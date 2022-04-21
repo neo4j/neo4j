@@ -83,6 +83,7 @@ object Cardinality {
 case class EffectiveCardinality(amount: Double, originalCardinality: Option[Cardinality] = None) extends Ordered[EffectiveCardinality] {
   def compare(that: EffectiveCardinality): Int = amount.compare(that.amount)
   def +(that: EffectiveCardinality): EffectiveCardinality = EffectiveCardinality(amount + that.amount, originalCardinality)
+  def -(that: EffectiveCardinality): EffectiveCardinality = EffectiveCardinality(Math.max(amount - that.amount, 0), originalCardinality)
 }
 
 case class Cost(gummyBears: Double) extends Ordered[Cost] {
