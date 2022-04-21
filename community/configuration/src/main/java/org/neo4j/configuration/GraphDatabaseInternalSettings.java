@@ -286,13 +286,8 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     }
     @Internal
     @Description( "The worker management determines how the Cypher parallel runtime will distribute query execution work between multiple threads." )
-    public static final Setting<CypherWorkerManagement> cypher_worker_management = newBuilder( "unsupported.cypher.worker_management",
+    public static final Setting<CypherWorkerManagement> cypher_worker_management = newBuilder( "internal.cypher.worker_management",
             ofEnum( CypherWorkerManagement.class ), CypherWorkerManagement.DEFAULT ).build();
-
-    @Internal
-    @Description( "Feature flag to force produce result to always be in a separate pipeline" )
-    public static final Setting<Boolean> produce_result_in_separate_pipeline =
-            newBuilder( "unsupported.cypher.produce_result_in_separate_pipeline", BOOL, false ).build();
 
     public enum CypherOperatorEngine
     {
