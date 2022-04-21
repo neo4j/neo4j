@@ -19,10 +19,15 @@
  */
 package org.neo4j.internal.counts;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.eclipse.collections.api.set.ImmutableSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.internal.counts.CountsChanges.ABSENT;
+import static org.neo4j.internal.counts.CountsKey.MAX_STRAY_TX_ID;
+import static org.neo4j.internal.counts.CountsKey.MIN_STRAY_TX_ID;
+import static org.neo4j.internal.counts.CountsKey.strayTxId;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.util.Preconditions.checkState;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -36,7 +41,10 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
-
+import org.apache.commons.lang3.ArrayUtils;
+import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.collection.PrimitiveLongArrayQueue;
 import org.neo4j.counts.CountsStorage;
@@ -53,7 +61,6 @@ import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.logging.InternalLogProvider;
@@ -61,17 +68,6 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
-
-import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
-import static org.neo4j.internal.counts.CountsChanges.ABSENT;
-import static org.neo4j.internal.counts.CountsKey.MAX_STRAY_TX_ID;
-import static org.neo4j.internal.counts.CountsKey.MIN_STRAY_TX_ID;
-import static org.neo4j.internal.counts.CountsKey.strayTxId;
-import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
-import static org.neo4j.util.Preconditions.checkState;
 
 /**
  * A "counts store" backed by {@link GBPTree}. It solves the problem of incrementing/decrementing counts for arbitrary keys, while at the same time
@@ -87,19 +83,19 @@ import static org.neo4j.util.Preconditions.checkState;
  * Data flow wise updates are accumulated and written in each checkpoint. Reads are served from the tree or directly from {@link CountsChanges}
  * if there's changes to that particular key.
  */
-public class GBPTreeGenericCountsStore implements CountsStorage
-{
+public class GBPTreeGenericCountsStore implements CountsStorage {
     public static final Monitor NO_MONITOR = txId -> {};
     private static final long NEEDS_REBUILDING_HIGH_ID = 0;
     private static final String OPEN_COUNT_STORE_TAG = "openCountStore";
     static final long INVALID_COUNT = -1;
 
-    protected final GBPTree<CountsKey,CountsValue> tree;
+    protected final GBPTree<CountsKey, CountsValue> tree;
     private final OutOfOrderSequence idSequence;
     /**
      * Guards interaction between checkpoint (write-lock) and transactions (read-lock).
      */
-    private final ReadWriteLock lock = new ReentrantReadWriteLock( true );
+    private final ReadWriteLock lock = new ReentrantReadWriteLock(true);
+
     protected final CountsLayout layout = new CountsLayout();
     private final Rebuilder rebuilder;
     private final boolean needsRebuild;
@@ -114,12 +110,21 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     private final InternalLogProvider userLogProvider;
     private volatile boolean started;
 
-    public GBPTreeGenericCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
-                                      Rebuilder rebuilder, DatabaseReadOnlyChecker readOnlyChecker, String name, Monitor monitor, String databaseName,
-                                      int maxCacheSize, InternalLogProvider userLogProvider, CursorContextFactory contextFactory,
-                                      ImmutableSet<OpenOption> openOptions )
-            throws IOException
-    {
+    public GBPTreeGenericCountsStore(
+            PageCache pageCache,
+            Path file,
+            FileSystemAbstraction fileSystem,
+            RecoveryCleanupWorkCollector recoveryCollector,
+            Rebuilder rebuilder,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            String name,
+            Monitor monitor,
+            String databaseName,
+            int maxCacheSize,
+            InternalLogProvider userLogProvider,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> openOptions)
+            throws IOException {
         this.userLogProvider = userLogProvider;
         this.readOnlyChecker = readOnlyChecker;
         this.name = name;
@@ -130,104 +135,110 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         this.rebuilder = rebuilder;
 
         // First just read the header so that we can avoid creating it if this store is read-only
-        CountsHeader header = new CountsHeader( NEEDS_REBUILDING_HIGH_ID );
-        GBPTree<CountsKey,CountsValue> instantiatedTree;
-        try
-        {
-            instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnlyChecker, header, contextFactory, openOptions );
-        }
-        catch ( MetadataMismatchException e )
-        {
+        CountsHeader header = new CountsHeader(NEEDS_REBUILDING_HIGH_ID);
+        GBPTree<CountsKey, CountsValue> instantiatedTree;
+        try {
+            instantiatedTree = instantiateTree(
+                    pageCache, file, recoveryCollector, readOnlyChecker, header, contextFactory, openOptions);
+        } catch (MetadataMismatchException e) {
             // Corrupt, delete and rebuild
-            fileSystem.deleteFileOrThrow( file );
-            header = new CountsHeader( NEEDS_REBUILDING_HIGH_ID );
-            instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnlyChecker, header, contextFactory, openOptions );
+            fileSystem.deleteFileOrThrow(file);
+            header = new CountsHeader(NEEDS_REBUILDING_HIGH_ID);
+            instantiatedTree = instantiateTree(
+                    pageCache, file, recoveryCollector, readOnlyChecker, header, contextFactory, openOptions);
         }
         this.tree = instantiatedTree;
         boolean successful = false;
-        try ( var cursorContext = contextFactory.create( OPEN_COUNT_STORE_TAG ) )
-        {
-            this.txIdInformation = readTxIdInformation( header.highestGapFreeTxId(), cursorContext );
+        try (var cursorContext = contextFactory.create(OPEN_COUNT_STORE_TAG)) {
+            this.txIdInformation = readTxIdInformation(header.highestGapFreeTxId(), cursorContext);
             // Recreate the tx id state as it was from last checkpoint (or base if empty)
-            this.idSequence = new ArrayQueueOutOfOrderSequence( txIdInformation.highestGapFreeTxId, 200, EMPTY_LONG_ARRAY );
-            this.txIdInformation.strayTxIds.forEach( txId -> idSequence.offer( txId, EMPTY_LONG_ARRAY ) );
+            this.idSequence =
+                    new ArrayQueueOutOfOrderSequence(txIdInformation.highestGapFreeTxId, 200, EMPTY_LONG_ARRAY);
+            this.txIdInformation.strayTxIds.forEach(txId -> idSequence.offer(txId, EMPTY_LONG_ARRAY));
             // Only care about initial counts rebuilding if the tree was created right now when opening this tree
             // The actual rebuilding will happen in start()
             this.needsRebuild = !header.wasRead() || header.highestGapFreeTxId() == NEEDS_REBUILDING_HIGH_ID;
             successful = true;
-        }
-        finally
-        {
-            if ( !successful )
-            {
-                closeAllUnchecked( tree );
+        } finally {
+            if (!successful) {
+                closeAllUnchecked(tree);
             }
         }
     }
 
-    protected CountsChanges createCountChanges()
-    {
+    protected CountsChanges createCountChanges() {
         return new MapCountsChanges();
     }
 
-    private GBPTree<CountsKey,CountsValue> instantiateTree( PageCache pageCache, Path file, RecoveryCleanupWorkCollector recoveryCollector,
-                                                            DatabaseReadOnlyChecker readOnlyChecker, CountsHeader header, CursorContextFactory contextFactory,
-                                                            ImmutableSet<OpenOption> openOptions )
-    {
-        try
-        {
-            return new GBPTree<>( pageCache, file, layout, GBPTree.NO_MONITOR, header, header, recoveryCollector, readOnlyChecker,
-                                  openOptions, databaseName, name, contextFactory );
-        }
-        catch ( TreeFileNotFoundException e )
-        {
+    private GBPTree<CountsKey, CountsValue> instantiateTree(
+            PageCache pageCache,
+            Path file,
+            RecoveryCleanupWorkCollector recoveryCollector,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            CountsHeader header,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> openOptions) {
+        try {
+            return new GBPTree<>(
+                    pageCache,
+                    file,
+                    layout,
+                    GBPTree.NO_MONITOR,
+                    header,
+                    header,
+                    recoveryCollector,
+                    readOnlyChecker,
+                    openOptions,
+                    databaseName,
+                    name,
+                    contextFactory);
+        } catch (TreeFileNotFoundException e) {
             throw new IllegalStateException(
-                    "Counts store file could not be found, most likely this database needs to be recovered, file:" + file, e );
+                    "Counts store file could not be found, most likely this database needs to be recovered, file:"
+                            + file,
+                    e);
         }
     }
 
     // === Life cycle ===
 
     @Override
-    public void start( CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker ) throws IOException
-    {
-        // Execute the initial counts building if we need to, i.e. if instantiation of this counts store had to create it
-        if ( needsRebuild || rebuilder.lastCommittedTxId() != idSequence.getHighestGapFreeNumber() )
-        {
-            checkState( !readOnlyChecker.isReadOnly(), "Counts store needs rebuilding, most likely this database needs to be recovered." );
-            try ( CountUpdater updater = directUpdater( false, cursorContext ) )
-            {
-                rebuilder.rebuild( updater, cursorContext, memoryTracker );
-            }
-            finally
-            {
-                idSequence.set( rebuilder.lastCommittedTxId(), ArrayUtils.EMPTY_LONG_ARRAY );
+    public void start(CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker)
+            throws IOException {
+        // Execute the initial counts building if we need to, i.e. if instantiation of this counts store had to create
+        // it
+        if (needsRebuild || rebuilder.lastCommittedTxId() != idSequence.getHighestGapFreeNumber()) {
+            checkState(
+                    !readOnlyChecker.isReadOnly(),
+                    "Counts store needs rebuilding, most likely this database needs to be recovered.");
+            try (CountUpdater updater = directUpdater(false, cursorContext)) {
+                rebuilder.rebuild(updater, cursorContext, memoryTracker);
+            } finally {
+                idSequence.set(rebuilder.lastCommittedTxId(), ArrayUtils.EMPTY_LONG_ARRAY);
             }
         }
         started = true;
     }
 
     @Override
-    public void close()
-    {
-        closeAllUnchecked( tree );
+    public void close() {
+        closeAllUnchecked(tree);
     }
 
     // === Writes ===
 
-    protected CountUpdater updater( long txId, CursorContext cursorContext )
-    {
+    protected CountUpdater updater(long txId, CursorContext cursorContext) {
         // In order to keep the cache limited then check if we need to flush to the tree
-        if ( txId % 10 == 0 )
-        {
+        if (txId % 10 == 0) {
             // Although it's somewhat costly to check map size so only do it every N transaction.
-            checkCacheSizeAndPotentiallyFlush( cursorContext );
+            checkCacheSizeAndPotentiallyFlush(cursorContext);
         }
 
-        Lock lock = lock( this.lock.readLock() );
+        Lock lock = lock(this.lock.readLock());
 
-        boolean alreadyApplied = txIdInformation.txIdIsAlreadyApplied( txId );
-        // Why have this check below? Why should we not apply transactions before started when we have an initial counts builder?
+        boolean alreadyApplied = txIdInformation.txIdIsAlreadyApplied(txId);
+        // Why have this check below? Why should we not apply transactions before started when we have an initial counts
+        // builder?
         // Consider the following scenario:
         // - Create node N
         // - Checkpoint
@@ -238,17 +249,19 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         // - Recovery replays deletion of N
         // - After recovery the counts store is rebuilt from scratch
         //
-        // The deletion of N on the empty counts store would have resulted in a count of -1, which is not OK to write to the tree,
-        // since there can never be a negative amount of, say nodes. The counts store will be rebuilt after recovery anyway,
+        // The deletion of N on the empty counts store would have resulted in a count of -1, which is not OK to write to
+        // the tree,
+        // since there can never be a negative amount of, say nodes. The counts store will be rebuilt after recovery
+        // anyway,
         // so ignore these transactions.
         boolean inRecoveryOnEmptyCountsStore = needsRebuild && !started;
-        if ( alreadyApplied || inRecoveryOnEmptyCountsStore )
-        {
+        if (alreadyApplied || inRecoveryOnEmptyCountsStore) {
             lock.unlock();
-            monitor.ignoredTransaction( txId );
+            monitor.ignoredTransaction(txId);
             return null;
         }
-        return new CountUpdater( new MapWriter( key -> readCountFromTree( key, cursorContext ), changes, idSequence, txId ), lock );
+        return new CountUpdater(
+                new MapWriter(key -> readCountFromTree(key, cursorContext), changes, idSequence, txId), lock);
     }
 
     /**
@@ -258,174 +271,152 @@ public class GBPTreeGenericCountsStore implements CountsStorage
      * @param applyDeltas if {@code true} the writer will apply the changes as deltas, which means reading from the tree.
      * If {@code false} all changes will be written as-is, i.e. as if they are absolute counts.
      */
-    protected CountUpdater directUpdater( boolean applyDeltas, CursorContext cursorContext ) throws IOException
-    {
+    protected CountUpdater directUpdater(boolean applyDeltas, CursorContext cursorContext) throws IOException {
         boolean success = false;
         Lock lock = this.lock.writeLock();
         lock.lock();
-        try
-        {
+        try {
             CountUpdater.CountWriter writer = applyDeltas
-                    ? new DeltaTreeWriter( () -> tree.writer( cursorContext ), key -> readCountFromTree( key, cursorContext ), layout, maxCacheSize,
-                    userLogProvider )
-                    : new TreeWriter( tree.writer( cursorContext ), userLogProvider );
-            CountUpdater updater = new CountUpdater( writer, lock );
+                    ? new DeltaTreeWriter(
+                            () -> tree.writer(cursorContext),
+                            key -> readCountFromTree(key, cursorContext),
+                            layout,
+                            maxCacheSize,
+                            userLogProvider)
+                    : new TreeWriter(tree.writer(cursorContext), userLogProvider);
+            CountUpdater updater = new CountUpdater(writer, lock);
             success = true;
             return updater;
-        }
-        finally
-        {
-            if ( !success )
-            {
+        } finally {
+            if (!success) {
                 lock.unlock();
             }
         }
     }
 
     @Override
-    public void checkpoint( CursorContext cursorContext ) throws IOException
-    {
-        try ( CriticalSection criticalSection = new CriticalSection( lock ) )
-        {
+    public void checkpoint(CursorContext cursorContext) throws IOException {
+        try (CriticalSection criticalSection = new CriticalSection(lock)) {
             criticalSection.acquireExclusive();
-            // Take a snapshot of applied transactions while in the exclusive critical section (but write it later, no need to write it under the lock)
+            // Take a snapshot of applied transactions while in the exclusive critical section (but write it later, no
+            // need to write it under the lock)
             OutOfOrderSequence.Snapshot txIdSnapshot = idSequence.snapshot();
-            writeChangesToTreeAndSwitchToSharedCriticalSection( criticalSection, cursorContext );
+            writeChangesToTreeAndSwitchToSharedCriticalSection(criticalSection, cursorContext);
 
             // Write transaction information to the tree and checkpoint while still in the shared critical section
-            updateTxIdInformationInTree( txIdSnapshot, cursorContext );
-            tree.checkpoint( new CountsHeader( txIdSnapshot.highestGapFree()[0] ), cursorContext );
+            updateTxIdInformationInTree(txIdSnapshot, cursorContext);
+            tree.checkpoint(new CountsHeader(txIdSnapshot.highestGapFree()[0]), cursorContext);
         }
     }
 
-    private void checkCacheSizeAndPotentiallyFlush( CursorContext cursorContext )
-    {
+    private void checkCacheSizeAndPotentiallyFlush(CursorContext cursorContext) {
         int cacheSize = changes.size();
-        if ( cacheSize > highMarkCacheSize )
-        {
-            try ( CriticalSection criticalSection = new CriticalSection( lock ) )
-            {
-                // The cache is getting big, try to get a write lock to flush the changes. If we can't get it then give up and let someone else try later.
+        if (cacheSize > highMarkCacheSize) {
+            try (CriticalSection criticalSection = new CriticalSection(lock)) {
+                // The cache is getting big, try to get a write lock to flush the changes. If we can't get it then give
+                // up and let someone else try later.
                 // Reasons for waiting for this lock could be:
                 // - Another thread is flushing changes (in which case this updater would need to wait anyway)
                 // - Other threads are making updates as we speak (more likely)
-                if ( !criticalSection.tryAcquireExclusive() && cacheSize > maxCacheSize )
-                {
-                    // Although if the write pressure is really high then flushing may be starved so if the cache is much bigger then acquire the lock blocking
+                if (!criticalSection.tryAcquireExclusive() && cacheSize > maxCacheSize) {
+                    // Although if the write pressure is really high then flushing may be starved so if the cache is
+                    // much bigger then acquire the lock blocking
                     criticalSection.acquireExclusive();
                 }
 
-                if ( criticalSection.hasExclusive() && changes.size() > maxCacheSize )
-                {
-                    try
-                    {
-                        writeChangesToTreeAndSwitchToSharedCriticalSection( criticalSection, cursorContext );
-                    }
-                    catch ( IOException e )
-                    {
-                        throw new UncheckedIOException( e );
+                if (criticalSection.hasExclusive() && changes.size() > maxCacheSize) {
+                    try {
+                        writeChangesToTreeAndSwitchToSharedCriticalSection(criticalSection, cursorContext);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
                     }
                 }
             }
         }
     }
 
-    private void writeChangesToTreeAndSwitchToSharedCriticalSection( CriticalSection criticalSection, CursorContext cursorContext ) throws IOException
-    {
+    private void writeChangesToTreeAndSwitchToSharedCriticalSection(
+            CriticalSection criticalSection, CursorContext cursorContext) throws IOException {
         criticalSection.acquireShared();
         CountsChanges changesToWrite;
-        try
-        {
+        try {
             // Take the changes and instantiate a new map for other updates to apply to after we release this lock
             changesToWrite = changes;
             changes = changes.freezeAndFork();
-        }
-        finally
-        {
-            // The exclusive part of the critical section is completed, release that lock so that updaters can commence applying updates
+        } finally {
+            // The exclusive part of the critical section is completed, release that lock so that updaters can commence
+            // applying updates
             criticalSection.releaseExclusive();
         }
 
         // Now write all the things to the tree in the shared critical section
-        writeCountsChanges( changesToWrite, cursorContext );
+        writeCountsChanges(changesToWrite, cursorContext);
         changes.clearPreviousChanges();
     }
 
-    private void writeCountsChanges( CountsChanges changes, CursorContext cursorContext ) throws IOException
-    {
-        try ( TreeWriter writer = new TreeWriter( tree.unsafeWriter( cursorContext ), userLogProvider ) )
-        {
+    private void writeCountsChanges(CountsChanges changes, CursorContext cursorContext) throws IOException {
+        try (TreeWriter writer = new TreeWriter(tree.unsafeWriter(cursorContext), userLogProvider)) {
             // Sort the entries in the natural tree order to get more performance in the writer
-            changes.sortedChanges( layout ).forEach( entry -> writer.write( entry.getKey(), entry.getValue().get() ) );
+            changes.sortedChanges(layout)
+                    .forEach(entry ->
+                            writer.write(entry.getKey(), entry.getValue().get()));
         }
     }
 
-    private void updateTxIdInformationInTree( OutOfOrderSequence.Snapshot txIdSnapshot, CursorContext cursorContext ) throws IOException
-    {
+    private void updateTxIdInformationInTree(OutOfOrderSequence.Snapshot txIdSnapshot, CursorContext cursorContext)
+            throws IOException {
         PrimitiveLongArrayQueue strayIds = new PrimitiveLongArrayQueue();
-        visitStrayTxIdsInTree( strayIds::enqueue, cursorContext );
+        visitStrayTxIdsInTree(strayIds::enqueue, cursorContext);
 
-        try ( Writer<CountsKey,CountsValue> writer = tree.unsafeWriter( cursorContext ) )
-        {
+        try (Writer<CountsKey, CountsValue> writer = tree.unsafeWriter(cursorContext)) {
             // First clear all the stray ids from the previous checkpoint
             CountsValue value = new CountsValue();
-            while ( !strayIds.isEmpty() )
-            {
+            while (!strayIds.isEmpty()) {
                 long strayTxId = strayIds.dequeue();
-                writer.remove( strayTxId( strayTxId ) );
+                writer.remove(strayTxId(strayTxId));
             }
 
             // And write all stray txIds into the tree
-            value.initialize( 0 );
+            value.initialize(0);
             long[][] strayTxIds = txIdSnapshot.idsOutOfOrder();
-            for ( long[] strayTxId : strayTxIds )
-            {
+            for (long[] strayTxId : strayTxIds) {
                 long txId = strayTxId[0];
-                writer.put( strayTxId( txId ), value );
+                writer.put(strayTxId(txId), value);
             }
         }
     }
 
     // === Reads ===
 
-    public long txId()
-    {
+    public long txId() {
         return idSequence.getHighestGapFreeNumber();
     }
 
-    protected long read( CountsKey key, CursorContext cursorContext )
-    {
-        long changedCount = changes.get( key );
-        return changedCount != ABSENT ? changedCount : readCountFromTree( key, cursorContext );
+    protected long read(CountsKey key, CursorContext cursorContext) {
+        long changedCount = changes.get(key);
+        return changedCount != ABSENT ? changedCount : readCountFromTree(key, cursorContext);
     }
 
-    public void visitAllCounts( CountVisitor visitor, CursorContext cursorContext )
-    {
+    public void visitAllCounts(CountVisitor visitor, CursorContext cursorContext) {
         // First visit the changes that we haven't check-pointed yet
-        for ( Map.Entry<CountsKey,AtomicLong> changedEntry : changes.sortedChanges( layout ) )
-        {
-            // Our simplistic approach to the changes map makes it contain 0 counts at times, we don't remove entries from it
-            if ( changedEntry.getValue().get() != 0 )
-            {
-                visitor.visit( changedEntry.getKey(), changedEntry.getValue().get() );
+        for (Map.Entry<CountsKey, AtomicLong> changedEntry : changes.sortedChanges(layout)) {
+            // Our simplistic approach to the changes map makes it contain 0 counts at times, we don't remove entries
+            // from it
+            if (changedEntry.getValue().get() != 0) {
+                visitor.visit(changedEntry.getKey(), changedEntry.getValue().get());
             }
         }
 
         // Then visit the remaining stored changes from the last check-point
-        try ( Seeker<CountsKey,CountsValue> seek = tree.seek( CountsKey.MIN_COUNT, CountsKey.MAX_COUNT, cursorContext ) )
-        {
-            while ( seek.next() )
-            {
+        try (Seeker<CountsKey, CountsValue> seek = tree.seek(CountsKey.MIN_COUNT, CountsKey.MAX_COUNT, cursorContext)) {
+            while (seek.next()) {
                 CountsKey key = seek.key();
-                if ( !changes.containsChange( key ) )
-                {
-                    visitor.visit( key, seek.value().count );
+                if (!changes.containsChange(key)) {
+                    visitor.visit(key, seek.value().count);
                 }
             }
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
+        } catch (IOException e) {
+            throw new UnderlyingStorageException(e);
         }
     }
 
@@ -436,68 +427,53 @@ public class GBPTreeGenericCountsStore implements CountsStorage
      * @param key count value to read from the tree.
      * @return AtomicLong with the read count, or initialized to 0 if the count didn't exist in the tree.
      */
-    private long readCountFromTree( CountsKey key, CursorContext cursorContext )
-    {
-        try ( Seeker<CountsKey,CountsValue> seek = tree.seek( key, key, cursorContext ) )
-        {
-            if ( !seek.next() )
-            {
+    private long readCountFromTree(CountsKey key, CursorContext cursorContext) {
+        try (Seeker<CountsKey, CountsValue> seek = tree.seek(key, key, cursorContext)) {
+            if (!seek.next()) {
                 return 0;
             }
 
-            if ( seek.value().count == INVALID_COUNT )
-            {
-                throw new InvalidCountException( "The count value for key '" + key + "' is invalid. " +
-                        "This is a serious error which is typically caused by a store corruption" );
+            if (seek.value().count == INVALID_COUNT) {
+                throw new InvalidCountException("The count value for key '" + key + "' is invalid. "
+                        + "This is a serious error which is typically caused by a store corruption");
             }
 
             return seek.value().count;
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    private void visitStrayTxIdsInTree( LongConsumer visitor, CursorContext cursorContext ) throws IOException
-    {
-        try ( Seeker<CountsKey,CountsValue> seek = tree.seek( MIN_STRAY_TX_ID, MAX_STRAY_TX_ID, cursorContext ) )
-        {
-            while ( seek.next() )
-            {
-                visitor.accept( seek.key().first );
+    private void visitStrayTxIdsInTree(LongConsumer visitor, CursorContext cursorContext) throws IOException {
+        try (Seeker<CountsKey, CountsValue> seek = tree.seek(MIN_STRAY_TX_ID, MAX_STRAY_TX_ID, cursorContext)) {
+            while (seek.next()) {
+                visitor.accept(seek.key().first);
             }
         }
     }
 
-    private TxIdInformation readTxIdInformation( long highestGapFreeTxId, CursorContext cursorContext ) throws IOException
-    {
+    private TxIdInformation readTxIdInformation(long highestGapFreeTxId, CursorContext cursorContext)
+            throws IOException {
         MutableLongSet strayTxIds = new LongHashSet();
-        visitStrayTxIdsInTree( strayTxIds::add, cursorContext );
-        return new TxIdInformation( highestGapFreeTxId, strayTxIds );
+        visitStrayTxIdsInTree(strayTxIds::add, cursorContext);
+        return new TxIdInformation(highestGapFreeTxId, strayTxIds);
     }
 
-    private static Lock lock( Lock lock )
-    {
+    private static Lock lock(Lock lock) {
         lock.lock();
         return lock;
     }
 
     @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext )
-    {
-        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ), cursorContext );
+    public boolean consistencyCheck(ReporterFactory reporterFactory, CursorContext cursorContext) {
+        return consistencyCheck(reporterFactory.getClass(GBPTreeConsistencyCheckVisitor.class), cursorContext);
     }
 
-    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<CountsKey> visitor, CursorContext cursorContext )
-    {
-        try
-        {
-            return tree.consistencyCheck( visitor, cursorContext );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+    private boolean consistencyCheck(GBPTreeConsistencyCheckVisitor<CountsKey> visitor, CursorContext cursorContext) {
+        try {
+            return tree.consistencyCheck(visitor, cursorContext);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -514,75 +490,83 @@ public class GBPTreeGenericCountsStore implements CountsStorage
      * @param openOptions
      * @throws IOException on missing file or I/O error.
      */
-    protected static void dump( PageCache pageCache, Path file, PrintStream out, String databaseName, String name, CursorContextFactory contextFactory,
-                                Function<CountsKey,String> keyToString, ImmutableSet<OpenOption> openOptions ) throws IOException
-    {
-        // First check if it even exists as we don't really want to create it as part of dumping it. readHeader will throw if not found
-        CountsHeader header = new CountsHeader( BASE_TX_ID );
-        try ( var cursorContext = contextFactory.create( "dump" ) )
-        {
-            GBPTree.readHeader( pageCache, file, header, databaseName, cursorContext, openOptions );
+    protected static void dump(
+            PageCache pageCache,
+            Path file,
+            PrintStream out,
+            String databaseName,
+            String name,
+            CursorContextFactory contextFactory,
+            Function<CountsKey, String> keyToString,
+            ImmutableSet<OpenOption> openOptions)
+            throws IOException {
+        // First check if it even exists as we don't really want to create it as part of dumping it. readHeader will
+        // throw if not found
+        CountsHeader header = new CountsHeader(BASE_TX_ID);
+        try (var cursorContext = contextFactory.create("dump")) {
+            GBPTree.readHeader(pageCache, file, header, databaseName, cursorContext, openOptions);
         }
 
         // Now open it and dump its contents
-        try ( GBPTree<CountsKey,CountsValue> tree = new GBPTree<>( pageCache, file, new CountsLayout(), GBPTree.NO_MONITOR, header, GBPTree.NO_HEADER_WRITER,
-                RecoveryCleanupWorkCollector.ignore(), readOnly(), openOptions, databaseName, name, contextFactory ) )
-        {
-            out.printf( "Highest gap-free txId: %d%n", header.highestGapFreeTxId() );
-            try ( var cursorContext = contextFactory.create( "dumpVisitor" ) )
-            {
-                tree.visit( new GBPTreeVisitor.Adaptor<>()
-                {
-                    private CountsKey key;
+        try (GBPTree<CountsKey, CountsValue> tree = new GBPTree<>(
+                pageCache,
+                file,
+                new CountsLayout(),
+                GBPTree.NO_MONITOR,
+                header,
+                GBPTree.NO_HEADER_WRITER,
+                RecoveryCleanupWorkCollector.ignore(),
+                readOnly(),
+                openOptions,
+                databaseName,
+                name,
+                contextFactory)) {
+            out.printf("Highest gap-free txId: %d%n", header.highestGapFreeTxId());
+            try (var cursorContext = contextFactory.create("dumpVisitor")) {
+                tree.visit(
+                        new GBPTreeVisitor.Adaptor<>() {
+                            private CountsKey key;
 
-                    @Override
-                    public void key( CountsKey key, boolean isLeaf, long offloadId )
-                    {
-                        this.key = key;
-                    }
+                            @Override
+                            public void key(CountsKey key, boolean isLeaf, long offloadId) {
+                                this.key = key;
+                            }
 
-                    @Override
-                    public void value( CountsValue value )
-                    {
-                        out.printf( "%s = %d%n", keyToString.apply( key ), value.count );
-                    }
-                }, cursorContext );
+                            @Override
+                            public void value(CountsValue value) {
+                                out.printf("%s = %d%n", keyToString.apply(key), value.count);
+                            }
+                        },
+                        cursorContext);
             }
         }
     }
 
-    public interface Monitor
-    {
-        void ignoredTransaction( long txId );
+    public interface Monitor {
+        void ignoredTransaction(long txId);
     }
 
-    public interface Rebuilder
-    {
+    public interface Rebuilder {
         long lastCommittedTxId();
 
         /**
          * @param updater the updater to write the counts into. Note: the updater will write all counts as absolute.
          */
-        void rebuild( CountUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker );
+        void rebuild(CountUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker);
     }
 
-    public interface CountVisitor
-    {
-        void visit( CountsKey key, long count );
+    public interface CountVisitor {
+        void visit(CountsKey key, long count);
     }
 
-    public static final Rebuilder EMPTY_REBUILD = new Rebuilder()
-    {
+    public static final Rebuilder EMPTY_REBUILD = new Rebuilder() {
         @Override
-        public long lastCommittedTxId()
-        {
+        public long lastCommittedTxId() {
             return BASE_TX_ID;
         }
 
         @Override
-        public void rebuild( CountUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
-        {
-        }
+        public void rebuild(CountUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {}
     };
 
     /**
@@ -608,61 +592,51 @@ public class GBPTreeGenericCountsStore implements CountsStorage
      * Then the shared lock is acquired and held until the writing is done. For checkpointing this also includes doing checkpoint on the tree.
      * This will prevent others from entering another critical section, but still allow writers to make updates (once the exclusive lock has been released)
      */
-    private static class CriticalSection implements AutoCloseable
-    {
+    private static class CriticalSection implements AutoCloseable {
         private final ReadWriteLock lock;
         private boolean exclusive;
         private boolean shared;
 
-        private CriticalSection( ReadWriteLock lock )
-        {
+        private CriticalSection(ReadWriteLock lock) {
             this.lock = lock;
         }
 
-        boolean tryAcquireExclusive()
-        {
+        boolean tryAcquireExclusive() {
             assert !exclusive && !shared;
             return exclusive = lock.writeLock().tryLock();
         }
 
-        void acquireExclusive()
-        {
+        void acquireExclusive() {
             assert !exclusive && !shared;
             lock.writeLock().lock();
             exclusive = true;
         }
 
-        void acquireShared()
-        {
+        void acquireShared() {
             assert exclusive && !shared;
             lock.readLock().lock();
             shared = true;
         }
 
-        void releaseExclusive()
-        {
+        void releaseExclusive() {
             assert exclusive;
             lock.writeLock().unlock();
             exclusive = false;
         }
 
         @Override
-        public void close()
-        {
-            if ( shared )
-            {
+        public void close() {
+            if (shared) {
                 lock.readLock().unlock();
                 shared = false;
             }
-            if ( exclusive )
-            {
+            if (exclusive) {
                 lock.writeLock().unlock();
                 exclusive = false;
             }
         }
 
-        boolean hasExclusive()
-        {
+        boolean hasExclusive() {
             return exclusive;
         }
     }

@@ -27,25 +27,21 @@ import org.neo4j.lock.ResourceTypes;
 import org.neo4j.time.SystemNanoClock;
 
 @ServiceProvider
-public class ForsetiLocksFactory implements LocksFactory
-{
+public class ForsetiLocksFactory implements LocksFactory {
     public static final String FORSETI_LOCKS_NAME = "forseti";
 
     @Override
-    public String getName()
-    {
+    public String getName() {
         return FORSETI_LOCKS_NAME;
     }
 
     @Override
-    public int getPriority()
-    {
+    public int getPriority() {
         return 10;
     }
 
     @Override
-    public Locks newInstance( Config config, SystemNanoClock clock )
-    {
-        return new ForsetiLockManager( config, clock, ResourceTypes.values() );
+    public Locks newInstance(Config config, SystemNanoClock clock) {
+        return new ForsetiLockManager(config, clock, ResourceTypes.values());
     }
 }

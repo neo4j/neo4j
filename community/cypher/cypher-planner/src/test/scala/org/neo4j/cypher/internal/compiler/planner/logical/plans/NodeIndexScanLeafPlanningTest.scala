@@ -98,7 +98,8 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       qg = queryGraph(propIsNotNull, hasLabelAwesome)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans shouldBe empty
@@ -112,7 +113,8 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
@@ -128,7 +130,11 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.OnlyIndexSeekPlansFor(idName, Set()))(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.OnlyIndexSeekPlansFor(idName, Set()))(
+        cfg.qg,
+        InterestingOrderConfig.empty,
+        ctx
+      )
 
       // then
       resultPlans should be(empty)
@@ -142,14 +148,15 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
-        case SetExtractor(plan@NodeIndexScan(`idName`, _, _, _, _, _)) =>
+        case SetExtractor(plan @ NodeIndexScan(`idName`, _, _, _, _, _)) =>
           solvedPredicates(plan, ctx) should equal(Set(
             propIsNotNull,
-            hasLabelAwesome,
+            hasLabelAwesome
           ))
       }
     }
@@ -162,14 +169,15 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
-        case SetExtractor(plan@NodeIndexScan(`idName`, _, _, _, _, _)) =>
+        case SetExtractor(plan @ NodeIndexScan(`idName`, _, _, _, _, _)) =>
           solvedPredicates(plan, ctx) should equal(Set(
             propIsNotNull,
-            hasLabelAwesome,
+            hasLabelAwesome
           ))
       }
     }
@@ -185,7 +193,8 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
@@ -201,7 +210,8 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
@@ -217,7 +227,8 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       uniqueIndexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
@@ -227,7 +238,8 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("plans index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
+    val hint: UsingIndexHint =
+      UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
       qg = queryGraph(propIsNotNull, hasLabelAwesome).addHints(Some(hint))
@@ -235,19 +247,23 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
         case SetExtractor(NodeIndexScan(`idName`, _, _, _, _, _)) => ()
       }
 
-      resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph).head.hints shouldEqual Set(hint)
+      resultPlans.map(p =>
+        ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+      ).head.hints shouldEqual Set(hint)
     }
   }
 
   test("plans unique index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
+    val hint: UsingIndexHint =
+      UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
       qg = queryGraph(propIsNotNull, hasLabelAwesome).addHints(Some(hint))
@@ -255,19 +271,23 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
         case SetExtractor(NodeIndexScan(`idName`, _, _, _, _, _)) => ()
       }
 
-      resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph).head.hints shouldEqual Set(hint)
+      resultPlans.map(p =>
+        ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+      ).head.hints shouldEqual Set(hint)
     }
   }
 
   test("index scan does not solve seek hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)), SeekOnly) _
+    val hint: UsingIndexHint =
+      UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)), SeekOnly) _
 
     new given {
       qg = queryGraph(propIsNotNull, hasLabelAwesome).addHints(Some(hint))
@@ -275,14 +295,17 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
         case SetExtractor(NodeIndexScan(`idName`, _, _, _, _, _)) => ()
       }
 
-      resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph).head.hints shouldBe empty
+      resultPlans.map(p =>
+        ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+      ).head.hints shouldBe empty
     }
   }
 
@@ -292,11 +315,19 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
-        case SetExtractor(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)), _, _, _)) =>
+        case SetExtractor(plan @ NodeIndexScan(
+            `idName`,
+            _,
+            Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)),
+            _,
+            _,
+            _
+          )) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
@@ -308,18 +339,25 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     }
   }
 
-
   test("plans index scans with value for: n.prop STARTS WITH <pattern>") {
     new given {
       qg = queryGraph(propStartsWithEmpty, hasLabelAwesome)
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
-        case SetExtractor(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)), _, _, _)) =>
+        case SetExtractor(plan @ NodeIndexScan(
+            `idName`,
+            _,
+            Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)),
+            _,
+            _,
+            _
+          )) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
@@ -338,11 +376,19 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
-        case SetExtractor(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)), _, _, _)) =>
+        case SetExtractor(plan @ NodeIndexScan(
+            `idName`,
+            _,
+            Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)),
+            _,
+            _,
+            _
+          )) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
@@ -361,11 +407,19 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
-        case SetExtractor(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)), _, _, _)) =>
+        case SetExtractor(plan @ NodeIndexScan(
+            `idName`,
+            _,
+            Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)),
+            _,
+            _,
+            _
+          )) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
@@ -383,11 +437,19 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
-        case SetExtractor(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)), _, _, _)) =>
+        case SetExtractor(plan @ NodeIndexScan(
+            `idName`,
+            _,
+            Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)),
+            _,
+            _,
+            _
+          )) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
@@ -405,11 +467,19 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
-        case SetExtractor(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)), _, _, _)) =>
+        case SetExtractor(plan @ NodeIndexScan(
+            `idName`,
+            _,
+            Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)),
+            _,
+            _,
+            _
+          )) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
@@ -427,11 +497,19 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
-        case SetExtractor(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)), _, _, _)) =>
+        case SetExtractor(plan @ NodeIndexScan(
+            `idName`,
+            _,
+            Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)),
+            _,
+            _,
+            _
+          )) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
@@ -449,11 +527,19 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
-        case SetExtractor(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)), _, _, _)) =>
+        case SetExtractor(plan @ NodeIndexScan(
+            `idName`,
+            _,
+            Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)),
+            _,
+            _,
+            _
+          )) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
@@ -471,11 +557,19 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
-        case SetExtractor(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)), _, _, _)) =>
+        case SetExtractor(plan @ NodeIndexScan(
+            `idName`,
+            _,
+            Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)),
+            _,
+            _,
+            _
+          )) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
@@ -493,11 +587,19 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
-        case SetExtractor(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)), _, _, _)) =>
+        case SetExtractor(plan @ NodeIndexScan(
+            `idName`,
+            _,
+            Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)),
+            _,
+            _,
+            _
+          )) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
@@ -516,18 +618,19 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "foo", "prop", "bar", "baz").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
-        case SetExtractor(plan@NodeIndexScan(`idName`, _, properties, _, _, _)) =>
+        case SetExtractor(plan @ NodeIndexScan(`idName`, _, properties, _, _, _)) =>
           properties should beLike {
             case Seq(
-            IndexedProperty(PropertyKeyToken("foo", _), CanGetValue, NODE_TYPE),
-            IndexedProperty(PropertyKeyToken("prop", _), CanGetValue, NODE_TYPE),
-            IndexedProperty(PropertyKeyToken("bar", _), CanGetValue, NODE_TYPE),
-            IndexedProperty(PropertyKeyToken("baz", _), CanGetValue, NODE_TYPE),
-            ) => ()
+                IndexedProperty(PropertyKeyToken("foo", _), CanGetValue, NODE_TYPE),
+                IndexedProperty(PropertyKeyToken("prop", _), CanGetValue, NODE_TYPE),
+                IndexedProperty(PropertyKeyToken("bar", _), CanGetValue, NODE_TYPE),
+                IndexedProperty(PropertyKeyToken("baz", _), CanGetValue, NODE_TYPE)
+              ) => ()
           }
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
@@ -536,7 +639,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                 PartialPredicate(fooIsNotNull, fooContainsApa),
                 barIsNotNull,
                 PartialPredicate(bazIsNotNull, bazEquals12),
-                hasLabelAwesome,
+                hasLabelAwesome
               ))
           }
       }
@@ -550,18 +653,19 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "foo", "prop", "bar", "baz").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
-        case SetExtractor(plan@NodeIndexScan(`idName`, _, properties, _, _, _)) =>
+        case SetExtractor(plan @ NodeIndexScan(`idName`, _, properties, _, _, _)) =>
           properties should beLike {
             case Seq(
-            IndexedProperty(PropertyKeyToken("foo", _), CanGetValue, NODE_TYPE),
-            IndexedProperty(PropertyKeyToken("prop", _), CanGetValue, NODE_TYPE),
-            IndexedProperty(PropertyKeyToken("bar", _), CanGetValue, NODE_TYPE),
-            IndexedProperty(PropertyKeyToken("baz", _), CanGetValue, NODE_TYPE),
-            ) => ()
+                IndexedProperty(PropertyKeyToken("foo", _), CanGetValue, NODE_TYPE),
+                IndexedProperty(PropertyKeyToken("prop", _), CanGetValue, NODE_TYPE),
+                IndexedProperty(PropertyKeyToken("bar", _), CanGetValue, NODE_TYPE),
+                IndexedProperty(PropertyKeyToken("baz", _), CanGetValue, NODE_TYPE)
+              ) => ()
           }
 
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
@@ -573,7 +677,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                 fooIsNotNull,
                 barIsNotNull,
                 PartialPredicate(bazIsNotNull, bazEquals12),
-                hasLabelAwesome,
+                hasLabelAwesome
               ))
           }
       }
@@ -587,7 +691,8 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "foo", "prop", "bar", "baz").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
@@ -601,7 +706,11 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       qg = queryGraph(propContainsApa, hasLabelAwesome)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+        cfg.qg,
+        InterestingOrderConfig.empty,
+        ctx
+      )
 
       // then
       resultPlans shouldBe empty
@@ -615,11 +724,23 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+        cfg.qg,
+        InterestingOrderConfig.empty,
+        ctx
+      )
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeIndexContainsScan(`idName`, _, IndexedProperty(_, DoNotGetValue, NODE_TYPE), `litApa`, _, _, _)) => ()
+        case SetExtractor(NodeIndexContainsScan(
+            `idName`,
+            _,
+            IndexedProperty(_, DoNotGetValue, NODE_TYPE),
+            `litApa`,
+            _,
+            _,
+            _
+          )) => ()
       }
     }
   }
@@ -631,11 +752,23 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+        cfg.qg,
+        InterestingOrderConfig.empty,
+        ctx
+      )
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeIndexContainsScan(`idName`, _, IndexedProperty(_, CanGetValue, NODE_TYPE), `litApa`, _, _, _)) => ()
+        case SetExtractor(NodeIndexContainsScan(
+            `idName`,
+            _,
+            IndexedProperty(_, CanGetValue, NODE_TYPE),
+            `litApa`,
+            _,
+            _,
+            _
+          )) => ()
       }
     }
   }
@@ -647,12 +780,32 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+        cfg.qg,
+        InterestingOrderConfig.empty,
+        ctx
+      )
 
       // then
       resultPlans shouldEqual Set(
-        NodeIndexContainsScan(`idName`, awesomeLabelToken, IndexedProperty(propPropertyKeyToken, CanGetValue, NODE_TYPE), `litApa`, Set.empty, IndexOrderNone, IndexType.RANGE),
-        NodeIndexContainsScan(`idName`, awesomeLabelToken, IndexedProperty(propPropertyKeyToken, CanGetValue, NODE_TYPE), `litBepa`, Set.empty, IndexOrderNone, IndexType.RANGE),
+        NodeIndexContainsScan(
+          `idName`,
+          awesomeLabelToken,
+          IndexedProperty(propPropertyKeyToken, CanGetValue, NODE_TYPE),
+          `litApa`,
+          Set.empty,
+          IndexOrderNone,
+          IndexType.RANGE
+        ),
+        NodeIndexContainsScan(
+          `idName`,
+          awesomeLabelToken,
+          IndexedProperty(propPropertyKeyToken, CanGetValue, NODE_TYPE),
+          `litBepa`,
+          Set.empty,
+          IndexOrderNone,
+          IndexType.RANGE
+        )
       )
     }
   }
@@ -664,7 +817,11 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop", "foo").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+        cfg.qg,
+        InterestingOrderConfig.empty,
+        ctx
+      )
 
       // then
       resultPlans shouldBe empty
@@ -678,11 +835,23 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+        cfg.qg,
+        InterestingOrderConfig.empty,
+        ctx
+      )
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeIndexContainsScan(`idName`, _, IndexedProperty(_, DoNotGetValue, NODE_TYPE), `litApa`, _, _, _)) => ()
+        case SetExtractor(NodeIndexContainsScan(
+            `idName`,
+            _,
+            IndexedProperty(_, DoNotGetValue, NODE_TYPE),
+            `litApa`,
+            _,
+            _,
+            _
+          )) => ()
       }
     }
   }
@@ -694,17 +863,30 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       uniqueIndexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+        cfg.qg,
+        InterestingOrderConfig.empty,
+        ctx
+      )
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeIndexContainsScan(`idName`, _, IndexedProperty(_, CanGetValue, NODE_TYPE), `litApa`, _, _, _)) => ()
+        case SetExtractor(NodeIndexContainsScan(
+            `idName`,
+            _,
+            IndexedProperty(_, CanGetValue, NODE_TYPE),
+            `litApa`,
+            _,
+            _,
+            _
+          )) => ()
       }
     }
   }
 
   test("plans index contains scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
+    val hint: UsingIndexHint =
+      UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
       qg = queryGraph(propContainsApa, hasLabelAwesome).addHints(Some(hint))
@@ -712,19 +894,26 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+        cfg.qg,
+        InterestingOrderConfig.empty,
+        ctx
+      )
 
       // then
       resultPlans should beLike {
         case SetExtractor(NodeIndexContainsScan(`idName`, _, _, `litApa`, _, _, _)) => ()
       }
 
-      resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph).head.hints shouldEqual Set(hint)
+      resultPlans.map(p =>
+        ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+      ).head.hints shouldEqual Set(hint)
     }
   }
 
   test("index contains scan does not solve seek hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)), SeekOnly) _
+    val hint: UsingIndexHint =
+      UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)), SeekOnly) _
 
     new given {
       qg = queryGraph(propContainsApa, hasLabelAwesome).addHints(Some(hint))
@@ -732,19 +921,26 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+        cfg.qg,
+        InterestingOrderConfig.empty,
+        ctx
+      )
 
       // then
       resultPlans should beLike {
         case SetExtractor(NodeIndexContainsScan(`idName`, _, _, `litApa`, _, _, _)) => ()
       }
 
-      resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph).head.hints shouldBe empty
+      resultPlans.map(p =>
+        ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+      ).head.hints shouldBe empty
     }
   }
 
   test("plans unique index contains scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
+    val hint: UsingIndexHint =
+      UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
       qg = queryGraph(propContainsApa, hasLabelAwesome).addHints(Some(hint))
@@ -752,14 +948,20 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+        cfg.qg,
+        InterestingOrderConfig.empty,
+        ctx
+      )
 
       // then
       resultPlans should beLike {
         case SetExtractor(NodeIndexContainsScan(`idName`, _, _, `litApa`, _, _, _)) => ()
       }
 
-      resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph).head.hints shouldEqual Set(hint)
+      resultPlans.map(p =>
+        ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+      ).head.hints shouldEqual Set(hint)
     }
   }
 
@@ -770,11 +972,23 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+        cfg.qg,
+        InterestingOrderConfig.empty,
+        ctx
+      )
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeIndexEndsWithScan(`idName`, _, IndexedProperty(_, DoNotGetValue, NODE_TYPE), `litApa`, _, _, _)) => ()
+        case SetExtractor(NodeIndexEndsWithScan(
+            `idName`,
+            _,
+            IndexedProperty(_, DoNotGetValue, NODE_TYPE),
+            `litApa`,
+            _,
+            _,
+            _
+          )) => ()
       }
     }
   }
@@ -786,11 +1000,23 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+        cfg.qg,
+        InterestingOrderConfig.empty,
+        ctx
+      )
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeIndexEndsWithScan(`idName`, _, IndexedProperty(_, CanGetValue, NODE_TYPE), `litApa`, _, _, _)) => ()
+        case SetExtractor(NodeIndexEndsWithScan(
+            `idName`,
+            _,
+            IndexedProperty(_, CanGetValue, NODE_TYPE),
+            `litApa`,
+            _,
+            _,
+            _
+          )) => ()
       }
     }
   }
@@ -802,12 +1028,32 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+        cfg.qg,
+        InterestingOrderConfig.empty,
+        ctx
+      )
 
       // then
       resultPlans shouldEqual Set(
-        NodeIndexEndsWithScan(`idName`, awesomeLabelToken, IndexedProperty(propPropertyKeyToken, CanGetValue, NODE_TYPE), `litApa`, Set.empty, IndexOrderNone, IndexType.RANGE),
-        NodeIndexEndsWithScan(`idName`, awesomeLabelToken, IndexedProperty(propPropertyKeyToken, CanGetValue, NODE_TYPE), `litBepa`, Set.empty, IndexOrderNone, IndexType.RANGE),
+        NodeIndexEndsWithScan(
+          `idName`,
+          awesomeLabelToken,
+          IndexedProperty(propPropertyKeyToken, CanGetValue, NODE_TYPE),
+          `litApa`,
+          Set.empty,
+          IndexOrderNone,
+          IndexType.RANGE
+        ),
+        NodeIndexEndsWithScan(
+          `idName`,
+          awesomeLabelToken,
+          IndexedProperty(propPropertyKeyToken, CanGetValue, NODE_TYPE),
+          `litBepa`,
+          Set.empty,
+          IndexOrderNone,
+          IndexType.RANGE
+        )
       )
     }
   }
@@ -819,7 +1065,11 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop", "foo").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+        cfg.qg,
+        InterestingOrderConfig.empty,
+        ctx
+      )
 
       // then
       resultPlans should beLike {
@@ -829,7 +1079,8 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("plans index ends with scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
+    val hint: UsingIndexHint =
+      UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
       qg = queryGraph(propEndsWithApa, hasLabelAwesome).addHints(Some(hint))
@@ -837,11 +1088,15 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+        cfg.qg,
+        InterestingOrderConfig.empty,
+        ctx
+      )
 
       // then
       resultPlans should beLike {
-        case SetExtractor(p@NodeIndexEndsWithScan(`idName`, _, _, `litApa`, _, _, _)) =>
+        case SetExtractor(p @ NodeIndexEndsWithScan(`idName`, _, _, `litApa`, _, _, _)) =>
           val plannedQG = ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
           plannedQG.hints shouldEqual Set(hint)
       }
@@ -849,7 +1104,8 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("index ends with scan does not solve seek hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)), SeekOnly) _
+    val hint: UsingIndexHint =
+      UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)), SeekOnly) _
 
     new given {
       qg = queryGraph(propEndsWithApa, hasLabelAwesome).addHints(Some(hint))
@@ -857,11 +1113,15 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+        cfg.qg,
+        InterestingOrderConfig.empty,
+        ctx
+      )
 
       // then
       resultPlans should beLike {
-        case SetExtractor(p@NodeIndexEndsWithScan(`idName`, _, _, `litApa`, _, _, _)) =>
+        case SetExtractor(p @ NodeIndexEndsWithScan(`idName`, _, _, `litApa`, _, _, _)) =>
           val plannedQG = ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
           plannedQG.hints shouldEqual Set()
       }
@@ -876,7 +1136,8 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = allNodeScansLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        allNodeScansLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans shouldBe empty
@@ -891,7 +1152,8 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = allNodeScansLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        allNodeScansLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans shouldBe empty
@@ -906,7 +1168,8 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = allNodeScansLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        allNodeScansLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans shouldBe empty
@@ -922,7 +1185,8 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       nodePropertyExistenceConstraintOn("Awesome", Set("prop"))
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = allNodeScansLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        allNodeScansLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans shouldBe empty
@@ -938,14 +1202,20 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val ctxWithAggregation = ctx.withAggregationProperties(Set(PropertyAccess(idName, "prop")))
-      val resultPlans = allNodeScansLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctxWithAggregation)
+      val resultPlans = allNodeScansLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+        cfg.qg,
+        InterestingOrderConfig.empty,
+        ctxWithAggregation
+      )
 
       // then
       resultPlans shouldBe empty
     }
   }
 
-  test("does plan scans when seeks are found for single property indexes, when used together with nodeIndexSeekPlanProvider") {
+  test(
+    "does plan scans when seeks are found for single property indexes, when used together with nodeIndexSeekPlanProvider"
+  ) {
     new given {
       indexOn("Awesome", "prop")
       addTypeToSemanticTable(lit12, CTInteger.invariant)
@@ -953,7 +1223,8 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       qg = queryGraph(propLessThan12, hasLabelAwesome)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans =
+        nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should beLike {
@@ -969,7 +1240,11 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       qg = queryGraph(propEndsWithApa, fooEndsWithApa, hasLabelAwesome)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+      val resultPlans = nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+        cfg.qg,
+        InterestingOrderConfig.empty,
+        ctx
+      )
 
       // then
       resultPlans shouldBe empty

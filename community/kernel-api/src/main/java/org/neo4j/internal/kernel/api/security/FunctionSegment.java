@@ -19,35 +19,29 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-public class FunctionSegment implements Segment
-{
+public class FunctionSegment implements Segment {
     private final String function;
 
-    public FunctionSegment( String function )
-    {
+    public FunctionSegment(String function) {
         this.function = function;
     }
 
-    public String getFunction()
-    {
+    public String getFunction() {
         return function;
     }
 
     @Override
-    public boolean satisfies( Segment segment )
-    {
-        if ( segment instanceof FunctionSegment other )
-        {
-            return function == null || function.equals( other.function );
+    public boolean satisfies(Segment segment) {
+        if (segment instanceof FunctionSegment other) {
+            return function == null || function.equals(other.function);
         }
         return false;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return function == null ? "*" : function;
     }
 
-    public static final FunctionSegment ALL = new FunctionSegment( null );
+    public static final FunctionSegment ALL = new FunctionSegment(null);
 }

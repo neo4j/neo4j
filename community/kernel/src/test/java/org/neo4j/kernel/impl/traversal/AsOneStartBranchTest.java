@@ -19,37 +19,35 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Iterator;
-
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.traversal.InitialBranchState;
-import org.neo4j.graphdb.traversal.TraversalContext;
-import org.neo4j.graphdb.traversal.Uniqueness;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class AsOneStartBranchTest
-{
+import java.util.Iterator;
+import org.junit.jupiter.api.Test;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.traversal.InitialBranchState;
+import org.neo4j.graphdb.traversal.TraversalContext;
+import org.neo4j.graphdb.traversal.Uniqueness;
+
+class AsOneStartBranchTest {
     @Test
-    void donNotExhaustIteratorWhenUsingRelationshipPath()
-    {
+    void donNotExhaustIteratorWhenUsingRelationshipPath() {
         // Given
-        Iterable<Node> nodeIterable = mock( Iterable.class );
-        Iterator<Node> nodeIterator = mock( Iterator.class );
-        when(nodeIterable.iterator()).thenReturn( nodeIterator );
-        when( nodeIterator.hasNext() ).thenReturn( true );
+        Iterable<Node> nodeIterable = mock(Iterable.class);
+        Iterator<Node> nodeIterator = mock(Iterator.class);
+        when(nodeIterable.iterator()).thenReturn(nodeIterator);
+        when(nodeIterator.hasNext()).thenReturn(true);
 
         // When
-        new AsOneStartBranch( mock( TraversalContext.class ), nodeIterable, mock( InitialBranchState.class ),
-                Uniqueness.RELATIONSHIP_PATH );
+        new AsOneStartBranch(
+                mock(TraversalContext.class),
+                nodeIterable,
+                mock(InitialBranchState.class),
+                Uniqueness.RELATIONSHIP_PATH);
 
         // Then
-        verify( nodeIterator, never() ).next();
+        verify(nodeIterator, never()).next();
     }
-
 }

@@ -35,27 +35,43 @@ object CallSupport {
   type KernelProcedureCall = Array[AnyValue] => RawIterator[Array[AnyValue], ProcedureException]
 
   def callFunction(procedures: Procedures, id: Int, args: Array[AnyValue]): AnyValue = {
-      procedures.functionCall(id, args)
+    procedures.functionCall(id, args)
   }
 
   def callBuiltInFunction(procedures: Procedures, id: Int, args: Array[AnyValue]): AnyValue = {
     procedures.builtInFunctionCall(id, args)
   }
 
-  def callReadOnlyProcedure(procedures: Procedures, id: Int, args: Array[AnyValue],
-                            context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+  def callReadOnlyProcedure(
+    procedures: Procedures,
+    id: Int,
+    args: Array[AnyValue],
+    context: ProcedureCallContext
+  ): Iterator[Array[AnyValue]] =
     callProcedure(args, procedures.procedureCallRead(id, _, context))
 
-  def callReadWriteProcedure(procedures: Procedures, id: Int, args: Array[AnyValue],
-                             context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+  def callReadWriteProcedure(
+    procedures: Procedures,
+    id: Int,
+    args: Array[AnyValue],
+    context: ProcedureCallContext
+  ): Iterator[Array[AnyValue]] =
     callProcedure(args, procedures.procedureCallWrite(id, _, context))
 
-  def callSchemaWriteProcedure(procedures: Procedures, id: Int, args: Array[AnyValue],
-                               context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+  def callSchemaWriteProcedure(
+    procedures: Procedures,
+    id: Int,
+    args: Array[AnyValue],
+    context: ProcedureCallContext
+  ): Iterator[Array[AnyValue]] =
     callProcedure(args, procedures.procedureCallSchema(id, _, context))
 
-  def callDbmsProcedure(procedures: Procedures, id: Int, args: Array[AnyValue],
-                        context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+  def callDbmsProcedure(
+    procedures: Procedures,
+    id: Int,
+    args: Array[AnyValue],
+    context: ProcedureCallContext
+  ): Iterator[Array[AnyValue]] =
     callProcedure(args, procedures.procedureCallDbms(id, _, context))
 
   def aggregateFunction(procedures: Procedures, id: Int): UserDefinedAggregator = {

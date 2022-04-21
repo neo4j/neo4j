@@ -24,7 +24,14 @@ case object Distance extends Function {
   val name = "point.distance"
 
   override val signatures = Vector(
-    FunctionTypeSignature(function = this, names = Vector("from", "to"), argumentTypes = Vector(CTPoint, CTPoint), outputType = CTFloat,
-      description = "Returns a floating point number representing the geodesic distance between any two points in the same CRS.", category = Category.SPATIAL)
+    FunctionTypeSignature(
+      function = this,
+      names = Vector("from", "to"),
+      argumentTypes = Vector(CTPoint, CTPoint),
+      outputType = CTFloat,
+      description =
+        "Returns a floating point number representing the geodesic distance between any two points in the same CRS.",
+      category = Category.SPATIAL
+    )
   )
 }

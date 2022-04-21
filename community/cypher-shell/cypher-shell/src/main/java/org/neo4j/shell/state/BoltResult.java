@@ -21,15 +21,13 @@ package org.neo4j.shell.state;
 
 import java.util.Iterator;
 import java.util.List;
-
 import org.neo4j.driver.Record;
 import org.neo4j.driver.summary.ResultSummary;
 
 /**
  * The result of executing some Cypher over bolt.
  */
-public interface BoltResult
-{
+public interface BoltResult {
 
     List<String> getKeys();
 

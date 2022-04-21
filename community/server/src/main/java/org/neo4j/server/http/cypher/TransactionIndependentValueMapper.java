@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -40,107 +39,77 @@ import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
-public class TransactionIndependentValueMapper extends DefaultValueMapper
-{
+public class TransactionIndependentValueMapper extends DefaultValueMapper {
     private final CachingWriter cachingWriter;
 
-    public TransactionIndependentValueMapper( CachingWriter cachingWriter )
-    {
+    public TransactionIndependentValueMapper(CachingWriter cachingWriter) {
         // transaction not needed
-        super( null );
+        super(null);
         this.cachingWriter = cachingWriter;
     }
 
     @Override
-    public Object mapMap( MapValue value )
-    {
-        Map<Object,Object> map = new HashMap<>();
-        value.foreach( ( k, v ) ->
-                       {
-                           if ( v instanceof NodeValue || v instanceof RelationshipValue )
-                           {
-                               try
-                               {
-                                   v.writeTo( cachingWriter );
-                               }
-                               catch ( IOException e )
-                               {
-                                   throw new RuntimeException( e );
-                               }
-                               map.put( k, cachingWriter.getCachedObject() );
-                           }
-                           else
-                           {
-                               map.put( k, v.map( this ) );
-                           }
-                       } );
+    public Object mapMap(MapValue value) {
+        Map<Object, Object> map = new HashMap<>();
+        value.foreach((k, v) -> {
+            if (v instanceof NodeValue || v instanceof RelationshipValue) {
+                try {
+                    v.writeTo(cachingWriter);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                map.put(k, cachingWriter.getCachedObject());
+            } else {
+                map.put(k, v.map(this));
+            }
+        });
         return map;
     }
 
     @Override
-    public List<?> mapSequence( SequenceValue value )
-    {
-        List<Object> list = new ArrayList<>( value.length() );
-        value.forEach( v ->
-                       {
-                           if ( v instanceof NodeValue || v instanceof RelationshipValue )
-                           {
-                               try
-                               {
-                                   v.writeTo( cachingWriter );
-                               }
-                               catch ( IOException e )
-                               {
-                                   throw new RuntimeException( e );
-                               }
-                               list.add( cachingWriter.getCachedObject() );
-                           }
-                           else
-                           {
-                               list.add( v.map( this ) );
-                           }
-                       } );
+    public List<?> mapSequence(SequenceValue value) {
+        List<Object> list = new ArrayList<>(value.length());
+        value.forEach(v -> {
+            if (v instanceof NodeValue || v instanceof RelationshipValue) {
+                try {
+                    v.writeTo(cachingWriter);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                list.add(cachingWriter.getCachedObject());
+            } else {
+                list.add(v.map(this));
+            }
+        });
         return list;
     }
 
     @Override
-    public Node mapNode( VirtualNodeValue value )
-    {
-        try
-        {
-            value.writeTo( cachingWriter );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+    public Node mapNode(VirtualNodeValue value) {
+        try {
+            value.writeTo(cachingWriter);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
         return (HttpNode) cachingWriter.getCachedObject();
     }
 
     @Override
-    public Relationship mapRelationship( VirtualRelationshipValue value )
-    {
-        try
-        {
-            value.writeTo( cachingWriter );
-        }
-        catch ( IOException ex )
-        {
-            throw new RuntimeException( ex );
+    public Relationship mapRelationship(VirtualRelationshipValue value) {
+        try {
+            value.writeTo(cachingWriter);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
         }
         return (HttpRelationship) cachingWriter.getCachedObject();
     }
 
     @Override
-    public Path mapPath( VirtualPathValue value )
-    {
-        try
-        {
-            value.writeTo( cachingWriter );
-        }
-        catch ( IOException ex )
-        {
-            throw new RuntimeException( ex );
+    public Path mapPath(VirtualPathValue value) {
+        try {
+            value.writeTo(cachingWriter);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
         }
         return (HttpPath) cachingWriter.getCachedObject();
     }

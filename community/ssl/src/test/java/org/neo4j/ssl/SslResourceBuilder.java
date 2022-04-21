@@ -19,6 +19,9 @@
  */
 package org.neo4j.ssl;
 
+import static org.neo4j.ssl.SslResourceBuilder.SignedBy.CA;
+import static org.neo4j.ssl.SslResourceBuilder.SignedBy.SELF;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -26,19 +29,14 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-
-import static org.neo4j.ssl.SslResourceBuilder.SignedBy.CA;
-import static org.neo4j.ssl.SslResourceBuilder.SignedBy.SELF;
 
 /**
  * This builder has a finite set of pre-generated resource
  * keys and certificates which can be utilized in tests.
  */
-public class SslResourceBuilder
-{
+public class SslResourceBuilder {
     private static final String CA_CERTIFICATE_NAME = "cluster.crt";
 
     private static final String PRIVATE_KEY_NAME = "private.key";
@@ -56,21 +54,18 @@ public class SslResourceBuilder
 
     private final int keyId;
 
-    enum SignedBy
-    {
-        SELF( SELF_SIGNED_NAME ),
-        CA( CA_SIGNED_NAME );
+    enum SignedBy {
+        SELF(SELF_SIGNED_NAME),
+        CA(CA_SIGNED_NAME);
 
         private final String resourceName;
 
-        SignedBy( String resourceName )
-        {
+        SignedBy(String resourceName) {
             this.resourceName = resourceName;
         }
 
-        public URL keyId( int keyId )
-        {
-            return resource( resourceName, keyId );
+        public URL keyId(int keyId) {
+            return resource(resourceName, keyId);
         }
     }
 
@@ -82,95 +77,80 @@ public class SslResourceBuilder
 
     private FileSystemAbstraction fsa = new DefaultFileSystemAbstraction();
 
-    private SslResourceBuilder( int keyId, SignedBy signedBy )
-    {
+    private SslResourceBuilder(int keyId, SignedBy signedBy) {
         this.keyId = keyId;
         this.signedBy = signedBy;
     }
 
-    public static SslResourceBuilder selfSignedKeyId( int keyId )
-    {
-        return new SslResourceBuilder( keyId, SELF );
+    public static SslResourceBuilder selfSignedKeyId(int keyId) {
+        return new SslResourceBuilder(keyId, SELF);
     }
 
-    public static SslResourceBuilder caSignedKeyId( int keyId )
-    {
-        return new SslResourceBuilder( keyId, CA );
+    public static SslResourceBuilder caSignedKeyId(int keyId) {
+        return new SslResourceBuilder(keyId, CA);
     }
 
-    public SslResourceBuilder trustKeyId( int keyId )
-    {
-        trusted.add( keyId );
+    public SslResourceBuilder trustKeyId(int keyId) {
+        trusted.add(keyId);
         return this;
     }
 
-    public SslResourceBuilder trustSignedByCA()
-    {
+    public SslResourceBuilder trustSignedByCA() {
         this.trustSignedByCA = true;
         return this;
     }
 
-    public SslResourceBuilder revoke( int keyId )
-    {
-        revoked.add( keyId );
+    public SslResourceBuilder revoke(int keyId) {
+        revoked.add(keyId);
         return this;
     }
 
-    public SslResource install( Path targetDirectory ) throws IOException
-    {
-        return install( targetDirectory, CA_CERTIFICATE_NAME );
+    public SslResource install(Path targetDirectory) throws IOException {
+        return install(targetDirectory, CA_CERTIFICATE_NAME);
     }
 
-    public SslResource install( Path targetDirectory, String trustedFileName ) throws IOException
-    {
-        Path targetKey = targetDirectory.resolve( PRIVATE_KEY_NAME );
-        Path targetCertificate = targetDirectory.resolve( PUBLIC_CERT_NAME );
-        Path targetTrusted = targetDirectory.resolve( TRUSTED_DIR_NAME );
-        Path targetRevoked = targetDirectory.resolve( REVOKED_DIR_NAME );
+    public SslResource install(Path targetDirectory, String trustedFileName) throws IOException {
+        Path targetKey = targetDirectory.resolve(PRIVATE_KEY_NAME);
+        Path targetCertificate = targetDirectory.resolve(PUBLIC_CERT_NAME);
+        Path targetTrusted = targetDirectory.resolve(TRUSTED_DIR_NAME);
+        Path targetRevoked = targetDirectory.resolve(REVOKED_DIR_NAME);
 
-        fsa.mkdir( targetTrusted );
-        fsa.mkdir( targetRevoked );
+        fsa.mkdir(targetTrusted);
+        fsa.mkdir(targetRevoked);
 
-        for ( int trustedKeyId : trusted )
-        {
-            Path targetTrustedCertificate = targetTrusted.resolve( trustedKeyId + ".crt" );
-            copy( resource( SELF_SIGNED_NAME, trustedKeyId ), targetTrustedCertificate );
+        for (int trustedKeyId : trusted) {
+            Path targetTrustedCertificate = targetTrusted.resolve(trustedKeyId + ".crt");
+            copy(resource(SELF_SIGNED_NAME, trustedKeyId), targetTrustedCertificate);
         }
 
-        for ( int revokedKeyId : revoked )
-        {
-            Path targetRevokedCRL = targetRevoked.resolve( revokedKeyId + ".crl" );
-            copy( resource( REVOKED_NAME, revokedKeyId ), targetRevokedCRL );
+        for (int revokedKeyId : revoked) {
+            Path targetRevokedCRL = targetRevoked.resolve(revokedKeyId + ".crl");
+            copy(resource(REVOKED_NAME, revokedKeyId), targetRevokedCRL);
         }
 
-        if ( trustSignedByCA )
-        {
-            Path targetTrustedCertificate = targetTrusted.resolve( trustedFileName );
-            copy( resource( trustedFileName ), targetTrustedCertificate );
+        if (trustSignedByCA) {
+            Path targetTrustedCertificate = targetTrusted.resolve(trustedFileName);
+            copy(resource(trustedFileName), targetTrustedCertificate);
         }
 
-        copy( resource( PRIVATE_KEY_NAME, keyId ), targetKey );
-        copy( signedBy.keyId( keyId ), targetCertificate );
+        copy(resource(PRIVATE_KEY_NAME, keyId), targetKey);
+        copy(signedBy.keyId(keyId), targetCertificate);
 
-        return new SslResource( targetKey, targetCertificate, targetTrusted, targetRevoked );
+        return new SslResource(targetKey, targetCertificate, targetTrusted, targetRevoked);
     }
 
-    private static URL resource( String filename, int keyId )
-    {
-        return SslResourceBuilder.class.getResource( SERVERS_BASE_PATH + keyId + "/" + filename );
+    private static URL resource(String filename, int keyId) {
+        return SslResourceBuilder.class.getResource(SERVERS_BASE_PATH + keyId + "/" + filename);
     }
 
-    private static URL resource( String filename )
-    {
-        return SslResourceBuilder.class.getResource( CA_BASE_PATH + filename );
+    private static URL resource(String filename) {
+        return SslResourceBuilder.class.getResource(CA_BASE_PATH + filename);
     }
 
-    private void copy( URL in, Path outFile ) throws IOException
-    {
-        try ( InputStream is = in.openStream();
-              OutputStream os = fsa.openAsOutputStream( outFile, false ) )
-        {
-            is.transferTo( os );
+    private void copy(URL in, Path outFile) throws IOException {
+        try (InputStream is = in.openStream();
+                OutputStream os = fsa.openAsOutputStream(outFile, false)) {
+            is.transferTo(os);
         }
     }
 }

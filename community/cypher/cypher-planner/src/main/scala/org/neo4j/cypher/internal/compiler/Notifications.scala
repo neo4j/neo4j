@@ -24,15 +24,31 @@ import org.neo4j.cypher.internal.ast.UsingIndexHintType
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 
-case class SuboptimalIndexForConstainsQueryNotification(variableName: String, labelOrRelType: String, propertyKeys: Seq[String], entityType: EntityType) extends InternalNotification
+case class SuboptimalIndexForConstainsQueryNotification(
+  variableName: String,
+  labelOrRelType: String,
+  propertyKeys: Seq[String],
+  entityType: EntityType
+) extends InternalNotification
 
-case class SuboptimalIndexForEndsWithQueryNotification(variableName: String, labelOrRelType: String, propertyKeys: Seq[String], entityType: EntityType) extends InternalNotification
+case class SuboptimalIndexForEndsWithQueryNotification(
+  variableName: String,
+  labelOrRelType: String,
+  propertyKeys: Seq[String],
+  entityType: EntityType
+) extends InternalNotification
 
 case object StartUnavailableFallback extends InternalNotification
 
 case class RuntimeUnsupportedNotification(msg: String) extends InternalNotification
 
-case class IndexHintUnfulfillableNotification(variableName: String, labelOrRelType: String, propertyKeys: Seq[String], entityType: EntityType, indexType: UsingIndexHintType) extends InternalNotification
+case class IndexHintUnfulfillableNotification(
+  variableName: String,
+  labelOrRelType: String,
+  propertyKeys: Seq[String],
+  entityType: EntityType,
+  indexType: UsingIndexHintType
+) extends InternalNotification
 
 case class JoinHintUnfulfillableNotification(identified: Seq[String]) extends InternalNotification
 
@@ -52,11 +68,14 @@ case class MissingPropertyNameNotification(position: InputPosition, name: String
 
 case class ExhaustiveShortestPathForbiddenNotification(position: InputPosition) extends InternalNotification
 
-case class DeprecatedProcedureNotification(position: InputPosition, oldName: String, newName: String) extends InternalNotification
+case class DeprecatedProcedureNotification(position: InputPosition, oldName: String, newName: String)
+    extends InternalNotification
 
-case class ProcedureWarningNotification(position: InputPosition, procedure: String, warning: String) extends InternalNotification
+case class ProcedureWarningNotification(position: InputPosition, procedure: String, warning: String)
+    extends InternalNotification
 
-case class DeprecatedFieldNotification(position: InputPosition, procedure: String, field: String) extends InternalNotification
+case class DeprecatedFieldNotification(position: InputPosition, procedure: String, field: String)
+    extends InternalNotification
 
 case class MissingParametersNotification(parameters: Seq[String]) extends InternalNotification
 

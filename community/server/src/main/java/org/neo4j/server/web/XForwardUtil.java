@@ -19,128 +19,105 @@
  */
 package org.neo4j.server.web;
 
+import static java.util.Objects.requireNonNullElse;
+
 import java.net.URI;
 import javax.ws.rs.core.UriBuilder;
 
-import static java.util.Objects.requireNonNullElse;
-
-public class XForwardUtil
-{
+public class XForwardUtil {
     public static final String X_FORWARD_HOST_HEADER_KEY = "X-Forwarded-Host";
     public static final String X_FORWARD_PROTO_HEADER_KEY = "X-Forwarded-Proto";
 
-    private XForwardUtil()
-    {
+    private XForwardUtil() {}
+
+    public static String externalUri(String internalUri, String xForwardedHost, String xForwardedProto) {
+        return externalUri(UriBuilder.fromUri(internalUri), xForwardedHost, xForwardedProto)
+                .toString();
     }
 
-    public static String externalUri( String internalUri, String xForwardedHost, String xForwardedProto )
-    {
-        return externalUri( UriBuilder.fromUri( internalUri ), xForwardedHost, xForwardedProto ).toString();
+    public static URI externalUri(URI internalUri, String xForwardedHost, String xForwardedProto) {
+        return externalUri(UriBuilder.fromUri(internalUri), xForwardedHost, xForwardedProto);
     }
 
-    public static URI externalUri( URI internalUri, String xForwardedHost, String xForwardedProto )
-    {
-        return externalUri( UriBuilder.fromUri( internalUri ), xForwardedHost, xForwardedProto );
-    }
+    private static URI externalUri(UriBuilder builder, String xForwardedHost, String xForwardedProto) {
+        ForwardedHost forwardedHost = new ForwardedHost(xForwardedHost);
+        ForwardedProto forwardedProto = new ForwardedProto(xForwardedProto);
 
-    private static URI externalUri( UriBuilder builder, String xForwardedHost, String xForwardedProto )
-    {
-        ForwardedHost forwardedHost = new ForwardedHost( xForwardedHost );
-        ForwardedProto forwardedProto = new ForwardedProto( xForwardedProto );
+        if (forwardedHost.isValid) {
+            builder.host(forwardedHost.getHost());
 
-        if ( forwardedHost.isValid )
-        {
-            builder.host( forwardedHost.getHost() );
-
-            if ( forwardedHost.hasExplicitlySpecifiedPort() )
-            {
-                builder.port( forwardedHost.getPort() );
+            if (forwardedHost.hasExplicitlySpecifiedPort()) {
+                builder.port(forwardedHost.getPort());
             }
         }
 
-        if ( forwardedProto.isValid() )
-        {
-            builder.scheme( forwardedProto.getScheme() );
+        if (forwardedProto.isValid()) {
+            builder.scheme(forwardedProto.getScheme());
         }
 
         return builder.build();
     }
 
-    private static final class ForwardedHost
-    {
+    private static final class ForwardedHost {
         String host;
         int port = -1;
         boolean isValid;
 
-        ForwardedHost( String headerValue )
-        {
-            if ( headerValue == null )
-            {
+        ForwardedHost(String headerValue) {
+            if (headerValue == null) {
                 this.isValid = false;
                 return;
             }
 
-            String firstHostInXForwardedHostHeader = headerValue.split( "," )[0].trim();
+            String firstHostInXForwardedHostHeader = headerValue.split(",")[0].trim();
 
-            try
-            {
-                UriBuilder.fromUri( firstHostInXForwardedHostHeader ).build();
-            }
-            catch ( IllegalArgumentException ex )
-            {
+            try {
+                UriBuilder.fromUri(firstHostInXForwardedHostHeader).build();
+            } catch (IllegalArgumentException ex) {
                 this.isValid = false;
                 return;
             }
 
-            String[] strings = firstHostInXForwardedHostHeader.split( ":" );
-            if ( strings.length > 0 )
-            {
+            String[] strings = firstHostInXForwardedHostHeader.split(":");
+            if (strings.length > 0) {
                 this.host = strings[0];
                 isValid = true;
             }
-            if ( strings.length > 1 )
-            {
-                this.port = Integer.parseInt( strings[1] );
+            if (strings.length > 1) {
+                this.port = Integer.parseInt(strings[1]);
                 isValid = true;
             }
-            if ( strings.length > 2 )
-            {
+            if (strings.length > 2) {
                 this.isValid = false;
             }
         }
 
-        boolean hasExplicitlySpecifiedPort()
-        {
+        boolean hasExplicitlySpecifiedPort() {
             return port >= 0;
         }
 
-        String getHost()
-        {
+        String getHost() {
             return host;
         }
 
-        int getPort()
-        {
+        int getPort() {
             return port;
         }
     }
 
-    private static final class ForwardedProto
-    {
+    private static final class ForwardedProto {
         final String headerValue;
 
-        ForwardedProto( String headerValue )
-        {
-            this.headerValue = requireNonNullElse( headerValue, "" );
+        ForwardedProto(String headerValue) {
+            this.headerValue = requireNonNullElse(headerValue, "");
         }
 
-        boolean isValid()
-        {
-            return headerValue.toLowerCase().equals( "http" ) || headerValue.toLowerCase().equals( "https" );
+        boolean isValid() {
+            return headerValue.toLowerCase().equals("http")
+                    || headerValue.toLowerCase().equals("https");
         }
 
-        String getScheme()
-        {
+        String getScheme() {
             return headerValue;
         }
     }

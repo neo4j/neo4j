@@ -22,8 +22,7 @@ package org.neo4j.storageengine.api;
 import org.neo4j.kernel.KernelVersion;
 
 @FunctionalInterface
-public interface KernelVersionRepository
-{
+public interface KernelVersionRepository {
     KernelVersionRepository LATEST = () -> KernelVersion.LATEST;
 
     KernelVersion kernelVersion();

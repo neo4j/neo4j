@@ -19,49 +19,44 @@
  */
 package org.neo4j.internal.schema;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Map;
-
-import org.neo4j.values.storable.BooleanValue;
-import org.neo4j.values.storable.Value;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class IndexConfigTest
-{
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.Value;
+
+class IndexConfigTest {
     @Test
-    void addingAndGetting()
-    {
+    void addingAndGetting() {
         IndexConfig config = IndexConfig.empty();
-        config = config.withIfAbsent( "a", BooleanValue.TRUE );
-        assertTrue( config.<BooleanValue>get( "a" ).booleanValue() );
+        config = config.withIfAbsent("a", BooleanValue.TRUE);
+        assertTrue(config.<BooleanValue>get("a").booleanValue());
 
-        config = config.withIfAbsent( "a", BooleanValue.FALSE );
-        assertTrue( config.<BooleanValue>get( "a" ).booleanValue() );
+        config = config.withIfAbsent("a", BooleanValue.FALSE);
+        assertTrue(config.<BooleanValue>get("a").booleanValue());
 
-        assertNull( config.get( "b" ) );
-        assertFalse( config.getOrDefault( "b", BooleanValue.FALSE ).booleanValue() );
+        assertNull(config.get("b"));
+        assertFalse(config.getOrDefault("b", BooleanValue.FALSE).booleanValue());
     }
 
-    @SuppressWarnings( "ConstantConditions" )
+    @SuppressWarnings("ConstantConditions")
     @Test
-    void shouldNotBePossibleToMutateIndexConfigFromAsMap()
-    {
+    void shouldNotBePossibleToMutateIndexConfigFromAsMap() {
         IndexConfig config = IndexConfig.empty();
-        config = config.withIfAbsent( "a", BooleanValue.TRUE );
-        config = config.withIfAbsent( "b", BooleanValue.TRUE );
+        config = config.withIfAbsent("a", BooleanValue.TRUE);
+        config = config.withIfAbsent("b", BooleanValue.TRUE);
 
-        Map<String,Value> map = config.asMap();
-        assertThrows( UnsupportedOperationException.class, () -> map.remove( "a" ) );
-        assertThrows( UnsupportedOperationException.class, () -> map.put( "b", BooleanValue.FALSE ) );
-        assertThrows( UnsupportedOperationException.class, () -> map.put( "c", BooleanValue.TRUE ) );
+        Map<String, Value> map = config.asMap();
+        assertThrows(UnsupportedOperationException.class, () -> map.remove("a"));
+        assertThrows(UnsupportedOperationException.class, () -> map.put("b", BooleanValue.FALSE));
+        assertThrows(UnsupportedOperationException.class, () -> map.put("c", BooleanValue.TRUE));
 
-        assertTrue( config.<BooleanValue>get( "a" ).booleanValue() );
-        assertTrue( config.<BooleanValue>get( "b" ).booleanValue() );
-        assertNull( config.get( "c" ) );
+        assertTrue(config.<BooleanValue>get("a").booleanValue());
+        assertTrue(config.<BooleanValue>get("b").booleanValue());
+        assertNull(config.get("c"));
     }
 }

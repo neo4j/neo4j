@@ -22,7 +22,6 @@ package org.neo4j.graphdb;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.annotations.api.PublicApi;
 
 /**
@@ -80,8 +79,7 @@ import org.neo4j.annotations.api.PublicApi;
  * can be queried.
  */
 @PublicApi
-public interface Result extends ResourceIterator<Map<String,Object>>
-{
+public interface Result extends ResourceIterator<Map<String, Object>> {
     /**
      * Indicates what kind of query execution produced this result.
      *
@@ -123,7 +121,7 @@ public interface Result extends ResourceIterator<Map<String,Object>>
      * @throws ClassCastException when the result object can not be cast to the requested type
      * @throws org.neo4j.graphdb.NotFoundException when the column name does not appear in the original query
      */
-    <T> ResourceIterator<T> columnAs( String name );
+    <T> ResourceIterator<T> columnAs(String name);
 
     /**
      * Denotes there being more rows available in this result. These rows must either be consumed, by invoking
@@ -140,7 +138,7 @@ public interface Result extends ResourceIterator<Map<String,Object>>
      * @return the next row in this result.
      */
     @Override
-    Map<String,Object> next();
+    Map<String, Object> next();
 
     /**
      * Closes the result, freeing up any resources held by the result.
@@ -194,7 +192,7 @@ public interface Result extends ResourceIterator<Map<String,Object>>
      *
      * @param writer the {@link java.io.PrintWriter} to receive the textual representation of the query result.
      */
-    void writeAsStringTo( PrintWriter writer );
+    void writeAsStringTo(PrintWriter writer);
 
     /** Removing rows from the result is not supported. */
     @Override
@@ -221,7 +219,7 @@ public interface Result extends ResourceIterator<Map<String,Object>>
      * @throws VisitationException if the {@code visit(ResultRow)} method of {@link ResultVisitor} throws such an
      * exception.
      */
-    <VisitationException extends Exception> void accept( ResultVisitor<VisitationException> visitor )
+    <VisitationException extends Exception> void accept(ResultVisitor<VisitationException> visitor)
             throws VisitationException;
 
     /**
@@ -231,29 +229,27 @@ public interface Result extends ResourceIterator<Map<String,Object>>
      * Instances of this type should thus not be saved
      * for later use, or shared with other threads, rather the content should be copied.
      */
-    interface ResultRow
-    {
+    interface ResultRow {
         // TODO: Type safe getters for collections and maps?
-        Node getNode( String key );
+        Node getNode(String key);
 
-        Relationship getRelationship( String key );
+        Relationship getRelationship(String key);
 
-        Object get( String key );
+        Object get(String key);
 
-        String getString( String key );
+        String getString(String key);
 
-        Number getNumber( String key );
+        Number getNumber(String key);
 
-        Boolean getBoolean( String key );
+        Boolean getBoolean(String key);
 
-        Path getPath( String key );
+        Path getPath(String key);
     }
 
     /**
      * This is the visitor interface you need to implement to use the {@link Result#accept(ResultVisitor)} method.
      */
-    interface ResultVisitor<VisitationException extends Exception>
-    {
+    interface ResultVisitor<VisitationException extends Exception> {
         /**
          * Visits the specified row.
          *
@@ -265,6 +261,6 @@ public interface Result extends ResourceIterator<Map<String,Object>>
          * the result being visited, and the exception will propagate out through the
          * {@linkplain #accept(ResultVisitor) accept method}.
          */
-        boolean visit( ResultRow row ) throws VisitationException;
+        boolean visit(ResultRow row) throws VisitationException;
     }
 }

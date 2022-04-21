@@ -36,15 +36,20 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.values.virtual.MapValue
 
-class PredicateExecutionPlan(predicate: (MapValue, SecurityContext) => Boolean,
-                             source: Option[ExecutionPlan] = None,
-                             onViolation: (MapValue, SecurityContext) => Exception) extends AdministrationChainedExecutionPlan(source) {
-  override def runSpecific(originalCtx: SystemUpdateCountingQueryContext,
-                           executionMode: ExecutionMode,
-                           params: MapValue,
-                           prePopulateResults: Boolean,
-                           ignore: InputDataStream,
-                           subscriber: QuerySubscriber): RuntimeResult = {
+class PredicateExecutionPlan(
+  predicate: (MapValue, SecurityContext) => Boolean,
+  source: Option[ExecutionPlan] = None,
+  onViolation: (MapValue, SecurityContext) => Exception
+) extends AdministrationChainedExecutionPlan(source) {
+
+  override def runSpecific(
+    originalCtx: SystemUpdateCountingQueryContext,
+    executionMode: ExecutionMode,
+    params: MapValue,
+    prePopulateResults: Boolean,
+    ignore: InputDataStream,
+    subscriber: QuerySubscriber
+  ): RuntimeResult = {
     val securityContext = originalCtx.transactionalContext.securityContext
     if (predicate(params, securityContext)) {
       NoRuntimeResult(subscriber)

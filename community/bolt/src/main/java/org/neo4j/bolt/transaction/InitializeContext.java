@@ -21,24 +21,20 @@ package org.neo4j.bolt.transaction;
 
 import org.neo4j.bolt.runtime.statemachine.impl.StatementProcessorProvider;
 
-public class InitializeContext
-{
+public class InitializeContext {
     private final String connectionId;
     private final StatementProcessorProvider statementProcessorProvider;
 
-    public InitializeContext( String connectionId, StatementProcessorProvider statementProcessorProvider )
-    {
+    public InitializeContext(String connectionId, StatementProcessorProvider statementProcessorProvider) {
         this.connectionId = connectionId;
         this.statementProcessorProvider = statementProcessorProvider;
     }
 
-    public String connectionId()
-    {
+    public String connectionId() {
         return connectionId;
     }
 
-    public StatementProcessorProvider statementProcessorProvider()
-    {
+    public StatementProcessorProvider statementProcessorProvider() {
         return statementProcessorProvider;
     }
 }

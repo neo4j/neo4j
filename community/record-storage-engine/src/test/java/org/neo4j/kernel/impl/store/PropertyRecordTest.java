@@ -19,18 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
-import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.store.record.PropertyBlock;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.values.storable.Values;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -38,105 +26,103 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-class PropertyRecordTest
-{
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.values.storable.Values;
+
+class PropertyRecordTest {
     @Test
-    void shouldIterateOverBlocks()
-    {
+    void shouldIterateOverBlocks() {
         // GIVEN
-        PropertyRecord record = new PropertyRecord( 0 );
+        PropertyRecord record = new PropertyRecord(0);
         PropertyBlock[] blocks = new PropertyBlock[3];
-        for ( int i = 0; i < blocks.length; i++ )
-        {
+        for (int i = 0; i < blocks.length; i++) {
             blocks[i] = new PropertyBlock();
-            record.addPropertyBlock( blocks[i] );
+            record.addPropertyBlock(blocks[i]);
         }
 
         // WHEN
         Iterator<PropertyBlock> iterator = record.iterator();
 
         // THEN
-        for ( PropertyBlock block : blocks )
-        {
-            assertTrue( iterator.hasNext() );
-            assertEquals( block, iterator.next() );
+        for (PropertyBlock block : blocks) {
+            assertTrue(iterator.hasNext());
+            assertEquals(block, iterator.next());
         }
-        assertFalse( iterator.hasNext() );
+        assertFalse(iterator.hasNext());
     }
 
     @Test
-    void shouldBeAbleToRemoveBlocksDuringIteration()
-    {
+    void shouldBeAbleToRemoveBlocksDuringIteration() {
         // GIVEN
-        PropertyRecord record = new PropertyRecord( 0 );
+        PropertyRecord record = new PropertyRecord(0);
         Set<PropertyBlock> blocks = new HashSet<>();
-        for ( int i = 0; i < 4; i++ )
-        {
+        for (int i = 0; i < 4; i++) {
             PropertyBlock block = new PropertyBlock();
-            block.setValueBlocks( new long[]{i} );
-            record.addPropertyBlock( block );
-            blocks.add( block );
+            block.setValueBlocks(new long[] {i});
+            record.addPropertyBlock(block);
+            blocks.add(block);
         }
 
         // WHEN
         Iterator<PropertyBlock> iterator = record.iterator();
-        assertThrows( IllegalStateException.class, iterator::remove );
+        assertThrows(IllegalStateException.class, iterator::remove);
 
         // THEN
         int size = blocks.size();
-        for ( int i = 0; i < size; i++ )
-        {
-            assertTrue( iterator.hasNext() );
+        for (int i = 0; i < size; i++) {
+            assertTrue(iterator.hasNext());
             PropertyBlock block = iterator.next();
-            if ( i % 2 == 1 )
-            {
+            if (i % 2 == 1) {
                 iterator.remove();
-                assertThrows( IllegalStateException.class, iterator::remove );
-                blocks.remove( block );
+                assertThrows(IllegalStateException.class, iterator::remove);
+                blocks.remove(block);
             }
         }
-        assertFalse( iterator.hasNext() );
+        assertFalse(iterator.hasNext());
 
         // and THEN there should only be the non-removed blocks left
-        assertEquals( blocks, Iterables.asSet( record ) );
+        assertEquals(blocks, Iterables.asSet(record));
     }
 
     @Test
-    void addLoadedBlock()
-    {
-        PropertyRecord record = new PropertyRecord( 42 );
+    void addLoadedBlock() {
+        PropertyRecord record = new PropertyRecord(42);
 
-        addBlock( record, 1, 2 );
-        addBlock( record, 3, 4 );
+        addBlock(record, 1, 2);
+        addBlock(record, 3, 4);
 
-        List<PropertyBlock> blocks = Iterables.asList( record );
-        assertEquals( 2, blocks.size() );
-        assertEquals( 1, blocks.get( 0 ).getKeyIndexId() );
-        assertEquals( 2, blocks.get( 0 ).getSingleValueInt() );
-        assertEquals( 3, blocks.get( 1 ).getKeyIndexId() );
-        assertEquals( 4, blocks.get( 1 ).getSingleValueInt() );
+        List<PropertyBlock> blocks = Iterables.asList(record);
+        assertEquals(2, blocks.size());
+        assertEquals(1, blocks.get(0).getKeyIndexId());
+        assertEquals(2, blocks.get(0).getSingleValueInt());
+        assertEquals(3, blocks.get(1).getKeyIndexId());
+        assertEquals(4, blocks.get(1).getSingleValueInt());
     }
 
     @Test
-    void addLoadedBlockFailsWhenTooManyBlocksAdded()
-    {
-        PropertyRecord record = new PropertyRecord( 42 );
+    void addLoadedBlockFailsWhenTooManyBlocksAdded() {
+        PropertyRecord record = new PropertyRecord(42);
 
-        addBlock( record, 1, 2 );
-        addBlock( record, 3, 4 );
-        addBlock( record, 5, 6 );
-        addBlock( record, 7, 8 );
+        addBlock(record, 1, 2);
+        addBlock(record, 3, 4);
+        addBlock(record, 5, 6);
+        addBlock(record, 7, 8);
 
-        assertThrows( AssertionError.class, () -> addBlock( record, 9, 10 ) );
+        assertThrows(AssertionError.class, () -> addBlock(record, 9, 10));
     }
 
-    private static void addBlock( PropertyRecord record, int key, int value )
-    {
+    private static void addBlock(PropertyRecord record, int key, int value) {
         PropertyBlock block = new PropertyBlock();
-        PropertyStore.encodeValue( block, key, Values.of( value ), null, null, NULL_CONTEXT, INSTANCE );
-        for ( long valueBlock : block.getValueBlocks() )
-        {
-            record.addLoadedBlock( valueBlock );
+        PropertyStore.encodeValue(block, key, Values.of(value), null, null, NULL_CONTEXT, INSTANCE);
+        for (long valueBlock : block.getValueBlocks()) {
+            record.addLoadedBlock(valueBlock);
         }
     }
 }

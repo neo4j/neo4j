@@ -20,42 +20,36 @@
 package org.neo4j.kernel.api.impl.index.collector;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-
 import org.neo4j.collection.PrimitiveLongCollections;
 
 /**
  * Document values iterators that are primitive long iterators that can access value by field from document
  * and provides information about how many items remains in the underlying source.
  */
-public interface ValuesIterator extends DocValuesAccess, LongIterator
-{
+public interface ValuesIterator extends DocValuesAccess, LongIterator {
     int remaining();
 
     float currentScore();
 
-    ValuesIterator EMPTY = new ValuesIterator.Adapter( 0 )
-    {
+    ValuesIterator EMPTY = new ValuesIterator.Adapter(0) {
         @Override
-        protected boolean fetchNext()
-        {
+        protected boolean fetchNext() {
             return false;
         }
 
         @Override
-        public long current()
-        {
+        public long current() {
             return 0;
         }
 
         @Override
-        public float currentScore()
-        {
+        public float currentScore() {
             return 0;
         }
     };
 
-    abstract class Adapter extends PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator implements ValuesIterator
-    {
+    abstract class Adapter extends PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator
+            implements ValuesIterator {
         protected final int size;
         protected int index;
 
@@ -67,8 +61,7 @@ public interface ValuesIterator extends DocValuesAccess, LongIterator
         @Override
         public abstract float currentScore();
 
-        Adapter( int size )
-        {
+        Adapter(int size) {
             this.size = size;
         }
 
@@ -76,8 +69,7 @@ public interface ValuesIterator extends DocValuesAccess, LongIterator
          * @return the number of docs left in this iterator.
          */
         @Override
-        public int remaining()
-        {
+        public int remaining() {
             return size - index;
         }
     }

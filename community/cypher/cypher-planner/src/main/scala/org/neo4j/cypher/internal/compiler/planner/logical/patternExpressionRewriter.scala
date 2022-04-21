@@ -66,59 +66,69 @@ case class patternExpressionRewriter(planArguments: Set[String], context: Logica
     IdentityMap(exprScopes.toSeq: _*)
   }
 
-  private def computeReplacements(scopeMap: IdentityMap[Expression, Set[String]], that: AnyRef): IdentityMap[AnyRef, AnyRef] = {
+  private def computeReplacements(
+    scopeMap: IdentityMap[Expression, Set[String]],
+    that: AnyRef
+  ): IdentityMap[AnyRef, AnyRef] = {
     that.folder.treeFold(IdentityMap.empty[AnyRef, AnyRef]) {
 
-      case expr@Exists(pattern@PatternExpression(_: RelationshipsPattern)) =>
+      case expr @ Exists(pattern @ PatternExpression(_: RelationshipsPattern)) =>
         acc =>
-          val newAcc = if (acc.contains(expr)) {
-            acc
-          } else {
-            val arguments = planArguments ++ scopeMap(pattern)
-            val plan = context.strategy.planPatternExpression(arguments, pattern, context)
-            val rewrittenExpression = NestedPlanExpression.exists(plan, expr)(pattern.position)
-            acc.updated(expr, rewrittenExpression)
-               .updated(pattern, ERROR("Should never attempt to rewrite pattern in exists(PatternExpression) on it's own"))
-          }
+          val newAcc =
+            if (acc.contains(expr)) {
+              acc
+            } else {
+              val arguments = planArguments ++ scopeMap(pattern)
+              val plan = context.strategy.planPatternExpression(arguments, pattern, context)
+              val rewrittenExpression = NestedPlanExpression.exists(plan, expr)(pattern.position)
+              acc.updated(expr, rewrittenExpression)
+                .updated(
+                  pattern,
+                  ERROR("Should never attempt to rewrite pattern in exists(PatternExpression) on it's own")
+                )
+            }
 
           TraverseChildren(newAcc)
 
       // replace pattern expressions with their plan and also register
       // the contained pattern expression for no further processing
       // by this tree fold
-      case expr@PatternExpression(_: RelationshipsPattern) =>
+      case expr @ PatternExpression(_: RelationshipsPattern) =>
         acc =>
           // only process pattern expressions that were not contained in previously seen nested plans
-          val newAcc = if (acc.contains(expr)) {
-            acc
-          } else {
-            val arguments = planArguments ++ scopeMap(expr)
-            val plan = context.strategy.planPatternExpression(arguments, expr, context)
-            val path = EveryPath(expr.pattern.element)
-            val step: PathStep = projectNamedPaths.patternPartPathExpression(path)
-            val pathExpression: PathExpression = PathExpression(step)(expr.position)
+          val newAcc =
+            if (acc.contains(expr)) {
+              acc
+            } else {
+              val arguments = planArguments ++ scopeMap(expr)
+              val plan = context.strategy.planPatternExpression(arguments, expr, context)
+              val path = EveryPath(expr.pattern.element)
+              val step: PathStep = projectNamedPaths.patternPartPathExpression(path)
+              val pathExpression: PathExpression = PathExpression(step)(expr.position)
 
-            val rewrittenExpression = NestedPlanExpression.collect(plan, pathExpression, expr)(expr.position)
-            acc.updated(expr, rewrittenExpression)
-          }
+              val rewrittenExpression = NestedPlanExpression.collect(plan, pathExpression, expr)(expr.position)
+              acc.updated(expr, rewrittenExpression)
+            }
 
           TraverseChildren(newAcc)
 
       // replace pattern comprehension
-      case expr@PatternComprehension(namedPath, _, _, projection) =>
+      case expr @ PatternComprehension(namedPath, _, _, projection) =>
         acc =>
           require(namedPath.isEmpty, "Named paths in pattern comprehensions should have been rewritten away already")
           // only process pattern expressions that were not contained in previously seen nested plans
-          val newAcc = if (acc.contains(expr)) {
-            acc
-          } else {
-            val arguments = planArguments ++ scopeMap(expr)
-            val plan = context.strategy.planPatternComprehension(arguments, expr, context)
-            val uniqueNamedExpr = expr.copy()(expr.position, expr.outerScope, expr.variableToCollectName, expr.collectionName)
+          val newAcc =
+            if (acc.contains(expr)) {
+              acc
+            } else {
+              val arguments = planArguments ++ scopeMap(expr)
+              val plan = context.strategy.planPatternComprehension(arguments, expr, context)
+              val uniqueNamedExpr =
+                expr.copy()(expr.position, expr.outerScope, expr.variableToCollectName, expr.collectionName)
 
-            val rewrittenExpression = NestedPlanExpression.collect(plan, projection, expr)(uniqueNamedExpr.position)
-            acc.updated(expr, rewrittenExpression)
-          }
+              val rewrittenExpression = NestedPlanExpression.collect(plan, projection, expr)(uniqueNamedExpr.position)
+              acc.updated(expr, rewrittenExpression)
+            }
 
           TraverseChildren(newAcc)
 

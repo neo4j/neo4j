@@ -30,11 +30,13 @@ case object selectCovered extends SelectionCandidateGenerator with SelectionCand
 
   override def generator(): SelectionCandidateGenerator = this
 
-  override def apply(input: LogicalPlan,
-                     unsolvedPredicates: Set[Expression],
-                     queryGraph: QueryGraph,
-                     interestingOrderConfig: InterestingOrderConfig,
-                     context: LogicalPlanningContext): Iterator[SelectionCandidate] = {
+  override def apply(
+    input: LogicalPlan,
+    unsolvedPredicates: Set[Expression],
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): Iterator[SelectionCandidate] = {
     val unsolvedScalarPredicates = unsolvedPredicates.filterNot(containsPatternPredicates)
 
     if (unsolvedScalarPredicates.isEmpty) {
@@ -45,4 +47,3 @@ case object selectCovered extends SelectionCandidateGenerator with SelectionCand
     }
   }
 }
-

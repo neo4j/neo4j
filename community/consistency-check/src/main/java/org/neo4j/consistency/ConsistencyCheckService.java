@@ -19,7 +19,20 @@
  */
 package org.neo4j.consistency;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static java.lang.Long.max;
+import static java.lang.String.format;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
+import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.internal.helpers.Strings.joinAsLines;
+import static org.neo4j.io.ByteUnit.bytesToString;
+import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.factory.DbmsInfo.TOOL;
+import static org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory;
+import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
+import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -29,7 +42,7 @@ import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Optional;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -74,23 +87,7 @@ import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.time.Clocks;
 
-import static java.lang.Long.max;
-import static java.lang.String.format;
-import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
-import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
-import static org.neo4j.internal.helpers.Strings.joinAsLines;
-import static org.neo4j.io.ByteUnit.bytesToString;
-import static org.neo4j.io.ByteUnit.mebiBytes;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.factory.DbmsInfo.TOOL;
-import static org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory;
-import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
-import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
-
-public class ConsistencyCheckService
-{
+public class ConsistencyCheckService {
     private final Date timestamp;
     private final DatabaseLayout layout;
     private final Config config;
@@ -105,16 +102,37 @@ public class ConsistencyCheckService
     private final CursorContextFactory contextFactory;
     private final MemoryTracker memoryTracker;
 
-    public ConsistencyCheckService( DatabaseLayout layout )
-    {
-        this( new Date(), layout, Config.defaults(), null, NullLogProvider.getInstance(), new DefaultFileSystemAbstraction(), null, false, null,
-                ConsistencyFlags.DEFAULT, PageCacheTracer.NULL, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), EmptyMemoryTracker.INSTANCE );
+    public ConsistencyCheckService(DatabaseLayout layout) {
+        this(
+                new Date(),
+                layout,
+                Config.defaults(),
+                null,
+                NullLogProvider.getInstance(),
+                new DefaultFileSystemAbstraction(),
+                null,
+                false,
+                null,
+                ConsistencyFlags.DEFAULT,
+                PageCacheTracer.NULL,
+                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                EmptyMemoryTracker.INSTANCE);
     }
 
-    private ConsistencyCheckService( Date timestamp, DatabaseLayout layout, Config config, OutputStream progressOutput, InternalLogProvider logProvider,
-            FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose, Path reportDir, ConsistencyFlags consistencyFlags,
-            PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
-    {
+    private ConsistencyCheckService(
+            Date timestamp,
+            DatabaseLayout layout,
+            Config config,
+            OutputStream progressOutput,
+            InternalLogProvider logProvider,
+            FileSystemAbstraction fileSystem,
+            PageCache pageCache,
+            boolean verbose,
+            Path reportDir,
+            ConsistencyFlags consistencyFlags,
+            PageCacheTracer pageCacheTracer,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
         this.timestamp = timestamp;
         this.layout = layout;
         this.config = config;
@@ -130,216 +148,406 @@ public class ConsistencyCheckService
         this.memoryTracker = memoryTracker;
     }
 
-    public ConsistencyCheckService with( CursorContextFactory contextFactory )
-    {
-        return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
+    public ConsistencyCheckService with(CursorContextFactory contextFactory) {
+        return new ConsistencyCheckService(
+                timestamp,
+                layout,
+                config,
+                progressOutput,
+                logProvider,
+                fileSystem,
+                pageCache,
+                verbose,
+                reportDir,
+                consistencyFlags,
+                pageCacheTracer,
+                contextFactory,
+                memoryTracker);
     }
 
-    public ConsistencyCheckService with( Date timestamp )
-    {
-        return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
+    public ConsistencyCheckService with(Date timestamp) {
+        return new ConsistencyCheckService(
+                timestamp,
+                layout,
+                config,
+                progressOutput,
+                logProvider,
+                fileSystem,
+                pageCache,
+                verbose,
+                reportDir,
+                consistencyFlags,
+                pageCacheTracer,
+                contextFactory,
+                memoryTracker);
     }
 
-    public ConsistencyCheckService with( DatabaseLayout layout )
-    {
-        return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
+    public ConsistencyCheckService with(DatabaseLayout layout) {
+        return new ConsistencyCheckService(
+                timestamp,
+                layout,
+                config,
+                progressOutput,
+                logProvider,
+                fileSystem,
+                pageCache,
+                verbose,
+                reportDir,
+                consistencyFlags,
+                pageCacheTracer,
+                contextFactory,
+                memoryTracker);
     }
 
-    public ConsistencyCheckService with( Config config )
-    {
-        return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
+    public ConsistencyCheckService with(Config config) {
+        return new ConsistencyCheckService(
+                timestamp,
+                layout,
+                config,
+                progressOutput,
+                logProvider,
+                fileSystem,
+                pageCache,
+                verbose,
+                reportDir,
+                consistencyFlags,
+                pageCacheTracer,
+                contextFactory,
+                memoryTracker);
     }
 
-    public ConsistencyCheckService with( OutputStream progressOutput )
-    {
-        return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
+    public ConsistencyCheckService with(OutputStream progressOutput) {
+        return new ConsistencyCheckService(
+                timestamp,
+                layout,
+                config,
+                progressOutput,
+                logProvider,
+                fileSystem,
+                pageCache,
+                verbose,
+                reportDir,
+                consistencyFlags,
+                pageCacheTracer,
+                contextFactory,
+                memoryTracker);
     }
 
-    public ConsistencyCheckService with( InternalLogProvider logProvider )
-    {
-        return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
+    public ConsistencyCheckService with(InternalLogProvider logProvider) {
+        return new ConsistencyCheckService(
+                timestamp,
+                layout,
+                config,
+                progressOutput,
+                logProvider,
+                fileSystem,
+                pageCache,
+                verbose,
+                reportDir,
+                consistencyFlags,
+                pageCacheTracer,
+                contextFactory,
+                memoryTracker);
     }
 
-    public ConsistencyCheckService with( FileSystemAbstraction fileSystem )
-    {
-        return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
+    public ConsistencyCheckService with(FileSystemAbstraction fileSystem) {
+        return new ConsistencyCheckService(
+                timestamp,
+                layout,
+                config,
+                progressOutput,
+                logProvider,
+                fileSystem,
+                pageCache,
+                verbose,
+                reportDir,
+                consistencyFlags,
+                pageCacheTracer,
+                contextFactory,
+                memoryTracker);
     }
 
-    public ConsistencyCheckService with( PageCache pageCache )
-    {
-        return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
+    public ConsistencyCheckService with(PageCache pageCache) {
+        return new ConsistencyCheckService(
+                timestamp,
+                layout,
+                config,
+                progressOutput,
+                logProvider,
+                fileSystem,
+                pageCache,
+                verbose,
+                reportDir,
+                consistencyFlags,
+                pageCacheTracer,
+                contextFactory,
+                memoryTracker);
     }
 
-    public ConsistencyCheckService verbose( boolean verbose )
-    {
-        return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
+    public ConsistencyCheckService verbose(boolean verbose) {
+        return new ConsistencyCheckService(
+                timestamp,
+                layout,
+                config,
+                progressOutput,
+                logProvider,
+                fileSystem,
+                pageCache,
+                verbose,
+                reportDir,
+                consistencyFlags,
+                pageCacheTracer,
+                contextFactory,
+                memoryTracker);
     }
 
-    public ConsistencyCheckService with( Path reportDir )
-    {
-        return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
+    public ConsistencyCheckService with(Path reportDir) {
+        return new ConsistencyCheckService(
+                timestamp,
+                layout,
+                config,
+                progressOutput,
+                logProvider,
+                fileSystem,
+                pageCache,
+                verbose,
+                reportDir,
+                consistencyFlags,
+                pageCacheTracer,
+                contextFactory,
+                memoryTracker);
     }
 
-    public ConsistencyCheckService with( ConsistencyFlags consistencyFlags )
-    {
-        return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
+    public ConsistencyCheckService with(ConsistencyFlags consistencyFlags) {
+        return new ConsistencyCheckService(
+                timestamp,
+                layout,
+                config,
+                progressOutput,
+                logProvider,
+                fileSystem,
+                pageCache,
+                verbose,
+                reportDir,
+                consistencyFlags,
+                pageCacheTracer,
+                contextFactory,
+                memoryTracker);
     }
 
-    public ConsistencyCheckService with( PageCacheTracer pageCacheTracer )
-    {
-        return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
+    public ConsistencyCheckService with(PageCacheTracer pageCacheTracer) {
+        return new ConsistencyCheckService(
+                timestamp,
+                layout,
+                config,
+                progressOutput,
+                logProvider,
+                fileSystem,
+                pageCache,
+                verbose,
+                reportDir,
+                consistencyFlags,
+                pageCacheTracer,
+                contextFactory,
+                memoryTracker);
     }
 
-    public ConsistencyCheckService with( MemoryTracker memoryTracker )
-    {
-        return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
+    public ConsistencyCheckService with(MemoryTracker memoryTracker) {
+        return new ConsistencyCheckService(
+                timestamp,
+                layout,
+                config,
+                progressOutput,
+                logProvider,
+                fileSystem,
+                pageCache,
+                verbose,
+                reportDir,
+                consistencyFlags,
+                pageCacheTracer,
+                contextFactory,
+                memoryTracker);
     }
 
-    public Result runFullConsistencyCheck()
-            throws ConsistencyCheckIncompleteException
-    {
+    public Result runFullConsistencyCheck() throws ConsistencyCheckIncompleteException {
         var life = new LifeSupport();
-        try
-        {
+        try {
             Config config = this.config;
             PageCache pageCache = this.pageCache;
-            if ( pageCache == null )
-            {
-                // Now that there's no existing page cache we have the opportunity to change that setting for the benefit of a faster
-                // consistency check ahead of us. Ask the checker what the optimal amount of available off-heap memory would be
+            if (pageCache == null) {
+                // Now that there's no existing page cache we have the opportunity to change that setting for the
+                // benefit of a faster
+                // consistency check ahead of us. Ask the checker what the optimal amount of available off-heap memory
+                // would be
                 // and change the page cache memory setting a bit in that direction.
                 long availablePhysicalMemory = OsBeanUtil.getTotalPhysicalMemory();
-                if ( availablePhysicalMemory != OsBeanUtil.VALUE_UNAVAILABLE )
-                {
-                    availablePhysicalMemory *= config.get( GraphDatabaseInternalSettings.consistency_check_memory_limit_factor );
+                if (availablePhysicalMemory != OsBeanUtil.VALUE_UNAVAILABLE) {
+                    availablePhysicalMemory *=
+                            config.get(GraphDatabaseInternalSettings.consistency_check_memory_limit_factor);
                     long optimalOffHeapMemory = calculateOptimalOffHeapMemoryForChecker();
-                    // Check the configured page cache memory setting and potentially change it a bit to get closer to the
+                    // Check the configured page cache memory setting and potentially change it a bit to get closer to
+                    // the
                     // optimal amount of off-heap for the checker
 
                     // [heap|pageCache|                        ]
                     long heapMemory = Runtime.getRuntime().maxMemory();
-                    Long pageCacheMemory = config.get( GraphDatabaseSettings.pagecache_memory );
-                    pageCacheMemory = pageCacheMemory != null ? pageCacheMemory : defaultHeuristicPageCacheMemory( MachineMemory.DEFAULT );
+                    Long pageCacheMemory = config.get(GraphDatabaseSettings.pagecache_memory);
+                    pageCacheMemory = pageCacheMemory != null
+                            ? pageCacheMemory
+                            : defaultHeuristicPageCacheMemory(MachineMemory.DEFAULT);
                     long availableOffHeapMemory = availablePhysicalMemory - heapMemory - pageCacheMemory;
-                    if ( availableOffHeapMemory < optimalOffHeapMemory )
-                    {
+                    if (availableOffHeapMemory < optimalOffHeapMemory) {
                         // current: [heap|        pageCache      |          ]
                         // optimal: [heap|pageCache|                        ]
                         // Reduce the page cache memory setting, although not below 20% of what it was configured to
-                        long newPageCacheMemory = max( (long) (pageCacheMemory * 0.2D), availablePhysicalMemory - optimalOffHeapMemory - heapMemory );
-                        config = Config.newBuilder().fromConfig( config ).set( GraphDatabaseSettings.pagecache_memory, newPageCacheMemory ).build();
-                        logProvider.getLog( ConsistencyCheckService.class ).info(
-                                "%s setting was tweaked from %s down to %s for better overall performance of the consistency checker",
-                                GraphDatabaseSettings.pagecache_memory.name(), bytesToString( pageCacheMemory ), bytesToString( newPageCacheMemory ) );
+                        long newPageCacheMemory = max(
+                                (long) (pageCacheMemory * 0.2D),
+                                availablePhysicalMemory - optimalOffHeapMemory - heapMemory);
+                        config = Config.newBuilder()
+                                .fromConfig(config)
+                                .set(GraphDatabaseSettings.pagecache_memory, newPageCacheMemory)
+                                .build();
+                        logProvider
+                                .getLog(ConsistencyCheckService.class)
+                                .info(
+                                        "%s setting was tweaked from %s down to %s for better overall performance of the consistency checker",
+                                        GraphDatabaseSettings.pagecache_memory.name(),
+                                        bytesToString(pageCacheMemory),
+                                        bytesToString(newPageCacheMemory));
                     }
                 }
 
                 JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
-                life.add( onShutdown( jobScheduler::close ) );
-                ConfiguringPageCacheFactory pageCacheFactory =
-                        new ConfiguringPageCacheFactory( fileSystem, config, pageCacheTracer, logProvider.getLog( PageCache.class ),
-                                jobScheduler, Clocks.nanoClock(), new MemoryPools( config.get( memory_tracking ) ),
-                                pageCacheConfig -> pageCacheConfig.faultLockStriping( 1 << 11 ) );
+                life.add(onShutdown(jobScheduler::close));
+                ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
+                        fileSystem,
+                        config,
+                        pageCacheTracer,
+                        logProvider.getLog(PageCache.class),
+                        jobScheduler,
+                        Clocks.nanoClock(),
+                        new MemoryPools(config.get(memory_tracking)),
+                        pageCacheConfig -> pageCacheConfig.faultLockStriping(1 << 11));
                 pageCache = pageCacheFactory.getOrCreatePageCache();
-                life.add( onShutdown( pageCache::close ) );
+                life.add(onShutdown(pageCache::close));
             }
-            Path reportDir = this.reportDir != null ? this.reportDir : defaultReportDir( config );
+            Path reportDir = this.reportDir != null ? this.reportDir : defaultReportDir(config);
 
-            config.set( GraphDatabaseSettings.pagecache_warmup_enabled, false );
+            config.set(GraphDatabaseSettings.pagecache_warmup_enabled, false);
 
             // assert recovered
-            var storageEngineFactory = StorageEngineFactory.selectStorageEngine( fileSystem, layout, pageCache ).orElseThrow();
-            assertRecovered( layout, pageCache, storageEngineFactory, config, fileSystem, memoryTracker );
+            var storageEngineFactory = StorageEngineFactory.selectStorageEngine(fileSystem, layout, pageCache)
+                    .orElseThrow();
+            assertRecovered(layout, pageCache, storageEngineFactory, config, fileSystem, memoryTracker);
 
-            assertSupportedFormat( config, pageCache, storageEngineFactory );
+            assertSupportedFormat(config, pageCache, storageEngineFactory);
 
             // instantiate the inconsistencies report logging
-            var outLog = logProvider.getLog( getClass() );
-            var reportFile = chooseReportPath( reportDir );
-            var reportLogProvider =
-                    new Log4jLogProvider( LogConfig.createBuilder( fileSystem, reportFile, Level.INFO ).createOnDemand().withCategory( false ).build() );
-            life.add( onShutdown( reportLogProvider::close ) );
-            var reportLog = reportLogProvider.getLog( getClass() );
-            var log = new DuplicatingLog( outLog, reportLog );
+            var outLog = logProvider.getLog(getClass());
+            var reportFile = chooseReportPath(reportDir);
+            var reportLogProvider = new Log4jLogProvider(LogConfig.createBuilder(fileSystem, reportFile, Level.INFO)
+                    .createOnDemand()
+                    .withCategory(false)
+                    .build());
+            life.add(onShutdown(reportLogProvider::close));
+            var reportLog = reportLogProvider.getLog(getClass());
+            var log = new DuplicatingLog(outLog, reportLog);
 
             // instantiate kernel extensions and the StaticIndexProviderMapFactory thing
-            var jobScheduler = life.add( JobSchedulerFactory.createInitialisedScheduler() );
+            var jobScheduler = life.add(JobSchedulerFactory.createInitialisedScheduler());
             var recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.ignore();
             var monitors = new Monitors();
-            var tokenHolders = storageEngineFactory.loadReadOnlyTokens( fileSystem, layout, config, pageCache, true, contextFactory );
-            var extensions = life.add( instantiateExtensions(
-                    layout, fileSystem, config, new SimpleLogService( logProvider ), pageCache, jobScheduler,
+            var tokenHolders = storageEngineFactory.loadReadOnlyTokens(
+                    fileSystem, layout, config, pageCache, true, contextFactory);
+            var extensions = life.add(instantiateExtensions(
+                    layout,
+                    fileSystem,
+                    config,
+                    new SimpleLogService(logProvider),
+                    pageCache,
+                    jobScheduler,
                     recoveryCleanupWorkCollector,
-                    TOOL,// We use TOOL context because it's true, and also because it uses the 'single' operational mode, which is important.
-                    monitors, tokenHolders, pageCacheTracer, readOnly() ) );
-            var indexProviders = life.add( StaticIndexProviderMapFactory.create(
-                    life, config, pageCache, fileSystem, new SimpleLogService( logProvider ), monitors, readOnly(), TOOL, recoveryCleanupWorkCollector,
-                    layout, tokenHolders, jobScheduler, contextFactory, extensions ) );
+                    TOOL, // We use TOOL context because it's true, and also because it uses the 'single' operational
+                    // mode, which is important.
+                    monitors,
+                    tokenHolders,
+                    pageCacheTracer,
+                    readOnly()));
+            var indexProviders = life.add(StaticIndexProviderMapFactory.create(
+                    life,
+                    config,
+                    pageCache,
+                    fileSystem,
+                    new SimpleLogService(logProvider),
+                    monitors,
+                    readOnly(),
+                    TOOL,
+                    recoveryCleanupWorkCollector,
+                    layout,
+                    tokenHolders,
+                    jobScheduler,
+                    contextFactory,
+                    extensions));
 
             // do the consistency check
             life.start();
             var numberOfThreads = defaultConsistencyCheckThreadsNumber();
-            var memoryLimitLeewayFactor = config.get( GraphDatabaseInternalSettings.consistency_check_memory_limit_factor );
+            var memoryLimitLeewayFactor =
+                    config.get(GraphDatabaseInternalSettings.consistency_check_memory_limit_factor);
             var summary = new ConsistencySummaryStatistics();
 
-            if ( consistencyFlags.isCheckIndexStructure() )
-            {
-                var openOptions = storageEngineFactory.getStoreOpenOptions( fileSystem, pageCache, layout, contextFactory );
-                var statisticsStore = getStatisticStore( pageCache, recoveryCleanupWorkCollector, contextFactory, openOptions );
-                life.add( statisticsStore );
-                consistencyCheckSingleCheckable( log, summary, statisticsStore, "INDEX_STATISTICS", NULL_CONTEXT );
+            if (consistencyFlags.isCheckIndexStructure()) {
+                var openOptions =
+                        storageEngineFactory.getStoreOpenOptions(fileSystem, pageCache, layout, contextFactory);
+                var statisticsStore =
+                        getStatisticStore(pageCache, recoveryCleanupWorkCollector, contextFactory, openOptions);
+                life.add(statisticsStore);
+                consistencyCheckSingleCheckable(log, summary, statisticsStore, "INDEX_STATISTICS", NULL_CONTEXT);
             }
 
-            try
-            {
-                storageEngineFactory.consistencyCheck( fileSystem, layout, config, pageCache, indexProviders, log, summary, numberOfThreads,
-                        memoryLimitLeewayFactor, progressOutput, verbose, consistencyFlags, contextFactory );
-            }
-            catch ( Exception e )
-            {
-                throw new ConsistencyCheckIncompleteException( e );
+            try {
+                storageEngineFactory.consistencyCheck(
+                        fileSystem,
+                        layout,
+                        config,
+                        pageCache,
+                        indexProviders,
+                        log,
+                        summary,
+                        numberOfThreads,
+                        memoryLimitLeewayFactor,
+                        progressOutput,
+                        verbose,
+                        consistencyFlags,
+                        contextFactory);
+            } catch (Exception e) {
+                throw new ConsistencyCheckIncompleteException(e);
             }
 
-            if ( !summary.isConsistent() )
-            {
-                log.warn( "Inconsistencies found: " + summary );
-                log.warn( "See '%s' for a detailed consistency report.", reportFile );
-                return Result.failure( reportFile, summary );
+            if (!summary.isConsistent()) {
+                log.warn("Inconsistencies found: " + summary);
+                log.warn("See '%s' for a detailed consistency report.", reportFile);
+                return Result.failure(reportFile, summary);
             }
-            return Result.success( reportFile, summary );
-        }
-        finally
-        {
+            return Result.success(reportFile, summary);
+        } finally {
             life.shutdown();
         }
     }
 
-    private void assertSupportedFormat( Config config, PageCache pageCache, StorageEngineFactory storageEngineFactory )
-    {
-        StoreVersionCheck storeVersionCheck =
-                storageEngineFactory.versionCheck( fileSystem, layout, config, pageCache, new SimpleLogService( logProvider ), contextFactory );
+    private void assertSupportedFormat(Config config, PageCache pageCache, StorageEngineFactory storageEngineFactory) {
+        StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck(
+                fileSystem, layout, config, pageCache, new SimpleLogService(logProvider), contextFactory);
 
-        try ( var cursorContext = contextFactory.create( "consistencyCheck" ) )
-        {
-            String storeVersion = storeVersionCheck.storeVersion( cursorContext ).orElseThrow( () -> new RuntimeException( "No store version found" ) );
-            StoreVersion version = storageEngineFactory.versionInformation( storeVersion );
-            if ( version.onlyForMigration() )
-            {
-                throw new IllegalStateException( "The store must be upgraded or migrated to a supported version before it is possible to " +
-                                                 "check consistency" );
+        try (var cursorContext = contextFactory.create("consistencyCheck")) {
+            String storeVersion = storeVersionCheck
+                    .storeVersion(cursorContext)
+                    .orElseThrow(() -> new RuntimeException("No store version found"));
+            StoreVersion version = storageEngineFactory.versionInformation(storeVersion);
+            if (version.onlyForMigration()) {
+                throw new IllegalStateException(
+                        "The store must be upgraded or migrated to a supported version before it is possible to "
+                                + "check consistency");
             }
         }
     }
@@ -348,122 +556,127 @@ public class ConsistencyCheckService
      * Starts a tiny page cache just to ask the store about rough number of entities in it. Based on that the storage can then decide
      * what the optimal amount of available off-heap memory should be when running the consistency check.
      */
-    private long calculateOptimalOffHeapMemoryForChecker() throws ConsistencyCheckIncompleteException
-    {
-        try ( JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
-                PageCache tempPageCache = new ConfiguringPageCacheFactory( fileSystem,
-                        Config.defaults( GraphDatabaseSettings.pagecache_memory, mebiBytes( 8 ) ), PageCacheTracer.NULL, NullLog.getInstance(), jobScheduler,
-                        Clocks.nanoClock(), new MemoryPools() ).getOrCreatePageCache() )
-        {
-            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( fileSystem, layout, tempPageCache ).get();
-            return storageEngineFactory.optimalAvailableConsistencyCheckerMemory( fileSystem, layout, config, tempPageCache );
-        }
-        catch ( Exception e )
-        {
-            throw new ConsistencyCheckIncompleteException( e );
-        }
-    }
-
-    private IndexStatisticsStore getStatisticStore( PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                                                    CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions )
-    {
-        try
-        {
-            return new IndexStatisticsStore( pageCache, layout, recoveryCleanupWorkCollector, readOnly(), contextFactory, openOptions );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+    private long calculateOptimalOffHeapMemoryForChecker() throws ConsistencyCheckIncompleteException {
+        try (JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
+                PageCache tempPageCache = new ConfiguringPageCacheFactory(
+                                fileSystem,
+                                Config.defaults(GraphDatabaseSettings.pagecache_memory, mebiBytes(8)),
+                                PageCacheTracer.NULL,
+                                NullLog.getInstance(),
+                                jobScheduler,
+                                Clocks.nanoClock(),
+                                new MemoryPools())
+                        .getOrCreatePageCache()) {
+            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine(
+                            fileSystem, layout, tempPageCache)
+                    .get();
+            return storageEngineFactory.optimalAvailableConsistencyCheckerMemory(
+                    fileSystem, layout, config, tempPageCache);
+        } catch (Exception e) {
+            throw new ConsistencyCheckIncompleteException(e);
         }
     }
 
-    private boolean consistencyCheckSingleCheckable( InternalLog log, ConsistencySummaryStatistics summary, ConsistencyCheckable checkable,
-            String type, CursorContext cursorContext )
-    {
-        LoggingReporterFactoryInvocationHandler handler = new LoggingReporterFactoryInvocationHandler( log, true );
-        ReporterFactory proxyFactory = new ReporterFactory( handler );
+    private IndexStatisticsStore getStatisticStore(
+            PageCache pageCache,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> openOptions) {
+        try {
+            return new IndexStatisticsStore(
+                    pageCache, layout, recoveryCleanupWorkCollector, readOnly(), contextFactory, openOptions);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
 
-        boolean consistent = checkable.consistencyCheck( proxyFactory, cursorContext );
-        summary.update( type, handler.errors(), handler.warnings() );
+    private boolean consistencyCheckSingleCheckable(
+            InternalLog log,
+            ConsistencySummaryStatistics summary,
+            ConsistencyCheckable checkable,
+            String type,
+            CursorContext cursorContext) {
+        LoggingReporterFactoryInvocationHandler handler = new LoggingReporterFactoryInvocationHandler(log, true);
+        ReporterFactory proxyFactory = new ReporterFactory(handler);
+
+        boolean consistent = checkable.consistencyCheck(proxyFactory, cursorContext);
+        summary.update(type, handler.errors(), handler.warnings());
         return consistent;
     }
 
-    private static void assertRecovered( DatabaseLayout databaseLayout, PageCache pageCache, StorageEngineFactory storageEngineFactory,
-            Config config, FileSystemAbstraction fileSystem, MemoryTracker memoryTracker )
-            throws ConsistencyCheckIncompleteException
-    {
-        try
-        {
-            if ( isRecoveryRequired( fileSystem, pageCache, databaseLayout, storageEngineFactory, config, Optional.empty(), memoryTracker,
-                    DatabaseTracers.EMPTY ) )
-            {
-                throw new IllegalStateException(
-                        joinAsLines( "Active logical log detected, this might be a source of inconsistencies.", "Please recover database.",
-                                "To perform recovery please start database in single mode and perform clean shutdown." ) );
+    private static void assertRecovered(
+            DatabaseLayout databaseLayout,
+            PageCache pageCache,
+            StorageEngineFactory storageEngineFactory,
+            Config config,
+            FileSystemAbstraction fileSystem,
+            MemoryTracker memoryTracker)
+            throws ConsistencyCheckIncompleteException {
+        try {
+            if (isRecoveryRequired(
+                    fileSystem,
+                    pageCache,
+                    databaseLayout,
+                    storageEngineFactory,
+                    config,
+                    Optional.empty(),
+                    memoryTracker,
+                    DatabaseTracers.EMPTY)) {
+                throw new IllegalStateException(joinAsLines(
+                        "Active logical log detected, this might be a source of inconsistencies.",
+                        "Please recover database.",
+                        "To perform recovery please start database in single mode and perform clean shutdown."));
             }
-        }
-        catch ( Exception e )
-        {
-            throw new ConsistencyCheckIncompleteException( e );
+        } catch (Exception e) {
+            throw new ConsistencyCheckIncompleteException(e);
         }
     }
 
-    private Path chooseReportPath( Path reportDir )
-    {
-        return reportDir.resolve( defaultLogFileName( timestamp ) );
+    private Path chooseReportPath(Path reportDir) {
+        return reportDir.resolve(defaultLogFileName(timestamp));
     }
 
-    private static Path defaultReportDir( Config tuningConfiguration )
-    {
-        return tuningConfiguration.get( GraphDatabaseSettings.logs_directory );
+    private static Path defaultReportDir(Config tuningConfiguration) {
+        return tuningConfiguration.get(GraphDatabaseSettings.logs_directory);
     }
 
-    private static String defaultLogFileName( Date date )
-    {
-        return format( "inconsistencies-%s.report", new SimpleDateFormat( "yyyy-MM-dd.HH.mm.ss" ).format( date ) );
+    private static String defaultLogFileName(Date date) {
+        return format("inconsistencies-%s.report", new SimpleDateFormat("yyyy-MM-dd.HH.mm.ss").format(date));
     }
 
-    public static class Result
-    {
+    public static class Result {
         private final boolean successful;
         private final Path reportFile;
         private final ConsistencySummaryStatistics summary;
 
-        public static Result failure( Path reportFile, ConsistencySummaryStatistics summary )
-        {
-            return new Result( false, reportFile, summary );
+        public static Result failure(Path reportFile, ConsistencySummaryStatistics summary) {
+            return new Result(false, reportFile, summary);
         }
 
-        public static Result success( Path reportFile, ConsistencySummaryStatistics summary )
-        {
-            return new Result( true, reportFile, summary );
+        public static Result success(Path reportFile, ConsistencySummaryStatistics summary) {
+            return new Result(true, reportFile, summary);
         }
 
-        private Result( boolean successful, Path reportFile, ConsistencySummaryStatistics summary )
-        {
+        private Result(boolean successful, Path reportFile, ConsistencySummaryStatistics summary) {
             this.successful = successful;
             this.reportFile = reportFile;
             this.summary = summary;
         }
 
-        public boolean isSuccessful()
-        {
+        public boolean isSuccessful() {
             return successful;
         }
 
-        public Path reportFile()
-        {
+        public Path reportFile() {
             return reportFile;
         }
 
-        public ConsistencySummaryStatistics summary()
-        {
+        public ConsistencySummaryStatistics summary() {
             return summary;
         }
     }
 
-    public static int defaultConsistencyCheckThreadsNumber()
-    {
+    public static int defaultConsistencyCheckThreadsNumber() {
         return Runtime.getRuntime().availableProcessors();
     }
 }

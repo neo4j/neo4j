@@ -20,12 +20,10 @@
 package org.neo4j.procedure.builtin;
 
 import java.time.ZoneId;
-
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 
-public class ListConnectionResult
-{
+public class ListConnectionResult {
     public final String connectionId;
     public final String connectTime;
     public final String connector;
@@ -34,14 +32,13 @@ public class ListConnectionResult
     public final String serverAddress;
     public final String clientAddress;
 
-    ListConnectionResult( TrackedNetworkConnection connection, ZoneId timeZone )
-    {
+    ListConnectionResult(TrackedNetworkConnection connection, ZoneId timeZone) {
         connectionId = connection.id();
-        connectTime = ProceduresTimeFormatHelper.formatTime( connection.connectTime(), timeZone );
+        connectTime = ProceduresTimeFormatHelper.formatTime(connection.connectTime(), timeZone);
         connector = connection.connector();
         username = connection.username();
         userAgent = connection.userAgent();
-        serverAddress = SocketAddress.format( connection.serverAddress() );
-        clientAddress = SocketAddress.format( connection.clientAddress() );
+        serverAddress = SocketAddress.format(connection.serverAddress());
+        clientAddress = SocketAddress.format(connection.clientAddress());
     }
 }

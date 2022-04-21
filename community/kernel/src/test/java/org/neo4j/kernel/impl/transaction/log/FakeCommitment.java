@@ -21,43 +21,36 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import org.neo4j.storageengine.api.TransactionIdStore;
 
-public class FakeCommitment implements Commitment
-{
+public class FakeCommitment implements Commitment {
     public static final int CHECKSUM = 3;
     public static final long TIMESTAMP = 8194639457389L;
     private final long id;
     private final TransactionIdStore transactionIdStore;
     private boolean committed;
 
-    public FakeCommitment( long id, TransactionIdStore transactionIdStore )
-    {
-        this( id, transactionIdStore, false );
+    public FakeCommitment(long id, TransactionIdStore transactionIdStore) {
+        this(id, transactionIdStore, false);
     }
 
-    public FakeCommitment( long id, TransactionIdStore transactionIdStore, boolean markedAsCommitted )
-    {
+    public FakeCommitment(long id, TransactionIdStore transactionIdStore, boolean markedAsCommitted) {
         this.id = id;
         this.transactionIdStore = transactionIdStore;
         this.committed = markedAsCommitted;
     }
 
     @Override
-    public void publishAsCommitted()
-    {
+    public void publishAsCommitted() {
         committed = true;
-        transactionIdStore.transactionCommitted( id, CHECKSUM, TIMESTAMP );
+        transactionIdStore.transactionCommitted(id, CHECKSUM, TIMESTAMP);
     }
 
     @Override
-    public void publishAsClosed()
-    {
-        transactionIdStore.transactionClosed( id, 1, 2, CHECKSUM, TIMESTAMP );
+    public void publishAsClosed() {
+        transactionIdStore.transactionClosed(id, 1, 2, CHECKSUM, TIMESTAMP);
     }
 
     @Override
-    public boolean markedAsCommitted()
-    {
+    public boolean markedAsCommitted() {
         return committed;
     }
-
 }

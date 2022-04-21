@@ -22,6 +22,4 @@ package org.neo4j.util;
 /**
  * Annotation to indicate that program element exists, or has visibility wider than necessary, only for testing purposes.
  */
-public @interface VisibleForTesting
-{
-}
+public @interface VisibleForTesting {}

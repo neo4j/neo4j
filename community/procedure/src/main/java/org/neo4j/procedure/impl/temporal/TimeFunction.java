@@ -19,11 +19,12 @@
  */
 package org.neo4j.procedure.impl.temporal;
 
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTTime;
+
 import java.time.Clock;
 import java.time.ZoneId;
 import java.time.temporal.TemporalUnit;
 import java.util.function.Supplier;
-
 import org.neo4j.procedure.Description;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TemporalValue;
@@ -31,43 +32,35 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTTime;
-
-@Description( "Create a Time instant." )
-class TimeFunction extends TemporalFunction<TimeValue>
-{
-    TimeFunction( Supplier<ZoneId> defaultZone )
-    {
-        super( NTTime, defaultZone );
+@Description("Create a Time instant.")
+class TimeFunction extends TemporalFunction<TimeValue> {
+    TimeFunction(Supplier<ZoneId> defaultZone) {
+        super(NTTime, defaultZone);
     }
 
     @Override
-    protected TimeValue now( Clock clock, String timezone, Supplier<ZoneId> defaultZone )
-    {
-        return timezone == null ? TimeValue.now( clock, defaultZone ) : TimeValue.now( clock, timezone );
+    protected TimeValue now(Clock clock, String timezone, Supplier<ZoneId> defaultZone) {
+        return timezone == null ? TimeValue.now(clock, defaultZone) : TimeValue.now(clock, timezone);
     }
 
     @Override
-    protected TimeValue parse( TextValue value, Supplier<ZoneId> defaultZone )
-    {
-        return TimeValue.parse( value, defaultZone );
+    protected TimeValue parse(TextValue value, Supplier<ZoneId> defaultZone) {
+        return TimeValue.parse(value, defaultZone);
     }
 
     @Override
-    protected TimeValue build( MapValue map, Supplier<ZoneId> defaultZone )
-    {
-        return TimeValue.build( map, defaultZone );
+    protected TimeValue build(MapValue map, Supplier<ZoneId> defaultZone) {
+        return TimeValue.build(map, defaultZone);
     }
 
     @Override
-    protected TimeValue select( AnyValue from, Supplier<ZoneId> defaultZone )
-    {
-        return TimeValue.select( from, defaultZone );
+    protected TimeValue select(AnyValue from, Supplier<ZoneId> defaultZone) {
+        return TimeValue.select(from, defaultZone);
     }
 
     @Override
-    protected TimeValue truncate( TemporalUnit unit, TemporalValue input, MapValue fields, Supplier<ZoneId> defaultZone )
-    {
-        return TimeValue.truncate( unit, input, fields, defaultZone );
+    protected TimeValue truncate(
+            TemporalUnit unit, TemporalValue input, MapValue fields, Supplier<ZoneId> defaultZone) {
+        return TimeValue.truncate(unit, input, fields, defaultZone);
     }
 }

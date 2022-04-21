@@ -19,40 +19,37 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.cli.AdminTool;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @TestDirectoryExtension
-public class AdminToolTest
-{
+public class AdminToolTest {
     @Inject
     private TestDirectory directory;
 
     @Test
-    void shouldPrintEnvironmentVariablesInHelpUsage()
-    {
+    void shouldPrintEnvironmentVariablesInHelpUsage() {
         ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
         ByteArrayOutputStream errBuffer = new ByteArrayOutputStream();
-        try ( PrintStream out = new PrintStream( outBuffer );
-                PrintStream err = new PrintStream( errBuffer ) )
-        {
-            assertEquals( 2, AdminTool.execute(
-                    new ExecutionContext( directory.homePath(), directory.directory( "conf" ), out, err, directory.getFileSystem() ) ) );
+        try (PrintStream out = new PrintStream(outBuffer);
+                PrintStream err = new PrintStream(errBuffer)) {
+            assertEquals(
+                    2,
+                    AdminTool.execute(new ExecutionContext(
+                            directory.homePath(), directory.directory("conf"), out, err, directory.getFileSystem())));
         }
         String outString = outBuffer.toString();
-        assertTrue( outString.contains( "Environment variables" ) );
-        assertTrue( outString.contains( "NEO4J_HOME" ) );
-        assertTrue( outString.contains( "NEO4J_CONF" ) );
+        assertTrue(outString.contains("Environment variables"));
+        assertTrue(outString.contains("NEO4J_HOME"));
+        assertTrue(outString.contains("NEO4J_CONF"));
     }
 }

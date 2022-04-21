@@ -20,13 +20,11 @@
 package org.neo4j.graphdb.traversal;
 
 import java.util.function.Predicate;
-
 import org.neo4j.graphdb.Path;
 
 /**
  * Copied from kernel package so that we can hide kernel from the public API.
  */
-public interface BranchCollisionPolicy
-{
-    BranchCollisionDetector create( Evaluator evaluator, Predicate<Path> pathPredicate );
+public interface BranchCollisionPolicy {
+    BranchCollisionDetector create(Evaluator evaluator, Predicate<Path> pathPredicate);
 }

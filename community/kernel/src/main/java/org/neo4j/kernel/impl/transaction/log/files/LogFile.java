@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import org.eclipse.collections.api.map.primitive.LongObjectMap;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.OptionalLong;
 import java.util.function.LongSupplier;
-
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -42,12 +40,10 @@ import org.neo4j.kernel.impl.transaction.tracing.LogForceEvents;
 /**
  * Sees a log file as bytes, including taking care of rotation of the file into optimal chunks.
  */
-public interface LogFile extends RotatableFile
-{
+public interface LogFile extends RotatableFile {
     @FunctionalInterface
-    interface LogFileVisitor
-    {
-        boolean visit( ReadableClosablePositionAwareChecksumChannel channel ) throws IOException;
+    interface LogFileVisitor {
+        boolean visit(ReadableClosablePositionAwareChecksumChannel channel) throws IOException;
     }
 
     /**
@@ -68,7 +64,7 @@ public interface LogFile extends RotatableFile
      * @return {@link ReadableChannel} capable of reading log data, starting from {@link LogPosition position}.
      * @throws IOException on I/O error.
      */
-    ReadableLogChannel getReader( LogPosition position ) throws IOException;
+    ReadableLogChannel getReader(LogPosition position) throws IOException;
 
     /**
      * Opens a {@link ReadableLogChannel reader} at the desired {@link LogPosition}, capable of reading log entries
@@ -80,7 +76,7 @@ public interface LogFile extends RotatableFile
      * @return {@link ReadableChannel} capable of reading log data, starting from {@link LogPosition position}.
      * @throws IOException on I/O error.
      */
-    ReadableLogChannel getRawReader( LogPosition position ) throws IOException;
+    ReadableLogChannel getRawReader(LogPosition position) throws IOException;
 
     /**
      * Opens a {@link ReadableLogChannel reader} at the desired {@link LogPosition}, capable of reading log entries
@@ -91,21 +87,22 @@ public interface LogFile extends RotatableFile
      * @return {@link ReadableChannel} capable of reading log data, starting from {@link LogPosition position}.
      * @throws IOException on I/O error.
      */
-    ReadableLogChannel getReader( LogPosition position, LogVersionBridge logVersionBridge ) throws IOException;
+    ReadableLogChannel getReader(LogPosition position, LogVersionBridge logVersionBridge) throws IOException;
 
-    void accept( LogFileVisitor visitor, LogPosition startingFromPosition ) throws IOException;
+    void accept(LogFileVisitor visitor, LogPosition startingFromPosition) throws IOException;
 
     TransactionLogFileInformation getLogFileInformation();
 
-    PhysicalLogVersionedStoreChannel openForVersion( long version ) throws IOException;
+    PhysicalLogVersionedStoreChannel openForVersion(long version) throws IOException;
 
-    PhysicalLogVersionedStoreChannel openForVersion( long version, boolean raw ) throws IOException;
+    PhysicalLogVersionedStoreChannel openForVersion(long version, boolean raw) throws IOException;
 
-    PhysicalLogVersionedStoreChannel createLogChannelForVersion( long versionUsed, LongSupplier lastCommittedTransactionId ) throws IOException;
+    PhysicalLogVersionedStoreChannel createLogChannelForVersion(
+            long versionUsed, LongSupplier lastCommittedTransactionId) throws IOException;
 
-    long getLogVersion( Path file );
+    long getLogVersion(Path file);
 
-    Path getLogFileForVersion( long version );
+    Path getLogFileForVersion(long version);
 
     Path getHighestLogFile();
 
@@ -115,49 +112,49 @@ public interface LogFile extends RotatableFile
 
     long getLowestLogVersion();
 
-    LogHeader extractHeader( long version ) throws IOException;
+    LogHeader extractHeader(long version) throws IOException;
 
-    boolean versionExists( long version );
+    boolean versionExists(long version);
 
-    boolean hasAnyEntries( long version );
+    boolean hasAnyEntries(long version);
 
-    void accept( LogVersionVisitor visitor );
+    void accept(LogVersionVisitor visitor);
 
-    void accept( LogHeaderVisitor visitor ) throws IOException;
+    void accept(LogHeaderVisitor visitor) throws IOException;
 
     Path[] getMatchedFiles() throws IOException;
 
-    void combine( Path additionalSource ) throws IOException;
+    void combine(Path additionalSource) throws IOException;
 
-    boolean forceAfterAppend( LogForceEvents logForceEvents ) throws IOException;
+    boolean forceAfterAppend(LogForceEvents logForceEvents) throws IOException;
 
-    void locklessForce( LogForceEvents logAppendEvents ) throws IOException;
+    void locklessForce(LogForceEvents logAppendEvents) throws IOException;
 
     void flush() throws IOException;
 
     void truncate() throws IOException;
 
-    void truncate( LogPosition position ) throws IOException;
+    void truncate(LogPosition position) throws IOException;
 
-    LogPosition append( ByteBuffer byteBuffer, OptionalLong transactionId ) throws IOException;
+    LogPosition append(ByteBuffer byteBuffer, OptionalLong transactionId) throws IOException;
 
     /**
      * Register map of externally exposed readers. Key is log version number. Value is log reader.
      * @param internalChannels map of readers
      */
-    void registerExternalReaders( LongObjectMap<StoreChannel> internalChannels );
+    void registerExternalReaders(LongObjectMap<StoreChannel> internalChannels);
 
     /**
      * Unregister externally exposed reader. If version is not registered or channel is not registered it will be just ignored
      * @param version version of log file to unregister reader
      * @param channel reader to unregister
      */
-    void unregisterExternalReader( long version, StoreChannel channel );
+    void unregisterExternalReader(long version, StoreChannel channel);
 
     /**
      * Mass termination (unregistration and closing ) of externally exposed readers.
      * All registered readers up to (inclusive) specified version will be closed and unregistered.
      * @param maxDeletedVersion version up to terminate external readers.
      */
-    void terminateExternalReaders( long maxDeletedVersion );
+    void terminateExternalReaders(long maxDeletedVersion);
 }

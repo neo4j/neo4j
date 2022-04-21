@@ -23,7 +23,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.WatchService;
-
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
 
 /**
@@ -35,8 +34,7 @@ import org.neo4j.io.fs.watcher.resource.WatchedResource;
  *
  * @see WatchService
  */
-public interface FileWatcher extends Closeable
-{
+public interface FileWatcher extends Closeable {
 
     FileWatcher SILENT_WATCHER = new SilentFileWatcher();
 
@@ -47,19 +45,19 @@ public interface FileWatcher extends Closeable
      * @return closable resource that represent watched file
      * @throws IOException
      */
-    WatchedResource watch( Path path ) throws IOException;
+    WatchedResource watch(Path path) throws IOException;
 
     /**
      * Register listener to receive updates about registered resources.
      * @param listener listener to register
      */
-    void addFileWatchEventListener( FileWatchEventListener listener );
+    void addFileWatchEventListener(FileWatchEventListener listener);
 
     /**
      * Remove listener from a list of updates receivers.
      * @param listener listener to remove
      */
-    void removeFileWatchEventListener( FileWatchEventListener listener );
+    void removeFileWatchEventListener(FileWatchEventListener listener);
 
     /**
      * Stop monitoring of registered directories

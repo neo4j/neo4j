@@ -49,6 +49,8 @@ class NameDeduplicatorTest extends CypherFunSuite {
   }
 
   test("does not greedily consume more than the UUID in input position names") {
-    removeGeneratedNamesAndParams("  var@33(17debdfe-6233-42f6-be08-941b2163bddd)(this is not part of the uuid)") should equal("var(this is not part of the uuid)")
+    removeGeneratedNamesAndParams(
+      "  var@33(17debdfe-6233-42f6-be08-941b2163bddd)(this is not part of the uuid)"
+    ) should equal("var(this is not part of the uuid)")
   }
 }

@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.helpers.collection.NestingIterator;
@@ -36,9 +35,8 @@ import org.neo4j.util.concurrent.AsyncApply;
 import org.neo4j.util.concurrent.Work;
 import org.neo4j.util.concurrent.WorkSync;
 
-public class IndexUpdatesWorkSync
-{
-    private final WorkSync<IndexUpdateListener,IndexUpdatesWork> workSync;
+public class IndexUpdatesWorkSync {
+    private final WorkSync<IndexUpdateListener, IndexUpdatesWork> workSync;
     private final IndexUpdateListener listener;
     private final boolean parallelApply;
 
@@ -47,118 +45,95 @@ public class IndexUpdatesWorkSync
      * will end up applying all the updates. Otherwise if {@code true} each thread will apply their updates itself, with the "parallel" note
      * passed down to the updaters to arrange for this fact.
      */
-    public IndexUpdatesWorkSync( IndexUpdateListener listener, boolean parallelApply )
-    {
+    public IndexUpdatesWorkSync(IndexUpdateListener listener, boolean parallelApply) {
         this.listener = listener;
         this.parallelApply = parallelApply;
-        this.workSync = parallelApply ? null : new WorkSync<>( listener );
+        this.workSync = parallelApply ? null : new WorkSync<>(listener);
     }
 
-    public Batch newBatch()
-    {
+    public Batch newBatch() {
         return new Batch();
     }
 
-    public class Batch
-    {
+    public class Batch {
         private final List<Iterable<IndexEntryUpdate<IndexDescriptor>>> updates = new ArrayList<>();
         private List<IndexEntryUpdate<IndexDescriptor>> singleUpdates;
 
-        public void add( Iterable<IndexEntryUpdate<IndexDescriptor>> indexUpdates )
-        {
-            updates.add( indexUpdates );
+        public void add(Iterable<IndexEntryUpdate<IndexDescriptor>> indexUpdates) {
+            updates.add(indexUpdates);
         }
 
-        public void add( IndexEntryUpdate<IndexDescriptor> indexUpdate )
-        {
-            if ( singleUpdates == null )
-            {
+        public void add(IndexEntryUpdate<IndexDescriptor> indexUpdate) {
+            if (singleUpdates == null) {
                 singleUpdates = new ArrayList<>();
             }
-            singleUpdates.add( indexUpdate );
+            singleUpdates.add(indexUpdate);
         }
 
-        private void addSingleUpdates()
-        {
-            if ( singleUpdates != null )
-            {
-                updates.add( singleUpdates );
+        private void addSingleUpdates() {
+            if (singleUpdates != null) {
+                updates.add(singleUpdates);
             }
         }
 
-        public void apply( CursorContext cursorContext ) throws ExecutionException
-        {
+        public void apply(CursorContext cursorContext) throws ExecutionException {
             addSingleUpdates();
-            if ( !updates.isEmpty() )
-            {
-                if ( parallelApply )
-                {
+            if (!updates.isEmpty()) {
+                if (parallelApply) {
                     // Just skip the work-sync if this is parallel apply and instead update straight in
-                    try
-                    {
-                        listener.applyUpdates( combinedUpdates( updates ), cursorContext, true );
+                    try {
+                        listener.applyUpdates(combinedUpdates(updates), cursorContext, true);
+                    } catch (IOException | KernelException e) {
+                        throw new ExecutionException(e);
                     }
-                    catch ( IOException | KernelException e )
-                    {
-                        throw new ExecutionException( e );
-                    }
-                }
-                else
-                {
-                    workSync.apply( new IndexUpdatesWork( updates, cursorContext ) );
+                } else {
+                    workSync.apply(new IndexUpdatesWork(updates, cursorContext));
                 }
             }
         }
 
-        public AsyncApply applyAsync( CursorContext cursorContext )
-        {
+        public AsyncApply applyAsync(CursorContext cursorContext) {
             addSingleUpdates();
-            return updates.isEmpty() ? AsyncApply.EMPTY : workSync.applyAsync( new IndexUpdatesWork( updates, cursorContext ) );
+            return updates.isEmpty()
+                    ? AsyncApply.EMPTY
+                    : workSync.applyAsync(new IndexUpdatesWork(updates, cursorContext));
         }
     }
 
     /**
      * Combines index updates from multiple transactions into one bigger job.
      */
-    private static class IndexUpdatesWork implements Work<IndexUpdateListener,IndexUpdatesWork>
-    {
+    private static class IndexUpdatesWork implements Work<IndexUpdateListener, IndexUpdatesWork> {
         private final List<Iterable<IndexEntryUpdate<IndexDescriptor>>> updates;
         private final CursorContext cursorContext;
 
-        IndexUpdatesWork( List<Iterable<IndexEntryUpdate<IndexDescriptor>>> updates, CursorContext cursorContext )
-        {
+        IndexUpdatesWork(List<Iterable<IndexEntryUpdate<IndexDescriptor>>> updates, CursorContext cursorContext) {
             this.cursorContext = cursorContext;
             this.updates = updates;
         }
 
         @Override
-        public IndexUpdatesWork combine( IndexUpdatesWork work )
-        {
-            updates.addAll( work.updates );
+        public IndexUpdatesWork combine(IndexUpdatesWork work) {
+            updates.addAll(work.updates);
             return this;
         }
 
         @Override
-        public void apply( IndexUpdateListener material )
-        {
-            try
-            {
-                material.applyUpdates( combinedUpdates( updates ), cursorContext, false );
-            }
-            catch ( IOException | KernelException e )
-            {
-                throw new UnderlyingStorageException( e );
+        public void apply(IndexUpdateListener material) {
+            try {
+                material.applyUpdates(combinedUpdates(updates), cursorContext, false);
+            } catch (IOException | KernelException e) {
+                throw new UnderlyingStorageException(e);
             }
         }
     }
 
-    private static Iterable<IndexEntryUpdate<IndexDescriptor>> combinedUpdates( List<Iterable<IndexEntryUpdate<IndexDescriptor>>> updates )
-    {
-        return () -> new NestingIterator<>( updates.iterator() )
-        {
+    private static Iterable<IndexEntryUpdate<IndexDescriptor>> combinedUpdates(
+            List<Iterable<IndexEntryUpdate<IndexDescriptor>>> updates) {
+        return () -> new NestingIterator<>(updates.iterator()) {
             @Override
-            protected Iterator<IndexEntryUpdate<IndexDescriptor>> createNestedIterator( Iterable<IndexEntryUpdate<IndexDescriptor>> item )
-            {
+            protected Iterator<IndexEntryUpdate<IndexDescriptor>> createNestedIterator(
+                    Iterable<IndexEntryUpdate<IndexDescriptor>> item) {
                 return item.iterator();
             }
         };

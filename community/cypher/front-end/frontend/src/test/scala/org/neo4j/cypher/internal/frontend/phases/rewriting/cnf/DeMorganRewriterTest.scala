@@ -42,9 +42,12 @@ class DeMorganRewriterTest extends CypherFunSuite with PredicateTestSupport {
       or(
         and(
           not(P),
-          not(Q)),
+          not(Q)
+        ),
         and(
           not(not(P)),
-          not(not(Q))))
+          not(not(Q))
+        )
+      )
   }
 }

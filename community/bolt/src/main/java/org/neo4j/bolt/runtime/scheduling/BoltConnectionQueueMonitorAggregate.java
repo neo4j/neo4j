@@ -22,28 +22,23 @@ package org.neo4j.bolt.runtime.scheduling;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.Job;
 
-public class BoltConnectionQueueMonitorAggregate implements BoltConnectionQueueMonitor
-{
+public class BoltConnectionQueueMonitorAggregate implements BoltConnectionQueueMonitor {
     private final List<BoltConnectionQueueMonitor> monitors;
 
-    public BoltConnectionQueueMonitorAggregate( BoltConnectionQueueMonitor... monitors )
-    {
-        this.monitors = Arrays.asList( monitors );
+    public BoltConnectionQueueMonitorAggregate(BoltConnectionQueueMonitor... monitors) {
+        this.monitors = Arrays.asList(monitors);
     }
 
     @Override
-    public void enqueued( BoltConnection to, Job job )
-    {
-        monitors.forEach( m -> m.enqueued( to, job ) );
+    public void enqueued(BoltConnection to, Job job) {
+        monitors.forEach(m -> m.enqueued(to, job));
     }
 
     @Override
-    public void drained( BoltConnection from, Collection<Job> batch )
-    {
-        monitors.forEach( m -> m.drained( from, batch ) );
+    public void drained(BoltConnection from, Collection<Job> batch) {
+        monitors.forEach(m -> m.drained(from, batch));
     }
 }

@@ -26,10 +26,8 @@ import org.neo4j.memory.HeapHighWaterMarkTracker;
 /**
  * The result API of a Cypher runtime
  */
-public interface RuntimeResult extends AutoCloseable, QuerySubscription, HeapHighWaterMarkTracker
-{
-    enum ConsumptionState
-    {
+public interface RuntimeResult extends AutoCloseable, QuerySubscription, HeapHighWaterMarkTracker {
+    enum ConsumptionState {
         NOT_STARTED,
         HAS_MORE,
         EXHAUSTED

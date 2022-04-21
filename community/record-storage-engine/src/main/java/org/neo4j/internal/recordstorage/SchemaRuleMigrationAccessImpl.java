@@ -19,8 +19,9 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import java.io.IOException;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
+import java.io.IOException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -30,19 +31,19 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.storageengine.util.IdUpdateListener;
 
-import static org.neo4j.io.IOUtils.closeAllUnchecked;
-
-public class SchemaRuleMigrationAccessImpl implements SchemaRuleMigrationAccess
-{
+public class SchemaRuleMigrationAccessImpl implements SchemaRuleMigrationAccess {
     private final NeoStores neoStores;
     private final SchemaStorage schemaStorage;
     private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
     private final StoreCursors storeCursors;
 
-    SchemaRuleMigrationAccessImpl( NeoStores neoStores, SchemaStorage schemaStorage, CursorContext cursorContext, MemoryTracker memoryTracker,
-            StoreCursors storeCursors )
-    {
+    SchemaRuleMigrationAccessImpl(
+            NeoStores neoStores,
+            SchemaStorage schemaStorage,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker,
+            StoreCursors storeCursors) {
         this.neoStores = neoStores;
         this.schemaStorage = schemaStorage;
         this.cursorContext = cursorContext;
@@ -51,34 +52,29 @@ public class SchemaRuleMigrationAccessImpl implements SchemaRuleMigrationAccess
     }
 
     @Override
-    public Iterable<SchemaRule> getAll()
-    {
-        return schemaStorage.getAll( storeCursors );
+    public Iterable<SchemaRule> getAll() {
+        return schemaStorage.getAll(storeCursors);
     }
 
     @Override
-    public void writeSchemaRule( SchemaRule rule ) throws KernelException
-    {
-        schemaStorage.writeSchemaRule( rule, IdUpdateListener.DIRECT, cursorContext, memoryTracker, storeCursors );
+    public void writeSchemaRule(SchemaRule rule) throws KernelException {
+        schemaStorage.writeSchemaRule(rule, IdUpdateListener.DIRECT, cursorContext, memoryTracker, storeCursors);
     }
 
     @Override
-    public void deleteSchemaRule( long id ) throws KernelException
-    {
-        schemaStorage.deleteSchemaRule( id, IdUpdateListener.DIRECT, cursorContext, memoryTracker, storeCursors );
+    public void deleteSchemaRule(long id) throws KernelException {
+        schemaStorage.deleteSchemaRule(id, IdUpdateListener.DIRECT, cursorContext, memoryTracker, storeCursors);
     }
 
     @Override
-    public long nextId()
-    {
-        return schemaStorage.newRuleId( cursorContext );
+    public long nextId() {
+        return schemaStorage.newRuleId(cursorContext);
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         storeCursors.close();
-        neoStores.flush( cursorContext );
-        closeAllUnchecked( storeCursors, neoStores, cursorContext );
+        neoStores.flush(cursorContext);
+        closeAllUnchecked(storeCursors, neoStores, cursorContext);
     }
 }

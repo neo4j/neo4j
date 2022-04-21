@@ -27,17 +27,18 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 
-case class UndirectedRelationshipIndexScanPipe(ident: String,
-                                               startNode: String,
-                                               endNode: String,
-                                               relType: RelationshipTypeToken,
-                                               properties: Array[IndexedProperty],
-                                               queryIndexId: Int,
-                                               indexOrder: IndexOrder)
-                                              (val id: Id = Id.INVALID_ID) extends Pipe with IndexPipeWithValues {
-
+case class UndirectedRelationshipIndexScanPipe(
+  ident: String,
+  startNode: String,
+  endNode: String,
+  relType: RelationshipTypeToken,
+  properties: Array[IndexedProperty],
+  queryIndexId: Int,
+  indexOrder: IndexOrder
+)(val id: Id = Id.INVALID_ID) extends Pipe with IndexPipeWithValues {
 
   override val indexPropertyIndices: Array[Int] = properties.indices.filter(properties(_).shouldGetValue).toArray
+
   override val indexCachedProperties: Array[CachedProperty] =
     indexPropertyIndices.map(offset => properties(offset).asCachedProperty(ident))
   private val needsValues: Boolean = indexPropertyIndices.nonEmpty

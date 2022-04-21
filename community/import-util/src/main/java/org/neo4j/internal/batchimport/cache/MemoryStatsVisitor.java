@@ -22,18 +22,15 @@ package org.neo4j.internal.batchimport.cache;
 /**
  * Visits objects able to provide stats about amount of used memory.
  */
-public interface MemoryStatsVisitor
-{
-    Visitable NONE = visitor ->
-    {   // report no memory
+public interface MemoryStatsVisitor {
+    Visitable NONE = visitor -> { // report no memory
     };
 
-    interface Visitable
-    {
-        void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor );
+    interface Visitable {
+        void acceptMemoryStatsVisitor(MemoryStatsVisitor visitor);
     }
 
-    void heapUsage( long bytes );
+    void heapUsage(long bytes);
 
-    void offHeapUsage( long bytes );
+    void offHeapUsage(long bytes);
 }

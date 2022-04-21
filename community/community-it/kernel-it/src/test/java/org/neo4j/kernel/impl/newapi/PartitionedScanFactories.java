@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import static org.neo4j.test.Tags.Suppliers.UUID.LABEL;
+import static org.neo4j.test.Tags.Suppliers.UUID.PROPERTY_KEY;
+import static org.neo4j.test.Tags.Suppliers.UUID.RELATIONSHIP_TYPE;
+
 import java.util.Arrays;
 import java.util.stream.Collectors;
-
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -45,348 +48,311 @@ import org.neo4j.kernel.impl.newapi.TokenIndexScanPartitionedScanTestSuite.Token
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.Tags;
 
-import static org.neo4j.test.Tags.Suppliers.UUID.LABEL;
-import static org.neo4j.test.Tags.Suppliers.UUID.PROPERTY_KEY;
-import static org.neo4j.test.Tags.Suppliers.UUID.RELATIONSHIP_TYPE;
+class PartitionedScanFactories {
+    abstract static class PartitionedScanFactory<QUERY extends Query<?>, SESSION, CURSOR extends Cursor> {
+        abstract PartitionedScanFactory<QUERY, SESSION, ? extends Cursor> getEntityTypeComplimentFactory();
 
-class PartitionedScanFactories
-{
-    abstract static class PartitionedScanFactory<QUERY extends Query<?>, SESSION, CURSOR extends Cursor>
-    {
-        abstract PartitionedScanFactory<QUERY,SESSION,? extends Cursor> getEntityTypeComplimentFactory();
+        abstract SESSION getSession(KernelTransaction tx, QUERY query) throws KernelException;
 
-        abstract SESSION getSession( KernelTransaction tx, QUERY query )
+        abstract CursorWithContext<CURSOR> getCursor(CursorFactory cursors);
+
+        abstract long getEntityReference(CURSOR cursor);
+
+        abstract PartitionedScan<CURSOR> partitionedScan(
+                KernelTransaction tx, QUERY query, SESSION session, int desiredNumberOfPartitions)
                 throws KernelException;
 
-        abstract CursorWithContext<CURSOR> getCursor( CursorFactory cursors );
-
-        abstract long getEntityReference( CURSOR cursor );
-
-        abstract PartitionedScan<CURSOR> partitionedScan( KernelTransaction tx, QUERY query, SESSION session, int desiredNumberOfPartitions )
-                throws KernelException;
-
-        final PartitionedScan<CURSOR> partitionedScan( KernelTransaction tx, QUERY query, int desiredNumberOfPartitions )
-                throws KernelException
-        {
-            return partitionedScan( tx, query, getSession( tx, query ), desiredNumberOfPartitions );
+        final PartitionedScan<CURSOR> partitionedScan(KernelTransaction tx, QUERY query, int desiredNumberOfPartitions)
+                throws KernelException {
+            return partitionedScan(tx, query, getSession(tx, query), desiredNumberOfPartitions);
         }
 
-        final String name()
-        {
+        final String name() {
             return getClass().getSimpleName();
         }
     }
 
     abstract static class TokenIndex<CURSOR extends Cursor>
-            extends PartitionedScanFactory<TokenScanQuery,TokenReadSession,CURSOR>
-    {
+            extends PartitionedScanFactory<TokenScanQuery, TokenReadSession, CURSOR> {
         @Override
-        protected final TokenReadSession getSession( KernelTransaction tx, TokenScanQuery query )
-                throws KernelException
-        {
-            final var index = tx.schemaRead().indexGetForName( query.indexName() );
-            return tx.dataRead().tokenReadSession( index );
+        protected final TokenReadSession getSession(KernelTransaction tx, TokenScanQuery query) throws KernelException {
+            final var index = tx.schemaRead().indexGetForName(query.indexName());
+            return tx.dataRead().tokenReadSession(index);
         }
     }
 
-    static final class NodeLabelIndexScan extends TokenIndex<NodeLabelIndexCursor>
-    {
+    static final class NodeLabelIndexScan extends TokenIndex<NodeLabelIndexCursor> {
         public static final NodeLabelIndexScan FACTORY = new NodeLabelIndexScan();
 
-        private NodeLabelIndexScan()
-        {
-        }
+        private NodeLabelIndexScan() {}
 
         @Override
-        RelationshipTypeIndexScan getEntityTypeComplimentFactory()
-        {
+        RelationshipTypeIndexScan getEntityTypeComplimentFactory() {
             return RelationshipTypeIndexScan.FACTORY;
         }
 
         @Override
-        PartitionedScan<NodeLabelIndexCursor> partitionedScan( KernelTransaction tx, TokenScanQuery tokenScanQuery,
-                                                               TokenReadSession session, int desiredNumberOfPartitions )
-                throws KernelException
-        {
-            return tx.dataRead().nodeLabelScan( session, desiredNumberOfPartitions, CursorContext.NULL_CONTEXT, tokenScanQuery.get() );
+        PartitionedScan<NodeLabelIndexCursor> partitionedScan(
+                KernelTransaction tx,
+                TokenScanQuery tokenScanQuery,
+                TokenReadSession session,
+                int desiredNumberOfPartitions)
+                throws KernelException {
+            return tx.dataRead()
+                    .nodeLabelScan(
+                            session, desiredNumberOfPartitions, CursorContext.NULL_CONTEXT, tokenScanQuery.get());
         }
 
         @Override
-        CursorWithContext<NodeLabelIndexCursor> getCursor( CursorFactory cursors )
-        {
+        CursorWithContext<NodeLabelIndexCursor> getCursor(CursorFactory cursors) {
             return cursors::allocateNodeLabelIndexCursor;
         }
 
         @Override
-        long getEntityReference( NodeLabelIndexCursor cursor )
-        {
+        long getEntityReference(NodeLabelIndexCursor cursor) {
             return cursor.nodeReference();
         }
     }
 
-    static final class RelationshipTypeIndexScan extends TokenIndex<RelationshipTypeIndexCursor>
-    {
+    static final class RelationshipTypeIndexScan extends TokenIndex<RelationshipTypeIndexCursor> {
         public static final RelationshipTypeIndexScan FACTORY = new RelationshipTypeIndexScan();
 
-        private RelationshipTypeIndexScan()
-        {
-        }
+        private RelationshipTypeIndexScan() {}
 
         @Override
-        NodeLabelIndexScan getEntityTypeComplimentFactory()
-        {
+        NodeLabelIndexScan getEntityTypeComplimentFactory() {
             return NodeLabelIndexScan.FACTORY;
         }
 
         @Override
-        PartitionedScan<RelationshipTypeIndexCursor> partitionedScan( KernelTransaction tx, TokenScanQuery tokenScanQuery,
-                                                                      TokenReadSession session, int desiredNumberOfPartitions )
-                throws KernelException
-        {
-            return tx.dataRead().relationshipTypeScan( session, desiredNumberOfPartitions, CursorContext.NULL_CONTEXT, tokenScanQuery.get() );
+        PartitionedScan<RelationshipTypeIndexCursor> partitionedScan(
+                KernelTransaction tx,
+                TokenScanQuery tokenScanQuery,
+                TokenReadSession session,
+                int desiredNumberOfPartitions)
+                throws KernelException {
+            return tx.dataRead()
+                    .relationshipTypeScan(
+                            session, desiredNumberOfPartitions, CursorContext.NULL_CONTEXT, tokenScanQuery.get());
         }
 
         @Override
-        CursorWithContext<RelationshipTypeIndexCursor> getCursor( CursorFactory cursors )
-        {
+        CursorWithContext<RelationshipTypeIndexCursor> getCursor(CursorFactory cursors) {
             return cursors::allocateRelationshipTypeIndexCursor;
         }
 
         @Override
-        long getEntityReference( RelationshipTypeIndexCursor cursor )
-        {
+        long getEntityReference(RelationshipTypeIndexCursor cursor) {
             return cursor.relationshipReference();
         }
     }
 
     abstract static class PropertyIndex<QUERY extends Query<?>, CURSOR extends Cursor>
-            extends PartitionedScanFactory<QUERY,IndexReadSession,CURSOR>
-    {
-        abstract SchemaDescriptor getSchemaDescriptor( int tokenId, int... propKeyIds );
+            extends PartitionedScanFactory<QUERY, IndexReadSession, CURSOR> {
+        abstract SchemaDescriptor getSchemaDescriptor(int tokenId, int... propKeyIds);
 
         abstract Tags.Suppliers.Supplier<?> getTokenSupplier();
 
-        final Tags.Suppliers.PropertyKey getPropKeySupplier()
-        {
+        final Tags.Suppliers.PropertyKey getPropKeySupplier() {
             return PROPERTY_KEY;
         }
 
-        final String getIndexName( int tokenId, int... propKeyIds )
-        {
-            return String.format( "%s[%s[%d] {%s}]", name(), getTokenSupplier().name(), tokenId,
-                                  Arrays.stream( propKeyIds ).mapToObj( String::valueOf ).collect( Collectors.joining( "," ) ) );
+        final String getIndexName(int tokenId, int... propKeyIds) {
+            return String.format(
+                    "%s[%s[%d] {%s}]",
+                    name(),
+                    getTokenSupplier().name(),
+                    tokenId,
+                    Arrays.stream(propKeyIds).mapToObj(String::valueOf).collect(Collectors.joining(",")));
         }
 
         @Override
-        protected final IndexReadSession getSession( KernelTransaction tx, QUERY query )
-                throws KernelException
-        {
-            final var index = tx.schemaRead().indexGetForName( query.indexName() );
-            return tx.dataRead().indexReadSession( index );
+        protected final IndexReadSession getSession(KernelTransaction tx, QUERY query) throws KernelException {
+            final var index = tx.schemaRead().indexGetForName(query.indexName());
+            return tx.dataRead().indexReadSession(index);
         }
 
-        protected final IndexDescriptor getIndex( KernelTransaction tx, String name )
-        {
-            return tx.schemaRead().indexGetForName( name );
+        protected final IndexDescriptor getIndex(KernelTransaction tx, String name) {
+            return tx.schemaRead().indexGetForName(name);
         }
 
-        protected final IndexDescriptor getIndex( KernelTransaction tx, int tokenId, int... propKeyIds )
-        {
-            return getIndex(tx, getIndexName( tokenId, propKeyIds ) );
+        protected final IndexDescriptor getIndex(KernelTransaction tx, int tokenId, int... propKeyIds) {
+            return getIndex(tx, getIndexName(tokenId, propKeyIds));
         }
     }
 
-    static final class NodePropertyIndexSeek extends PropertyIndex<PropertyKeySeekQuery,NodeValueIndexCursor>
-    {
+    static final class NodePropertyIndexSeek extends PropertyIndex<PropertyKeySeekQuery, NodeValueIndexCursor> {
         public static final NodePropertyIndexSeek FACTORY = new NodePropertyIndexSeek();
 
-        private NodePropertyIndexSeek()
-        {
-        }
+        private NodePropertyIndexSeek() {}
 
         @Override
-        RelationshipPropertyIndexSeek getEntityTypeComplimentFactory()
-        {
+        RelationshipPropertyIndexSeek getEntityTypeComplimentFactory() {
             return RelationshipPropertyIndexSeek.FACTORY;
         }
 
         @Override
-        PartitionedScan<NodeValueIndexCursor> partitionedScan( KernelTransaction tx, PropertyKeySeekQuery propertyKeySeekQuery,
-                                                               IndexReadSession session, int desiredNumberOfPartitions )
-                throws KernelException
-        {
-            return tx.dataRead().nodeIndexSeek( session, desiredNumberOfPartitions, QueryContext.NULL_CONTEXT, propertyKeySeekQuery.get() );
+        PartitionedScan<NodeValueIndexCursor> partitionedScan(
+                KernelTransaction tx,
+                PropertyKeySeekQuery propertyKeySeekQuery,
+                IndexReadSession session,
+                int desiredNumberOfPartitions)
+                throws KernelException {
+            return tx.dataRead()
+                    .nodeIndexSeek(
+                            session, desiredNumberOfPartitions, QueryContext.NULL_CONTEXT, propertyKeySeekQuery.get());
         }
 
         @Override
-        CursorWithContext<NodeValueIndexCursor> getCursor( CursorFactory cursors )
-        {
-            return context -> cursors.allocateNodeValueIndexCursor( context, EmptyMemoryTracker.INSTANCE );
+        CursorWithContext<NodeValueIndexCursor> getCursor(CursorFactory cursors) {
+            return context -> cursors.allocateNodeValueIndexCursor(context, EmptyMemoryTracker.INSTANCE);
         }
 
         @Override
-        long getEntityReference( NodeValueIndexCursor cursor )
-        {
+        long getEntityReference(NodeValueIndexCursor cursor) {
             return cursor.nodeReference();
         }
 
         @Override
-        Tags.Suppliers.Label getTokenSupplier()
-        {
+        Tags.Suppliers.Label getTokenSupplier() {
             return LABEL;
         }
 
         @Override
-        SchemaDescriptor getSchemaDescriptor( int labelId, int... propKeyIds )
-        {
-            return SchemaDescriptors.forLabel( labelId, propKeyIds );
+        SchemaDescriptor getSchemaDescriptor(int labelId, int... propKeyIds) {
+            return SchemaDescriptors.forLabel(labelId, propKeyIds);
         }
     }
 
-    static final class NodePropertyIndexScan extends PropertyIndex<PropertyKeyScanQuery,NodeValueIndexCursor>
-    {
+    static final class NodePropertyIndexScan extends PropertyIndex<PropertyKeyScanQuery, NodeValueIndexCursor> {
         public static final NodePropertyIndexScan FACTORY = new NodePropertyIndexScan();
 
-        private NodePropertyIndexScan()
-        {
-        }
+        private NodePropertyIndexScan() {}
 
         @Override
-        RelationshipPropertyIndexScan getEntityTypeComplimentFactory()
-        {
+        RelationshipPropertyIndexScan getEntityTypeComplimentFactory() {
             return RelationshipPropertyIndexScan.FACTORY;
         }
 
         @Override
-        PartitionedScan<NodeValueIndexCursor> partitionedScan( KernelTransaction tx, PropertyKeyScanQuery propertyKeyScanQuery,
-                                                               IndexReadSession session, int desiredNumberOfPartitions )
-                throws KernelException
-        {
-            return tx.dataRead().nodeIndexScan( session, desiredNumberOfPartitions, QueryContext.NULL_CONTEXT );
+        PartitionedScan<NodeValueIndexCursor> partitionedScan(
+                KernelTransaction tx,
+                PropertyKeyScanQuery propertyKeyScanQuery,
+                IndexReadSession session,
+                int desiredNumberOfPartitions)
+                throws KernelException {
+            return tx.dataRead().nodeIndexScan(session, desiredNumberOfPartitions, QueryContext.NULL_CONTEXT);
         }
 
         @Override
-        CursorWithContext<NodeValueIndexCursor> getCursor( CursorFactory cursors )
-        {
-            return context -> cursors.allocateNodeValueIndexCursor( context, EmptyMemoryTracker.INSTANCE );
+        CursorWithContext<NodeValueIndexCursor> getCursor(CursorFactory cursors) {
+            return context -> cursors.allocateNodeValueIndexCursor(context, EmptyMemoryTracker.INSTANCE);
         }
 
         @Override
-        long getEntityReference( NodeValueIndexCursor cursor )
-        {
+        long getEntityReference(NodeValueIndexCursor cursor) {
             return cursor.nodeReference();
         }
 
         @Override
-        Tags.Suppliers.Label getTokenSupplier()
-        {
+        Tags.Suppliers.Label getTokenSupplier() {
             return LABEL;
         }
 
         @Override
-        SchemaDescriptor getSchemaDescriptor( int labelId, int... propKeyIds )
-        {
-            return SchemaDescriptors.forLabel( labelId, propKeyIds );
+        SchemaDescriptor getSchemaDescriptor(int labelId, int... propKeyIds) {
+            return SchemaDescriptors.forLabel(labelId, propKeyIds);
         }
     }
 
-    static final class RelationshipPropertyIndexSeek extends PropertyIndex<PropertyKeySeekQuery,RelationshipValueIndexCursor>
-    {
+    static final class RelationshipPropertyIndexSeek
+            extends PropertyIndex<PropertyKeySeekQuery, RelationshipValueIndexCursor> {
         public static final RelationshipPropertyIndexSeek FACTORY = new RelationshipPropertyIndexSeek();
 
-        private RelationshipPropertyIndexSeek()
-        {
-        }
+        private RelationshipPropertyIndexSeek() {}
 
         @Override
-        NodePropertyIndexSeek getEntityTypeComplimentFactory()
-        {
+        NodePropertyIndexSeek getEntityTypeComplimentFactory() {
             return NodePropertyIndexSeek.FACTORY;
         }
 
         @Override
-        PartitionedScan<RelationshipValueIndexCursor> partitionedScan( KernelTransaction tx, PropertyKeySeekQuery propertyKeySeekQuery,
-                                                                       IndexReadSession session, int desiredNumberOfPartitions )
-                throws KernelException
-        {
-            return tx.dataRead().relationshipIndexSeek( session, desiredNumberOfPartitions, QueryContext.NULL_CONTEXT, propertyKeySeekQuery.get() );
+        PartitionedScan<RelationshipValueIndexCursor> partitionedScan(
+                KernelTransaction tx,
+                PropertyKeySeekQuery propertyKeySeekQuery,
+                IndexReadSession session,
+                int desiredNumberOfPartitions)
+                throws KernelException {
+            return tx.dataRead()
+                    .relationshipIndexSeek(
+                            session, desiredNumberOfPartitions, QueryContext.NULL_CONTEXT, propertyKeySeekQuery.get());
         }
 
         @Override
-        CursorWithContext<RelationshipValueIndexCursor> getCursor( CursorFactory cursors )
-        {
-            return context -> cursors.allocateRelationshipValueIndexCursor( context, EmptyMemoryTracker.INSTANCE );
+        CursorWithContext<RelationshipValueIndexCursor> getCursor(CursorFactory cursors) {
+            return context -> cursors.allocateRelationshipValueIndexCursor(context, EmptyMemoryTracker.INSTANCE);
         }
 
         @Override
-        long getEntityReference( RelationshipValueIndexCursor cursor )
-        {
+        long getEntityReference(RelationshipValueIndexCursor cursor) {
             return cursor.relationshipReference();
         }
 
         @Override
-        Tags.Suppliers.RelationshipType getTokenSupplier()
-        {
+        Tags.Suppliers.RelationshipType getTokenSupplier() {
             return RELATIONSHIP_TYPE;
         }
 
         @Override
-        SchemaDescriptor getSchemaDescriptor( int relTypeId, int... propKeyIds )
-        {
-            return SchemaDescriptors.forRelType( relTypeId, propKeyIds );
+        SchemaDescriptor getSchemaDescriptor(int relTypeId, int... propKeyIds) {
+            return SchemaDescriptors.forRelType(relTypeId, propKeyIds);
         }
     }
 
-    static final class RelationshipPropertyIndexScan extends PropertyIndex<PropertyKeyScanQuery,RelationshipValueIndexCursor>
-    {
+    static final class RelationshipPropertyIndexScan
+            extends PropertyIndex<PropertyKeyScanQuery, RelationshipValueIndexCursor> {
         public static final RelationshipPropertyIndexScan FACTORY = new RelationshipPropertyIndexScan();
 
-        private RelationshipPropertyIndexScan()
-        {
-        }
+        private RelationshipPropertyIndexScan() {}
 
         @Override
-        NodePropertyIndexScan getEntityTypeComplimentFactory()
-        {
+        NodePropertyIndexScan getEntityTypeComplimentFactory() {
             return NodePropertyIndexScan.FACTORY;
         }
 
         @Override
-        PartitionedScan<RelationshipValueIndexCursor> partitionedScan( KernelTransaction tx, PropertyKeyScanQuery propertyKeyScanQuery,
-                                                                       IndexReadSession session, int desiredNumberOfPartitions )
-                throws KernelException
-        {
-            return tx.dataRead().relationshipIndexScan( session, desiredNumberOfPartitions, QueryContext.NULL_CONTEXT );
+        PartitionedScan<RelationshipValueIndexCursor> partitionedScan(
+                KernelTransaction tx,
+                PropertyKeyScanQuery propertyKeyScanQuery,
+                IndexReadSession session,
+                int desiredNumberOfPartitions)
+                throws KernelException {
+            return tx.dataRead().relationshipIndexScan(session, desiredNumberOfPartitions, QueryContext.NULL_CONTEXT);
         }
 
         @Override
-        CursorWithContext<RelationshipValueIndexCursor> getCursor( CursorFactory cursors )
-        {
-            return context -> cursors.allocateRelationshipValueIndexCursor( context, EmptyMemoryTracker.INSTANCE );
+        CursorWithContext<RelationshipValueIndexCursor> getCursor(CursorFactory cursors) {
+            return context -> cursors.allocateRelationshipValueIndexCursor(context, EmptyMemoryTracker.INSTANCE);
         }
 
         @Override
-        long getEntityReference( RelationshipValueIndexCursor cursor )
-        {
+        long getEntityReference(RelationshipValueIndexCursor cursor) {
             return cursor.relationshipReference();
         }
 
         @Override
-        Tags.Suppliers.RelationshipType getTokenSupplier()
-        {
+        Tags.Suppliers.RelationshipType getTokenSupplier() {
             return RELATIONSHIP_TYPE;
         }
 
         @Override
-        SchemaDescriptor getSchemaDescriptor( int relTypeId, int... propKeyIds )
-        {
-            return SchemaDescriptors.forRelType( relTypeId, propKeyIds );
+        SchemaDescriptor getSchemaDescriptor(int relTypeId, int... propKeyIds) {
+            return SchemaDescriptors.forRelType(relTypeId, propKeyIds);
         }
     }
 
     @FunctionalInterface
-    interface CursorWithContext<CURSOR extends Cursor>
-    {
-        CURSOR with( CursorContext cursorContext );
+    interface CursorWithContext<CURSOR extends Cursor> {
+        CURSOR with(CursorContext cursorContext);
     }
 }

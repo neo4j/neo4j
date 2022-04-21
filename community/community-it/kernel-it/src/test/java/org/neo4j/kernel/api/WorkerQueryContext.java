@@ -27,50 +27,42 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
-public class WorkerQueryContext implements QueryContext
-{
+public class WorkerQueryContext implements QueryContext {
     private final CursorContext cursorContext;
     private final QueryContext delegate;
 
-    public WorkerQueryContext( QueryContext delegate, CursorContext cursorContext )
-    {
+    public WorkerQueryContext(QueryContext delegate, CursorContext cursorContext) {
         this.delegate = delegate;
         this.cursorContext = cursorContext;
     }
 
     @Override
-    public Read getRead()
-    {
+    public Read getRead() {
         return delegate.getRead();
     }
 
     @Override
-    public CursorFactory cursors()
-    {
+    public CursorFactory cursors() {
         return delegate.cursors();
     }
 
     @Override
-    public ReadableTransactionState getTransactionStateOrNull()
-    {
+    public ReadableTransactionState getTransactionStateOrNull() {
         return delegate.getTransactionStateOrNull();
     }
 
     @Override
-    public CursorContext cursorContext()
-    {
+    public CursorContext cursorContext() {
         return cursorContext;
     }
 
     @Override
-    public MemoryTracker memoryTracker()
-    {
+    public MemoryTracker memoryTracker() {
         return delegate.memoryTracker();
     }
 
     @Override
-    public IndexMonitor monitor()
-    {
+    public IndexMonitor monitor() {
         return delegate.monitor();
     }
 }

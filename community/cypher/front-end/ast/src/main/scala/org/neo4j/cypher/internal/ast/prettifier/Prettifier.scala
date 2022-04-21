@@ -213,7 +213,7 @@ case class Prettifier(
     case q: Query                 => base.query(q)
     case c: SchemaCommand         => asString(c)
     case c: AdministrationCommand => asString(c)
-    case _ => throw new IllegalStateException(s"Unknown statement: $statement")
+    case _                        => throw new IllegalStateException(s"Unknown statement: $statement")
   }
 
   def asString(hint: Hint): String = hint match {
@@ -221,20 +221,23 @@ case class Prettifier(
     case _                => hint.toString
   }
 
-
   def backtick(s: String): String = expr.backtick(s)
 
   def optionsToString(options: Map[String, Expression]): String =
-    if (options.nonEmpty) s" OPTIONS ${options.map({ case (s, e) => s"${backtick(s)}: ${expr(e)}" }).mkString("{", ", ", "}")}" else " OPTIONS {}"
+    if (options.nonEmpty)
+      s" OPTIONS ${options.map({ case (s, e) => s"${backtick(s)}: ${expr(e)}" }).mkString("{", ", ", "}")}"
+    else " OPTIONS {}"
 
   def asString(command: SchemaCommand): String = {
-    def propertiesToString(properties: Seq[Property]): String = properties.map(propertyToString).mkString("(", ", ", ")")
-    def fulltextPropertiesToString(properties: Seq[Property]): String = properties.map(propertyToString).mkString("[", ", ", "]")
+    def propertiesToString(properties: Seq[Property]): String =
+      properties.map(propertyToString).mkString("(", ", ", ")")
+    def fulltextPropertiesToString(properties: Seq[Property]): String =
+      properties.map(propertyToString).mkString("[", ", ", "]")
     def propertyToString(property: Property): String = s"${expr(property.map)}.${backtick(property.propertyKey.name)}"
     def propertyToStringExistenceConstraint(property: Property, constraintVersion: ConstraintVersion): String = {
       constraintVersion match {
         case ConstraintVersion0 => s"exists(${propertyToString(property)})"
-        case _ => s"(${propertyToString(property)}) IS NOT NULL"
+        case _                  => s"(${propertyToString(property)}) IS NOT NULL"
       }
     }
 
@@ -251,21 +254,40 @@ case class Prettifier(
     val useString = asString(command.useGraph)
     val commandString = command match {
 
-      case CreateRangeNodeIndex(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, fromDefault, _) =>
+      case CreateRangeNodeIndex(
+          Variable(variable),
+          LabelName(label),
+          properties,
+          name,
+          ifExistsDo,
+          options,
+          fromDefault,
+          _
+        ) =>
         val schemaType = if (fromDefault) "INDEX" else "RANGE INDEX"
         val startOfCommand = getStartOfCommand(name, ifExistsDo, schemaType)
         s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) ON ${propertiesToString(properties)}${asString(options)}"
 
-      case CreateRangeRelationshipIndex(Variable(variable), RelTypeName(relType), properties, name, ifExistsDo, options, fromDefault, _) =>
+      case CreateRangeRelationshipIndex(
+          Variable(variable),
+          RelTypeName(relType),
+          properties,
+          name,
+          ifExistsDo,
+          options,
+          fromDefault,
+          _
+        ) =>
         val schemaType = if (fromDefault) "INDEX" else "RANGE INDEX"
         val startOfCommand = getStartOfCommand(name, ifExistsDo, schemaType)
         s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() ON ${propertiesToString(properties)}${asString(options)}"
 
       case CreateLookupIndex(Variable(variable), isNodeIndex, function, name, ifExistsDo, options, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "LOOKUP INDEX")
-        val pattern = if(isNodeIndex) s"(${backtick(variable)})" else s"()-[${backtick(variable)}]-()"
+        val pattern = if (isNodeIndex) s"(${backtick(variable)})" else s"()-[${backtick(variable)}]-()"
         // can't use `expr(functions)` since that might add extra () we can't parse: labels((n))
-        val functionString = function.name + "(" + function.args.map(e => backtick(e.asCanonicalStringVal)).mkString(", ") + ")"
+        val functionString =
+          function.name + "(" + function.args.map(e => backtick(e.asCanonicalStringVal)).mkString(", ") + ")"
         s"${startOfCommand}FOR $pattern ON EACH $functionString${asString(options)}"
 
       case CreateFulltextNodeIndex(Variable(variable), labels, properties, name, ifExistsDo, options, _) =>
@@ -282,7 +304,15 @@ case class Prettifier(
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "TEXT INDEX")
         s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) ON ${propertiesToString(properties)}${asString(options)}"
 
-      case CreateTextRelationshipIndex(Variable(variable), RelTypeName(relType), properties, name, ifExistsDo, options, _) =>
+      case CreateTextRelationshipIndex(
+          Variable(variable),
+          RelTypeName(relType),
+          properties,
+          name,
+          ifExistsDo,
+          options,
+          _
+        ) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "TEXT INDEX")
         s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() ON ${propertiesToString(properties)}${asString(options)}"
 
@@ -290,7 +320,15 @@ case class Prettifier(
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "POINT INDEX")
         s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) ON ${propertiesToString(properties)}${asString(options)}"
 
-      case CreatePointRelationshipIndex(Variable(variable), RelTypeName(relType), properties, name, ifExistsDo, options, _) =>
+      case CreatePointRelationshipIndex(
+          Variable(variable),
+          RelTypeName(relType),
+          properties,
+          name,
+          ifExistsDo,
+          options,
+          _
+        ) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "POINT INDEX")
         s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() ON ${propertiesToString(properties)}${asString(options)}"
 
@@ -298,19 +336,49 @@ case class Prettifier(
         val ifExistsString = if (ifExists) " IF EXISTS" else ""
         s"DROP INDEX ${backtick(name)}$ifExistsString"
 
-      case CreateNodeKeyConstraint(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, containsOn, constraintVersion, _) =>
+      case CreateNodeKeyConstraint(
+          Variable(variable),
+          LabelName(label),
+          properties,
+          name,
+          ifExistsDo,
+          options,
+          containsOn,
+          constraintVersion,
+          _
+        ) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
         val forOrOn = if (containsOn) "ON" else "FOR"
         val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
         s"$startOfCommand$forOrOn (${backtick(variable)}:${backtick(label)}) $assertOrRequire ${propertiesToString(properties)} IS NODE KEY${asString(options)}"
 
-      case CreateUniquePropertyConstraint(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, containsOn, constraintVersion, _) =>
+      case CreateUniquePropertyConstraint(
+          Variable(variable),
+          LabelName(label),
+          properties,
+          name,
+          ifExistsDo,
+          options,
+          containsOn,
+          constraintVersion,
+          _
+        ) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
         val forOrOn = if (containsOn) "ON" else "FOR"
         val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
         s"$startOfCommand$forOrOn (${backtick(variable)}:${backtick(label)}) $assertOrRequire ${propertiesToString(properties)} IS UNIQUE${asString(options)}"
 
-      case CreateNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, name, ifExistsDo, options, containsOn, constraintVersion, _) =>
+      case CreateNodePropertyExistenceConstraint(
+          Variable(variable),
+          LabelName(label),
+          property,
+          name,
+          ifExistsDo,
+          options,
+          containsOn,
+          constraintVersion,
+          _
+        ) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
         val propertyString = propertyToStringExistenceConstraint(property, constraintVersion)
         val optionsString = asString(options)
@@ -318,7 +386,17 @@ case class Prettifier(
         val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
         s"$startOfCommand$forOrOn (${backtick(variable)}:${backtick(label)}) $assertOrRequire $propertyString$optionsString"
 
-      case CreateRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, name, ifExistsDo, options, containsOn, constraintVersion, _) =>
+      case CreateRelationshipPropertyExistenceConstraint(
+          Variable(variable),
+          RelTypeName(relType),
+          property,
+          name,
+          ifExistsDo,
+          options,
+          containsOn,
+          constraintVersion,
+          _
+        ) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
         val propertyString = propertyToStringExistenceConstraint(property, constraintVersion)
         val optionsString = asString(options)
@@ -335,21 +413,21 @@ case class Prettifier(
     useString + commandString
   }
 
-  def asString(adminCommand: AdministrationCommand): String =  {
+  def asString(adminCommand: AdministrationCommand): String = {
     val useString = asString(adminCommand.useGraph)
 
     def showClausesAsString(yieldOrWhere: YieldOrWhere): (String, String) = {
       val ind: IndentingQueryPrettifier = base.indented()
       yieldOrWhere match {
-        case Some(Left((y,r))) => (NL + ind.asString(y), r.map(ind.asString).map(NL + _).getOrElse(""))
-        case Some(Right(w)) => (NL + ind.asString(w), "")
-        case None => ("", "")
+        case Some(Left((y, r))) => (NL + ind.asString(y), r.map(ind.asString).map(NL + _).getOrElse(""))
+        case Some(Right(w))     => (NL + ind.asString(w), "")
+        case None               => ("", "")
       }
     }
 
     def getAccessString(access: Access): String = {
       val accessValue = access match {
-        case ReadOnlyAccess => "READ ONLY"
+        case ReadOnlyAccess  => "READ ONLY"
         case ReadWriteAccess => "READ WRITE"
       }
       "SET ACCESS " + accessValue
@@ -359,11 +437,11 @@ case class Prettifier(
 
       // User commands
 
-      case x @ ShowUsers(yields,_) =>
+      case x @ ShowUsers(yields, _) =>
         val (y: String, r: String) = showClausesAsString(yields)
         s"${x.name}$y$r"
 
-      case x @ ShowCurrentUser(yields,_) =>
+      case x @ ShowCurrentUser(yields, _) =>
         val (y: String, r: String) = showClausesAsString(yields)
         s"${x.name}$y$r"
 
@@ -371,15 +449,19 @@ case class Prettifier(
         val userNameString = Prettifier.escapeName(userName)
         val ifNotExists = ifExistsDo match {
           case IfExistsDoNothing | IfExistsInvalidSyntax => " IF NOT EXISTS"
-          case _                    => ""
+          case _                                         => ""
         }
-        val setPasswordString = if(isEncryptedPassword) "SET ENCRYPTED PASSWORD" else "SET PASSWORD"
+        val setPasswordString = if (isEncryptedPassword) "SET ENCRYPTED PASSWORD" else "SET PASSWORD"
         val password = expr.escapePassword(initialPassword)
-        val passwordString = s"$setPasswordString $password CHANGE ${if (userOptions.requirePasswordChange.getOrElse(true)) "" else "NOT "}REQUIRED"
-        val statusString = if (userOptions.suspended.isDefined) s" SET STATUS ${if (userOptions.suspended.get) "SUSPENDED" else "ACTIVE"}" else ""
+        val passwordString =
+          s"$setPasswordString $password CHANGE ${if (userOptions.requirePasswordChange.getOrElse(true)) "" else "NOT "}REQUIRED"
+        val statusString =
+          if (userOptions.suspended.isDefined)
+            s" SET STATUS ${if (userOptions.suspended.get) "SUSPENDED" else "ACTIVE"}"
+          else ""
         val homeDatabaseString = userOptions.homeDatabase.map {
           case SetHomeDatabaseAction(name) => s" SET HOME DATABASE ${Prettifier.escapeName(name)}"
-          case _ => None
+          case _                           => None
         }.getOrElse("")
         s"${x.name} $userNameString$ifNotExists $passwordString$statusString$homeDatabaseString"
 
@@ -394,16 +476,20 @@ case class Prettifier(
         val userNameString = Prettifier.escapeName(userName)
         val ifExistsString = if (ifExists) " IF EXISTS" else ""
         val passwordString = initialPassword.map(" " + expr.escapePassword(_)).getOrElse("")
-        val passwordModeString = if (userOptions.requirePasswordChange.isDefined)
-          s" CHANGE ${if (!userOptions.requirePasswordChange.get) "NOT " else ""}REQUIRED"
-        else
-          ""
-        val setPasswordString = if(isEncryptedPassword.getOrElse(false)) "SET ENCRYPTED PASSWORD" else "SET PASSWORD"
+        val passwordModeString =
+          if (userOptions.requirePasswordChange.isDefined)
+            s" CHANGE ${if (!userOptions.requirePasswordChange.get) "NOT " else ""}REQUIRED"
+          else
+            ""
+        val setPasswordString = if (isEncryptedPassword.getOrElse(false)) "SET ENCRYPTED PASSWORD" else "SET PASSWORD"
         val passwordPrefix = if (passwordString.nonEmpty || passwordModeString.nonEmpty) s" $setPasswordString" else ""
-        val statusString = if (userOptions.suspended.isDefined) s" SET STATUS ${if (userOptions.suspended.get) "SUSPENDED" else "ACTIVE"}" else ""
+        val statusString =
+          if (userOptions.suspended.isDefined)
+            s" SET STATUS ${if (userOptions.suspended.get) "SUSPENDED" else "ACTIVE"}"
+          else ""
         val homeDatabaseString = userOptions.homeDatabase.map {
           case SetHomeDatabaseAction(name) => s" SET HOME DATABASE ${Prettifier.escapeName(name)}"
-          case RemoveHomeDatabaseAction => " REMOVE HOME DATABASE"
+          case RemoveHomeDatabaseAction    => " REMOVE HOME DATABASE"
         }.getOrElse("")
         s"${x.name} $userNameString$ifExistsString$passwordPrefix$passwordString$passwordModeString$statusString$homeDatabaseString"
 
@@ -412,20 +498,22 @@ case class Prettifier(
 
       // Role commands
 
-      case x @ ShowRoles(withUsers, _, yields,_) =>
+      case x @ ShowRoles(withUsers, _, yields, _) =>
         val (y: String, r: String) = showClausesAsString(yields)
         s"${x.name}${if (withUsers) " WITH USERS" else ""}$y$r"
 
       case x @ CreateRole(roleName, None, ifExistsDo) =>
         ifExistsDo match {
-          case IfExistsDoNothing | IfExistsInvalidSyntax => s"${x.name} ${Prettifier.escapeName(roleName)} IF NOT EXISTS"
-          case _                    => s"${x.name} ${Prettifier.escapeName(roleName)}"
+          case IfExistsDoNothing | IfExistsInvalidSyntax =>
+            s"${x.name} ${Prettifier.escapeName(roleName)} IF NOT EXISTS"
+          case _ => s"${x.name} ${Prettifier.escapeName(roleName)}"
         }
 
       case x @ CreateRole(roleName, Some(fromRole), ifExistsDo) =>
         ifExistsDo match {
-          case IfExistsDoNothing | IfExistsInvalidSyntax => s"${x.name} ${Prettifier.escapeName(roleName)} IF NOT EXISTS AS COPY OF ${Prettifier.escapeName(fromRole)}"
-          case _                    => s"${x.name} ${Prettifier.escapeName(roleName)} AS COPY OF ${Prettifier.escapeName(fromRole)}"
+          case IfExistsDoNothing | IfExistsInvalidSyntax =>
+            s"${x.name} ${Prettifier.escapeName(roleName)} IF NOT EXISTS AS COPY OF ${Prettifier.escapeName(fromRole)}"
+          case _ => s"${x.name} ${Prettifier.escapeName(roleName)} AS COPY OF ${Prettifier.escapeName(fromRole)}"
         }
 
       case x @ RenameRole(fromRoleName, toRoleName, ifExists) =>
@@ -497,28 +585,32 @@ case class Prettifier(
         val (y: String, r: String) = showClausesAsString(yields)
         val optionalName = scope match {
           case NamedDatabaseScope(dbName) => s" ${Prettifier.escapeName(dbName)}"
-          case _ => ""
+          case _                          => ""
         }
         s"${x.name}$optionalName$y$r"
 
       case x @ CreateDatabase(dbName, ifExistsDo, options, waitUntilComplete) =>
         val formattedOptions = asString(options)
         ifExistsDo match {
-          case IfExistsDoNothing | IfExistsInvalidSyntax => s"${x.name} ${Prettifier.escapeName(dbName)} IF NOT EXISTS$formattedOptions${waitUntilComplete.name}"
-          case _                                               => s"${x.name} ${Prettifier.escapeName(dbName)}$formattedOptions${waitUntilComplete.name}"
+          case IfExistsDoNothing | IfExistsInvalidSyntax =>
+            s"${x.name} ${Prettifier.escapeName(dbName)} IF NOT EXISTS$formattedOptions${waitUntilComplete.name}"
+          case _ => s"${x.name} ${Prettifier.escapeName(dbName)}$formattedOptions${waitUntilComplete.name}"
         }
 
       case x @ DropDatabase(dbName, ifExists, additionalAction, waitUntilComplete) =>
         (ifExists, additionalAction) match {
-          case (false, DestroyData) => s"${x.name} ${Prettifier.escapeName(dbName)} DESTROY DATA${waitUntilComplete.name}"
-          case (true, DestroyData) => s"${x.name} ${Prettifier.escapeName(dbName)} IF EXISTS DESTROY DATA${waitUntilComplete.name}"
+          case (false, DestroyData) =>
+            s"${x.name} ${Prettifier.escapeName(dbName)} DESTROY DATA${waitUntilComplete.name}"
+          case (true, DestroyData) =>
+            s"${x.name} ${Prettifier.escapeName(dbName)} IF EXISTS DESTROY DATA${waitUntilComplete.name}"
           case (false, DumpData) => s"${x.name} ${Prettifier.escapeName(dbName)} DUMP DATA${waitUntilComplete.name}"
-          case (true, DumpData) => s"${x.name} ${Prettifier.escapeName(dbName)} IF EXISTS DUMP DATA${waitUntilComplete.name}"
+          case (true, DumpData) =>
+            s"${x.name} ${Prettifier.escapeName(dbName)} IF EXISTS DUMP DATA${waitUntilComplete.name}"
         }
 
       case x @ AlterDatabase(dbName, ifExists, access) =>
         val accessString = getAccessString(access)
-        val maybeIfExists = if(ifExists) " IF EXISTS" else ""
+        val maybeIfExists = if (ifExists) " IF EXISTS" else ""
         s"${x.name} ${Prettifier.escapeName(dbName)}$maybeIfExists $accessString"
 
       case x @ StartDatabase(dbName, waitUntilComplete) =>
@@ -529,8 +621,9 @@ case class Prettifier(
 
       case x @ CreateDatabaseAlias(aliasName, targetName, ifExistsDo) =>
         ifExistsDo match {
-          case IfExistsDoNothing | IfExistsInvalidSyntax => s"${x.name} ${Prettifier.escapeName(aliasName)} IF NOT EXISTS FOR DATABASE ${Prettifier.escapeName(targetName)}"
-          case _                                         => s"${x.name} ${Prettifier.escapeName(aliasName)} FOR DATABASE ${Prettifier.escapeName(targetName)}"
+          case IfExistsDoNothing | IfExistsInvalidSyntax =>
+            s"${x.name} ${Prettifier.escapeName(aliasName)} IF NOT EXISTS FOR DATABASE ${Prettifier.escapeName(targetName)}"
+          case _ => s"${x.name} ${Prettifier.escapeName(aliasName)} FOR DATABASE ${Prettifier.escapeName(targetName)}"
         }
 
       case x @ DropDatabaseAlias(aliasName, ifExists) =>
@@ -538,7 +631,8 @@ case class Prettifier(
         else s"${x.name} ${Prettifier.escapeName(aliasName)} FOR DATABASE"
 
       case x @ AlterDatabaseAlias(aliasName, targetName, ifExists) =>
-        if (ifExists) s"${x.name} ${Prettifier.escapeName(aliasName)} IF EXISTS SET DATABASE TARGET ${Prettifier.escapeName(targetName)}"
+        if (ifExists)
+          s"${x.name} ${Prettifier.escapeName(aliasName)} IF EXISTS SET DATABASE TARGET ${Prettifier.escapeName(targetName)}"
         else s"${x.name} ${Prettifier.escapeName(aliasName)} SET DATABASE TARGET ${Prettifier.escapeName(targetName)}"
     }
     useString + commandString
@@ -549,9 +643,9 @@ case class Prettifier(
   }
 
   private def asString(options: Options) = options match {
-    case NoOptions => ""
+    case NoOptions               => ""
     case OptionsParam(parameter) => s" OPTIONS ${expr(parameter)}"
-    case OptionsMap(map) => optionsToString(map)
+    case OptionsMap(map)         => optionsToString(map)
   }
 
   case class IndentingQueryPrettifier(indentLevel: Int = 0) extends Prettifier.QueryPrettifier {
@@ -575,7 +669,7 @@ case class Prettifier(
             case _: UnionAll      => s"${INDENT}UNION ALL"
             case _: UnionDistinct => s"${INDENT}UNION"
 
-            case u: ProjectingUnionAll      =>
+            case u: ProjectingUnionAll =>
               s"${INDENT}UNION ALL mappings: (${u.unionMappings.map(asString).mkString(", ")})"
             case u: ProjectingUnionDistinct =>
               s"${INDENT}UNION mappings: (${u.unionMappings.map(asString).mkString(", ")})"
@@ -590,27 +684,27 @@ case class Prettifier(
     def asString(clause: Clause): String = dispatch(clause)
 
     def dispatch(clause: Clause): String = clause match {
-      case u: UseGraph       => asString(u)
-      case e: Return         => asString(e)
-      case m: Match          => asString(m)
-      case c: SubqueryCall   => asString(c)
-      case w: With           => asString(w)
-      case y: Yield          => asString(y)
-      case c: Create         => asString(c)
-      case u: Unwind         => asString(u)
-      case u: UnresolvedCall => asString(u)
+      case u: UseGraph                    => asString(u)
+      case e: Return                      => asString(e)
+      case m: Match                       => asString(m)
+      case c: SubqueryCall                => asString(c)
+      case w: With                        => asString(w)
+      case y: Yield                       => asString(y)
+      case c: Create                      => asString(c)
+      case u: Unwind                      => asString(u)
+      case u: UnresolvedCall              => asString(u)
       case s: ShowIndexesClause           => asString(s)
       case s: ShowConstraintsClause       => asString(s)
       case s: ShowProceduresClause        => asString(s)
       case s: ShowFunctionsClause         => asString(s)
       case s: ShowTransactionsClause      => asString(s)
       case t: TerminateTransactionsClause => asString(t)
-      case s: SetClause => asString(s)
-      case r: Remove    => asString(r)
-      case d: Delete    => asString(d)
-      case m: Merge     => asString(m)
-      case l: LoadCSV   => asString(l)
-      case f: Foreach   => asString(f)
+      case s: SetClause                   => asString(s)
+      case r: Remove                      => asString(r)
+      case d: Delete                      => asString(d)
+      case m: Merge                       => asString(m)
+      case l: LoadCSV                     => asString(l)
+      case f: Foreach                     => asString(f)
       case c =>
         val ext = extension.asString(this)
         ext.applyOrElse(c, fallback)
@@ -649,25 +743,31 @@ case class Prettifier(
     def asString(m: UsingHint): String = {
       m match {
         case UsingIndexHint(v, l, ps, s, t) => Seq(
-          s"${INDENT}USING ",
-          t match {
-            case UsingAnyIndexType   => "INDEX "
-            case UsingTextIndexType  => "TEXT INDEX "
-            case UsingRangeIndexType  => "RANGE INDEX "
-            case UsingPointIndexType  => "POINT INDEX "
-          },
-          if (s == SeekOnly) "SEEK " else "",
-          expr(v), ":", expr(l),
-          ps.map(expr(_)).mkString("(", ",", ")")
-        ).mkString
+            s"${INDENT}USING ",
+            t match {
+              case UsingAnyIndexType   => "INDEX "
+              case UsingTextIndexType  => "TEXT INDEX "
+              case UsingRangeIndexType => "RANGE INDEX "
+              case UsingPointIndexType => "POINT INDEX "
+            },
+            if (s == SeekOnly) "SEEK " else "",
+            expr(v),
+            ":",
+            expr(l),
+            ps.map(expr(_)).mkString("(", ",", ")")
+          ).mkString
 
         case UsingScanHint(v, l) => Seq(
-          s"${INDENT}USING SCAN ", expr(v), ":", expr(l)
-        ).mkString
+            s"${INDENT}USING SCAN ",
+            expr(v),
+            ":",
+            expr(l)
+          ).mkString
 
         case UsingJoinHint(vs) => Seq(
-          s"${INDENT}USING JOIN ON ", vs.map(expr(_)).toIterable.mkString(", ")
-        ).mkString
+            s"${INDENT}USING JOIN ON ",
+            vs.map(expr(_)).toIterable.mkString(", ")
+          ).mkString
       }
     }
 
@@ -754,8 +854,9 @@ case class Prettifier(
       })
       val arguments = args.map(list => list.map(expr(_)).mkString("(", ", ", ")")).getOrElse("")
       val ind = indented()
-      val yields = if (u.yieldAll) asNewLine(s"${indented().INDENT}YIELD *")
-      else u.declaredResult.filter(_.items.nonEmpty).map(ind.asString).map(asNewLine).getOrElse("")
+      val yields =
+        if (u.yieldAll) asNewLine(s"${indented().INDENT}YIELD *")
+        else u.declaredResult.filter(_.items.nonEmpty).map(ind.asString).map(asNewLine).getOrElse("")
       s"${INDENT}CALL $prefix${expr(u.procedureName)}$arguments$yields"
     }
 
@@ -814,15 +915,16 @@ case class Prettifier(
     }
 
     private def idsAsString(ids: Either[List[String], Parameter]): String = ids match {
-      case Left(s) => if (s.nonEmpty) s.map(id => expr.quote(id)).mkString(" ", ", ", "") else ""
+      case Left(s)  => if (s.nonEmpty) s.map(id => expr.quote(id)).mkString(" ", ", ", "") else ""
       case Right(p) => s" $$${ExpressionStringifier.backtick(p.name)}"
     }
 
     def asString(s: SetClause): String = {
       val items = s.items.map {
-        case SetPropertyItem(prop, exp)                       => s"${expr(prop)} = ${expr(exp)}"
-        case SetPropertyItems(entity, items)                  => items.map(i =>  s"${expr(entity)}.${i._1.name} = ${expr(i._2)}").mkString(", ")
-        case SetLabelItem(variable, labels)                   => expr(variable) + labels.map(l => s":${expr(l)}").mkString("")
+        case SetPropertyItem(prop, exp) => s"${expr(prop)} = ${expr(exp)}"
+        case SetPropertyItems(entity, items) =>
+          items.map(i => s"${expr(entity)}.${i._1.name} = ${expr(i._2)}").mkString(", ")
+        case SetLabelItem(variable, labels) => expr(variable) + labels.map(l => s":${expr(l)}").mkString("")
         case SetIncludingPropertiesFromMapItem(variable, exp) => s"${expr(variable)} += ${expr(exp)}"
         case SetExactPropertiesFromMapItem(variable, exp)     => s"${expr(variable)} = ${expr(exp)}"
         case _                                                => s.asCanonicalStringVal
@@ -876,7 +978,12 @@ object Prettifier {
     def asString(ctx: QueryPrettifier): PartialFunction[Clause, String] = PartialFunction.empty
   }
 
-  def prettifyRename(commandName: String, fromName: Either[String, Parameter], toName: Either[String, Parameter], ifExists: Boolean): String = {
+  def prettifyRename(
+    commandName: String,
+    fromName: Either[String, Parameter],
+    toName: Either[String, Parameter],
+    ifExists: Boolean
+  ): String = {
     val maybeIfExists = if (ifExists) " IF EXISTS" else ""
     s"$commandName ${escapeName(fromName)}$maybeIfExists TO ${escapeName(toName)}"
   }
@@ -884,7 +991,7 @@ object Prettifier {
   def extractScope(scope: ShowPrivilegeScope): String = {
     scope match {
       case ShowUserPrivileges(name) =>
-        if(name.isDefined)
+        if (name.isDefined)
           s"USER ${escapeName(name.get)}"
         else
           "USER"
@@ -898,44 +1005,49 @@ object Prettifier {
           s"ROLE ${escapeName(names.head)}"
         else
           s"ROLES ${escapeNames(names)}"
-      case ShowAllPrivileges()      => "ALL"
-      case _                        => "<unknown>"
+      case ShowAllPrivileges() => "ALL"
+      case _                   => "<unknown>"
     }
   }
 
   def revokeOperation(operation: String, revokeType: String) = s"$operation($revokeType)"
 
-  def prettifyDatabasePrivilege(privilegeName: String,
-                                dbScope: List[DatabaseScope],
-                                qualifier: List[PrivilegeQualifier],
-                                preposition: String,
-                                roleNames: Seq[Either[String, Parameter]]): String = {
+  def prettifyDatabasePrivilege(
+    privilegeName: String,
+    dbScope: List[DatabaseScope],
+    qualifier: List[PrivilegeQualifier],
+    preposition: String,
+    roleNames: Seq[Either[String, Parameter]]
+  ): String = {
     val (dbName, default, multiple) = Prettifier.extractDbScope(dbScope)
-    val db = if (default) {
-      s"$dbName DATABASE"
-    } else if (multiple) {
-      s"DATABASES $dbName"
-    } else {
-      s"DATABASE $dbName"
-    }
+    val db =
+      if (default) {
+        s"$dbName DATABASE"
+      } else if (multiple) {
+        s"DATABASES $dbName"
+      } else {
+        s"DATABASE $dbName"
+      }
     s"$privilegeName${extractQualifierString(qualifier)} ON $db $preposition ${escapeNames(roleNames)}"
   }
 
-  def prettifyGraphPrivilege(privilegeName: String,
-                             graphScope: List[GraphScope],
-                             qualifierString: String,
-                             resource: Option[ActionResource],
-                             preposition: String,
-                             roleNames: Seq[Either[String, Parameter]]): String = {
+  def prettifyGraphPrivilege(
+    privilegeName: String,
+    graphScope: List[GraphScope],
+    qualifierString: String,
+    resource: Option[ActionResource],
+    preposition: String,
+    roleNames: Seq[Either[String, Parameter]]
+  ): String = {
 
     val resourceName = resource match {
-      case Some(PropertyResource(name)) => s" {${ExpressionStringifier.backtick(name)}}"
+      case Some(PropertyResource(name))    => s" {${ExpressionStringifier.backtick(name)}}"
       case Some(PropertiesResource(names)) => s" {${names.map(ExpressionStringifier.backtick(_)).mkString(", ")}}"
-      case Some(AllPropertyResource()) => " {*}"
-      case Some(LabelsResource(names)) => s" ${names.map(ExpressionStringifier.backtick(_)).mkString(", ")}"
-      case Some(AllLabelResource()) => " *"
-      case None => ""
-      case _ => throw new IllegalStateException(s"Unknown resource: $resource")
+      case Some(AllPropertyResource())     => " {*}"
+      case Some(LabelsResource(names))     => s" ${names.map(ExpressionStringifier.backtick(_)).mkString(", ")}"
+      case Some(AllLabelResource())        => " *"
+      case None                            => ""
+      case _                               => throw new IllegalStateException(s"Unknown resource: $resource")
     }
     val scope = s"${extractGraphScope(graphScope)}"
     s"$privilegeName$resourceName ON $scope$qualifierString $preposition ${Prettifier.escapeNames(roleNames)}"
@@ -951,36 +1063,37 @@ object Prettifier {
   }
 
   def extractQualifierPart(qualifier: List[PrivilegeQualifier]): Option[String] = {
-    def stringifyQualifiedName(glob: String) = glob.split('.').map(ExpressionStringifier.backtick(_, globbing = true)).mkString(".")
+    def stringifyQualifiedName(glob: String) =
+      glob.split('.').map(ExpressionStringifier.backtick(_, globbing = true)).mkString(".")
 
-    def stringify: PartialFunction[PrivilegeQualifier,String] = {
-      case LabelQualifier(name) => ExpressionStringifier.backtick(name)
+    def stringify: PartialFunction[PrivilegeQualifier, String] = {
+      case LabelQualifier(name)        => ExpressionStringifier.backtick(name)
       case RelationshipQualifier(name) => ExpressionStringifier.backtick(name)
-      case ElementQualifier(name) => ExpressionStringifier.backtick(name)
-      case UserQualifier(name) => escapeName(name)
-      case ProcedureQualifier(glob) => stringifyQualifiedName(glob)
-      case FunctionQualifier(glob) => stringifyQualifiedName(glob)
+      case ElementQualifier(name)      => ExpressionStringifier.backtick(name)
+      case UserQualifier(name)         => escapeName(name)
+      case ProcedureQualifier(glob)    => stringifyQualifiedName(glob)
+      case FunctionQualifier(glob)     => stringifyQualifiedName(glob)
     }
 
     qualifier match {
-      case l@LabelQualifier(_) :: Nil => Some("NODE " + l.map(stringify).mkString(", "))
-      case l@LabelQualifier(_) :: _ => Some("NODES " + l.map(stringify).mkString(", "))
-      case LabelAllQualifier() :: Nil => Some("NODES *")
-      case rels@RelationshipQualifier(_) :: Nil => Some("RELATIONSHIP " + rels.map(stringify).mkString(", "))
-      case rels@RelationshipQualifier(_) :: _ => Some("RELATIONSHIPS " + rels.map(stringify).mkString(", "))
-      case RelationshipAllQualifier() :: Nil => Some("RELATIONSHIPS *")
-      case elems@ElementQualifier(_) :: _ => Some("ELEMENTS " + elems.map(stringify).mkString(", "))
-      case ElementsAllQualifier() :: Nil => Some("ELEMENTS *")
-      case UserQualifier(user) :: Nil => Some("(" + escapeName(user) + ")")
-      case users@UserQualifier(_) :: _ => Some("(" + users.map(stringify).mkString(", ") + ")")
-      case UserAllQualifier() :: Nil => Some("(*)")
-      case AllQualifier() :: Nil => None
-      case AllDatabasesQualifier() :: Nil => None
-      case p@ProcedureQualifier(_) :: _ => Some(p.map(stringify).mkString(", "))
-      case ProcedureAllQualifier() :: Nil => Some("*")
-      case p@FunctionQualifier(_) :: _ => Some(p.map(stringify).mkString(", "))
-      case FunctionAllQualifier() :: Nil => Some("*")
-      case _ => Some("<unknown>")
+      case l @ LabelQualifier(_) :: Nil           => Some("NODE " + l.map(stringify).mkString(", "))
+      case l @ LabelQualifier(_) :: _             => Some("NODES " + l.map(stringify).mkString(", "))
+      case LabelAllQualifier() :: Nil             => Some("NODES *")
+      case rels @ RelationshipQualifier(_) :: Nil => Some("RELATIONSHIP " + rels.map(stringify).mkString(", "))
+      case rels @ RelationshipQualifier(_) :: _   => Some("RELATIONSHIPS " + rels.map(stringify).mkString(", "))
+      case RelationshipAllQualifier() :: Nil      => Some("RELATIONSHIPS *")
+      case elems @ ElementQualifier(_) :: _       => Some("ELEMENTS " + elems.map(stringify).mkString(", "))
+      case ElementsAllQualifier() :: Nil          => Some("ELEMENTS *")
+      case UserQualifier(user) :: Nil             => Some("(" + escapeName(user) + ")")
+      case users @ UserQualifier(_) :: _          => Some("(" + users.map(stringify).mkString(", ") + ")")
+      case UserAllQualifier() :: Nil              => Some("(*)")
+      case AllQualifier() :: Nil                  => None
+      case AllDatabasesQualifier() :: Nil         => None
+      case p @ ProcedureQualifier(_) :: _         => Some(p.map(stringify).mkString(", "))
+      case ProcedureAllQualifier() :: Nil         => Some("*")
+      case p @ FunctionQualifier(_) :: _          => Some(p.map(stringify).mkString(", "))
+      case FunctionAllQualifier() :: Nil          => Some("*")
+      case _                                      => Some("<unknown>")
     }
   }
 
@@ -988,7 +1101,7 @@ object Prettifier {
     val qualifierPart = extractQualifierPart(qualifier)
     qualifierPart match {
       case Some(string) => s" $string"
-      case _ => ""
+      case _            => ""
     }
   }
 
@@ -997,21 +1110,22 @@ object Prettifier {
     case AllDatabasesScope() :: Nil      => ("*", false, false)
     case DefaultDatabaseScope() :: Nil   => ("DEFAULT", true, false)
     case HomeDatabaseScope() :: Nil      => ("HOME", true, false)
-    case namedDatabaseScopes             => (escapeNames(namedDatabaseScopes.collect { case NamedDatabaseScope(name) => name }), false, true)
+    case namedDatabaseScopes =>
+      (escapeNames(namedDatabaseScopes.collect { case NamedDatabaseScope(name) => name }), false, true)
   }
 
-    def extractGraphScope(graphScope: List[GraphScope]): String = {
-      graphScope match {
-        case NamedGraphScope(name) :: Nil => s"GRAPH ${escapeName(name)}"
-        case AllGraphsScope() :: Nil => "GRAPH *"
-        case DefaultGraphScope() :: Nil => "DEFAULT GRAPH"
-        case HomeGraphScope() :: Nil => "HOME GRAPH"
-        case namedGraphScopes => s"GRAPHS ${escapeNames(namedGraphScopes.collect { case NamedGraphScope(name) => name })}"
-      }
+  def extractGraphScope(graphScope: List[GraphScope]): String = {
+    graphScope match {
+      case NamedGraphScope(name) :: Nil => s"GRAPH ${escapeName(name)}"
+      case AllGraphsScope() :: Nil      => "GRAPH *"
+      case DefaultGraphScope() :: Nil   => "DEFAULT GRAPH"
+      case HomeGraphScope() :: Nil      => "HOME GRAPH"
+      case namedGraphScopes => s"GRAPHS ${escapeNames(namedGraphScopes.collect { case NamedGraphScope(name) => name })}"
+    }
   }
 
   def escapeName(name: Either[String, Parameter]): String = name match {
-    case Left(s) => ExpressionStringifier.backtick(s)
+    case Left(s)  => ExpressionStringifier.backtick(s)
     case Right(p) => s"$$${ExpressionStringifier.backtick(p.name)}"
   }
 

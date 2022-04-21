@@ -21,29 +21,24 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.fa.PersianAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Persian extends AnalyzerProvider
-{
-    public Persian()
-    {
-        super( "persian" );
+public class Persian extends AnalyzerProvider {
+    public Persian() {
+        super("persian");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
+    public Analyzer createAnalyzer() {
         return new PersianAnalyzer();
     }
 
     @Override
-    public String description()
-    {
-        return "Persian analyzer. Tokenizes with zero-width non-joiner characters in addition to whitespace. " +
-                "Persian-specific variants, such as the farsi 'yeh' and 'keheh', are standardized. " +
-                "Simple stemming is accomplished via stop words.";
+    public String description() {
+        return "Persian analyzer. Tokenizes with zero-width non-joiner characters in addition to whitespace. "
+                + "Persian-specific variants, such as the farsi 'yeh' and 'keheh', are standardized. "
+                + "Simple stemming is accomplished via stop words.";
     }
 }

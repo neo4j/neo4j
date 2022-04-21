@@ -52,6 +52,7 @@ object IndexOrderCapability {
 }
 
 object IndexDescriptor {
+
   /**
    * Given the actual types of properties (one for a single-property index and multiple for a composite index)
    * can this index guarantee ordered retrieval?
@@ -76,11 +77,13 @@ object IndexDescriptor {
     IndexDescriptor(indexType, EntityType.of(labelOrRelTypeId), properties)
 
   sealed trait EntityType
+
   object EntityType {
     final case class Node(label: LabelId) extends EntityType
     final case class Relationship(relType: RelTypeId) extends EntityType
+
     def of(id: NameId): EntityType = id match {
-      case labelId: LabelId => Node(labelId)
+      case labelId: LabelId     => Node(labelId)
       case relTypeId: RelTypeId => Relationship(relTypeId)
     }
   }
@@ -88,16 +91,21 @@ object IndexDescriptor {
   sealed trait IndexType {
     def toPublicApi: graphdb.schema.IndexType
   }
+
   object IndexType {
+
     case object Range extends IndexType {
       override def toPublicApi: graphdb.schema.IndexType = graphdb.schema.IndexType.RANGE
     }
+
     case object Btree extends IndexType {
       override def toPublicApi: graphdb.schema.IndexType = graphdb.schema.IndexType.BTREE
     }
+
     case object Text extends IndexType {
       override def toPublicApi: graphdb.schema.IndexType = graphdb.schema.IndexType.TEXT
     }
+
     case object Point extends IndexType {
       override def toPublicApi: graphdb.schema.IndexType = graphdb.schema.IndexType.POINT
     }
@@ -107,23 +115,27 @@ object IndexDescriptor {
       case graphdb.schema.IndexType.BTREE => Some(IndexType.Btree)
       case graphdb.schema.IndexType.TEXT  => Some(IndexType.Text)
       case graphdb.schema.IndexType.POINT => Some(IndexType.Point)
-      case _ => None
+      case _                              => None
     }
   }
 
   implicit def toKernelEncode(properties: Seq[PropertyKeyId]): Array[Int] = properties.map(_.id).toArray
 }
 
-case class IndexDescriptor(indexType: IndexType,
-                           entityType: EntityType,
-                           properties: Seq[PropertyKeyId],
-                           behaviours: Set[IndexBehaviour] = Set.empty[IndexBehaviour],
-                           orderCapability: OrderCapability = IndexDescriptor.noOrderCapability,
-                           valueCapability: ValueCapability = IndexDescriptor.noValueCapability,
-                           isUnique: Boolean = false) {
+case class IndexDescriptor(
+  indexType: IndexType,
+  entityType: EntityType,
+  properties: Seq[PropertyKeyId],
+  behaviours: Set[IndexBehaviour] = Set.empty[IndexBehaviour],
+  orderCapability: OrderCapability = IndexDescriptor.noOrderCapability,
+  valueCapability: ValueCapability = IndexDescriptor.noValueCapability,
+  isUnique: Boolean = false
+) {
   val isComposite: Boolean = properties.length > 1
 
-  def property: PropertyKeyId = if (isComposite) throw new IllegalArgumentException("Cannot get single property of multi-property index") else properties.head
+  def property: PropertyKeyId =
+    if (isComposite) throw new IllegalArgumentException("Cannot get single property of multi-property index")
+    else properties.head
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[IndexDescriptor]
 

@@ -28,10 +28,10 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
 abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
-                                                         edition: Edition[CONTEXT],
-                                                         runtime: CypherRuntime[CONTEXT],
-                                                         sizeHint: Int
-                                                       ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("anti conditional apply should not run rhs if lhs is empty") {
     // given
@@ -69,7 +69,8 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array[Any](null), Array[Any](null), Array[Any](null)))
+    val runtimeResult =
+      execute(logicalQuery, runtime, inputValues(Array[Any](null), Array[Any](null), Array[Any](null)))
 
     // then
     // because graph contains no relationships, the expand will return no rows
@@ -129,7 +130,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       circleGraph(nodeCount, "L")
     }
 
-    //when
+    // when
     val limit = 2
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -142,8 +143,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(logicalQuery, runtime)
 
-
-    //then
+    // then
     runtimeResult should beColumns("x", "y").withRows(nodes.map(n => Array[Any](n, null)))
   }
 
@@ -165,7 +165,6 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .|.argument("x")
       .input(variables = Seq("x"))
       .build()
-
 
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
@@ -237,7 +236,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .|.aggregation(Seq.empty, Seq("count(*) AS c"))
       .|.limit(limit)
       .|.expand("(y)-[:R]->(z)")
-      .|.nodeByLabelScan("y","A", IndexOrderNone, "x")
+      .|.nodeByLabelScan("y", "A", IndexOrderNone, "x")
       .projection("42 AS value")
       .input(variables = Seq("x"))
       .build()
@@ -257,7 +256,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .aggregation(Seq.empty, Seq("count(value) AS vs"))
       .antiConditionalApply("x")
       .|.expandAll("(y)-->(z)")
-      .|.nodeByLabelScan("y","A", IndexOrderNone, "x")
+      .|.nodeByLabelScan("y", "A", IndexOrderNone, "x")
       .projection("42 AS value")
       .input(variables = Seq("x"))
       .build()
@@ -279,7 +278,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .aggregation(Seq("x AS x"), Seq("count(y) AS ys"))
       .antiConditionalApply("x")
       .|.expandAll("(y)-->(z)")
-      .|.nodeByLabelScan("y","A", IndexOrderNone, "x")
+      .|.nodeByLabelScan("y", "A", IndexOrderNone, "x")
       .projection("42 AS value")
       .input(variables = Seq("x"))
       .build()
@@ -287,14 +286,24 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(null), Array(42)))
 
     // then
-    runtimeResult should beColumns("x", "ys").withRows(Seq(Array[Any](42, 0), Array[Any](null, nodesPerLabel * nodesPerLabel)))
+    runtimeResult should beColumns("x", "ys").withRows(Seq(
+      Array[Any](42, 0),
+      Array[Any](null, nodesPerLabel * nodesPerLabel)
+    ))
   }
 
   test("should aggregate on top of anti conditional apply with expand on RHS with nulls") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R",
-      { case i if i % 2 == 0 => Map("prop" -> i)})}
+    val (aNodes, bNodes) = given {
+      bipartiteGraph(
+        nodesPerLabel,
+        "A",
+        "B",
+        "R",
+        { case i if i % 2 == 0 => Map("prop" -> i) }
+      )
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -304,7 +313,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .|.expandAll("(x)-->(y)")
       .|.argument("x")
       .projection("x AS x", "x.prop AS prop")
-      .nodeByLabelScan("x","A", IndexOrderNone)
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -312,19 +321,18 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = aNodes.map {
       case x if !x.hasProperty("prop") => Array[Any](x, bNodes.size)
-      case x  => Array[Any](x, 0)
+      case x                           => Array[Any](x, 0)
     }
     runtimeResult should beColumns("x", "ys").withRows(expected)
   }
 
-
   test("limit after antiConditionalApply on the RHS of apply") {
-    //given
+    // given
     val inputRows = (0 until 5).map { i =>
       Array[Any](i.toLong)
     }
 
-    //when
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .apply()
@@ -338,8 +346,8 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    //then
-    //then
+    // then
+    // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     runtimeResult should beColumns("x").withRows(singleColumn(inputRows.map(_(0))))
   }

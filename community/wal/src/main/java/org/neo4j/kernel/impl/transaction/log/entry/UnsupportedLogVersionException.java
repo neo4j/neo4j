@@ -22,15 +22,12 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 /**
  * Throw to indicate that detected log version format is not supported.
  */
-public class UnsupportedLogVersionException extends RuntimeException
-{
-    UnsupportedLogVersionException( String message )
-    {
-        super( message );
+public class UnsupportedLogVersionException extends RuntimeException {
+    UnsupportedLogVersionException(String message) {
+        super(message);
     }
 
-    UnsupportedLogVersionException( String message, Throwable cause )
-    {
-        super( message, cause );
+    UnsupportedLogVersionException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

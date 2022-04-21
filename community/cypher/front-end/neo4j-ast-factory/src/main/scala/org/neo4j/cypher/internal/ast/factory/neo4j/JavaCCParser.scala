@@ -33,7 +33,11 @@ case object JavaCCParser {
    * @param cypherExceptionFactory A factory for producing error messages related to the specific implementation of the language.
    * @return
    */
-  def parse(queryText: String, cypherExceptionFactory: CypherExceptionFactory, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Statement = {
+  def parse(
+    queryText: String,
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Statement = {
     val charStream = new CypherCharStream(queryText)
     val astFactory = new Neo4jASTFactory(queryText, anonymousVariableNameGenerator)
     val astExceptionFactory = new Neo4jASTExceptionFactory(cypherExceptionFactory)
@@ -42,7 +46,10 @@ case object JavaCCParser {
     if (statements.size() == 1) {
       statements.get(0)
     } else {
-      throw cypherExceptionFactory.syntaxException(s"Expected exactly one statement per query but got: ${statements.size}", InputPosition.NONE)
+      throw cypherExceptionFactory.syntaxException(
+        s"Expected exactly one statement per query but got: ${statements.size}",
+        InputPosition.NONE
+      )
     }
   }
 }

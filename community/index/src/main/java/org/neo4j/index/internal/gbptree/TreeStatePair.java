@@ -19,25 +19,20 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.apache.commons.lang3.tuple.Pair;
+import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 
 import java.io.IOException;
 import java.util.Optional;
-
+import org.apache.commons.lang3.tuple.Pair;
 import org.neo4j.io.pagecache.PageCursor;
-
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 
 /**
  * Pair of {@link TreeState}, ability to make decision about which of the two to read and write respectively,
  * depending on the {@link TreeState#isValid() validity} and {@link TreeState#stableGeneration()} of each.
  */
-class TreeStatePair
-{
+class TreeStatePair {
 
-    private TreeStatePair()
-    {
-    }
+    private TreeStatePair() {}
 
     /**
      * Initialize state pages because new pages are expected to be allocated directly after
@@ -47,10 +42,9 @@ class TreeStatePair
      * @param cursor {@link PageCursor} assumed to be opened with write capabilities.
      * @throws IOException on {@link PageCursor} error.
      */
-    static void initializeStatePages( PageCursor cursor ) throws IOException
-    {
-        PageCursorUtil.goTo( cursor, "State page A", IdSpace.STATE_PAGE_A );
-        PageCursorUtil.goTo( cursor, "State page B", IdSpace.STATE_PAGE_B );
+    static void initializeStatePages(PageCursor cursor) throws IOException {
+        PageCursorUtil.goTo(cursor, "State page A", IdSpace.STATE_PAGE_A);
+        PageCursorUtil.goTo(cursor, "State page B", IdSpace.STATE_PAGE_B);
     }
 
     /**
@@ -65,23 +59,19 @@ class TreeStatePair
      * @return {@link Pair} of both tree states.
      * @throws IOException on {@link PageCursor} reading error.
      */
-    static Pair<TreeState,TreeState> readStatePages( PageCursor cursor, long pageIdA, long pageIdB ) throws IOException
-    {
-        TreeState stateA = readStatePage( cursor, pageIdA );
-        TreeState stateB = readStatePage( cursor, pageIdB );
-        return Pair.of( stateA, stateB );
+    static Pair<TreeState, TreeState> readStatePages(PageCursor cursor, long pageIdA, long pageIdB) throws IOException {
+        TreeState stateA = readStatePage(cursor, pageIdA);
+        TreeState stateB = readStatePage(cursor, pageIdB);
+        return Pair.of(stateA, stateB);
     }
 
-    private static TreeState readStatePage( PageCursor cursor, long pageIdA ) throws IOException
-    {
-        PageCursorUtil.goTo( cursor, "state page", pageIdA );
+    private static TreeState readStatePage(PageCursor cursor, long pageIdA) throws IOException {
+        PageCursorUtil.goTo(cursor, "state page", pageIdA);
         TreeState state;
-        do
-        {
-            state = TreeState.read( cursor );
-        }
-        while ( cursor.shouldRetry() );
-        checkOutOfBounds( cursor );
+        do {
+            state = TreeState.read(cursor);
+        } while (cursor.shouldRetry());
+        checkOutOfBounds(cursor);
         return state;
     }
 
@@ -91,11 +81,11 @@ class TreeStatePair
      * {@link TreeState} of the two.
      * @throws IllegalStateException if none were valid.
      */
-    static TreeState selectNewestValidState( Pair<TreeState,TreeState> states )
-    {
-        return selectNewestValidStateOptionally( states ).orElseThrow( () ->
-                new TreeInconsistencyException( "Unexpected combination of state.%n  STATE_A[%s]%n  STATE_B[%s]",
-                        states.getLeft(), states.getRight() ) );
+    static TreeState selectNewestValidState(Pair<TreeState, TreeState> states) {
+        return selectNewestValidStateOptionally(states)
+                .orElseThrow(() -> new TreeInconsistencyException(
+                        "Unexpected combination of state.%n  STATE_A[%s]%n  STATE_B[%s]",
+                        states.getLeft(), states.getRight()));
     }
 
     /**
@@ -103,24 +93,19 @@ class TreeStatePair
      * @return oldest (w/ regards to {@link TreeState#stableGeneration()}) {@link TreeState#isValid() invalid}
      * {@link TreeState} of the two. If both are invalid then the {@link Pair#getLeft() first one} is returned.
      */
-    static TreeState selectOldestOrInvalid( Pair<TreeState,TreeState> states )
-    {
-        TreeState newestValidState = selectNewestValidStateOptionally( states ).orElse( states.getRight() );
+    static TreeState selectOldestOrInvalid(Pair<TreeState, TreeState> states) {
+        TreeState newestValidState = selectNewestValidStateOptionally(states).orElse(states.getRight());
         return newestValidState == states.getLeft() ? states.getRight() : states.getLeft();
     }
 
-    private static Optional<TreeState> selectNewestValidStateOptionally( Pair<TreeState,TreeState> states )
-    {
+    private static Optional<TreeState> selectNewestValidStateOptionally(Pair<TreeState, TreeState> states) {
         TreeState stateA = states.getLeft();
         TreeState stateB = states.getRight();
 
-        if ( stateA.isValid() != stateB.isValid() )
-        {
+        if (stateA.isValid() != stateB.isValid()) {
             // return only valid
-            return stateA.isValid() ? Optional.of( stateA ) : Optional.of( stateB );
-        }
-        else if ( stateA.isValid() && stateB.isValid() )
-        {
+            return stateA.isValid() ? Optional.of(stateA) : Optional.of(stateB);
+        } else if (stateA.isValid() && stateB.isValid()) {
             // return newest
 
             // compare unstable generations of A/B, if equal, compare clean flag (clean is newer than dirty)
@@ -128,21 +113,16 @@ class TreeStatePair
             // to other state O where
             // S.unstableGeneration > O.unstableGeneration AND S.stableGeneration < O.stableGeneration
 
-            if ( stateA.stableGeneration() == stateB.stableGeneration() &&
-                    stateA.unstableGeneration() == stateB.unstableGeneration() &&
-                    stateA.isClean() != stateB.isClean() )
-            {
-                return Optional.of( stateA.isClean() ? stateA : stateB );
-            }
-            else if ( stateA.stableGeneration() >= stateB.stableGeneration() &&
-                    stateA.unstableGeneration() > stateB.unstableGeneration() )
-            {
-                return Optional.of( stateA );
-            }
-            else if ( stateA.stableGeneration() <= stateB.stableGeneration() &&
-                    stateA.unstableGeneration() < stateB.unstableGeneration() )
-            {
-                return Optional.of( stateB );
+            if (stateA.stableGeneration() == stateB.stableGeneration()
+                    && stateA.unstableGeneration() == stateB.unstableGeneration()
+                    && stateA.isClean() != stateB.isClean()) {
+                return Optional.of(stateA.isClean() ? stateA : stateB);
+            } else if (stateA.stableGeneration() >= stateB.stableGeneration()
+                    && stateA.unstableGeneration() > stateB.unstableGeneration()) {
+                return Optional.of(stateA);
+            } else if (stateA.stableGeneration() <= stateB.stableGeneration()
+                    && stateA.unstableGeneration() < stateB.unstableGeneration()) {
+                return Optional.of(stateB);
             }
         }
 

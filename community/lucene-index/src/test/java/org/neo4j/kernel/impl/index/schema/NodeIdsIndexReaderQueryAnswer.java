@@ -19,43 +19,44 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.neo4j.collection.PrimitiveLongResourceCollections.iterator;
+import static org.neo4j.graphdb.Resource.EMPTY;
+import static org.neo4j.internal.helpers.collection.Iterators.array;
+
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.NodeValueIndexProgressor;
 
-import static org.neo4j.collection.PrimitiveLongResourceCollections.iterator;
-import static org.neo4j.graphdb.Resource.EMPTY;
-import static org.neo4j.internal.helpers.collection.Iterators.array;
-
-public class NodeIdsIndexReaderQueryAnswer implements Answer<Object>
-{
+public class NodeIdsIndexReaderQueryAnswer implements Answer<Object> {
     private final IndexDescriptor descriptor;
     private final long[] nodeIds;
 
-    public NodeIdsIndexReaderQueryAnswer( IndexDescriptor descriptor, long... nodeIds )
-    {
+    public NodeIdsIndexReaderQueryAnswer(IndexDescriptor descriptor, long... nodeIds) {
         this.descriptor = descriptor;
         this.nodeIds = nodeIds;
     }
 
     @Override
-    public Object answer( InvocationOnMock invocation )
-    {
-        IndexProgressor.EntityValueClient client = invocation.getArgument( 0 );
-        NodeValueIndexProgressor progressor = new NodeValueIndexProgressor( iterator( EMPTY, nodeIds ), client );
-        client.initialize( descriptor, progressor, AccessMode.Static.READ, false, invocation.getArgument( 3 ), getIndexQueryArgument( invocation ) );
+    public Object answer(InvocationOnMock invocation) {
+        IndexProgressor.EntityValueClient client = invocation.getArgument(0);
+        NodeValueIndexProgressor progressor = new NodeValueIndexProgressor(iterator(EMPTY, nodeIds), client);
+        client.initialize(
+                descriptor,
+                progressor,
+                AccessMode.Static.READ,
+                false,
+                invocation.getArgument(3),
+                getIndexQueryArgument(invocation));
         return null;
     }
 
-    public static PropertyIndexQuery[] getIndexQueryArgument( InvocationOnMock invocation )
-    {
+    public static PropertyIndexQuery[] getIndexQueryArgument(InvocationOnMock invocation) {
         // Apparently vararg arguments from mockito can either be non-existent, a single value or an array...
-        Object rawQuery = invocation.getArgument( 4 );
-        return rawQuery.getClass().isArray() ? (PropertyIndexQuery[]) rawQuery : array( (PropertyIndexQuery) rawQuery );
+        Object rawQuery = invocation.getArgument(4);
+        return rawQuery.getClass().isArray() ? (PropertyIndexQuery[]) rawQuery : array((PropertyIndexQuery) rawQuery);
     }
 }

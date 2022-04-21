@@ -24,10 +24,9 @@ package org.neo4j.io.pagecache;
  * translation tables can be updated when pages are evicted. The PageSwapper implementations are responsible for
  * delegating their {@link PageSwapper#evicted(long)} calls to these callback objects.
  */
-public interface PageEvictionCallback
-{
+public interface PageEvictionCallback {
     /**
      * Notify that the file/memory page has been evicted.
      */
-    void onEvict( long filePageId );
+    void onEvict(long filePageId);
 }

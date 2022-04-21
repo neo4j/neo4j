@@ -35,7 +35,7 @@ trait DatabaseLookup {
     *
     * Note: returned map is sorted lexicographically by databaseName, to provide stable iteration order.
     */
-  def databaseReferences: SortedMap[NormalizedDatabaseName,NamedDatabaseId]
+  def databaseReferences: SortedMap[NormalizedDatabaseName, NamedDatabaseId]
 
   /**
    * Returns all known database Ids for this DBMS.
@@ -54,9 +54,9 @@ object DatabaseLookup {
 
   class Default(databaseIdRepository: DatabaseIdRepository) extends DatabaseLookup {
 
-    def databaseReferences: SortedMap[NormalizedDatabaseName,NamedDatabaseId] = {
+    def databaseReferences: SortedMap[NormalizedDatabaseName, NamedDatabaseId] = {
       val unsortedMap = databaseIdRepository.getAllDatabaseAliases.asScala
-      SortedMap.empty[NormalizedDatabaseName,NamedDatabaseId] ++ unsortedMap
+      SortedMap.empty[NormalizedDatabaseName, NamedDatabaseId] ++ unsortedMap
     }
 
     def databaseIds: SortedSet[NamedDatabaseId] = {

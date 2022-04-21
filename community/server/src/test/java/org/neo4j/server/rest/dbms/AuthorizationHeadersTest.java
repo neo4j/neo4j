@@ -19,41 +19,36 @@
  */
 package org.neo4j.server.rest.dbms;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Base64;
-
-import org.neo4j.test.server.HTTP;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.server.rest.dbms.AuthorizationHeaders.decode;
 
-class AuthorizationHeadersTest
-{
+import java.util.Base64;
+import org.junit.jupiter.api.Test;
+import org.neo4j.test.server.HTTP;
+
+class AuthorizationHeadersTest {
     @Test
-    void shouldParseHappyPath()
-    {
+    void shouldParseHappyPath() {
         // Given
         String username = "jake";
         String password = "qwerty123456";
-        String header = HTTP.basicAuthHeader( username, password );
+        String header = HTTP.basicAuthHeader(username, password);
 
         // When
-        String[] parsed = decode( header );
+        String[] parsed = decode(header);
 
         // Then
-        assertEquals( username, parsed[0] );
-        assertEquals( password, parsed[1] );
+        assertEquals(username, parsed[0]);
+        assertEquals(password, parsed[1]);
     }
 
     @Test
-    void shouldHandleSadPaths()
-    {
+    void shouldHandleSadPaths() {
         // When & then
-        assertNull( decode( "" ) );
-        assertNull( decode( "Basic" ) );
-        assertNull( decode( "Basic not valid value" ) );
-        assertNull( decode( "Basic " + Base64.getEncoder().encodeToString( "".getBytes() ) ) );
+        assertNull(decode(""));
+        assertNull(decode("Basic"));
+        assertNull(decode("Basic not valid value"));
+        assertNull(decode("Basic " + Base64.getEncoder().encodeToString("".getBytes())));
     }
 }

@@ -19,45 +19,41 @@
  */
 package org.neo4j.bolt.transport.pipeline;
 
+import static java.lang.String.format;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.memory.HeapEstimator;
 
-import static java.lang.String.format;
-
-public class BytesAccumulator extends ChannelInboundHandlerAdapter
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BytesAccumulator.class );
+public class BytesAccumulator extends ChannelInboundHandlerAdapter {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(BytesAccumulator.class);
 
     private final long limit;
     private long count;
 
-    public BytesAccumulator( long limit )
-    {
+    public BytesAccumulator(long limit) {
         this.limit = limit;
     }
 
     @Override
-    public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
-    {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ByteBuf buf = (ByteBuf) msg;
         count += buf.readableBytes();
-        if ( count < 0 )
-        {
+        if (count < 0) {
             count = Long.MAX_VALUE;
         }
-        if ( count > limit )
-        {
+        if (count > limit) {
             ctx.channel().close();
-            throw new BoltConnectionFatality( format(
-                    "A connection '%s' is terminated because too many inbound bytes received " +
-                    "before the client is authenticated. Max bytes allowed: %s. Bytes received: %s.",
-                    ctx.channel(), limit, count ), null );
+            throw new BoltConnectionFatality(
+                    format(
+                            "A connection '%s' is terminated because too many inbound bytes received "
+                                    + "before the client is authenticated. Max bytes allowed: %s. Bytes received: %s.",
+                            ctx.channel(), limit, count),
+                    null);
         }
 
-        super.channelRead( ctx, msg );
+        super.channelRead(ctx, msg);
     }
 }

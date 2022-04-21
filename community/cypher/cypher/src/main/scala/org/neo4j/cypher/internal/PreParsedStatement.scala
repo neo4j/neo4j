@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.util.InputPosition
 
 final case class PreParserOption(key: String, value: String)
+
 object PreParserOption {
   val explain: PreParserOption = PreParserOption(CypherExecutionMode.name, "EXPLAIN")
   val profile: PreParserOption = PreParserOption(CypherExecutionMode.name, "PROFILE")

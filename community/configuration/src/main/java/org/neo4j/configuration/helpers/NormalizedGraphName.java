@@ -19,16 +19,14 @@
  */
 package org.neo4j.configuration.helpers;
 
-import org.neo4j.annotations.api.PublicApi;
-
 import static java.util.Objects.requireNonNull;
 
+import org.neo4j.annotations.api.PublicApi;
+
 @PublicApi
-public record NormalizedGraphName( String name )
-{
-    public NormalizedGraphName( String name )
-    {
-        requireNonNull( name, "Graph name should be not null." );
+public record NormalizedGraphName(String name) {
+    public NormalizedGraphName(String name) {
+        requireNonNull(name, "Graph name should be not null.");
         this.name = name.toLowerCase();
     }
 }

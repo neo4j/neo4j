@@ -22,56 +22,47 @@ package org.neo4j.codegen;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 
-public class ClassHandle extends TypeReference
-{
+public class ClassHandle extends TypeReference {
     private final TypeReference parent;
     final CodeGenerator generator;
     private final long compilationUnit;
 
-    ClassHandle( String packageName, String name, TypeReference parent, CodeGenerator generator, long compilationUnit )
-    {
-        super( packageName, name, parent.arrayDepth(), false, null, Modifier.PUBLIC );
+    ClassHandle(String packageName, String name, TypeReference parent, CodeGenerator generator, long compilationUnit) {
+        super(packageName, name, parent.arrayDepth(), false, null, Modifier.PUBLIC);
         this.parent = parent;
         this.generator = generator;
         this.compilationUnit = compilationUnit;
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
+    public boolean equals(Object obj) {
         return obj == this;
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return simpleName().hashCode();
     }
 
     public Object newInstance()
             throws CompilationFailureException, IllegalAccessException, InstantiationException, NoSuchMethodException,
-            InvocationTargetException
-    {
+                    InvocationTargetException {
         return loadClass().getConstructor().newInstance();
     }
 
-    public Class<?> loadClass() throws CompilationFailureException
-    {
-        return generator.loadClass( fullName(), compilationUnit );
+    public Class<?> loadClass() throws CompilationFailureException {
+        return generator.loadClass(fullName(), compilationUnit);
     }
 
-    public Class<?> loadAnonymousClass() throws CompilationFailureException
-    {
-        return generator.loadAnonymousClass( fullName(), compilationUnit );
+    public Class<?> loadAnonymousClass() throws CompilationFailureException {
+        return generator.loadAnonymousClass(fullName(), compilationUnit);
     }
 
-    public TypeReference parent()
-    {
+    public TypeReference parent() {
         return parent;
     }
 
-    public CodeGenerator generator()
-    {
+    public CodeGenerator generator() {
         return generator;
     }
 }

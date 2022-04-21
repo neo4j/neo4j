@@ -19,6 +19,10 @@
  */
 package org.neo4j.bolt.v4.runtime;
 
+import static org.neo4j.bolt.v3.runtime.ReadyState.FIELDS_KEY;
+import static org.neo4j.bolt.v3.runtime.ReadyState.FIRST_RECORD_AVAILABLE_KEY;
+import static org.neo4j.values.storable.Values.stringArray;
+
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.ResultConsumer;
 import org.neo4j.bolt.runtime.Bookmark;
@@ -32,87 +36,80 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.bolt.v3.runtime.ReadyState.FIELDS_KEY;
-import static org.neo4j.bolt.v3.runtime.ReadyState.FIRST_RECORD_AVAILABLE_KEY;
-import static org.neo4j.values.storable.Values.stringArray;
-
-public class InTransactionState extends AbstractStreamingState
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( InTransactionState.class );
+public class InTransactionState extends AbstractStreamingState {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(InTransactionState.class);
 
     public static final String QUERY_ID_KEY = "qid";
 
     @Override
-    protected BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Throwable
-    {
+    protected BoltStateMachineState processUnsafe(RequestMessage message, StateMachineContext context)
+            throws Throwable {
         context.connectionState().ensureNoPendingTerminationNotice();
 
-        if ( message instanceof RunMessage )
-        {
-            return processRunMessage( (RunMessage) message, context );
+        if (message instanceof RunMessage) {
+            return processRunMessage((RunMessage) message, context);
         }
-        if ( message instanceof CommitMessage )
-        {
-            return processCommitMessage( context );
+        if (message instanceof CommitMessage) {
+            return processCommitMessage(context);
         }
-        if ( message instanceof RollbackMessage )
-        {
-            return processRollbackMessage( context );
-        }
-        else
-        {
-            return super.processUnsafe( message, context );
+        if (message instanceof RollbackMessage) {
+            return processRollbackMessage(context);
+        } else {
+            return super.processUnsafe(message, context);
         }
     }
 
     @Override
-    public String name()
-    {
+    public String name() {
         return "IN_TRANSACTION";
     }
 
     @Override
-    protected BoltStateMachineState processStreamPullResultMessage( int statementId, ResultConsumer resultConsumer,
-                                                                    StateMachineContext context, long noToPull ) throws Throwable
-    {
-        context.getTransactionManager().pullData( context.connectionState().getCurrentTransactionId(), statementId, noToPull, resultConsumer );
+    protected BoltStateMachineState processStreamPullResultMessage(
+            int statementId, ResultConsumer resultConsumer, StateMachineContext context, long noToPull)
+            throws Throwable {
+        context.getTransactionManager()
+                .pullData(context.connectionState().getCurrentTransactionId(), statementId, noToPull, resultConsumer);
         return this;
     }
 
     @Override
-    protected BoltStateMachineState processStreamDiscardResultMessage( int statementId, ResultConsumer resultConsumer,
-                                                                       StateMachineContext context, long noToDiscard ) throws Throwable
-    {
-        context.getTransactionManager().discardData( context.connectionState().getCurrentTransactionId(), statementId, noToDiscard, resultConsumer );
+    protected BoltStateMachineState processStreamDiscardResultMessage(
+            int statementId, ResultConsumer resultConsumer, StateMachineContext context, long noToDiscard)
+            throws Throwable {
+        context.getTransactionManager()
+                .discardData(
+                        context.connectionState().getCurrentTransactionId(), statementId, noToDiscard, resultConsumer);
         return this;
     }
 
-    private BoltStateMachineState processRunMessage( RunMessage message, StateMachineContext context ) throws KernelException, TransactionNotFoundException
-    {
+    private BoltStateMachineState processRunMessage(RunMessage message, StateMachineContext context)
+            throws KernelException, TransactionNotFoundException {
         context.connectionState().ensureNoPendingTerminationNotice();
         long start = context.clock().millis();
         var metadata = context.getTransactionManager()
-                               .runQuery( context.connectionState().getCurrentTransactionId(), message.statement(), message.params() );
+                .runQuery(context.connectionState().getCurrentTransactionId(), message.statement(), message.params());
         long end = context.clock().millis();
 
-        context.connectionState().onMetadata( FIELDS_KEY, stringArray( metadata.fieldNames() ) );
-        context.connectionState().onMetadata( FIRST_RECORD_AVAILABLE_KEY, Values.longValue( end - start ) );
-        context.connectionState().onMetadata( QUERY_ID_KEY, Values.longValue( metadata.queryId() ) );
+        context.connectionState().onMetadata(FIELDS_KEY, stringArray(metadata.fieldNames()));
+        context.connectionState().onMetadata(FIRST_RECORD_AVAILABLE_KEY, Values.longValue(end - start));
+        context.connectionState().onMetadata(QUERY_ID_KEY, Values.longValue(metadata.queryId()));
 
         return this;
     }
 
-    protected BoltStateMachineState processCommitMessage( StateMachineContext context ) throws KernelException, TransactionNotFoundException
-    {
-        Bookmark bookmark = context.getTransactionManager().commit( context.connectionState().getCurrentTransactionId() );
+    protected BoltStateMachineState processCommitMessage(StateMachineContext context)
+            throws KernelException, TransactionNotFoundException {
+        Bookmark bookmark =
+                context.getTransactionManager().commit(context.connectionState().getCurrentTransactionId());
         context.connectionState().clearCurrentTransactionId();
-        bookmark.attachTo( context.connectionState() );
+        bookmark.attachTo(context.connectionState());
         return readyState;
     }
 
-    protected BoltStateMachineState processRollbackMessage( StateMachineContext context ) throws KernelException, TransactionNotFoundException
-    {
-        context.getTransactionManager().rollback( context.connectionState().getCurrentTransactionId() );
+    protected BoltStateMachineState processRollbackMessage(StateMachineContext context)
+            throws KernelException, TransactionNotFoundException {
+        context.getTransactionManager().rollback(context.connectionState().getCurrentTransactionId());
         context.connectionState().clearCurrentTransactionId();
         return readyState;
     }

@@ -27,20 +27,22 @@ import org.neo4j.graphdb.schema.IndexType
 /**
  * This operator does a full scan of an index, producing one row per entry.
  */
-case class NodeIndexScan(idName: String,
-                         override val label: LabelToken,
-                         properties: Seq[IndexedProperty],
-                         argumentIds: Set[String],
-                         indexOrder: IndexOrder,
-                         override val indexType: IndexType)
-                        (implicit idGen: IdGen)
-  extends NodeIndexLeafPlan(idGen) {
+case class NodeIndexScan(
+  idName: String,
+  override val label: LabelToken,
+  properties: Seq[IndexedProperty],
+  argumentIds: Set[String],
+  indexOrder: IndexOrder,
+  override val indexType: IndexType
+)(implicit idGen: IdGen)
+    extends NodeIndexLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds + idName
 
   override def usedVariables: Set[String] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): NodeIndexScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+  override def withoutArgumentIds(argsToExclude: Set[String]): NodeIndexScan =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: NodeIndexScan =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))

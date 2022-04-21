@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel.api.impl.schema.reader;
 
+import static java.lang.String.format;
+import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
+
+import java.io.IOException;
+import java.util.Arrays;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
-
-import java.io.IOException;
-import java.util.Arrays;
-
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
@@ -51,154 +52,142 @@ import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-import static java.lang.String.format;
-import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
-
 /**
  * Schema index reader that is able to read/sample a single partition of a partitioned Lucene index.
  *
  * @see PartitionedValueIndexReader
  */
-public class SimpleValueIndexReader extends AbstractValueIndexReader
-{
+public class SimpleValueIndexReader extends AbstractValueIndexReader {
     private final SearcherReference searcherReference;
     private final IndexSamplingConfig samplingConfig;
     private final TaskCoordinator taskCoordinator;
 
-    public SimpleValueIndexReader( SearcherReference searcherReference,
-                                   IndexDescriptor descriptor,
-                                   IndexSamplingConfig samplingConfig,
-                                   TaskCoordinator taskCoordinator )
-    {
-        super( descriptor );
+    public SimpleValueIndexReader(
+            SearcherReference searcherReference,
+            IndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig,
+            TaskCoordinator taskCoordinator) {
+        super(descriptor);
         this.searcherReference = searcherReference;
         this.samplingConfig = samplingConfig;
         this.taskCoordinator = taskCoordinator;
     }
 
     @Override
-    public IndexSampler createSampler()
-    {
-        return new NonUniqueLuceneIndexSampler( getIndexSearcher(), taskCoordinator, samplingConfig );
+    public IndexSampler createSampler() {
+        return new NonUniqueLuceneIndexSampler(getIndexSearcher(), taskCoordinator, samplingConfig);
     }
 
     @Override
-    public void query( IndexProgressor.EntityValueClient client, QueryContext context, AccessMode accessMode,
-                       IndexQueryConstraints constraints, PropertyIndexQuery... predicates ) throws IndexNotApplicableKernelException
-    {
-        validateQuery( descriptor, predicates );
-        context.monitor().queried( descriptor );
+    public void query(
+            IndexProgressor.EntityValueClient client,
+            QueryContext context,
+            AccessMode accessMode,
+            IndexQueryConstraints constraints,
+            PropertyIndexQuery... predicates)
+            throws IndexNotApplicableKernelException {
+        validateQuery(descriptor, predicates);
+        context.monitor().queried(descriptor);
 
         PropertyIndexQuery predicate = predicates[0];
-        Query query = toLuceneQuery( descriptor, predicate );
-        IndexProgressor progressor = search( query ).getIndexProgressor( NODE_ID_KEY, client );
-        client.initialize( descriptor, progressor, accessMode, false, constraints, predicate );
+        Query query = toLuceneQuery(descriptor, predicate);
+        IndexProgressor progressor = search(query).getIndexProgressor(NODE_ID_KEY, client);
+        client.initialize(descriptor, progressor, accessMode, false, constraints, predicate);
     }
 
     @Override
-    public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, QueryContext context, PropertyIndexQuery... query )
-    {
+    public PartitionedValueSeek valueSeek(
+            int desiredNumberOfPartitions, QueryContext context, PropertyIndexQuery... query) {
         throw new UnsupportedOperationException();
     }
 
-    private DocValuesCollector search( Query query )
-    {
-        try
-        {
+    private DocValuesCollector search(Query query) {
+        try {
             DocValuesCollector docValuesCollector = new DocValuesCollector();
-            getIndexSearcher().search( query, docValuesCollector );
+            getIndexSearcher().search(query, docValuesCollector);
             return docValuesCollector;
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private static Query toLuceneQuery( IndexDescriptor index, PropertyIndexQuery predicate )
-    {
-        // Todo: After removal of Fusion index, remove `IndexDescriptor` parameter, and replace `key` with `IndexType.Text` for consistency
+    private static Query toLuceneQuery(IndexDescriptor index, PropertyIndexQuery predicate) {
+        // Todo: After removal of Fusion index, remove `IndexDescriptor` parameter, and replace `key` with
+        // `IndexType.Text` for consistency
         String key = index.getIndexProvider().getKey();
-        switch ( predicate.type() )
-        {
-        case ALL_ENTRIES:
-        case EXISTS:
-            return LuceneDocumentStructure.newScanQuery();
-        case EXACT:
-            return LuceneDocumentStructure.newSeekQuery( ((PropertyIndexQuery.ExactPredicate) predicate).value() );
-        case RANGE:
-            PropertyIndexQuery.TextRangePredicate sp = (PropertyIndexQuery.TextRangePredicate) predicate;
-            return CypherStringQueryFactory.range( sp.from(), sp.fromInclusive(), sp.to(), sp.toInclusive() );
-        case STRING_PREFIX:
-            PropertyIndexQuery.StringPrefixPredicate spp = (PropertyIndexQuery.StringPrefixPredicate) predicate;
-            return CypherStringQueryFactory.stringPrefix( spp.prefix().stringValue() );
-        case STRING_CONTAINS:
-            PropertyIndexQuery.StringContainsPredicate scp = (PropertyIndexQuery.StringContainsPredicate) predicate;
-            return CypherStringQueryFactory.stringContains( scp.contains().stringValue() );
-        case STRING_SUFFIX:
-            PropertyIndexQuery.StringSuffixPredicate ssp = (PropertyIndexQuery.StringSuffixPredicate) predicate;
-            return CypherStringQueryFactory.stringSuffix( ssp.suffix().stringValue() );
-        default:
-            throw new IllegalArgumentException( format( "Index query not supported for %s index. Query: %s", key, predicate ) );
+        switch (predicate.type()) {
+            case ALL_ENTRIES:
+            case EXISTS:
+                return LuceneDocumentStructure.newScanQuery();
+            case EXACT:
+                return LuceneDocumentStructure.newSeekQuery(((PropertyIndexQuery.ExactPredicate) predicate).value());
+            case RANGE:
+                PropertyIndexQuery.TextRangePredicate sp = (PropertyIndexQuery.TextRangePredicate) predicate;
+                return CypherStringQueryFactory.range(sp.from(), sp.fromInclusive(), sp.to(), sp.toInclusive());
+            case STRING_PREFIX:
+                PropertyIndexQuery.StringPrefixPredicate spp = (PropertyIndexQuery.StringPrefixPredicate) predicate;
+                return CypherStringQueryFactory.stringPrefix(spp.prefix().stringValue());
+            case STRING_CONTAINS:
+                PropertyIndexQuery.StringContainsPredicate scp = (PropertyIndexQuery.StringContainsPredicate) predicate;
+                return CypherStringQueryFactory.stringContains(scp.contains().stringValue());
+            case STRING_SUFFIX:
+                PropertyIndexQuery.StringSuffixPredicate ssp = (PropertyIndexQuery.StringSuffixPredicate) predicate;
+                return CypherStringQueryFactory.stringSuffix(ssp.suffix().stringValue());
+            default:
+                throw new IllegalArgumentException(
+                        format("Index query not supported for %s index. Query: %s", key, predicate));
         }
     }
 
-    private static void validateQuery( IndexDescriptor index, PropertyIndexQuery... predicates )
-    {
-        // Todo: After removal of Fusion index, remove `IndexDescriptor` parameter, and replace `key` with `IndexType.Text` for consistency
+    private static void validateQuery(IndexDescriptor index, PropertyIndexQuery... predicates) {
+        // Todo: After removal of Fusion index, remove `IndexDescriptor` parameter, and replace `key` with
+        // `IndexType.Text` for consistency
         String key = index.getIndexProvider().getKey();
-        if ( predicates.length > 1 )
-        {
-            throw new IllegalArgumentException( format(
+        if (predicates.length > 1) {
+            throw new IllegalArgumentException(format(
                     "Tried to query a %s index with a composite query. Composite queries are not supported by a %s index. Query was: %s ",
-                    key, key, Arrays.toString( predicates ) ) );
+                    key, key, Arrays.toString(predicates)));
         }
 
         PropertyIndexQuery predicate = predicates[0];
-        // Todo: After removal of Fusion index, this can be simplified by removing the second line in the conditional expression
-        if ( !(predicate.valueGroup() == ValueGroup.TEXT || predicate.type() == IndexQueryType.ALL_ENTRIES
-               || (index.getIndexType() != IndexType.TEXT && predicate.type() == IndexQueryType.EXISTS)) )
-        {
-            throw new IllegalArgumentException( format( "Index query not supported for %s index. Query: %s", key, predicate ) );
+        // Todo: After removal of Fusion index, this can be simplified by removing the second line in the conditional
+        // expression
+        if (!(predicate.valueGroup() == ValueGroup.TEXT
+                || predicate.type() == IndexQueryType.ALL_ENTRIES
+                || (index.getIndexType() != IndexType.TEXT && predicate.type() == IndexQueryType.EXISTS))) {
+            throw new IllegalArgumentException(
+                    format("Index query not supported for %s index. Query: %s", key, predicate));
         }
     }
 
     @Override
-    public long countIndexedEntities( long entityId, CursorContext cursorContext, int[] propertyKeyIds, Value... propertyValues )
-    {
-        Query entityIdQuery = new TermQuery( LuceneDocumentStructure.newTermForChangeOrRemove( entityId ) );
-        Query valueQuery = LuceneDocumentStructure.newSeekQuery( propertyValues );
+    public long countIndexedEntities(
+            long entityId, CursorContext cursorContext, int[] propertyKeyIds, Value... propertyValues) {
+        Query entityIdQuery = new TermQuery(LuceneDocumentStructure.newTermForChangeOrRemove(entityId));
+        Query valueQuery = LuceneDocumentStructure.newSeekQuery(propertyValues);
         BooleanQuery.Builder entityIdAndValueQuery = new BooleanQuery.Builder();
-        entityIdAndValueQuery.add( entityIdQuery, BooleanClause.Occur.MUST );
-        entityIdAndValueQuery.add( valueQuery, BooleanClause.Occur.MUST );
-        try
-        {
+        entityIdAndValueQuery.add(entityIdQuery, BooleanClause.Occur.MUST);
+        entityIdAndValueQuery.add(valueQuery, BooleanClause.Occur.MUST);
+        try {
             TotalHitCountCollector collector = new TotalHitCountCollector();
-            getIndexSearcher().search( entityIdAndValueQuery.build(), collector );
+            getIndexSearcher().search(entityIdAndValueQuery.build(), collector);
             // A <label,propertyKeyId,nodeId> tuple should only match at most a single propertyValue
             return collector.getTotalHits();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
-    public void close()
-    {
-        try
-        {
+    public void close() {
+        try {
             searcherReference.close();
-        }
-        catch ( IOException e )
-        {
-            throw new IndexReaderCloseException( e );
+        } catch (IOException e) {
+            throw new IndexReaderCloseException(e);
         }
     }
 
-    private IndexSearcher getIndexSearcher()
-    {
+    private IndexSearcher getIndexSearcher() {
         return searcherReference.getIndexSearcher();
     }
 }

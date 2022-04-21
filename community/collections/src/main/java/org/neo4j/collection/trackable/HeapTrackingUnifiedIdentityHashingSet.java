@@ -19,67 +19,60 @@
  */
 package org.neo4j.collection.trackable;
 
-import org.eclipse.collections.impl.block.factory.HashingStrategies;
-import org.eclipse.collections.impl.set.strategy.mutable.UnifiedSetWithHashingStrategy;
-
-import org.neo4j.memory.MemoryTracker;
-import org.neo4j.util.VisibleForTesting;
-
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.memory.HeapEstimator.ARRAY_HEADER_BYTES;
 import static org.neo4j.memory.HeapEstimator.OBJECT_REFERENCE_BYTES;
 import static org.neo4j.memory.HeapEstimator.alignObjectSize;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-@SuppressWarnings( "ExternalizableWithoutPublicNoArgConstructor" )
-public class HeapTrackingUnifiedIdentityHashingSet<T> extends UnifiedSetWithHashingStrategy<T> implements AutoCloseable
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingUnifiedIdentityHashingSet.class );
+import org.eclipse.collections.impl.block.factory.HashingStrategies;
+import org.eclipse.collections.impl.set.strategy.mutable.UnifiedSetWithHashingStrategy;
+import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
+
+@SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
+public class HeapTrackingUnifiedIdentityHashingSet<T> extends UnifiedSetWithHashingStrategy<T>
+        implements AutoCloseable {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(HeapTrackingUnifiedIdentityHashingSet.class);
     private final MemoryTracker memoryTracker;
     private int trackedCapacity;
 
     @VisibleForTesting
-    public static <T> HeapTrackingUnifiedIdentityHashingSet<T> createUnifiedIdentityHashingSet( MemoryTracker memoryTracker )
-    {
+    public static <T> HeapTrackingUnifiedIdentityHashingSet<T> createUnifiedIdentityHashingSet(
+            MemoryTracker memoryTracker) {
         int initialSizeToAllocate = DEFAULT_INITIAL_CAPACITY << 1;
-        memoryTracker.allocateHeap( SHALLOW_SIZE + arrayHeapSize( initialSizeToAllocate ) );
-        return new HeapTrackingUnifiedIdentityHashingSet<>( memoryTracker, initialSizeToAllocate );
+        memoryTracker.allocateHeap(SHALLOW_SIZE + arrayHeapSize(initialSizeToAllocate));
+        return new HeapTrackingUnifiedIdentityHashingSet<>(memoryTracker, initialSizeToAllocate);
     }
 
-    private HeapTrackingUnifiedIdentityHashingSet( MemoryTracker memoryTracker, int trackedCapacity )
-    {
-        super( HashingStrategies.identityStrategy() );
-        this.memoryTracker = requireNonNull( memoryTracker );
+    private HeapTrackingUnifiedIdentityHashingSet(MemoryTracker memoryTracker, int trackedCapacity) {
+        super(HashingStrategies.identityStrategy());
+        this.memoryTracker = requireNonNull(memoryTracker);
         this.trackedCapacity = trackedCapacity;
     }
 
     @Override
-    protected void allocateTable( int sizeToAllocate )
-    {
-        if ( memoryTracker != null )
-        {
-            memoryTracker.allocateHeap( arrayHeapSize( sizeToAllocate ) );
-            memoryTracker.releaseHeap( arrayHeapSize( trackedCapacity ) );
+    protected void allocateTable(int sizeToAllocate) {
+        if (memoryTracker != null) {
+            memoryTracker.allocateHeap(arrayHeapSize(sizeToAllocate));
+            memoryTracker.releaseHeap(arrayHeapSize(trackedCapacity));
             trackedCapacity = sizeToAllocate;
         }
-        super.allocateTable( sizeToAllocate );
+        super.allocateTable(sizeToAllocate);
     }
 
     @Override
-    public void close()
-    {
-        memoryTracker.releaseHeap( SHALLOW_SIZE + arrayHeapSize( trackedCapacity ) );
+    public void close() {
+        memoryTracker.releaseHeap(SHALLOW_SIZE + arrayHeapSize(trackedCapacity));
     }
 
     @VisibleForTesting
-    public int getIndex( T key )
-    {
-        return index( key );
+    public int getIndex(T key) {
+        return index(key);
     }
 
     @VisibleForTesting
-    public static long arrayHeapSize( int arrayLength )
-    {
-        return alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * OBJECT_REFERENCE_BYTES );
+    public static long arrayHeapSize(int arrayLength) {
+        return alignObjectSize(ARRAY_HEADER_BYTES + (long) arrayLength * OBJECT_REFERENCE_BYTES);
     }
 }

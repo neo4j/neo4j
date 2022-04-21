@@ -20,7 +20,6 @@
 package org.neo4j.io.marshal;
 
 import java.io.IOException;
-
 import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.io.fs.ReadableChannel;
 
@@ -30,17 +29,12 @@ import org.neo4j.io.fs.ReadableChannel;
  *
  * @param <STATE> The type of state marshalled.
  */
-public abstract class SafeChannelMarshal<STATE> implements ChannelMarshal<STATE>
-{
+public abstract class SafeChannelMarshal<STATE> implements ChannelMarshal<STATE> {
     @Override
-    public final STATE unmarshal( ReadableChannel channel ) throws IOException, EndOfStreamException
-    {
-        try
-        {
-            return unmarshal0( channel );
-        }
-        catch ( ReadPastEndException e )
-        {
+    public final STATE unmarshal(ReadableChannel channel) throws IOException, EndOfStreamException {
+        try {
+            return unmarshal0(channel);
+        } catch (ReadPastEndException e) {
             throw EndOfStreamException.INSTANCE;
         }
     }
@@ -55,5 +49,5 @@ public abstract class SafeChannelMarshal<STATE> implements ChannelMarshal<STATE>
      * @throws IOException
      * @throws EndOfStreamException
      */
-    protected abstract STATE unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException;
+    protected abstract STATE unmarshal0(ReadableChannel channel) throws IOException, EndOfStreamException;
 }

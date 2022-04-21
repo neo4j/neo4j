@@ -19,10 +19,8 @@
  */
 package org.neo4j.bolt.transaction;
 
-public class TransactionNotFoundException extends Exception
-{
-    public TransactionNotFoundException( String transactionId )
-    {
-        super( "Transaction with id " + transactionId + " was not found." );
+public class TransactionNotFoundException extends Exception {
+    public TransactionNotFoundException(String transactionId) {
+        super("Transaction with id " + transactionId + " was not found.");
     }
 }

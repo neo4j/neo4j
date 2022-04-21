@@ -25,29 +25,24 @@ import org.neo4j.bolt.v41.messaging.RoutingContext;
  * A collection of methods that allow overriding default behaviour to make some aspects of Fabric testable.
  * An override is injected using thread local values, in order to avoid interference between tests executed in parallel.
  */
-public class TestOverrides
-{
+public class TestOverrides {
     public static final InheritableThreadLocal<Boolean> MULTI_GRAPH_EVERYWHERE = new InheritableThreadLocal<>();
     public static final InheritableThreadLocal<RoutingContext> ROUTING_CONTEXT = new InheritableThreadLocal<>();
 
-    public static boolean multiGraphCapabilitiesEnabledForAllDatabases( boolean originalValue )
-    {
+    public static boolean multiGraphCapabilitiesEnabledForAllDatabases(boolean originalValue) {
         var overriddenValue = MULTI_GRAPH_EVERYWHERE.get();
 
-        if ( overriddenValue != null )
-        {
+        if (overriddenValue != null) {
             return overriddenValue;
         }
 
         return originalValue;
     }
 
-    public static RoutingContext routingContext( RoutingContext originalValue )
-    {
+    public static RoutingContext routingContext(RoutingContext originalValue) {
         var overriddenValue = ROUTING_CONTEXT.get();
 
-        if ( overriddenValue != null )
-        {
+        if (overriddenValue != null) {
             return overriddenValue;
         }
 

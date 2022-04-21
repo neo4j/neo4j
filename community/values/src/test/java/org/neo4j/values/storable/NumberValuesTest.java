@@ -19,88 +19,76 @@
  */
 package org.neo4j.values.storable;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.values.storable.NumberValues.hash;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.toAnyValue;
 
-class NumberValuesTest
-{
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+import org.junit.jupiter.api.Test;
+
+class NumberValuesTest {
 
     @Test
-    void shouldHashNaN()
-    {
-        assertThat( hash( Double.NaN ) ).isEqualTo( hash( Float.NaN ) );
+    void shouldHashNaN() {
+        assertThat(hash(Double.NaN)).isEqualTo(hash(Float.NaN));
     }
 
     @Test
-    void shouldHashInfinite()
-    {
-        assertThat( hash( Double.NEGATIVE_INFINITY ) ).isEqualTo( hash( Float.NEGATIVE_INFINITY ) );
-        assertThat( hash( Double.POSITIVE_INFINITY ) ).isEqualTo( hash( Float.POSITIVE_INFINITY ) );
+    void shouldHashInfinite() {
+        assertThat(hash(Double.NEGATIVE_INFINITY)).isEqualTo(hash(Float.NEGATIVE_INFINITY));
+        assertThat(hash(Double.POSITIVE_INFINITY)).isEqualTo(hash(Float.POSITIVE_INFINITY));
     }
 
     @Test
-    void shouldHandleNaNCorrectly()
-    {
-        assertNotEqual( toAnyValue(Double.NaN), toAnyValue( Double.NaN ) );
-        assertNotEqual( toAnyValue( 1 ), toAnyValue( Double.NaN ) );
-        assertNotEqual( toAnyValue( Double.NaN ), toAnyValue( 1 ) );
+    void shouldHandleNaNCorrectly() {
+        assertNotEqual(toAnyValue(Double.NaN), toAnyValue(Double.NaN));
+        assertNotEqual(toAnyValue(1), toAnyValue(Double.NaN));
+        assertNotEqual(toAnyValue(Double.NaN), toAnyValue(1));
     }
 
     @Test
-    void shouldHashIntegralDoubleAsLong()
-    {
-        assertThat( hash( 1337d ) ).isEqualTo( hash( 1337L ) );
+    void shouldHashIntegralDoubleAsLong() {
+        assertThat(hash(1337d)).isEqualTo(hash(1337L));
     }
 
     @Test
-    void shouldGiveSameResultEvenWhenArraysContainDifferentTypes()
-    {
+    void shouldGiveSameResultEvenWhenArraysContainDifferentTypes() {
         int[] ints = new int[32];
         long[] longs = new long[32];
 
         Random r = ThreadLocalRandom.current();
-        for ( int i = 0; i < 32; i++ )
-        {
+        for (int i = 0; i < 32; i++) {
             int nextInt = r.nextInt();
             ints[i] = nextInt;
             longs[i] = nextInt;
         }
 
-        assertThat( hash( ints ) ).isEqualTo( hash( longs ) );
+        assertThat(hash(ints)).isEqualTo(hash(longs));
     }
 
     @Test
-    void shouldGiveSameHashForLongsAndInts()
-    {
+    void shouldGiveSameHashForLongsAndInts() {
         Random r = ThreadLocalRandom.current();
-        for ( int i = 0; i < 1_000_000; i++ )
-        {
+        for (int i = 0; i < 1_000_000; i++) {
             int anInt = r.nextInt();
-            assertThat( anInt ).isEqualTo( hash( anInt ) );
+            assertThat(anInt).isEqualTo(hash(anInt));
         }
     }
 
     @Test
-    void shouldGiveSameResultEvenWhenArraysContainDifferentTypes2()
-    {
+    void shouldGiveSameResultEvenWhenArraysContainDifferentTypes2() {
         byte[] bytes = new byte[32];
         short[] shorts = new short[32];
 
         Random r = ThreadLocalRandom.current();
-        for ( int i = 0; i < 32; i++ )
-        {
+        for (int i = 0; i < 32; i++) {
             byte nextByte = ((Number) (r.nextInt())).byteValue();
             bytes[i] = nextByte;
             shorts[i] = nextByte;
         }
 
-        assertThat( hash( bytes ) ).isEqualTo( hash( shorts ) );
+        assertThat(hash(bytes)).isEqualTo(hash(shorts));
     }
 }

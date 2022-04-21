@@ -69,9 +69,11 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   private val cacheFactory = TestExecutorCaffeineCacheFactory
 
-  private def cypherConfig(queryCacheSize: Int = 128,
-                            statsDivergenceThreshold: Double = 0.5,
-                            queryPlanTTL: Long = 1000): CypherConfiguration = {
+  private def cypherConfig(
+    queryCacheSize: Int = 128,
+    statsDivergenceThreshold: Double = 0.5,
+    queryPlanTTL: Long = 1000
+  ): CypherConfiguration = {
     val builder = Config.newBuilder()
     builder.set(GraphDatabaseSettings.query_cache_size, Int.box(queryCacheSize))
     builder.set(GraphDatabaseSettings.query_statistics_divergence_threshold, Double.box(statsDivergenceThreshold))
@@ -80,16 +82,18 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     CypherConfiguration.fromConfig(config)
   }
 
-  private def createCompiler(config: CypherConfiguration,
-                             clock: Clock = Clock.systemUTC(),
-                             logProvider: InternalLogProvider = NullLogProvider.getInstance): CypherCurrentCompiler[RuntimeContext] = {
+  private def createCompiler(
+    config: CypherConfiguration,
+    clock: Clock = Clock.systemUTC(),
+    logProvider: InternalLogProvider = NullLogProvider.getInstance
+  ): CypherCurrentCompiler[RuntimeContext] = {
     val caches = new CypherQueryCaches(
       CypherQueryCaches.Config.fromCypherConfiguration(config),
       () => 1,
       cacheFactory,
       clock,
       kernelMonitors,
-      logProvider,
+      logProvider
     )
 
     val log = logProvider.getLog(getClass)
@@ -102,17 +106,23 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       caches,
       CypherPlannerOption.default,
       CypherUpdateStrategy.default,
-      compatibilityMode = Compatibility4_4)
+      compatibilityMode = Compatibility4_4
+    )
 
     CypherCurrentCompiler(
       planner,
       CommunityRuntimeFactory.getRuntime(CypherRuntimeOption.default, disallowFallback = true),
-      CommunityRuntimeContextManager(log, CypherRuntimeConfiguration.fromCypherConfiguration(CypherConfiguration.fromConfig(Config.defaults()))),
+      CommunityRuntimeContextManager(
+        log,
+        CypherRuntimeConfiguration.fromCypherConfiguration(CypherConfiguration.fromConfig(Config.defaults()))
+      ),
       kernelMonitors,
-      caches)
+      caches
+    )
   }
 
-  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(GraphDatabaseSettings.cypher_min_replan_interval -> Duration.ZERO)
+  override def databaseConfig(): Map[Setting[_], Object] =
+    super.databaseConfig() ++ Map(GraphDatabaseSettings.cypher_min_replan_interval -> Duration.ZERO)
 
   private var counter: CountingCacheTracer[CacheKey[AnyRef]] = _
   private var compiler: CypherCurrentCompiler[RuntimeContext] = _
@@ -124,20 +134,29 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     kernelMonitors.addMonitorListener(counter)
   }
 
-  private def runQuery(query: String,
-                       params: scala.Predef.Map[String, AnyRef] = Map.empty,
-                       cypherCompiler: Compiler = compiler): String = {
+  private def runQuery(
+    query: String,
+    params: scala.Predef.Map[String, AnyRef] = Map.empty,
+    cypherCompiler: Compiler = compiler
+  ): String = {
 
     val preParser = new PreParser(
       CypherConfiguration.fromConfig(Config.defaults()),
-      new LFUCache[String, PreParsedQuery](TestExecutorCaffeineCacheFactory, 1))
+      new LFUCache[String, PreParsedQuery](TestExecutorCaffeineCacheFactory, 1)
+    )
 
     val preParsedQuery = preParser.preParseQuery(query)
 
     graph.withTx { tx =>
       val noTracing = CompilationPhaseTracer.NO_TRACING
       val context = graph.transactionalContext(tx, query = query -> params)
-      cypherCompiler.compile(preParsedQuery, noTracing, Set.empty, context, ValueUtils.asParameterMapValue(asJavaMapDeep(params)))
+      cypherCompiler.compile(
+        preParsedQuery,
+        noTracing,
+        Set.empty,
+        context,
+        ValueUtils.asParameterMapValue(asJavaMapDeep(params))
+      )
       val id = context.executingQuery().id()
       context.close()
       id
@@ -200,16 +219,18 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   }
 
   test("should keep different cache entries for different literal types") {
-    runQuery("WITH 1 as x RETURN x")      // miss
-    runQuery("WITH 2 as x RETURN x")      // hit
-    runQuery("WITH 1.0 as x RETURN x")    // miss
-    runQuery("WITH 2.0 as x RETURN x")    // hit
-    runQuery("WITH 'foo' as x RETURN x")  // miss
-    runQuery("WITH 'bar' as x RETURN x")  // hit
-    runQuery("WITH $p as x RETURN x")    // not enough parameters -> not even miss
-    runQuery("WITH $k as x RETURN x")    // not enough parameters -> not even miss
-    runQuery("WITH [1,2] as x RETURN x")  // miss
-    runQuery("WITH [1,2,3] as x RETURN x")    // hit (list of size 2 and list of size 3 both fall into the same bucket of size 10)
+    runQuery("WITH 1 as x RETURN x") // miss
+    runQuery("WITH 2 as x RETURN x") // hit
+    runQuery("WITH 1.0 as x RETURN x") // miss
+    runQuery("WITH 2.0 as x RETURN x") // hit
+    runQuery("WITH 'foo' as x RETURN x") // miss
+    runQuery("WITH 'bar' as x RETURN x") // hit
+    runQuery("WITH $p as x RETURN x") // not enough parameters -> not even miss
+    runQuery("WITH $k as x RETURN x") // not enough parameters -> not even miss
+    runQuery("WITH [1,2] as x RETURN x") // miss
+    runQuery(
+      "WITH [1,2,3] as x RETURN x"
+    ) // hit (list of size 2 and list of size 3 both fall into the same bucket of size 10)
 
     counter.counts should equal(CacheCounts(hits = 4, misses = 4, flushes = 1, compilations = 4))
   }
@@ -256,7 +277,9 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
-  test("should keep different cache entries for explicitly parametrized lists where inner type is not string and where inner type is string") {
+  test(
+    "should keep different cache entries for explicitly parametrized lists where inner type is not string and where inner type is string"
+  ) {
     runQuery("MATCH (n:Label) WHERE n.prop IN $list RETURN *", params = Map("list" -> Seq("1", "2", "3")))
     runQuery("MATCH (n:Label) WHERE n.prop IN $list RETURN *", params = Map("list" -> Seq("1", 2, "3")))
 
@@ -390,8 +413,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
     assertThat(logProvider).forClass(classOf[CypherQueryCaches]).forLevel(Level.DEBUG)
       .containsMessages(s"Discarded stale plan from the plan cache after 0 seconds. " +
-                             s"Reason: NodesWithLabelCardinality(Some(LabelId($dogId))) changed from 10.0 to 1001.0, " +
-                             s"which is a divergence of 0.99000999000999 which is greater than threshold 0.5. Query id: $queryId.")
+        s"Reason: NodesWithLabelCardinality(Some(LabelId($dogId))) changed from 10.0 to 1001.0, " +
+        s"which is a divergence of 0.99000999000999 which is greater than threshold 0.5. Query id: $queryId.")
       .doesNotContainMessage(query)
   }
 
@@ -422,7 +445,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   test("should find query in cache with same parameter types, ignoring unused parameters") {
     val map1: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> Integer.valueOf(42), "foo" -> "bar")
-    val map2: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> Integer.valueOf(43), "bar" -> Integer.valueOf(10))
+    val map2: scala.Predef.Map[String, AnyRef] =
+      scala.Predef.Map("number" -> Integer.valueOf(43), "bar" -> Integer.valueOf(10))
     runQuery("return $number", params = map1)
     runQuery("return $number", params = map2)
 
@@ -432,7 +456,12 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   test("should clear all compiler library caches") {
     val compilerLibrary = createCompilerLibrary()
     val compilers = CypherVersion.values.map { version =>
-      compilerLibrary.selectCompiler(version, CypherPlannerOption.default, CypherRuntimeOption.default, CypherUpdateStrategy.default)
+      compilerLibrary.selectCompiler(
+        version,
+        CypherPlannerOption.default,
+        CypherRuntimeOption.default,
+        CypherUpdateStrategy.default
+      )
     }
 
     compilers.foreach { compiler =>
@@ -446,7 +475,12 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       runQuery("return 42", cypherCompiler = compiler) // Misses
     }
 
-    counter.counts should equal(CacheCounts(hits = compilers.size, misses = 2 * compilers.size, flushes = 2 * compilers.size, compilations = 2 * compilers.size))
+    counter.counts should equal(CacheCounts(
+      hits = compilers.size,
+      misses = 2 * compilers.size,
+      flushes = 2 * compilers.size,
+      compilations = 2 * compilers.size
+    ))
   }
 
   private def createCompilerLibrary(): CompilerLibrary = {
@@ -464,10 +498,13 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       logProvider
     )
     val compilerFactory =
-      new CommunityCompilerFactory(graph, monitors, nullLogProvider,
+      new CommunityCompilerFactory(
+        graph,
+        monitors,
+        nullLogProvider,
         CypherPlannerConfiguration.fromCypherConfiguration(cypherConfig, config, planSystemCommands = false),
         CypherRuntimeConfiguration.fromCypherConfiguration(cypherConfig),
-        queryCaches,
+        queryCaches
       )
     new CompilerLibrary(compilerFactory, () => null)
   }

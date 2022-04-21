@@ -19,126 +19,108 @@
  */
 package org.neo4j.logging;
 
-import org.assertj.core.api.AbstractAssert;
-import org.assertj.core.api.AbstractThrowableAssert;
-
-import java.util.Arrays;
-import java.util.Objects;
-
-import org.neo4j.logging.AssertableLogProvider.LogCall;
-
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.helpers.Exceptions.stringify;
 
-public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider>
-{
+import java.util.Arrays;
+import java.util.Objects;
+import org.assertj.core.api.AbstractAssert;
+import org.assertj.core.api.AbstractThrowableAssert;
+import org.neo4j.logging.AssertableLogProvider.LogCall;
+
+public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider> {
     private Class<?> loggerClazz;
     private AssertableLogProvider.Level logLevel;
 
-    public LogAssert( AssertableLogProvider logProvider )
-    {
-        super( logProvider, LogAssert.class );
+    public LogAssert(AssertableLogProvider logProvider) {
+        super(logProvider, LogAssert.class);
     }
 
-    public LogAssert forClass( Class<?> clazz )
-    {
+    public LogAssert forClass(Class<?> clazz) {
         loggerClazz = clazz;
         return this;
     }
 
-    public LogAssert forLevel( AssertableLogProvider.Level level )
-    {
+    public LogAssert forLevel(AssertableLogProvider.Level level) {
         this.logLevel = level;
         return this;
     }
 
-    public LogAssert containsMessages( String... messages )
-    {
+    public LogAssert containsMessages(String... messages) {
         isNotNull();
-        for ( String message : messages )
-        {
-            if ( !haveMessage( message ) )
-            {
-                failWithMessage( "Expected log to contain messages: `%s` but no matches found in:%n%s", Arrays.toString( messages ), actual.serialize() );
+        for (String message : messages) {
+            if (!haveMessage(message)) {
+                failWithMessage(
+                        "Expected log to contain messages: `%s` but no matches found in:%n%s",
+                        Arrays.toString(messages), actual.serialize());
             }
         }
         return this;
     }
 
-    public LogAssert containsMessagesOnce( String... messages )
-    {
+    public LogAssert containsMessagesOnce(String... messages) {
         isNotNull();
-        for ( String message : messages )
-        {
-            long messageMatchCount = messageMatchCount( message );
-            if ( messageMatchCount != 1 )
-            {
-                if ( messageMatchCount == 0 )
-                {
-                    failWithMessage( "Expected log to contain messages: `%s` exactly once but no matches found in:%n%s",
-                            Arrays.toString( messages ), actual.serialize() );
-                }
-                else
-                {
-                    failWithMessage( "Expected log to contain messages: `%s` exactly once but %d matches found in:%n%s",
-                            Arrays.toString( messages ), messageMatchCount, actual.serialize() );
+        for (String message : messages) {
+            long messageMatchCount = messageMatchCount(message);
+            if (messageMatchCount != 1) {
+                if (messageMatchCount == 0) {
+                    failWithMessage(
+                            "Expected log to contain messages: `%s` exactly once but no matches found in:%n%s",
+                            Arrays.toString(messages), actual.serialize());
+                } else {
+                    failWithMessage(
+                            "Expected log to contain messages: `%s` exactly once but %d matches found in:%n%s",
+                            Arrays.toString(messages), messageMatchCount, actual.serialize());
                 }
             }
         }
         return this;
     }
 
-    public LogAssert doesNotHaveAnyLogs()
-    {
+    public LogAssert doesNotHaveAnyLogs() {
         isNotNull();
-        if ( actual.getLogCalls().stream()
-                   .anyMatch(call -> matchedLogger( call ) && matchedLevel( call ) ) )
-        {
-            failWithMessage( "Expected log to be empty but following log calls were recorded:%n%s", actual.serialize() );
+        if (actual.getLogCalls().stream().anyMatch(call -> matchedLogger(call) && matchedLevel(call))) {
+            failWithMessage("Expected log to be empty but following log calls were recorded:%n%s", actual.serialize());
         }
         return this;
     }
 
-    public LogAssert doesNotContainMessage( String message )
-    {
+    public LogAssert doesNotContainMessage(String message) {
         isNotNull();
-        if ( haveMessage( message ) )
-        {
-            failWithMessage( "Unexpected log message: `%s` in:%n%s", message, actual.serialize() );
+        if (haveMessage(message)) {
+            failWithMessage("Unexpected log message: `%s` in:%n%s", message, actual.serialize());
         }
         return this;
     }
 
-    public LogAssert containsMessageWithArguments( String message, Object... arguments )
-    {
+    public LogAssert containsMessageWithArguments(String message, Object... arguments) {
         isNotNull();
-        if ( !haveMessageWithArguments( message, arguments ) )
-        {
-            failWithMessage( "Expected log to contain messages: `%s` with arguments: `%s`. " +
-                            "But no matches found in:%n%s", message, Arrays.toString( arguments ), actual.serialize() );
+        if (!haveMessageWithArguments(message, arguments)) {
+            failWithMessage(
+                    "Expected log to contain messages: `%s` with arguments: `%s`. " + "But no matches found in:%n%s",
+                    message, Arrays.toString(arguments), actual.serialize());
         }
         return this;
     }
 
-    public LogAssert containsMessageWithArgumentsContaining( String message, Object... arguments )
-    {
+    public LogAssert containsMessageWithArgumentsContaining(String message, Object... arguments) {
         isNotNull();
-        if ( !haveMessageWithArgumentsContaining( message, arguments ) )
-        {
-            failWithMessage( "Expected log to contain messages: `%s` with arguments containing: `%s`. " +
-                    "But no matches found in:%n%s", message, Arrays.toString( arguments ), actual.serialize() );
+        if (!haveMessageWithArgumentsContaining(message, arguments)) {
+            failWithMessage(
+                    "Expected log to contain messages: `%s` with arguments containing: `%s`. "
+                            + "But no matches found in:%n%s",
+                    message, Arrays.toString(arguments), actual.serialize());
         }
         return this;
     }
 
-    public LogAssert doesNotContainMessageWithArguments( String message, Object... arguments )
-    {
+    public LogAssert doesNotContainMessageWithArguments(String message, Object... arguments) {
         isNotNull();
-        if ( haveMessageWithArguments( message, arguments ) )
-        {
-            failWithMessage( "Unexpected log message: `%s` with arguments: `%s` " +
-                    " in:%n%s", message, Arrays.toString( arguments ), actual.serialize() );
+        if (haveMessageWithArguments(message, arguments)) {
+            failWithMessage(
+                    "Unexpected log message: `%s` with arguments: `%s` " + " in:%n%s",
+                    message, Arrays.toString(arguments), actual.serialize());
         }
         return this;
     }
@@ -146,145 +128,133 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider>
     /**
      * Checks that there is a message that contains all the supplies message snippets.
      */
-    public LogAssert containsMessageWithAll( String... snippets )
-    {
+    public LogAssert containsMessageWithAll(String... snippets) {
         isNotNull();
 
         var logCalls = actual.getLogCalls();
-        boolean matched = logCalls.stream().anyMatch( call -> matchedLogger( call )
-                && matchedLevel( call )
-                && Arrays.stream( snippets ).allMatch( snippet -> matchedMessage( snippet, call ) ) );
+        boolean matched = logCalls.stream()
+                .anyMatch(call -> matchedLogger(call)
+                        && matchedLevel(call)
+                        && Arrays.stream(snippets).allMatch(snippet -> matchedMessage(snippet, call)));
 
-        if ( !matched )
-        {
-            failWithMessage( "Expected log to contain a message containing: `%s`. " +
-                    "But no matches found in:%s", Arrays.toString( snippets ), actual.serialize() );
+        if (!matched) {
+            failWithMessage(
+                    "Expected log to contain a message containing: `%s`. " + "But no matches found in:%s",
+                    Arrays.toString(snippets), actual.serialize());
         }
 
         return this;
     }
 
-    public LogAssert eachMessageContains( String message )
-    {
+    public LogAssert eachMessageContains(String message) {
         isNotNull();
-        for ( LogCall logCall : actual.getLogCalls() )
-        {
-            if ( !matchedMessage( message, logCall ) )
-            {
-                failWithMessage( "Expected each log message to contain '%s', but message '%s' doesn't", message, logCall.toLogLikeString() );
+        for (LogCall logCall : actual.getLogCalls()) {
+            if (!matchedMessage(message, logCall)) {
+                failWithMessage(
+                        "Expected each log message to contain '%s', but message '%s' doesn't",
+                        message, logCall.toLogLikeString());
             }
         }
         return this;
     }
 
-    public AbstractThrowableAssert<?,? extends Throwable> assertExceptionForLogMessage( String message )
-    {
+    public AbstractThrowableAssert<?, ? extends Throwable> assertExceptionForLogMessage(String message) {
         isNotNull();
-        haveMessage( message );
+        haveMessage(message);
         var logCall = actual.getLogCalls().stream()
-                .filter( call -> matchedLogger( call ) && matchedLevel( call ) && matchedMessage( message, call ) ).findFirst();
-        if ( logCall.isEmpty() )
-        {
-            failWithMessage( "Expected log call with message `%s` not found in:%n%s.", message, actual.serialize() );
+                .filter(call -> matchedLogger(call) && matchedLevel(call) && matchedMessage(message, call))
+                .findFirst();
+        if (logCall.isEmpty()) {
+            failWithMessage("Expected log call with message `%s` not found in:%n%s.", message, actual.serialize());
         }
-        return assertThat( logCall.get().getThrowable() );
+        return assertThat(logCall.get().getThrowable());
     }
 
-    public LogAssert containsMessageWithException( String message, Throwable t )
-    {
+    public LogAssert containsMessageWithException(String message, Throwable t) {
         isNotNull();
-        requireNonNull( t );
-        if ( !haveMessageWithException( message, t ) )
-        {
-            failWithMessage( "Expected log to contain message `%s` with exception: `%s`. But no matches found in:%n%s",
-                    message, stringify( t ), actual.serialize() );
+        requireNonNull(t);
+        if (!haveMessageWithException(message, t)) {
+            failWithMessage(
+                    "Expected log to contain message `%s` with exception: `%s`. But no matches found in:%n%s",
+                    message, stringify(t), actual.serialize());
         }
         return this;
     }
 
-    public LogAssert containsException( Throwable t )
-    {
-        requireNonNull( t );
+    public LogAssert containsException(Throwable t) {
+        requireNonNull(t);
         isNotNull();
-        if ( actual.getLogCalls().stream().noneMatch( call -> matchedLogger( call ) &&
-                                                    matchedLevel( call ) &&
-                                                    t.equals( call.getThrowable() ) ) )
-        {
-            failWithMessage( "Expected log to contain exception: `%s`. But no matches found in:%n%s",
-                    stringify( t ), actual.serialize() );
+        if (actual.getLogCalls().stream()
+                .noneMatch(call -> matchedLogger(call) && matchedLevel(call) && t.equals(call.getThrowable()))) {
+            failWithMessage(
+                    "Expected log to contain exception: `%s`. But no matches found in:%n%s",
+                    stringify(t), actual.serialize());
         }
         return this;
     }
 
-    private boolean haveMessageWithException( String message, Throwable t )
-    {
-        return actual.getLogCalls().stream().anyMatch(
-                call -> matchedLogger( call ) && matchedLevel( call ) &&
-                        t.equals( call.getThrowable() ) && matchedMessage( message, call ) );
+    private boolean haveMessageWithException(String message, Throwable t) {
+        return actual.getLogCalls().stream()
+                .anyMatch(call -> matchedLogger(call)
+                        && matchedLevel(call)
+                        && t.equals(call.getThrowable())
+                        && matchedMessage(message, call));
     }
 
-    private boolean haveMessageWithArguments( String message, Object... arguments )
-    {
+    private boolean haveMessageWithArguments(String message, Object... arguments) {
         var logCalls = actual.getLogCalls();
-        return logCalls.stream().anyMatch( call -> matchedLogger( call )
-                && matchedLevel( call ) && matchedArguments( call, arguments ) &&
-                matchedMessage( message, call ) );
+        return logCalls.stream()
+                .anyMatch(call -> matchedLogger(call)
+                        && matchedLevel(call)
+                        && matchedArguments(call, arguments)
+                        && matchedMessage(message, call));
     }
 
-    private boolean haveMessageWithArgumentsContaining( String message, Object... arguments )
-    {
+    private boolean haveMessageWithArgumentsContaining(String message, Object... arguments) {
         var logCalls = actual.getLogCalls();
-        return logCalls.stream().anyMatch( call -> matchedLogger( call )
-                && matchedLevel( call ) && matchedArgumentsContains( call, arguments ) &&
-                matchedMessage( message, call ) );
+        return logCalls.stream()
+                .anyMatch(call -> matchedLogger(call)
+                        && matchedLevel(call)
+                        && matchedArgumentsContains(call, arguments)
+                        && matchedMessage(message, call));
     }
 
-    private boolean haveMessage( String message )
-    {
+    private boolean haveMessage(String message) {
         var logCalls = actual.getLogCalls();
-        return logCalls.stream().anyMatch( call -> matchedLogger( call ) &&
-                matchedLevel( call ) &&
-                matchedMessage( message, call ) );
+        return logCalls.stream()
+                .anyMatch(call -> matchedLogger(call) && matchedLevel(call) && matchedMessage(message, call));
     }
 
-    private long messageMatchCount( String message )
-    {
+    private long messageMatchCount(String message) {
         var logCalls = actual.getLogCalls();
-        return logCalls.stream().filter( call -> matchedLogger( call ) &&
-                matchedLevel( call ) &&
-                matchedMessage( message, call ) ).count();
+        return logCalls.stream()
+                .filter(call -> matchedLogger(call) && matchedLevel(call) && matchedMessage(message, call))
+                .count();
     }
 
-    private static boolean matchedArgumentsContains( LogCall call, Object[] arguments )
-    {
+    private static boolean matchedArgumentsContains(LogCall call, Object[] arguments) {
         Object[] callArguments = call.getArguments();
-        for ( int i = 0; i < arguments.length; i++ )
-        {
-            if ( !Objects.toString( callArguments[i] ).contains( Objects.toString( arguments[i] ) ) )
-            {
+        for (int i = 0; i < arguments.length; i++) {
+            if (!Objects.toString(callArguments[i]).contains(Objects.toString(arguments[i]))) {
                 return false;
             }
         }
         return true;
     }
 
-    private static boolean matchedArguments( LogCall call, Object[] arguments )
-    {
-        return Arrays.equals( call.getArguments(), arguments );
+    private static boolean matchedArguments(LogCall call, Object[] arguments) {
+        return Arrays.equals(call.getArguments(), arguments);
     }
 
-    private static boolean matchedMessage( String message, LogCall call )
-    {
-        return call.getMessage().contains( message ) || call.toLogLikeString().contains( message );
+    private static boolean matchedMessage(String message, LogCall call) {
+        return call.getMessage().contains(message) || call.toLogLikeString().contains(message);
     }
 
-    private boolean matchedLogger( LogCall call )
-    {
-        return loggerClazz == null || loggerClazz.getName().equals( call.getContext() );
+    private boolean matchedLogger(LogCall call) {
+        return loggerClazz == null || loggerClazz.getName().equals(call.getContext());
     }
 
-    private boolean matchedLevel( LogCall call )
-    {
+    private boolean matchedLevel(LogCall call) {
         return logLevel == null || logLevel == call.getLevel();
     }
 }

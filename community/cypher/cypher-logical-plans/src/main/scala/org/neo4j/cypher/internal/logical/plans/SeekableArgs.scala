@@ -47,22 +47,23 @@ case class SingleSeekableArg(expr: Expression) extends SeekableArgs {
 }
 
 case class ManySeekableArgs(expr: Expression) extends SeekableArgs {
+
   val sizeHint: Option[Int] = expr match {
-    case coll: ListLiteral => Some(coll.expressions.size)
+    case coll: ListLiteral             => Some(coll.expressions.size)
     case param: AutoExtractedParameter => param.sizeHint
-    case _ => None
+    case _                             => None
   }
 
   override def mapValues(f: Expression => Expression): ManySeekableArgs = expr match {
     case coll: ListLiteral => copy(expr = coll.map(f))
-    case _ => copy(expr = f(expr))
+    case _                 => copy(expr = f(expr))
   }
 
   def asQueryExpression: QueryExpression[Expression] = expr match {
     case coll: ListLiteral =>
       ZeroOneOrMany(coll.expressions) match {
         case One(value) => SingleQueryExpression(value)
-        case _ => ManyQueryExpression(coll)
+        case _          => ManyQueryExpression(coll)
       }
 
     case _ =>
@@ -71,9 +72,10 @@ case class ManySeekableArgs(expr: Expression) extends SeekableArgs {
 }
 
 object WithSeekableArgs {
+
   def unapply(v: Any) = v match {
-    case In(lhs, rhs) => Some(lhs -> ManySeekableArgs(rhs))
+    case In(lhs, rhs)     => Some(lhs -> ManySeekableArgs(rhs))
     case Equals(lhs, rhs) => Some(lhs -> SingleSeekableArg(rhs))
-    case _ => None
+    case _                => None
   }
 }

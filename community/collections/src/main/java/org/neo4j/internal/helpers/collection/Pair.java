@@ -27,8 +27,7 @@ import java.util.Objects;
  * @param <T1> the type of the {@link #first() first value} of the pair.
  * @param <T2> the type of the {@link #other() other value} of the pair.
  */
-public abstract class Pair<T1, T2>
-{
+public abstract class Pair<T1, T2> {
     /**
      * Create a new pair of objects.
      *
@@ -38,19 +37,15 @@ public abstract class Pair<T1, T2>
      * @param <T2> the type of the second object in the pair
      * @return a new pair of the two parameters.
      */
-    public static <T1, T2> Pair<T1,T2> pair( final T1 first, final T2 other )
-    {
-        return new Pair<>()
-        {
+    public static <T1, T2> Pair<T1, T2> pair(final T1 first, final T2 other) {
+        return new Pair<>() {
             @Override
-            public T1 first()
-            {
+            public T1 first() {
                 return first;
             }
 
             @Override
-            public T2 other()
-            {
+            public T2 other() {
                 return other;
             }
         };
@@ -64,13 +59,11 @@ public abstract class Pair<T1, T2>
      * @param <T2> the type of the second object in the pair
      * @return a new pair of the two parameters.
      */
-    public static <T1, T2> Pair<T1, T2> of( final T1 first, final T2 other )
-    {
-        return pair( first, other );
+    public static <T1, T2> Pair<T1, T2> of(final T1 first, final T2 other) {
+        return pair(first, other);
     }
 
-    Pair()
-    {
+    Pair() {
         // package private, limited number of subclasses
     }
 
@@ -85,33 +78,27 @@ public abstract class Pair<T1, T2>
     public abstract T2 other();
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "(" + first() + ", " + other() + ")";
     }
 
     @Override
-    public int hashCode()
-    {
-        return ( 31 * hashCode( first() ) ) | hashCode( other() );
+    public int hashCode() {
+        return (31 * hashCode(first())) | hashCode(other());
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        if ( this == obj )
-        {
+    public boolean equals(Object obj) {
+        if (this == obj) {
             return true;
         }
-        if ( obj instanceof Pair<?,?> that )
-        {
-            return Objects.equals( this.other(), that.other() ) && Objects.equals( this.first(), that.first() );
+        if (obj instanceof Pair<?, ?> that) {
+            return Objects.equals(this.other(), that.other()) && Objects.equals(this.first(), that.first());
         }
         return false;
     }
 
-    private static int hashCode( Object obj )
-    {
+    private static int hashCode(Object obj) {
         return obj == null ? 0 : obj.hashCode();
     }
 }

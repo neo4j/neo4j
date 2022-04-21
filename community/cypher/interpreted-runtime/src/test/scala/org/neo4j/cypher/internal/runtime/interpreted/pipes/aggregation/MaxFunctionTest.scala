@@ -66,13 +66,15 @@ class MaxFunctionTest extends CypherFunSuite with AggregateTest {
   }
 
   test("aggregating strings work") {
-    val result = aggregateOn(stringValue("abc"), stringValue("a"), stringValue("b"), stringValue("B"), stringValue("abc1"))
+    val result =
+      aggregateOn(stringValue("abc"), stringValue("a"), stringValue("b"), stringValue("B"), stringValue("abc1"))
 
     result should equal(stringValue("b"))
   }
 
   test("nulls are simply skipped") {
-    val result = aggregateOn(stringValue("abc"), stringValue("a"), Values.NO_VALUE, stringValue("B"), stringValue("abc1"))
+    val result =
+      aggregateOn(stringValue("abc"), stringValue("a"), Values.NO_VALUE, stringValue("B"), stringValue("abc1"))
 
     result should equal(stringValue("abc1"))
   }

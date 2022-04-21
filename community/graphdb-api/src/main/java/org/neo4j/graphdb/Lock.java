@@ -30,8 +30,7 @@ import org.neo4j.annotations.api.PublicApi;
  * it finishes.
  */
 @PublicApi
-public interface Lock extends AutoCloseable
-{
+public interface Lock extends AutoCloseable {
     /**
      * Releases this lock before the transaction finishes. It is an optional
      * operation and if not called, this lock will be released when the owning
@@ -47,8 +46,7 @@ public interface Lock extends AutoCloseable
      * @throws IllegalStateException if this lock has already been released.
      */
     @Override
-    default void close()
-    {
+    default void close() {
         release();
     }
 }

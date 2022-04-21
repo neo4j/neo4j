@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.security;
 
 import java.util.function.Supplier;
-
 import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -32,178 +31,152 @@ import org.neo4j.messages.MessageUtil;
  * Access mode that restricts the original access mode with the restricting mode. Allows things that both the
  * original and the restricting mode allows, while retaining the meta data of the original mode only.
  */
-public class RestrictedAccessMode extends WrappedAccessMode
-{
-    public RestrictedAccessMode( AccessMode original, Static restricting )
-    {
-        super( original, restricting );
+public class RestrictedAccessMode extends WrappedAccessMode {
+    public RestrictedAccessMode(AccessMode original, Static restricting) {
+        super(original, restricting);
     }
 
     @Override
-    public boolean allowsWrites()
-    {
+    public boolean allowsWrites() {
         return original.allowsWrites() && wrapping.allowsWrites();
     }
 
     @Override
-    public PermissionState allowsTokenCreates( PrivilegeAction action )
-    {
-        return original.allowsTokenCreates( action ).restrict( wrapping.allowsTokenCreates( action ) );
+    public PermissionState allowsTokenCreates(PrivilegeAction action) {
+        return original.allowsTokenCreates(action).restrict(wrapping.allowsTokenCreates(action));
     }
 
     @Override
-    public boolean allowsSchemaWrites()
-    {
+    public boolean allowsSchemaWrites() {
         return original.allowsSchemaWrites() && wrapping.allowsSchemaWrites();
     }
 
     @Override
-    public PermissionState allowsSchemaWrites( PrivilegeAction action )
-    {
-        return original.allowsSchemaWrites( action ).restrict( wrapping.allowsSchemaWrites( action ) );
+    public PermissionState allowsSchemaWrites(PrivilegeAction action) {
+        return original.allowsSchemaWrites(action).restrict(wrapping.allowsSchemaWrites(action));
     }
 
     @Override
-    public boolean allowsShowIndex()
-    {
+    public boolean allowsShowIndex() {
         return original.allowsShowIndex() && wrapping.allowsShowIndex();
     }
 
     @Override
-    public boolean allowsShowConstraint()
-    {
+    public boolean allowsShowConstraint() {
         return original.allowsShowConstraint() && wrapping.allowsShowConstraint();
     }
 
     @Override
-    public boolean allowsTraverseAllLabels()
-    {
+    public boolean allowsTraverseAllLabels() {
         return original.allowsTraverseAllLabels() && wrapping.allowsTraverseAllLabels();
     }
 
     @Override
-    public boolean allowsTraverseAllNodesWithLabel( long label )
-    {
-        return original.allowsTraverseAllNodesWithLabel( label ) && wrapping.allowsTraverseAllNodesWithLabel( label );
+    public boolean allowsTraverseAllNodesWithLabel(long label) {
+        return original.allowsTraverseAllNodesWithLabel(label) && wrapping.allowsTraverseAllNodesWithLabel(label);
     }
 
     @Override
-    public boolean disallowsTraverseLabel( long label )
-    {
-        return original.disallowsTraverseLabel( label ) || wrapping.disallowsTraverseLabel( label );
+    public boolean disallowsTraverseLabel(long label) {
+        return original.disallowsTraverseLabel(label) || wrapping.disallowsTraverseLabel(label);
     }
 
     @Override
-    public boolean allowsTraverseNode( long... labels )
-    {
-        return original.allowsTraverseNode( labels ) && wrapping.allowsTraverseNode( labels );
+    public boolean allowsTraverseNode(long... labels) {
+        return original.allowsTraverseNode(labels) && wrapping.allowsTraverseNode(labels);
     }
 
     @Override
-    public boolean allowsTraverseAllRelTypes()
-    {
+    public boolean allowsTraverseAllRelTypes() {
         return original.allowsTraverseAllRelTypes() && wrapping.allowsTraverseAllRelTypes();
     }
 
     @Override
-    public boolean allowsTraverseRelType( int relType )
-    {
-        return original.allowsTraverseRelType( relType ) && wrapping.allowsTraverseRelType( relType );
+    public boolean allowsTraverseRelType(int relType) {
+        return original.allowsTraverseRelType(relType) && wrapping.allowsTraverseRelType(relType);
     }
 
     @Override
-    public boolean disallowsTraverseRelType( int relType )
-    {
-        return original.disallowsTraverseRelType( relType ) && wrapping.disallowsTraverseRelType( relType );
+    public boolean disallowsTraverseRelType(int relType) {
+        return original.disallowsTraverseRelType(relType) && wrapping.disallowsTraverseRelType(relType);
     }
 
     @Override
-    public boolean allowsReadPropertyAllLabels( int propertyKey )
-    {
-        return original.allowsReadPropertyAllLabels( propertyKey ) && wrapping.allowsReadPropertyAllLabels( propertyKey );
+    public boolean allowsReadPropertyAllLabels(int propertyKey) {
+        return original.allowsReadPropertyAllLabels(propertyKey) && wrapping.allowsReadPropertyAllLabels(propertyKey);
     }
 
     @Override
-    public boolean disallowsReadPropertyForSomeLabel( int propertyKey )
-    {
-        return original.disallowsReadPropertyForSomeLabel( propertyKey ) && wrapping.disallowsReadPropertyForSomeLabel( propertyKey );
+    public boolean disallowsReadPropertyForSomeLabel(int propertyKey) {
+        return original.disallowsReadPropertyForSomeLabel(propertyKey)
+                && wrapping.disallowsReadPropertyForSomeLabel(propertyKey);
     }
 
     @Override
-    public boolean allowsReadNodeProperty( Supplier<TokenSet> labels, int propertyKey )
-    {
-        return original.allowsReadNodeProperty( labels, propertyKey ) && wrapping.allowsReadNodeProperty( labels, propertyKey );
+    public boolean allowsReadNodeProperty(Supplier<TokenSet> labels, int propertyKey) {
+        return original.allowsReadNodeProperty(labels, propertyKey)
+                && wrapping.allowsReadNodeProperty(labels, propertyKey);
     }
 
     @Override
-    public boolean allowsReadPropertyAllRelTypes( int propertyKey )
-    {
-        return original.allowsReadPropertyAllRelTypes( propertyKey ) && wrapping.allowsReadPropertyAllRelTypes( propertyKey );
+    public boolean allowsReadPropertyAllRelTypes(int propertyKey) {
+        return original.allowsReadPropertyAllRelTypes(propertyKey)
+                && wrapping.allowsReadPropertyAllRelTypes(propertyKey);
     }
 
     @Override
-    public boolean allowsReadRelationshipProperty( RelTypeSupplier relType, int propertyKey )
-    {
-        return original.allowsReadRelationshipProperty( relType, propertyKey ) && wrapping.allowsReadRelationshipProperty( relType, propertyKey );
+    public boolean allowsReadRelationshipProperty(RelTypeSupplier relType, int propertyKey) {
+        return original.allowsReadRelationshipProperty(relType, propertyKey)
+                && wrapping.allowsReadRelationshipProperty(relType, propertyKey);
     }
 
     @Override
-    public boolean allowsSeePropertyKeyToken( int propertyKey )
-    {
-        return original.allowsSeePropertyKeyToken( propertyKey ) && wrapping.allowsSeePropertyKeyToken( propertyKey );
+    public boolean allowsSeePropertyKeyToken(int propertyKey) {
+        return original.allowsSeePropertyKeyToken(propertyKey) && wrapping.allowsSeePropertyKeyToken(propertyKey);
     }
 
     @Override
-    public boolean allowsSetLabel( long labelId )
-    {
-        return original.allowsSetLabel( labelId ) && wrapping.allowsSetLabel( labelId );
+    public boolean allowsSetLabel(long labelId) {
+        return original.allowsSetLabel(labelId) && wrapping.allowsSetLabel(labelId);
     }
 
     @Override
-    public boolean allowsRemoveLabel( long labelId )
-    {
-        return original.allowsRemoveLabel( labelId ) && wrapping.allowsRemoveLabel( labelId );
+    public boolean allowsRemoveLabel(long labelId) {
+        return original.allowsRemoveLabel(labelId) && wrapping.allowsRemoveLabel(labelId);
     }
 
     @Override
-    public boolean allowsCreateNode( int[] labelIds )
-    {
-        return original.allowsCreateNode( labelIds ) && wrapping.allowsCreateNode( labelIds );
+    public boolean allowsCreateNode(int[] labelIds) {
+        return original.allowsCreateNode(labelIds) && wrapping.allowsCreateNode(labelIds);
     }
 
     @Override
-    public boolean allowsDeleteNode( Supplier<TokenSet> labelSupplier )
-    {
-        return original.allowsDeleteNode( labelSupplier ) && wrapping.allowsDeleteNode( labelSupplier );
+    public boolean allowsDeleteNode(Supplier<TokenSet> labelSupplier) {
+        return original.allowsDeleteNode(labelSupplier) && wrapping.allowsDeleteNode(labelSupplier);
     }
 
     @Override
-    public boolean allowsCreateRelationship( int relType )
-    {
-        return original.allowsCreateRelationship( relType ) && wrapping.allowsCreateRelationship( relType );
+    public boolean allowsCreateRelationship(int relType) {
+        return original.allowsCreateRelationship(relType) && wrapping.allowsCreateRelationship(relType);
     }
 
     @Override
-    public boolean allowsDeleteRelationship( int relType )
-    {
-        return original.allowsDeleteRelationship( relType ) && wrapping.allowsDeleteRelationship( relType );
+    public boolean allowsDeleteRelationship(int relType) {
+        return original.allowsDeleteRelationship(relType) && wrapping.allowsDeleteRelationship(relType);
     }
 
     @Override
-    public boolean allowsSetProperty( Supplier<TokenSet> labels, int propertyKey )
-    {
-        return original.allowsSetProperty( labels, propertyKey ) && wrapping.allowsSetProperty( labels, propertyKey );
+    public boolean allowsSetProperty(Supplier<TokenSet> labels, int propertyKey) {
+        return original.allowsSetProperty(labels, propertyKey) && wrapping.allowsSetProperty(labels, propertyKey);
     }
 
     @Override
-    public boolean allowsSetProperty( RelTypeSupplier relType, int propertyKey )
-    {
-        return original.allowsSetProperty( relType, propertyKey ) && wrapping.allowsSetProperty( relType, propertyKey );
+    public boolean allowsSetProperty(RelTypeSupplier relType, int propertyKey) {
+        return original.allowsSetProperty(relType, propertyKey) && wrapping.allowsSetProperty(relType, propertyKey);
     }
 
     @Override
-    public String name()
-    {
-        return MessageUtil.restrictedMode( original.name(), wrapping.name() );
+    public String name() {
+        return MessageUtil.restrictedMode(original.name(), wrapping.name());
     }
 }

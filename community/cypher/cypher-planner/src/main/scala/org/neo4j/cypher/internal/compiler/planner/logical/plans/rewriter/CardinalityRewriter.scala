@@ -38,19 +38,23 @@ case object LogicalPlanUsesEffectiveOutputCardinality extends StepSequencer.Cond
 /**
  * Change logical plans to reflect the effective output cardinality.
  */
-case object CardinalityRewriter extends LogicalPlanRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
-  override def instance(context: PlannerContext,
-                        solveds: Solveds,
-                        cardinalities: Cardinalities,
-                        effectiveCardinalities: EffectiveCardinalities,
-                        providedOrders: ProvidedOrders,
-                        otherAttributes: Attributes[LogicalPlan]): Rewriter =
+case object CardinalityRewriter extends LogicalPlanRewriter with StepSequencer.Step
+    with PlanPipelineTransformerFactory {
+
+  override def instance(
+    context: PlannerContext,
+    solveds: Solveds,
+    cardinalities: Cardinalities,
+    effectiveCardinalities: EffectiveCardinalities,
+    providedOrders: ProvidedOrders,
+    otherAttributes: Attributes[LogicalPlan]
+  ): Rewriter =
     recordEffectiveOutputCardinality(context.executionModel, cardinalities, effectiveCardinalities, providedOrders)
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // The rewriters operate on the LogicalPlan
     CompilationContains[LogicalPlan],
-    LogicalPlanRewritten,
+    LogicalPlanRewritten
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(
@@ -60,6 +64,8 @@ case object CardinalityRewriter extends LogicalPlanRewriter with StepSequencer.S
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def getTransformer(pushdownPropertyReads: Boolean,
-                              semanticFeatures: Seq[SemanticFeature]): LogicalPlanRewriter = this
+  override def getTransformer(
+    pushdownPropertyReads: Boolean,
+    semanticFeatures: Seq[SemanticFeature]
+  ): LogicalPlanRewriter = this
 }

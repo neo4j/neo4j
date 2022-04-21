@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.format.aligned;
 
+import static org.neo4j.kernel.impl.store.format.StoreVersion.ALIGNED_V5_0;
+
 import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
@@ -43,8 +45,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
-import static org.neo4j.kernel.impl.store.format.StoreVersion.ALIGNED_V5_0;
-
 /**
  * Record format, very similar to {@link Standard}, only more machine friendly.
  *
@@ -55,86 +55,71 @@ import static org.neo4j.kernel.impl.store.format.StoreVersion.ALIGNED_V5_0;
  * The only reason why it is just not an evolution of the standard format is
  * that it requires costly migration.
  */
-public class PageAlignedV5_0 extends BaseRecordFormats
-{
+public class PageAlignedV5_0 extends BaseRecordFormats {
     public static final RecordFormats RECORD_FORMATS = new PageAlignedV5_0();
     public static final String NAME = FormatFamily.aligned.name();
 
-    private PageAlignedV5_0()
-    {
-        super( ALIGNED_V5_0, 1, 1,
-               FormatFamily.aligned.formatCapability() );
+    private PageAlignedV5_0() {
+        super(ALIGNED_V5_0, 1, 1, FormatFamily.aligned.formatCapability());
     }
 
     @Override
-    public RecordFormat<NodeRecord> node()
-    {
-        return new NodeRecordFormat( true );
+    public RecordFormat<NodeRecord> node() {
+        return new NodeRecordFormat(true);
     }
 
     @Override
-    public RecordFormat<RelationshipGroupRecord> relationshipGroup()
-    {
-        return new RelationshipGroupRecordFormat( true );
+    public RecordFormat<RelationshipGroupRecord> relationshipGroup() {
+        return new RelationshipGroupRecordFormat(true);
     }
 
     @Override
-    public RecordFormat<RelationshipRecord> relationship()
-    {
-        return new RelationshipRecordFormat( true );
+    public RecordFormat<RelationshipRecord> relationship() {
+        return new RelationshipRecordFormat(true);
     }
 
     @Override
-    public RecordFormat<PropertyRecord> property()
-    {
-        return new PropertyRecordFormat( true );
+    public RecordFormat<PropertyRecord> property() {
+        return new PropertyRecordFormat(true);
     }
 
     @Override
-    public RecordFormat<LabelTokenRecord> labelToken()
-    {
-        return new LabelTokenRecordFormat( true );
+    public RecordFormat<LabelTokenRecord> labelToken() {
+        return new LabelTokenRecordFormat(true);
     }
 
     @Override
-    public RecordFormat<PropertyKeyTokenRecord> propertyKeyToken()
-    {
-        return new PropertyKeyTokenRecordFormat( true );
+    public RecordFormat<PropertyKeyTokenRecord> propertyKeyToken() {
+        return new PropertyKeyTokenRecordFormat(true);
     }
 
     @Override
-    public RecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken()
-    {
-        return new RelationshipTypeTokenRecordFormat( true );
+    public RecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken() {
+        return new RelationshipTypeTokenRecordFormat(true);
     }
 
     @Override
-    public RecordFormat<DynamicRecord> dynamic()
-    {
-        return new DynamicRecordFormat( true );
+    public RecordFormat<DynamicRecord> dynamic() {
+        return new DynamicRecordFormat(true);
     }
 
     @Override
-    public RecordFormat<SchemaRecord> schema()
-    {
-        return new SchemaRecordFormat( true );
+    public RecordFormat<SchemaRecord> schema() {
+        return new SchemaRecordFormat(true);
     }
 
     @Override
-    public FormatFamily getFormatFamily()
-    {
+    public FormatFamily getFormatFamily() {
         return FormatFamily.aligned;
     }
 
     @Override
-    public String name()
-    {
+    public String name() {
         return NAME;
     }
 
     @Override
-    public RecordFormats[] compatibleVersionsForRollingUpgrade()
-    {
+    public RecordFormats[] compatibleVersionsForRollingUpgrade() {
         return new RecordFormats[0];
     }
 }

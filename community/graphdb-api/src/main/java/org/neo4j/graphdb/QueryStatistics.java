@@ -28,8 +28,7 @@ import org.neo4j.annotations.api.PublicApi;
  * {@code 0}.
  */
 @PublicApi
-public interface QueryStatistics
-{
+public interface QueryStatistics {
     // NOTE: If you change this interface, be sure to update bolt
 
     /**
@@ -131,89 +130,74 @@ public interface QueryStatistics
      */
     boolean containsSystemUpdates();
 
-    QueryStatistics EMPTY = new QueryStatistics()
-    {
+    QueryStatistics EMPTY = new QueryStatistics() {
         @Override
-        public int getNodesCreated()
-        {
+        public int getNodesCreated() {
             return 0;
         }
 
         @Override
-        public int getNodesDeleted()
-        {
+        public int getNodesDeleted() {
             return 0;
         }
 
         @Override
-        public int getRelationshipsCreated()
-        {
+        public int getRelationshipsCreated() {
             return 0;
         }
 
         @Override
-        public int getRelationshipsDeleted()
-        {
+        public int getRelationshipsDeleted() {
             return 0;
         }
 
         @Override
-        public int getPropertiesSet()
-        {
+        public int getPropertiesSet() {
             return 0;
         }
 
         @Override
-        public int getLabelsAdded()
-        {
+        public int getLabelsAdded() {
             return 0;
         }
 
         @Override
-        public int getLabelsRemoved()
-        {
+        public int getLabelsRemoved() {
             return 0;
         }
 
         @Override
-        public int getIndexesAdded()
-        {
+        public int getIndexesAdded() {
             return 0;
         }
 
         @Override
-        public int getIndexesRemoved()
-        {
+        public int getIndexesRemoved() {
             return 0;
         }
 
         @Override
-        public int getConstraintsAdded()
-        {
+        public int getConstraintsAdded() {
             return 0;
         }
 
         @Override
-        public int getConstraintsRemoved()
-        {
+        public int getConstraintsRemoved() {
             return 0;
         }
 
         @Override
-        public int getSystemUpdates()
-        {
+        public int getSystemUpdates() {
             return 0;
         }
 
         @Override
-        public boolean containsUpdates()
-        {
+        public boolean containsUpdates() {
             return false;
         }
 
         @Override
-        public boolean containsSystemUpdates()
-        {
+        public boolean containsSystemUpdates() {
             return false;
         }
     };

@@ -19,28 +19,22 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-public class NoSuchTransactionException extends MissingLogDataException
-{
-    public NoSuchTransactionException( long missingTxId )
-    {
-        this( missingTxId, null );
+public class NoSuchTransactionException extends MissingLogDataException {
+    public NoSuchTransactionException(long missingTxId) {
+        this(missingTxId, null);
     }
 
-    public NoSuchTransactionException( long missingTxId, String additionalInformation )
-    {
-        super( combinedMessage( missingTxId, additionalInformation ) );
+    public NoSuchTransactionException(long missingTxId, String additionalInformation) {
+        super(combinedMessage(missingTxId, additionalInformation));
     }
 
-    public NoSuchTransactionException( long missingTxId, String additionalInformation, Throwable cause )
-    {
-        super( combinedMessage( missingTxId, additionalInformation ), cause );
+    public NoSuchTransactionException(long missingTxId, String additionalInformation, Throwable cause) {
+        super(combinedMessage(missingTxId, additionalInformation), cause);
     }
 
-    private static String combinedMessage( long missingTxId, String additionalInformation )
-    {
+    private static String combinedMessage(long missingTxId, String additionalInformation) {
         String result = "Unable to find transaction " + missingTxId + " in any of my logical logs";
-        if ( additionalInformation != null )
-        {
+        if (additionalInformation != null) {
             result += ": " + additionalInformation;
         }
         return result;

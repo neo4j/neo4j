@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import org.neo4j.graphalgo.impl.util.PathImpl;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -35,35 +34,29 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 
-public class SimpleGraphBuilder
-{
+public class SimpleGraphBuilder {
     public static final String KEY_ID = "name";
 
     GraphDatabaseService graphDb;
-    Map<String,Node> nodes;
-    Map<Node,String> nodeNames;
+    Map<String, Node> nodes;
+    Map<Node, String> nodeNames;
     Set<Relationship> edges;
     RelationshipType currentRelType;
 
-    public SimpleGraphBuilder( GraphDatabaseService graphDb,
-        RelationshipType relationshipType )
-    {
+    public SimpleGraphBuilder(GraphDatabaseService graphDb, RelationshipType relationshipType) {
         super();
         this.graphDb = graphDb;
         nodes = new HashMap<>();
         nodeNames = new HashMap<>();
         edges = new HashSet<>();
-        setCurrentRelType( relationshipType );
+        setCurrentRelType(relationshipType);
     }
 
-    public void clear()
-    {
-        try ( Transaction transaction = graphDb.beginTx() )
-        {
-            for ( Node node : nodes.values() )
-            {
-                node = transaction.getNodeById( node.getId() );
-                Iterables.forEach( node.getRelationships(), Relationship::delete );
+    public void clear() {
+        try (Transaction transaction = graphDb.beginTx()) {
+            for (Node node : nodes.values()) {
+                node = transaction.getNodeById(node.getId());
+                Iterables.forEach(node.getRelationships(), Relationship::delete);
                 node.delete();
             }
             nodes.clear();
@@ -73,100 +66,81 @@ public class SimpleGraphBuilder
         }
     }
 
-    public Set<Relationship> getAllEdges()
-    {
+    public Set<Relationship> getAllEdges() {
         return edges;
     }
 
-    public Set<Node> getAllNodes()
-    {
+    public Set<Node> getAllNodes() {
         return nodeNames.keySet();
     }
 
-    public void setCurrentRelType( RelationshipType currentRelType )
-    {
+    public void setCurrentRelType(RelationshipType currentRelType) {
         this.currentRelType = currentRelType;
     }
 
-    public Node makeNode( Transaction tx, String id )
-    {
-        return makeNode( tx, id, Collections.emptyMap() );
+    public Node makeNode(Transaction tx, String id) {
+        return makeNode(tx, id, Collections.emptyMap());
     }
 
-    public Node makeNode( Transaction tx, String id, Object... keyValuePairs )
-    {
-        return makeNode( tx, id, toMap( keyValuePairs ) );
+    public Node makeNode(Transaction tx, String id, Object... keyValuePairs) {
+        return makeNode(tx, id, toMap(keyValuePairs));
     }
 
-    private static Map<String, Object> toMap( Object[] keyValuePairs )
-    {
+    private static Map<String, Object> toMap(Object[] keyValuePairs) {
         Map<String, Object> map = new HashMap<>();
-        for ( int i = 0; i < keyValuePairs.length; i++ )
-        {
-            map.put( keyValuePairs[i++].toString(), keyValuePairs[i] );
+        for (int i = 0; i < keyValuePairs.length; i++) {
+            map.put(keyValuePairs[i++].toString(), keyValuePairs[i]);
         }
         return map;
     }
 
-    public Node makeNode( Transaction tx, String id, Map<String, Object> properties )
-    {
+    public Node makeNode(Transaction tx, String id, Map<String, Object> properties) {
         Node node = tx.createNode();
-        nodes.put( id, node );
-        nodeNames.put( node, id );
-        node.setProperty( KEY_ID, id );
-        for ( Map.Entry<String, Object> property : properties.entrySet() )
-        {
-            if ( property.getKey().equals( KEY_ID ) )
-            {
-                throw new RuntimeException( "Can't use '" + property.getKey() + "'" );
+        nodes.put(id, node);
+        nodeNames.put(node, id);
+        node.setProperty(KEY_ID, id);
+        for (Map.Entry<String, Object> property : properties.entrySet()) {
+            if (property.getKey().equals(KEY_ID)) {
+                throw new RuntimeException("Can't use '" + property.getKey() + "'");
             }
-            node.setProperty( property.getKey(), property.getValue() );
+            node.setProperty(property.getKey(), property.getValue());
         }
         return node;
     }
 
-    public Node getNode( Transaction tx, String id )
-    {
-        return getNode( tx, id, false );
+    public Node getNode(Transaction tx, String id) {
+        return getNode(tx, id, false);
     }
 
-    public Node getNode( Transaction tx, String id, boolean force )
-    {
-        Node node = nodes.get( id );
-        if ( node == null && force )
-        {
-            node = makeNode( tx, id );
+    public Node getNode(Transaction tx, String id, boolean force) {
+        Node node = nodes.get(id);
+        if (node == null && force) {
+            node = makeNode(tx, id);
         }
         return node;
     }
 
-    public String getNodeId( Node node )
-    {
-        return nodeNames.get( node );
+    public String getNodeId(Node node) {
+        return nodeNames.get(node);
     }
 
-    public Relationship makeEdge( Transaction tx, String node1, String node2 )
-    {
-        return makeEdge( tx, node1, node2, Collections.emptyMap() );
+    public Relationship makeEdge(Transaction tx, String node1, String node2) {
+        return makeEdge(tx, node1, node2, Collections.emptyMap());
     }
 
-    public Relationship makeEdge( Transaction tx, String node1, String node2, Map<String, Object> edgeProperties )
-    {
-        Node n1 = getNode( tx, node1, true );
-        Node n2 = getNode( tx, node2, true );
-        Relationship relationship = n1
-            .createRelationshipTo( n2, currentRelType );
-        for ( Map.Entry<String, Object> property : edgeProperties.entrySet() )
-        {
-            relationship.setProperty( property.getKey(), property.getValue() );
+    public Relationship makeEdge(Transaction tx, String node1, String node2, Map<String, Object> edgeProperties) {
+        Node n1 = getNode(tx, node1, true);
+        Node n2 = getNode(tx, node2, true);
+        Relationship relationship = n1.createRelationshipTo(n2, currentRelType);
+        for (Map.Entry<String, Object> property : edgeProperties.entrySet()) {
+            relationship.setProperty(property.getKey(), property.getValue());
         }
-        edges.add( relationship );
+        edges.add(relationship);
         return relationship;
     }
 
-    public Relationship makeEdge( Transaction transaction, String node1, String node2, Object... keyValuePairs )
-    {
-        return makeEdge( transaction, node1, node2, toMap( keyValuePairs ) );
+    public Relationship makeEdge(Transaction transaction, String node1, String node2, Object... keyValuePairs) {
+        return makeEdge(transaction, node1, node2, toMap(keyValuePairs));
     }
 
     /**
@@ -175,12 +149,10 @@ public class SimpleGraphBuilder
      * @param transaction
      * @param commaSeparatedNodeNames
      */
-    public void makeEdgeChain( Transaction transaction, String commaSeparatedNodeNames )
-    {
-        String[] nodeNames = commaSeparatedNodeNames.split( "," );
-        for ( int i = 0; i < nodeNames.length - 1; ++i )
-        {
-            makeEdge( transaction, nodeNames[i], nodeNames[i + 1] );
+    public void makeEdgeChain(Transaction transaction, String commaSeparatedNodeNames) {
+        String[] nodeNames = commaSeparatedNodeNames.split(",");
+        for (int i = 0; i < nodeNames.length - 1; ++i) {
+            makeEdge(transaction, nodeNames[i], nodeNames[i + 1]);
         }
     }
 
@@ -192,13 +164,11 @@ public class SimpleGraphBuilder
      * @param propertyName
      * @param propertyValue
      */
-    public void makeEdgeChain( Transaction transaction, String commaSeparatedNodeNames, String propertyName, Object propertyValue )
-    {
-        String[] nodeNames = commaSeparatedNodeNames.split( "," );
-        for ( int i = 0; i < nodeNames.length - 1; ++i )
-        {
-            makeEdge( transaction, nodeNames[i], nodeNames[i + 1], propertyName,
-                propertyValue );
+    public void makeEdgeChain(
+            Transaction transaction, String commaSeparatedNodeNames, String propertyName, Object propertyValue) {
+        String[] nodeNames = commaSeparatedNodeNames.split(",");
+        for (int i = 0; i < nodeNames.length - 1; ++i) {
+            makeEdge(transaction, nodeNames[i], nodeNames[i + 1], propertyName, propertyValue);
         }
     }
 
@@ -208,12 +178,10 @@ public class SimpleGraphBuilder
      * @param transaction
      * @param commaSeparatedNodeNames
      */
-    public void makeEdges( Transaction transaction, String commaSeparatedNodeNames )
-    {
-        String[] nodeNames = commaSeparatedNodeNames.split( "," );
-        for ( int i = 0; i < nodeNames.length / 2; ++i )
-        {
-            makeEdge( transaction, nodeNames[i * 2], nodeNames[i * 2 + 1] );
+    public void makeEdges(Transaction transaction, String commaSeparatedNodeNames) {
+        String[] nodeNames = commaSeparatedNodeNames.split(",");
+        for (int i = 0; i < nodeNames.length / 2; ++i) {
+            makeEdge(transaction, nodeNames[i * 2], nodeNames[i * 2 + 1]);
         }
     }
 
@@ -223,21 +191,16 @@ public class SimpleGraphBuilder
      * @return One relationship between two given nodes, if there exists one,
      *         otherwise null.
      */
-    public Relationship getRelationship( Transaction tx, String node1Id, String node2Id )
-    {
-        Node node1 = getNode( tx, node1Id );
-        Node node2 = getNode( tx, node2Id );
-        if ( node1 == null || node2 == null )
-        {
+    public Relationship getRelationship(Transaction tx, String node1Id, String node2Id) {
+        Node node1 = getNode(tx, node1Id);
+        Node node2 = getNode(tx, node2Id);
+        if (node1 == null || node2 == null) {
             return null;
         }
 
-        try ( ResourceIterable<Relationship> relationships = node1.getRelationships() )
-        {
-            for ( final var relationship : relationships )
-            {
-                if ( relationship.getOtherNode( node1 ).equals( node2 ) )
-                {
+        try (ResourceIterable<Relationship> relationships = node1.getRelationships()) {
+            for (final var relationship : relationships) {
+                if (relationship.getOtherNode(node1).equals(node2)) {
                     return relationship;
                 }
             }
@@ -246,24 +209,22 @@ public class SimpleGraphBuilder
     }
 
     // Syntax: makePathWithRelProperty( "weight", "a-4-b-2.3-c-3-d" )
-    public Path makePathWithRelProperty( Transaction tx, String relPropertyName, String dashSeparatedNodeNamesAndRelationshipProperty )
-    {
-        String[] nodeNamesAndRelationshipProperties = dashSeparatedNodeNamesAndRelationshipProperty.split( "-" );
-        Node startNode = getNode( tx, nodeNamesAndRelationshipProperties[0], true);
-        PathImpl.Builder builder = new PathImpl.Builder( startNode );
+    public Path makePathWithRelProperty(
+            Transaction tx, String relPropertyName, String dashSeparatedNodeNamesAndRelationshipProperty) {
+        String[] nodeNamesAndRelationshipProperties = dashSeparatedNodeNamesAndRelationshipProperty.split("-");
+        Node startNode = getNode(tx, nodeNamesAndRelationshipProperties[0], true);
+        PathImpl.Builder builder = new PathImpl.Builder(startNode);
 
-        if ( nodeNamesAndRelationshipProperties.length < 1 )
-        {
+        if (nodeNamesAndRelationshipProperties.length < 1) {
             return builder.build();
         }
 
-        for ( int i = 0; i < nodeNamesAndRelationshipProperties.length - 2; i += 2 )
-        {
+        for (int i = 0; i < nodeNamesAndRelationshipProperties.length - 2; i += 2) {
             String from = nodeNamesAndRelationshipProperties[i];
             String to = nodeNamesAndRelationshipProperties[i + 2];
             String prop = nodeNamesAndRelationshipProperties[i + 1];
-            Relationship relationship = makeEdge( tx, from, to, relPropertyName, prop );
-            builder = builder.push( relationship );
+            Relationship relationship = makeEdge(tx, from, to, relPropertyName, prop);
+            builder = builder.push(relationship);
         }
         return builder.build();
     }

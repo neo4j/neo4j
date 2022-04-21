@@ -19,7 +19,9 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.storage_engine;
+import static org.neo4j.internal.helpers.collection.Iterables.single;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -32,7 +34,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -75,18 +77,13 @@ import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.token.TokenHolders;
 
-import static org.apache.commons.lang3.StringUtils.isNotEmpty;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.storage_engine;
-import static org.neo4j.internal.helpers.collection.Iterables.single;
-
 /**
  * Represents a type of storage engine and is capable of creating/instantiating {@link StorageEngine storage engines}, where each such
  * {@link StorageEngine} instance represents one storage engine running underneath a particular database. This factory also allows
  * access to recovery status, migration logic and access to meta-data about a storage engine.
  */
 @Service
-public interface StorageEngineFactory
-{
+public interface StorageEngineFactory {
     /**
      * @return the name of this storage engine, which will be used in e.g. storage engine selection and settings.
      */
@@ -95,7 +92,8 @@ public interface StorageEngineFactory
     /**
      * Retrieves the store ID of the store represented by the submitted layout.
      */
-    StoreId retrieveStoreId( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext )
+    StoreId retrieveStoreId(
+            FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext)
             throws IOException;
 
     /**
@@ -103,12 +101,17 @@ public interface StorageEngineFactory
      * and means of checking upgradability between them.
      * @return StoreVersionCheck to check store version as well as upgradability to other versions.
      */
-    StoreVersionCheck versionCheck( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, LogService logService,
-            CursorContextFactory contextFactory );
+    StoreVersionCheck versionCheck(
+            FileSystemAbstraction fs,
+            DatabaseLayout databaseLayout,
+            Config config,
+            PageCache pageCache,
+            LogService logService,
+            CursorContextFactory contextFactory);
 
-    StoreVersion versionInformation( String storeVersion );
+    StoreVersion versionInformation(String storeVersion);
 
-    StoreVersion versionInformation( LegacyStoreId storeId );
+    StoreVersion versionInformation(LegacyStoreId storeId);
 
     StoreVersion defaultStoreVersion();
 
@@ -118,21 +121,41 @@ public interface StorageEngineFactory
      * Returns a {@link StoreMigrationParticipant} which will be able to participate in a store migration.
      * @return StoreMigrationParticipant for migration.
      */
-    List<StoreMigrationParticipant> migrationParticipants( FileSystemAbstraction fs, Config config, PageCache pageCache,
-            JobScheduler jobScheduler, LogService logService, MemoryTracker memoryTracker, PageCacheTracer pageCacheTracer,
-            CursorContextFactory contextFactory );
+    List<StoreMigrationParticipant> migrationParticipants(
+            FileSystemAbstraction fs,
+            Config config,
+            PageCache pageCache,
+            JobScheduler jobScheduler,
+            LogService logService,
+            MemoryTracker memoryTracker,
+            PageCacheTracer pageCacheTracer,
+            CursorContextFactory contextFactory);
 
     /**
      * Instantiates a {@link StorageEngine} where all dependencies can be retrieved from the supplied {@code dependencyResolver}.
      *
      * @return the instantiated {@link StorageEngine}.
      */
-    StorageEngine instantiate( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, TokenHolders tokenHolders,
-            SchemaState schemaState, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter, LockService lockService,
-            IdGeneratorFactory idGeneratorFactory, DatabaseHealth databaseHealth, InternalLogProvider internalLogProvider,
-            InternalLogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            boolean createStoreIfNotExists, DatabaseReadOnlyChecker readOnlyChecker, LogTailMetadata logTailMetadata, MemoryTracker memoryTracker,
-            CursorContextFactory contextFactory )
+    StorageEngine instantiate(
+            FileSystemAbstraction fs,
+            DatabaseLayout databaseLayout,
+            Config config,
+            PageCache pageCache,
+            TokenHolders tokenHolders,
+            SchemaState schemaState,
+            ConstraintRuleAccessor constraintSemantics,
+            IndexConfigCompleter indexConfigCompleter,
+            LockService lockService,
+            IdGeneratorFactory idGeneratorFactory,
+            DatabaseHealth databaseHealth,
+            InternalLogProvider internalLogProvider,
+            InternalLogProvider userLogProvider,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            boolean createStoreIfNotExists,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            LogTailMetadata logTailMetadata,
+            MemoryTracker memoryTracker,
+            CursorContextFactory contextFactory)
             throws IOException;
 
     /**
@@ -142,7 +165,7 @@ public interface StorageEngineFactory
      * @return a {@link List} of {@link Path} instances for the storage files.
      * @throws IOException if there was no storage in this location.
      */
-    List<Path> listStorageFiles( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException;
+    List<Path> listStorageFiles(FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout) throws IOException;
 
     /**
      * Check if a store described by provided database layout exists in provided file system
@@ -151,20 +174,20 @@ public interface StorageEngineFactory
      * @param pageCache page cache to open store with
      * @return true of store exist, false otherwise
      */
-    boolean storageExists( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCache pageCache );
+    boolean storageExists(FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCache pageCache);
 
     /**
      * Instantiates a read-only {@link TransactionIdStore} to be used outside of a {@link StorageEngine}.
      * @return the read-only {@link TransactionIdStore}.
      * @throws IOException on I/O error or if the store doesn't exist.
      */
-    TransactionIdStore readOnlyTransactionIdStore( LogTailMetadata logTailMetadata ) throws IOException;
+    TransactionIdStore readOnlyTransactionIdStore(LogTailMetadata logTailMetadata) throws IOException;
 
     /**
      * Instantiates a read-only {@link LogVersionRepository} to be used outside of a {@link StorageEngine}.
      * @return the read-only {@link LogVersionRepository}.
      */
-    LogVersionRepository readOnlyLogVersionRepository( LogTailMetadata logTailMetadata );
+    LogVersionRepository readOnlyLogVersionRepository(LogTailMetadata logTailMetadata);
 
     /**
      * Instantiates a fully functional {@link MetadataProvider}, which is a union of {@link TransactionIdStore}
@@ -172,31 +195,71 @@ public interface StorageEngineFactory
      * @return a fully functional {@link MetadataProvider}.
      * @throws IOException on I/O error or if the store doesn't exist.
      */
-    MetadataProvider transactionMetaDataStore( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache,
-            DatabaseReadOnlyChecker readOnlyChecker, CursorContextFactory contextFactory, LogTailMetadata logTailMetadata ) throws IOException;
+    MetadataProvider transactionMetaDataStore(
+            FileSystemAbstraction fs,
+            DatabaseLayout databaseLayout,
+            Config config,
+            PageCache pageCache,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            CursorContextFactory contextFactory,
+            LogTailMetadata logTailMetadata)
+            throws IOException;
 
     @Deprecated
-    LegacyStoreId storeId( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext ) throws IOException;
+    LegacyStoreId storeId(
+            FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext)
+            throws IOException;
 
-    void resetMetadata( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, CursorContextFactory contextFactory,
-            LegacyStoreId storeId, UUID externalStoreId ) throws IOException;
+    void resetMetadata(
+            FileSystemAbstraction fs,
+            DatabaseLayout databaseLayout,
+            Config config,
+            PageCache pageCache,
+            CursorContextFactory contextFactory,
+            LegacyStoreId storeId,
+            UUID externalStoreId)
+            throws IOException;
 
-    Optional<UUID> databaseIdUuid( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext );
+    Optional<UUID> databaseIdUuid(
+            FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext);
 
-    SchemaRuleMigrationAccess schemaRuleMigrationAccess( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
-            LogService logService, String recordFormats, CursorContextFactory contextFactory, MemoryTracker memoryTracker );
+    SchemaRuleMigrationAccess schemaRuleMigrationAccess(
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            Config config,
+            DatabaseLayout databaseLayout,
+            LogService logService,
+            String recordFormats,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker);
 
     /**
      * Reads schema rules from 4.4 schema store and ignores malformed rules while doing so.
      */
-    List<SchemaRule44> load44SchemaRules( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
-            CursorContextFactory contextFactory, LogTailMetadata logTailMetadata );
+    List<SchemaRule44> load44SchemaRules(
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            Config config,
+            DatabaseLayout databaseLayout,
+            CursorContextFactory contextFactory,
+            LogTailMetadata logTailMetadata);
 
-    List<SchemaRule> loadSchemaRules( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout, boolean lenient,
-            Function<SchemaRule,SchemaRule> schemaRuleMigration, CursorContextFactory contextFactory );
+    List<SchemaRule> loadSchemaRules(
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            Config config,
+            DatabaseLayout databaseLayout,
+            boolean lenient,
+            Function<SchemaRule, SchemaRule> schemaRuleMigration,
+            CursorContextFactory contextFactory);
 
-    TokenHolders loadReadOnlyTokens( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, boolean lenient,
-            CursorContextFactory contextFactory );
+    TokenHolders loadReadOnlyTokens(
+            FileSystemAbstraction fs,
+            DatabaseLayout databaseLayout,
+            Config config,
+            PageCache pageCache,
+            boolean lenient,
+            CursorContextFactory contextFactory);
 
     /**
      * Asks this storage engine about the state of a specific store before opening it. If this specific store is missing optional or
@@ -207,7 +270,7 @@ public interface StorageEngineFactory
      * @param pageCache {@link PageCache} for any data reading needs.
      * @return the state of the storage files.
      */
-    StorageFilesState checkStoreFileState( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache );
+    StorageFilesState checkStoreFileState(FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache);
 
     /**
      * @return a {@link CommandReaderFactory} capable of handing out {@link CommandReader} for specific versions. Generally kernel will take care
@@ -238,18 +301,36 @@ public interface StorageEngineFactory
      * @param databaseName the name of the database
      * @return the layout representing the database
      */
-    DatabaseLayout databaseLayout( Neo4jLayout neo4jLayout, String databaseName );
+    DatabaseLayout databaseLayout(Neo4jLayout neo4jLayout, String databaseName);
 
-    BatchImporter batchImporter( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem,
-            PageCacheTracer pageCacheTracer, org.neo4j.internal.batchimport.Configuration config, LogService logService,
-            PrintStream progressOutput, boolean verboseProgressOutput,
-            AdditionalInitialIds additionalInitialIds, Config dbConfig, Monitor monitor,
-            JobScheduler jobScheduler, Collector badCollector, LogFilesInitializer logFilesInitializer,
-            IndexImporterFactory indexImporterFactory, MemoryTracker memoryTracker, CursorContextFactory contextFactory );
+    BatchImporter batchImporter(
+            DatabaseLayout databaseLayout,
+            FileSystemAbstraction fileSystem,
+            PageCacheTracer pageCacheTracer,
+            org.neo4j.internal.batchimport.Configuration config,
+            LogService logService,
+            PrintStream progressOutput,
+            boolean verboseProgressOutput,
+            AdditionalInitialIds additionalInitialIds,
+            Config dbConfig,
+            Monitor monitor,
+            JobScheduler jobScheduler,
+            Collector badCollector,
+            LogFilesInitializer logFilesInitializer,
+            IndexImporterFactory indexImporterFactory,
+            MemoryTracker memoryTracker,
+            CursorContextFactory contextFactory);
 
-    Input asBatchImporterInput( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, PageCache pageCache,
-            Config config, MemoryTracker memoryTracker, ReadBehaviour readBehaviour, boolean compactNodeIdSpace,
-            CursorContextFactory contextFactory, LogTailMetadata logTailMetadata );
+    Input asBatchImporterInput(
+            DatabaseLayout databaseLayout,
+            FileSystemAbstraction fileSystem,
+            PageCache pageCache,
+            Config config,
+            MemoryTracker memoryTracker,
+            ReadBehaviour readBehaviour,
+            boolean compactNodeIdSpace,
+            CursorContextFactory contextFactory,
+            LogTailMetadata logTailMetadata);
 
     /**
      * Calculates the optimal amount of memory that this consistency checker would want to have to perform optimally in terms of fitting
@@ -257,7 +338,8 @@ public interface StorageEngineFactory
      *
      * @return the optimal amount of memory that should be available when running consistency checker for this provided db.
      */
-    long optimalAvailableConsistencyCheckerMemory( FileSystemAbstraction fs, DatabaseLayout layout, Config config, PageCache pageCache );
+    long optimalAvailableConsistencyCheckerMemory(
+            FileSystemAbstraction fs, DatabaseLayout layout, Config config, PageCache pageCache);
 
     /**
      * Checks consistency of a store.
@@ -277,41 +359,53 @@ public interface StorageEngineFactory
      * @param contextFactory underlying page cursor context factory.
      * @throws ConsistencyCheckIncompleteException on failure doing the consistency check.
      */
-    void consistencyCheck( FileSystemAbstraction fileSystem, DatabaseLayout layout, Config config, PageCache pageCache, IndexProviderMap indexProviders,
-            InternalLog log, ConsistencySummaryStatistics summary, int numberOfThreads, double memoryLimitLeewayFactor, OutputStream progressOutput,
-            boolean verbose, ConsistencyFlags flags, CursorContextFactory contextFactory ) throws ConsistencyCheckIncompleteException;
+    void consistencyCheck(
+            FileSystemAbstraction fileSystem,
+            DatabaseLayout layout,
+            Config config,
+            PageCache pageCache,
+            IndexProviderMap indexProviders,
+            InternalLog log,
+            ConsistencySummaryStatistics summary,
+            int numberOfThreads,
+            double memoryLimitLeewayFactor,
+            OutputStream progressOutput,
+            boolean verbose,
+            ConsistencyFlags flags,
+            CursorContextFactory contextFactory)
+            throws ConsistencyCheckIncompleteException;
 
     /**
      * Detects open options for existing store such as endianness or versionness
      */
-    ImmutableSet<OpenOption> getStoreOpenOptions( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout,
-                                                  CursorContextFactory contextFactory );
+    ImmutableSet<OpenOption> getStoreOpenOptions(
+            FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, CursorContextFactory contextFactory);
 
     /**
      * @return the default {@link StorageEngineFactory}.
      * @throws IllegalStateException if there were no storage engine factories to choose from.
      */
-    static StorageEngineFactory defaultStorageEngine()
-    {
-        return selectStorageEngine( "record" );
+    static StorageEngineFactory defaultStorageEngine() {
+        return selectStorageEngine("record");
     }
 
     /**
      * @return all {@link StorageEngineFactory} instances that are available on the class path, loaded via {@link Service service loading}.
      */
-    static Collection<StorageEngineFactory> allAvailableStorageEngines()
-    {
-        return Services.loadAll( StorageEngineFactory.class );
+    static Collection<StorageEngineFactory> allAvailableStorageEngines() {
+        return Services.loadAll(StorageEngineFactory.class);
     }
 
     /**
      * @return the first {@link StorageEngineFactory} that returns {@code true} when asked about
      * {@link StorageEngineFactory#storageExists(FileSystemAbstraction, DatabaseLayout, PageCache)} for the given {@code databaseLayout}.
      */
-    static Optional<StorageEngineFactory> selectStorageEngine( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache )
-    {
+    static Optional<StorageEngineFactory> selectStorageEngine(
+            FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache) {
         Collection<StorageEngineFactory> storageEngineFactories = allAvailableStorageEngines();
-        return storageEngineFactories.stream().filter( engine -> engine.storageExists( fs, databaseLayout, pageCache ) ).findFirst();
+        return storageEngineFactories.stream()
+                .filter(engine -> engine.storageExists(fs, databaseLayout, pageCache))
+                .findFirst();
     }
 
     /**
@@ -319,16 +413,18 @@ public interface StorageEngineFactory
      * @return the {@link StorageEngineFactory} that has the given {@code name}.
      * @throws IllegalArgumentException if the storage engine with the given {@code name} couldn't be found.
      */
-    static StorageEngineFactory selectStorageEngine( String name )
-    {
-        Collection<StorageEngineFactory> storageEnginesWithThisName =
-                allAvailableStorageEngines().stream().filter( e -> e.name().equals( name ) ).collect( Collectors.toList() );
-        if ( storageEnginesWithThisName.isEmpty() )
-        {
-            throw new IllegalArgumentException( "No storage engine matching name '" + name + "'. Available storage engines are: " +
-                    allAvailableStorageEngines().stream().map( e -> "'" + e.name() + "'" ).collect( Collectors.joining( ", " ) ) );
+    static StorageEngineFactory selectStorageEngine(String name) {
+        Collection<StorageEngineFactory> storageEnginesWithThisName = allAvailableStorageEngines().stream()
+                .filter(e -> e.name().equals(name))
+                .collect(Collectors.toList());
+        if (storageEnginesWithThisName.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "No storage engine matching name '" + name + "'. Available storage engines are: "
+                            + allAvailableStorageEngines().stream()
+                                    .map(e -> "'" + e.name() + "'")
+                                    .collect(Collectors.joining(", ")));
         }
-        return single( storageEnginesWithThisName );
+        return single(storageEnginesWithThisName);
     }
 
     /**
@@ -338,9 +434,8 @@ public interface StorageEngineFactory
      * @return the {@link StorageEngineFactory} for this name.
      * @throws IllegalArgumentException if no storage engine with the given name was found.
      */
-    static StorageEngineFactory selectStorageEngine( Configuration configuration )
-    {
-        return selectStorageEngine( configuration.get( storage_engine ) );
+    static StorageEngineFactory selectStorageEngine(Configuration configuration) {
+        return selectStorageEngine(configuration.get(storage_engine));
     }
 
     /**
@@ -351,9 +446,10 @@ public interface StorageEngineFactory
      * @param configuration the {@link Configuration} to read the name from. This parameter can be {@code null}, which then means to select use the default.
      * @return the found {@link StorageEngineFactory}.
      */
-    static StorageEngineFactory selectStorageEngine( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, Configuration configuration )
-    {
-        return selectStorageEngine( fs, databaseLayout, pageCache, configuration != null ? configuration.get( storage_engine ) : null );
+    static StorageEngineFactory selectStorageEngine(
+            FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, Configuration configuration) {
+        return selectStorageEngine(
+                fs, databaseLayout, pageCache, configuration != null ? configuration.get(storage_engine) : null);
     }
 
     /**
@@ -365,29 +461,28 @@ public interface StorageEngineFactory
      * This parameter can be {@code null}, which then means to select use the default.
      * @return the found {@link StorageEngineFactory}.
      */
-    static StorageEngineFactory selectStorageEngine( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, String specificNameOrNull )
-    {
+    static StorageEngineFactory selectStorageEngine(
+            FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, String specificNameOrNull) {
         // - Does a store exist at this location? -> get the one able to open it
         // - Is there a specific name of a storage engine to look for? -> get that one
         // - Use the default one
-        Optional<StorageEngineFactory> forExistingStore = StorageEngineFactory.selectStorageEngine( fs, databaseLayout, pageCache );
-        if ( forExistingStore.isPresent() )
-        {
+        Optional<StorageEngineFactory> forExistingStore =
+                StorageEngineFactory.selectStorageEngine(fs, databaseLayout, pageCache);
+        if (forExistingStore.isPresent()) {
             return forExistingStore.get();
         }
 
-        if ( isNotEmpty( specificNameOrNull ) )
-        {
-            return StorageEngineFactory.selectStorageEngine( specificNameOrNull );
+        if (isNotEmpty(specificNameOrNull)) {
+            return StorageEngineFactory.selectStorageEngine(specificNameOrNull);
         }
 
         return defaultStorageEngine();
     }
 
     @FunctionalInterface
-    interface Selector
-    {
-        Optional<StorageEngineFactory> selectStorageEngine( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache );
+    interface Selector {
+        Optional<StorageEngineFactory> selectStorageEngine(
+                FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache);
     }
 
     Selector SELECTOR = StorageEngineFactory::selectStorageEngine;

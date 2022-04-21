@@ -19,8 +19,7 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-public interface ProcessContext extends AutoCloseable
-{
+public interface ProcessContext extends AutoCloseable {
     ProcessContext EMPTY_CONTEXT = () -> {};
 
     @Override

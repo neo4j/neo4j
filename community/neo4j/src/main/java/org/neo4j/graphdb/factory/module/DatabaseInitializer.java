@@ -22,9 +22,8 @@ package org.neo4j.graphdb.factory.module;
 import org.neo4j.graphdb.GraphDatabaseService;
 
 @FunctionalInterface
-public interface DatabaseInitializer
-{
+public interface DatabaseInitializer {
     DatabaseInitializer NO_INITIALIZATION = db -> {};
 
-    void initialize( GraphDatabaseService database );
+    void initialize(GraphDatabaseService database);
 }

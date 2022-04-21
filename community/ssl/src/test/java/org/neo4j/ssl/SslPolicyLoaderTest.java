@@ -19,31 +19,6 @@
  */
 package org.neo4j.ssl;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.security.cert.CRLException;
-import java.security.cert.CertificateException;
-import javax.net.ssl.SSLException;
-
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.SslSystemInternalSettings;
-import org.neo4j.configuration.ssl.SslPolicyConfig;
-import org.neo4j.io.fs.FileUtils;
-import org.neo4j.logging.NullLogProvider;
-import org.neo4j.ssl.config.SslPolicyLoader;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.utils.TestDirectory;
-import org.neo4j.test.ssl.SelfSignedCertificateFactory;
-
 import static java.nio.file.Files.createDirectories;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -54,10 +29,32 @@ import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 import static org.neo4j.configuration.ssl.SslPolicyScope.TESTING;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.security.cert.CRLException;
+import java.security.cert.CertificateException;
+import javax.net.ssl.SSLException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.SslSystemInternalSettings;
+import org.neo4j.configuration.ssl.SslPolicyConfig;
+import org.neo4j.io.fs.FileUtils;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.ssl.config.SslPolicyLoader;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.ssl.SelfSignedCertificateFactory;
+import org.neo4j.test.utils.TestDirectory;
+
 @TestDirectoryExtension
 @Disabled
-class SslPolicyLoaderTest
-{
+class SslPolicyLoaderTest {
     private static final String REVOCATION_ERROR_MSG = "Could not load CRL";
     private static final String TRUSTED_CERTS_ERROR_MSG = "Failed to create trust manager";
 
@@ -72,243 +69,224 @@ class SslPolicyLoaderTest
     private Path baseDir;
 
     @BeforeEach
-    void setup() throws Exception
-    {
-        home = testDirectory.directory( "home" );
-        baseDir = home.resolve( "certificates/default" );
-        publicCertificateFile = baseDir.resolve( "public.crt" );
-        privateKeyFile = baseDir.resolve( "private.key" );
+    void setup() throws Exception {
+        home = testDirectory.directory("home");
+        baseDir = home.resolve("certificates/default");
+        publicCertificateFile = baseDir.resolve("public.crt");
+        privateKeyFile = baseDir.resolve("private.key");
 
-        new SelfSignedCertificateFactory().createSelfSignedCertificate( publicCertificateFile, privateKeyFile, "localhost" );
+        new SelfSignedCertificateFactory()
+                .createSelfSignedCertificate(publicCertificateFile, privateKeyFile, "localhost");
 
-        trustedDir = makeDir( baseDir, "trusted" );
-        FileUtils.copyFile( publicCertificateFile, trustedDir.resolve( "public.crt" ) );
+        trustedDir = makeDir(baseDir, "trusted");
+        FileUtils.copyFile(publicCertificateFile, trustedDir.resolve("public.crt"));
 
-        revokedDir = makeDir( baseDir, "revoked" );
+        revokedDir = makeDir(baseDir, "revoked");
     }
 
     @ParameterizedTest
-    @ValueSource( booleans = {true, false} )
-    void shouldLoadBaseCryptographicObjects( boolean ignoreDotfiles ) throws Exception
-    {
+    @ValueSource(booleans = {true, false})
+    void shouldLoadBaseCryptographicObjects(boolean ignoreDotfiles) throws Exception {
         // when
-        SslPolicyLoader sslPolicyLoader = createSslPolicyLoader( ignoreDotfiles );
+        SslPolicyLoader sslPolicyLoader = createSslPolicyLoader(ignoreDotfiles);
 
         // then
-        SslPolicy sslPolicy = sslPolicyLoader.getPolicy( TESTING );
-        assertPolicyValid( sslPolicy );
+        SslPolicy sslPolicy = sslPolicyLoader.getPolicy(TESTING);
+        assertPolicyValid(sslPolicy);
     }
 
     @ParameterizedTest
-    @ValueSource( booleans = {true, false} )
-    void shouldComplainIfUnparseableFilesPresentInTrusted( boolean ignoreDotfiles ) throws IOException
-    {
+    @ValueSource(booleans = {true, false})
+    void shouldComplainIfUnparseableFilesPresentInTrusted(boolean ignoreDotfiles) throws IOException {
         // given
-        writeJunkToFile( trustedDir, "foo.txt" );
-        Files.createFile( revokedDir.resolve( "empty.crt" ) );
+        writeJunkToFile(trustedDir, "foo.txt");
+        Files.createFile(revokedDir.resolve("empty.crt"));
 
         // then
-        shouldThrowCertificateExceptionCreatingSslPolicy( TRUSTED_CERTS_ERROR_MSG, CertificateException.class, ignoreDotfiles );
+        shouldThrowCertificateExceptionCreatingSslPolicy(
+                TRUSTED_CERTS_ERROR_MSG, CertificateException.class, ignoreDotfiles);
     }
 
     @ParameterizedTest
-    @ValueSource( booleans = {true, false} )
-    void shouldComplainIfDirectoriesPresentInTrusted( boolean ignoreDotfiles ) throws IOException
-    {
+    @ValueSource(booleans = {true, false})
+    void shouldComplainIfDirectoriesPresentInTrusted(boolean ignoreDotfiles) throws IOException {
         // given
-        makeDir( trustedDir, "foo" );
+        makeDir(trustedDir, "foo");
 
         // then
-        shouldThrowCertificateExceptionCreatingSslPolicy( TRUSTED_CERTS_ERROR_MSG, Exception.class, ignoreDotfiles );
+        shouldThrowCertificateExceptionCreatingSslPolicy(TRUSTED_CERTS_ERROR_MSG, Exception.class, ignoreDotfiles);
     }
 
     @ParameterizedTest
-    @ValueSource( booleans = {true, false} )
-    void shouldComplainIfUnparseableFilesPresentInRevoked( boolean ignoreDotfiles ) throws IOException
-    {
+    @ValueSource(booleans = {true, false})
+    void shouldComplainIfUnparseableFilesPresentInRevoked(boolean ignoreDotfiles) throws IOException {
         // given
-        writeJunkToFile( revokedDir, "foo.txt" );
+        writeJunkToFile(revokedDir, "foo.txt");
 
         // then
-        shouldThrowCertificateExceptionCreatingSslPolicy( REVOCATION_ERROR_MSG, CRLException.class, ignoreDotfiles );
+        shouldThrowCertificateExceptionCreatingSslPolicy(REVOCATION_ERROR_MSG, CRLException.class, ignoreDotfiles);
     }
 
     @ParameterizedTest
-    @ValueSource( booleans = {true, false} )
-    void shouldComplainIfDirectoriesPresentInRevoked( boolean ignoreDotfiles ) throws IOException
-    {
+    @ValueSource(booleans = {true, false})
+    void shouldComplainIfDirectoriesPresentInRevoked(boolean ignoreDotfiles) throws IOException {
         // given
-        makeDir( revokedDir, "foo" );
+        makeDir(revokedDir, "foo");
 
         // then
-        shouldThrowCertificateExceptionCreatingSslPolicy( REVOCATION_ERROR_MSG, Exception.class, ignoreDotfiles );
+        shouldThrowCertificateExceptionCreatingSslPolicy(REVOCATION_ERROR_MSG, Exception.class, ignoreDotfiles);
     }
 
-    private void shouldThrowCertificateExceptionCreatingSslPolicy( String expectedMessage, Class<? extends Exception> expectedCause, boolean ignoreDotfiles )
-    {
-        SslPolicyConfig policyConfig = SslPolicyConfig.forScope( TESTING );
+    private void shouldThrowCertificateExceptionCreatingSslPolicy(
+            String expectedMessage, Class<? extends Exception> expectedCause, boolean ignoreDotfiles) {
+        SslPolicyConfig policyConfig = SslPolicyConfig.forScope(TESTING);
 
         Config config = newBuilder()
-                .set( neo4j_home, home.toAbsolutePath() )
-                .set( SslSystemInternalSettings.ignore_dotfiles, ignoreDotfiles )
-                .set( policyConfig.enabled, Boolean.TRUE )
-                .set( policyConfig.base_directory, Path.of( "certificates/default" ) )
+                .set(neo4j_home, home.toAbsolutePath())
+                .set(SslSystemInternalSettings.ignore_dotfiles, ignoreDotfiles)
+                .set(policyConfig.enabled, Boolean.TRUE)
+                .set(policyConfig.base_directory, Path.of("certificates/default"))
                 .build();
 
         // when
-        Exception exception = assertThrows( Exception.class, () -> SslPolicyLoader.create( config, NullLogProvider.getInstance() ) );
-        assertThat( exception.getMessage() ).contains( expectedMessage );
-        assertThat( exception.getCause() ).isInstanceOf( expectedCause );
+        Exception exception =
+                assertThrows(Exception.class, () -> SslPolicyLoader.create(config, NullLogProvider.getInstance()));
+        assertThat(exception.getMessage()).contains(expectedMessage);
+        assertThat(exception.getCause()).isInstanceOf(expectedCause);
     }
 
     @ParameterizedTest
-    @ValueSource( booleans = {true, false} )
-    void correctBehaviourIfDotfilesPresent( boolean ignoreDotfiles ) throws IOException
-    {
+    @ValueSource(booleans = {true, false})
+    void correctBehaviourIfDotfilesPresent(boolean ignoreDotfiles) throws IOException {
         // given
-        writeJunkToFile( baseDir, ".README" );
-        writeJunkToFile( trustedDir, ".README" );
-        writeJunkToFile( revokedDir, ".README" );
+        writeJunkToFile(baseDir, ".README");
+        writeJunkToFile(trustedDir, ".README");
+        writeJunkToFile(revokedDir, ".README");
 
         // when
         SslPolicyLoader sslPolicyLoader;
-        if ( !ignoreDotfiles )
-        {
-            assertThrows( Exception.class, () -> createSslPolicyLoader( ignoreDotfiles ) );
+        if (!ignoreDotfiles) {
+            assertThrows(Exception.class, () -> createSslPolicyLoader(ignoreDotfiles));
             return;
-        }
-        else
-        {
-            sslPolicyLoader = createSslPolicyLoader( ignoreDotfiles );
+        } else {
+            sslPolicyLoader = createSslPolicyLoader(ignoreDotfiles);
         }
 
-        SslPolicy sslPolicy = sslPolicyLoader.getPolicy( TESTING );
+        SslPolicy sslPolicy = sslPolicyLoader.getPolicy(TESTING);
 
         // then
-        assertPolicyValid( sslPolicy );
+        assertPolicyValid(sslPolicy);
     }
 
     @ParameterizedTest
-    @ValueSource( booleans = {true, false} )
-    void shouldNotComplainIfDotdirsPresent( boolean ignoreDotfiles ) throws IOException
-    {
+    @ValueSource(booleans = {true, false})
+    void shouldNotComplainIfDotdirsPresent(boolean ignoreDotfiles) throws IOException {
         // given
-        makeDir( baseDir, "..data" );
-        makeDir( trustedDir, "..data" );
-        makeDir( revokedDir, "..data" );
+        makeDir(baseDir, "..data");
+        makeDir(trustedDir, "..data");
+        makeDir(revokedDir, "..data");
 
         // when
         SslPolicyLoader sslPolicyLoader;
-        if ( !ignoreDotfiles )
-        {
-            Exception exception = assertThrows( Exception.class, () -> createSslPolicyLoader( ignoreDotfiles ) );
-            assertThat( exception.getMessage() ).contains( "Failed to create trust manager" );
+        if (!ignoreDotfiles) {
+            Exception exception = assertThrows(Exception.class, () -> createSslPolicyLoader(ignoreDotfiles));
+            assertThat(exception.getMessage()).contains("Failed to create trust manager");
             return;
+        } else {
+            sslPolicyLoader = createSslPolicyLoader(ignoreDotfiles);
         }
-        else
-        {
-            sslPolicyLoader = createSslPolicyLoader( ignoreDotfiles );
-        }
-
-        //then
-        SslPolicy sslPolicy = sslPolicyLoader.getPolicy( TESTING );
-        assertPolicyValid( sslPolicy );
-    }
-
-    @Test
-    void shouldComplainIfMissingPrivateKey() throws IOException
-    {
-        shouldComplainIfMissingFile( privateKeyFile, "Failed to load private key" );
-    }
-
-    @Test
-    void shouldComplainIfMissingPublicCertificate() throws IOException
-    {
-        shouldComplainIfMissingFile( publicCertificateFile, "Failed to load public certificate chain" );
-    }
-
-    private void shouldComplainIfMissingFile( Path file, String expectedErrorMessage ) throws IOException
-    {
-        // given
-        Files.delete( file );
-
-        SslPolicyConfig policyConfig = SslPolicyConfig.forScope( TESTING );
-
-        Config config = newBuilder()
-                .set( neo4j_home, home.toAbsolutePath() )
-                .set( policyConfig.enabled, Boolean.TRUE )
-                .set( policyConfig.base_directory, Path.of( "certificates/default" ) )
-                .build();
-
-        // when
-        Exception exception = assertThrows( Exception.class, () -> SslPolicyLoader.create( config, NullLogProvider.getInstance() ) );
-        assertThat( exception.getMessage() ).contains( expectedErrorMessage );
-        assertThat( exception.getCause() ).isInstanceOf( NoSuchFileException.class );
-    }
-
-    @Test
-    void shouldThrowIfPolicyNameDoesNotExist()
-    {
-        // given
-        SslPolicyConfig policyConfig = SslPolicyConfig.forScope( TESTING );
-
-        Config config = newBuilder()
-                .set( neo4j_home, home.toAbsolutePath() )
-                .set( policyConfig.base_directory, Path.of( "certificates/default" ) )
-                .build();
-
-        SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( config, NullLogProvider.getInstance() );
-
-        // when
-        assertThrows( IllegalArgumentException.class, () -> sslPolicyLoader.getPolicy( BOLT ) );
-    }
-
-    @Test
-    void shouldReturnNullPolicyIfNullRequested()
-    {
-        // given
-        SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( Config.defaults(), NullLogProvider.getInstance() );
-
-        // when
-        SslPolicy sslPolicy = sslPolicyLoader.getPolicy( null );
 
         // then
-        assertNull( sslPolicy );
+        SslPolicy sslPolicy = sslPolicyLoader.getPolicy(TESTING);
+        assertPolicyValid(sslPolicy);
     }
 
-    private static Path makeDir( Path parent, String child ) throws IOException
-    {
-        Path dir = parent.resolve( child );
-        createDirectories( dir );
+    @Test
+    void shouldComplainIfMissingPrivateKey() throws IOException {
+        shouldComplainIfMissingFile(privateKeyFile, "Failed to load private key");
+    }
+
+    @Test
+    void shouldComplainIfMissingPublicCertificate() throws IOException {
+        shouldComplainIfMissingFile(publicCertificateFile, "Failed to load public certificate chain");
+    }
+
+    private void shouldComplainIfMissingFile(Path file, String expectedErrorMessage) throws IOException {
+        // given
+        Files.delete(file);
+
+        SslPolicyConfig policyConfig = SslPolicyConfig.forScope(TESTING);
+
+        Config config = newBuilder()
+                .set(neo4j_home, home.toAbsolutePath())
+                .set(policyConfig.enabled, Boolean.TRUE)
+                .set(policyConfig.base_directory, Path.of("certificates/default"))
+                .build();
+
+        // when
+        Exception exception =
+                assertThrows(Exception.class, () -> SslPolicyLoader.create(config, NullLogProvider.getInstance()));
+        assertThat(exception.getMessage()).contains(expectedErrorMessage);
+        assertThat(exception.getCause()).isInstanceOf(NoSuchFileException.class);
+    }
+
+    @Test
+    void shouldThrowIfPolicyNameDoesNotExist() {
+        // given
+        SslPolicyConfig policyConfig = SslPolicyConfig.forScope(TESTING);
+
+        Config config = newBuilder()
+                .set(neo4j_home, home.toAbsolutePath())
+                .set(policyConfig.base_directory, Path.of("certificates/default"))
+                .build();
+
+        SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create(config, NullLogProvider.getInstance());
+
+        // when
+        assertThrows(IllegalArgumentException.class, () -> sslPolicyLoader.getPolicy(BOLT));
+    }
+
+    @Test
+    void shouldReturnNullPolicyIfNullRequested() {
+        // given
+        SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create(Config.defaults(), NullLogProvider.getInstance());
+
+        // when
+        SslPolicy sslPolicy = sslPolicyLoader.getPolicy(null);
+
+        // then
+        assertNull(sslPolicy);
+    }
+
+    private static Path makeDir(Path parent, String child) throws IOException {
+        Path dir = parent.resolve(child);
+        createDirectories(dir);
         return dir;
     }
 
-    private static void writeJunkToFile( Path parent, String child ) throws IOException
-    {
-        Path file = parent.resolve( child );
-        Files.write( file, "junk data".getBytes() );
+    private static void writeJunkToFile(Path parent, String child) throws IOException {
+        Path file = parent.resolve(child);
+        Files.write(file, "junk data".getBytes());
     }
 
-    private SslPolicyLoader createSslPolicyLoader( boolean ignoreDotfiles )
-    {
-        SslPolicyConfig policyConfig = SslPolicyConfig.forScope( TESTING );
+    private SslPolicyLoader createSslPolicyLoader(boolean ignoreDotfiles) {
+        SslPolicyConfig policyConfig = SslPolicyConfig.forScope(TESTING);
 
         Config config = newBuilder()
-                .set( neo4j_home, home.toAbsolutePath() )
-                .set( SslSystemInternalSettings.ignore_dotfiles, ignoreDotfiles )
-                .set( policyConfig.enabled, Boolean.TRUE )
-                .set( policyConfig.base_directory, Path.of( "certificates/default" ) )
+                .set(neo4j_home, home.toAbsolutePath())
+                .set(SslSystemInternalSettings.ignore_dotfiles, ignoreDotfiles)
+                .set(policyConfig.enabled, Boolean.TRUE)
+                .set(policyConfig.base_directory, Path.of("certificates/default"))
                 .build();
 
-        return SslPolicyLoader.create( config, NullLogProvider.getInstance() );
+        return SslPolicyLoader.create(config, NullLogProvider.getInstance());
     }
 
-    private static void assertPolicyValid( SslPolicy sslPolicy ) throws SSLException
-    {
-        assertNotNull( sslPolicy );
-        assertNotNull( sslPolicy.privateKey() );
-        assertNotNull( sslPolicy.certificateChain() );
-        assertNotNull( sslPolicy.nettyClientContext() );
-        assertNotNull( sslPolicy.nettyServerContext() );
+    private static void assertPolicyValid(SslPolicy sslPolicy) throws SSLException {
+        assertNotNull(sslPolicy);
+        assertNotNull(sslPolicy.privateKey());
+        assertNotNull(sslPolicy.certificateChain());
+        assertNotNull(sslPolicy.nettyClientContext());
+        assertNotNull(sslPolicy.nettyServerContext());
     }
 }

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -32,41 +31,35 @@ import org.neo4j.logging.InternalLogProvider;
  * Schema state is transient state that should be invalidated when the schema changes.
  * Examples of things stored in schema state is execution plans for cypher.
  */
-public class DatabaseSchemaState implements SchemaState
-{
+public class DatabaseSchemaState implements SchemaState {
     private final Map<Object, Object> state;
     private final InternalLog log;
 
-    public DatabaseSchemaState( InternalLogProvider logProvider )
-    {
+    public DatabaseSchemaState(InternalLogProvider logProvider) {
         this.state = new ConcurrentHashMap<>();
-        this.log = logProvider.getLog( getClass() );
+        this.log = logProvider.getLog(getClass());
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Override
-    public <K, V> V get( K key )
-    {
-        return (V) state.get( key );
+    public <K, V> V get(K key) {
+        return (V) state.get(key);
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Override
-    public <K, V> V getOrCreate( K key, Function<K,V> creator )
-    {
-        return (V) state.computeIfAbsent( key, (Function<Object, Object>) creator );
-    }
-
-    @Override
-    public <K, V> void put( K key, V value )
-    {
-        state.put( key, value );
+    public <K, V> V getOrCreate(K key, Function<K, V> creator) {
+        return (V) state.computeIfAbsent(key, (Function<Object, Object>) creator);
     }
 
     @Override
-    public void clear()
-    {
+    public <K, V> void put(K key, V value) {
+        state.put(key, value);
+    }
+
+    @Override
+    public void clear() {
         state.clear();
-        log.debug( "Schema state store has been cleared." );
+        log.debug("Schema state store has been cleared.");
     }
 }

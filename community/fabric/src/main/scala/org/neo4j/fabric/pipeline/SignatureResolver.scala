@@ -62,6 +62,7 @@ import org.neo4j.procedure.Mode
 
 import java.util.Optional
 import java.util.function.Supplier
+
 import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
@@ -84,17 +85,25 @@ object SignatureResolver {
     val signature = handle.signature()
     ProcedureSignature(
       name = asCypherQualifiedName(signature.name()),
-      inputSignature = signature.inputSignature().asScala.toIndexedSeq.map(s => FieldSignature(
-        name = s.name(),
-        typ = asCypherType(s.neo4jType()),
-        default = s.defaultValue().asScala.map(asCypherValue),
-        sensitive = s.isSensitive)),
-      outputSignature = if (signature.isVoid)
-        None else
-        Some(signature.outputSignature().asScala.toIndexedSeq.map(s => FieldSignature(
+      inputSignature = signature.inputSignature().asScala.toIndexedSeq.map(s =>
+        FieldSignature(
           name = s.name(),
           typ = asCypherType(s.neo4jType()),
-          deprecated = s.isDeprecated))),
+          default = s.defaultValue().asScala.map(asCypherValue),
+          sensitive = s.isSensitive
+        )
+      ),
+      outputSignature =
+        if (signature.isVoid)
+          None
+        else
+          Some(signature.outputSignature().asScala.toIndexedSeq.map(s =>
+            FieldSignature(
+              name = s.name(),
+              typ = asCypherType(s.neo4jType()),
+              deprecated = s.isDeprecated
+            )
+          )),
       deprecationInfo = signature.deprecated().asScala,
       accessMode = asCypherProcMode(signature.mode()),
       description = signature.description().asScala,
@@ -110,10 +119,13 @@ object SignatureResolver {
     val signature = fcn.signature()
     UserFunctionSignature(
       name = asCypherQualifiedName(signature.name()),
-      inputSignature = signature.inputSignature().asScala.toIndexedSeq.map(s => FieldSignature(
-        name = s.name(),
-        typ = asCypherType(s.neo4jType()),
-        default = s.defaultValue().asScala.map(asCypherValue))),
+      inputSignature = signature.inputSignature().asScala.toIndexedSeq.map(s =>
+        FieldSignature(
+          name = s.name(),
+          typ = asCypherType(s.neo4jType()),
+          default = s.defaultValue().asScala.map(asCypherValue)
+        )
+      ),
       outputType = asCypherType(signature.outputType()),
       deprecationInfo = signature.deprecated().asScala,
       description = signature.description().asScala,
@@ -163,10 +175,13 @@ object SignatureResolver {
     case Mode.DBMS    => ProcedureDbmsAccess
 
     case _ => throw new CypherExecutionException(
-      "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null)
+        "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(),
+        null
+      )
   }
 
-  private implicit class OptionalOps[T](optional: Optional[T]) {
+  implicit private class OptionalOps[T](optional: Optional[T]) {
+
     def asScala: Option[T] =
       if (optional.isPresent) Some(optional.get()) else None
   }

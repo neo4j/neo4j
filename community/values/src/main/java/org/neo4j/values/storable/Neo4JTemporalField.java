@@ -19,6 +19,11 @@
  */
 package org.neo4j.values.storable;
 
+import static java.time.temporal.ChronoUnit.CENTURIES;
+import static java.time.temporal.ChronoUnit.DECADES;
+import static java.time.temporal.ChronoUnit.MILLENNIA;
+import static java.time.temporal.ChronoUnit.YEARS;
+
 import java.time.Year;
 import java.time.temporal.ChronoField;
 import java.time.temporal.Temporal;
@@ -29,16 +34,10 @@ import java.time.temporal.TemporalUnit;
 import java.time.temporal.ValueRange;
 import java.util.Locale;
 
-import static java.time.temporal.ChronoUnit.CENTURIES;
-import static java.time.temporal.ChronoUnit.DECADES;
-import static java.time.temporal.ChronoUnit.MILLENNIA;
-import static java.time.temporal.ChronoUnit.YEARS;
-
-enum Neo4JTemporalField implements TemporalField
-{
-    YEAR_OF_DECADE( "Year of decade", YEARS, DECADES, 10 ),
-    YEAR_OF_CENTURY( "Year of century", YEARS, CENTURIES, 100 ),
-    YEAR_OF_MILLENNIUM( "Millennium", YEARS, MILLENNIA, 1000 );
+enum Neo4JTemporalField implements TemporalField {
+    YEAR_OF_DECADE("Year of decade", YEARS, DECADES, 10),
+    YEAR_OF_CENTURY("Year of century", YEARS, CENTURIES, 100),
+    YEAR_OF_MILLENNIUM("Millennium", YEARS, MILLENNIA, 1000);
 
     private final String name;
     private final TemporalUnit baseUnit;
@@ -46,84 +45,71 @@ enum Neo4JTemporalField implements TemporalField
     private final int years;
     private final ValueRange range;
 
-    Neo4JTemporalField( String name, TemporalUnit baseUnit, TemporalUnit rangeUnit, int years )
-    {
+    Neo4JTemporalField(String name, TemporalUnit baseUnit, TemporalUnit rangeUnit, int years) {
         this.name = name;
         this.baseUnit = baseUnit;
         this.rangeUnit = rangeUnit;
         this.years = years;
-        this.range = ValueRange.of( Year.MIN_VALUE / years, Year.MAX_VALUE / years );
+        this.range = ValueRange.of(Year.MIN_VALUE / years, Year.MAX_VALUE / years);
     }
 
     @Override
-    public String getDisplayName( Locale locale )
-    {
+    public String getDisplayName(Locale locale) {
         return name;
     }
 
     @Override
-    public TemporalUnit getBaseUnit()
-    {
+    public TemporalUnit getBaseUnit() {
         return baseUnit;
     }
 
     @Override
-    public TemporalUnit getRangeUnit()
-    {
+    public TemporalUnit getRangeUnit() {
         return rangeUnit;
     }
 
     @Override
-    public ValueRange range()
-    {
+    public ValueRange range() {
         return range;
     }
 
     @Override
-    public boolean isDateBased()
-    {
+    public boolean isDateBased() {
         return true;
     }
 
     @Override
-    public boolean isTimeBased()
-    {
+    public boolean isTimeBased() {
         return false;
     }
 
     @Override
-    public boolean isSupportedBy( TemporalAccessor temporal )
-    {
+    public boolean isSupportedBy(TemporalAccessor temporal) {
         return false;
     }
 
     @Override
-    public ValueRange rangeRefinedBy( TemporalAccessor temporal )
-    {
+    public ValueRange rangeRefinedBy(TemporalAccessor temporal) {
         // Always identical
         return range();
     }
 
     @Override
-    public long getFrom( TemporalAccessor temporal )
-    {
-        throw new UnsupportedOperationException( "Getting a " + this.name + " from temporal values is not supported." );
+    public long getFrom(TemporalAccessor temporal) {
+        throw new UnsupportedOperationException("Getting a " + this.name + " from temporal values is not supported.");
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Override
-    public <R extends Temporal> R adjustInto( R temporal, long newValue )
-    {
-        int newVal = range.checkValidIntValue( newValue, this );
-        int oldYear = temporal.get( ChronoField.YEAR );
-        return (R) temporal.with( ChronoField.YEAR, (oldYear / years) * years + newVal )
-                           .with( TemporalAdjusters.firstDayOfYear() );
+    public <R extends Temporal> R adjustInto(R temporal, long newValue) {
+        int newVal = range.checkValidIntValue(newValue, this);
+        int oldYear = temporal.get(ChronoField.YEAR);
+        return (R) temporal.with(ChronoField.YEAR, (oldYear / years) * years + newVal)
+                .with(TemporalAdjusters.firstDayOfYear());
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return name;
     }
-
 }

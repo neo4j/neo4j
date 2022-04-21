@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.neo4j.kernel.KernelVersion;
-import org.neo4j.storageengine.api.LegacyStoreId;
-import org.neo4j.storageengine.api.TransactionId;
-
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
-public interface LogTailMetadata
-{
-    TransactionId EMPTY_LAST_TRANSACTION = new TransactionId( BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP );
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.TransactionId;
+
+public interface LogTailMetadata {
+    TransactionId EMPTY_LAST_TRANSACTION = new TransactionId(BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP);
 
     LogTailMetadata EMPTY_LOG_TAIL = new EmptyLogTailMetadata();
 

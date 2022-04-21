@@ -19,46 +19,41 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import static org.neo4j.graphdb.schema.IndexType.RANGE;
+import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStringResultingInIndexEntrySize;
+
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.test.RandomSupport;
 
-import static org.neo4j.graphdb.schema.IndexType.RANGE;
-import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStringResultingInIndexEntrySize;
-
-public class RangeIndexStringLengthIndexValidationIT extends StringLengthIndexValidationIT
-{
+public class RangeIndexStringLengthIndexValidationIT extends StringLengthIndexValidationIT {
     @Override
-    protected int getSingleKeySizeLimit( int payloadSize )
-    {
-        return TreeNodeDynamicSize.keyValueSizeCapFromPageSize( payloadSize );
+    protected int getSingleKeySizeLimit(int payloadSize) {
+        return TreeNodeDynamicSize.keyValueSizeCapFromPageSize(payloadSize);
     }
 
     @Override
-    protected String getString( RandomSupport random, int keySize )
-    {
-        return generateStringResultingInIndexEntrySize( keySize );
+    protected String getString(RandomSupport random, int keySize) {
+        return generateStringResultingInIndexEntrySize(keySize);
     }
 
     @Override
-    protected IndexType getIndexType()
-    {
+    protected IndexType getIndexType() {
         return RANGE;
     }
 
     @Override
-    protected String getIndexProviderString()
-    {
+    protected String getIndexProviderString() {
         return RangeIndexProvider.DESCRIPTOR.name();
     }
 
     @Override
-    protected String expectedPopulationFailureCauseMessage( long indexId, long entityId )
-    {
-        return String.format( "Property value is too large to index, please see index documentation for limitations. " +
-                              "Index: Index( id=%d, name='coolName', type='GENERAL RANGE', " +
-                              "schema=(:LABEL_ONE {largeString}), indexProvider='range-1.0' ), entity id: %d",
-                              indexId, entityId );
+    protected String expectedPopulationFailureCauseMessage(long indexId, long entityId) {
+        return String.format(
+                "Property value is too large to index, please see index documentation for limitations. "
+                        + "Index: Index( id=%d, name='coolName', type='GENERAL RANGE', "
+                        + "schema=(:LABEL_ONE {largeString}), indexProvider='range-1.0' ), entity id: %d",
+                indexId, entityId);
     }
 }

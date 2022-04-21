@@ -21,7 +21,6 @@ package org.neo4j.internal.recordstorage;
 
 import java.util.HashSet;
 import java.util.Set;
-
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.IndexUpdateListener;
@@ -33,13 +32,11 @@ import org.neo4j.storageengine.api.IndexUpdateListener;
  * that wants to be activated inside an applier, to be activated right after the low-level locks have been released for the batch
  * of transactions currently applying.
  */
-public class IndexActivator implements AutoCloseable
-{
+public class IndexActivator implements AutoCloseable {
     private final IndexUpdateListener listener;
     private Set<IndexDescriptor> indexesToActivate;
 
-    IndexActivator( IndexUpdateListener listener )
-    {
+    IndexActivator(IndexUpdateListener listener) {
         this.listener = listener;
     }
 
@@ -47,19 +44,13 @@ public class IndexActivator implements AutoCloseable
      * Activates any index that needs activation, i.e. have been added with {@link #activateIndex(IndexDescriptor)}.
      */
     @Override
-    public void close()
-    {
-        if ( indexesToActivate != null )
-        {
-            for ( IndexDescriptor index : indexesToActivate )
-            {
-                try
-                {
-                    listener.activateIndex( index );
-                }
-                catch ( KernelException e )
-                {
-                    throw new IllegalStateException( "Unable to enable constraint, backing index is not online.", e );
+    public void close() {
+        if (indexesToActivate != null) {
+            for (IndexDescriptor index : indexesToActivate) {
+                try {
+                    listener.activateIndex(index);
+                } catch (KernelException e) {
+                    throw new IllegalStateException("Unable to enable constraint, backing index is not online.", e);
                 }
             }
         }
@@ -69,24 +60,20 @@ public class IndexActivator implements AutoCloseable
      * Makes a note to activate index after batch of transaction have been applied, i.e. in {@link #close()}.
      * @param index index.
      */
-    void activateIndex( IndexDescriptor index )
-    {
-        if ( indexesToActivate == null )
-        {
+    void activateIndex(IndexDescriptor index) {
+        if (indexesToActivate == null) {
             indexesToActivate = new HashSet<>();
         }
-        indexesToActivate.add( index );
+        indexesToActivate.add(index);
     }
 
     /**
      * Called when an index is dropped, so that a previously noted index to activate is removed from this internal list.
      * @param index index.
      */
-    void indexDropped( IndexDescriptor index )
-    {
-        if ( indexesToActivate != null )
-        {
-            indexesToActivate.remove( index );
+    void indexDropped(IndexDescriptor index) {
+        if (indexesToActivate != null) {
+            indexesToActivate.remove(index);
         }
     }
 }

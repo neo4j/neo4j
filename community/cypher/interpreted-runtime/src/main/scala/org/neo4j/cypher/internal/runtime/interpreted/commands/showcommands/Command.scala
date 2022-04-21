@@ -28,7 +28,7 @@ abstract class Command(columns: List[ShowColumn]) {
 
   def originalNameRows(state: QueryState): ClosingIterator[Map[String, AnyValue]]
 
-  final def rows(state: QueryState): ClosingIterator[Map[String, AnyValue]] =  {
+  final def rows(state: QueryState): ClosingIterator[Map[String, AnyValue]] = {
     originalNameRows(state).map { map =>
       columns.map {
         case ShowColumn(lv, _, originalName) => lv.name -> map(originalName)

@@ -22,37 +22,31 @@ package org.neo4j.exceptions;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public abstract class KernelException extends Exception implements Status.HasStatus
-{
+public abstract class KernelException extends Exception implements Status.HasStatus {
     private final Status statusCode;
 
-    protected KernelException( Status statusCode, Throwable cause, String message, Object... parameters )
-    {
-        super( (parameters.length > 0) ? String.format( message, parameters ) : message, cause );
+    protected KernelException(Status statusCode, Throwable cause, String message, Object... parameters) {
+        super((parameters.length > 0) ? String.format(message, parameters) : message, cause);
         this.statusCode = statusCode;
     }
 
-    protected KernelException( Status statusCode, Throwable cause )
-    {
-        super( cause );
+    protected KernelException(Status statusCode, Throwable cause) {
+        super(cause);
         this.statusCode = statusCode;
     }
 
-    protected KernelException( Status statusCode, String message, Object... parameters )
-    {
-        super( String.format( message, parameters ) );
+    protected KernelException(Status statusCode, String message, Object... parameters) {
+        super(String.format(message, parameters));
         this.statusCode = statusCode;
     }
 
     /** The Neo4j status code associated with this exception type. */
     @Override
-    public Status status()
-    {
+    public Status status() {
         return statusCode;
     }
 
-    public String getUserMessage( TokenNameLookup tokenNameLookup )
-    {
+    public String getUserMessage(TokenNameLookup tokenNameLookup) {
         return getMessage();
     }
 }

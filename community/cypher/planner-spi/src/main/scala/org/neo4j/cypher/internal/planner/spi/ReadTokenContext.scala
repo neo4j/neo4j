@@ -32,6 +32,7 @@ trait ReadTokenContext {
 }
 
 object ReadTokenContext {
+
   val EMPTY = new ReadTokenContext {
     override def getLabelName(id: Int): String = throw new IllegalArgumentException("No such label.", null)
 
@@ -43,7 +44,8 @@ object ReadTokenContext {
 
     override def getOptPropertyKeyId(propertyKeyName: String): Option[Int] = None
 
-    override def getPropertyKeyId(propertyKeyName: String): Int = throw new IllegalArgumentException("No such property.", null)
+    override def getPropertyKeyId(propertyKeyName: String): Int =
+      throw new IllegalArgumentException("No such property.", null)
 
     override def getRelTypeName(id: Int): String = throw new IllegalArgumentException("No such relationship.", null)
 

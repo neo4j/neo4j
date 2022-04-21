@@ -19,12 +19,13 @@
  */
 package org.neo4j.bolt.routing;
 
+import static java.util.Collections.emptyList;
+
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-
 import org.neo4j.bolt.messaging.ResultConsumer;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.Bookmark;
@@ -37,114 +38,112 @@ import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 
-import static java.util.Collections.emptyList;
-
 /**
  * Implementation of @{@link RoutingTableGetter} which uses the `dbms.routing.getRoutingTable` procedure.
  */
-public class ProcedureRoutingTableGetter implements RoutingTableGetter
-{
-    private static final String GET_ROUTING_TABLE_STATEMENT = "CALL dbms.routing.getRoutingTable($routingContext, $databaseName)";
+public class ProcedureRoutingTableGetter implements RoutingTableGetter {
+    private static final String GET_ROUTING_TABLE_STATEMENT =
+            "CALL dbms.routing.getRoutingTable($routingContext, $databaseName)";
     private static final String ROUTING_CONTEXT_PARAM = "routingContext";
     private static final String DATABASE_NAME_PARAM = "databaseName";
     private static final String SYSTEM_DB_NAME = GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
     @Override
-    public CompletableFuture<MapValue> get( String programId, LoginContext loginContext, TransactionManager transactionManager, MapValue routingContext,
-                                            List<Bookmark> bookmarks, String databaseName, String connectionId )
-    {
-        var params = getParams( routingContext, databaseName );
+    public CompletableFuture<MapValue> get(
+            String programId,
+            LoginContext loginContext,
+            TransactionManager transactionManager,
+            MapValue routingContext,
+            List<Bookmark> bookmarks,
+            String databaseName,
+            String connectionId) {
+        var params = getParams(routingContext, databaseName);
         var future = new CompletableFuture<MapValue>();
 
-        try
-        {
-            ProgramResultReference programResultReference =
-                    transactionManager.runProgram( programId, loginContext, SYSTEM_DB_NAME, GET_ROUTING_TABLE_STATEMENT, params, emptyList(),
-                                                   true, Map.of(), null, connectionId );
+        try {
+            ProgramResultReference programResultReference = transactionManager.runProgram(
+                    programId,
+                    loginContext,
+                    SYSTEM_DB_NAME,
+                    GET_ROUTING_TABLE_STATEMENT,
+                    params,
+                    emptyList(),
+                    true,
+                    Map.of(),
+                    null,
+                    connectionId);
 
-            transactionManager.pullData( programId, programResultReference.statementMetadata().queryId(), -1,
-                                         new RoutingTableConsumer( future ) );
-        }
-        catch ( Throwable throwable )
-        {
-            future.completeExceptionally( throwable );
+            transactionManager.pullData(
+                    programId,
+                    programResultReference.statementMetadata().queryId(),
+                    -1,
+                    new RoutingTableConsumer(future));
+        } catch (Throwable throwable) {
+            future.completeExceptionally(throwable);
         }
 
         return future;
     }
 
-    private static MapValue getParams( MapValue routingContext, String databaseName )
-    {
+    private static MapValue getParams(MapValue routingContext, String databaseName) {
         var paramsBuilder = new MapValueBuilder();
-        paramsBuilder.add( ROUTING_CONTEXT_PARAM, routingContext );
-        paramsBuilder.add( DATABASE_NAME_PARAM, Values.stringOrNoValue( databaseName ) );
+        paramsBuilder.add(ROUTING_CONTEXT_PARAM, routingContext);
+        paramsBuilder.add(DATABASE_NAME_PARAM, Values.stringOrNoValue(databaseName));
         return paramsBuilder.build();
     }
 
-    private static class RoutingTableConsumer implements ResultConsumer
-    {
+    private static class RoutingTableConsumer implements ResultConsumer {
         private final CompletableFuture<MapValue> future;
 
-        private RoutingTableConsumer( CompletableFuture<MapValue> future )
-        {
+        private RoutingTableConsumer(CompletableFuture<MapValue> future) {
             this.future = future;
         }
 
         @Override
-        public void consume( BoltResult result ) throws Throwable
-        {
-            var consumer = new RoutingTableRecordConsumer( future, result.fieldNames() );
-            result.handleRecords( consumer, 1L );
+        public void consume(BoltResult result) throws Throwable {
+            var consumer = new RoutingTableRecordConsumer(future, result.fieldNames());
+            result.handleRecords(consumer, 1L);
         }
 
         @Override
-        public boolean hasMore()
-        {
+        public boolean hasMore() {
             return false;
         }
     }
 
-    private static class RoutingTableRecordConsumer implements BoltResult.RecordConsumer
-    {
+    private static class RoutingTableRecordConsumer implements BoltResult.RecordConsumer {
         private final CompletableFuture<MapValue> future;
         private final MapValueBuilder mapValueBuilder;
         private final List<String> fields;
         private Iterator<String> fieldsIt;
 
-        private RoutingTableRecordConsumer( CompletableFuture<MapValue> future, String[] fields )
-        {
+        private RoutingTableRecordConsumer(CompletableFuture<MapValue> future, String[] fields) {
             this.future = future;
             this.mapValueBuilder = new MapValueBuilder();
-            this.fields = List.of( fields );
+            this.fields = List.of(fields);
         }
 
         @Override
-        public void addMetadata( String key, AnyValue value )
-        {
-        }
+        public void addMetadata(String key, AnyValue value) {}
 
         @Override
-        public void beginRecord( int numberOfFields ) throws IOException
-        {
+        public void beginRecord(int numberOfFields) throws IOException {
             this.fieldsIt = this.fields.iterator();
         }
 
         @Override
-        public void consumeField( AnyValue value ) throws IOException
-        {
-            this.mapValueBuilder.add( this.fieldsIt.next(), value );
+        public void consumeField(AnyValue value) throws IOException {
+            this.mapValueBuilder.add(this.fieldsIt.next(), value);
         }
 
         @Override
-        public void endRecord() throws IOException
-        {
-            future.complete( mapValueBuilder.build() );
+        public void endRecord() throws IOException {
+            future.complete(mapValueBuilder.build());
         }
 
         @Override
-        public void onError() throws IOException
-        {
-            future.completeExceptionally( new RuntimeException( "Error processing the record" ) );
+        public void onError() throws IOException {
+            future.completeExceptionally(new RuntimeException("Error processing the record"));
         }
     }
 }

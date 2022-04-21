@@ -65,7 +65,8 @@ trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
     override def defaultValue: Cardinality = 0.0
   }
 
-  class StubEffectiveCardinalities extends EffectiveCardinalities with StubAttribute[LogicalPlan, EffectiveCardinality] {
+  class StubEffectiveCardinalities extends EffectiveCardinalities
+      with StubAttribute[LogicalPlan, EffectiveCardinality] {
     override def defaultValue: EffectiveCardinality = EffectiveCardinality(0.0)
   }
 
@@ -75,5 +76,11 @@ trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
 
   class StubLeveragedOrders extends LeveragedOrders with StubAttribute[LogicalPlan, Boolean]
 
-  def newStubbedPlanningAttributes: PlanningAttributes = PlanningAttributes(new StubSolveds, new StubCardinalities, new StubEffectiveCardinalities, new StubProvidedOrders, new StubLeveragedOrders)
+  def newStubbedPlanningAttributes: PlanningAttributes = PlanningAttributes(
+    new StubSolveds,
+    new StubCardinalities,
+    new StubEffectiveCardinalities,
+    new StubProvidedOrders,
+    new StubLeveragedOrders
+  )
 }

@@ -21,6 +21,4 @@ package org.neo4j.logging;
 
 import org.apache.logging.log4j.message.Message;
 
-public interface Neo4jLogMessage extends Message
-{
-}
+public interface Neo4jLogMessage extends Message {}

@@ -22,8 +22,7 @@ package org.neo4j.internal.batchimport.input.csv;
 /**
  * Types used to semantically specify the contents of a {@link Header.Entry}.
  */
-public enum Type
-{
+public enum Type {
     ID,
     PROPERTY,
     LABEL,

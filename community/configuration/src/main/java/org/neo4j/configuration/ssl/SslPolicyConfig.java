@@ -19,10 +19,17 @@
  */
 package org.neo4j.configuration.ssl;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.SettingValueParsers.BOOL;
+import static org.neo4j.configuration.SettingValueParsers.PATH;
+import static org.neo4j.configuration.SettingValueParsers.SECURE_STRING;
+import static org.neo4j.configuration.SettingValueParsers.STRING;
+import static org.neo4j.configuration.SettingValueParsers.listOf;
+import static org.neo4j.configuration.SettingValueParsers.ofEnum;
+
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
-
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
@@ -33,111 +40,110 @@ import org.neo4j.configuration.SettingValueParser;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.string.SecureString;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.configuration.SettingValueParsers.BOOL;
-import static org.neo4j.configuration.SettingValueParsers.PATH;
-import static org.neo4j.configuration.SettingValueParsers.SECURE_STRING;
-import static org.neo4j.configuration.SettingValueParsers.STRING;
-import static org.neo4j.configuration.SettingValueParsers.listOf;
-import static org.neo4j.configuration.SettingValueParsers.ofEnum;
-
 @ServiceProvider
 @PublicApi
-public class SslPolicyConfig implements GroupSetting
-{
+public class SslPolicyConfig implements GroupSetting {
     public final Setting<Boolean> enabled;
 
-    @Description( "The mandatory base directory for cryptographic objects of this policy." +
-            " It is also possible to override each individual configuration with absolute paths." )
+    @Description("The mandatory base directory for cryptographic objects of this policy."
+            + " It is also possible to override each individual configuration with absolute paths.")
     public final Setting<Path> base_directory;
 
-    @Description( "Path to directory of CRLs (Certificate Revocation Lists) in PEM format." )
+    @Description("Path to directory of CRLs (Certificate Revocation Lists) in PEM format.")
     public final Setting<Path> revoked_dir;
 
-    @Description( "Makes this policy trust all remote parties." +
-            " Enabling this is not recommended and the trusted directory will be ignored." )
+    @Description("Makes this policy trust all remote parties."
+            + " Enabling this is not recommended and the trusted directory will be ignored.")
     public final Setting<Boolean> trust_all;
 
-    @Description( "Client authentication stance." )
+    @Description("Client authentication stance.")
     public final Setting<ClientAuth> client_auth;
 
-    @Description( "Restrict allowed TLS protocol versions." )
+    @Description("Restrict allowed TLS protocol versions.")
     public final Setting<List<String>> tls_versions;
 
-    @Description( "Restrict allowed ciphers. " +
-            "Valid values depend on JRE and SSL however some examples can be found here " +
-            "https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html#jsse-cipher-suite-names" )
+    @Description(
+            "Restrict allowed ciphers. " + "Valid values depend on JRE and SSL however some examples can be found here "
+                    + "https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html#jsse-cipher-suite-names")
     public final Setting<List<String>> ciphers;
 
-    @Description( "When true, this node will verify the hostname of every other instance it connects to by comparing the address it used to connect with it " +
-            "and the patterns described in the remote hosts public certificate Subject Alternative Names" )
+    @Description(
+            "When true, this node will verify the hostname of every other instance it connects to by comparing the address it used to connect with it "
+                    + "and the patterns described in the remote hosts public certificate Subject Alternative Names")
     public final Setting<Boolean> verify_hostname;
 
-    @Description( "Private PKCS#8 key in PEM format." )
+    @Description("Private PKCS#8 key in PEM format.")
     public final Setting<Path> private_key;
 
-    @Description( "The passphrase for the private key." )
+    @Description("The passphrase for the private key.")
     public final Setting<SecureString> private_key_password;
 
-    @Description( "X.509 certificate (chain) of this server in PEM format." )
+    @Description("X.509 certificate (chain) of this server in PEM format.")
     public final Setting<Path> public_certificate;
 
-    @Description( "Path to directory of X.509 certificates in PEM format for trusted parties." )
+    @Description("Path to directory of X.509 certificates in PEM format for trusted parties.")
     public final Setting<Path> trusted_dir;
 
     private final SslPolicyScope scope;
 
-    public static SslPolicyConfig forScope( SslPolicyScope scope )
-    {
-        return new SslPolicyConfig( scope.name() );
+    public static SslPolicyConfig forScope(SslPolicyScope scope) {
+        return new SslPolicyConfig(scope.name());
     }
 
-    private SslPolicyConfig( String scopeString )
-    {
-        scope = SslPolicyScope.fromName( scopeString );
-        if ( scope == null )
-        {
-            throw new IllegalArgumentException( "SslPolicy can not be created for scope: " + scopeString );
+    private SslPolicyConfig(String scopeString) {
+        scope = SslPolicyScope.fromName(scopeString);
+        if (scope == null) {
+            throw new IllegalArgumentException("SslPolicy can not be created for scope: " + scopeString);
         }
 
-        enabled = getBuilder( "enabled", BOOL, Boolean.FALSE ).build();
-        base_directory = getBuilder( "base_directory", PATH, Path.of( scope.baseDir ) ).setDependency( neo4j_home ).immutable().build();
-        revoked_dir = getBuilder( "revoked_dir", PATH, Path.of( "revoked" ) ).setDependency( base_directory ).build();
-        trust_all = getBuilder( "trust_all", BOOL, false ).build();
-        client_auth = getBuilder( "client_auth", ofEnum( ClientAuth.class ), scope.authDefault ).build();
-        tls_versions = getBuilder( "tls_versions", listOf( STRING ),  List.of("TLSv1.2") ).build();
-        ciphers = getBuilder( "ciphers", listOf( STRING ), null ).build();
-        verify_hostname = getBuilder( "verify_hostname", BOOL, false ).build();
-        private_key = getBuilder( "private_key", PATH, Path.of( "private.key" ) ).setDependency( base_directory ).build();
-        private_key_password = getBuilder( "private_key_password", SECURE_STRING, null ).build();
-        public_certificate = getBuilder( "public_certificate", PATH, Path.of( "public.crt" ) ).setDependency( base_directory ).build();
-        trusted_dir = getBuilder( "trusted_dir", PATH, Path.of( "trusted" ) ).setDependency( base_directory ).build();
+        enabled = getBuilder("enabled", BOOL, Boolean.FALSE).build();
+        base_directory = getBuilder("base_directory", PATH, Path.of(scope.baseDir))
+                .setDependency(neo4j_home)
+                .immutable()
+                .build();
+        revoked_dir = getBuilder("revoked_dir", PATH, Path.of("revoked"))
+                .setDependency(base_directory)
+                .build();
+        trust_all = getBuilder("trust_all", BOOL, false).build();
+        client_auth = getBuilder("client_auth", ofEnum(ClientAuth.class), scope.authDefault)
+                .build();
+        tls_versions =
+                getBuilder("tls_versions", listOf(STRING), List.of("TLSv1.2")).build();
+        ciphers = getBuilder("ciphers", listOf(STRING), null).build();
+        verify_hostname = getBuilder("verify_hostname", BOOL, false).build();
+        private_key = getBuilder("private_key", PATH, Path.of("private.key"))
+                .setDependency(base_directory)
+                .build();
+        private_key_password =
+                getBuilder("private_key_password", SECURE_STRING, null).build();
+        public_certificate = getBuilder("public_certificate", PATH, Path.of("public.crt"))
+                .setDependency(base_directory)
+                .build();
+        trusted_dir = getBuilder("trusted_dir", PATH, Path.of("trusted"))
+                .setDependency(base_directory)
+                .build();
     }
 
     public SslPolicyConfig() // For service loading
-    {
-        this( "testing" );
+            {
+        this("testing");
     }
 
     @Override
-    public String name()
-    {
-        return scope.name().toLowerCase( Locale.ROOT );
+    public String name() {
+        return scope.name().toLowerCase(Locale.ROOT);
     }
 
     @Override
-    public String getPrefix()
-    {
+    public String getPrefix() {
         return "dbms.ssl.policy";
     }
 
-    public SslPolicyScope getScope()
-    {
+    public SslPolicyScope getScope() {
         return scope;
     }
 
-    private <T> SettingBuilder<T> getBuilder( String suffix, SettingValueParser<T> parser, T defaultValue )
-    {
-        return GroupSettingHelper.getBuilder( getPrefix(), name(), suffix , parser, defaultValue );
+    private <T> SettingBuilder<T> getBuilder(String suffix, SettingValueParser<T> parser, T defaultValue) {
+        return GroupSettingHelper.getBuilder(getPrefix(), name(), suffix, parser, defaultValue);
     }
 }

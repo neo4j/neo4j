@@ -19,10 +19,12 @@
  */
 package org.neo4j.bolt.messaging;
 
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toMap;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.PackStream;
 import org.neo4j.bolt.runtime.BoltConnection;
@@ -31,72 +33,63 @@ import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.kernel.api.exceptions.Status;
 
-import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.toMap;
-
 /**
  * Reader for Bolt request messages made available via a {@link Neo4jPack.Unpacker}.
  */
-public abstract class BoltRequestMessageReader
-{
+public abstract class BoltRequestMessageReader {
     private final BoltConnection connection;
     private final BoltResponseHandler externalErrorResponseHandler;
-    private final Map<Integer,RequestMessageDecoder> decoders;
+    private final Map<Integer, RequestMessageDecoder> decoders;
     private final ChannelProtector channelProtector;
 
-    protected BoltRequestMessageReader( BoltConnection connection, BoltResponseHandler externalErrorResponseHandler,
-                                        List<RequestMessageDecoder> decoders, ChannelProtector channelProtector )
-    {
+    protected BoltRequestMessageReader(
+            BoltConnection connection,
+            BoltResponseHandler externalErrorResponseHandler,
+            List<RequestMessageDecoder> decoders,
+            ChannelProtector channelProtector) {
         this.connection = connection;
         this.externalErrorResponseHandler = externalErrorResponseHandler;
-        this.decoders = decoders.stream().collect( toMap( RequestMessageDecoder::signature, identity() ) );
+        this.decoders = decoders.stream().collect(toMap(RequestMessageDecoder::signature, identity()));
         this.channelProtector = channelProtector;
     }
 
-    public void read( Neo4jPack.Unpacker unpacker ) throws IOException
-    {
-        try
-        {
-            doRead( unpacker );
-        }
-        catch ( BoltIOException e )
-        {
-            if ( e.causesFailureMessage() )
-            {
-                Neo4jError error = Neo4jError.from( e );
-                connection.enqueue( stateMachine -> stateMachine.handleExternalFailure( error, externalErrorResponseHandler ) );
-            }
-            else
-            {
+    public void read(Neo4jPack.Unpacker unpacker) throws IOException {
+        try {
+            doRead(unpacker);
+        } catch (BoltIOException e) {
+            if (e.causesFailureMessage()) {
+                Neo4jError error = Neo4jError.from(e);
+                connection.enqueue(
+                        stateMachine -> stateMachine.handleExternalFailure(error, externalErrorResponseHandler));
+            } else {
                 throw e;
             }
         }
     }
 
-    private void doRead( Neo4jPack.Unpacker unpacker ) throws IOException
-    {
-        try
-        {
+    private void doRead(Neo4jPack.Unpacker unpacker) throws IOException {
+        try {
             unpacker.unpackStructHeader();
             int signature = unpacker.unpackStructSignature();
 
-            RequestMessageDecoder decoder = decoders.get( signature );
-            if ( decoder == null )
-            {
-                throw new BoltIOException( Status.Request.InvalidFormat,
-                        String.format( "Message 0x%s is not a valid message signature.", Integer.toHexString( signature ) ) );
+            RequestMessageDecoder decoder = decoders.get(signature);
+            if (decoder == null) {
+                throw new BoltIOException(
+                        Status.Request.InvalidFormat,
+                        String.format(
+                                "Message 0x%s is not a valid message signature.", Integer.toHexString(signature)));
             }
 
-            RequestMessage message = decoder.decode( unpacker );
+            RequestMessage message = decoder.decode(unpacker);
             BoltResponseHandler responseHandler = decoder.responseHandler();
 
-            connection.enqueue( stateMachine -> stateMachine.process( message, responseHandler ) );
+            connection.enqueue(stateMachine -> stateMachine.process(message, responseHandler));
             channelProtector.afterRequestReceived();
-        }
-        catch ( PackStream.PackStreamException e )
-        {
-            throw new BoltIOException( Status.Request.InvalidFormat,
-                    String.format( "Unable to read message type. Error was: %s.", e.getMessage() ), e );
+        } catch (PackStream.PackStreamException e) {
+            throw new BoltIOException(
+                    Status.Request.InvalidFormat,
+                    String.format("Unable to read message type. Error was: %s.", e.getMessage()),
+                    e);
         }
     }
 }

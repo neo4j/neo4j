@@ -40,19 +40,19 @@ case object simplifySelections extends Rewriter {
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
-    case s@Selection(Ands(preds), source) if isFalse(preds) =>
+    case s @ Selection(Ands(preds), source) if isFalse(preds) =>
       planLimitOnTopOf(source, SignedDecimalIntegerLiteral("0")(InputPosition.NONE))(SameId(s.id))
 
     case Selection(Ands(preds), source) if isTrue(preds) => source
   })
 
   private def isTrue(predicates: collection.Seq[Expression]): Boolean = predicates.forall {
-    case _:True => true
-    case _ => false
+    case _: True => true
+    case _       => false
   }
 
   private def isFalse(predicates: collection.Seq[Expression]): Boolean = predicates.forall {
-    case _:False => true
-    case _ => false
+    case _: False => true
+    case _        => false
   }
 }

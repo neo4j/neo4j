@@ -27,18 +27,16 @@ package org.neo4j.graphdb.traversal;
  *
  * @see Evaluator
  */
-public enum Evaluation
-{
-    INCLUDE_AND_CONTINUE( true, true ),
-    INCLUDE_AND_PRUNE( true, false ),
-    EXCLUDE_AND_CONTINUE( false, true ),
-    EXCLUDE_AND_PRUNE( false, false );
+public enum Evaluation {
+    INCLUDE_AND_CONTINUE(true, true),
+    INCLUDE_AND_PRUNE(true, false),
+    EXCLUDE_AND_CONTINUE(false, true),
+    EXCLUDE_AND_PRUNE(false, false);
 
     private final boolean includes;
     private final boolean continues;
 
-    Evaluation( boolean includes, boolean continues )
-    {
+    Evaluation(boolean includes, boolean continues) {
         this.includes = includes;
         this.continues = continues;
     }
@@ -47,8 +45,7 @@ public enum Evaluation
      * @return whether or not the {@link TraversalBranch} this outcome was
      * generated for should be included in the traversal result.
      */
-    public boolean includes()
-    {
+    public boolean includes() {
         return this.includes;
     }
 
@@ -56,8 +53,7 @@ public enum Evaluation
      * @return whether or not the traversal should continue down the
      * {@link TraversalBranch} this outcome was generator for.
      */
-    public boolean continues()
-    {
+    public boolean continues() {
         return continues;
     }
 
@@ -72,10 +68,10 @@ public enum Evaluation
      * @return an {@link Evaluation} representing {@code includes}
      * and {@code continues}.
      */
-    public static Evaluation of( boolean includes, boolean continues )
-    {
-        return includes ? (continues ? INCLUDE_AND_CONTINUE : INCLUDE_AND_PRUNE)
-                        : (continues ? EXCLUDE_AND_CONTINUE : EXCLUDE_AND_PRUNE);
+    public static Evaluation of(boolean includes, boolean continues) {
+        return includes
+                ? (continues ? INCLUDE_AND_CONTINUE : INCLUDE_AND_PRUNE)
+                : (continues ? EXCLUDE_AND_CONTINUE : EXCLUDE_AND_PRUNE);
     }
 
     /**
@@ -89,8 +85,7 @@ public enum Evaluation
      * @return an {@link Evaluation} representing whether or not to include
      * a {@link TraversalBranch} in the traversal result.
      */
-    public static Evaluation ofIncludes( boolean includes )
-    {
+    public static Evaluation ofIncludes(boolean includes) {
         return includes ? INCLUDE_AND_CONTINUE : EXCLUDE_AND_CONTINUE;
     }
 
@@ -105,8 +100,7 @@ public enum Evaluation
      * @return an {@link Evaluation} representing whether or not to continue
      *         further down a {@link TraversalBranch} in the traversal.
      */
-    public static Evaluation ofContinues( boolean continues )
-    {
+    public static Evaluation ofContinues(boolean continues) {
         return continues ? INCLUDE_AND_CONTINUE : INCLUDE_AND_PRUNE;
     }
 }

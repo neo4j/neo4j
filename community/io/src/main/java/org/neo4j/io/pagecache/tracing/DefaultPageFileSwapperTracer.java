@@ -21,8 +21,7 @@ package org.neo4j.io.pagecache.tracing;
 
 import java.util.concurrent.atomic.LongAdder;
 
-public class DefaultPageFileSwapperTracer implements PageFileSwapperTracer
-{
+public class DefaultPageFileSwapperTracer implements PageFileSwapperTracer {
     private final LongAdder pins = new LongAdder();
     private final LongAdder unpins = new LongAdder();
     private final LongAdder hits = new LongAdder();
@@ -41,9 +40,8 @@ public class DefaultPageFileSwapperTracer implements PageFileSwapperTracer
      * @param pins number of pins
      */
     @Override
-    public void pins( long pins )
-    {
-        this.pins.add( pins );
+    public void pins(long pins) {
+        this.pins.add(pins);
     }
 
     /**
@@ -51,9 +49,8 @@ public class DefaultPageFileSwapperTracer implements PageFileSwapperTracer
      * @param unpins number of unpins
      */
     @Override
-    public void unpins( long unpins )
-    {
-        this.unpins.add( unpins );
+    public void unpins(long unpins) {
+        this.unpins.add(unpins);
     }
 
     /**
@@ -61,9 +58,8 @@ public class DefaultPageFileSwapperTracer implements PageFileSwapperTracer
      * @param hits number of hits
      */
     @Override
-    public void hits( long hits )
-    {
-        this.hits.add( hits );
+    public void hits(long hits) {
+        this.hits.add(hits);
     }
 
     /**
@@ -71,21 +67,18 @@ public class DefaultPageFileSwapperTracer implements PageFileSwapperTracer
      * @param faults number of faults
      */
     @Override
-    public void faults( long faults )
-    {
-        this.faults.add( faults );
+    public void faults(long faults) {
+        this.faults.add(faults);
     }
 
     @Override
-    public void noFaults( long noFaults )
-    {
-        this.noFaults.add( noFaults );
+    public void noFaults(long noFaults) {
+        this.noFaults.add(noFaults);
     }
 
     @Override
-    public void failedFaults( long failedFaults )
-    {
-        this.failedFaults.add( failedFaults );
+    public void failedFaults(long failedFaults) {
+        this.failedFaults.add(failedFaults);
     }
 
     /**
@@ -93,9 +86,8 @@ public class DefaultPageFileSwapperTracer implements PageFileSwapperTracer
      * @param bytesRead number of read bytes
      */
     @Override
-    public void bytesRead( long bytesRead )
-    {
-        this.bytesRead.add( bytesRead );
+    public void bytesRead(long bytesRead) {
+        this.bytesRead.add(bytesRead);
     }
 
     /**
@@ -103,9 +95,8 @@ public class DefaultPageFileSwapperTracer implements PageFileSwapperTracer
      * @param evictions number of evictions
      */
     @Override
-    public void evictions( long evictions )
-    {
-        this.evictions.add( evictions );
+    public void evictions(long evictions) {
+        this.evictions.add(evictions);
     }
 
     /**
@@ -113,9 +104,8 @@ public class DefaultPageFileSwapperTracer implements PageFileSwapperTracer
      * @param evictionExceptions number of eviction exceptions
      */
     @Override
-    public void evictionExceptions( long evictionExceptions )
-    {
-        this.evictionExceptions.add( evictionExceptions );
+    public void evictionExceptions(long evictionExceptions) {
+        this.evictionExceptions.add(evictionExceptions);
     }
 
     /**
@@ -123,9 +113,8 @@ public class DefaultPageFileSwapperTracer implements PageFileSwapperTracer
      * @param bytesWritten number of written bytes
      */
     @Override
-    public void bytesWritten( long bytesWritten )
-    {
-        this.bytesWritten.add( bytesWritten );
+    public void bytesWritten(long bytesWritten) {
+        this.bytesWritten.add(bytesWritten);
     }
 
     /**
@@ -133,9 +122,8 @@ public class DefaultPageFileSwapperTracer implements PageFileSwapperTracer
      * @param flushes number of flushes
      */
     @Override
-    public void flushes( long flushes )
-    {
-        this.flushes.add( flushes );
+    public void flushes(long flushes) {
+        this.flushes.add(flushes);
     }
 
     /**
@@ -143,80 +131,67 @@ public class DefaultPageFileSwapperTracer implements PageFileSwapperTracer
      * @param merges number of merges
      */
     @Override
-    public void merges( long merges )
-    {
-        this.merges.add( merges );
+    public void merges(long merges) {
+        this.merges.add(merges);
     }
 
     @Override
-    public long faults()
-    {
+    public long faults() {
         return faults.sum();
     }
 
     @Override
-    public long failedFaults()
-    {
+    public long failedFaults() {
         return failedFaults.sum();
     }
 
     @Override
-    public long noFaults()
-    {
+    public long noFaults() {
         return noFaults.sum();
     }
 
     @Override
-    public long evictions()
-    {
+    public long evictions() {
         return evictions.sum();
     }
 
     @Override
-    public long pins()
-    {
+    public long pins() {
         return pins.sum();
     }
 
     @Override
-    public long unpins()
-    {
+    public long unpins() {
         return unpins.sum();
     }
 
     @Override
-    public long hits()
-    {
+    public long hits() {
         return hits.sum();
     }
 
     @Override
-    public long flushes()
-    {
+    public long flushes() {
         return flushes.sum();
     }
 
     @Override
-    public long merges()
-    {
+    public long merges() {
         return merges.sum();
     }
 
     @Override
-    public long bytesRead()
-    {
+    public long bytesRead() {
         return bytesRead.sum();
     }
 
     @Override
-    public long bytesWritten()
-    {
+    public long bytesWritten() {
         return bytesWritten.sum();
     }
 
     @Override
-    public long evictionExceptions()
-    {
+    public long evictionExceptions() {
         return evictionExceptions.sum();
     }
 }

@@ -39,34 +39,34 @@ import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.VirtualValues
 
 import java.io.IOException
+
 import scala.collection.mutable
 
-abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                                 runtime: CypherRuntime[CONTEXT])
-  extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT]
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should handle requesting one record at a time") {
-    //Given
+    // Given
     val subscriber = TestSubscriber.concurrent
-    val result = runtimeResult(subscriber,
-                               Array("1", 1),
-                               Array("2", 2),
-                               Array("3", 3))
+    val result = runtimeResult(subscriber, Array("1", 1), Array("2", 2), Array("3", 3))
 
-
-    //request 1
+    // request 1
     result.request(1)
     result.await() shouldBe true
-    val allSeen = mutable.Set(Seq[AnyValue](stringValue("1"), longValue(1)),
+    val allSeen = mutable.Set(
+      Seq[AnyValue](stringValue("1"), longValue(1)),
       Seq[AnyValue](stringValue("2"), longValue(2)),
-      Seq[AnyValue](stringValue("3"), longValue(3)))
+      Seq[AnyValue](stringValue("3"), longValue(3))
+    )
     if (!isParallel) {
       subscriber.lastSeen should equal(Seq[AnyValue](stringValue("1"), longValue(1)))
     }
     allSeen.remove(subscriber.lastSeen) shouldBe true
     subscriber.isCompleted shouldBe false
 
-    //request 2
+    // request 2
     result.request(1)
     result.await() shouldBe true
     if (!isParallel) {
@@ -75,7 +75,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
     allSeen.remove(subscriber.lastSeen) shouldBe true
     subscriber.isCompleted shouldBe false
 
-    //request 3
+    // request 3
     result.request(1)
     val lastAwait = result.await()
     if (!isParallel) {
@@ -84,9 +84,9 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
     allSeen.remove(subscriber.lastSeen) shouldBe true
     allSeen shouldBe empty
 
-    //There is no more data so lastAwait should in that regard be false, however
-    //we cannot guarantee that since we are also out of demand. In the next request-await cycle
-    //we should in that case just return false though.
+    // There is no more data so lastAwait should in that regard be false, however
+    // we cannot guarantee that since we are also out of demand. In the next request-await cycle
+    // we should in that case just return false though.
     if (lastAwait) {
       result.request(1)
       result.await() shouldBe false
@@ -97,86 +97,77 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
   }
 
   test("should handle requesting more data than available") {
-    //Given
+    // Given
     val subscriber = TestSubscriber.concurrent
-    val result = runtimeResult(subscriber,
-                               Array(1),
-                               Array(2),
-                               Array(3))
+    val result = runtimeResult(subscriber, Array(1), Array(2), Array(3))
 
-    //When
+    // When
     result.request(17)
 
-    //Then
+    // Then
     result.await() shouldBe false
     subscriber.allSeen should equal(
       List(
         List(longValue(1)),
         List(longValue(2)),
-        List(longValue(3)))
+        List(longValue(3))
+      )
     )
     subscriber.isCompleted shouldBe true
   }
 
   test("should handle requesting data multiple times") {
-    //Given
+    // Given
     val subscriber = TestSubscriber.concurrent
-    val result = runtimeResult(subscriber,
-                               Array(1),
-                               Array(2),
-                               Array(3))
+    val result = runtimeResult(subscriber, Array(1), Array(2), Array(3))
 
-    //When
+    // When
     result.request(1)
     result.request(1)
 
-    //Then
+    // Then
     result.await() shouldBe true
     subscriber.allSeen should equal(
       List(
         List(longValue(1)),
-        List(longValue(2)))
+        List(longValue(2))
+      )
     )
     subscriber.isCompleted shouldBe false
   }
 
   test("should handle request overflowing the demand") {
-    //Given
+    // Given
     val subscriber = TestSubscriber.concurrent
-    val result = runtimeResult(subscriber,
-                               Array(1),
-                               Array(2),
-                               Array(3))
+    val result = runtimeResult(subscriber, Array(1), Array(2), Array(3))
 
-    //When
+    // When
     result.request(Int.MaxValue)
     result.request(Long.MaxValue)
 
-    //Then
+    // Then
     result.await() shouldBe false
     subscriber.allSeen should equal(
       List(
         List(longValue(1)),
         List(longValue(2)),
-        List(longValue(3)))
+        List(longValue(3))
+      )
     )
     subscriber.isCompleted shouldBe true
   }
 
   test("should handle cancel stream") {
-    //Given
+    // Given
     val subscriber = TestSubscriber.concurrent
-    val result = runtimeResult(subscriber,
-                               Array(1),
-                               Array(2),
-                               Array(3))
+    val result = runtimeResult(subscriber, Array(1), Array(2), Array(3))
 
-    //When
+    // When
     result.request(1)
     result.await() shouldBe true
     if (isParallel) {
-      //no guarantee of order
-      Set(longValue(1), longValue(2), longValue(3)) should contain (subscriber.lastSeen.head)
+      // no guarantee of order
+      Set(longValue(1), longValue(2), longValue(3)) should contain(subscriber.lastSeen.head)
     } else {
       subscriber.lastSeen should equal(Array(longValue(1)))
     }
@@ -184,7 +175,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
     result.cancel()
     result.request(1)
 
-    //Then
+    // Then
     result.await() shouldBe false
     subscriber.numberOfSeenResults shouldBe 1
     subscriber.isCompleted shouldBe false
@@ -201,12 +192,12 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
 
     val result = execute(logicalQuery, runtime, subscriber)
 
-    //When
+    // When
     result.request(1)
     result.await() shouldBe true
 
     if (isParallel) {
-      //No guarantees about order
+      // No guarantees about order
       nodes.map(n => VirtualValues.node(n.getId)) should contain(subscriber.lastSeen.head)
     } else {
       subscriber.lastSeen should equal(Array(VirtualValues.node(nodes.head.getId)))
@@ -215,7 +206,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
     result.cancel()
     result.request(1)
 
-    //Then
+    // Then
     result.await() shouldBe false
     subscriber.numberOfSeenResults shouldBe 1
     subscriber.isCompleted shouldBe false
@@ -232,11 +223,11 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
 
     val result = execute(logicalQuery, runtime, subscriber)
 
-    //When
+    // When
     result.request(1)
     result.await() shouldBe true
     if (isParallel) {
-      //No guarantees about order
+      // No guarantees about order
       nodes.map(n => VirtualValues.node(n.getId)) should contain(subscriber.lastSeen.head)
     } else {
       subscriber.lastSeen should equal(Array(VirtualValues.node(nodes.head.getId)))
@@ -249,7 +240,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
       result.cancel()
     }
 
-    //Then
+    // Then
     result.await() shouldBe false
     subscriber.numberOfSeenResults shouldBe 1
     subscriber.isCompleted shouldBe false
@@ -271,24 +262,21 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
     // Then
     result.request(1)
     result.await() shouldBe true
-    //we shouldn't have exhausted the entire input
+    // we shouldn't have exhausted the entire input
     stream.hasMore shouldBe true
 
-    //However if we demand the rest of the data we should
+    // However if we demand the rest of the data we should
     result.request(9999)
     result.await() shouldBe false
     stream.hasMore shouldBe false
   }
 
   test("should only call onResult once") {
-    //Given
+    // Given
     val subscriber = mock[QuerySubscriber]
-    val result = runtimeResult(subscriber,
-                               Array(1),
-                               Array(2),
-                               Array(3))
+    val result = runtimeResult(subscriber, Array(1), Array(2), Array(3))
 
-    //When
+    // When
     result.request(1)
     result.await()
     result.request(1)
@@ -296,7 +284,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
     result.request(1)
     result.await()
 
-    //Then
+    // Then
     verify(subscriber, times(1)).onResult(1)
   }
 
@@ -323,7 +311,8 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
       List(
         List(longValue(1)),
         List(longValue(2))
-      ))
+      )
+    )
   }
 
   test("should handle throwing subscriber") {
@@ -331,10 +320,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
     val exception = new IOException("two is the loneliest number since the number one")
     when(subscriber.onField(0, intValue(2))).thenThrow(exception)
 
-    val result = runtimeResult(subscriber,
-                               Array(1),
-                               Array(2),
-                               Array(3))
+    val result = runtimeResult(subscriber, Array(1), Array(2), Array(3))
 
     result.request(1)
     result.await() shouldBe true

@@ -19,10 +19,11 @@
  */
 package org.neo4j.fabric;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.fabric.transaction.TransactionManager;
 import org.neo4j.graphdb.DatabaseShutdownException;
@@ -32,34 +33,28 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @DbmsExtension
-class TransactionManagerIT
-{
+class TransactionManagerIT {
     @Inject
     private DatabaseManagementService databaseManagementService;
+
     @Inject
     private GraphDatabaseAPI database;
 
     @Test
-    void failToStartFabricTransactionAfterShutdown()
-    {
-        var transactionManager = database.getDependencyResolver().resolveDependency( TransactionManager.class );
-        var invocationWitness = new AtomicBoolean( false );
+    void failToStartFabricTransactionAfterShutdown() {
+        var transactionManager = database.getDependencyResolver().resolveDependency(TransactionManager.class);
+        var invocationWitness = new AtomicBoolean(false);
 
-        databaseManagementService.registerDatabaseEventListener( new DatabaseEventListenerAdapter()
-        {
+        databaseManagementService.registerDatabaseEventListener(new DatabaseEventListenerAdapter() {
             @Override
-            public void databaseShutdown( DatabaseEventContext eventContext )
-            {
-                assertThrows( DatabaseShutdownException.class, () -> transactionManager.begin( null, null ) );
-                invocationWitness.set( true );
+            public void databaseShutdown(DatabaseEventContext eventContext) {
+                assertThrows(DatabaseShutdownException.class, () -> transactionManager.begin(null, null));
+                invocationWitness.set(true);
             }
-        } );
+        });
         databaseManagementService.shutdown();
 
-        assertTrue( invocationWitness.get() );
+        assertTrue(invocationWitness.get());
     }
 }

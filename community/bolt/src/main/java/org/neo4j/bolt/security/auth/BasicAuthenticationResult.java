@@ -21,25 +21,21 @@ package org.neo4j.bolt.security.auth;
 
 import org.neo4j.internal.kernel.api.security.LoginContext;
 
-public class BasicAuthenticationResult implements AuthenticationResult
-{
+public class BasicAuthenticationResult implements AuthenticationResult {
     private LoginContext loginContext;
 
-    public BasicAuthenticationResult( LoginContext loginContext )
-    {
+    public BasicAuthenticationResult(LoginContext loginContext) {
         this.loginContext = loginContext;
     }
 
     @Override
-    public LoginContext getLoginContext()
-    {
+    public LoginContext getLoginContext() {
         return loginContext;
     }
 
     @Override
-    public boolean credentialsExpired()
-    {
-        return loginContext.subject().getAuthenticationResult() ==
-                org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+    public boolean credentialsExpired() {
+        return loginContext.subject().getAuthenticationResult()
+                == org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
     }
 }

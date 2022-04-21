@@ -26,28 +26,22 @@ import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 
-public final class MessageMetadataParser
-{
+public final class MessageMetadataParser {
     public static final String DB_NAME_KEY = "db";
     public static final String ABSENT_DB_NAME = "";
 
     /**
      * Empty or null value indicates the default database is selected
      */
-    static String parseDatabaseName( MapValue meta ) throws BoltIOException
-    {
-        AnyValue anyValue = meta.get( DB_NAME_KEY );
-        if ( anyValue == Values.NO_VALUE )
-        {
+    static String parseDatabaseName(MapValue meta) throws BoltIOException {
+        AnyValue anyValue = meta.get(DB_NAME_KEY);
+        if (anyValue == Values.NO_VALUE) {
             return ABSENT_DB_NAME;
-        }
-        else if ( anyValue instanceof StringValue )
-        {
+        } else if (anyValue instanceof StringValue) {
             return ((StringValue) anyValue).stringValue();
-        }
-        else
-        {
-            throw new BoltIOException( Status.Request.Invalid, "Expecting database name value to be a String value, but got: " + anyValue );
+        } else {
+            throw new BoltIOException(
+                    Status.Request.Invalid, "Expecting database name value to be a String value, but got: " + anyValue);
         }
     }
 }

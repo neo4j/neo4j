@@ -20,34 +20,32 @@
 package org.neo4j.server.http.cypher.format.output.eventsource;
 
 import com.fasterxml.jackson.core.JsonFactory;
-
 import java.io.OutputStream;
 import java.util.Map;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
-
 import org.neo4j.server.http.cypher.format.jolt.JoltCodec;
 
 @Provider
-@Produces( {LineDelimitedEventSourceJoltMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE_WITH_QUALITY,} )
-public class LineDelimitedEventSourceJoltMessageBodyWriter extends AbstractEventSourceJoltMessageBodyWriter
-{
+@Produces({
+    LineDelimitedEventSourceJoltMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE_WITH_QUALITY,
+})
+public class LineDelimitedEventSourceJoltMessageBodyWriter extends AbstractEventSourceJoltMessageBodyWriter {
 
     public static final String JSON_JOLT_MIME_TYPE_VALUE = "application/vnd.neo4j.jolt";
     public static final String JSON_JOLT_MIME_TYPE_VALUE_WITH_QUALITY = JSON_JOLT_MIME_TYPE_VALUE + ";qs=0.5";
-    public static final MediaType JSON_JOLT_MIME_TYPE = MediaType.valueOf( JSON_JOLT_MIME_TYPE_VALUE );
+    public static final MediaType JSON_JOLT_MIME_TYPE = MediaType.valueOf(JSON_JOLT_MIME_TYPE_VALUE);
 
     @Override
-    protected MediaType getMediaType()
-    {
+    protected MediaType getMediaType() {
         return JSON_JOLT_MIME_TYPE;
     }
 
     @Override
-    protected LineDelimitedEventSourceJoltSerializer createSerializer( OutputStream outputStream, JsonFactory jsonFactory,
-                                                                       Map<String,Object> parameters, boolean strict )
-    {
-        return new LineDelimitedEventSourceJoltSerializer( parameters, JoltCodec.class, strict, jsonFactory, outputStream );
+    protected LineDelimitedEventSourceJoltSerializer createSerializer(
+            OutputStream outputStream, JsonFactory jsonFactory, Map<String, Object> parameters, boolean strict) {
+        return new LineDelimitedEventSourceJoltSerializer(
+                parameters, JoltCodec.class, strict, jsonFactory, outputStream);
     }
 }

@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static java.lang.String.format;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.HIGH;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.LOW;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
+import static org.neo4j.kernel.impl.index.schema.Type.booleanOf;
+
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.string.UTF8;
@@ -27,12 +33,6 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeZones;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
-
-import static java.lang.String.format;
-import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.HIGH;
-import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.LOW;
-import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
-import static org.neo4j.kernel.impl.index.schema.Type.booleanOf;
 
 /**
  * Regarding why the "internal" versions of some methods which are overridden by the composite keys. Example:
@@ -43,14 +43,14 @@ import static org.neo4j.kernel.impl.index.schema.Type.booleanOf;
  * This is why aInternal() exists and GenericKey#a() is implemented by simply forwarding to aInternal().
  * #a() on a composite key is implemented by looping over multiple GenericKey instances, also calling aInternal() in each of those, instead of a().
  */
-public abstract class GenericKey<KEY extends GenericKey<KEY>> extends NativeIndexKey<KEY>
-{
+public abstract class GenericKey<KEY extends GenericKey<KEY>> extends NativeIndexKey<KEY> {
     public static final int TYPE_ID_SIZE = Byte.BYTES;
     protected static final double[] NO_COORDINATES = new double[0];
     /**
      * This is the biggest size a static (as in non-dynamic, like string), non-array value can have.
      */
     static final int BIGGEST_STATIC_SIZE = Long.BYTES * 4; // long0, long1, long2, long3
+
     static final long TRUE = 1;
     static final long FALSE = 0;
     /**
@@ -58,6 +58,7 @@ public abstract class GenericKey<KEY extends GenericKey<KEY>> extends NativeInde
      * In seconds this is (((30 * 24) + 10) * 60 + 30) * 60 = 2629800
      */
     static final long AVG_MONTH_SECONDS = 2_629_800;
+
     static final long AVG_DAY_SECONDS = 86_400;
 
     // Mutable, meta-state
@@ -85,18 +86,21 @@ public abstract class GenericKey<KEY extends GenericKey<KEY>> extends NativeInde
     // Mutable, spatial values
     SpaceFillingCurve spaceFillingCurve;
 
-    abstract KEY stateSlot( int slot );
+    abstract KEY stateSlot(int slot);
+
     abstract Type[] getTypesById();
+
     abstract AbstractArrayType<?>[] getArrayTypes();
+
     abstract Type getLowestByValueGroup();
+
     abstract Type getHighestByValueGroup();
+
     abstract Type[] getTypesByGroup();
 
     /* <initializers> */
-    void clear()
-    {
-        if ( type == Types.TEXT && booleanOf( long1 ) )
-        {
+    void clear() {
+        if (type == Types.TEXT && booleanOf(long1)) {
             // Clear byteArray if it has been dereferenced
             byteArray = null;
         }
@@ -113,251 +117,215 @@ public abstract class GenericKey<KEY extends GenericKey<KEY>> extends NativeInde
         spaceFillingCurve = null;
     }
 
-    void initializeToDummyValue()
-    {
-        setEntityId( Long.MIN_VALUE );
+    void initializeToDummyValue() {
+        setEntityId(Long.MIN_VALUE);
         initializeToDummyValueInternal();
     }
 
-    void initializeToDummyValueInternal()
-    {
+    void initializeToDummyValueInternal() {
         clear();
-        writeInteger( 0 );
+        writeInteger(0);
         inclusion = NEUTRAL;
     }
 
-    void initValueAsLowest( ValueGroup valueGroup )
-    {
+    void initValueAsLowest(ValueGroup valueGroup) {
         clear();
-        type = valueGroup == ValueGroup.UNKNOWN || valueGroup == ValueGroup.ANYTHING ? getLowestByValueGroup() : getTypesByGroup()[valueGroup.ordinal()];
-        type.initializeAsLowest( this );
+        type = valueGroup == ValueGroup.UNKNOWN || valueGroup == ValueGroup.ANYTHING
+                ? getLowestByValueGroup()
+                : getTypesByGroup()[valueGroup.ordinal()];
+        type.initializeAsLowest(this);
     }
 
-    void initValueAsHighest( ValueGroup valueGroup )
-    {
+    void initValueAsHighest(ValueGroup valueGroup) {
         clear();
-        type = valueGroup == ValueGroup.UNKNOWN || valueGroup == ValueGroup.ANYTHING ? getHighestByValueGroup() : getTypesByGroup()[valueGroup.ordinal()];
-        type.initializeAsHighest( this );
+        type = valueGroup == ValueGroup.UNKNOWN || valueGroup == ValueGroup.ANYTHING
+                ? getHighestByValueGroup()
+                : getTypesByGroup()[valueGroup.ordinal()];
+        type.initializeAsHighest(this);
     }
 
-    void initAsPrefixLow( TextValue prefix )
-    {
-        prefix.writeTo( this );
+    void initAsPrefixLow(TextValue prefix) {
+        prefix.writeTo(this);
         long2 = FALSE;
         inclusion = LOW;
         // Don't set ignoreLength = true here since the "low" a.k.a. left side of the range should care about length.
         // This will make the prefix lower than those that matches the prefix (their length is >= that of the prefix)
     }
 
-    void initAsPrefixHigh( TextValue prefix )
-    {
-        prefix.writeTo( this );
+    void initAsPrefixHigh(TextValue prefix) {
+        prefix.writeTo(this);
         long2 = TRUE; // ignoreLength
         inclusion = HIGH;
     }
 
     /* </initializers> */
-    void copyFrom( GenericKey<?> key )
-    {
-        setEntityId( key.getEntityId() );
-        setCompareId( key.getCompareId() );
-        copyFromInternal( key );
+    void copyFrom(GenericKey<?> key) {
+        setEntityId(key.getEntityId());
+        setCompareId(key.getCompareId());
+        copyFromInternal(key);
     }
 
-    void copyFromInternal( GenericKey<?> key )
-    {
-        copyMetaFrom( key );
-        type.copyValue( this, key );
+    void copyFromInternal(GenericKey<?> key) {
+        copyMetaFrom(key);
+        type.copyValue(this, key);
     }
 
-    void copyMetaFrom( GenericKey<?> key )
-    {
+    void copyMetaFrom(GenericKey<?> key) {
         this.type = key.type;
         this.inclusion = key.inclusion;
         this.isArray = key.isArray;
-        if ( key.isArray )
-        {
+        if (key.isArray) {
             this.arrayLength = key.arrayLength;
             this.currentArrayOffset = key.currentArrayOffset;
             this.isHighestArray = key.isHighestArray;
         }
     }
 
-    void writeValue( Value value, Inclusion inclusion )
-    {
+    void writeValue(Value value, Inclusion inclusion) {
         isArray = false;
-        value.writeTo( this );
+        value.writeTo(this);
         this.inclusion = inclusion;
     }
 
     @Override
-    void writeValue( int stateSlot, Value value, Inclusion inclusion )
-    {
-        writeValue( value, inclusion );
+    void writeValue(int stateSlot, Value value, Inclusion inclusion) {
+        writeValue(value, inclusion);
     }
 
     @Override
-    void assertValidValue( int stateSlot, Value value )
-    {
+    void assertValidValue(int stateSlot, Value value) {
         // No need, we can handle all values
     }
 
     @Override
-    Value[] asValues()
-    {
+    Value[] asValues() {
         return new Value[] {asValue()};
     }
 
     @Override
-    void initValueAsLowest( int stateSlot, ValueGroup valueGroup )
-    {
-        initValueAsLowest( valueGroup );
+    void initValueAsLowest(int stateSlot, ValueGroup valueGroup) {
+        initValueAsLowest(valueGroup);
     }
 
     @Override
-    void initValueAsHighest( int stateSlot, ValueGroup valueGroup )
-    {
-        initValueAsHighest( valueGroup );
+    void initValueAsHighest(int stateSlot, ValueGroup valueGroup) {
+        initValueAsHighest(valueGroup);
     }
 
-    static void setCursorException( PageCursor cursor, String reason )
-    {
-        cursor.setCursorException( format( "Unable to read generic key slot due to %s", reason ) );
+    static void setCursorException(PageCursor cursor, String reason) {
+        cursor.setCursorException(format("Unable to read generic key slot due to %s", reason));
     }
 
     @Override
-    int numberOfStateSlots()
-    {
+    int numberOfStateSlots() {
         return 1;
     }
 
     @Override
-    int compareValueTo( KEY other )
-    {
-        return compareValueToInternal( other );
+    int compareValueTo(KEY other) {
+        return compareValueToInternal(other);
     }
 
-    int compareValueToInternal( KEY other )
-    {
-        if ( type != other.type )
-        {
+    int compareValueToInternal(KEY other) {
+        if (type != other.type) {
             // These null checks guard for inconsistent reading where we're expecting a retry to occur
             // Unfortunately it's the case that SeekCursor calls these methods inside a shouldRetry.
             // Fortunately we only need to do these checks if the types aren't equal, and one of the two
             // are guaranteed to be a "real" state, i.e. not inside a shouldRetry.
-            if ( type == null )
-            {
+            if (type == null) {
                 return -1;
             }
-            if ( other.type == null )
-            {
+            if (other.type == null) {
                 return 1;
             }
-            return Type.COMPARATOR.compare( type, other.type );
+            return Type.COMPARATOR.compare(type, other.type);
         }
 
-        int valueComparison = type.compareValue( this, other );
-        if ( valueComparison != 0 )
-        {
+        int valueComparison = type.compareValue(this, other);
+        if (valueComparison != 0) {
             return valueComparison;
         }
 
-        return inclusion.compareTo( other.inclusion );
+        return inclusion.compareTo(other.inclusion);
     }
 
-    void minimalSplitter( KEY left, KEY right, KEY into )
-    {
-        into.setCompareId( right.getCompareId() );
-        if ( left.compareValueTo( right ) != 0 )
-        {
-            into.setEntityId( NO_ENTITY_ID );
-        }
-        else
-        {
+    void minimalSplitter(KEY left, KEY right, KEY into) {
+        into.setCompareId(right.getCompareId());
+        if (left.compareValueTo(right) != 0) {
+            into.setEntityId(NO_ENTITY_ID);
+        } else {
             // There was no minimal splitter to be found so entity id will serve as divider
-            into.setEntityId( right.getEntityId() );
+            into.setEntityId(right.getEntityId());
         }
-        minimalSplitterInternal( left, right, into );
+        minimalSplitterInternal(left, right, into);
     }
 
-    void minimalSplitterInternal( KEY left, KEY right, KEY into )
-    {
+    void minimalSplitterInternal(KEY left, KEY right, KEY into) {
         into.clear();
-        into.copyMetaFrom( right );
-        right.type.minimalSplitter( left, right, into );
+        into.copyMetaFrom(right);
+        right.type.minimalSplitter(left, right, into);
     }
 
-    int size()
-    {
+    int size() {
         return ENTITY_ID_SIZE + sizeInternal();
     }
 
-    int sizeInternal()
-    {
-        return type.valueSize( this ) + TYPE_ID_SIZE;
+    int sizeInternal() {
+        return type.valueSize(this) + TYPE_ID_SIZE;
     }
 
-    Value asValue()
-    {
-        return type.asValue( this );
+    Value asValue() {
+        return type.asValue(this);
     }
 
-    void put( PageCursor cursor )
-    {
-        cursor.putLong( getEntityId() );
-        putInternal( cursor );
+    void put(PageCursor cursor) {
+        cursor.putLong(getEntityId());
+        putInternal(cursor);
     }
 
-    void putInternal( PageCursor cursor )
-    {
-        cursor.putByte( type.typeId );
-        type.putValue( cursor, this );
+    void putInternal(PageCursor cursor) {
+        cursor.putByte(type.typeId);
+        type.putValue(cursor, this);
     }
 
-    boolean get( PageCursor cursor, int size )
-    {
-        if ( size < ENTITY_ID_SIZE )
-        {
+    boolean get(PageCursor cursor, int size) {
+        if (size < ENTITY_ID_SIZE) {
             initializeToDummyValue();
-            cursor.setCursorException( format( "Failed to read " + getClass().getSimpleName() +
-                    " due to keySize < ENTITY_ID_SIZE, more precisely %d", size ) );
+            cursor.setCursorException(format(
+                    "Failed to read " + getClass().getSimpleName()
+                            + " due to keySize < ENTITY_ID_SIZE, more precisely %d",
+                    size));
             return false;
         }
 
-        initialize( cursor.getLong() );
-        if ( !getInternal( cursor, size ) )
-        {
+        initialize(cursor.getLong());
+        if (!getInternal(cursor, size)) {
             initializeToDummyValue();
             return false;
         }
         return true;
     }
 
-    boolean getInternal( PageCursor cursor, int size )
-    {
-        if ( size <= TYPE_ID_SIZE )
-        {
-            GenericKey.setCursorException( cursor, "slot size less than TYPE_ID_SIZE, " + size );
+    boolean getInternal(PageCursor cursor, int size) {
+        if (size <= TYPE_ID_SIZE) {
+            GenericKey.setCursorException(cursor, "slot size less than TYPE_ID_SIZE, " + size);
             return false;
         }
 
         byte typeId = cursor.getByte();
-        if ( typeId < 0 || typeId >= getTypesById().length )
-        {
-            GenericKey.setCursorException( cursor, "non-valid typeId, " + typeId );
+        if (typeId < 0 || typeId >= getTypesById().length) {
+            GenericKey.setCursorException(cursor, "non-valid typeId, " + typeId);
             return false;
         }
 
         inclusion = NEUTRAL;
-        return setType( getTypesById()[typeId] ).readValue( cursor, size - TYPE_ID_SIZE, this );
+        return setType(getTypesById()[typeId]).readValue(cursor, size - TYPE_ID_SIZE, this);
     }
 
     /* <write> (write to field state from Value or cursor) */
 
-    protected <T extends Type> T setType( T type )
-    {
-        if ( this.type != null && type != this.type )
-        {
+    protected <T extends Type> T setType(T type) {
+        if (this.type != null && type != this.type) {
             clear();
         }
         this.type = type;
@@ -365,206 +333,157 @@ public abstract class GenericKey<KEY extends GenericKey<KEY>> extends NativeInde
     }
 
     @Override
-    protected void writeDate( long epochDay )
-    {
-        if ( !isArray )
-        {
-            setType( Types.DATE );
-            DateType.write( this, epochDay );
-        }
-        else
-        {
-            DateArrayType.write( this, currentArrayOffset++, epochDay );
+    protected void writeDate(long epochDay) {
+        if (!isArray) {
+            setType(Types.DATE);
+            DateType.write(this, epochDay);
+        } else {
+            DateArrayType.write(this, currentArrayOffset++, epochDay);
         }
     }
 
     @Override
-    protected void writeLocalTime( long nanoOfDay )
-    {
-        if ( !isArray )
-        {
-            setType( Types.LOCAL_TIME );
-            LocalTimeType.write( this, nanoOfDay );
-        }
-        else
-        {
-            LocalTimeArrayType.write( this, currentArrayOffset++, nanoOfDay );
+    protected void writeLocalTime(long nanoOfDay) {
+        if (!isArray) {
+            setType(Types.LOCAL_TIME);
+            LocalTimeType.write(this, nanoOfDay);
+        } else {
+            LocalTimeArrayType.write(this, currentArrayOffset++, nanoOfDay);
         }
     }
 
     @Override
-    protected void writeTime( long nanosOfDayUTC, int offsetSeconds )
-    {
-        if ( !isArray )
-        {
-            setType( Types.ZONED_TIME );
-            ZonedTimeType.write( this, nanosOfDayUTC, offsetSeconds );
-        }
-        else
-        {
-            ZonedTimeArrayType.write( this, currentArrayOffset++, nanosOfDayUTC, offsetSeconds );
+    protected void writeTime(long nanosOfDayUTC, int offsetSeconds) {
+        if (!isArray) {
+            setType(Types.ZONED_TIME);
+            ZonedTimeType.write(this, nanosOfDayUTC, offsetSeconds);
+        } else {
+            ZonedTimeArrayType.write(this, currentArrayOffset++, nanosOfDayUTC, offsetSeconds);
         }
     }
 
     @Override
-    protected void writeLocalDateTime( long epochSecond, int nano )
-    {
-        if ( !isArray )
-        {
-            setType( Types.LOCAL_DATE_TIME );
-            LocalDateTimeType.write( this, epochSecond, nano );
-        }
-        else
-        {
-            LocalDateTimeArrayType.write( this, currentArrayOffset++, epochSecond, nano );
+    protected void writeLocalDateTime(long epochSecond, int nano) {
+        if (!isArray) {
+            setType(Types.LOCAL_DATE_TIME);
+            LocalDateTimeType.write(this, epochSecond, nano);
+        } else {
+            LocalDateTimeArrayType.write(this, currentArrayOffset++, epochSecond, nano);
         }
     }
 
     @Override
-    protected void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds )
-    {
-        writeDateTime( epochSecondUTC, nano, (short) -1, offsetSeconds );
+    protected void writeDateTime(long epochSecondUTC, int nano, int offsetSeconds) {
+        writeDateTime(epochSecondUTC, nano, (short) -1, offsetSeconds);
     }
 
     @Override
-    protected void writeDateTime( long epochSecondUTC, int nano, String zoneId )
-    {
-        writeDateTime( epochSecondUTC, nano, TimeZones.map( zoneId ) );
+    protected void writeDateTime(long epochSecondUTC, int nano, String zoneId) {
+        writeDateTime(epochSecondUTC, nano, TimeZones.map(zoneId));
     }
 
-    protected void writeDateTime( long epochSecondUTC, int nano, short zoneId )
-    {
-        writeDateTime( epochSecondUTC, nano, zoneId, 0 );
+    protected void writeDateTime(long epochSecondUTC, int nano, short zoneId) {
+        writeDateTime(epochSecondUTC, nano, zoneId, 0);
     }
 
-    private void writeDateTime( long epochSecondUTC, int nano, short zoneId, int offsetSeconds )
-    {
-        if ( !isArray )
-        {
-            setType( Types.ZONED_DATE_TIME );
-            ZonedDateTimeType.write( this, epochSecondUTC, nano, zoneId, offsetSeconds );
-        }
-        else
-        {
-            ZonedDateTimeArrayType.write( this, currentArrayOffset++, epochSecondUTC, nano, zoneId, offsetSeconds );
+    private void writeDateTime(long epochSecondUTC, int nano, short zoneId, int offsetSeconds) {
+        if (!isArray) {
+            setType(Types.ZONED_DATE_TIME);
+            ZonedDateTimeType.write(this, epochSecondUTC, nano, zoneId, offsetSeconds);
+        } else {
+            ZonedDateTimeArrayType.write(this, currentArrayOffset++, epochSecondUTC, nano, zoneId, offsetSeconds);
         }
     }
 
     @Override
-    public void writeBoolean( boolean value )
-    {
-        if ( !isArray )
-        {
-            setType( Types.BOOLEAN );
-            BooleanType.write( this, value );
-        }
-        else
-        {
-            BooleanArrayType.write( this, currentArrayOffset++, value );
+    public void writeBoolean(boolean value) {
+        if (!isArray) {
+            setType(Types.BOOLEAN);
+            BooleanType.write(this, value);
+        } else {
+            BooleanArrayType.write(this, currentArrayOffset++, value);
         }
     }
 
-    private void writeNumber( long value, byte numberType )
-    {
-        if ( !isArray )
-        {
-            setType( Types.NUMBER );
-            NumberType.write( this, value, numberType );
-        }
-        else
-        {
-            NumberArrayType.write( this, currentArrayOffset++, value );
+    private void writeNumber(long value, byte numberType) {
+        if (!isArray) {
+            setType(Types.NUMBER);
+            NumberType.write(this, value, numberType);
+        } else {
+            NumberArrayType.write(this, currentArrayOffset++, value);
         }
     }
 
     @Override
-    public void writeInteger( byte value )
-    {
-        writeNumber( value, RawBits.BYTE );
+    public void writeInteger(byte value) {
+        writeNumber(value, RawBits.BYTE);
     }
 
     @Override
-    public void writeInteger( short value )
-    {
-        writeNumber( value, RawBits.SHORT );
+    public void writeInteger(short value) {
+        writeNumber(value, RawBits.SHORT);
     }
 
     @Override
-    public void writeInteger( int value )
-    {
-        writeNumber( value, RawBits.INT );
+    public void writeInteger(int value) {
+        writeNumber(value, RawBits.INT);
     }
 
     @Override
-    public void writeInteger( long value )
-    {
-        writeNumber( value, RawBits.LONG );
+    public void writeInteger(long value) {
+        writeNumber(value, RawBits.LONG);
     }
 
     @Override
-    public void writeFloatingPoint( float value )
-    {
-        writeNumber( Float.floatToIntBits( value ), RawBits.FLOAT );
+    public void writeFloatingPoint(float value) {
+        writeNumber(Float.floatToIntBits(value), RawBits.FLOAT);
     }
 
     @Override
-    public void writeFloatingPoint( double value )
-    {
-        writeNumber( Double.doubleToLongBits( value ), RawBits.DOUBLE );
+    public void writeFloatingPoint(double value) {
+        writeNumber(Double.doubleToLongBits(value), RawBits.DOUBLE);
     }
 
     @Override
-    public void writeString( String value )
-    {
-        writeStringBytes( UTF8.encode( value ), false );
+    public void writeString(String value) {
+        writeStringBytes(UTF8.encode(value), false);
     }
 
     @Override
-    public void writeString( char value )
-    {
-        writeStringBytes( UTF8.encode( String.valueOf( value ) ), true );
+    public void writeString(char value) {
+        writeStringBytes(UTF8.encode(String.valueOf(value)), true);
     }
 
     @Override
-    public void writeUTF8( byte[] bytes, int offset, int length )
-    {
+    public void writeUTF8(byte[] bytes, int offset, int length) {
         byte[] dest = new byte[length];
-        System.arraycopy( bytes, offset, dest, 0, length );
-        writeStringBytes( dest, false );
+        System.arraycopy(bytes, offset, dest, 0, length);
+        writeStringBytes(dest, false);
     }
 
-    private void writeStringBytes( byte[] bytes, boolean isCharType )
-    {
-        if ( !isArray )
-        {
-            setType( Types.TEXT );
-            TextType.write( this, bytes, isCharType );
-        }
-        else
-        {
+    private void writeStringBytes(byte[] bytes, boolean isCharType) {
+        if (!isArray) {
+            setType(Types.TEXT);
+            TextType.write(this, bytes, isCharType);
+        } else {
             // in the array case we've already noted the char/string type in beginArray
-            TextArrayType.write( this, currentArrayOffset++, bytes );
+            TextArrayType.write(this, currentArrayOffset++, bytes);
         }
         long1 = FALSE; // long1 is dereferenced true/false
     }
 
     @Override
-    public void writeDuration( long months, long days, long seconds, int nanos )
-    {
+    public void writeDuration(long months, long days, long seconds, int nanos) {
         long totalAvgSeconds = months * AVG_MONTH_SECONDS + days * AVG_DAY_SECONDS + seconds;
-        writeDurationWithTotalAvgSeconds( months, days, totalAvgSeconds, nanos );
+        writeDurationWithTotalAvgSeconds(months, days, totalAvgSeconds, nanos);
     }
 
-    void writeDurationWithTotalAvgSeconds( long months, long days, long totalAvgSeconds, int nanos )
-    {
-        if ( !isArray )
-        {
-            setType( Types.DURATION );
-            DurationType.write( this, months, days, totalAvgSeconds, nanos );
-        }
-        else
-        {
-            DurationArrayType.write( this, currentArrayOffset++, months, days, totalAvgSeconds, nanos );
+    void writeDurationWithTotalAvgSeconds(long months, long days, long totalAvgSeconds, int nanos) {
+        if (!isArray) {
+            setType(Types.DURATION);
+            DurationType.write(this, months, days, totalAvgSeconds, nanos);
+        } else {
+            DurationArrayType.write(this, currentArrayOffset++, months, days, totalAvgSeconds, nanos);
         }
     }
 
@@ -573,52 +492,44 @@ public abstract class GenericKey<KEY extends GenericKey<KEY>> extends NativeInde
     // writeByteArray is called so that the bytes can be written in batches.
     // We don't care about that though so just delegate.
     @Override
-    public void writeByteArray( byte[] value )
-    {
-        PrimitiveArrayWriting.writeTo( this, value );
+    public void writeByteArray(byte[] value) {
+        PrimitiveArrayWriting.writeTo(this, value);
     }
 
     @Override
-    public void beginArray( int size, ArrayType arrayType )
-    {
+    public void beginArray(int size, ArrayType arrayType) {
         AbstractArrayType<?> arrayValueType = getArrayTypes()[arrayType.ordinal()];
-        setType( arrayValueType );
-        initializeArrayMeta( size );
-        arrayValueType.initializeArray( this, size, arrayType );
+        setType(arrayValueType);
+        initializeArrayMeta(size);
+        arrayValueType.initializeArray(this, size, arrayType);
     }
 
-    void initializeArrayMeta( int size )
-    {
+    void initializeArrayMeta(int size) {
         isArray = true;
         arrayLength = size;
         currentArrayOffset = 0;
     }
 
     @Override
-    public void endArray()
-    {   // no-op
+    public void endArray() { // no-op
     }
 
     /* </write> */
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "[" + toStringInternal() + "],entityId=" + getEntityId();
     }
 
-    String toStringInternal()
-    {
-        return type.toString( this );
+    String toStringInternal() {
+        return type.toString(this);
     }
 
-    String toDetailedString()
-    {
+    String toDetailedString() {
         return "[" + toDetailedStringInternal() + "],entityId=" + getEntityId();
     }
 
-    String toDetailedStringInternal()
-    {
-        return type.toDetailedString( this );
+    String toDetailedStringInternal() {
+        return type.toDetailedString(this);
     }
 }

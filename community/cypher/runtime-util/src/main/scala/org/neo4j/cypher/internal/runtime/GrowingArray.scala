@@ -39,7 +39,7 @@ class GrowingArray[T <: AnyRef](memoryTracker: HeapMemoryTracker) extends AutoCl
    * Set an element at a given index, and grows the underlying structure if needed.
    */
   def set(index: Int, t: T): Unit = {
-    ensureCapacity(index+1)
+    ensureCapacity(index + 1)
     array(index) = t
   }
 
@@ -68,7 +68,7 @@ class GrowingArray[T <: AnyRef](memoryTracker: HeapMemoryTracker) extends AutoCl
    * This is useful for storing resources that can be reused depending on their index.
    */
   def computeIfAbsent(index: Int, compute: () => T): T = {
-    ensureCapacity(index+1)
+    ensureCapacity(index + 1)
     var t = array(index)
     if (t == null) {
       t = compute()

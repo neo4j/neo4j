@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import static org.neo4j.util.Preconditions.checkArgument;
+
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.util.Preconditions.checkArgument;
-
 /**
  * A sort merge join that sorts entities by their values (properties).
  */
-final class SortedMergeJoin
-{
+final class SortedMergeJoin {
     private static final int NO_ENTITY = -1;
 
     private long nextFromA = NO_ENTITY;
@@ -38,8 +37,7 @@ final class SortedMergeJoin
     private Value[] valuesFromB;
     private int indexOrder;
 
-    void initialize( IndexOrder indexOrder )
-    {
+    void initialize(IndexOrder indexOrder) {
         this.indexOrder = indexOrder == IndexOrder.DESCENDING ? 1 : NO_ENTITY;
         this.nextFromA = NO_ENTITY;
         this.nextFromB = NO_ENTITY;
@@ -47,24 +45,20 @@ final class SortedMergeJoin
         this.valuesFromB = null;
     }
 
-    boolean needsA()
-    {
+    boolean needsA() {
         return nextFromA == NO_ENTITY;
     }
 
-    boolean needsB()
-    {
+    boolean needsB() {
         return nextFromB == NO_ENTITY;
     }
 
-    void setA( long entityId, Value[] values )
-    {
+    void setA(long entityId, Value[] values) {
         nextFromA = entityId;
         valuesFromA = values;
     }
 
-    void setB( long entityId, Value[] values )
-    {
+    void setB(long entityId, Value[] values) {
         nextFromB = entityId;
         valuesFromB = values;
     }
@@ -72,35 +66,30 @@ final class SortedMergeJoin
     /**
      * Produces a next entity unless it is at the end of the entity stream, in which case it returns {@code false}.
      */
-    boolean next( Sink sink )
-    {
+    boolean next(Sink sink) {
         int c = 0;
-        if ( valuesFromA != null && valuesFromB != null )
-        {
-            checkArgument( valuesFromA.length == valuesFromB.length,
-                           "Expected index and txState values to have same dimensions, but got %d values from index and %d from txState",
-                           valuesFromB.length, valuesFromA.length );
+        if (valuesFromA != null && valuesFromB != null) {
+            checkArgument(
+                    valuesFromA.length == valuesFromB.length,
+                    "Expected index and txState values to have same dimensions, but got %d values from index and %d from txState",
+                    valuesFromB.length,
+                    valuesFromA.length);
 
-            for ( int i = 0; c == 0 && i < valuesFromA.length; i++ )
-            {
-                c = Values.COMPARATOR.compare( valuesFromA[i], valuesFromB[i] );
+            for (int i = 0; c == 0 && i < valuesFromA.length; i++) {
+                c = Values.COMPARATOR.compare(valuesFromA[i], valuesFromB[i]);
             }
         }
 
-        if ( nextFromB == NO_ENTITY || Integer.signum( c ) == indexOrder )
-        {
-            if ( nextFromA == NO_ENTITY )
-            {
+        if (nextFromB == NO_ENTITY || Integer.signum(c) == indexOrder) {
+            if (nextFromA == NO_ENTITY) {
                 return false;
             }
 
-            sink.acceptSortedMergeJoin( nextFromA, valuesFromA );
+            sink.acceptSortedMergeJoin(nextFromA, valuesFromA);
             nextFromA = NO_ENTITY;
             valuesFromA = null;
-        }
-        else
-        {
-            sink.acceptSortedMergeJoin( nextFromB, valuesFromB );
+        } else {
+            sink.acceptSortedMergeJoin(nextFromB, valuesFromB);
             nextFromB = NO_ENTITY;
             valuesFromB = null;
         }
@@ -108,8 +97,7 @@ final class SortedMergeJoin
         return true;
     }
 
-    interface Sink
-    {
-        void acceptSortedMergeJoin( long entityId, Value[] values );
+    interface Sink {
+        void acceptSortedMergeJoin(long entityId, Value[] values);
     }
 }

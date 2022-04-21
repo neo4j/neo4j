@@ -19,46 +19,45 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.function.Predicate;
+import static org.neo4j.graphdb.Direction.BOTH;
 
+import java.util.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-import static org.neo4j.graphdb.Direction.BOTH;
-
-public class RelationshipLinkforwardStep extends RelationshipLinkStep
-{
-    public RelationshipLinkforwardStep( StageControl control, Configuration config, NodeRelationshipCache cache,
-            Predicate<RelationshipRecord> filter, int nodeTypes, StatsProvider... additionalStatsProvider )
-    {
-        super( control, config, cache, filter, nodeTypes, true, additionalStatsProvider );
+public class RelationshipLinkforwardStep extends RelationshipLinkStep {
+    public RelationshipLinkforwardStep(
+            StageControl control,
+            Configuration config,
+            NodeRelationshipCache cache,
+            Predicate<RelationshipRecord> filter,
+            int nodeTypes,
+            StatsProvider... additionalStatsProvider) {
+        super(control, config, cache, filter, nodeTypes, true, additionalStatsProvider);
     }
 
     @Override
-    protected void linkStart( RelationshipRecord record )
-    {
-        long firstNextRel = cache.getAndPutRelationship( record.getFirstNode(),
-                record.getType(), Direction.OUTGOING, record.getId(), true );
-        record.setFirstNextRel( firstNextRel );
-    }
-
-    @Override
-    protected void linkEnd( RelationshipRecord record )
-    {
-        long secondNextRel = cache.getAndPutRelationship( record.getSecondNode(),
-                record.getType(), Direction.INCOMING, record.getId(), true );
-        record.setSecondNextRel( secondNextRel );
-    }
-
-    @Override
-    protected void linkLoop( RelationshipRecord record )
-    {
+    protected void linkStart(RelationshipRecord record) {
         long firstNextRel = cache.getAndPutRelationship(
-                record.getFirstNode(), record.getType(), BOTH, record.getId(), true );
-        record.setFirstNextRel( firstNextRel );
-        record.setSecondNextRel( firstNextRel );
+                record.getFirstNode(), record.getType(), Direction.OUTGOING, record.getId(), true);
+        record.setFirstNextRel(firstNextRel);
+    }
+
+    @Override
+    protected void linkEnd(RelationshipRecord record) {
+        long secondNextRel = cache.getAndPutRelationship(
+                record.getSecondNode(), record.getType(), Direction.INCOMING, record.getId(), true);
+        record.setSecondNextRel(secondNextRel);
+    }
+
+    @Override
+    protected void linkLoop(RelationshipRecord record) {
+        long firstNextRel =
+                cache.getAndPutRelationship(record.getFirstNode(), record.getType(), BOTH, record.getId(), true);
+        record.setFirstNextRel(firstNextRel);
+        record.setSecondNextRel(firstNextRel);
     }
 }

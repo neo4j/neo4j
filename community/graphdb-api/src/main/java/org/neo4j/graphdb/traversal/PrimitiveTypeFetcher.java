@@ -21,7 +21,6 @@ package org.neo4j.graphdb.traversal;
 
 import java.util.HashSet;
 import java.util.Set;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -29,59 +28,46 @@ import org.neo4j.graphdb.Relationship;
 /**
  * Used with uniqueness filters for simplifying node and relationship uniqueness evaluation.
  */
-enum PrimitiveTypeFetcher
-{
-    NODE
-    {
+enum PrimitiveTypeFetcher {
+    NODE {
         @Override
-        long getId( Path source )
-        {
+        long getId(Path source) {
             return source.endNode().getId();
         }
 
         @Override
-        boolean idEquals( Path source, long idToCompare )
-        {
-            return getId( source ) == idToCompare;
+        boolean idEquals(Path source, long idToCompare) {
+            return getId(source) == idToCompare;
         }
 
         @Override
-        boolean containsDuplicates( Path source )
-        {
+        boolean containsDuplicates(Path source) {
             Set<Node> nodes = new HashSet<>();
-            for ( Node node : source.reverseNodes() )
-            {
-                if ( !nodes.add( node ) )
-                {
+            for (Node node : source.reverseNodes()) {
+                if (!nodes.add(node)) {
                     return true;
                 }
             }
             return false;
         }
     },
-    RELATIONSHIP
-    {
+    RELATIONSHIP {
         @Override
-        long getId( Path source )
-        {
+        long getId(Path source) {
             return source.lastRelationship().getId();
         }
 
         @Override
-        boolean idEquals( Path source, long idToCompare )
-        {
+        boolean idEquals(Path source, long idToCompare) {
             Relationship relationship = source.lastRelationship();
             return relationship != null && relationship.getId() == idToCompare;
         }
 
         @Override
-        boolean containsDuplicates( Path source )
-        {
+        boolean containsDuplicates(Path source) {
             Set<Relationship> relationships = new HashSet<>();
-            for ( Relationship relationship : source.reverseRelationships() )
-            {
-                if ( !relationships.add( relationship ) )
-                {
+            for (Relationship relationship : source.reverseRelationships()) {
+                if (!relationships.add(relationship)) {
                     return true;
                 }
             }
@@ -89,9 +75,9 @@ enum PrimitiveTypeFetcher
         }
     };
 
-    abstract long getId( Path path );
+    abstract long getId(Path path);
 
-    abstract boolean idEquals( Path path, long idToCompare );
+    abstract boolean idEquals(Path path, long idToCompare);
 
-    abstract boolean containsDuplicates( Path path );
+    abstract boolean containsDuplicates(Path path);
 }

@@ -19,175 +19,145 @@
  */
 package org.neo4j.values.storable;
 
+import static java.lang.String.format;
+
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.ValueMapper;
 
-import static java.lang.String.format;
+public abstract class BooleanValue extends ScalarValue {
 
-public abstract class BooleanValue extends ScalarValue
-{
+    private BooleanValue() {}
 
-    private BooleanValue()
-    {
+    @Override
+    public boolean equalTo(Object other) {
+        return other instanceof Value && equals((Value) other);
     }
 
     @Override
-    public boolean equalTo( Object other )
-    {
-        return other instanceof Value && equals( (Value) other );
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapBoolean(this);
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapBoolean( this );
-    }
-
-    @Override
-    public ValueRepresentation valueRepresentation()
-    {
+    public ValueRepresentation valueRepresentation() {
         return ValueRepresentation.BOOLEAN;
     }
 
     public abstract boolean booleanValue();
 
     @Override
-    public NumberType numberType()
-    {
+    public NumberType numberType() {
         return NumberType.NO_NUMBER;
     }
 
     @Override
-    public long updateHash( HashFunction hashFunction, long hash )
-    {
-        return hashFunction.update( hash, hashCode() );
+    public long updateHash(HashFunction hashFunction, long hash) {
+        return hashFunction.update(hash, hashCode());
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "Boolean";
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
+    public long estimatedHeapUsage() {
         return 0L;
     }
 
-    public static final BooleanValue TRUE = new BooleanValue()
-    {
+    public static final BooleanValue TRUE = new BooleanValue() {
         @Override
-        public boolean equals( Value other )
-        {
+        public boolean equals(Value other) {
             return this == other;
         }
 
         @Override
-        public boolean equals( boolean x )
-        {
+        public boolean equals(boolean x) {
             return x;
         }
 
         @Override
-        protected int computeHash()
-        {
-            return Boolean.hashCode( true );
+        protected int computeHash() {
+            return Boolean.hashCode(true);
         }
 
         @Override
-        public boolean booleanValue()
-        {
+        public boolean booleanValue() {
             return true;
         }
 
         @Override
-        protected int unsafeCompareTo( Value otherValue )
-        {
+        protected int unsafeCompareTo(Value otherValue) {
             BooleanValue other = (BooleanValue) otherValue;
             return other.booleanValue() ? 0 : 1;
         }
 
         @Override
-        public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-        {
-            writer.writeBoolean( true );
+        public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+            writer.writeBoolean(true);
         }
 
         @Override
-        public Object asObjectCopy()
-        {
+        public Object asObjectCopy() {
             return Boolean.TRUE;
         }
 
         @Override
-        public String prettyPrint()
-        {
-            return Boolean.toString( true );
+        public String prettyPrint() {
+            return Boolean.toString(true);
         }
 
         @Override
-        public String toString()
-        {
-            return format( "%s('%s')", getTypeName(), true );
+        public String toString() {
+            return format("%s('%s')", getTypeName(), true);
         }
     };
 
-    public static final BooleanValue FALSE = new BooleanValue()
-    {
+    public static final BooleanValue FALSE = new BooleanValue() {
         @Override
-        public boolean equals( Value other )
-        {
+        public boolean equals(Value other) {
             return this == other;
         }
 
         @Override
-        public boolean equals( boolean x )
-        {
+        public boolean equals(boolean x) {
             return !x;
         }
 
         @Override
-        protected int computeHash()
-        {
-            return Boolean.hashCode( false );
+        protected int computeHash() {
+            return Boolean.hashCode(false);
         }
 
         @Override
-        public boolean booleanValue()
-        {
+        public boolean booleanValue() {
             return false;
         }
 
         @Override
-        protected int unsafeCompareTo( Value otherValue )
-        {
+        protected int unsafeCompareTo(Value otherValue) {
             BooleanValue other = (BooleanValue) otherValue;
             return !other.booleanValue() ? 0 : -1;
         }
 
         @Override
-        public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-        {
-            writer.writeBoolean( false );
+        public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+            writer.writeBoolean(false);
         }
 
         @Override
-        public Object asObjectCopy()
-        {
+        public Object asObjectCopy() {
             return Boolean.FALSE;
         }
 
         @Override
-        public String prettyPrint()
-        {
-            return Boolean.toString( false );
+        public String prettyPrint() {
+            return Boolean.toString(false);
         }
 
         @Override
-        public String toString()
-        {
-            return format( "%s('%s')", getTypeName(), false );
+        public String toString() {
+            return format("%s('%s')", getTypeName(), false);
         }
     };
 }

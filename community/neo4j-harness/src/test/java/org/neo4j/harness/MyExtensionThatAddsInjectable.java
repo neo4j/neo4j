@@ -32,25 +32,20 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 // and is in place as an approach that should either eventually be made
 // public, or the relevant use cases addressed in other ways.
 @ServiceProvider
-public class MyExtensionThatAddsInjectable
-        extends ExtensionFactory<MyExtensionThatAddsInjectable.Dependencies>
-{
+public class MyExtensionThatAddsInjectable extends ExtensionFactory<MyExtensionThatAddsInjectable.Dependencies> {
     static final String NAME = "my-ext";
 
-    public MyExtensionThatAddsInjectable()
-    {
-        super( NAME );
+    public MyExtensionThatAddsInjectable() {
+        super(NAME);
     }
 
     @Override
-    public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
-    {
-        dependencies.procedures().registerComponent( SomeService.class, ctx -> new SomeService(), true );
+    public Lifecycle newInstance(ExtensionContext context, Dependencies dependencies) {
+        dependencies.procedures().registerComponent(SomeService.class, ctx -> new SomeService(), true);
         return new LifecycleAdapter();
     }
 
-    public interface Dependencies
-    {
+    public interface Dependencies {
         GlobalProcedures procedures();
     }
 }

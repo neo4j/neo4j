@@ -19,43 +19,35 @@
  */
 package org.neo4j.internal.recordstorage;
 
-public class TestDegreeItem
-{
+public class TestDegreeItem {
     private final int type;
     private final long outgoing;
     private final long incoming;
 
-    public TestDegreeItem( int type, long outgoing, long incoming )
-    {
+    public TestDegreeItem(int type, long outgoing, long incoming) {
         this.type = type;
         this.outgoing = outgoing;
         this.incoming = incoming;
     }
 
-    public int type()
-    {
+    public int type() {
         return type;
     }
 
-    public long outgoing()
-    {
+    public long outgoing() {
         return outgoing;
     }
 
-    public long incoming()
-    {
+    public long incoming() {
         return incoming;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         TestDegreeItem that = (TestDegreeItem) o;
@@ -63,18 +55,12 @@ public class TestDegreeItem
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return 31 * (31 * type + (int) (outgoing ^ (outgoing >>> 32))) + (int) (incoming ^ (incoming >>> 32));
     }
 
     @Override
-    public String toString()
-    {
-        return "TestDegreeItem{" +
-               "type=" + type +
-               ", outgoing=" + outgoing +
-               ", incoming=" + incoming +
-               '}';
+    public String toString() {
+        return "TestDegreeItem{" + "type=" + type + ", outgoing=" + outgoing + ", incoming=" + incoming + '}';
     }
 }

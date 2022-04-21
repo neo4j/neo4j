@@ -23,47 +23,39 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.neo4j.graphdb.ExecutionPlanDescription;
 
 /**
  * An empty plan, just to make Bolt server not throwing NPE.
  */
-public class EmptyExecutionPlanDescription implements ExecutionPlanDescription
-{
+public class EmptyExecutionPlanDescription implements ExecutionPlanDescription {
     @Override
-    public String getName()
-    {
+    public String getName() {
         return "";
     }
 
     @Override
-    public List<ExecutionPlanDescription> getChildren()
-    {
+    public List<ExecutionPlanDescription> getChildren() {
         return Collections.emptyList();
     }
 
     @Override
-    public Map<String,Object> getArguments()
-    {
+    public Map<String, Object> getArguments() {
         return Collections.emptyMap();
     }
 
     @Override
-    public Set<String> getIdentifiers()
-    {
+    public Set<String> getIdentifiers() {
         return Collections.emptySet();
     }
 
     @Override
-    public boolean hasProfilerStatistics()
-    {
+    public boolean hasProfilerStatistics() {
         return false;
     }
 
     @Override
-    public ProfilerStatistics getProfilerStatistics()
-    {
+    public ProfilerStatistics getProfilerStatistics() {
         return null;
     }
 }

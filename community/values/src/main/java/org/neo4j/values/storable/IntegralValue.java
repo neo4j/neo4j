@@ -23,20 +23,16 @@ import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.utils.ValueMath;
 
-public abstract class IntegralValue extends NumberValue
-{
-    public static long safeCastIntegral( String name, AnyValue value, long defaultValue )
-    {
-        if ( value == null || value == Values.NO_VALUE )
-        {
+public abstract class IntegralValue extends NumberValue {
+    public static long safeCastIntegral(String name, AnyValue value, long defaultValue) {
+        if (value == null || value == Values.NO_VALUE) {
             return defaultValue;
         }
-        if ( value instanceof IntegralValue )
-        {
+        if (value instanceof IntegralValue) {
             return ((IntegralValue) value).longValue();
         }
-        throw new IllegalArgumentException(
-                name + " must be an integer value, but was a " + value.getClass().getSimpleName() );
+        throw new IllegalArgumentException(name + " must be an integer value, but was a "
+                + value.getClass().getSimpleName());
     }
 
     public abstract int intValue();
@@ -46,121 +42,98 @@ public abstract class IntegralValue extends NumberValue
     public abstract byte byteValue();
 
     @Override
-    public boolean equals( long x )
-    {
+    public boolean equals(long x) {
         return longValue() == x;
     }
 
     @Override
-    public boolean equals( double x )
-    {
-        return NumberValues.numbersEqual( x, longValue() );
+    public boolean equals(double x) {
+        return NumberValues.numbersEqual(x, longValue());
     }
 
     @Override
-    protected final int computeHash()
-    {
-        return NumberValues.hash( longValue() );
+    protected final int computeHash() {
+        return NumberValues.hash(longValue());
     }
 
     @Override
-    public long updateHash( HashFunction hashFunction, long hash )
-    {
-        return hashFunction.update( hash, longValue() );
+    public long updateHash(HashFunction hashFunction, long hash) {
+        return hashFunction.update(hash, longValue());
     }
 
     @Override
-    public boolean equalTo( Object other )
-    {
-        return other instanceof Value && equals( (Value) other );
+    public boolean equalTo(Object other) {
+        return other instanceof Value && equals((Value) other);
     }
 
     @Override
-    public final boolean equals( Value other )
-    {
-        if ( other instanceof IntegralValue that )
-        {
+    public final boolean equals(Value other) {
+        if (other instanceof IntegralValue that) {
             return this.longValue() == that.longValue();
-        }
-        else if ( other instanceof FloatingPointValue that )
-        {
-            return NumberValues.numbersEqual( that.doubleValue(), this.longValue() );
-        }
-        else
-        {
+        } else if (other instanceof FloatingPointValue that) {
+            return NumberValues.numbersEqual(that.doubleValue(), this.longValue());
+        } else {
             return false;
         }
     }
 
     @Override
-    public int compareTo( IntegralValue other )
-    {
-        return Long.compare( longValue(), other.longValue() );
+    public int compareTo(IntegralValue other) {
+        return Long.compare(longValue(), other.longValue());
     }
 
     @Override
-    public int compareTo( FloatingPointValue other )
-    {
-        return NumberValues.compareLongAgainstDouble( longValue(), other.doubleValue() );
+    public int compareTo(FloatingPointValue other) {
+        return NumberValues.compareLongAgainstDouble(longValue(), other.doubleValue());
     }
 
     @Override
-    public NumberType numberType()
-    {
+    public NumberType numberType() {
         return NumberType.INTEGRAL;
     }
 
     @Override
-    public double doubleValue()
-    {
+    public double doubleValue() {
         return longValue();
     }
 
     @Override
-    public LongValue minus( long b )
-    {
-        return ValueMath.subtract( longValue(), b );
+    public LongValue minus(long b) {
+        return ValueMath.subtract(longValue(), b);
     }
 
     @Override
-    public DoubleValue minus( double b )
-    {
-        return ValueMath.subtract( longValue(), b );
+    public DoubleValue minus(double b) {
+        return ValueMath.subtract(longValue(), b);
     }
 
     @Override
-    public LongValue plus( long b )
-    {
-        return ValueMath.add( longValue(), b );
+    public LongValue plus(long b) {
+        return ValueMath.add(longValue(), b);
     }
 
     @Override
-    public DoubleValue plus( double b )
-    {
-        return ValueMath.add( longValue(), b );
+    public DoubleValue plus(double b) {
+        return ValueMath.add(longValue(), b);
     }
 
     @Override
-    public LongValue times( long b )
-    {
-        return ValueMath.multiply( longValue(), b );
+    public LongValue times(long b) {
+        return ValueMath.multiply(longValue(), b);
     }
 
     @Override
-    public DoubleValue times( double b )
-    {
-        return ValueMath.multiply( longValue(), b );
+    public DoubleValue times(double b) {
+        return ValueMath.multiply(longValue(), b);
     }
 
     @Override
-    public LongValue dividedBy( long b )
-    {
-        return Values.longValue( longValue() / b );
+    public LongValue dividedBy(long b) {
+        return Values.longValue(longValue() / b);
     }
 
     @Override
-    public DoubleValue dividedBy( double b )
-    {
-        return Values.doubleValue( doubleValue() / b );
+    public DoubleValue dividedBy(double b) {
+        return Values.doubleValue(doubleValue() / b);
     }
 }

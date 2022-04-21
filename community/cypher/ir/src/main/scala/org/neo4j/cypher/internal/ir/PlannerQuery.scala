@@ -61,10 +61,12 @@ trait PlannerQueryPart {
  * @param distinct whether it is a distinct union
  * @param unionMappings mappings of return items from both parts
  */
-case class UnionQuery(part: PlannerQueryPart,
-                      query: SinglePlannerQuery,
-                      distinct: Boolean,
-                      unionMappings: List[UnionMapping]) extends PlannerQueryPart {
+case class UnionQuery(
+  part: PlannerQueryPart,
+  query: SinglePlannerQuery,
+  distinct: Boolean,
+  unionMappings: List[UnionMapping]
+) extends PlannerQueryPart {
   override def readOnly: Boolean = part.readOnly && query.readOnly
 
   override def returns: Set[String] = part.returns.map { returnColInPart =>
@@ -82,7 +84,8 @@ case class UnionQuery(part: PlannerQueryPart,
 
   override def numHints: Int = part.numHints + query.numHints
 
-  override def asSinglePlannerQuery: SinglePlannerQuery = throw new IllegalStateException("Called asSinglePlannerQuery on a UnionQuery")
+  override def asSinglePlannerQuery: SinglePlannerQuery =
+    throw new IllegalStateException("Called asSinglePlannerQuery on a UnionQuery")
 
   override def allQGsWithLeafInfo: collection.Seq[QgWithLeafInfo] = query.allQGsWithLeafInfo ++ part.allQGsWithLeafInfo
 }

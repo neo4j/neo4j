@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.counts;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.NamedThreadFactory;
@@ -33,31 +34,24 @@ import org.neo4j.test.Barrier;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
-
 @ImpermanentDbmsExtension
-class NodeCountsTest
-{
+class NodeCountsTest {
     @Inject
     private GraphDatabaseAPI db;
 
     @Test
-    void shouldReportNumberOfNodesInAnEmptyGraph()
-    {
+    void shouldReportNumberOfNodesInAnEmptyGraph() {
         // when
         long nodeCount = numberOfNodes();
 
         // then
-        assertEquals( 0, nodeCount );
+        assertEquals(0, nodeCount);
     }
 
     @Test
-    void shouldReportNumberOfNodes()
-    {
+    void shouldReportNumberOfNodes() {
         // given
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             tx.createNode();
             tx.createNode();
             tx.commit();
@@ -67,23 +61,20 @@ class NodeCountsTest
         long nodeCount = numberOfNodes();
 
         // then
-        assertEquals( 2, nodeCount );
+        assertEquals(2, nodeCount);
     }
 
     @Test
-    void shouldReportAccurateNumberOfNodesAfterDeletion()
-    {
+    void shouldReportAccurateNumberOfNodesAfterDeletion() {
         // given
         Node one;
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             one = tx.createNode();
             tx.createNode();
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.getNodeById( one.getId() ).delete();
+        try (Transaction tx = db.beginTx()) {
+            tx.getNodeById(one.getId()).delete();
             tx.commit();
         }
 
@@ -91,82 +82,72 @@ class NodeCountsTest
         long nodeCount = numberOfNodes();
 
         // then
-        assertEquals( 1, nodeCount );
+        assertEquals(1, nodeCount);
     }
 
     @Test
-    void shouldIncludeNumberOfNodesAddedInTransaction()
-    {
+    void shouldIncludeNumberOfNodesAddedInTransaction() {
         // given
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             tx.createNode();
             tx.createNode();
             tx.commit();
         }
         long before = numberOfNodes();
 
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             // when
             tx.createNode();
-            long nodeCount = countsForNode( tx );
+            long nodeCount = countsForNode(tx);
 
             // then
-            assertEquals( before + 1, nodeCount );
+            assertEquals(before + 1, nodeCount);
             tx.commit();
         }
     }
 
     @Test
-    void shouldIncludeNumberOfNodesDeletedInTransaction()
-    {
+    void shouldIncludeNumberOfNodesDeletedInTransaction() {
         // given
         Node one;
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             one = tx.createNode();
             tx.createNode();
             tx.commit();
         }
         long before = numberOfNodes();
 
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             // when
-            tx.getNodeById( one.getId() ).delete();
-            long nodeCount = countsForNode( tx );
+            tx.getNodeById(one.getId()).delete();
+            long nodeCount = countsForNode(tx);
 
             // then
-            assertEquals( before - 1, nodeCount );
+            assertEquals(before - 1, nodeCount);
             tx.commit();
         }
     }
 
     @Test
-    void shouldNotSeeNodeCountsOfOtherTransaction() throws Exception
-    {
+    void shouldNotSeeNodeCountsOfOtherTransaction() throws Exception {
         // given
         final Barrier.Control barrier = new Barrier.Control();
         long before = numberOfNodes();
 
-        var executor = Executors.newSingleThreadExecutor( NamedThreadFactory.named( "create-nodes" ) );
+        var executor = Executors.newSingleThreadExecutor(NamedThreadFactory.named("create-nodes"));
         var graphDb = db;
-        try
-        {
+        try {
 
-            Future<Long> done = executor.submit( () ->
-            {
-                try ( Transaction tx = graphDb.beginTx() )
-                {
+            Future<Long> done = executor.submit(() -> {
+                try (Transaction tx = graphDb.beginTx()) {
                     tx.createNode();
                     tx.createNode();
                     barrier.reached();
-                    long whatThisThreadSees = countsForNode( tx );
+                    long whatThisThreadSees = countsForNode(tx);
                     tx.commit();
                     return whatThisThreadSees;
                 }
-            } );
+            });
 
             barrier.await();
 
@@ -177,30 +158,25 @@ class NodeCountsTest
             long after = numberOfNodes();
 
             // then
-            assertEquals( 0, before );
-            assertEquals( 0, during );
-            assertEquals( after, whatOtherThreadSees );
-            assertEquals( 2, after );
-        }
-        finally
-        {
+            assertEquals(0, before);
+            assertEquals(0, during);
+            assertEquals(after, whatOtherThreadSees);
+            assertEquals(2, after);
+        } finally {
             executor.shutdown();
         }
     }
 
     /** Transactional version of {@link #countsForNode(Transaction)} */
-    private long numberOfNodes()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            long nodeCount = countsForNode( tx );
+    private long numberOfNodes() {
+        try (Transaction tx = db.beginTx()) {
+            long nodeCount = countsForNode(tx);
             tx.commit();
             return nodeCount;
         }
     }
 
-    private static long countsForNode( Transaction tx )
-    {
-        return ((InternalTransaction) tx).kernelTransaction().dataRead().countsForNode( ANY_LABEL );
+    private static long countsForNode(Transaction tx) {
+        return ((InternalTransaction) tx).kernelTransaction().dataRead().countsForNode(ANY_LABEL);
     }
 }

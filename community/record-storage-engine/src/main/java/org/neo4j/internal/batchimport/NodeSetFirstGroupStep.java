@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.batchimport;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.ProcessorStep;
@@ -31,13 +33,10 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
-import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
-
 /**
  * Scans {@link RelationshipGroupRecord group records} and discovers which should affect the owners.
  */
-public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord[]>
-{
+public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord[]> {
     private static final String SET_FIRST_GROUP_STEP_TAG = "setFirstGroupStep";
     private final int batchSize;
     private final ByteArray cache;
@@ -48,72 +47,66 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
     private NodeRecord[] current;
     private int cursor;
 
-    NodeSetFirstGroupStep( StageControl control, Configuration config, NodeStore nodeStore, ByteArray cache, CursorContextFactory contextFactory )
-    {
-        super( control, "FIRST", config, 1, contextFactory );
+    NodeSetFirstGroupStep(
+            StageControl control,
+            Configuration config,
+            NodeStore nodeStore,
+            ByteArray cache,
+            CursorContextFactory contextFactory) {
+        super(control, "FIRST", config, 1, contextFactory);
         this.cache = cache;
         this.batchSize = config.batchSize();
         this.nodeStore = nodeStore;
-        this.cursorContext = contextFactory.create( SET_FIRST_GROUP_STEP_TAG );
-        this.nodeCursor = nodeStore.openPageCursorForReading( 0, cursorContext );
+        this.cursorContext = contextFactory.create(SET_FIRST_GROUP_STEP_TAG);
+        this.nodeCursor = nodeStore.openPageCursorForReading(0, cursorContext);
         newBatch();
     }
 
     @Override
-    public void start( int orderingGuarantees )
-    {
-        super.start( orderingGuarantees );
+    public void start(int orderingGuarantees) {
+        super.start(orderingGuarantees);
     }
 
-    private void newBatch()
-    {
+    private void newBatch() {
         current = new NodeRecord[batchSize];
         cursor = 0;
     }
 
     @Override
-    protected void process( RelationshipGroupRecord[] batch, BatchSender sender, CursorContext cursorContext )
-    {
-        for ( RelationshipGroupRecord group : batch )
-        {
-            if ( !group.inUse() )
-            {
+    protected void process(RelationshipGroupRecord[] batch, BatchSender sender, CursorContext cursorContext) {
+        for (RelationshipGroupRecord group : batch) {
+            if (!group.inUse()) {
                 continue;
             }
 
             long nodeId = group.getOwningNode();
-            if ( cache.getByte( nodeId, 0 ) == 0 )
-            {
-                cache.setByte( nodeId, 0, (byte) 1 );
+            if (cache.getByte(nodeId, 0) == 0) {
+                cache.setByte(nodeId, 0, (byte) 1);
                 NodeRecord nodeRecord = nodeStore.newRecord();
-                nodeStore.getRecordByCursor( nodeId, nodeRecord, NORMAL, nodeCursor );
-                nodeRecord.setNextRel( group.getId() );
-                nodeRecord.setDense( true );
+                nodeStore.getRecordByCursor(nodeId, nodeRecord, NORMAL, nodeCursor);
+                nodeRecord.setNextRel(group.getId());
+                nodeRecord.setDense(true);
 
                 current[cursor++] = nodeRecord;
-                if ( cursor == batchSize )
-                {
-                    sender.send( current );
+                if (cursor == batchSize) {
+                    sender.send(current);
                     newBatch();
                 }
             }
         }
-        control.recycle( batch );
+        control.recycle(batch);
     }
 
     @Override
-    protected void lastCallForEmittingOutstandingBatches( BatchSender sender )
-    {
-        if ( cursor > 0 )
-        {
-            sender.send( current );
+    protected void lastCallForEmittingOutstandingBatches(BatchSender sender) {
+        if (cursor > 0) {
+            sender.send(current);
         }
     }
 
     @Override
-    public void close() throws Exception
-    {
-        IOUtils.closeAll( nodeCursor, cursorContext );
+    public void close() throws Exception {
+        IOUtils.closeAll(nodeCursor, cursorContext);
         super.close();
     }
 }

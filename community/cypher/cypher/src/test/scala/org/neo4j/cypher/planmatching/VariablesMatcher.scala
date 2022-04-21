@@ -37,6 +37,7 @@ trait VariablesMatcher extends Matcher[InternalPlanDescription] {
  * Asserts that a plan has exactly the provided variables.
  */
 case class ExactVariablesMatcher(expected: Set[String]) extends VariablesMatcher {
+
   override def apply(plan: InternalPlanDescription): MatchResult = {
     val vars = planVars(plan)
     MatchResult(
@@ -51,6 +52,7 @@ case class ExactVariablesMatcher(expected: Set[String]) extends VariablesMatcher
  * Asserts that a plan contains the provided variables (among others).
  */
 case class ContainsVariablesMatcher(expected: Set[String]) extends VariablesMatcher {
+
   override def apply(plan: InternalPlanDescription): MatchResult = {
     val vars = planVars(plan)
     MatchResult(

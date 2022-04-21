@@ -19,10 +19,16 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.junit.jupiter.api.Test;
+import static java.util.Collections.singletonList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
+import static org.neo4j.values.virtual.VirtualValues.nodeValue;
+import static org.neo4j.values.virtual.VirtualValues.pathReference;
+import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
 import java.util.Arrays;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -39,153 +45,136 @@ import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
-import static java.util.Collections.singletonList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
-import static org.neo4j.values.virtual.VirtualValues.nodeValue;
-import static org.neo4j.values.virtual.VirtualValues.pathReference;
-import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
-
 @ImpermanentDbmsExtension
-class DefaultValueMapperTest
-{
+class DefaultValueMapperTest {
     @Inject
     private GraphDatabaseService db;
 
     @Test
-    void shouldHandleSingleNodePath()
-    {
+    void shouldHandleSingleNodePath() {
         // Given
         Node node;
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             node = tx.createNode();
             tx.commit();
         }
 
         // Then
-        try ( Transaction tx = db.beginTx() )
-        {
-            var mapper = new DefaultValueMapper( (InternalTransaction) tx );
-            Path mapped = mapper.mapPath( pathReference( asNodeValues( node ), asRelationshipsValues() ) );
-            assertThat( mapped.length() ).isEqualTo( 0 );
-            assertThat( mapped.startNode() ).isEqualTo( node );
-            assertThat( mapped.endNode() ).isEqualTo( node );
-            assertThat( Iterables.asList( mapped.relationships() ) ).hasSize( 0 );
-            assertThat( Iterables.asList( mapped.reverseRelationships() ) ).hasSize( 0 );
-            assertThat( Iterables.asList( mapped.nodes() ) ).isEqualTo( singletonList( node ) );
-            assertThat( Iterables.asList( mapped.reverseNodes() ) ).isEqualTo( singletonList( node ) );
-            assertThat( mapped.lastRelationship() ).isNull();
-            assertThat( Iterators.asList( mapped.iterator() ) ).isEqualTo( singletonList( node ) );
+        try (Transaction tx = db.beginTx()) {
+            var mapper = new DefaultValueMapper((InternalTransaction) tx);
+            Path mapped = mapper.mapPath(pathReference(asNodeValues(node), asRelationshipsValues()));
+            assertThat(mapped.length()).isEqualTo(0);
+            assertThat(mapped.startNode()).isEqualTo(node);
+            assertThat(mapped.endNode()).isEqualTo(node);
+            assertThat(Iterables.asList(mapped.relationships())).hasSize(0);
+            assertThat(Iterables.asList(mapped.reverseRelationships())).hasSize(0);
+            assertThat(Iterables.asList(mapped.nodes())).isEqualTo(singletonList(node));
+            assertThat(Iterables.asList(mapped.reverseNodes())).isEqualTo(singletonList(node));
+            assertThat(mapped.lastRelationship()).isNull();
+            assertThat(Iterators.asList(mapped.iterator())).isEqualTo(singletonList(node));
         }
     }
 
     @Test
-    void shouldHandleSingleRelationshipPath()
-    {
+    void shouldHandleSingleRelationshipPath() {
         // Given
         Node start, end;
         Relationship relationship;
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             start = tx.createNode();
             end = tx.createNode();
-            relationship = start.createRelationshipTo( end, RelationshipType.withName( "R" ) );
+            relationship = start.createRelationshipTo(end, RelationshipType.withName("R"));
             tx.commit();
         }
 
         // Then
-        try ( Transaction tx = db.beginTx() )
-        {
-            var mapper = new DefaultValueMapper( (InternalTransaction) tx );
-            Path mapped = mapper.mapPath( pathReference( asNodeValues( start, end ), asRelationshipsValues( relationship ) ) );
-            assertThat( mapped.length() ).isEqualTo( 1 );
-            assertThat( mapped.startNode() ).isEqualTo( start );
-            assertThat( mapped.endNode() ).isEqualTo( end );
-            assertThat( Iterables.asList( mapped.relationships() ) ).isEqualTo( singletonList( relationship ) );
-            assertThat( Iterables.asList( mapped.reverseRelationships() ) ).isEqualTo( singletonList( relationship ) );
-            assertThat( Iterables.asList( mapped.nodes() ) ).isEqualTo( Arrays.asList( start, end ) );
-            assertThat( Iterables.asList( mapped.reverseNodes() ) ).isEqualTo( Arrays.asList( end, start ) );
-            assertThat( mapped.lastRelationship() ).isEqualTo( relationship );
-            assertThat( Iterators.asList( mapped.iterator() ) ).isEqualTo( Arrays.asList( start, relationship, end ) );
+        try (Transaction tx = db.beginTx()) {
+            var mapper = new DefaultValueMapper((InternalTransaction) tx);
+            Path mapped = mapper.mapPath(pathReference(asNodeValues(start, end), asRelationshipsValues(relationship)));
+            assertThat(mapped.length()).isEqualTo(1);
+            assertThat(mapped.startNode()).isEqualTo(start);
+            assertThat(mapped.endNode()).isEqualTo(end);
+            assertThat(Iterables.asList(mapped.relationships())).isEqualTo(singletonList(relationship));
+            assertThat(Iterables.asList(mapped.reverseRelationships())).isEqualTo(singletonList(relationship));
+            assertThat(Iterables.asList(mapped.nodes())).isEqualTo(Arrays.asList(start, end));
+            assertThat(Iterables.asList(mapped.reverseNodes())).isEqualTo(Arrays.asList(end, start));
+            assertThat(mapped.lastRelationship()).isEqualTo(relationship);
+            assertThat(Iterators.asList(mapped.iterator())).isEqualTo(Arrays.asList(start, relationship, end));
         }
     }
 
     @Test
-    void shouldHandleLongPath()
-    {
+    void shouldHandleLongPath() {
         // Given
         Node a, b, c, d, e;
         Relationship r1, r2, r3, r4;
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             a = tx.createNode();
             b = tx.createNode();
             c = tx.createNode();
             d = tx.createNode();
             e = tx.createNode();
-            r1 = a.createRelationshipTo( b, RelationshipType.withName( "R" ) );
-            r2 = b.createRelationshipTo( c, RelationshipType.withName( "R" ) );
-            r3 = c.createRelationshipTo( d, RelationshipType.withName( "R" ) );
-            r4 = d.createRelationshipTo( e, RelationshipType.withName( "R" ) );
+            r1 = a.createRelationshipTo(b, RelationshipType.withName("R"));
+            r2 = b.createRelationshipTo(c, RelationshipType.withName("R"));
+            r3 = c.createRelationshipTo(d, RelationshipType.withName("R"));
+            r4 = d.createRelationshipTo(e, RelationshipType.withName("R"));
             tx.commit();
         }
 
         // Then
-        try ( Transaction tx = db.beginTx() )
-        {
-            var mapper = new DefaultValueMapper( (InternalTransaction) tx );
-            Path mapped = mapper.mapPath( pathReference( asNodeValues( a, b, c, d, e ), asRelationshipsValues( r1, r2, r3, r4 ) ) );
-            assertThat( mapped.length() ).isEqualTo( 4 );
-            assertThat( mapped.startNode() ).isEqualTo( a );
-            assertThat( mapped.endNode() ).isEqualTo( e );
-            assertThat( Iterables.asList( mapped.relationships() ) ).isEqualTo( Arrays.asList( r1, r2, r3, r4 ) );
-            assertThat( Iterables.asList( mapped.reverseRelationships() ) ).isEqualTo( Arrays.asList( r4, r3, r2, r1 ) );
-            assertThat( Iterables.asList( mapped.nodes() ) ).isEqualTo( Arrays.asList( a, b, c, d, e ) );
-            assertThat( Iterables.asList( mapped.reverseNodes() ) ).isEqualTo( Arrays.asList( e, d, c, b, a ) );
-            assertThat( mapped.lastRelationship() ).isEqualTo( r4 );
-            assertThat( Iterators.asList( mapped.iterator() ) ).isEqualTo( Arrays.asList( a, r1, b, r2, c, r3, d, r4, e ) );
+        try (Transaction tx = db.beginTx()) {
+            var mapper = new DefaultValueMapper((InternalTransaction) tx);
+            Path mapped =
+                    mapper.mapPath(pathReference(asNodeValues(a, b, c, d, e), asRelationshipsValues(r1, r2, r3, r4)));
+            assertThat(mapped.length()).isEqualTo(4);
+            assertThat(mapped.startNode()).isEqualTo(a);
+            assertThat(mapped.endNode()).isEqualTo(e);
+            assertThat(Iterables.asList(mapped.relationships())).isEqualTo(Arrays.asList(r1, r2, r3, r4));
+            assertThat(Iterables.asList(mapped.reverseRelationships())).isEqualTo(Arrays.asList(r4, r3, r2, r1));
+            assertThat(Iterables.asList(mapped.nodes())).isEqualTo(Arrays.asList(a, b, c, d, e));
+            assertThat(Iterables.asList(mapped.reverseNodes())).isEqualTo(Arrays.asList(e, d, c, b, a));
+            assertThat(mapped.lastRelationship()).isEqualTo(r4);
+            assertThat(Iterators.asList(mapped.iterator())).isEqualTo(Arrays.asList(a, r1, b, r2, c, r3, d, r4, e));
         }
     }
 
     @Test
-    void shouldMapDirectRelationship()
-    {
+    void shouldMapDirectRelationship() {
         // Given
         Node start, end;
         Relationship relationship;
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             start = tx.createNode();
             end = tx.createNode();
-            relationship = start.createRelationshipTo( end, RelationshipType.withName( "R" ) );
+            relationship = start.createRelationshipTo(end, RelationshipType.withName("R"));
             tx.commit();
         }
-        RelationshipValue relationshipValue =
-                relationshipValue( relationship.getId(), "r", null, nodeValue( start.getId(), "n1", null,
-                        Values.EMPTY_TEXT_ARRAY, EMPTY_MAP ), nodeValue( start.getId(), "n2", null,
-                        Values.EMPTY_TEXT_ARRAY, EMPTY_MAP ), stringValue( "R" ), EMPTY_MAP );
+        RelationshipValue relationshipValue = relationshipValue(
+                relationship.getId(),
+                "r",
+                null,
+                nodeValue(start.getId(), "n1", null, Values.EMPTY_TEXT_ARRAY, EMPTY_MAP),
+                nodeValue(start.getId(), "n2", null, Values.EMPTY_TEXT_ARRAY, EMPTY_MAP),
+                stringValue("R"),
+                EMPTY_MAP);
 
         // Then
-        try ( Transaction tx = db.beginTx() )
-        {
-            var mapper = new DefaultValueMapper( (InternalTransaction) tx );
-            Relationship coreAPIRelationship = mapper.mapRelationship( relationshipValue );
-            assertThat( coreAPIRelationship.getId() ).isEqualTo( relationship.getId() );
-            assertThat( coreAPIRelationship.getStartNode() ).isEqualTo( start );
-            assertThat( coreAPIRelationship.getEndNode() ).isEqualTo( end );
+        try (Transaction tx = db.beginTx()) {
+            var mapper = new DefaultValueMapper((InternalTransaction) tx);
+            Relationship coreAPIRelationship = mapper.mapRelationship(relationshipValue);
+            assertThat(coreAPIRelationship.getId()).isEqualTo(relationship.getId());
+            assertThat(coreAPIRelationship.getStartNode()).isEqualTo(start);
+            assertThat(coreAPIRelationship.getEndNode()).isEqualTo(end);
         }
     }
 
-    private static VirtualNodeValue[] asNodeValues( Node... nodes )
-    {
-        return Arrays.stream( nodes ).map( ValueUtils::fromNodeEntity ).toArray( VirtualNodeValue[]::new );
+    private static VirtualNodeValue[] asNodeValues(Node... nodes) {
+        return Arrays.stream(nodes).map(ValueUtils::fromNodeEntity).toArray(VirtualNodeValue[]::new);
     }
 
-    private static VirtualRelationshipValue[] asRelationshipsValues( Relationship... relationships )
-    {
-        return Arrays.stream( relationships ).map( ValueUtils::fromRelationshipEntity )
-                .toArray( VirtualRelationshipValue[]::new );
+    private static VirtualRelationshipValue[] asRelationshipsValues(Relationship... relationships) {
+        return Arrays.stream(relationships)
+                .map(ValueUtils::fromRelationshipEntity)
+                .toArray(VirtualRelationshipValue[]::new);
     }
 }

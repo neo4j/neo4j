@@ -20,39 +20,32 @@
 package org.neo4j.bolt.v4.messaging;
 
 import java.io.IOException;
-
-import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
+import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.values.virtual.MapValue;
 
-public class DiscardMessageDecoder implements RequestMessageDecoder
-{
+public class DiscardMessageDecoder implements RequestMessageDecoder {
     private final BoltResponseHandler responseHandler;
 
-    public DiscardMessageDecoder( BoltResponseHandler responseHandler )
-    {
+    public DiscardMessageDecoder(BoltResponseHandler responseHandler) {
         this.responseHandler = responseHandler;
     }
 
     @Override
-    public int signature()
-    {
+    public int signature() {
         return DiscardMessage.SIGNATURE;
     }
 
     @Override
-    public BoltResponseHandler responseHandler()
-    {
+    public BoltResponseHandler responseHandler() {
         return responseHandler;
     }
 
     @Override
-    public RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException
-    {
+    public RequestMessage decode(Neo4jPack.Unpacker unpacker) throws IOException {
         MapValue meta = unpacker.unpackMap();
-        return new DiscardMessage( meta );
+        return new DiscardMessage(meta);
     }
 }
-

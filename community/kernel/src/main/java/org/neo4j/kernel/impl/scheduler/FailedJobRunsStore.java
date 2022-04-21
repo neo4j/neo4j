@@ -23,32 +23,26 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-
 import org.neo4j.scheduler.FailedJobRun;
 
-public class FailedJobRunsStore
-{
+public class FailedJobRunsStore {
     private final int sizeLimit;
     private final Deque<FailedJobRun> failedJobs;
 
-    public FailedJobRunsStore( int sizeLimit )
-    {
+    public FailedJobRunsStore(int sizeLimit) {
         this.sizeLimit = sizeLimit;
-        failedJobs = new ArrayDeque<>( sizeLimit );
+        failedJobs = new ArrayDeque<>(sizeLimit);
     }
 
-    public synchronized void add( FailedJobRun jobFailure )
-    {
-        if ( failedJobs.size() + 1 == sizeLimit )
-        {
+    public synchronized void add(FailedJobRun jobFailure) {
+        if (failedJobs.size() + 1 == sizeLimit) {
             failedJobs.removeFirst();
         }
 
-        failedJobs.add( jobFailure );
+        failedJobs.add(jobFailure);
     }
 
-    public synchronized List<FailedJobRun> getFailedJobRuns()
-    {
-        return new ArrayList<>( failedJobs );
+    public synchronized List<FailedJobRun> getFailedJobRuns() {
+        return new ArrayList<>(failedJobs);
     }
 }

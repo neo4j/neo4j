@@ -27,27 +27,24 @@ import java.nio.file.Path;
  * This exception is still an {@link IOException}, but a specific subclass of it as to make possible
  * special handling.
  */
-public class IncompleteLogHeaderException extends IOException
-{
-    public IncompleteLogHeaderException( Path file, int readSize, int expectedSize )
-    {
-        super( template( file, readSize, expectedSize ) );
+public class IncompleteLogHeaderException extends IOException {
+    public IncompleteLogHeaderException(Path file, int readSize, int expectedSize) {
+        super(template(file, readSize, expectedSize));
     }
 
-    public IncompleteLogHeaderException( int readSize, int expectedSize )
-    {
-        super( template( null, readSize, expectedSize ) );
+    public IncompleteLogHeaderException(int readSize, int expectedSize) {
+        super(template(null, readSize, expectedSize));
     }
 
-    private static String template( Path file, int readSize, int expectedSize )
-    {
-        StringBuilder builder = new StringBuilder( "Unable to read log version and last committed tx" );
-        if ( file != null )
-        {
-            builder.append( " from '" ).append( file.toAbsolutePath() ).append( '\'' );
+    private static String template(Path file, int readSize, int expectedSize) {
+        StringBuilder builder = new StringBuilder("Unable to read log version and last committed tx");
+        if (file != null) {
+            builder.append(" from '").append(file.toAbsolutePath()).append('\'');
         }
-        builder.append( ". Was only able to read " ).append( readSize ).append( " bytes, but was expecting " )
-               .append( expectedSize );
+        builder.append(". Was only able to read ")
+                .append(readSize)
+                .append(" bytes, but was expecting ")
+                .append(expectedSize);
         return builder.toString();
     }
 }

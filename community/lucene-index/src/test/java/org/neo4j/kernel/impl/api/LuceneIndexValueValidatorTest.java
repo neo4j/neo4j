@@ -19,17 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.apache.commons.lang3.RandomUtils;
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptors;
-import org.neo4j.kernel.api.index.IndexValueValidator;
-import org.neo4j.values.storable.TextArray;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
-
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,70 +27,75 @@ import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_
 import static org.neo4j.kernel.impl.api.LuceneIndexValueValidator.MAX_TERM_LENGTH;
 import static org.neo4j.values.storable.Values.of;
 
-class LuceneIndexValueValidatorTest
-{
-    private static final IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 1 ) ).withName( "test" ).materialise( 1 );
-    private static final IndexValueValidator VALIDATOR = new LuceneIndexValueValidator( descriptor, SIMPLE_TOKEN_LOOKUP );
+import org.apache.commons.lang3.RandomUtils;
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.kernel.api.index.IndexValueValidator;
+import org.neo4j.values.storable.TextArray;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
+
+class LuceneIndexValueValidatorTest {
+    private static final IndexDescriptor descriptor = IndexPrototype.forSchema(SchemaDescriptors.forLabel(1, 1))
+            .withName("test")
+            .materialise(1);
+    private static final IndexValueValidator VALIDATOR = new LuceneIndexValueValidator(descriptor, SIMPLE_TOKEN_LOOKUP);
     private static final long ENTITY_ID = 42;
 
     @Test
-    void tooLongArrayIsNotAllowed()
-    {
-        IllegalArgumentException iae = assertThrows( IllegalArgumentException.class, () -> {
-            TextArray largeArray = Values.stringArray( randomAlphabetic( MAX_TERM_LENGTH ), randomAlphabetic( MAX_TERM_LENGTH ) );
-            VALIDATOR.validate( ENTITY_ID, largeArray );
-        } );
-        assertThat( iae.getMessage() ).contains( "Property value is too large to index" );
+    void tooLongArrayIsNotAllowed() {
+        IllegalArgumentException iae = assertThrows(IllegalArgumentException.class, () -> {
+            TextArray largeArray =
+                    Values.stringArray(randomAlphabetic(MAX_TERM_LENGTH), randomAlphabetic(MAX_TERM_LENGTH));
+            VALIDATOR.validate(ENTITY_ID, largeArray);
+        });
+        assertThat(iae.getMessage()).contains("Property value is too large to index");
     }
 
     @Test
-    void stringOverExceedLimitNotAllowed()
-    {
+    void stringOverExceedLimitNotAllowed() {
         int length = MAX_TERM_LENGTH + 1;
-        IllegalArgumentException iae =
-                assertThrows( IllegalArgumentException.class, () -> VALIDATOR.validate( ENTITY_ID, values( randomAlphabetic( length ) ) ) );
-        assertThat( iae.getMessage() ).contains( "Property value is too large to index" );
+        IllegalArgumentException iae = assertThrows(
+                IllegalArgumentException.class, () -> VALIDATOR.validate(ENTITY_ID, values(randomAlphabetic(length))));
+        assertThat(iae.getMessage()).contains("Property value is too large to index");
     }
 
     @Test
-    void nullIsNotAllowed()
-    {
-        IllegalArgumentException iae = assertThrows( IllegalArgumentException.class, () -> VALIDATOR.validate( ENTITY_ID, values( (Object) null ) ) );
-        assertEquals( iae.getMessage(), "Null value" );
+    void nullIsNotAllowed() {
+        IllegalArgumentException iae = assertThrows(
+                IllegalArgumentException.class, () -> VALIDATOR.validate(ENTITY_ID, values((Object) null)));
+        assertEquals(iae.getMessage(), "Null value");
     }
 
     @Test
-    void numberIsValidValue()
-    {
-        VALIDATOR.validate( ENTITY_ID, values( 5 ) );
-        VALIDATOR.validate( ENTITY_ID, values( 5.0d ) );
-        VALIDATOR.validate( ENTITY_ID, values( 5.0f ) );
-        VALIDATOR.validate( ENTITY_ID, values( 5L ) );
+    void numberIsValidValue() {
+        VALIDATOR.validate(ENTITY_ID, values(5));
+        VALIDATOR.validate(ENTITY_ID, values(5.0d));
+        VALIDATOR.validate(ENTITY_ID, values(5.0f));
+        VALIDATOR.validate(ENTITY_ID, values(5L));
     }
 
     @Test
-    void shortArrayIsValidValue()
-    {
-        VALIDATOR.validate( ENTITY_ID, values( (Object) new long[] {1, 2, 3} ) );
-        VALIDATOR.validate( ENTITY_ID, values( (Object) RandomUtils.nextBytes( 200 ) ) );
+    void shortArrayIsValidValue() {
+        VALIDATOR.validate(ENTITY_ID, values((Object) new long[] {1, 2, 3}));
+        VALIDATOR.validate(ENTITY_ID, values((Object) RandomUtils.nextBytes(200)));
     }
 
     @Test
-    void shortStringIsValidValue()
-    {
-        VALIDATOR.validate( ENTITY_ID, values( randomAlphabetic( 5 ) ) );
-        VALIDATOR.validate( ENTITY_ID, values( randomAlphabetic( 10 ) ) );
-        VALIDATOR.validate( ENTITY_ID, values( randomAlphabetic( 250 ) ) );
-        VALIDATOR.validate( ENTITY_ID, values( randomAlphabetic( 450 ) ) );
-        VALIDATOR.validate( ENTITY_ID, values( randomAlphabetic( MAX_TERM_LENGTH ) ) );
+    void shortStringIsValidValue() {
+        VALIDATOR.validate(ENTITY_ID, values(randomAlphabetic(5)));
+        VALIDATOR.validate(ENTITY_ID, values(randomAlphabetic(10)));
+        VALIDATOR.validate(ENTITY_ID, values(randomAlphabetic(250)));
+        VALIDATOR.validate(ENTITY_ID, values(randomAlphabetic(450)));
+        VALIDATOR.validate(ENTITY_ID, values(randomAlphabetic(MAX_TERM_LENGTH)));
     }
 
-    private static Value[] values( Object... objects )
-    {
+    private static Value[] values(Object... objects) {
         Value[] array = new Value[objects.length];
-        for ( int i = 0; i < objects.length; i++ )
-        {
-            array[i] = of( objects[i] );
+        for (int i = 0; i < objects.length; i++) {
+            array[i] = of(objects[i]);
         }
         return array;
     }

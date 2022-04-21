@@ -19,13 +19,6 @@
  */
 package org.neo4j.values.storable;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-
-import org.neo4j.exceptions.CypherTypeException;
-import org.neo4j.values.virtual.ListValue;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
@@ -45,99 +38,97 @@ import static org.neo4j.values.storable.ValueRepresentation.UTF8_TEXT;
 import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
-class ValueRepresentationTest
-{
+import java.util.Arrays;
+import org.junit.jupiter.api.Test;
+import org.neo4j.exceptions.CypherTypeException;
+import org.neo4j.values.virtual.ListValue;
+
+class ValueRepresentationTest {
 
     @Test
-    void shouldCoerceNumbers()
-    {
-        //8 bit numbers
-        assertEquals( INT8, INT8.coerce( INT8 ) );
-        assertEquals( INT16, INT8.coerce( INT16 ) );
-        assertEquals( INT32, INT8.coerce( INT32 ) );
-        assertEquals( INT64, INT8.coerce( INT64 ) );
-        assertEquals( FLOAT32, INT8.coerce( FLOAT32 ) );
-        assertEquals( FLOAT64, INT8.coerce( FLOAT64 ) );
-        assertEquals( ValueRepresentation.UNKNOWN, INT8.coerce( LOCAL_TIME ) );
+    void shouldCoerceNumbers() {
+        // 8 bit numbers
+        assertEquals(INT8, INT8.coerce(INT8));
+        assertEquals(INT16, INT8.coerce(INT16));
+        assertEquals(INT32, INT8.coerce(INT32));
+        assertEquals(INT64, INT8.coerce(INT64));
+        assertEquals(FLOAT32, INT8.coerce(FLOAT32));
+        assertEquals(FLOAT64, INT8.coerce(FLOAT64));
+        assertEquals(ValueRepresentation.UNKNOWN, INT8.coerce(LOCAL_TIME));
 
-        //16 bit integers
-        assertEquals( INT16, INT16.coerce( INT8 ) );
-        assertEquals( INT16, INT16.coerce( INT16 ) );
-        assertEquals( INT32, INT16.coerce( INT32 ) );
-        assertEquals( INT64, INT16.coerce( INT64 ) );
-        assertEquals( FLOAT32, INT16.coerce( FLOAT32 ) );
-        assertEquals( FLOAT64, INT16.coerce( FLOAT64 ) );
-        assertEquals( ValueRepresentation.UNKNOWN, INT16.coerce( LOCAL_TIME ) );
+        // 16 bit integers
+        assertEquals(INT16, INT16.coerce(INT8));
+        assertEquals(INT16, INT16.coerce(INT16));
+        assertEquals(INT32, INT16.coerce(INT32));
+        assertEquals(INT64, INT16.coerce(INT64));
+        assertEquals(FLOAT32, INT16.coerce(FLOAT32));
+        assertEquals(FLOAT64, INT16.coerce(FLOAT64));
+        assertEquals(ValueRepresentation.UNKNOWN, INT16.coerce(LOCAL_TIME));
 
-        //32 bit integers
-        assertEquals( INT32, INT32.coerce( INT8 ) );
-        assertEquals( INT32, INT32.coerce( INT16 ) );
-        assertEquals( INT32, INT32.coerce( INT32 ) );
-        assertEquals( INT64, INT32.coerce( INT64 ) );
-        assertEquals( FLOAT64, INT32.coerce( FLOAT32 ) );
-        assertEquals( FLOAT64, INT32.coerce( FLOAT64 ) );
-        assertEquals( ValueRepresentation.UNKNOWN, INT32.coerce( LOCAL_TIME ) );
+        // 32 bit integers
+        assertEquals(INT32, INT32.coerce(INT8));
+        assertEquals(INT32, INT32.coerce(INT16));
+        assertEquals(INT32, INT32.coerce(INT32));
+        assertEquals(INT64, INT32.coerce(INT64));
+        assertEquals(FLOAT64, INT32.coerce(FLOAT32));
+        assertEquals(FLOAT64, INT32.coerce(FLOAT64));
+        assertEquals(ValueRepresentation.UNKNOWN, INT32.coerce(LOCAL_TIME));
 
-        //64 bit integers
-        assertEquals( INT64, INT64.coerce( INT8 ) );
-        assertEquals( INT64, INT64.coerce( INT16 ) );
-        assertEquals( INT64, INT64.coerce( INT32 ) );
-        assertEquals( INT64, INT64.coerce( INT64 ) );
-        assertEquals( FLOAT64, INT64.coerce( FLOAT32 ) );
-        assertEquals( FLOAT64, INT64.coerce( FLOAT64 ) );
-        assertEquals( ValueRepresentation.UNKNOWN, INT64.coerce( LOCAL_TIME ) );
+        // 64 bit integers
+        assertEquals(INT64, INT64.coerce(INT8));
+        assertEquals(INT64, INT64.coerce(INT16));
+        assertEquals(INT64, INT64.coerce(INT32));
+        assertEquals(INT64, INT64.coerce(INT64));
+        assertEquals(FLOAT64, INT64.coerce(FLOAT32));
+        assertEquals(FLOAT64, INT64.coerce(FLOAT64));
+        assertEquals(ValueRepresentation.UNKNOWN, INT64.coerce(LOCAL_TIME));
 
-        //32 bit floats
-        assertEquals( FLOAT32, FLOAT32.coerce( INT8 ) );
-        assertEquals( FLOAT32, FLOAT32.coerce( INT16 ) );
-        assertEquals( FLOAT64, FLOAT32.coerce( INT32 ) );
-        assertEquals( FLOAT64, FLOAT32.coerce( INT64 ) );
-        assertEquals( FLOAT32, FLOAT32.coerce( FLOAT32 ) );
-        assertEquals( FLOAT64, FLOAT32.coerce( FLOAT64 ) );
-        assertEquals( ValueRepresentation.UNKNOWN, FLOAT32.coerce( LOCAL_TIME ) );
+        // 32 bit floats
+        assertEquals(FLOAT32, FLOAT32.coerce(INT8));
+        assertEquals(FLOAT32, FLOAT32.coerce(INT16));
+        assertEquals(FLOAT64, FLOAT32.coerce(INT32));
+        assertEquals(FLOAT64, FLOAT32.coerce(INT64));
+        assertEquals(FLOAT32, FLOAT32.coerce(FLOAT32));
+        assertEquals(FLOAT64, FLOAT32.coerce(FLOAT64));
+        assertEquals(ValueRepresentation.UNKNOWN, FLOAT32.coerce(LOCAL_TIME));
 
-        //64 bit floats
-        assertEquals( FLOAT64, FLOAT64.coerce( INT8 ) );
-        assertEquals( FLOAT64, FLOAT64.coerce( INT16 ) );
-        assertEquals( FLOAT64, FLOAT64.coerce( INT32 ) );
-        assertEquals( FLOAT64, FLOAT64.coerce( INT64 ) );
-        assertEquals( FLOAT64, FLOAT64.coerce( FLOAT32 ) );
-        assertEquals( FLOAT64, FLOAT64.coerce( FLOAT64 ) );
-        assertEquals( ValueRepresentation.UNKNOWN, FLOAT64.coerce( LOCAL_TIME ) );
+        // 64 bit floats
+        assertEquals(FLOAT64, FLOAT64.coerce(INT8));
+        assertEquals(FLOAT64, FLOAT64.coerce(INT16));
+        assertEquals(FLOAT64, FLOAT64.coerce(INT32));
+        assertEquals(FLOAT64, FLOAT64.coerce(INT64));
+        assertEquals(FLOAT64, FLOAT64.coerce(FLOAT32));
+        assertEquals(FLOAT64, FLOAT64.coerce(FLOAT64));
+        assertEquals(ValueRepresentation.UNKNOWN, FLOAT64.coerce(LOCAL_TIME));
     }
 
     @Test
-    void shouldCoerceText()
-    {
-        assertEquals( UTF8_TEXT, UTF8_TEXT.coerce( UTF8_TEXT ) );
-        assertEquals( UTF16_TEXT, UTF8_TEXT.coerce( UTF16_TEXT ) );
-        assertEquals( UTF16_TEXT, UTF16_TEXT.coerce( UTF8_TEXT ) );
-        assertEquals( UTF16_TEXT, UTF16_TEXT.coerce( UTF16_TEXT ) );
+    void shouldCoerceText() {
+        assertEquals(UTF8_TEXT, UTF8_TEXT.coerce(UTF8_TEXT));
+        assertEquals(UTF16_TEXT, UTF8_TEXT.coerce(UTF16_TEXT));
+        assertEquals(UTF16_TEXT, UTF16_TEXT.coerce(UTF8_TEXT));
+        assertEquals(UTF16_TEXT, UTF16_TEXT.coerce(UTF16_TEXT));
     }
 
     @Test
-    void shouldCoerceWithAnything()
-    {
-        Arrays.stream( ValueRepresentation.values() ).forEach( representation ->
-        {
-            assertEquals( representation, ANYTHING.coerce( representation ) );
-            assertEquals( representation, representation.coerce( ANYTHING ) );
-        } );
+    void shouldCoerceWithAnything() {
+        Arrays.stream(ValueRepresentation.values()).forEach(representation -> {
+            assertEquals(representation, ANYTHING.coerce(representation));
+            assertEquals(representation, representation.coerce(ANYTHING));
+        });
     }
 
     @Test
-    void shouldFailToCreateArrayOfPointsWithDifferentCRS()
-    {
+    void shouldFailToCreateArrayOfPointsWithDifferentCRS() {
         // given
-        ListValue points = list( pointValue( CARTESIAN, 1.0, 1.0 ), pointValue( WGS_84, 1.0, 1.0 ) );
-        assertThrows( CypherTypeException.class, () -> GEOMETRY.arrayOf( points ) );
+        ListValue points = list(pointValue(CARTESIAN, 1.0, 1.0), pointValue(WGS_84, 1.0, 1.0));
+        assertThrows(CypherTypeException.class, () -> GEOMETRY.arrayOf(points));
     }
 
     @Test
-    void shouldFailToCreateArrayOfPointsWithDifferentDimension()
-    {
+    void shouldFailToCreateArrayOfPointsWithDifferentDimension() {
         // given
-        ListValue points = list( pointValue( CARTESIAN, 1.0, 1.0 ), pointValue( CARTESIAN_3D, 1.0, 1.0, 1.0 ) );
-        assertThrows( CypherTypeException.class, () -> GEOMETRY.arrayOf( points ) );
+        ListValue points = list(pointValue(CARTESIAN, 1.0, 1.0), pointValue(CARTESIAN_3D, 1.0, 1.0, 1.0));
+        assertThrows(CypherTypeException.class, () -> GEOMETRY.arrayOf(points));
     }
 }

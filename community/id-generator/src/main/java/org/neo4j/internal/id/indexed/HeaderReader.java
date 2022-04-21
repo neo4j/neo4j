@@ -19,11 +19,10 @@
  */
 package org.neo4j.internal.id.indexed;
 
-import java.nio.ByteBuffer;
-
-import org.neo4j.index.internal.gbptree.Header;
-
 import static java.lang.String.format;
+
+import java.nio.ByteBuffer;
+import org.neo4j.index.internal.gbptree.Header;
 
 /**
  * {@link Header.Reader} capable of reading header of an {@link IndexedIdGenerator}. After read correctly the header data
@@ -31,16 +30,14 @@ import static java.lang.String.format;
  *
  * @see HeaderWriter
  */
-public class HeaderReader implements Header.Reader
-{
+public class HeaderReader implements Header.Reader {
     long highId;
     long highestWrittenId;
     long generation;
     int idsPerEntry;
 
     @Override
-    public void read( ByteBuffer headerBytes )
-    {
+    public void read(ByteBuffer headerBytes) {
         this.highId = headerBytes.getLong();
         this.highestWrittenId = headerBytes.getLong();
         this.generation = headerBytes.getLong();
@@ -48,8 +45,7 @@ public class HeaderReader implements Header.Reader
     }
 
     @Override
-    public String toString()
-    {
-        return format( "High-ID:%d, Highest-ID written:%d, Generation:%d", highId, highestWrittenId, generation );
+    public String toString() {
+        return format("High-ID:%d, Highest-ID written:%d, Generation:%d", highId, highestWrittenId, generation);
     }
 }

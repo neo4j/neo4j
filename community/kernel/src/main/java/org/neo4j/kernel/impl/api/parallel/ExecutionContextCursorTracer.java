@@ -23,39 +23,44 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.CursorStatisticSnapshot;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 
-public class ExecutionContextCursorTracer extends DefaultPageCursorTracer
-{
+public class ExecutionContextCursorTracer extends DefaultPageCursorTracer {
     private volatile boolean completed;
 
-    ExecutionContextCursorTracer( PageCacheTracer pageCacheTracer, String tag )
-    {
-        super( pageCacheTracer, tag );
+    ExecutionContextCursorTracer(PageCacheTracer pageCacheTracer, String tag) {
+        super(pageCacheTracer, tag);
     }
 
     @Override
-    public void reportEvents()
-    {
-        throw new UnsupportedOperationException( "Please report events using merge snapshots." );
+    public void reportEvents() {
+        throw new UnsupportedOperationException("Please report events using merge snapshots.");
     }
 
-    // We mark context as completed here since we want to capture all the events accumulated in the tracer for another consumer thread.
+    // We mark context as completed here since we want to capture all the events accumulated in the tracer for another
+    // consumer thread.
     // That in ensued by waiting for completed flag by consumer thread.
-    public void complete()
-    {
+    public void complete() {
         completed = true;
     }
 
-    CursorStatisticSnapshot snapshot()
-    {
-        CursorStatisticSnapshot snapshot =
-                new CursorStatisticSnapshot( super.pins(), super.unpins(), super.hits(), super.faults(), super.noFaults(), super.failedFaults(),
-                        super.bytesRead(), super.bytesWritten(), super.evictions(), super.evictionExceptions(), super.flushes(), super.merges() );
+    CursorStatisticSnapshot snapshot() {
+        CursorStatisticSnapshot snapshot = new CursorStatisticSnapshot(
+                super.pins(),
+                super.unpins(),
+                super.hits(),
+                super.faults(),
+                super.noFaults(),
+                super.failedFaults(),
+                super.bytesRead(),
+                super.bytesWritten(),
+                super.evictions(),
+                super.evictionExceptions(),
+                super.flushes(),
+                super.merges());
         reset();
         return snapshot;
     }
 
-    public boolean isCompleted()
-    {
+    public boolean isCompleted() {
         return completed;
     }
 }

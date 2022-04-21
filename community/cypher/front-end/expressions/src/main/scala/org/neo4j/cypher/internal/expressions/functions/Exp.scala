@@ -23,7 +23,12 @@ case object Exp extends Function {
   def name = "exp"
 
   override val signatures = Vector(
-    TypeSignature(this, CTFloat, CTFloat,
-      "Returns e^n, where e is the base of the natural logarithm, and n is the value of the argument expression.", Category.LOGARITHMIC)
+    TypeSignature(
+      this,
+      CTFloat,
+      CTFloat,
+      "Returns e^n, where e is the base of the natural logarithm, and n is the value of the argument expression.",
+      Category.LOGARITHMIC
+    )
   )
 }

@@ -52,7 +52,9 @@ case object IndependenceCombiner extends SelectivityCombiner {
    * We then implement this formula with reduce.
    */
   override def orTogetherSelectivities(selectivities: Iterable[Selectivity]): Option[Selectivity] = {
-    selectivities.map(_.factor).reduceLeftOption((result, value) => result + value - result * value).flatMap(Selectivity.of)
+    selectivities.map(_.factor).reduceLeftOption((result, value) => result + value - result * value).flatMap(
+      Selectivity.of
+    )
   }
 }
 

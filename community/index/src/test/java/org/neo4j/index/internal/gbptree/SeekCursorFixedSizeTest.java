@@ -19,22 +19,21 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.apache.commons.lang3.mutable.MutableLong;
-
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
-class SeekCursorFixedSizeTest extends SeekCursorTestBase<MutableLong,MutableLong>
-{
+import org.apache.commons.lang3.mutable.MutableLong;
+
+class SeekCursorFixedSizeTest extends SeekCursorTestBase<MutableLong, MutableLong> {
     @Override
-    TestLayout<MutableLong,MutableLong> getLayout()
-    {
+    TestLayout<MutableLong, MutableLong> getLayout() {
         return longLayout().build();
     }
 
     @Override
-    TreeNode<MutableLong,MutableLong> getTreeNode( int pageSize, TestLayout<MutableLong,MutableLong> layout,
-            OffloadStore<MutableLong,MutableLong> offloadStore )
-    {
-        return new TreeNodeFixedSize<>( pageSize, layout );
+    TreeNode<MutableLong, MutableLong> getTreeNode(
+            int pageSize,
+            TestLayout<MutableLong, MutableLong> layout,
+            OffloadStore<MutableLong, MutableLong> offloadStore) {
+        return new TreeNodeFixedSize<>(pageSize, layout);
     }
 }

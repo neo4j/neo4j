@@ -32,8 +32,7 @@ import org.neo4j.annotations.api.PublicApi;
  * </ul>
  */
 @PublicApi
-public enum StringSearchMode
-{
+public enum StringSearchMode {
     /**
      * The value has to match the template exactly.
      */

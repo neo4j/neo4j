@@ -25,32 +25,27 @@ import static org.neo4j.test.ports.PortConstants.EPHEMERAL_PORT_MAXIMUM;
  * Port provider that relies on state in a single JVM. Not suitable for parallel test execution (as in, several JVM
  * processes executing tests). _Is_ suitable for multi-threaded execution.
  */
-public class SimplePortProvider implements PortProvider
-{
+public class SimplePortProvider implements PortProvider {
     private final PortProbe portProbe;
 
     private int currentPort;
 
-    public SimplePortProvider( PortProbe portProbe, int initialPort )
-    {
+    public SimplePortProvider(PortProbe portProbe, int initialPort) {
         this.portProbe = portProbe;
 
         this.currentPort = initialPort;
     }
 
     @Override
-    public synchronized int getNextFreePort( String ignored )
-    {
-        while ( currentPort <= EPHEMERAL_PORT_MAXIMUM )
-        {
-            if ( !portProbe.isOccupied( currentPort ) )
-            {
+    public synchronized int getNextFreePort(String ignored) {
+        while (currentPort <= EPHEMERAL_PORT_MAXIMUM) {
+            if (!portProbe.isOccupied(currentPort)) {
                 return currentPort++;
             }
 
             currentPort++;
         }
 
-        throw new IllegalStateException( "There are no more ports available" );
+        throw new IllegalStateException("There are no more ports available");
     }
 }

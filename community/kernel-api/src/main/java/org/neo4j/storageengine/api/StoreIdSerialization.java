@@ -20,18 +20,12 @@
 package org.neo4j.storageengine.api;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
-import org.neo4j.io.memory.HeapScopedBuffer;
-import org.neo4j.io.memory.ScopedBuffer;
-import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 
-class StoreIdSerialization
-{
+class StoreIdSerialization {
     /**
      * There is currently only one version of the serialisation format and hopefully it will stay like that.
      * The version existence is there only for future-proofness.
@@ -39,48 +33,44 @@ class StoreIdSerialization
      */
     private static final byte VERSION = 0x01;
 
-    static void serialize( StoreId storeId, WritableChannel channel ) throws IOException
-    {
-        byte[] storageEngine = storeId.getStorageEngineName().getBytes( StandardCharsets.UTF_8 );
-        byte[] formatFamily = storeId.getFormatFamilyName().getBytes( StandardCharsets.UTF_8 );
-        Preconditions.requireBetween( storageEngine.length, 0, 256 );
-        Preconditions.requireBetween( formatFamily.length, 0, 256 );
-        Preconditions.requireBetween( storeId.getMajorVersion(), 0, 256 );
-        Preconditions.requireBetween( storeId.getMinorVersion(), 0, 256 );
+    static void serialize(StoreId storeId, WritableChannel channel) throws IOException {
+        byte[] storageEngine = storeId.getStorageEngineName().getBytes(StandardCharsets.UTF_8);
+        byte[] formatFamily = storeId.getFormatFamilyName().getBytes(StandardCharsets.UTF_8);
+        Preconditions.requireBetween(storageEngine.length, 0, 256);
+        Preconditions.requireBetween(formatFamily.length, 0, 256);
+        Preconditions.requireBetween(storeId.getMajorVersion(), 0, 256);
+        Preconditions.requireBetween(storeId.getMinorVersion(), 0, 256);
 
-        channel.put( VERSION );
-        channel.putLong( storeId.getCreationTime() );
-        channel.putLong( storeId.getRandom() );
-        channel.put( (byte) storageEngine.length );
-        channel.put( storageEngine, storageEngine.length );
-        channel.put( (byte) formatFamily.length );
-        channel.put( formatFamily, storageEngine.length );
-        channel.put( (byte) storeId.getMajorVersion() );
-        channel.put( (byte) storeId.getMinorVersion() );
+        channel.put(VERSION);
+        channel.putLong(storeId.getCreationTime());
+        channel.putLong(storeId.getRandom());
+        channel.put((byte) storageEngine.length);
+        channel.put(storageEngine, storageEngine.length);
+        channel.put((byte) formatFamily.length);
+        channel.put(formatFamily, storageEngine.length);
+        channel.put((byte) storeId.getMajorVersion());
+        channel.put((byte) storeId.getMinorVersion());
     }
 
-    static StoreId deserialize( ReadableChannel channel ) throws IOException
-    {
+    static StoreId deserialize(ReadableChannel channel) throws IOException {
         byte version = channel.get();
-        if ( version != VERSION )
-        {
-            throw new IllegalArgumentException( "Unknown serialization format version: " + version );
+        if (version != VERSION) {
+            throw new IllegalArgumentException("Unknown serialization format version: " + version);
         }
 
         long creationTime = channel.getLong();
         long randomId = channel.getLong();
-        String storageEngine = deserializeString( channel );
-        String formatFamily = deserializeString( channel );
+        String storageEngine = deserializeString(channel);
+        String formatFamily = deserializeString(channel);
         int majorVersion = channel.get() & 0xFF;
         int minorVersion = channel.get() & 0xFF;
-        return new StoreId( creationTime, randomId, storageEngine, formatFamily, majorVersion, minorVersion );
+        return new StoreId(creationTime, randomId, storageEngine, formatFamily, majorVersion, minorVersion);
     }
 
-    static String deserializeString( ReadableChannel channel ) throws IOException
-    {
+    static String deserializeString(ReadableChannel channel) throws IOException {
         int length = channel.get() & 0xFF;
         byte[] bytes = new byte[length];
-        channel.get( bytes, length );
-        return new String( bytes, StandardCharsets.UTF_8 );
+        channel.get(bytes, length);
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 }

@@ -19,87 +19,74 @@
  */
 package org.neo4j.server.startup;
 
-import picocli.CommandLine;
-import picocli.CommandLine.Option;
+import static org.neo4j.server.startup.Bootloader.ARG_EXPAND_COMMANDS;
 
 import java.io.PrintWriter;
 import java.util.concurrent.Callable;
+import picocli.CommandLine;
+import picocli.CommandLine.Option;
 
-import static org.neo4j.server.startup.Bootloader.ARG_EXPAND_COMMANDS;
-
-@CommandLine.Command( sortOptions = false )
-abstract class BootloaderCommand
-{
+@CommandLine.Command(sortOptions = false)
+abstract class BootloaderCommand {
     protected final BootloaderContext ctx;
 
-    BootloaderCommand( BootloaderContext ctx )
-    {
+    BootloaderCommand(BootloaderContext ctx) {
         this.ctx = ctx;
     }
 
-    protected abstract static class BaseCommand implements Callable<Integer>, VerboseCommand
-    {
+    protected abstract static class BaseCommand implements Callable<Integer>, VerboseCommand {
         @CommandLine.ParentCommand
         protected BootloaderCommand bootloader;
 
-        @Option( names = ARG_VERBOSE, description = "Prints additional information." )
+        @Option(names = ARG_VERBOSE, description = "Prints additional information.")
         boolean verbose;
 
-        Bootloader getBootloader( boolean expandCommands )
-        {
-            bootloader.ctx.init( expandCommands, verbose );
-            return new Bootloader( bootloader.ctx );
+        Bootloader getBootloader(boolean expandCommands) {
+            bootloader.ctx.init(expandCommands, verbose);
+            return new Bootloader(bootloader.ctx);
         }
 
         @Override
-        public boolean verbose()
-        {
+        public boolean verbose() {
             return verbose;
         }
     }
 
-    protected abstract static class BootCommand extends BaseCommand
-    {
+    protected abstract static class BootCommand extends BaseCommand {
         @CommandLine.Mixin
         protected StartOptions startOptions;
 
-        static class StartOptions
-        {
-            @Option( names = ARG_EXPAND_COMMANDS, description = "Allow command expansion in config value evaluation." )
+        static class StartOptions {
+            @Option(names = ARG_EXPAND_COMMANDS, description = "Allow command expansion in config value evaluation.")
             boolean expandCommands;
         }
     }
 
-    protected static CommandLine addDefaultOptions( CommandLine command, BootloaderContext ctx )
-    {
-        return command.setCaseInsensitiveEnumValuesAllowed( true )
-                .setExecutionExceptionHandler( new ExceptionHandler( ctx ) )
-                .setOut( new PrintWriter( ctx.out, true ) )
-                .setErr( new PrintWriter( ctx.err, true ) );
+    protected static CommandLine addDefaultOptions(CommandLine command, BootloaderContext ctx) {
+        return command.setCaseInsensitiveEnumValuesAllowed(true)
+                .setExecutionExceptionHandler(new ExceptionHandler(ctx))
+                .setOut(new PrintWriter(ctx.out, true))
+                .setErr(new PrintWriter(ctx.err, true));
     }
 
-    private static class ExceptionHandler implements CommandLine.IExecutionExceptionHandler
-    {
+    private static class ExceptionHandler implements CommandLine.IExecutionExceptionHandler {
         private final BootloaderContext ctx;
-        ExceptionHandler( BootloaderContext ctx )
-        {
+
+        ExceptionHandler(BootloaderContext ctx) {
             this.ctx = ctx;
         }
 
         @Override
-        public int handleExecutionException( Exception exception, CommandLine commandLine, CommandLine.ParseResult parseResult )
-        {
-            if ( commandLine.getCommand() instanceof VerboseCommand && !((VerboseCommand) commandLine.getCommand()).verbose() )
-            {
-                ctx.err.println( exception.getMessage() );
-                ctx.err.println( "Run with '--verbose' for a more detailed error message.");
+        public int handleExecutionException(
+                Exception exception, CommandLine commandLine, CommandLine.ParseResult parseResult) {
+            if (commandLine.getCommand() instanceof VerboseCommand
+                    && !((VerboseCommand) commandLine.getCommand()).verbose()) {
+                ctx.err.println(exception.getMessage());
+                ctx.err.println("Run with '--verbose' for a more detailed error message.");
+            } else {
+                exception.printStackTrace(ctx.err);
             }
-            else
-            {
-                exception.printStackTrace( ctx.err );
-            }
-            if ( exception instanceof BootFailureException failure )
-            {
+            if (exception instanceof BootFailureException failure) {
                 return failure.getExitCode();
             }
             return commandLine.getCommandSpec().exitCodeOnExecutionException();

@@ -28,8 +28,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.monitoring.VmPauseMonitor;
 import org.neo4j.scheduler.JobScheduler;
 
-public class VmPauseMonitorComponent extends LifecycleAdapter
-{
+public class VmPauseMonitorComponent extends LifecycleAdapter {
     private final Config config;
     private final InternalLog log;
     private final JobScheduler jobScheduler;
@@ -38,33 +37,30 @@ public class VmPauseMonitorComponent extends LifecycleAdapter
     private final Monitors globalMonitors;
     private volatile VmPauseMonitor vmPauseMonitor;
 
-    public VmPauseMonitorComponent( Config config, InternalLog log, JobScheduler jobScheduler, Monitors globalMonitors )
-    {
+    public VmPauseMonitorComponent(Config config, InternalLog log, JobScheduler jobScheduler, Monitors globalMonitors) {
         this.config = config;
         this.log = log;
         this.jobScheduler = jobScheduler;
         this.globalMonitors = globalMonitors;
-        monitor = globalMonitors.newMonitor( VmPauseMonitor.Monitor.class );
-        loggingVmPauseMonitor = new LoggingVmPauseMonitor( log );
+        monitor = globalMonitors.newMonitor(VmPauseMonitor.Monitor.class);
+        loggingVmPauseMonitor = new LoggingVmPauseMonitor(log);
     }
 
     @Override
-    public void start()
-    {
-        globalMonitors.addMonitorListener( loggingVmPauseMonitor );
+    public void start() {
+        globalMonitors.addMonitorListener(loggingVmPauseMonitor);
         vmPauseMonitor = new VmPauseMonitor(
-                config.get( GraphDatabaseInternalSettings.vm_pause_monitor_measurement_duration ),
-                config.get( GraphDatabaseInternalSettings.vm_pause_monitor_stall_alert_threshold ),
-                monitor, jobScheduler
-        );
+                config.get(GraphDatabaseInternalSettings.vm_pause_monitor_measurement_duration),
+                config.get(GraphDatabaseInternalSettings.vm_pause_monitor_stall_alert_threshold),
+                monitor,
+                jobScheduler);
         vmPauseMonitor.start();
     }
 
     @Override
-    public void stop()
-    {
+    public void stop() {
         vmPauseMonitor.stop();
         vmPauseMonitor = null;
-        globalMonitors.removeMonitorListener( loggingVmPauseMonitor );
+        globalMonitors.removeMonitorListener(loggingVmPauseMonitor);
     }
 }

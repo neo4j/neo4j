@@ -33,8 +33,8 @@ import org.neo4j.values.storable.Values
  * https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
  */
 class StdevFunction(val value: Expression, val population: Boolean)
-  extends AggregationFunction
-  with NumericExpressionOnly {
+    extends AggregationFunction
+    with NumericExpressionOnly {
 
   def name: String = if (population) "STDEVP" else "STDEV"
 
@@ -44,22 +44,25 @@ class StdevFunction(val value: Expression, val population: Boolean)
   var m2: Double = 0.0
 
   override def result(state: QueryState): AnyValue = {
-    if(count < 2) {
+    if (count < 2) {
       Values.ZERO_FLOAT
     } else {
-      val variance = if (population) m2/count else m2/(count - 1)
+      val variance = if (population) m2 / count else m2 / (count - 1)
       Values.doubleValue(math.sqrt(variance))
     }
   }
 
   override def apply(data: ReadableRow, state: QueryState): Unit = {
-    actOnNumber(value(data, state), number => {
-      count += 1
-      val x = number.doubleValue()
-      val nextM = movingAvg + (x - movingAvg) / count
-      m2 += (x - movingAvg) * (x - nextM)
-      movingAvg = nextM
-    })
+    actOnNumber(
+      value(data, state),
+      number => {
+        count += 1
+        val x = number.doubleValue()
+        val nextM = movingAvg + (x - movingAvg) / count
+        m2 += (x - movingAvg) * (x - nextM)
+        movingAvg = nextM
+      }
+    )
   }
 }
 

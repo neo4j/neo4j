@@ -23,13 +23,16 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CantCompileQueryException
 
 class ExecutionModelTest extends CypherFunSuite {
+
   Seq(1, 2, 3, 4, 1000, 1024, 2047, 2048, 2049, 2051, 10000, 35274, 98666, 9999999, 20482047, 20482048).foreach {
     explicitBatchSize =>
       test(s"explicit batch size: $explicitBatchSize") {
         val executionModel = ExecutionModel.Batched.default
         val batchSize = executionModel.selectBatchSize(null, null, Some(explicitBatchSize))
         val drift = explicitBatchSize % batchSize
-        withClue(s"Explicit batch size $explicitBatchSize => Batch size $batchSize would drift by $drift:")(drift shouldEqual 0L)
+        withClue(s"Explicit batch size $explicitBatchSize => Batch size $batchSize would drift by $drift:")(
+          drift shouldEqual 0L
+        )
       }
   }
 
@@ -39,7 +42,9 @@ class ExecutionModelTest extends CypherFunSuite {
         val executionModel = ExecutionModel.Batched.default
         val batchSize = executionModel.selectBatchSize(null, null, Some(explicitBatchSize))
         val drift = explicitBatchSize % batchSize
-        withClue(s"Explicit batch size $explicitBatchSize => Batch size $batchSize would drift by $drift:")(drift should be < 8)
+        withClue(s"Explicit batch size $explicitBatchSize => Batch size $batchSize would drift by $drift:")(
+          drift should be < 8
+        )
       }
   }
 
@@ -49,14 +54,16 @@ class ExecutionModelTest extends CypherFunSuite {
         val executionModel = ExecutionModel.Batched.default
         val batchSize = executionModel.selectBatchSize(null, null, Some(explicitBatchSize))
         val drift = explicitBatchSize % batchSize
-        withClue(s"Explicit batch size $explicitBatchSize => Batch size $batchSize would drift by $drift:")(drift should be < executionModel.bigBatchSize.toLong)
+        withClue(s"Explicit batch size $explicitBatchSize => Batch size $batchSize would drift by $drift:")(
+          drift should be < executionModel.bigBatchSize.toLong
+        )
       }
   }
 
   Seq(0, -1, Long.MinValue).foreach { explicitBatchSize =>
     test(s"explicit batch size not supported: $explicitBatchSize") {
       val executionModel = ExecutionModel.Batched.default
-      a [CantCompileQueryException] should be thrownBy {
+      a[CantCompileQueryException] should be thrownBy {
         executionModel.selectBatchSize(null, null, Some(explicitBatchSize))
       }
     }

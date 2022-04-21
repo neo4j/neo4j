@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.apache.commons.lang3.StringUtils;
-import org.eclipse.collections.api.set.ImmutableSet;
-
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexConfigCompleter;
@@ -102,30 +100,31 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
  * {@link #getOnlineAccessor(IndexDescriptor, IndexSamplingConfig, TokenNameLookup, ImmutableSet) online accessor} to
  * write to the index.
  */
-public abstract class IndexProvider extends LifecycleAdapter implements IndexConfigCompleter
-{
-    public interface Monitor
-    {
-        void failedToOpenIndex( IndexDescriptor index, String action, Exception cause );
+public abstract class IndexProvider extends LifecycleAdapter implements IndexConfigCompleter {
+    public interface Monitor {
+        void failedToOpenIndex(IndexDescriptor index, String action, Exception cause);
 
-        void recoveryCleanupRegistered( Path indexFile, IndexDescriptor index );
+        void recoveryCleanupRegistered(Path indexFile, IndexDescriptor index);
 
-        void recoveryCleanupStarted( Path indexFile, IndexDescriptor index );
+        void recoveryCleanupStarted(Path indexFile, IndexDescriptor index);
 
-        void recoveryCleanupFinished( Path indexFile, IndexDescriptor index,
-                long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis );
+        void recoveryCleanupFinished(
+                Path indexFile,
+                IndexDescriptor index,
+                long numberOfPagesVisited,
+                long numberOfTreeNodes,
+                long numberOfCleanedCrashPointers,
+                long durationMillis);
 
-        void recoveryCleanupClosed( Path indexFile, IndexDescriptor index );
+        void recoveryCleanupClosed(Path indexFile, IndexDescriptor index);
 
-        void recoveryCleanupFailed( Path indexFile, IndexDescriptor index, Throwable throwable );
+        void recoveryCleanupFailed(Path indexFile, IndexDescriptor index, Throwable throwable);
     }
 
     public static final IndexProvider EMPTY =
-            new IndexProvider( new IndexProviderDescriptor( "no-index-provider", "1.0" ), IndexDirectoryStructure.NONE )
-            {
+            new IndexProvider(new IndexProviderDescriptor("no-index-provider", "1.0"), IndexDirectoryStructure.NONE) {
                 @Override
-                public IndexDescriptor completeConfiguration( IndexDescriptor index )
-                {
+                public IndexDescriptor completeConfiguration(IndexDescriptor index) {
                     return index;
                 }
 
@@ -134,55 +133,56 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 private final MinimalIndexAccessor singleMinimalAccessor = MinimalIndexAccessor.EMPTY;
 
                 @Override
-                public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
-                                                        ImmutableSet<OpenOption> openOptions )
-                {
+                public IndexAccessor getOnlineAccessor(
+                        IndexDescriptor descriptor,
+                        IndexSamplingConfig samplingConfig,
+                        TokenNameLookup tokenNameLookup,
+                        ImmutableSet<OpenOption> openOptions) {
                     return singleWriter;
                 }
 
                 @Override
-                public MinimalIndexAccessor getMinimalIndexAccessor( IndexDescriptor descriptor )
-                {
+                public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor) {
                     return singleMinimalAccessor;
                 }
 
                 @Override
-                public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-                                                    MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
-                                                    ImmutableSet<OpenOption> openOptions )
-                {
+                public IndexPopulator getPopulator(
+                        IndexDescriptor descriptor,
+                        IndexSamplingConfig samplingConfig,
+                        ByteBufferFactory bufferFactory,
+                        MemoryTracker memoryTracker,
+                        TokenNameLookup tokenNameLookup,
+                        ImmutableSet<OpenOption> openOptions) {
                     return singlePopulator;
                 }
 
                 @Override
-                public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext,
-                                                           ImmutableSet<OpenOption> openOptions )
-                {
+                public InternalIndexState getInitialState(
+                        IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions) {
                     return InternalIndexState.ONLINE;
                 }
 
                 @Override
-                public void validatePrototype( IndexPrototype prototype )
-                {
-                }
+                public void validatePrototype(IndexPrototype prototype) {}
 
                 @Override
-                public IndexType getIndexType()
-                {
+                public IndexType getIndexType() {
                     return IndexType.RANGE;
                 }
 
                 @Override
-                public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs,
-                        PageCache pageCache, StorageEngineFactory storageEngineFactory, CursorContextFactory contextFactory )
-                {
+                public StoreMigrationParticipant storeMigrationParticipant(
+                        FileSystemAbstraction fs,
+                        PageCache pageCache,
+                        StorageEngineFactory storageEngineFactory,
+                        CursorContextFactory contextFactory) {
                     return StoreMigrationParticipant.NOT_PARTICIPATING;
                 }
 
                 @Override
-                public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext,
-                                                    ImmutableSet<OpenOption> openOptions )
-                {
+                public String getPopulationFailure(
+                        IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions) {
                     return StringUtils.EMPTY;
                 }
             };
@@ -191,33 +191,39 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
     private final IndexDirectoryStructure.Factory directoryStructureFactory;
     private final IndexDirectoryStructure directoryStructure;
 
-    protected IndexProvider( IndexProvider copySource )
-    {
-        this( copySource.providerDescriptor, copySource.directoryStructureFactory );
+    protected IndexProvider(IndexProvider copySource) {
+        this(copySource.providerDescriptor, copySource.directoryStructureFactory);
     }
 
-    protected IndexProvider( IndexProviderDescriptor descriptor, IndexDirectoryStructure.Factory directoryStructureFactory )
-    {
+    protected IndexProvider(
+            IndexProviderDescriptor descriptor, IndexDirectoryStructure.Factory directoryStructureFactory) {
         this.directoryStructureFactory = directoryStructureFactory;
         assert descriptor != null;
         this.providerDescriptor = descriptor;
-        this.directoryStructure = directoryStructureFactory.forProvider( descriptor );
+        this.directoryStructure = directoryStructureFactory.forProvider(descriptor);
     }
 
-    public abstract MinimalIndexAccessor getMinimalIndexAccessor( IndexDescriptor descriptor );
+    public abstract MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor);
 
     /**
      * Used for initially populating a created index, using batch insertion.
      */
-    public abstract IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-                                                 MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
-                                                 ImmutableSet<OpenOption> openOptions );
+    public abstract IndexPopulator getPopulator(
+            IndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig,
+            ByteBufferFactory bufferFactory,
+            MemoryTracker memoryTracker,
+            TokenNameLookup tokenNameLookup,
+            ImmutableSet<OpenOption> openOptions);
 
     /**
      * Used for updating an index once initial population has completed.
      */
-    public abstract IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
-                                                     ImmutableSet<OpenOption> openOptions )
+    public abstract IndexAccessor getOnlineAccessor(
+            IndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig,
+            TokenNameLookup tokenNameLookup,
+            ImmutableSet<OpenOption> openOptions)
             throws IOException;
 
     /**
@@ -229,8 +235,8 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
      * @param openOptions
      * @return failure, in the form of a stack trace, that happened during population or empty string if there is no failure
      */
-    public abstract String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext,
-                                                 ImmutableSet<OpenOption> openOptions );
+    public abstract String getPopulationFailure(
+            IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions);
 
     /**
      * Called during startup to find out which state an index is in. If {@link InternalIndexState#FAILED}
@@ -241,21 +247,20 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
      * @param cursorContext underlying page cursor context.
      * @param openOptions
      */
-    public abstract InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext,
-                                                        ImmutableSet<OpenOption> openOptions );
+    public abstract InternalIndexState getInitialState(
+            IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions);
 
     /**
      * Validate that the given index prototype can be used to create an index with the given index provider, or throw an {@link IllegalArgumentException} if
      * that is not the case.
      * @param prototype The prototype to be validated.
      */
-    public abstract void validatePrototype( IndexPrototype prototype );
+    public abstract void validatePrototype(IndexPrototype prototype);
 
     /**
      * @return a description of this index provider
      */
-    public IndexProviderDescriptor getProviderDescriptor()
-    {
+    public IndexProviderDescriptor getProviderDescriptor() {
         return providerDescriptor;
     }
 
@@ -265,25 +270,21 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
     public abstract IndexType getIndexType();
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         IndexProvider other = (IndexProvider) o;
 
-        return providerDescriptor.equals( other.providerDescriptor );
+        return providerDescriptor.equals(other.providerDescriptor);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return providerDescriptor.hashCode();
     }
 
@@ -291,198 +292,191 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
      * @return {@link IndexDirectoryStructure} for this schema index provider. From it can be retrieved directories
      * for individual indexes.
      */
-    public IndexDirectoryStructure directoryStructure()
-    {
+    public IndexDirectoryStructure directoryStructure() {
         return directoryStructure;
     }
 
-    public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache,
-            StorageEngineFactory storageEngineFactory, CursorContextFactory contextFactory );
+    public abstract StoreMigrationParticipant storeMigrationParticipant(
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            StorageEngineFactory storageEngineFactory,
+            CursorContextFactory contextFactory);
 
-    public static class Adaptor extends IndexProvider
-    {
-        protected Adaptor( IndexProviderDescriptor descriptor, IndexDirectoryStructure.Factory directoryStructureFactory )
-        {
-            super( descriptor, directoryStructureFactory );
+    public static class Adaptor extends IndexProvider {
+        protected Adaptor(
+                IndexProviderDescriptor descriptor, IndexDirectoryStructure.Factory directoryStructureFactory) {
+            super(descriptor, directoryStructureFactory);
         }
 
         @Override
-        public MinimalIndexAccessor getMinimalIndexAccessor( IndexDescriptor descriptor )
-        {
+        public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor) {
             return null;
         }
 
         @Override
-        public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-                                            MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
-                                            ImmutableSet<OpenOption> openOptions )
-        {
+        public IndexPopulator getPopulator(
+                IndexDescriptor descriptor,
+                IndexSamplingConfig samplingConfig,
+                ByteBufferFactory bufferFactory,
+                MemoryTracker memoryTracker,
+                TokenNameLookup tokenNameLookup,
+                ImmutableSet<OpenOption> openOptions) {
             return null;
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
-                                                ImmutableSet<OpenOption> openOptions )
-        {
+        public IndexAccessor getOnlineAccessor(
+                IndexDescriptor descriptor,
+                IndexSamplingConfig samplingConfig,
+                TokenNameLookup tokenNameLookup,
+                ImmutableSet<OpenOption> openOptions) {
             return null;
         }
 
         @Override
-        public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext,
-                                            ImmutableSet<OpenOption> openOptions )
-        {
+        public String getPopulationFailure(
+                IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions) {
             return StringUtils.EMPTY;
         }
 
         @Override
-        public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext,
-                                                   ImmutableSet<OpenOption> openOptions )
-        {
+        public InternalIndexState getInitialState(
+                IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions) {
             return null;
         }
 
         @Override
-        public void validatePrototype( IndexPrototype prototype )
-        {
-        }
+        public void validatePrototype(IndexPrototype prototype) {}
 
         @Override
-        public IndexType getIndexType()
-        {
+        public IndexType getIndexType() {
             return IndexType.RANGE;
         }
 
         @Override
-        public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory,
-                CursorContextFactory contextFactory )
-        {
+        public StoreMigrationParticipant storeMigrationParticipant(
+                FileSystemAbstraction fs,
+                PageCache pageCache,
+                StorageEngineFactory storageEngineFactory,
+                CursorContextFactory contextFactory) {
             return StoreMigrationParticipant.NOT_PARTICIPATING;
         }
 
         @Override
-        public IndexDescriptor completeConfiguration( IndexDescriptor index )
-        {
+        public IndexDescriptor completeConfiguration(IndexDescriptor index) {
             return index;
         }
     }
 
-    public static class Delegating extends IndexProvider
-    {
+    public static class Delegating extends IndexProvider {
         private final IndexProvider provider;
 
-        public Delegating( IndexProvider provider )
-        {
-            super( provider );
+        public Delegating(IndexProvider provider) {
+            super(provider);
             this.provider = provider;
         }
 
         @Override
-        public MinimalIndexAccessor getMinimalIndexAccessor( IndexDescriptor descriptor )
-        {
-            return provider.getMinimalIndexAccessor( descriptor );
+        public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor) {
+            return provider.getMinimalIndexAccessor(descriptor);
         }
 
         @Override
-        public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-                                            MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
-                                            ImmutableSet<OpenOption> openOptions )
-        {
-            return provider.getPopulator( descriptor, samplingConfig, bufferFactory, memoryTracker, tokenNameLookup, openOptions );
+        public IndexPopulator getPopulator(
+                IndexDescriptor descriptor,
+                IndexSamplingConfig samplingConfig,
+                ByteBufferFactory bufferFactory,
+                MemoryTracker memoryTracker,
+                TokenNameLookup tokenNameLookup,
+                ImmutableSet<OpenOption> openOptions) {
+            return provider.getPopulator(
+                    descriptor, samplingConfig, bufferFactory, memoryTracker, tokenNameLookup, openOptions);
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
-                                                ImmutableSet<OpenOption> openOptions )
-                throws IOException
-        {
-            return provider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup, openOptions );
+        public IndexAccessor getOnlineAccessor(
+                IndexDescriptor descriptor,
+                IndexSamplingConfig samplingConfig,
+                TokenNameLookup tokenNameLookup,
+                ImmutableSet<OpenOption> openOptions)
+                throws IOException {
+            return provider.getOnlineAccessor(descriptor, samplingConfig, tokenNameLookup, openOptions);
         }
 
         @Override
-        public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext,
-                                            ImmutableSet<OpenOption> openOptions )
-        {
-            return provider.getPopulationFailure( descriptor, cursorContext, openOptions );
+        public String getPopulationFailure(
+                IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions) {
+            return provider.getPopulationFailure(descriptor, cursorContext, openOptions);
         }
 
         @Override
-        public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext,
-                                                   ImmutableSet<OpenOption> openOptions )
-        {
-            return provider.getInitialState( descriptor, cursorContext, openOptions );
+        public InternalIndexState getInitialState(
+                IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions) {
+            return provider.getInitialState(descriptor, cursorContext, openOptions);
         }
 
         @Override
-        public void validatePrototype( IndexPrototype prototype )
-        {
-            provider.validatePrototype( prototype );
+        public void validatePrototype(IndexPrototype prototype) {
+            provider.validatePrototype(prototype);
         }
 
         @Override
-        public IndexProviderDescriptor getProviderDescriptor()
-        {
+        public IndexProviderDescriptor getProviderDescriptor() {
             return provider.getProviderDescriptor();
         }
 
         @Override
-        public IndexType getIndexType()
-        {
+        public IndexType getIndexType() {
             return provider.getIndexType();
         }
 
         @Override
-        public boolean equals( Object o )
-        {
-            return o instanceof IndexProvider && provider.equals( o );
+        public boolean equals(Object o) {
+            return o instanceof IndexProvider && provider.equals(o);
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             return provider.hashCode();
         }
 
         @Override
-        public IndexDirectoryStructure directoryStructure()
-        {
+        public IndexDirectoryStructure directoryStructure() {
             return provider.directoryStructure();
         }
 
         @Override
-        public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory,
-                CursorContextFactory contextFactory )
-        {
-            return provider.storeMigrationParticipant( fs, pageCache, storageEngineFactory, contextFactory );
+        public StoreMigrationParticipant storeMigrationParticipant(
+                FileSystemAbstraction fs,
+                PageCache pageCache,
+                StorageEngineFactory storageEngineFactory,
+                CursorContextFactory contextFactory) {
+            return provider.storeMigrationParticipant(fs, pageCache, storageEngineFactory, contextFactory);
         }
 
         @Override
-        public void init() throws Exception
-        {
+        public void init() throws Exception {
             provider.init();
         }
 
         @Override
-        public void start() throws Exception
-        {
+        public void start() throws Exception {
             provider.start();
         }
 
         @Override
-        public void stop() throws Exception
-        {
+        public void stop() throws Exception {
             provider.stop();
         }
 
         @Override
-        public void shutdown() throws Exception
-        {
+        public void shutdown() throws Exception {
             provider.shutdown();
         }
 
         @Override
-        public IndexDescriptor completeConfiguration( IndexDescriptor index )
-        {
-            return provider.completeConfiguration( index );
+        public IndexDescriptor completeConfiguration(IndexDescriptor index) {
+            return provider.completeConfiguration(index);
         }
     }
 }

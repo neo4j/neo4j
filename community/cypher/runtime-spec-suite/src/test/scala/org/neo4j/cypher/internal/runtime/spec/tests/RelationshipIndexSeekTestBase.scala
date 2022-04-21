@@ -53,14 +53,68 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
   runtime: CypherRuntime[CONTEXT],
   val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](runtime = runtime, edition = edition)
-  with PropertyIndexTestSupport[CONTEXT]
-  with RandomValuesTestSupport
-{
+    with PropertyIndexTestSupport[CONTEXT]
+    with RandomValuesTestSupport {
 
-  testWithIndex(_.supports(EXACT), "should exact (single) directed relationship seek of an index with a property") { index =>
+  testWithIndex(_.supports(EXACT), "should exact (single) directed relationship seek of an index with a property") {
+    index =>
+      val propertyType = randomAmong(index.querySupport(EXACT))
+      val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+      val lookFor = asValue(randomAmong(relationships).getProperty("prop"))
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator(
+          "(x)-[r:R(prop = ???)]->(y)",
+          paramExpr = Some(toExpression(lookFor)),
+          indexType = index.indexType
+        )
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.filter(propFilter(equalTo(lookFor))).map(nodesAndRelationship)
+      runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
+  }
+
+  testWithIndex(_.supports(EXACT), "should exact (single) undirected relationship seek of an index with a property") {
+    index =>
+      val propertyType = randomAmong(index.querySupport(EXACT))
+      val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+      val lookFor = asValue(randomAmong(relationships).getProperty("prop"))
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator(
+          "(x)-[r:R(prop = ???)]-(y)",
+          paramExpr = Some(toExpression(lookFor)),
+          indexType = index.indexType
+        )
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.filter(propFilter(equalTo(lookFor))).flatMap(nodesAndRelationshipUndirectional)
+      runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
+  }
+
+  testWithIndex(
+    _.supports(EXACT),
+    "should exact (single) directed seek nodes of an index with a property with multiple matches"
+  ) { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
-    val lookFor = asValue(randomAmong(relationships).getProperty("prop"))
+    val propertyValues = randomValues(5, propertyType)
+    val relationships = given {
+      indexedCircleGraph(index.indexType, "R", "prop") {
+        case (r, _) => r.setProperty("prop", randomAmong(propertyValues).asObject())
+      }
+    }
+
+    val lookFor = propertyValues.head
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -78,60 +132,14 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val expected = relationships.filter(propFilter(equalTo(lookFor))).map(nodesAndRelationship)
     runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
   }
-  testWithIndex(_.supports(EXACT), "should exact (single) undirected relationship seek of an index with a property") { index =>
-    val propertyType = randomAmong(index.querySupport(EXACT))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
-    val lookFor = asValue(randomAmong(relationships).getProperty("prop"))
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator(
-        "(x)-[r:R(prop = ???)]-(y)",
-        paramExpr = Some(toExpression(lookFor)),
-        indexType = index.indexType
-      )
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships.filter(propFilter(equalTo(lookFor))).flatMap(nodesAndRelationshipUndirectional)
-    runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
-  }
-
-    testWithIndex(_.supports(EXACT), "should exact (single) directed seek nodes of an index with a property with multiple matches") { index =>
-      val propertyType = randomAmong(index.querySupport(EXACT))
-      val propertyValues = randomValues(5, propertyType)
-      val relationships = given {
-        indexedCircleGraph(index.indexType, "R", "prop") {
-          case (r, _) => r.setProperty("prop", randomAmong(propertyValues).asObject())
-        }
-      }
-
-      val lookFor = propertyValues.head
-
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("x", "r", "y")
-        .relationshipIndexOperator(
-          "(x)-[r:R(prop = ???)]->(y)",
-          paramExpr = Some(toExpression(lookFor)),
-          indexType = index.indexType
-        )
-        .build()
-
-      val runtimeResult = execute(logicalQuery, runtime)
-
-      // then
-      val expected = relationships.filter(propFilter(equalTo(lookFor))).map(nodesAndRelationship)
-      runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
-    }
-
-  testWithIndex(_.supports(EXACT), "should exact (single) undirected seek nodes of an index with a property with multiple matches") { index =>
-    val propertyValues = randomValues(5, index.querySupport(EXACT):_*)
+  testWithIndex(
+    _.supports(EXACT),
+    "should exact (single) undirected seek nodes of an index with a property with multiple matches"
+  ) { index =>
+    val propertyValues = randomValues(5, index.querySupport(EXACT): _*)
     val relationships = given {
-      indexedCircleGraph(index.indexType,"R", "prop") {
+      indexedCircleGraph(index.indexType, "R", "prop") {
         case (r, _) => r.setProperty("prop", randomAmong(propertyValues).asObject())
       }
     }
@@ -214,7 +222,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "r", "y")
       .relationshipIndexOperator(
         indexSeekString = "(x)-[r:R(prop)]->(y)",
-        customQueryExpression = Some(ManyQueryExpression(listOf(lookFor.map(toExpression):_*))),
+        customQueryExpression = Some(ManyQueryExpression(listOf(lookFor.map(toExpression): _*))),
         indexType = index.indexType
       )
       .build()
@@ -226,27 +234,29 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
   }
 
-  testWithIndex(_.supports(EXACT), "should exact (multiple) undirected seek nodes of an index with a property") { index =>
-    val propertyType = randomAmong(index.querySupport(EXACT))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+  testWithIndex(_.supports(EXACT), "should exact (multiple) undirected seek nodes of an index with a property") {
+    index =>
+      val propertyType = randomAmong(index.querySupport(EXACT))
+      val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
 
-    val lookFor = Seq(randomAmong(relationships), randomAmong(relationships)).map(r => asValue(r.getProperty("prop")))
+      val lookFor = Seq(randomAmong(relationships), randomAmong(relationships)).map(r => asValue(r.getProperty("prop")))
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator(
-        indexSeekString = "(x)-[r:R(prop)]-(y)",
-        customQueryExpression = Some(ManyQueryExpression(listOf(lookFor.map(toExpression):_*))),
-        indexType = index.indexType
-      )
-      .build()
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator(
+          indexSeekString = "(x)-[r:R(prop)]-(y)",
+          customQueryExpression = Some(ManyQueryExpression(listOf(lookFor.map(toExpression): _*))),
+          indexType = index.indexType
+        )
+        .build()
 
-    val runtimeResult = execute(logicalQuery, runtime)
+      val runtimeResult = execute(logicalQuery, runtime)
 
-    // then
-    val expected = relationships.filter(propFilter(p => lookFor.exists(equalTo(p)))).flatMap(nodesAndRelationshipUndirectional)
-    runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
+      // then
+      val expected =
+        relationships.filter(propFilter(p => lookFor.exists(equalTo(p)))).flatMap(nodesAndRelationshipUndirectional)
+      runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
   }
 
   testWithIndex(_.supports(EXACT), "should handle null in exact multiple directed seek") { index =>
@@ -297,7 +307,10 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "r", "y").withNoRows()
   }
 
-  testWithIndex(_.supports(EXACT), "should exact (multiple, but empty) directed seek relationships of an index with a property") { index =>
+  testWithIndex(
+    _.supports(EXACT),
+    "should exact (multiple, but empty) directed seek relationships of an index with a property"
+  ) { index =>
     val types = index.querySupport(EXACT)
     given {
       indexedCircleGraph(index.indexType, "R", "prop") {
@@ -321,7 +334,10 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "r", "y").withNoRows()
   }
 
-  testWithIndex(_.supports(EXACT), "should exact (multiple, but empty) undirected seek relationships of an index with a property") { index =>
+  testWithIndex(
+    _.supports(EXACT),
+    "should exact (multiple, but empty) undirected seek relationships of an index with a property"
+  ) { index =>
     given {
       indexedCircleGraph(index.indexType, "R", "prop") {
         case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
@@ -344,7 +360,10 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "r", "y").withNoRows()
   }
 
-  testWithIndex(_.supports(EXACT), "should exact (multiple, with null) directed seek relationships of an index with a property") { index =>
+  testWithIndex(
+    _.supports(EXACT),
+    "should exact (multiple, with null) directed seek relationships of an index with a property"
+  ) { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
     val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
 
@@ -367,7 +386,10 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
   }
 
-  testWithIndex(_.supports(EXACT), "should exact (multiple, with null) undirected seek relationships of an index with a property") { index =>
+  testWithIndex(
+    _.supports(EXACT),
+    "should exact (multiple, with null) undirected seek relationships of an index with a property"
+  ) { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
     val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
     val lookFor = asValue(randomAmong(relationships).getProperty("prop"))
@@ -389,45 +411,49 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
   }
 
-  testWithIndex(_.indexType == IndexType.RANGE,"should support directed seek on composite index with random type") { index =>
-    val propertyType1 = randomAmong(index.querySupport(EXACT))
-    val propertyType2 = randomAmong(index.querySupport(EXACT))
-    val relationships = given {
-      indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
-        case (r, i) if i % 10 == 0 =>
-          r.setProperty("prop", randomValue(propertyType1).asObject())
-          r.setProperty("prop2", randomValue(propertyType2).asObject())
+  testWithIndex(_.indexType == IndexType.RANGE, "should support directed seek on composite index with random type") {
+    index =>
+      val propertyType1 = randomAmong(index.querySupport(EXACT))
+      val propertyType2 = randomAmong(index.querySupport(EXACT))
+      val relationships = given {
+        indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
+          case (r, i) if i % 10 == 0 =>
+            r.setProperty("prop", randomValue(propertyType1).asObject())
+            r.setProperty("prop2", randomValue(propertyType2).asObject())
+        }
       }
-    }
 
-    val lookForRelationship = randomAmong(relationships)
-    val lookFor1 = asValue(lookForRelationship.getProperty("prop"))
-    val lookFor2 = asValue(lookForRelationship.getProperty("prop2"))
+      val lookForRelationship = randomAmong(relationships)
+      val lookFor1 = asValue(lookForRelationship.getProperty("prop"))
+      val lookFor2 = asValue(lookForRelationship.getProperty("prop2"))
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator(
-        indexSeekString = "(x)-[r:R(prop, prop2)]->(y)",
-        customQueryExpression = Some(CompositeQueryExpression(Seq(
-          SingleQueryExpression(toExpression(lookFor1)),
-          SingleQueryExpression(toExpression(lookFor2))
-        ))),
-        indexType = index.indexType
-      )
-      .build()
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator(
+          indexSeekString = "(x)-[r:R(prop, prop2)]->(y)",
+          customQueryExpression = Some(CompositeQueryExpression(Seq(
+            SingleQueryExpression(toExpression(lookFor1)),
+            SingleQueryExpression(toExpression(lookFor2))
+          ))),
+          indexType = index.indexType
+        )
+        .build()
 
-    val runtimeResult = execute(logicalQuery, runtime)
+      val runtimeResult = execute(logicalQuery, runtime)
 
-    // then
-    val expected = relationships
-      .filter(propFilter(equalTo(lookFor1)))
-      .filter(propertyFilter("prop2")(equalTo(lookFor2)))
-      .map(r => Array(r.getStartNode, r, r.getEndNode))
-    runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
+      // then
+      val expected = relationships
+        .filter(propFilter(equalTo(lookFor1)))
+        .filter(propertyFilter("prop2")(equalTo(lookFor2)))
+        .map(r => Array(r.getStartNode, r, r.getEndNode))
+      runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
   }
 
-  testWithIndex(_.supports(EXACT), "should exact (multiple, but identical) directed seek relationships of an index with a property") { index =>
+  testWithIndex(
+    _.supports(EXACT),
+    "should exact (multiple, but identical) directed seek relationships of an index with a property"
+  ) { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
     val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
     val lookFor = asValue(randomAmong(relationships).getProperty("prop"))
@@ -449,7 +475,10 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
   }
 
-  testWithIndex(_.supports(EXACT), "should exact (multiple, but identical) undirected seek relationships of an index with a property") { index =>
+  testWithIndex(
+    _.supports(EXACT),
+    "should exact (multiple, but identical) undirected seek relationships of an index with a property"
+  ) { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
     val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
     val lookFor = asValue(randomAmong(relationships).getProperty("prop"))
@@ -472,7 +501,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   // RANGE queries
-  testWithIndex(_.supports(RANGE),"should directed seek relationships of an index with a property") { index =>
+  testWithIndex(_.supports(RANGE), "should directed seek relationships of an index with a property") { index =>
     val propertyType = randomAmong(index.querySupport(RANGE))
     val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProp = asValue(randomAmong(relationships).getProperty("prop"))
@@ -494,7 +523,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
   }
 
-  testWithIndex(_.supports(RANGE),"should undirected seek relationships of an index with a property") { index =>
+  testWithIndex(_.supports(RANGE), "should undirected seek relationships of an index with a property") { index =>
     val propertyType = randomAmong(index.querySupport(RANGE))
     val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProp = asValue(randomAmong(relationships).getProperty("prop"))
@@ -626,7 +655,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = nodesAndRelationship(relationships(10 / 10))
-    runtimeResult should beColumns("x", "r", "y").withSingleRow(expected:_*)
+    runtimeResult should beColumns("x", "r", "y").withSingleRow(expected: _*)
   }
 
   testWithIndex(
@@ -961,7 +990,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should support null in undirected seek on composite index"
   ) { index =>
     val relationships = given {
-      indexedCircleGraph(index.indexType,"R", "prop", "prop2") {
+      indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
         case (r, i) if i % 10 == 0 =>
           r.setProperty("prop", i)
           r.setProperty("prop2", i.toString)
@@ -984,7 +1013,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "r", "y").withNoRows()
   }
 
-  testWithIndex(_.supportsValues(EXACT),"directed exact seek should cache properties") { index =>
+  testWithIndex(_.supportsValues(EXACT), "directed exact seek should cache properties") { index =>
     val propertyType = randomAmong(index.provideValueSupport(EXACT))
     val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
     val lookFor = asValue(randomAmong(relationships).getProperty("prop"))
@@ -1004,11 +1033,11 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = relationships.filter(propFilter(equalTo(lookFor))).map(r =>  Array(r, lookFor))
+    val expected = relationships.filter(propFilter(equalTo(lookFor))).map(r => Array(r, lookFor))
     runtimeResult should beColumns("r", "prop").withRows(inAnyOrder(expected))
   }
 
-  testWithIndex(_.supportsValues(EXACT),"undirected exact seek should cache properties") { index =>
+  testWithIndex(_.supportsValues(EXACT), "undirected exact seek should cache properties") { index =>
     val propertyType = randomAmong(index.provideValueSupport(EXACT))
     val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
     val lookFor = asValue(randomAmong(relationships).getProperty("prop"))
@@ -1144,7 +1173,10 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("r", "prop", "prop2").withRows(Seq(Array(relationships(10 / 10), 10, "10"), Array(relationships(10 / 10), 10, "10")))
+    runtimeResult should beColumns("r", "prop", "prop2").withRows(Seq(
+      Array(relationships(10 / 10), 10, "10"),
+      Array(relationships(10 / 10), 10, "10")
+    ))
   }
 
   testWithIndex(
@@ -1169,7 +1201,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("value"))
       .build()
 
-    val input = inputValues(lookFor.map(p => Array(p.asObject())):_*)
+    val input = inputValues(lookFor.map(p => Array(p.asObject())): _*)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
 
@@ -1204,7 +1236,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("value"))
       .build()
 
-    val input = inputValues(lookFor.map(p => Array(p.asObject())):_*)
+    val input = inputValues(lookFor.map(p => Array(p.asObject())): _*)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
 
@@ -1352,8 +1384,9 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("prop")
       .projection("r.prop AS prop")
-      .relationshipIndexOperator("(x)-[r:R(prop)]->(y)",
-        customQueryExpression = Some(ManyQueryExpression(listOf(someProps.map(toExpression):_*))),
+      .relationshipIndexOperator(
+        "(x)-[r:R(prop)]->(y)",
+        customQueryExpression = Some(ManyQueryExpression(listOf(someProps.map(toExpression): _*))),
         indexOrder = IndexOrderAscending,
         indexType = index.indexType
       )
@@ -1382,8 +1415,9 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("prop")
       .projection("r.prop AS prop")
-      .relationshipIndexOperator("(x)-[r:R(prop)]-(y)",
-        customQueryExpression = Some(ManyQueryExpression(listOf(someProps.map(toExpression):_*))),
+      .relationshipIndexOperator(
+        "(x)-[r:R(prop)]-(y)",
+        customQueryExpression = Some(ManyQueryExpression(listOf(someProps.map(toExpression): _*))),
         indexOrder = IndexOrderAscending,
         indexType = index.indexType
       )
@@ -1413,8 +1447,9 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("prop")
       .projection("r.prop AS prop")
-      .relationshipIndexOperator("(x)-[r:R(prop)]->(y)",
-        customQueryExpression = Some(ManyQueryExpression(listOf(someProps.map(toExpression):_*))),
+      .relationshipIndexOperator(
+        "(x)-[r:R(prop)]->(y)",
+        customQueryExpression = Some(ManyQueryExpression(listOf(someProps.map(toExpression): _*))),
         indexOrder = IndexOrderDescending,
         indexType = index.indexType
       )
@@ -1443,8 +1478,9 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("prop")
       .projection("r.prop AS prop")
-      .relationshipIndexOperator("(x)-[r:R(prop)]-(y)",
-        customQueryExpression = Some(ManyQueryExpression(listOf(someProps.map(toExpression):_*))),
+      .relationshipIndexOperator(
+        "(x)-[r:R(prop)]-(y)",
+        customQueryExpression = Some(ManyQueryExpression(listOf(someProps.map(toExpression): _*))),
         indexOrder = IndexOrderDescending,
         indexType = index.indexType
       )
@@ -1474,15 +1510,14 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
   )(
     propFunction: PartialFunction[(Relationship, Int), Unit]
   ): Seq[Relationship] = {
-    relationshipIndex(indexType, indexedRelType, indexedProperties:_*)
+    relationshipIndex(indexType, indexedRelType, indexedProperties: _*)
     val (_, rels) = circleGraph(sizeHint)
     rels.zipWithIndex.collect {
-      case t@(r, _) if propFunction.isDefinedAt(t) =>
+      case t @ (r, _) if propFunction.isDefinedAt(t) =>
         propFunction.apply(t)
         r
     }
   }
-
 
   test("should work with multiple index types") {
     val rels = given {
@@ -1510,16 +1545,17 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = rels.filter { r =>
       r.getProperty("prop") match {
-        case s: String => s.contains("1")
+        case s: String  => s.contains("1")
         case i: Integer => i > 42
-        case _ => false
+        case _          => false
       }
     }
 
     runtimeResult should beColumns("r").withRows(singleColumn(expected))
   }
 
-  private def nodesAndRelationship(relationship: Relationship): Array[_] = Array(relationship.getStartNode, relationship, relationship.getEndNode)
+  private def nodesAndRelationship(relationship: Relationship): Array[_] =
+    Array(relationship.getStartNode, relationship, relationship.getEndNode)
 
   private def nodesAndRelationshipUndirectional(relationship: Relationship): Seq[Array[_]] = Seq(
     Array(relationship.getStartNode, relationship, relationship.getEndNode),
@@ -1533,7 +1569,6 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
   private def propertyFilter(name: String)(predicate: Value => Boolean): Relationship => Boolean = {
     r => r.hasProperty(name) && predicate.apply(asValue(r.getProperty(name)))
   }
-
 
   private def equalTo(rhs: Value)(lhs: Value): Boolean = CypherBoolean.equals(lhs, rhs) == BooleanValue.TRUE
   private def greaterThan(rhs: Value)(lhs: Value): Boolean = CypherBoolean.greaterThan(lhs, rhs) == BooleanValue.TRUE

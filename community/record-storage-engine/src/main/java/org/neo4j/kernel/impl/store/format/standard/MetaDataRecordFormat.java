@@ -19,58 +19,51 @@
  */
 package org.neo4j.kernel.impl.store.format.standard;
 
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.POSITIONS_VALUES;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.POSITIONS_VALUES;
-
-public class MetaDataRecordFormat extends BaseOneByteHeaderRecordFormat<MetaDataRecord>
-{
+public class MetaDataRecordFormat extends BaseOneByteHeaderRecordFormat<MetaDataRecord> {
     public static final int RECORD_SIZE = 9;
     public static final long FIELD_NOT_PRESENT = -1;
     private static final int ID_BITS = 32;
 
-    public MetaDataRecordFormat()
-    {
-        this( true );
+    public MetaDataRecordFormat() {
+        this(true);
     }
 
-    public MetaDataRecordFormat( boolean pageAligned )
-    {
-        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, ID_BITS, pageAligned );
+    public MetaDataRecordFormat(boolean pageAligned) {
+        super(fixedRecordSize(RECORD_SIZE), 0, IN_USE_BIT, ID_BITS, pageAligned);
     }
 
     @Override
-    public MetaDataRecord newRecord()
-    {
+    public MetaDataRecord newRecord() {
         return new MetaDataRecord();
     }
 
     @Override
-    public void read( MetaDataRecord record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage )
-    {
+    public void read(MetaDataRecord record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage) {
         int id = record.getIntId();
-        if ( id >= POSITIONS_VALUES.length && !mode.shouldLoad( false ) )
-        {
-            record.initialize( false, FIELD_NOT_PRESENT );
+        if (id >= POSITIONS_VALUES.length && !mode.shouldLoad(false)) {
+            record.initialize(false, FIELD_NOT_PRESENT);
             return;
         }
 
         int offset = id * recordSize;
-        cursor.setOffset( offset );
+        cursor.setOffset(offset);
         boolean inUse = cursor.getByte() == Record.IN_USE.byteValue();
         long value = inUse ? cursor.getLong() : FIELD_NOT_PRESENT;
-        record.initialize( inUse, value );
+        record.initialize(inUse, value);
     }
 
     @Override
-    public void write( MetaDataRecord record, PageCursor cursor, int recordSize, int recordsPerPage )
-    {
+    public void write(MetaDataRecord record, PageCursor cursor, int recordSize, int recordsPerPage) {
         assert record.inUse();
-        cursor.putByte( Record.IN_USE.byteValue() );
-        cursor.putLong( record.getValue() );
+        cursor.putByte(Record.IN_USE.byteValue());
+        cursor.putLong(record.getValue());
     }
 }

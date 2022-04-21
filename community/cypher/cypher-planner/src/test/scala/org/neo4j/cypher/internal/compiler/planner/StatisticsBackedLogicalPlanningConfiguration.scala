@@ -73,49 +73,55 @@ import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.graphdb
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.schema.ConstraintType
-import org.neo4j.internal.schema.IndexType.RANGE
 import org.neo4j.internal.schema.IndexType.FULLTEXT
 import org.neo4j.internal.schema.IndexType.LOOKUP
+import org.neo4j.internal.schema.IndexType.RANGE
 
 trait StatisticsBackedLogicalPlanningSupport {
 
   /**
    * @return an immutable builder to construct [[StatisticsBackedLogicalPlanningConfiguration]]s.
    */
-  protected def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder = StatisticsBackedLogicalPlanningConfigurationBuilder.newBuilder()
+  protected def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
+    StatisticsBackedLogicalPlanningConfigurationBuilder.newBuilder()
 }
 
 object StatisticsBackedLogicalPlanningConfigurationBuilder {
 
-  def newBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder = StatisticsBackedLogicalPlanningConfigurationBuilder()
+  def newBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
+    StatisticsBackedLogicalPlanningConfigurationBuilder()
 
   case class Options(
-                      debug: CypherDebugOptions = CypherDebugOptions(Set.empty),
-                      connectComponentsPlanner: Boolean = true,
-                      executionModel: ExecutionModel = ExecutionModel.default,
-                      useMinimumGraphStatistics: Boolean = false,
-                      txStateHasChanges: Boolean = false,
-                      semanticFeatures: Seq[SemanticFeature] = Seq.empty,
-                    )
+    debug: CypherDebugOptions = CypherDebugOptions(Set.empty),
+    connectComponentsPlanner: Boolean = true,
+    executionModel: ExecutionModel = ExecutionModel.default,
+    useMinimumGraphStatistics: Boolean = false,
+    txStateHasChanges: Boolean = false,
+    semanticFeatures: Seq[SemanticFeature] = Seq.empty
+  )
+
   case class Cardinalities(
-                            allNodes: Option[Double] = None,
-                            labels: Map[String, Double] = Map[String, Double](),
-                            relationships: Map[RelDef, Double] = Map[RelDef, Double](),
-                            defaultRelationshipCardinalityTo0: Boolean = false
-                          ) {
+    allNodes: Option[Double] = None,
+    labels: Map[String, Double] = Map[String, Double](),
+    relationships: Map[RelDef, Double] = Map[RelDef, Double](),
+    defaultRelationshipCardinalityTo0: Boolean = false
+  ) {
+
     def getRelCount(relDef: RelDef): Double = {
       def orElse: Double =
         if (defaultRelationshipCardinalityTo0) 0.0
         else throw new IllegalStateException(
           s"""No cardinality set for relationship $relDef. Please specify using
-             |.setRelationshipCardinality("$relDef", cardinality)""".stripMargin)
+             |.setRelationshipCardinality("$relDef", cardinality)""".stripMargin
+        )
 
-        relationships.getOrElse(relDef, orElse)
+      relationships.getOrElse(relDef, orElse)
     }
   }
+
   object RelDef {
 
-    private implicit class RegexHelper(val sc: StringContext) {
+    implicit private class RegexHelper(val sc: StringContext) {
       def re: scala.util.matching.Regex = sc.parts.mkString.r
     }
 
@@ -132,13 +138,16 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
         Seq(RelDef(opt(b), opt(r), opt(t)), RelDef(opt(t), opt(r), opt(b)))
 
       case pat =>
-        throw new IllegalArgumentException(s"Invalid relationship pattern $pat. Expected something like ()-[]-(), (:A)-[:R]->(), (:A)<-[]-(), etc.")
+        throw new IllegalArgumentException(
+          s"Invalid relationship pattern $pat. Expected something like ()-[]-(), (:A)-[:R]->(), (:A)<-[]-(), etc."
+        )
     }
 
     val all: RelDef = RelDef(None, None, None)
   }
 
   case class RelDef(fromLabel: Option[String], relType: Option[String], toLabel: Option[String]) {
+
     override def toString: String = {
       val f = fromLabel.fold("")(l => ":" + l)
       val r = relType.fold("")(l => ":" + l)
@@ -147,36 +156,40 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
     }
   }
 
-  case class IndexDefinition(entityType: IndexDefinition.EntityType,
-                             indexType: graphdb.schema.IndexType,
-                             propertyKeys: Seq[String],
-                             uniqueValueSelectivity: Double,
-                             propExistsSelectivity: Double,
-                             isUnique: Boolean = false,
-                             withValues: Boolean = false,
-                             withOrdering: IndexOrderCapability = IndexOrderCapability.NONE)
+  case class IndexDefinition(
+    entityType: IndexDefinition.EntityType,
+    indexType: graphdb.schema.IndexType,
+    propertyKeys: Seq[String],
+    uniqueValueSelectivity: Double,
+    propExistsSelectivity: Double,
+    isUnique: Boolean = false,
+    withValues: Boolean = false,
+    withOrdering: IndexOrderCapability = IndexOrderCapability.NONE
+  )
 
   object IndexDefinition {
     sealed trait EntityType
+
     object EntityType {
       final case class Node(label: String) extends EntityType
       final case class Relationship(relType: String) extends EntityType
     }
   }
+
   case class Indexes(
-                      nodeLookupIndex: Boolean = true,
-                      relationshipLookupIndex: Boolean = true,
-                      propertyIndexes: Seq[IndexDefinition] = Seq.empty,
-                    ) {
+    nodeLookupIndex: Boolean = true,
+    relationshipLookupIndex: Boolean = true,
+    propertyIndexes: Seq[IndexDefinition] = Seq.empty
+  ) {
+
     def addPropertyIndex(indexDefinition: IndexDefinition): Indexes = {
       this.copy(propertyIndexes = propertyIndexes.filterNot(sameKeys(indexDefinition, _)) :+ indexDefinition)
     }
 
-    private def sameKeys(indexDefinition: IndexDefinition,
-                         oldDef: IndexDefinition) = {
+    private def sameKeys(indexDefinition: IndexDefinition, oldDef: IndexDefinition) = {
       oldDef.entityType == indexDefinition.entityType &&
-        oldDef.propertyKeys == indexDefinition.propertyKeys &&
-        oldDef.indexType == indexDefinition.indexType
+      oldDef.propertyKeys == indexDefinition.propertyKeys &&
+      oldDef.indexType == indexDefinition.indexType
     }
 
     def addNodeLookupIndex(): Indexes = this.copy(nodeLookupIndex = true)
@@ -185,19 +198,19 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
     def removeRelationshipLookupIndex(): Indexes = this.copy(relationshipLookupIndex = false)
   }
 
-  case class ExistenceConstraintDefinition(entityType: IndexDefinition.EntityType,
-                                           propertyKey: String)
+  case class ExistenceConstraintDefinition(entityType: IndexDefinition.EntityType, propertyKey: String)
 }
 
-case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
-                                                                        options: Options = Options(),
-                                                                        cardinalities: Cardinalities = Cardinalities(),
-                                                                        tokens: TokenContainer = TokenContainer(),
-                                                                        indexes: Indexes = Indexes(),
-                                                                        constraints: Seq[ExistenceConstraintDefinition] = Seq.empty,
-                                                                        procedures: Set[ProcedureSignature] = Set.empty,
-                                                                        settings: Map[Setting[_], AnyRef] = Map.empty,
-                                                                      ) {
+case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
+  options: Options = Options(),
+  cardinalities: Cardinalities = Cardinalities(),
+  tokens: TokenContainer = TokenContainer(),
+  indexes: Indexes = Indexes(),
+  constraints: Seq[ExistenceConstraintDefinition] = Seq.empty,
+  procedures: Set[ProcedureSignature] = Set.empty,
+  settings: Map[Setting[_], AnyRef] = Map.empty
+) {
+
   def withSetting[T <: AnyRef](setting: Setting[T], value: T): StatisticsBackedLogicalPlanningConfigurationBuilder = {
     this.copy(settings = settings + (setting -> value))
   }
@@ -223,7 +236,8 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       .copy(cardinalities = cardinalities.copy(labels = cardinalities.labels + (label -> c)))
   }
 
-  def setLabelCardinalities(labelCardinalities: Map[String, Double]): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+  def setLabelCardinalities(labelCardinalities: Map[String, Double])
+    : StatisticsBackedLogicalPlanningConfigurationBuilder = {
     labelCardinalities.foldLeft(this) {
       case (builder, (label, c)) => builder.setLabelCardinality(label, c)
     }
@@ -233,13 +247,21 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     setRelationshipCardinality(None, None, None, cardinality)
   }
 
-  def setRelationshipCardinality(relDef: String, cardinality: Double): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+  def setRelationshipCardinality(
+    relDef: String,
+    cardinality: Double
+  ): StatisticsBackedLogicalPlanningConfigurationBuilder = {
     RelDef.fromString(relDef).foldLeft(this) {
       case (builder, rd) => builder.setRelationshipCardinality(rd.fromLabel, rd.relType, rd.toLabel, cardinality)
     }
   }
 
-  def setRelationshipCardinality(from: Option[String] = None, rel: Option[String] = None, to: Option[String] = None, cardinality: Double): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+  def setRelationshipCardinality(
+    from: Option[String] = None,
+    rel: Option[String] = None,
+    to: Option[String] = None,
+    cardinality: Double
+  ): StatisticsBackedLogicalPlanningConfigurationBuilder = {
     val withFromLabel = from.foldLeft(this) {
       case (builder, label) => builder.addLabel(label)
     }
@@ -252,51 +274,61 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       case (builder, label) => builder.addLabel(label)
     }
 
-    withToLabel.copy(cardinalities = cardinalities.copy(relationships = cardinalities.relationships + (RelDef(from, rel, to) -> cardinality)))
+    withToLabel.copy(cardinalities =
+      cardinalities.copy(relationships = cardinalities.relationships + (RelDef(from, rel, to) -> cardinality))
+    )
   }
 
   def defaultRelationshipCardinalityTo0(enable: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
     this.copy(cardinalities = cardinalities.copy(defaultRelationshipCardinalityTo0 = enable))
   }
 
-  def addNodeIndex(label: String,
-                   properties: Seq[String],
-                   existsSelectivity: Double,
-                   uniqueSelectivity: Double,
-                   isUnique: Boolean = false,
-                   withValues: Boolean = false,
-                   providesOrder: IndexOrderCapability = IndexOrderCapability.NONE,
-                   indexType: graphdb.schema.IndexType = graphdb.schema.IndexType.RANGE): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+  def addNodeIndex(
+    label: String,
+    properties: Seq[String],
+    existsSelectivity: Double,
+    uniqueSelectivity: Double,
+    isUnique: Boolean = false,
+    withValues: Boolean = false,
+    providesOrder: IndexOrderCapability = IndexOrderCapability.NONE,
+    indexType: graphdb.schema.IndexType = graphdb.schema.IndexType.RANGE
+  ): StatisticsBackedLogicalPlanningConfigurationBuilder = {
 
-    val indexDef = IndexDefinition(IndexDefinition.EntityType.Node(label),
+    val indexDef = IndexDefinition(
+      IndexDefinition.EntityType.Node(label),
       indexType = indexType,
       propertyKeys = properties,
       propExistsSelectivity = existsSelectivity,
       uniqueValueSelectivity = uniqueSelectivity,
       isUnique = isUnique,
       withValues = withValues,
-      withOrdering = providesOrder)
+      withOrdering = providesOrder
+    )
 
     addLabel(label).addIndexDefAndProperties(indexDef, properties)
   }
 
-  def addRelationshipIndex(relType: String,
-                           properties: Seq[String],
-                           existsSelectivity: Double,
-                           uniqueSelectivity: Double,
-                           isUnique: Boolean = false,
-                           withValues: Boolean = false,
-                           providesOrder: IndexOrderCapability = IndexOrderCapability.NONE,
-                           indexType: graphdb.schema.IndexType = graphdb.schema.IndexType.RANGE): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+  def addRelationshipIndex(
+    relType: String,
+    properties: Seq[String],
+    existsSelectivity: Double,
+    uniqueSelectivity: Double,
+    isUnique: Boolean = false,
+    withValues: Boolean = false,
+    providesOrder: IndexOrderCapability = IndexOrderCapability.NONE,
+    indexType: graphdb.schema.IndexType = graphdb.schema.IndexType.RANGE
+  ): StatisticsBackedLogicalPlanningConfigurationBuilder = {
 
-    val indexDef = IndexDefinition(IndexDefinition.EntityType.Relationship(relType),
+    val indexDef = IndexDefinition(
+      IndexDefinition.EntityType.Relationship(relType),
       indexType = indexType,
       propertyKeys = properties,
       propExistsSelectivity = existsSelectivity,
       uniqueValueSelectivity = uniqueSelectivity,
       isUnique = isUnique,
       withValues = withValues,
-      withOrdering = providesOrder)
+      withOrdering = providesOrder
+    )
 
     addRelType(relType).addIndexDefAndProperties(indexDef, properties)
   }
@@ -317,7 +349,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     this.copy(indexes = indexes.removeRelationshipLookupIndex())
   }
 
-  private def addIndexDefAndProperties(indexDef: IndexDefinition, properties: Seq[String]): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+  private def addIndexDefAndProperties(
+    indexDef: IndexDefinition,
+    properties: Seq[String]
+  ): StatisticsBackedLogicalPlanningConfigurationBuilder = {
     val withProperties = properties.foldLeft(this) {
       case (builder, prop) => builder.addProperty(prop)
     }
@@ -325,8 +360,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       .copy(indexes = indexes.addPropertyIndex(indexDef))
   }
 
-  def addNodeExistenceConstraint(label: String,
-                                 property: String): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+  def addNodeExistenceConstraint(
+    label: String,
+    property: String
+  ): StatisticsBackedLogicalPlanningConfigurationBuilder = {
     val constraintDef = ExistenceConstraintDefinition(IndexDefinition.EntityType.Node(label), property)
 
     addLabel(label).addProperty(property).copy(
@@ -334,8 +371,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     )
   }
 
-  def addRelationshipExistenceConstraint(relType: String,
-                                         property: String): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+  def addRelationshipExistenceConstraint(
+    relType: String,
+    property: String
+  ): StatisticsBackedLogicalPlanningConfigurationBuilder = {
     val constraintDef = ExistenceConstraintDefinition(IndexDefinition.EntityType.Relationship(relType), property)
 
     addRelType(relType).addProperty(property).copy(
@@ -350,12 +389,18 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
   private def fail(message: String): Nothing =
     throw new IllegalStateException(message)
 
-  def enableDebugOption(option: CypherDebugOption, enable: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
-    this.copy(options = options.copy(
-      debug = if (enable)
-        options.debug.copy(options.debug.enabledOptions + option)
-      else
-        options.debug.copy(options.debug.enabledOptions - option))
+  def enableDebugOption(
+    option: CypherDebugOption,
+    enable: Boolean = true
+  ): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(options =
+      options.copy(
+        debug =
+          if (enable)
+            options.debug.copy(options.debug.enabledOptions + option)
+          else
+            options.debug.copy(options.debug.enabledOptions - option)
+      )
     )
   }
 
@@ -382,15 +427,15 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     def matchingUniquenessConstraintExists(index: Index): Boolean = {
       index match {
         case Index(Some(Seq(label)), None, RANGE, properties, _, _, _) => graphCountData.constraints.exists {
-          case Constraint(Some(`label`), None, `properties`, ConstraintType.UNIQUE) => true
-          case Constraint(Some(`label`), None, `properties`, ConstraintType.UNIQUE_EXISTS) => true
-          case _ => false
-        }
+            case Constraint(Some(`label`), None, `properties`, ConstraintType.UNIQUE)        => true
+            case Constraint(Some(`label`), None, `properties`, ConstraintType.UNIQUE_EXISTS) => true
+            case _                                                                           => false
+          }
         case Index(None, Some(Seq(relType)), RANGE, properties, _, _, _) => graphCountData.constraints.exists {
-          case Constraint(None, Some(`relType`), `properties`, ConstraintType.UNIQUE) => true
-          case Constraint(None, Some(`relType`), `properties`, ConstraintType.UNIQUE_EXISTS) => true
-          case _ => false
-        }
+            case Constraint(None, Some(`relType`), `properties`, ConstraintType.UNIQUE)        => true
+            case Constraint(None, Some(`relType`), `properties`, ConstraintType.UNIQUE_EXISTS) => true
+            case _                                                                             => false
+          }
         case _ => false
       }
     }
@@ -407,7 +452,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
     val withNodes = (builder: StatisticsBackedLogicalPlanningConfigurationBuilder) =>
       graphCountData.nodes.foldLeft(builder) {
-        case (builder, NodeCount(count, None)) => builder.setAllNodesCardinality(count)
+        case (builder, NodeCount(count, None))        => builder.setAllNodesCardinality(count)
         case (builder, NodeCount(count, Some(label))) => builder.setLabelCardinality(label, count)
       }
 
@@ -419,30 +464,53 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
     val withConstraints = (builder: StatisticsBackedLogicalPlanningConfigurationBuilder) =>
       graphCountData.constraints.foldLeft(builder) {
-        case (builder, Constraint(Some(label), None, Seq(property), ConstraintType.EXISTS)) => builder.addNodeExistenceConstraint(label, property)
-        case (builder, Constraint(None, Some(relType), Seq(property), ConstraintType.EXISTS)) => builder.addRelationshipExistenceConstraint(relType, property)
-        case (builder, Constraint(_, _, _, ConstraintType.UNIQUE)) => builder // Will get found by matchingUniquenessConstraintExists
-        case (builder, Constraint(_, _, _, ConstraintType.UNIQUE_EXISTS)) => builder // Will get found by matchingUniquenessConstraintExists
+        case (builder, Constraint(Some(label), None, Seq(property), ConstraintType.EXISTS)) =>
+          builder.addNodeExistenceConstraint(label, property)
+        case (builder, Constraint(None, Some(relType), Seq(property), ConstraintType.EXISTS)) =>
+          builder.addRelationshipExistenceConstraint(relType, property)
+        case (builder, Constraint(_, _, _, ConstraintType.UNIQUE)) =>
+          builder // Will get found by matchingUniquenessConstraintExists
+        case (builder, Constraint(_, _, _, ConstraintType.UNIQUE_EXISTS)) =>
+          builder // Will get found by matchingUniquenessConstraintExists
         case (_, constraint) => throw new IllegalArgumentException(s"Unsupported constraint: $constraint")
       }
 
     val withIndexes = (builder: StatisticsBackedLogicalPlanningConfigurationBuilder) =>
       graphCountData.indexes.foldLeft(builder) {
-        case (_, index@Index(_, _, FULLTEXT, _, _, _, _)) => throw new IllegalArgumentException(s"Unsupported index of type FULLTEXT: $index")
+        case (_, index @ Index(_, _, FULLTEXT, _, _, _, _)) =>
+          throw new IllegalArgumentException(s"Unsupported index of type FULLTEXT: $index")
         case (builder, Index(Some(Seq()), None, LOOKUP, Seq(), _, _, _)) =>
           builder.addNodeLookupIndex()
         case (builder, Index(None, Some(Seq()), LOOKUP, Seq(), _, _, _)) =>
           builder.addRelationshipLookupIndex()
-        case (builder, i@Index(Some(Seq(label)), None, indexType, properties, totalSize, estimatedUniqueSize, _)) =>
+        case (builder, i @ Index(Some(Seq(label)), None, indexType, properties, totalSize, estimatedUniqueSize, _)) =>
           val existsSelectivity = totalSize / builder.cardinalities.labels(label)
           val uniqueSelectivity = 1.0 / estimatedUniqueSize
           val isUnique = matchingUniquenessConstraintExists(i)
-          builder.addNodeIndex(label, properties, existsSelectivity, uniqueSelectivity, isUnique = isUnique, withValues = true, providesOrder = IndexOrderCapability.BOTH, indexType.toPublicApi)
-        case (builder, i@Index(None, Some(Seq(relType)), indexType, properties, totalSize, estimatedUniqueSize, _)) =>
+          builder.addNodeIndex(
+            label,
+            properties,
+            existsSelectivity,
+            uniqueSelectivity,
+            isUnique = isUnique,
+            withValues = true,
+            providesOrder = IndexOrderCapability.BOTH,
+            indexType.toPublicApi
+          )
+        case (builder, i @ Index(None, Some(Seq(relType)), indexType, properties, totalSize, estimatedUniqueSize, _)) =>
           val existsSelectivity = totalSize / builder.cardinalities.getRelCount(RelDef(None, Some(relType), None))
           val uniqueSelectivity = 1.0 / estimatedUniqueSize
           val isUnique = matchingUniquenessConstraintExists(i)
-          builder.addRelationshipIndex(relType, properties, existsSelectivity, uniqueSelectivity, isUnique = isUnique, withValues = true, providesOrder = IndexOrderCapability.BOTH, indexType.toPublicApi)
+          builder.addRelationshipIndex(
+            relType,
+            properties,
+            existsSelectivity,
+            uniqueSelectivity,
+            isUnique = isUnique,
+            withValues = true,
+            providesOrder = IndexOrderCapability.BOTH,
+            indexType.toPublicApi
+          )
         case (_, index) => throw new IllegalArgumentException(s"Unsupported index: $index")
       }
 
@@ -477,7 +545,8 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     cardinalities.allNodes.foreach(anc =>
       cardinalities.labels.values.foreach(lc =>
         require(anc >= lc, s"Label cardinality ($lc) was greater than all nodes cardinality ($anc)")
-      ))
+      )
+    )
 
     cardinalities.relationships.get(RelDef.all).foreach(arc =>
       cardinalities.relationships.values.foreach(rc =>
@@ -492,19 +561,29 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
       override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = {
         labelId.map(_.id)
-               .map(resolver.getLabelName)
-               .map(label => cardinalities.labels.getOrElse(label, fail(
-                 s"""No cardinality set for label $label. Please specify using
-                    |.setLabelCardinality("$label", cardinality)""".stripMargin)))
-               .map(Cardinality.apply)
-               .getOrElse(Cardinality.EMPTY)
+          .map(resolver.getLabelName)
+          .map(label =>
+            cardinalities.labels.getOrElse(
+              label,
+              fail(
+                s"""No cardinality set for label $label. Please specify using
+                   |.setLabelCardinality("$label", cardinality)""".stripMargin
+              )
+            )
+          )
+          .map(Cardinality.apply)
+          .getOrElse(Cardinality.EMPTY)
       }
 
-      override def patternStepCardinality(fromLabelId: Option[LabelId], relTypeId: Option[RelTypeId], toLabelId: Option[LabelId]): Cardinality = {
+      override def patternStepCardinality(
+        fromLabelId: Option[LabelId],
+        relTypeId: Option[RelTypeId],
+        toLabelId: Option[LabelId]
+      ): Cardinality = {
         val relDef = RelDef(
           fromLabel = fromLabelId.map(_.id).map(resolver.getLabelName),
           relType = relTypeId.map(_.id).map(resolver.getRelTypeName),
-          toLabel = toLabelId.map(_.id).map(resolver.getLabelName),
+          toLabel = toLabelId.map(_.id).map(resolver.getLabelName)
         )
         cardinalities.getRelCount(relDef)
       }
@@ -512,16 +591,16 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] = {
         indexes.propertyIndexes.find { indexDef =>
           indexDef.indexType == index.indexType.toPublicApi &&
-            indexDef.entityType == resolveEntityType(index) &&
-            indexDef.propertyKeys == index.properties.map(_.id).map(resolver.getPropertyKeyName)
+          indexDef.entityType == resolveEntityType(index) &&
+          indexDef.propertyKeys == index.properties.map(_.id).map(resolver.getPropertyKeyName)
         }.flatMap(indexDef => Selectivity.of(indexDef.uniqueValueSelectivity))
       }
 
       override def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] = {
         indexes.propertyIndexes.find { indexDef =>
           indexDef.indexType == index.indexType.toPublicApi &&
-            indexDef.entityType == resolveEntityType(index) &&
-            indexDef.propertyKeys == index.properties.map(_.id).map(resolver.getPropertyKeyName)
+          indexDef.entityType == resolveEntityType(index) &&
+          indexDef.propertyKeys == index.properties.map(_.id).map(resolver.getPropertyKeyName)
         }.flatMap(indexDef => Selectivity.of(indexDef.propExistsSelectivity))
       }
 
@@ -573,9 +652,12 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
         indexesGetForEntityAndIndexType(entityType, graphdb.schema.IndexType.POINT)
       }
 
-      private def indexesGetForEntityAndIndexType(entityType: IndexDefinition.EntityType, indexType: graphdb.schema.IndexType): Iterator[IndexDescriptor] = {
+      private def indexesGetForEntityAndIndexType(
+        entityType: IndexDefinition.EntityType,
+        indexType: graphdb.schema.IndexType
+      ): Iterator[IndexDescriptor] = {
         indexes.propertyIndexes.collect {
-          case indexDef@IndexDefinition(`entityType`, `indexType`, _, _, _, _, _, _) =>
+          case indexDef @ IndexDefinition(`entityType`, `indexType`, _, _, _, _, _, _) =>
             newIndexDescriptor(indexDef)
         }.flatten
       }.iterator
@@ -597,13 +679,14 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       override def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
         constraints.exists {
           case ExistenceConstraintDefinition(IndexDefinition.EntityType.Node(`labelName`), `propertyKey`) => true
-          case _ => false
+          case _                                                                                          => false
         }
       }
 
       override def getRelationshipPropertiesWithExistenceConstraint(relTypeName: String): Set[String] = {
         constraints.collect {
-          case ExistenceConstraintDefinition(IndexDefinition.EntityType.Relationship(`relTypeName`), property) => property
+          case ExistenceConstraintDefinition(IndexDefinition.EntityType.Relationship(`relTypeName`), property) =>
+            property
         }.toSet
       }
 
@@ -615,7 +698,8 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
       override def hasRelationshipPropertyExistenceConstraint(relTypeName: String, propertyKey: String): Boolean = {
         constraints.exists {
-          case ExistenceConstraintDefinition(IndexDefinition.EntityType.Relationship(`relTypeName`), `propertyKey`) => true
+          case ExistenceConstraintDefinition(IndexDefinition.EntityType.Relationship(`relTypeName`), `propertyKey`) =>
+            true
           case _ => false
         }
       }
@@ -648,41 +732,62 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
         pointIndexGetForRelTypeAndProperties(relTypeName, propertyKeys).nonEmpty
       }
 
-      override def textIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+      override def textIndexGetForLabelAndProperties(
+        labelName: String,
+        propertyKeys: Seq[String]
+      ): Option[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Node(labelName)
         indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.TEXT)
       }
 
-      override def rangeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+      override def rangeIndexGetForLabelAndProperties(
+        labelName: String,
+        propertyKeys: Seq[String]
+      ): Option[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Node(labelName)
         indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.RANGE)
       }
 
-      override def pointIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+      override def pointIndexGetForLabelAndProperties(
+        labelName: String,
+        propertyKeys: Seq[String]
+      ): Option[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Node(labelName)
         indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.POINT)
       }
 
-      override def textIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+      override def textIndexGetForRelTypeAndProperties(
+        relTypeName: String,
+        propertyKeys: Seq[String]
+      ): Option[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Relationship(relTypeName)
         indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.TEXT)
       }
 
-      override def rangeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+      override def rangeIndexGetForRelTypeAndProperties(
+        relTypeName: String,
+        propertyKeys: Seq[String]
+      ): Option[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Relationship(relTypeName)
         indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.RANGE)
       }
 
-      override def pointIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+      override def pointIndexGetForRelTypeAndProperties(
+        relTypeName: String,
+        propertyKeys: Seq[String]
+      ): Option[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Relationship(relTypeName)
         indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.POINT)
       }
 
-      private def indexGetForEntityTypePropertiesAndIndexType(entityType: IndexDefinition.EntityType,
-                                                              propertyKeys: Seq[String],
-                                                              indexType: graphdb.schema.IndexType): Option[IndexDescriptor] = {
+      private def indexGetForEntityTypePropertiesAndIndexType(
+        entityType: IndexDefinition.EntityType,
+        propertyKeys: Seq[String],
+        indexType: graphdb.schema.IndexType
+      ): Option[IndexDescriptor] = {
         indexes.propertyIndexes.collect {
-          case indexDef@IndexDefinition(`entityType`, `indexType`, `propertyKeys`, _, _, _, _, _) => newIndexDescriptor(indexDef)
+          case indexDef @ IndexDefinition(`entityType`, `indexType`, `propertyKeys`, _, _, _, _, _) =>
+            newIndexDescriptor(indexDef)
         }.flatten.headOption
       }
 
@@ -729,7 +834,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       resolver,
       planContext,
       options,
-      settings,
+      settings
     )
   }
 }
@@ -738,9 +843,9 @@ class StatisticsBackedLogicalPlanningConfiguration(
   resolver: LogicalPlanResolver,
   planContext: PlanContext,
   options: StatisticsBackedLogicalPlanningConfigurationBuilder.Options,
-  settings: Map[Setting[_], AnyRef],
+  settings: Map[Setting[_], AnyRef]
 ) extends LogicalPlanConstructionTestSupport
-  with AstConstructionTestSupport {
+    with AstConstructionTestSupport {
 
   def plan(queryString: String): LogicalPlan = {
     planState(queryString).logicalPlan
@@ -750,15 +855,17 @@ class StatisticsBackedLogicalPlanningConfiguration(
     val plannerConfiguration = CypherPlannerConfiguration.withSettings(settings)
 
     val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
-    val metrics = SimpleMetricsFactory.newMetrics(planContext,
+    val metrics = SimpleMetricsFactory.newMetrics(
+      planContext,
       simpleExpressionEvaluator,
       options.executionModel,
       plannerConfiguration.planningTextIndexesEnabled,
       plannerConfiguration.planningRangeIndexesEnabled,
-      plannerConfiguration.planningPointIndexesEnabled,
+      plannerConfiguration.planningPointIndexesEnabled
     )
 
-    val iDPSolverConfig = new ConfigurableIDPSolverConfig(plannerConfiguration.idpMaxTableSize, plannerConfiguration.idpIterationDuration)
+    val iDPSolverConfig =
+      new ConfigurableIDPSolverConfig(plannerConfiguration.idpMaxTableSize, plannerConfiguration.idpIterationDuration)
 
     val context = ContextHelper.create(
       planContext = planContext,

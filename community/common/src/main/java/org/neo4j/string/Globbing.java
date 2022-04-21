@@ -19,29 +19,28 @@
  */
 package org.neo4j.string;
 
+import static java.util.regex.Pattern.CASE_INSENSITIVE;
+
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static java.util.regex.Pattern.CASE_INSENSITIVE;
-
-public class Globbing
-{
-    // These are characters that have special meaning in java regex, * and ? are omitted since we have special handling for those
+public class Globbing {
+    // These are characters that have special meaning in java regex, * and ? are omitted since we have special handling
+    // for those
     private static final String specialCharacters = "<([{\\^-=$!|]})+.>";
     // To construct a pattern with the special characters they must first be escaped
     // the '.' is a regex matching every character in the string once and replacing it with the escaped form
-    @SuppressWarnings( "ReplaceAllDot" )
-    private static final String escapedSpecialCharacters = specialCharacters.replaceAll( ".", "\\\\$0" );
-    private static final Pattern specialCharacterPattern = Pattern.compile( "[" + escapedSpecialCharacters + "]" );
+    @SuppressWarnings("ReplaceAllDot")
+    private static final String escapedSpecialCharacters = specialCharacters.replaceAll(".", "\\\\$0");
 
-    public static Predicate<String> globPredicate( String globbing )
-    {
-        Matcher m = specialCharacterPattern.matcher( globbing );
+    private static final Pattern specialCharacterPattern = Pattern.compile("[" + escapedSpecialCharacters + "]");
+
+    public static Predicate<String> globPredicate(String globbing) {
+        Matcher m = specialCharacterPattern.matcher(globbing);
         // escape all special character that were found
-        String escaped = m.replaceAll( "\\\\$0" );
-        String escapedString = escaped.replaceAll( "\\*", ".*" )
-                .replaceAll( "\\?", ".{1}" );
-        return Pattern.compile( escapedString, CASE_INSENSITIVE ).asMatchPredicate();
+        String escaped = m.replaceAll("\\\\$0");
+        String escapedString = escaped.replaceAll("\\*", ".*").replaceAll("\\?", ".{1}");
+        return Pattern.compile(escapedString, CASE_INSENSITIVE).asMatchPredicate();
     }
 }

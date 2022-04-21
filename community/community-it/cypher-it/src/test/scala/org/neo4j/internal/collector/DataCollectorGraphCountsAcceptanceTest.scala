@@ -30,11 +30,12 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite with GraphIcing with SampleGraphs {
 
   // Make sure that background sampling is disabled so we can test `updatesSinceEstimation`
-  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() + (index_background_sampling_enabled -> java.lang.Boolean.FALSE)
+  override def databaseConfig(): Map[Setting[_], Object] =
+    super.databaseConfig() + (index_background_sampling_enabled -> java.lang.Boolean.FALSE)
 
   test("retrieve empty") {
     // setup
-    graph.withTx( tx => {
+    graph.withTx(tx => {
       tx.schema().getIndexes.iterator().asScala.foreach(index => index.drop())
       tx.commit()
     })
@@ -52,7 +53,7 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
 
   test("retrieve all index types") {
     // all but FULLTEXT, as this is currently not exported.
-    graph.withTx( tx => {
+    graph.withTx(tx => {
       tx.schema().getIndexes.iterator().asScala.foreach(index => index.drop())
       tx.commit()
     })
@@ -70,16 +71,71 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
     // when
     val res = execute("CALL db.stats.retrieve('GRAPH COUNTS')").single
 
-    list(res("data"), "indexes") should contain only(
-      Map("totalSize" -> 0, "indexType" -> IndexType.LOOKUP.name, "properties" -> Seq.empty, "labels" -> Seq.empty, "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
-      Map("totalSize" -> 0, "indexType" -> IndexType.TEXT.name, "properties" -> Seq("textProp"), "labels" -> Seq("Label"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
-      Map("totalSize" -> 0, "indexType" -> IndexType.POINT.name, "properties" -> Seq("pointProp"), "labels" -> Seq("Label"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
-      Map("totalSize" -> 0, "indexType" -> IndexType.RANGE.name, "properties" -> Seq("rangeProp"), "labels" -> Seq("Label"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
-
-      Map("totalSize" -> 0, "indexType" -> IndexType.LOOKUP.name, "properties" -> Seq.empty, "relationshipTypes" -> Seq.empty, "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
-      Map("totalSize" -> 0, "indexType" -> IndexType.TEXT.name, "properties" -> Seq("textProp"), "relationshipTypes" -> Seq("RelationshipType"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
-      Map("totalSize" -> 0, "indexType" -> IndexType.POINT.name, "properties" -> Seq("pointProp"), "relationshipTypes" -> Seq("RelationshipType"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
-      Map("totalSize" -> 0, "indexType" -> IndexType.RANGE.name, "properties" -> Seq("rangeProp"), "relationshipTypes" -> Seq("RelationshipType"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0)
+    list(res("data"), "indexes") should contain only (
+      Map(
+        "totalSize" -> 0,
+        "indexType" -> IndexType.LOOKUP.name,
+        "properties" -> Seq.empty,
+        "labels" -> Seq.empty,
+        "updatesSinceEstimation" -> 0,
+        "estimatedUniqueSize" -> 0
+      ),
+      Map(
+        "totalSize" -> 0,
+        "indexType" -> IndexType.TEXT.name,
+        "properties" -> Seq("textProp"),
+        "labels" -> Seq("Label"),
+        "updatesSinceEstimation" -> 0,
+        "estimatedUniqueSize" -> 0
+      ),
+      Map(
+        "totalSize" -> 0,
+        "indexType" -> IndexType.POINT.name,
+        "properties" -> Seq("pointProp"),
+        "labels" -> Seq("Label"),
+        "updatesSinceEstimation" -> 0,
+        "estimatedUniqueSize" -> 0
+      ),
+      Map(
+        "totalSize" -> 0,
+        "indexType" -> IndexType.RANGE.name,
+        "properties" -> Seq("rangeProp"),
+        "labels" -> Seq("Label"),
+        "updatesSinceEstimation" -> 0,
+        "estimatedUniqueSize" -> 0
+      ),
+      Map(
+        "totalSize" -> 0,
+        "indexType" -> IndexType.LOOKUP.name,
+        "properties" -> Seq.empty,
+        "relationshipTypes" -> Seq.empty,
+        "updatesSinceEstimation" -> 0,
+        "estimatedUniqueSize" -> 0
+      ),
+      Map(
+        "totalSize" -> 0,
+        "indexType" -> IndexType.TEXT.name,
+        "properties" -> Seq("textProp"),
+        "relationshipTypes" -> Seq("RelationshipType"),
+        "updatesSinceEstimation" -> 0,
+        "estimatedUniqueSize" -> 0
+      ),
+      Map(
+        "totalSize" -> 0,
+        "indexType" -> IndexType.POINT.name,
+        "properties" -> Seq("pointProp"),
+        "relationshipTypes" -> Seq("RelationshipType"),
+        "updatesSinceEstimation" -> 0,
+        "estimatedUniqueSize" -> 0
+      ),
+      Map(
+        "totalSize" -> 0,
+        "indexType" -> IndexType.RANGE.name,
+        "properties" -> Seq("rangeProp"),
+        "relationshipTypes" -> Seq("RelationshipType"),
+        "updatesSinceEstimation" -> 0,
+        "estimatedUniqueSize" -> 0
+      )
     )
   }
 
@@ -94,7 +150,7 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
     val res = execute("CALL db.stats.retrieve('GRAPH COUNTS')").single
 
     // then
-    list(res("data"), "nodes") should contain only(
+    list(res("data"), "nodes") should contain only (
       Map("count" -> 4),
       Map("count" -> 2, "label" -> "User"),
       Map("count" -> 1, "label" -> "Donkey")
@@ -114,7 +170,7 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
     val res = execute("CALL db.stats.retrieve('GRAPH COUNTS')").single
 
     // then
-    list(res("data"), "relationships") should contain only(
+    list(res("data"), "relationships") should contain only (
       Map("count" -> 4),
       Map("count" -> 3, "relationshipType" -> "R"),
       Map("count" -> 1, "relationshipType" -> "R", "startLabel" -> "User"),
@@ -132,16 +188,10 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
     val res = execute("CALL db.stats.retrieve('GRAPH COUNTS')").single
 
     // then
-    assertSteelfaceGraphCounts(res, TokenNames("User",
-                                               "Car",
-                                               "Room",
-                                               "OWNS",
-                                               "STAYS_IN",
-                                               "email",
-                                               "lastName",
-                                               "firstName",
-                                               "number",
-                                               "hotel"))
+    assertSteelfaceGraphCounts(
+      res,
+      TokenNames("User", "Car", "Room", "OWNS", "STAYS_IN", "email", "lastName", "firstName", "number", "hotel")
+    )
   }
 
   test("retrieve anonymized complex graph") {
@@ -149,57 +199,87 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
     createSteelfaceGraph()
 
     // when
-    val res = execute("CALL db.stats.retrieveAllAnonymized('myGraphToken')").toList.filter(row => row("section") == "GRAPH COUNTS").head
+    val res = execute("CALL db.stats.retrieveAllAnonymized('myGraphToken')").toList.filter(row =>
+      row("section") == "GRAPH COUNTS"
+    ).head
 
     // then
-    assertSteelfaceGraphCounts(res, TokenNames("L0",
-                                               "L1",
-                                               "L2",
-                                               "R0",
-                                               "R1",
-                                               "p10",
-                                               "p11",
-                                               "p12",
-                                               "p13",
-                                               "p14"))
+    assertSteelfaceGraphCounts(res, TokenNames("L0", "L1", "L2", "R0", "R1", "p10", "p11", "p12", "p13", "p14"))
   }
 
-  case class TokenNames(User: String,
-                        Car: String,
-                        Room: String,
-                        OWNS: String,
-                        STAYS_IN: String,
-                        email: String,
-                        lastName: String,
-                        firstName: String,
-                        number: String,
-                        hotel: String)
+  case class TokenNames(
+    User: String,
+    Car: String,
+    Room: String,
+    OWNS: String,
+    STAYS_IN: String,
+    email: String,
+    lastName: String,
+    firstName: String,
+    number: String,
+    hotel: String
+  )
 
   private def assertSteelfaceGraphCounts(res: Map[String, AnyRef], tokenNames: TokenNames): Unit = {
 
     res("section") should be("GRAPH COUNTS")
-    list(res("data"), "nodes") should contain only(
+    list(res("data"), "nodes") should contain only (
       Map("count" -> 1278),
       Map("label" -> tokenNames.User, "count" -> 1000),
       Map("label" -> tokenNames.Car, "count" -> 128),
       Map("label" -> tokenNames.Room, "count" -> 150)
     )
-    list(res("data"), "relationships") should contain only(
+    list(res("data"), "relationships") should contain only (
       Map("count" -> 320),
       Map("relationshipType" -> tokenNames.OWNS, "count" -> 170),
       Map("relationshipType" -> tokenNames.OWNS, "startLabel" -> tokenNames.User, "count" -> 170),
       Map("relationshipType" -> tokenNames.OWNS, "endLabel" -> tokenNames.Car, "count" -> 100),
-      Map("relationshipType" -> tokenNames. OWNS, "endLabel" -> tokenNames.Room, "count" -> 70),
+      Map("relationshipType" -> tokenNames.OWNS, "endLabel" -> tokenNames.Room, "count" -> 70),
       Map("relationshipType" -> tokenNames.STAYS_IN, "count" -> 150),
       Map("relationshipType" -> tokenNames.STAYS_IN, "startLabel" -> tokenNames.User, "count" -> 150),
       Map("relationshipType" -> tokenNames.STAYS_IN, "endLabel" -> tokenNames.Room, "count" -> 150)
     )
-    list(res("data"), "indexes") should contain only(
-      Map("labels" -> List(tokenNames.User), "properties" -> List(tokenNames.email), "totalSize" -> 1000, "estimatedUniqueSize" -> 1000, "updatesSinceEstimation" -> 0, "indexType" -> "RANGE"),
-      Map("labels" -> List(tokenNames.User), "properties" -> List(tokenNames.lastName), "totalSize" -> 500, "estimatedUniqueSize" -> 500, "updatesSinceEstimation" -> 0, "indexType" -> "RANGE"),
-      Map("labels" -> List(tokenNames.User), "properties" -> List(tokenNames.firstName, tokenNames.lastName), "totalSize" -> 300, "estimatedUniqueSize" -> 300, "updatesSinceEstimation" -> 0, "indexType" -> "RANGE"),
-      Map("labels" -> List(tokenNames.Room), "properties" -> List(tokenNames.hotel, tokenNames.number), "totalSize" -> 150, "estimatedUniqueSize" -> 50, "updatesSinceEstimation" -> 0, "indexType" -> "RANGE"),
-      Map("labels" -> List(tokenNames.Car), "properties" -> List(tokenNames.number), "totalSize" -> 120, "estimatedUniqueSize" -> 120, "updatesSinceEstimation" -> 8, "indexType" -> "RANGE")
+    list(res("data"), "indexes") should contain only (
+      Map(
+        "labels" -> List(tokenNames.User),
+        "properties" -> List(tokenNames.email),
+        "totalSize" -> 1000,
+        "estimatedUniqueSize" -> 1000,
+        "updatesSinceEstimation" -> 0,
+        "indexType" -> "RANGE"
+      ),
+      Map(
+        "labels" -> List(tokenNames.User),
+        "properties" -> List(tokenNames.lastName),
+        "totalSize" -> 500,
+        "estimatedUniqueSize" -> 500,
+        "updatesSinceEstimation" -> 0,
+        "indexType" -> "RANGE"
+      ),
+      Map(
+        "labels" -> List(tokenNames.User),
+        "properties" -> List(tokenNames.firstName, tokenNames.lastName),
+        "totalSize" -> 300,
+        "estimatedUniqueSize" -> 300,
+        "updatesSinceEstimation" -> 0,
+        "indexType" -> "RANGE"
+      ),
+      Map(
+        "labels" -> List(tokenNames.Room),
+        "properties" -> List(tokenNames.hotel, tokenNames.number),
+        "totalSize" -> 150,
+        "estimatedUniqueSize" -> 50,
+        "updatesSinceEstimation" -> 0,
+        "indexType" -> "RANGE"
+      ),
+      Map(
+        "labels" -> List(tokenNames.Car),
+        "properties" -> List(tokenNames.number),
+        "totalSize" -> 120,
+        "estimatedUniqueSize" -> 120,
+        "updatesSinceEstimation" -> 8,
+        "indexType" -> "RANGE"
+      )
     )
     list(res("data"), "constraints") should contain only
       Map("label" -> tokenNames.User, "properties" -> List(tokenNames.email), "type" -> "Uniqueness constraint")

@@ -30,7 +30,7 @@ import org.neo4j.fabric.planning.Use.Inherited
 import org.scalatest.Inside
 
 class FabricStitcherTest
-  extends FabricTest
+    extends FabricTest
     with Inside
     with ProcedureSignatureResolverTestSupport
     with FragmentTestUtils
@@ -38,7 +38,6 @@ class FabricStitcherTest
 
   private def importParams(names: String*) =
     with_(names.map(v => parameter(Columns.paramName(v), ct.any).as(v)): _*)
-
 
   private val dummyQuery = ""
   private val dummyPipeline = pipeline("RETURN 1")
@@ -48,7 +47,6 @@ class FabricStitcherTest
     def stitching(fragment: Fragment) =
       FabricStitcher(dummyQuery, allowMultiGraph = false, None, dummyPipeline)
         .convert(fragment).withoutLocalAndRemote
-
 
     "single fragment" in {
       stitching(
@@ -71,7 +69,9 @@ class FabricStitcherTest
         init(defaultUse, Seq("x", "y"), Seq("y")).leaf(Seq(return_(literal(1).as("a"))), Seq("a"))
       ).shouldEqual(
         init(defaultUse, Seq("x", "y"), Seq("y")).exec(
-          query(importParams("y"), return_(literal(1).as("a"))), Seq("a"))
+          query(importParams("y"), return_(literal(1).as("a"))),
+          Seq("a")
+        )
       )
     }
 
@@ -87,16 +87,21 @@ class FabricStitcherTest
       stitching(
         init(defaultUse)
           .leaf(Seq(with_(literal(1).as("a"))), Seq("a"))
-          .apply(u => init(Inherited(u)(pos), Seq("a"))
-            .leaf(Seq(return_(literal(2).as("b"))), Seq("b")))
+          .apply(u =>
+            init(Inherited(u)(pos), Seq("a"))
+              .leaf(Seq(return_(literal(2).as("b"))), Seq("b"))
+          )
           .leaf(Seq(return_(literal(3).as("c"))), Seq("c"))
       ).shouldEqual(
         init(defaultUse)
-          .exec(query(
-            with_(literal(1).as("a")),
-            subqueryCall(return_(literal(2).as("b"))),
-            return_(literal(3).as("c"))
-          ), Seq("c"))
+          .exec(
+            query(
+              with_(literal(1).as("a")),
+              subqueryCall(return_(literal(2).as("b"))),
+              return_(literal(3).as("c"))
+            ),
+            Seq("c")
+          )
       )
     }
 
@@ -104,23 +109,30 @@ class FabricStitcherTest
       stitching(
         init(defaultUse)
           .leaf(Seq(with_(literal(1).as("a"))), Seq("a"))
-          .apply(u => init(Inherited(u)(pos), Seq("a"))
-            .leaf(Seq(with_(literal(2).as("b"))), Seq("b"))
-            .apply(u => init(Inherited(u)(pos), Seq("b"))
-              .leaf(Seq(return_(literal(3).as("c"))), Seq("c")))
-            .leaf(Seq(return_(literal(4).as("d"))), Seq("d")))
+          .apply(u =>
+            init(Inherited(u)(pos), Seq("a"))
+              .leaf(Seq(with_(literal(2).as("b"))), Seq("b"))
+              .apply(u =>
+                init(Inherited(u)(pos), Seq("b"))
+                  .leaf(Seq(return_(literal(3).as("c"))), Seq("c"))
+              )
+              .leaf(Seq(return_(literal(4).as("d"))), Seq("d"))
+          )
           .leaf(Seq(return_(literal(5).as("e"))), Seq("e"))
       ).shouldEqual(
         init(defaultUse)
-          .exec(query(
-            with_(literal(1).as("a")),
-            subqueryCall(
-              with_(literal(2).as("b")),
-              subqueryCall(return_(literal(3).as("c"))),
-              return_(literal(4).as("d"))
+          .exec(
+            query(
+              with_(literal(1).as("a")),
+              subqueryCall(
+                with_(literal(2).as("b")),
+                subqueryCall(return_(literal(3).as("c"))),
+                return_(literal(4).as("d"))
+              ),
+              return_(literal(5).as("e"))
             ),
-            return_(literal(5).as("e"))
-          ), Seq("e"))
+            Seq("e")
+          )
       )
     }
 
@@ -128,19 +140,26 @@ class FabricStitcherTest
       stitching(
         init(defaultUse)
           .leaf(Seq(with_(literal(1).as("a"))), Seq("a"))
-          .apply(u => init(Inherited(u)(pos), Seq("a"))
-            .leaf(Seq(return_(literal(2).as("b"))), Seq("b")))
-          .apply(u => init(Inherited(u)(pos), Seq("a", "b"))
-            .leaf(Seq(return_(literal(3).as("c"))), Seq("c")))
+          .apply(u =>
+            init(Inherited(u)(pos), Seq("a"))
+              .leaf(Seq(return_(literal(2).as("b"))), Seq("b"))
+          )
+          .apply(u =>
+            init(Inherited(u)(pos), Seq("a", "b"))
+              .leaf(Seq(return_(literal(3).as("c"))), Seq("c"))
+          )
           .leaf(Seq(return_(literal(4).as("d"))), Seq("d"))
       ).shouldEqual(
         init(defaultUse)
-          .exec(query(
-            with_(literal(1).as("a")),
-            subqueryCall(return_(literal(2).as("b"))),
-            subqueryCall(return_(literal(3).as("c"))),
-            return_(literal(4).as("d"))
-          ), Seq("d"))
+          .exec(
+            query(
+              with_(literal(1).as("a")),
+              subqueryCall(return_(literal(2).as("b"))),
+              subqueryCall(return_(literal(3).as("c"))),
+              return_(literal(4).as("d"))
+            ),
+            Seq("d")
+          )
       )
     }
 
@@ -148,15 +167,20 @@ class FabricStitcherTest
       stitching(
         init(Declared(use("foo")))
           .leaf(Seq(use("foo")), Seq())
-          .apply(u => init(Inherited(u)(pos), Seq())
-            .leaf(Seq(return_(literal(2).as("b"))), Seq("b")))
+          .apply(u =>
+            init(Inherited(u)(pos), Seq())
+              .leaf(Seq(return_(literal(2).as("b"))), Seq("b"))
+          )
           .leaf(Seq(return_(literal(3).as("c"))), Seq("c"))
       ).shouldEqual(
         init(Declared(use("foo")))
-          .exec(query(
-            subqueryCall(return_(literal(2).as("b"))),
-            return_(literal(3).as("c"))
-          ), Seq("c"))
+          .exec(
+            query(
+              subqueryCall(return_(literal(2).as("b"))),
+              return_(literal(3).as("c"))
+            ),
+            Seq("c")
+          )
       )
     }
 
@@ -167,13 +191,17 @@ class FabricStitcherTest
             init(defaultUse, Seq("x", "y", "z"), Seq("y"))
               .leaf(Seq(return_(literal(1).as("a"))), Seq("a")),
             init(defaultUse, Seq("x", "y", "z"), Seq("z"))
-              .leaf(Seq(return_(literal(2).as("a"))), Seq("a")))
+              .leaf(Seq(return_(literal(2).as("a"))), Seq("a"))
+          )
       ).shouldEqual(
         init(defaultUse, Seq("x", "y", "z"), Seq("y", "z"))
-          .exec(query(union(
-            singleQuery(importParams("y"), return_(literal(1).as("a"))),
-            singleQuery(importParams("z"), return_(literal(2).as("a")))
-          )), Seq("a"))
+          .exec(
+            query(union(
+              singleQuery(importParams("y"), return_(literal(1).as("a"))),
+              singleQuery(importParams("z"), return_(literal(2).as("a")))
+            )),
+            Seq("a")
+          )
       )
     }
 
@@ -181,23 +209,29 @@ class FabricStitcherTest
       stitching(
         init(defaultUse)
           .leaf(Seq(with_(literal(1).as("x"), literal(2).as("y"), literal(3).as("z"))), Seq("x", "y", "z"))
-          .apply(u => init(Inherited(u)(pos), Seq("x", "y", "z"))
-            .union(
-              init(defaultUse, Seq("x", "y", "z"), Seq("y"))
-                .leaf(Seq(with_(varFor("y").as("y")), return_(varFor("y").as("a"))), Seq("a")),
-              init(defaultUse, Seq("x", "y", "z"), Seq("z"))
-                .leaf(Seq(with_(varFor("z").as("z")), return_(varFor("z").as("a"))), Seq("a"))))
+          .apply(u =>
+            init(Inherited(u)(pos), Seq("x", "y", "z"))
+              .union(
+                init(defaultUse, Seq("x", "y", "z"), Seq("y"))
+                  .leaf(Seq(with_(varFor("y").as("y")), return_(varFor("y").as("a"))), Seq("a")),
+                init(defaultUse, Seq("x", "y", "z"), Seq("z"))
+                  .leaf(Seq(with_(varFor("z").as("z")), return_(varFor("z").as("a"))), Seq("a"))
+              )
+          )
           .leaf(Seq(return_(literal(4).as("c"))), Seq("c"))
       ).shouldEqual(
         init(defaultUse)
-          .exec(query(
-            with_(literal(1).as("x"), literal(2).as("y"), literal(3).as("z")),
-            subqueryCall(union(
-              singleQuery(with_(varFor("y").as("y")), return_(varFor("y").as("a"))),
-              singleQuery(with_(varFor("z").as("z")), return_(varFor("z").as("a")))
-            )),
-            return_(literal(4).as("c"))
-          ), Seq("c"))
+          .exec(
+            query(
+              with_(literal(1).as("x"), literal(2).as("y"), literal(3).as("z")),
+              subqueryCall(union(
+                singleQuery(with_(varFor("y").as("y")), return_(varFor("y").as("a"))),
+                singleQuery(with_(varFor("z").as("z")), return_(varFor("z").as("a")))
+              )),
+              return_(literal(4).as("c"))
+            ),
+            Seq("c")
+          )
       )
     }
   }
@@ -224,14 +258,18 @@ class FabricStitcherTest
       stitching(
         init(defaultUse)
           .leaf(Seq(with_(literal(1).as("a"))), Seq("a"))
-          .apply(_ => init(Declared(use("foo")), Seq("a"))
-            .leaf(Seq(use("foo"), return_(literal(2).as("b"))), Seq("b")))
+          .apply(_ =>
+            init(Declared(use("foo")), Seq("a"))
+              .leaf(Seq(use("foo"), return_(literal(2).as("b"))), Seq("b"))
+          )
           .leaf(Seq(return_(literal(3).as("c"))), Seq("c"))
       ).shouldEqual(
         init(defaultUse)
           .exec(query(with_(literal(1).as("a")), return_(varFor("a").as("a"))), Seq("a"))
-          .apply(_ => init(Declared(use("foo")), Seq("a"))
-            .exec(query(return_(literal(2).as("b"))), Seq("b")))
+          .apply(_ =>
+            init(Declared(use("foo")), Seq("a"))
+              .exec(query(return_(literal(2).as("b"))), Seq("b"))
+          )
           .exec(query(input(varFor("a"), varFor("b")), return_(literal(3).as("c"))), Seq("c"))
       )
     }
@@ -240,14 +278,21 @@ class FabricStitcherTest
       stitching(
         init(defaultUse)
           .leaf(Seq(with_(literal(1).as("a"))), Seq("a"))
-          .apply(_ => init(Declared(use("foo")), Seq("a"), Seq("a"))
-            .leaf(Seq(with_(varFor("a").as("a")), use("foo"), return_(literal(2).as("b"))), Seq("b")))
+          .apply(_ =>
+            init(Declared(use("foo")), Seq("a"), Seq("a"))
+              .leaf(Seq(with_(varFor("a").as("a")), use("foo"), return_(literal(2).as("b"))), Seq("b"))
+          )
           .leaf(Seq(return_(literal(3).as("c"))), Seq("c"))
       ).shouldEqual(
         init(defaultUse)
           .exec(query(with_(literal(1).as("a")), return_(varFor("a").as("a"))), Seq("a"))
-          .apply(_ => init(Declared(use("foo")), Seq("a"), Seq("a"))
-            .exec(query(with_(parameter("@@a", ct.any).as("a")), with_(varFor("a").as("a")), return_(literal(2).as("b"))), Seq("b")))
+          .apply(_ =>
+            init(Declared(use("foo")), Seq("a"), Seq("a"))
+              .exec(
+                query(with_(parameter("@@a", ct.any).as("a")), with_(varFor("a").as("a")), return_(literal(2).as("b"))),
+                Seq("b")
+              )
+          )
           .exec(query(input(varFor("a"), varFor("b")), return_(literal(3).as("c"))), Seq("c"))
       )
     }
@@ -260,12 +305,19 @@ class FabricStitcherTest
           stitching(
             init(defaultUse)
               .leaf(Seq(with_(literal(1).as("a"))), Seq("a"))
-              .apply(_ => init(Declared(use("foo")), Seq("a"), Seq("a"))
-                .leaf(Seq(with_(varFor("a").as("a")), use("foo"), return_(literal(2).as("b"))), Seq("b")), inTransactionParameters)
+              .apply(
+                _ =>
+                  init(Declared(use("foo")), Seq("a"), Seq("a"))
+                    .leaf(Seq(with_(varFor("a").as("a")), use("foo"), return_(literal(2).as("b"))), Seq("b")),
+                inTransactionParameters
+              )
               .leaf(Seq(return_(literal(3).as("c"))), Seq("c"))
-          ))
+          )
+        )
 
-        e.getMessage.should(include("Transactional subquery is not allowed here. This feature is not supported in a Fabric database."))
+        e.getMessage.should(
+          include("Transactional subquery is not allowed here. This feature is not supported in a Fabric database.")
+        )
       }
 
       "disallows call in transactions as nested apply" in {
@@ -273,13 +325,22 @@ class FabricStitcherTest
           stitching(
             init(defaultUse)
               .leaf(Seq(with_(literal(1).as("a"))), Seq("a"))
-              .apply(oldUse => init(Inherited(oldUse)(pos), Seq("a"), Seq("a"))
-                .apply(_ => init(Declared(use("foo")), Seq("a"), Seq("a"))
-                  .leaf(Seq(with_(varFor("a").as("a")), use("foo"), return_(literal(2).as("b"))), Seq("b")), inTransactionParameters))
+              .apply(oldUse =>
+                init(Inherited(oldUse)(pos), Seq("a"), Seq("a"))
+                  .apply(
+                    _ =>
+                      init(Declared(use("foo")), Seq("a"), Seq("a"))
+                        .leaf(Seq(with_(varFor("a").as("a")), use("foo"), return_(literal(2).as("b"))), Seq("b")),
+                    inTransactionParameters
+                  )
+              )
               .leaf(Seq(return_(literal(3).as("c"))), Seq("c"))
-          ))
+          )
+        )
 
-        e.getMessage.should(include("Transactional subquery is not allowed here. This feature is not supported in a Fabric database."))
+        e.getMessage.should(
+          include("Transactional subquery is not allowed here. This feature is not supported in a Fabric database.")
+        )
       }
 
       "disallows call in transactions as apply under union" in {
@@ -291,22 +352,33 @@ class FabricStitcherTest
                   .leaf(Seq(return_(literal(3).as("c"))), Seq("c")),
                 init(defaultUse)
                   .leaf(Seq(with_(literal(1).as("a"))), Seq("a"))
-                  .apply(_ => init(Declared(use("foo")), Seq("a"), Seq("a"))
-                    .leaf(Seq(with_(varFor("a").as("a")), use("foo"), return_(literal(2).as("b"))), Seq("b")), inTransactionParameters)
+                  .apply(
+                    _ =>
+                      init(Declared(use("foo")), Seq("a"), Seq("a"))
+                        .leaf(Seq(with_(varFor("a").as("a")), use("foo"), return_(literal(2).as("b"))), Seq("b")),
+                    inTransactionParameters
+                  )
                   .leaf(Seq(return_(literal(3).as("c"))), Seq("c"))
               )
-          ))
+          )
+        )
 
-        e.getMessage.should(include("Transactional subquery is not allowed here. This feature is not supported in a Fabric database."))
+        e.getMessage.should(
+          include("Transactional subquery is not allowed here. This feature is not supported in a Fabric database.")
+        )
       }
 
       "disallows call in transactions as subquery call" in {
         val e = the[SyntaxException].thrownBy(
           stitching(
             init(defaultUse)
-              .leaf(Seq(with_(literal(1).as("a")), subqueryCallInTransactions(create(nodePat(Some("n"))))), Seq("a"))))
+              .leaf(Seq(with_(literal(1).as("a")), subqueryCallInTransactions(create(nodePat(Some("n"))))), Seq("a"))
+          )
+        )
 
-        e.getMessage.should(include("Transactional subquery is not allowed here. This feature is not supported in a Fabric database."))
+        e.getMessage.should(
+          include("Transactional subquery is not allowed here. This feature is not supported in a Fabric database.")
+        )
       }
     }
   }

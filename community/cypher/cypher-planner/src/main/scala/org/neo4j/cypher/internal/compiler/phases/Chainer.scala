@@ -24,15 +24,20 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 
 object Chainer {
+
   /**
    * Chain together transformers.
    * Illegal sequences are not caught because of type erasure.
    * They will lead to [[ClassCastException]]s later on.
    */
-  def chainTransformers(transformers: Seq[Transformer[_ <: BaseContext, _, _]]): Transformer[_  <: BaseContext, _, _] = {
-    transformers.reduceLeft[Transformer[_  <: BaseContext, _, _]] {
-      case (t1: Transformer[BaseContext, BaseState, BaseState], t2: Transformer[BaseContext, BaseState, BaseState]) => t1 andThen t2
-      case (t1: Transformer[BaseContext, BaseState, LogicalPlanState], t2: Transformer[BaseContext, LogicalPlanState, LogicalPlanState]) => t1 andThen t2
+  def chainTransformers(transformers: Seq[Transformer[_ <: BaseContext, _, _]]): Transformer[_ <: BaseContext, _, _] = {
+    transformers.reduceLeft[Transformer[_ <: BaseContext, _, _]] {
+      case (t1: Transformer[BaseContext, BaseState, BaseState], t2: Transformer[BaseContext, BaseState, BaseState]) =>
+        t1 andThen t2
+      case (
+          t1: Transformer[BaseContext, BaseState, LogicalPlanState],
+          t2: Transformer[BaseContext, LogicalPlanState, LogicalPlanState]
+        ) => t1 andThen t2
     }
   }
 }

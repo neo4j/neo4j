@@ -24,42 +24,34 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 
-public final class NullLogService implements LogService
-{
+public final class NullLogService implements LogService {
     private static final NullLogService INSTANCE = new NullLogService();
     private static final NullLogProvider NULL_LOG_PROVIDER = NullLogProvider.getInstance();
     private static final NullLog NULL_LOG = NullLog.getInstance();
 
-    private NullLogService()
-    {
-    }
+    private NullLogService() {}
 
-    public static NullLogService getInstance()
-    {
+    public static NullLogService getInstance() {
         return INSTANCE;
     }
 
     @Override
-    public InternalLogProvider getUserLogProvider()
-    {
+    public InternalLogProvider getUserLogProvider() {
         return NULL_LOG_PROVIDER;
     }
 
     @Override
-    public InternalLog getUserLog( Class<?> loggingClass )
-    {
+    public InternalLog getUserLog(Class<?> loggingClass) {
         return NULL_LOG;
     }
 
     @Override
-    public InternalLogProvider getInternalLogProvider()
-    {
+    public InternalLogProvider getInternalLogProvider() {
         return NULL_LOG_PROVIDER;
     }
 
     @Override
-    public InternalLog getInternalLog( Class<?> loggingClass )
-    {
+    public InternalLog getInternalLog(Class<?> loggingClass) {
         return NULL_LOG;
     }
 }

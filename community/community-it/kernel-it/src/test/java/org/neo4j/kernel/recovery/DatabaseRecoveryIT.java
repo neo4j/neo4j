@@ -19,12 +19,23 @@
  */
 package org.neo4j.kernel.recovery;
 
-import org.eclipse.collections.api.set.ImmutableSet;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import static java.lang.Long.max;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.Config.defaults;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.helpers.collection.Iterables.asList;
+import static org.neo4j.internal.helpers.collection.Iterables.count;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -39,7 +50,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-
+import org.eclipse.collections.api.set.ImmutableSet;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.collection.Dependencies;
@@ -123,67 +139,50 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.time.Clocks;
 
-import static java.lang.Long.max;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.Config.defaults;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.helpers.collection.Iterables.asList;
-import static org.neo4j.internal.helpers.collection.Iterables.count;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
-import static org.neo4j.logging.LogAssertions.assertThat;
-
 @Neo4jLayoutExtension
-@ExtendWith( RandomExtension.class )
-class DatabaseRecoveryIT
-{
+@ExtendWith(RandomExtension.class)
+class DatabaseRecoveryIT {
     private static final String[] TOKENS = new String[] {"Token1", "Token2", "Token3", "Token4", "Token5"};
-    private static final String[] MORE_TOKENS = new String[] {"Token1", "Token2", "Token3", "Token4", "Token5",
-                                                              "Token6", "Token7", "Token8", "Token9", "Token0"};
+    private static final String[] MORE_TOKENS = new String[] {
+        "Token1", "Token2", "Token3", "Token4", "Token5",
+        "Token6", "Token7", "Token8", "Token9", "Token0"
+    };
 
     @Inject
     private TestDirectory directory;
+
     @Inject
     private DatabaseLayout databaseLayout;
+
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
+
     @Inject
     private Neo4jLayout neo4jLayout;
+
     @Inject
     private RandomSupport random;
+
     @RegisterExtension
     static final PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
 
-    private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
+    private final AssertableLogProvider logProvider = new AssertableLogProvider(true);
     private DatabaseManagementService managementService;
 
     @AfterEach
-    void cleanUp()
-    {
-        if ( managementService != null )
-        {
+    void cleanUp() {
+        if (managementService != null) {
             managementService.shutdown();
             managementService = null;
         }
     }
 
     @Test
-    void idGeneratorsRebuildAfterRecovery() throws IOException
-    {
-        GraphDatabaseService database = startDatabase( directory.homePath() );
+    void idGeneratorsRebuildAfterRecovery() throws IOException {
+        GraphDatabaseService database = startDatabase(directory.homePath());
         int numberOfNodes = 10;
-        try ( Transaction transaction = database.beginTx() )
-        {
-            for ( int nodeIndex = 0; nodeIndex < numberOfNodes; nodeIndex++ )
-            {
+        try (Transaction transaction = database.beginTx()) {
+            for (int nodeIndex = 0; nodeIndex < numberOfNodes; nodeIndex++) {
                 transaction.createNode();
             }
             transaction.commit();
@@ -191,10 +190,10 @@ class DatabaseRecoveryIT
 
         var restoreDbLayout = copyStore();
 
-        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbLayout.getNeo4jLayout().homeDirectory() );
-        try ( Transaction tx = recoveredDatabase.beginTx() )
-        {
-            assertEquals( numberOfNodes, count( tx.getAllNodes() ) );
+        GraphDatabaseService recoveredDatabase =
+                startDatabase(restoreDbLayout.getNeo4jLayout().homeDirectory());
+        try (Transaction tx = recoveredDatabase.beginTx()) {
+            assertEquals(numberOfNodes, count(tx.getAllNodes()));
 
             // Make sure id generator has been rebuilt so this doesn't throw null pointer exception
             tx.createNode();
@@ -202,57 +201,50 @@ class DatabaseRecoveryIT
     }
 
     @Test
-    void reportProgressOnRecovery() throws IOException
-    {
-        GraphDatabaseService database = startDatabase( directory.homePath() );
-        for ( int i = 0; i < 10; i++ )
-        {
-            try ( Transaction transaction = database.beginTx() )
-            {
+    void reportProgressOnRecovery() throws IOException {
+        GraphDatabaseService database = startDatabase(directory.homePath());
+        for (int i = 0; i < 10; i++) {
+            try (Transaction transaction = database.beginTx()) {
                 transaction.createNode();
                 transaction.commit();
             }
         }
 
         var restoreDbLayout = copyStore();
-        DatabaseManagementService recoveredService = getManagementService( restoreDbLayout.getNeo4jLayout().homeDirectory() );
-        GraphDatabaseService recoveredDatabase = recoveredService.database( DEFAULT_DATABASE_NAME );
-        try ( Transaction tx = recoveredDatabase.beginTx() )
-        {
-            assertEquals( 10, count( tx.getAllNodes() ) );
+        DatabaseManagementService recoveredService =
+                getManagementService(restoreDbLayout.getNeo4jLayout().homeDirectory());
+        GraphDatabaseService recoveredDatabase = recoveredService.database(DEFAULT_DATABASE_NAME);
+        try (Transaction tx = recoveredDatabase.beginTx()) {
+            assertEquals(10, count(tx.getAllNodes()));
         }
-        assertThat( logProvider ).containsMessages( "10% completed", "100% completed" );
+        assertThat(logProvider).containsMessages("10% completed", "100% completed");
 
         recoveredService.shutdown();
     }
 
     @Test
-    void shouldRecoverIdsCorrectlyWhenWeCreateAndDeleteANodeInTheSameRecoveryRun() throws IOException
-    {
-        GraphDatabaseService database = startDatabase( directory.homePath() );
-        Label testLabel = Label.label( "testLabel" );
+    void shouldRecoverIdsCorrectlyWhenWeCreateAndDeleteANodeInTheSameRecoveryRun() throws IOException {
+        GraphDatabaseService database = startDatabase(directory.homePath());
+        Label testLabel = Label.label("testLabel");
         final String propertyToDelete = "propertyToDelete";
         final String validPropertyName = "validProperty";
 
-        try ( Transaction transaction = database.beginTx() )
-        {
+        try (Transaction transaction = database.beginTx()) {
             Node node = transaction.createNode();
-            node.addLabel( testLabel );
+            node.addLabel(testLabel);
             transaction.commit();
         }
 
-        try ( Transaction transaction = database.beginTx() )
-        {
-            Node node = findNodeByLabel( transaction, testLabel );
-            node.setProperty( propertyToDelete, createLongString() );
-            node.setProperty( validPropertyName, createLongString() );
+        try (Transaction transaction = database.beginTx()) {
+            Node node = findNodeByLabel(transaction, testLabel);
+            node.setProperty(propertyToDelete, createLongString());
+            node.setProperty(validPropertyName, createLongString());
             transaction.commit();
         }
 
-        try ( Transaction transaction = database.beginTx() )
-        {
-            Node node = findNodeByLabel( transaction, testLabel );
-            node.removeProperty( propertyToDelete );
+        try (Transaction transaction = database.beginTx()) {
+            Node node = findNodeByLabel(transaction, testLabel);
+            node.removeProperty(propertyToDelete);
             transaction.commit();
         }
 
@@ -260,78 +252,73 @@ class DatabaseRecoveryIT
         var restoreDbLayout = copyStore();
 
         // database should be restored and node should have expected properties
-        DatabaseManagementService recoveredService = getManagementService( restoreDbLayout.getNeo4jLayout().homeDirectory() );
-        GraphDatabaseService recoveredDatabase = recoveredService.database( DEFAULT_DATABASE_NAME );
-        try ( Transaction transaction = recoveredDatabase.beginTx() )
-        {
-            Node node = findNodeByLabel( transaction, testLabel );
-            assertFalse( node.hasProperty( propertyToDelete ) );
-            assertTrue( node.hasProperty( validPropertyName ) );
+        DatabaseManagementService recoveredService =
+                getManagementService(restoreDbLayout.getNeo4jLayout().homeDirectory());
+        GraphDatabaseService recoveredDatabase = recoveredService.database(DEFAULT_DATABASE_NAME);
+        try (Transaction transaction = recoveredDatabase.beginTx()) {
+            Node node = findNodeByLabel(transaction, testLabel);
+            assertFalse(node.hasProperty(propertyToDelete));
+            assertTrue(node.hasProperty(validPropertyName));
         }
 
         recoveredService.shutdown();
     }
 
     @Test
-    void recoveryShouldFixPartiallyAppliedSchemaIndexUpdates()
-    {
-        Label label = Label.label( "Foo" );
+    void recoveryShouldFixPartiallyAppliedSchemaIndexUpdates() {
+        Label label = Label.label("Foo");
         String property = "Bar";
 
         // cause failure during 'relationship.delete()' command application
-        ClassGuardedAdversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, true ), Command.RelationshipCommand.class );
+        ClassGuardedAdversary adversary =
+                new ClassGuardedAdversary(new CountingAdversary(1, true), Command.RelationshipCommand.class);
         adversary.disable();
 
         Path storeDir = directory.homePath();
-        DatabaseManagementService managementService =
-                AdversarialPageCacheGraphDatabaseFactory.create( storeDir, fileSystem, adversary ).build();
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-        try
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
+        DatabaseManagementService managementService = AdversarialPageCacheGraphDatabaseFactory.create(
+                        storeDir, fileSystem, adversary)
+                .build();
+        GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
+        try {
+            try (Transaction tx = db.beginTx()) {
+                tx.schema()
+                        .constraintFor(label)
+                        .assertPropertyIsUnique(property)
+                        .create();
                 tx.commit();
             }
 
-            long relationshipId = createRelationship( db );
+            long relationshipId = createRelationship(db);
 
             TransactionFailureException txFailure = null;
-            try ( Transaction tx = db.beginTx() )
-            {
-                Node node = tx.createNode( label );
-                node.setProperty( property, "B" );
-                tx.getRelationshipById( relationshipId ).delete(); // this should fail because of the adversary
+            try (Transaction tx = db.beginTx()) {
+                Node node = tx.createNode(label);
+                node.setProperty(property, "B");
+                tx.getRelationshipById(relationshipId).delete(); // this should fail because of the adversary
                 adversary.enable();
                 tx.commit();
-            }
-            catch ( TransactionFailureException e )
-            {
+            } catch (TransactionFailureException e) {
                 txFailure = e;
             }
-            assertNotNull( txFailure );
+            assertNotNull(txFailure);
             adversary.disable();
 
             managementService.shutdown();
-            db = startDatabase( storeDir );
+            db = startDatabase(storeDir);
 
             // now we observe correct state: node is in the index and relationship is removed
-            try ( Transaction tx = db.beginTx() )
-            {
-                assertNotNull( findNode( label, property, "B", tx ) );
-                assertRelationshipNotExist( tx, relationshipId );
+            try (Transaction tx = db.beginTx()) {
+                assertNotNull(findNode(label, property, "B", tx));
+                assertRelationshipNotExist(tx, relationshipId);
                 tx.commit();
             }
-        }
-        finally
-        {
+        } finally {
             managementService.shutdown();
         }
     }
 
     @Test
-    void shouldSeeSameIndexUpdatesDuringRecoveryAsFromNormalIndexApplication() throws Exception
-    {
+    void shouldSeeSameIndexUpdatesDuringRecoveryAsFromNormalIndexApplication() throws Exception {
         // Previously indexes weren't really participating in recovery, instead there was an after-phase
         // where nodes that was changed during recovery were reindexed. Do be able to do this reindexing
         // the index had to support removing arbitrary entries based on node id alone. Lucene can do this,
@@ -343,78 +330,83 @@ class DatabaseRecoveryIT
         // given
         Path storeDir = directory.absolutePath();
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        UpdateCapturingIndexProvider updateCapturingIndexProvider = new UpdateCapturingIndexProvider( IndexProvider.EMPTY, new HashMap<>() );
-        GraphDatabaseAPI db = startDatabase( storeDir, fs, updateCapturingIndexProvider );
+        UpdateCapturingIndexProvider updateCapturingIndexProvider =
+                new UpdateCapturingIndexProvider(IndexProvider.EMPTY, new HashMap<>());
+        GraphDatabaseAPI db = startDatabase(storeDir, fs, updateCapturingIndexProvider);
         Label label = TestLabels.LABEL_ONE;
         String key1 = "key1";
         String key2 = "key2";
-        try ( TransactionImpl tx = (TransactionImpl) db.beginTx() )
-        {
+        try (TransactionImpl tx = (TransactionImpl) db.beginTx()) {
             KernelTransaction kernelTransaction = tx.kernelTransaction();
             TokenWrite tokenWrite = kernelTransaction.tokenWrite();
-            int labelId = tokenWrite.labelGetOrCreateForName( TestLabels.LABEL_ONE.name() );
-            int key1Id = tokenWrite.propertyKeyGetOrCreateForName( key1 );
-            int key2Id = tokenWrite.propertyKeyGetOrCreateForName( key2 );
-            kernelTransaction.schemaWrite().indexCreate(
-                    IndexPrototype.forSchema( SchemaDescriptors.forLabel( labelId, key1Id ), updateCapturingIndexProvider.getProviderDescriptor() ) );
-            kernelTransaction.schemaWrite().indexCreate(
-                    IndexPrototype.forSchema( SchemaDescriptors.forLabel( labelId, key1Id, key2Id ), updateCapturingIndexProvider.getProviderDescriptor() ) );
+            int labelId = tokenWrite.labelGetOrCreateForName(TestLabels.LABEL_ONE.name());
+            int key1Id = tokenWrite.propertyKeyGetOrCreateForName(key1);
+            int key2Id = tokenWrite.propertyKeyGetOrCreateForName(key2);
+            kernelTransaction
+                    .schemaWrite()
+                    .indexCreate(IndexPrototype.forSchema(
+                            SchemaDescriptors.forLabel(labelId, key1Id),
+                            updateCapturingIndexProvider.getProviderDescriptor()));
+            kernelTransaction
+                    .schemaWrite()
+                    .indexCreate(IndexPrototype.forSchema(
+                            SchemaDescriptors.forLabel(labelId, key1Id, key2Id),
+                            updateCapturingIndexProvider.getProviderDescriptor()));
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 10, SECONDS );
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(10, SECONDS);
             tx.commit();
         }
-        checkPoint( db );
+        checkPoint(db);
 
-        produceRandomNodePropertyAndLabelUpdates( db, random.intBetween( 20, 40 ), label, key1, key2 );
-        checkPoint( db );
-        Map<Long,Collection<IndexEntryUpdate<?>>> updatesAtLastCheckPoint = updateCapturingIndexProvider.snapshot();
+        produceRandomNodePropertyAndLabelUpdates(db, random.intBetween(20, 40), label, key1, key2);
+        checkPoint(db);
+        Map<Long, Collection<IndexEntryUpdate<?>>> updatesAtLastCheckPoint = updateCapturingIndexProvider.snapshot();
 
         // when
-        produceRandomNodePropertyAndLabelUpdates( db, random.intBetween( 40, 100 ), label, key1, key2 );
+        produceRandomNodePropertyAndLabelUpdates(db, random.intBetween(40, 100), label, key1, key2);
 
         // Snapshot
-        flush( db );
+        flush(db);
         EphemeralFileSystemAbstraction crashedFs = fs.snapshot();
-        Map<Long,Collection<IndexEntryUpdate<?>>> updatesAtCrash = updateCapturingIndexProvider.snapshot();
+        Map<Long, Collection<IndexEntryUpdate<?>>> updatesAtCrash = updateCapturingIndexProvider.snapshot();
 
         // Crash and start anew
         UpdateCapturingIndexProvider recoveredUpdateCapturingIndexProvider =
-                new UpdateCapturingIndexProvider( IndexProvider.EMPTY, updatesAtLastCheckPoint );
-        long lastCommittedTxIdBeforeRecovered = lastCommittedTxId( db );
+                new UpdateCapturingIndexProvider(IndexProvider.EMPTY, updatesAtLastCheckPoint);
+        long lastCommittedTxIdBeforeRecovered = lastCommittedTxId(db);
         managementService.shutdown();
         fs.close();
 
-        db = startDatabase( storeDir, crashedFs, recoveredUpdateCapturingIndexProvider );
-        long lastCommittedTxIdAfterRecovered = lastCommittedTxId( db );
-        Map<Long,Collection<IndexEntryUpdate<?>>> updatesAfterRecovery = recoveredUpdateCapturingIndexProvider.snapshot();
+        db = startDatabase(storeDir, crashedFs, recoveredUpdateCapturingIndexProvider);
+        long lastCommittedTxIdAfterRecovered = lastCommittedTxId(db);
+        Map<Long, Collection<IndexEntryUpdate<?>>> updatesAfterRecovery =
+                recoveredUpdateCapturingIndexProvider.snapshot();
 
         // then
-        assertEquals( lastCommittedTxIdBeforeRecovered, lastCommittedTxIdAfterRecovered );
-        assertSameUpdates( updatesAtCrash, updatesAfterRecovery );
+        assertEquals(lastCommittedTxIdBeforeRecovered, lastCommittedTxIdAfterRecovered);
+        assertSameUpdates(updatesAtCrash, updatesAfterRecovery);
         managementService.shutdown();
         crashedFs.close();
     }
 
-    @RepeatedTest( 10 )
-    void shouldSeeTheSameRecordsAtCheckpointAsAfterReverseRecovery() throws Exception
-    {
+    @RepeatedTest(10)
+    void shouldSeeTheSameRecordsAtCheckpointAsAfterReverseRecovery() throws Exception {
         // given
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        managementService = new TestDatabaseManagementServiceBuilder( directory.homePath() )
-                .setFileSystem( fs )
+        managementService = new TestDatabaseManagementServiceBuilder(directory.homePath())
+                .setFileSystem(fs)
                 .impermanent()
                 .build();
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-        produceRandomGraphUpdates( db, 100, false );
-        checkPoint( db );
+        GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
+        produceRandomGraphUpdates(db, 100, false);
+        checkPoint(db);
         EphemeralFileSystemAbstraction checkPointFs = fs.snapshot();
 
         // when
-        produceRandomGraphUpdates( db, 300, true );
-        flush( db );
+        produceRandomGraphUpdates(db, 300, true);
+        flush(db);
         EphemeralFileSystemAbstraction crashedFs = fs.snapshot();
 
         managementService.shutdown();
@@ -422,284 +414,272 @@ class DatabaseRecoveryIT
         Dependencies dependencies = new Dependencies();
         Monitors monitors;
         AtomicReference<EphemeralFileSystemAbstraction> reversedFs;
-        try ( PageCache pageCache = pageCacheExtension.getPageCache( crashedFs ) )
-        {
-            dependencies.satisfyDependencies( pageCache );
+        try (PageCache pageCache = pageCacheExtension.getPageCache(crashedFs)) {
+            dependencies.satisfyDependencies(pageCache);
 
             monitors = new Monitors();
             reversedFs = new AtomicReference<>();
-            monitors.addMonitorListener( new RecoveryMonitor()
-            {
+            monitors.addMonitorListener(new RecoveryMonitor() {
                 @Override
-                public void reverseStoreRecoveryCompleted( long checkpointTxId )
-                {
-                    try
-                    {
-                        // Flush the page cache which will fished out of the GlobalModule at the point of constructing the database
+                public void reverseStoreRecoveryCompleted(long checkpointTxId) {
+                    try {
+                        // Flush the page cache which will fished out of the GlobalModule at the point of constructing
+                        // the database
                         pageCache.flushAndForce();
-                    }
-                    catch ( IOException e )
-                    {
-                        throw new UncheckedIOException( e );
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
                     }
 
                     // The stores should now be equal in content to the db as it was right after the checkpoint.
                     // Grab a snapshot so that we can compare later.
-                    reversedFs.set( crashedFs.snapshot() );
+                    reversedFs.set(crashedFs.snapshot());
                 }
-            } );
+            });
 
-            DatabaseManagementService managementService =
-                    new TestDatabaseManagementServiceBuilder( directory.homePath() ).setFileSystem( crashedFs ).setExternalDependencies(
-                            dependencies ).setMonitors( monitors ).impermanent().build();
+            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(directory.homePath())
+                    .setFileSystem(crashedFs)
+                    .setExternalDependencies(dependencies)
+                    .setMonitors(monitors)
+                    .impermanent()
+                    .build();
 
             managementService.shutdown();
         }
         // then
         fs.close();
 
-        try
-        {
+        try {
             // Here we verify that the neostore contents, record by record are exactly the same when comparing
-            // the store as it was right after the checkpoint with the store as it was right after reverse recovery completed.
-            assertSameStoreContents( checkPointFs, reversedFs.get(), databaseLayout );
-        }
-        finally
-        {
-            IOUtils.closeAll( checkPointFs, reversedFs.get() );
+            // the store as it was right after the checkpoint with the store as it was right after reverse recovery
+            // completed.
+            assertSameStoreContents(checkPointFs, reversedFs.get(), databaseLayout);
+        } finally {
+            IOUtils.closeAll(checkPointFs, reversedFs.get());
         }
     }
 
-    private static long lastCommittedTxId( GraphDatabaseService db )
-    {
-        return ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
+    private static long lastCommittedTxId(GraphDatabaseService db) {
+        return ((GraphDatabaseAPI) db)
+                .getDependencyResolver()
+                .resolveDependency(TransactionIdStore.class)
+                .getLastClosedTransactionId();
     }
 
-    private static void assertSameStoreContents( EphemeralFileSystemAbstraction fs1, EphemeralFileSystemAbstraction fs2, DatabaseLayout databaseLayout )
-    {
+    private static void assertSameStoreContents(
+            EphemeralFileSystemAbstraction fs1, EphemeralFileSystemAbstraction fs2, DatabaseLayout databaseLayout) {
         NullLogProvider logProvider = NullLogProvider.getInstance();
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
-        CursorContextFactory contextFactory = new CursorContextFactory( cacheTracer, EmptyVersionContextSupplier.EMPTY );
-        try (
-                ThreadPoolJobScheduler jobScheduler = new ThreadPoolJobScheduler();
-                PageCache pageCache1 = new ConfiguringPageCacheFactory( fs1, defaults(), cacheTracer, NullLog.getInstance(),
-                        jobScheduler, Clocks.nanoClock(), new MemoryPools() ).getOrCreatePageCache();
-                PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), cacheTracer, NullLog.getInstance(),
-                        jobScheduler, Clocks.nanoClock(), new MemoryPools() ).getOrCreatePageCache();
-                NeoStores store1 = new StoreFactory( databaseLayout, defaults(),
-                        new DefaultIdGeneratorFactory( fs1, immediate(), databaseLayout.getDatabaseName() ),
-                        pageCache1, fs1, logProvider, contextFactory, writable(), EMPTY_LOG_TAIL ).openAllNeoStores();
-                NeoStores store2 = new StoreFactory( databaseLayout, defaults(),
-                        new DefaultIdGeneratorFactory( fs2, immediate(), databaseLayout.getDatabaseName() ),
-                        pageCache2, fs2, logProvider, contextFactory, writable(), EMPTY_LOG_TAIL ).openAllNeoStores()
-                )
-        {
-            for ( StoreType storeType : StoreType.values() )
-            {
+        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
+        try (ThreadPoolJobScheduler jobScheduler = new ThreadPoolJobScheduler();
+                PageCache pageCache1 = new ConfiguringPageCacheFactory(
+                                fs1,
+                                defaults(),
+                                cacheTracer,
+                                NullLog.getInstance(),
+                                jobScheduler,
+                                Clocks.nanoClock(),
+                                new MemoryPools())
+                        .getOrCreatePageCache();
+                PageCache pageCache2 = new ConfiguringPageCacheFactory(
+                                fs2,
+                                defaults(),
+                                cacheTracer,
+                                NullLog.getInstance(),
+                                jobScheduler,
+                                Clocks.nanoClock(),
+                                new MemoryPools())
+                        .getOrCreatePageCache();
+                NeoStores store1 = new StoreFactory(
+                                databaseLayout,
+                                defaults(),
+                                new DefaultIdGeneratorFactory(fs1, immediate(), databaseLayout.getDatabaseName()),
+                                pageCache1,
+                                fs1,
+                                logProvider,
+                                contextFactory,
+                                writable(),
+                                EMPTY_LOG_TAIL)
+                        .openAllNeoStores();
+                NeoStores store2 = new StoreFactory(
+                                databaseLayout,
+                                defaults(),
+                                new DefaultIdGeneratorFactory(fs2, immediate(), databaseLayout.getDatabaseName()),
+                                pageCache2,
+                                fs2,
+                                logProvider,
+                                contextFactory,
+                                writable(),
+                                EMPTY_LOG_TAIL)
+                        .openAllNeoStores()) {
+            for (StoreType storeType : StoreType.values()) {
                 // Don't compare meta data records because they are updated somewhat outside tx application
-                if ( storeType != StoreType.META_DATA )
-                {
-                    assertSameStoreContents( store1.getRecordStore( storeType ), store2.getRecordStore( storeType ) );
+                if (storeType != StoreType.META_DATA) {
+                    assertSameStoreContents(store1.getRecordStore(storeType), store2.getRecordStore(storeType));
                 }
             }
         }
     }
 
-    private static <RECORD extends AbstractBaseRecord> void assertSameStoreContents( RecordStore<RECORD> store1, RecordStore<RECORD> store2 )
-    {
+    private static <RECORD extends AbstractBaseRecord> void assertSameStoreContents(
+            RecordStore<RECORD> store1, RecordStore<RECORD> store2) {
         long highId1 = store1.getHighId();
         long highId2 = store2.getHighId();
-        long maxHighId = max( highId1, highId2 );
+        long maxHighId = max(highId1, highId2);
         RECORD record1 = store1.newRecord();
         RECORD record2 = store2.newRecord();
-        try ( var cursor1 = store1.openPageCursorForReading( 0, CursorContext.NULL_CONTEXT );
-             var cursor2 = store2.openPageCursorForReading( 0, CursorContext.NULL_CONTEXT ) )
-        {
-            for ( long id = store1.getNumberOfReservedLowIds(); id < maxHighId; id++ )
-            {
-                store1.getRecordByCursor( id, record1, RecordLoad.CHECK, cursor1 );
-                store2.getRecordByCursor( id, record2, RecordLoad.CHECK, cursor2 );
+        try (var cursor1 = store1.openPageCursorForReading(0, CursorContext.NULL_CONTEXT);
+                var cursor2 = store2.openPageCursorForReading(0, CursorContext.NULL_CONTEXT)) {
+            for (long id = store1.getNumberOfReservedLowIds(); id < maxHighId; id++) {
+                store1.getRecordByCursor(id, record1, RecordLoad.CHECK, cursor1);
+                store2.getRecordByCursor(id, record2, RecordLoad.CHECK, cursor2);
                 boolean deletedAndDynamicPropertyRecord = !record1.inUse() && store1 instanceof AbstractDynamicStore;
-                if ( !deletedAndDynamicPropertyRecord )
-                {
-                    assertThat( record2 ).as( "Record missmatch in store " + store1 ).isEqualTo( record1 );
+                if (!deletedAndDynamicPropertyRecord) {
+                    assertThat(record2)
+                            .as("Record missmatch in store " + store1)
+                            .isEqualTo(record1);
                 }
-                // else this record is a dynamic record which came from a property record update, a dynamic record which will not be set back
-                // to unused during reverse recovery and therefore cannot be checked with equality between the two versions of that record.
+                // else this record is a dynamic record which came from a property record update, a dynamic record which
+                // will not be set back
+                // to unused during reverse recovery and therefore cannot be checked with equality between the two
+                // versions of that record.
             }
         }
     }
 
-    private static void flush( GraphDatabaseService db ) throws IOException
-    {
-        var forceOperation = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( CheckPointerImpl.ForceOperation.class );
-        forceOperation.flushAndForce( CursorContext.NULL_CONTEXT );
+    private static void flush(GraphDatabaseService db) throws IOException {
+        var forceOperation = ((GraphDatabaseAPI) db)
+                .getDependencyResolver()
+                .resolveDependency(CheckPointerImpl.ForceOperation.class);
+        forceOperation.flushAndForce(CursorContext.NULL_CONTEXT);
     }
 
-    private static void checkPoint( GraphDatabaseService db ) throws IOException
-    {
-        ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( CheckPointer.class )
-                .forceCheckPoint( new SimpleTriggerInfo( "Manual trigger" ) );
+    private static void checkPoint(GraphDatabaseService db) throws IOException {
+        ((GraphDatabaseAPI) db)
+                .getDependencyResolver()
+                .resolveDependency(CheckPointer.class)
+                .forceCheckPoint(new SimpleTriggerInfo("Manual trigger"));
     }
 
-    private void produceRandomGraphUpdates( GraphDatabaseService db, int numberOfTransactions, boolean moreTokens )
-    {
+    private void produceRandomGraphUpdates(GraphDatabaseService db, int numberOfTransactions, boolean moreTokens) {
         // Load all existing nodes
         List<Node> nodes = new ArrayList<>();
         List<String> indexNames = new ArrayList<>();
-        try ( Transaction tx = db.beginTx();
-              ResourceIterable<Node> allNodes = tx.getAllNodes() )
-        {
-            for ( final var node : allNodes )
-            {
-                nodes.add( node );
+        try (Transaction tx = db.beginTx();
+                ResourceIterable<Node> allNodes = tx.getAllNodes()) {
+            for (final var node : allNodes) {
+                nodes.add(node);
             }
-            tx.schema().getIndexes().forEach( i -> indexNames.add( i.getName() ) );
+            tx.schema().getIndexes().forEach(i -> indexNames.add(i.getName()));
         }
 
-        for ( int i = 0; i < numberOfTransactions; i++ )
-        {
-            if ( random.nextFloat() < 0.1 )
-            {
-                randomSchemaOperation( db, indexNames, moreTokens );
-            }
-            else
-            {
-                randomDataOperation( db, nodes, moreTokens );
+        for (int i = 0; i < numberOfTransactions; i++) {
+            if (random.nextFloat() < 0.1) {
+                randomSchemaOperation(db, indexNames, moreTokens);
+            } else {
+                randomDataOperation(db, nodes, moreTokens);
             }
         }
     }
 
-    private void randomSchemaOperation( GraphDatabaseService db, List<String> indexNames, boolean moreTokens )
-    {
-        try ( var tx = db.beginTx() )
-        {
-            if ( random.nextFloat() < 0.5 )
-            {
-                try
-                {
+    private void randomSchemaOperation(GraphDatabaseService db, List<String> indexNames, boolean moreTokens) {
+        try (var tx = db.beginTx()) {
+            if (random.nextFloat() < 0.5) {
+                try {
                     // try to create new index
-                    if ( random.nextFloat() < 0.5 )
-                    {
-                        var index = tx.schema().indexFor( randomLabel( moreTokens ) ).on( randomKey( moreTokens ) ).create();
-                        indexNames.add( index.getName() );
+                    if (random.nextFloat() < 0.5) {
+                        var index = tx.schema()
+                                .indexFor(randomLabel(moreTokens))
+                                .on(randomKey(moreTokens))
+                                .create();
+                        indexNames.add(index.getName());
+                    } else {
+                        var index = tx.schema()
+                                .indexFor(randomRelationshipType(moreTokens))
+                                .on(randomKey(moreTokens))
+                                .create();
+                        indexNames.add(index.getName());
                     }
-                    else
-                    {
-                        var index = tx.schema().indexFor( randomRelationshipType( moreTokens ) ).on( randomKey( moreTokens ) ).create();
-                        indexNames.add( index.getName() );
-                    }
-                }
-                catch ( ConstraintViolationException e )
-                {
+                } catch (ConstraintViolationException e) {
                     // such index already exists, try to delete random one instead
-                    deleteRandomIndex( indexNames, tx );
+                    deleteRandomIndex(indexNames, tx);
                 }
-            }
-            else
-            {
+            } else {
                 // try to delete random index
-                deleteRandomIndex( indexNames, tx );
+                deleteRandomIndex(indexNames, tx);
             }
             tx.commit();
         }
-        try ( var tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 5, MINUTES );
+        try (var tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(5, MINUTES);
         }
     }
 
-    private void deleteRandomIndex( List<String> indexNames, Transaction tx )
-    {
-        if ( indexNames.isEmpty() )
-        {
+    private void deleteRandomIndex(List<String> indexNames, Transaction tx) {
+        if (indexNames.isEmpty()) {
             // nothing left to delete
             return;
         }
-        var indexToDelete = random.among( indexNames );
-        tx.schema().getIndexByName( indexToDelete ).drop();
-        indexNames.remove( indexToDelete );
+        var indexToDelete = random.among(indexNames);
+        tx.schema().getIndexByName(indexToDelete).drop();
+        indexNames.remove(indexToDelete);
     }
 
-    private void randomDataOperation( GraphDatabaseService db, List<Node> nodes, boolean moreTokens )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            int transactionSize = random.intBetween( 1, 30 );
-            for ( int j = 0; j < transactionSize; j++ )
-            {
+    private void randomDataOperation(GraphDatabaseService db, List<Node> nodes, boolean moreTokens) {
+        try (Transaction tx = db.beginTx()) {
+            int transactionSize = random.intBetween(1, 30);
+            for (int j = 0; j < transactionSize; j++) {
                 float operationType = random.nextFloat();
                 float operation = random.nextFloat();
-                if ( operationType < 0.5 )
-                {   // create
-                    if ( operation < 0.5 )
-                    {   // create node (w/ random label, prop)
-                        Node node = tx.createNode( random.nextBoolean() ? new Label[]{randomLabel( moreTokens )} : new Label[0] );
-                        if ( random.nextBoolean() )
-                        {
-                            node.setProperty( randomKey( moreTokens ), random.nextValueAsObject() );
+                if (operationType < 0.5) { // create
+                    if (operation < 0.5) { // create node (w/ random label, prop)
+                        Node node = tx.createNode(
+                                random.nextBoolean() ? new Label[] {randomLabel(moreTokens)} : new Label[0]);
+                        if (random.nextBoolean()) {
+                            node.setProperty(randomKey(moreTokens), random.nextValueAsObject());
                         }
-                    }
-                    else
-                    {   // create relationship (w/ random prop)
-                        if ( !nodes.isEmpty() )
-                        {
-                            Relationship relationship = tx.getNodeById( random.among( nodes ).getId() )
-                                                          .createRelationshipTo( tx.getNodeById( random.among( nodes ).getId() ), randomRelationshipType(
-                                                                  moreTokens ) );
-                            if ( random.nextBoolean() )
-                            {
-                                relationship.setProperty( randomKey( moreTokens ), random.nextValueAsObject() );
+                    } else { // create relationship (w/ random prop)
+                        if (!nodes.isEmpty()) {
+                            Relationship relationship = tx.getNodeById(
+                                            random.among(nodes).getId())
+                                    .createRelationshipTo(
+                                            tx.getNodeById(random.among(nodes).getId()),
+                                            randomRelationshipType(moreTokens));
+                            if (random.nextBoolean()) {
+                                relationship.setProperty(randomKey(moreTokens), random.nextValueAsObject());
                             }
                         }
                     }
-                }
-                else if ( operationType < 0.8 )
-                {   // change
-                    if ( operation < 0.25 )
-                    {   // add label
-                        random.among( nodes, node -> tx.getNodeById( node.getId() ).addLabel( randomLabel(moreTokens) ) );
+                } else if (operationType < 0.8) { // change
+                    if (operation < 0.25) { // add label
+                        random.among(nodes, node -> tx.getNodeById(node.getId()).addLabel(randomLabel(moreTokens)));
+                    } else if (operation < 0.5) { // remove label
+                        random.among(nodes, node -> tx.getNodeById(node.getId()).removeLabel(randomLabel(moreTokens)));
+                    } else if (operation < 0.75) { // set node property
+                        random.among(nodes, node -> tx.getNodeById(node.getId())
+                                .setProperty(randomKey(moreTokens), random.nextValueAsObject()));
+                    } else { // set relationship property
+                        onRandomRelationship(
+                                nodes,
+                                relationship -> tx.getRelationshipById(relationship.getId())
+                                        .setProperty(randomKey(moreTokens), random.nextValueAsObject()),
+                                tx);
                     }
-                    else if ( operation < 0.5 )
-                    {   // remove label
-                        random.among( nodes, node -> tx.getNodeById( node.getId() ).removeLabel( randomLabel(moreTokens) ) );
-                    }
-                    else if ( operation < 0.75 )
-                    {   // set node property
-                        random.among( nodes, node -> tx.getNodeById( node.getId() ).setProperty( randomKey(moreTokens), random.nextValueAsObject() ) );
-                    }
-                    else
-                    {   // set relationship property
-                        onRandomRelationship( nodes, relationship ->
-                                tx.getRelationshipById( relationship.getId() ).setProperty( randomKey(moreTokens),
-                                                                                            random.nextValueAsObject() ), tx );
-                    }
-                }
-                else
-                {   // delete
+                } else { // delete
 
-                    if ( operation < 0.25 )
-                    {   // remove node property
-                        random.among( nodes, node -> tx.getNodeById( node.getId() ).removeProperty( randomKey(moreTokens) ) );
-                    }
-                    else if ( operation < 0.5 )
-                    {   // remove relationship property
-                        onRandomRelationship( nodes, relationship ->
-                                relationship.removeProperty( randomKey(moreTokens) ), tx );
-                    }
-                    else if ( operation < 0.9 )
-                    {   // delete relationship
-                        onRandomRelationship( nodes, Relationship::delete, tx );
-                    }
-                    else
-                    {   // delete node
-                        random.among( nodes, node ->
-                        {
-                            node = tx.getNodeById( node.getId() );
-                            Iterables.forEach( node.getRelationships(), Relationship::delete );
+                    if (operation < 0.25) { // remove node property
+                        random.among(nodes, node -> tx.getNodeById(node.getId()).removeProperty(randomKey(moreTokens)));
+                    } else if (operation < 0.5) { // remove relationship property
+                        onRandomRelationship(
+                                nodes, relationship -> relationship.removeProperty(randomKey(moreTokens)), tx);
+                    } else if (operation < 0.9) { // delete relationship
+                        onRandomRelationship(nodes, Relationship::delete, tx);
+                    } else { // delete node
+                        random.among(nodes, node -> {
+                            node = tx.getNodeById(node.getId());
+                            Iterables.forEach(node.getRelationships(), Relationship::delete);
                             node.delete();
-                            nodes.remove( node );
-                        } );
+                            nodes.remove(node);
+                        });
                     }
                 }
             }
@@ -707,29 +687,30 @@ class DatabaseRecoveryIT
         }
     }
 
-    private void onRandomRelationship( List<Node> nodes, Consumer<Relationship> action, Transaction transaction )
-    {
-        random.among( nodes, node -> random.among( asList( transaction.getNodeById( node.getId() ).getRelationships() ), action ) );
+    private void onRandomRelationship(List<Node> nodes, Consumer<Relationship> action, Transaction transaction) {
+        random.among(
+                nodes,
+                node -> random.among(
+                        asList(transaction.getNodeById(node.getId()).getRelationships()), action));
     }
 
-    private RelationshipType randomRelationshipType( boolean moreTokens )
-    {
-        return moreTokens ? RelationshipType.withName( random.among( MORE_TOKENS ) ) : RelationshipType.withName( random.among( TOKENS ) );
+    private RelationshipType randomRelationshipType(boolean moreTokens) {
+        return moreTokens
+                ? RelationshipType.withName(random.among(MORE_TOKENS))
+                : RelationshipType.withName(random.among(TOKENS));
     }
 
-    private String randomKey( boolean moreTokens )
-    {
-        return moreTokens ? random.among( MORE_TOKENS ) : random.among( TOKENS );
+    private String randomKey(boolean moreTokens) {
+        return moreTokens ? random.among(MORE_TOKENS) : random.among(TOKENS);
     }
 
-    private Label randomLabel( boolean moreTokens )
-    {
-        return moreTokens ? Label.label( random.among( MORE_TOKENS ) ) : Label.label( random.among( TOKENS ) );
+    private Label randomLabel(boolean moreTokens) {
+        return moreTokens ? Label.label(random.among(MORE_TOKENS)) : Label.label(random.among(TOKENS));
     }
 
-    private static void assertSameUpdates( Map<Long,Collection<IndexEntryUpdate<?>>> updatesAtCrash,
-            Map<Long,Collection<IndexEntryUpdate<?>>> recoveredUpdatesSnapshot )
-    {
+    private static void assertSameUpdates(
+            Map<Long, Collection<IndexEntryUpdate<?>>> updatesAtCrash,
+            Map<Long, Collection<IndexEntryUpdate<?>>> recoveredUpdatesSnapshot) {
         // The UpdateCapturingIndexProvider just captures updates made to indexes. The order in this test
         // should be the same during online transaction application and during recovery since everything
         // is single threaded. However there's a bunch of placing where entries and keys and what not
@@ -737,81 +718,66 @@ class DatabaseRecoveryIT
         // that updates for a particular transaction are the same during normal application and recovery,
         // regardless of ordering differences within the transaction.
 
-        Map<Long,Map<Long,Collection<IndexEntryUpdate<?>>>> crashUpdatesPerNode = splitPerNode( updatesAtCrash );
-        Map<Long,Map<Long,Collection<IndexEntryUpdate<?>>>> recoveredUpdatesPerNode = splitPerNode( recoveredUpdatesSnapshot );
-        assertEquals( crashUpdatesPerNode, recoveredUpdatesPerNode );
+        Map<Long, Map<Long, Collection<IndexEntryUpdate<?>>>> crashUpdatesPerNode = splitPerNode(updatesAtCrash);
+        Map<Long, Map<Long, Collection<IndexEntryUpdate<?>>>> recoveredUpdatesPerNode =
+                splitPerNode(recoveredUpdatesSnapshot);
+        assertEquals(crashUpdatesPerNode, recoveredUpdatesPerNode);
     }
 
-    private static Map<Long,Map<Long,Collection<IndexEntryUpdate<?>>>> splitPerNode( Map<Long,Collection<IndexEntryUpdate<?>>> updates )
-    {
-        Map<Long,Map<Long,Collection<IndexEntryUpdate<?>>>> result = new HashMap<>();
-        updates.forEach( ( indexId, indexUpdates ) -> result.put( indexId, splitPerNode( indexUpdates ) ) );
+    private static Map<Long, Map<Long, Collection<IndexEntryUpdate<?>>>> splitPerNode(
+            Map<Long, Collection<IndexEntryUpdate<?>>> updates) {
+        Map<Long, Map<Long, Collection<IndexEntryUpdate<?>>>> result = new HashMap<>();
+        updates.forEach((indexId, indexUpdates) -> result.put(indexId, splitPerNode(indexUpdates)));
         return result;
     }
 
-    private static Map<Long,Collection<IndexEntryUpdate<?>>> splitPerNode( Collection<IndexEntryUpdate<?>> updates )
-    {
-        Map<Long,Collection<IndexEntryUpdate<?>>> perNode = new HashMap<>();
-        updates.forEach( update -> perNode.computeIfAbsent( update.getEntityId(), nodeId -> new ArrayList<>() ).add( update ) );
+    private static Map<Long, Collection<IndexEntryUpdate<?>>> splitPerNode(Collection<IndexEntryUpdate<?>> updates) {
+        Map<Long, Collection<IndexEntryUpdate<?>>> perNode = new HashMap<>();
+        updates.forEach(update -> perNode.computeIfAbsent(update.getEntityId(), nodeId -> new ArrayList<>())
+                .add(update));
         return perNode;
     }
 
-    private void produceRandomNodePropertyAndLabelUpdates( GraphDatabaseService db, int numberOfTransactions, Label label, String... keys )
-    {
+    private void produceRandomNodePropertyAndLabelUpdates(
+            GraphDatabaseService db, int numberOfTransactions, Label label, String... keys) {
         // Load all existing nodes
         List<Node> nodes = new ArrayList<>();
-        try ( Transaction tx = db.beginTx();
-              ResourceIterable<Node> allNodes = tx.getAllNodes() )
-        {
-            for ( final var node : allNodes )
-            {
-                nodes.add( node );
+        try (Transaction tx = db.beginTx();
+                ResourceIterable<Node> allNodes = tx.getAllNodes()) {
+            for (final var node : allNodes) {
+                nodes.add(node);
             }
             tx.commit();
         }
 
-        for ( int i = 0; i < numberOfTransactions; i++ )
-        {
-            int transactionSize = random.intBetween( 1, 30 );
-            try ( Transaction tx = db.beginTx() )
-            {
-                for ( int j = 0; j < transactionSize; j++ )
-                {
+        for (int i = 0; i < numberOfTransactions; i++) {
+            int transactionSize = random.intBetween(1, 30);
+            try (Transaction tx = db.beginTx()) {
+                for (int j = 0; j < transactionSize; j++) {
                     float operation = random.nextFloat();
-                    if ( operation < 0.1 )
-                    {   // Delete node
-                        if ( !nodes.isEmpty() )
-                        {
-                            tx.getNodeById( nodes.remove( random.nextInt( nodes.size() ) ).getId() ).delete();
+                    if (operation < 0.1) { // Delete node
+                        if (!nodes.isEmpty()) {
+                            tx.getNodeById(nodes.remove(random.nextInt(nodes.size()))
+                                            .getId())
+                                    .delete();
                         }
-                    }
-                    else if ( operation < 0.3 )
-                    {   // Create node
-                        Node node = tx.createNode( random.nextBoolean() ? new Label[] { label } : new Label[0] );
-                        for ( String key : keys )
-                        {
-                            if ( random.nextBoolean() )
-                            {
-                                node.setProperty( key, random.nextValueAsObject() );
+                    } else if (operation < 0.3) { // Create node
+                        Node node = tx.createNode(random.nextBoolean() ? new Label[] {label} : new Label[0]);
+                        for (String key : keys) {
+                            if (random.nextBoolean()) {
+                                node.setProperty(key, random.nextValueAsObject());
                             }
                         }
-                        nodes.add( node );
-                    }
-                    else if ( operation < 0.4 )
-                    {   // Remove label
-                        random.among( nodes, node -> tx.getNodeById( node.getId() ).removeLabel( label ) );
-                    }
-                    else if ( operation < 0.6 )
-                    {   // Add label
-                        random.among( nodes, node -> tx.getNodeById( node.getId() ).addLabel( label ) );
-                    }
-                    else if ( operation < 0.85 )
-                    {   // Set property
-                        random.among( nodes, node -> tx.getNodeById( node.getId() ).setProperty( random.among( keys ), random.nextValueAsObject() ) );
-                    }
-                    else
-                    {   // Remove property
-                        random.among( nodes, node -> tx.getNodeById( node.getId() ).removeProperty( random.among( keys ) ) );
+                        nodes.add(node);
+                    } else if (operation < 0.4) { // Remove label
+                        random.among(nodes, node -> tx.getNodeById(node.getId()).removeLabel(label));
+                    } else if (operation < 0.6) { // Add label
+                        random.among(nodes, node -> tx.getNodeById(node.getId()).addLabel(label));
+                    } else if (operation < 0.85) { // Set property
+                        random.among(nodes, node -> tx.getNodeById(node.getId())
+                                .setProperty(random.among(keys), random.nextValueAsObject()));
+                    } else { // Remove property
+                        random.among(nodes, node -> tx.getNodeById(node.getId()).removeProperty(random.among(keys)));
                     }
                 }
                 tx.commit();
@@ -819,196 +785,171 @@ class DatabaseRecoveryIT
         }
     }
 
-    private static Node findNodeByLabel( Transaction transaction, Label testLabel )
-    {
-        try ( ResourceIterator<Node> nodes = transaction.findNodes( testLabel ) )
-        {
+    private static Node findNodeByLabel(Transaction transaction, Label testLabel) {
+        try (ResourceIterator<Node> nodes = transaction.findNodes(testLabel)) {
             return nodes.next();
         }
     }
 
-    private static Node findNode( Label label, String property, String value, Transaction transaction )
-    {
-        try ( ResourceIterator<Node> nodes = transaction.findNodes( label, property, value ) )
-        {
-            return Iterators.single( nodes );
+    private static Node findNode(Label label, String property, String value, Transaction transaction) {
+        try (ResourceIterator<Node> nodes = transaction.findNodes(label, property, value)) {
+            return Iterators.single(nodes);
         }
     }
 
-    private static long createRelationship( GraphDatabaseService db )
-    {
+    private static long createRelationship(GraphDatabaseService db) {
         long relationshipId;
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node start = tx.createNode( Label.label( System.currentTimeMillis() + "" ) );
-            Node end = tx.createNode( Label.label( System.currentTimeMillis() + "" ) );
-            relationshipId = start.createRelationshipTo( end, withName( "KNOWS" ) ).getId();
+        try (Transaction tx = db.beginTx()) {
+            Node start = tx.createNode(Label.label(System.currentTimeMillis() + ""));
+            Node end = tx.createNode(Label.label(System.currentTimeMillis() + ""));
+            relationshipId = start.createRelationshipTo(end, withName("KNOWS")).getId();
             tx.commit();
         }
         return relationshipId;
     }
 
-    private static void assertRelationshipNotExist( Transaction tx, long id )
-    {
-        assertThrows( NotFoundException.class, () -> tx.getRelationshipById( id ) );
+    private static void assertRelationshipNotExist(Transaction tx, long id) {
+        assertThrows(NotFoundException.class, () -> tx.getRelationshipById(id));
     }
 
-    private static Health healthOf( GraphDatabaseService db )
-    {
+    private static Health healthOf(GraphDatabaseService db) {
         DependencyResolver resolver = ((GraphDatabaseAPI) db).getDependencyResolver();
-        return resolver.resolveDependency( DatabaseHealth.class );
+        return resolver.resolveDependency(DatabaseHealth.class);
     }
 
-    private static String createLongString()
-    {
-        String[] strings = new String[(int) ByteUnit.kibiBytes( 2 )];
-        Arrays.fill( strings, "a" );
-        return Arrays.toString( strings );
+    private static String createLongString() {
+        String[] strings = new String[(int) ByteUnit.kibiBytes(2)];
+        Arrays.fill(strings, "a");
+        return Arrays.toString(strings);
     }
 
-    private DatabaseLayout copyStore() throws IOException
-    {
-        DatabaseLayout restoreDbLayout = Neo4jLayout.of( directory.homePath( "restore-db" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
-        fileSystem.mkdirs( restoreDbLayout.databaseDirectory() );
-        fileSystem.mkdirs( restoreDbLayout.getTransactionLogsDirectory() );
-        copy( fileSystem, databaseLayout.getTransactionLogsDirectory(), restoreDbLayout.getTransactionLogsDirectory() );
-        copy( fileSystem, databaseLayout.databaseDirectory(), restoreDbLayout.databaseDirectory() );
+    private DatabaseLayout copyStore() throws IOException {
+        DatabaseLayout restoreDbLayout =
+                Neo4jLayout.of(directory.homePath("restore-db")).databaseLayout(DEFAULT_DATABASE_NAME);
+        fileSystem.mkdirs(restoreDbLayout.databaseDirectory());
+        fileSystem.mkdirs(restoreDbLayout.getTransactionLogsDirectory());
+        copy(fileSystem, databaseLayout.getTransactionLogsDirectory(), restoreDbLayout.getTransactionLogsDirectory());
+        copy(fileSystem, databaseLayout.databaseDirectory(), restoreDbLayout.databaseDirectory());
         return restoreDbLayout;
     }
 
-    private static void copy( FileSystemAbstraction fs, Path fromDirectory, Path toDirectory ) throws IOException
-    {
-        assertTrue( fs.isDirectory( fromDirectory ) );
-        assertTrue( fs.isDirectory( toDirectory ) );
-        fs.copyRecursively( fromDirectory, toDirectory );
+    private static void copy(FileSystemAbstraction fs, Path fromDirectory, Path toDirectory) throws IOException {
+        assertTrue(fs.isDirectory(fromDirectory));
+        assertTrue(fs.isDirectory(toDirectory));
+        fs.copyRecursively(fromDirectory, toDirectory);
     }
 
-    private GraphDatabaseAPI startDatabase( Path homeDir, EphemeralFileSystemAbstraction fs, UpdateCapturingIndexProvider indexProvider )
-    {
+    private GraphDatabaseAPI startDatabase(
+            Path homeDir, EphemeralFileSystemAbstraction fs, UpdateCapturingIndexProvider indexProvider) {
 
-        if ( managementService != null )
-        {
+        if (managementService != null) {
             managementService.shutdown();
         }
-        managementService = new TestDatabaseManagementServiceBuilder( homeDir )
-                .setFileSystem( fs )
-                .addExtension( new IndexExtensionFactory( indexProvider ) )
+        managementService = new TestDatabaseManagementServiceBuilder(homeDir)
+                .setFileSystem(fs)
+                .addExtension(new IndexExtensionFactory(indexProvider))
                 .impermanent()
                 .noOpSystemGraphInitializer()
                 .build();
 
-        return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        return (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    private GraphDatabaseService startDatabase( Path homeDir )
-    {
-        if ( managementService != null )
-        {
+    private GraphDatabaseService startDatabase(Path homeDir) {
+        if (managementService != null) {
             managementService.shutdown();
         }
-        managementService = getManagementService( homeDir );
-        return managementService.database( DEFAULT_DATABASE_NAME );
+        managementService = getManagementService(homeDir);
+        return managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    private DatabaseManagementService getManagementService( Path homeDir )
-    {
-        return new TestDatabaseManagementServiceBuilder( homeDir ).setInternalLogProvider( logProvider ).build();
+    private DatabaseManagementService getManagementService(Path homeDir) {
+        return new TestDatabaseManagementServiceBuilder(homeDir)
+                .setInternalLogProvider(logProvider)
+                .build();
     }
 
-    public static class UpdateCapturingIndexProvider extends IndexProvider.Delegating
-    {
-        private final Map<Long,UpdateCapturingIndexAccessor> indexes = new ConcurrentHashMap<>();
-        private final Map<Long,Collection<IndexEntryUpdate<?>>> initialUpdates;
+    public static class UpdateCapturingIndexProvider extends IndexProvider.Delegating {
+        private final Map<Long, UpdateCapturingIndexAccessor> indexes = new ConcurrentHashMap<>();
+        private final Map<Long, Collection<IndexEntryUpdate<?>>> initialUpdates;
 
-        UpdateCapturingIndexProvider( IndexProvider actual, Map<Long,Collection<IndexEntryUpdate<?>>> initialUpdates )
-        {
-            super( actual );
+        UpdateCapturingIndexProvider(IndexProvider actual, Map<Long, Collection<IndexEntryUpdate<?>>> initialUpdates) {
+            super(actual);
             this.initialUpdates = initialUpdates;
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
-                                                ImmutableSet<OpenOption> openOptions )
-                throws IOException
-        {
-            IndexAccessor actualAccessor = super.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup, openOptions );
-            return indexes.computeIfAbsent( descriptor.getId(), id -> new UpdateCapturingIndexAccessor( actualAccessor, initialUpdates.get( id ) ) );
+        public IndexAccessor getOnlineAccessor(
+                IndexDescriptor descriptor,
+                IndexSamplingConfig samplingConfig,
+                TokenNameLookup tokenNameLookup,
+                ImmutableSet<OpenOption> openOptions)
+                throws IOException {
+            IndexAccessor actualAccessor =
+                    super.getOnlineAccessor(descriptor, samplingConfig, tokenNameLookup, openOptions);
+            return indexes.computeIfAbsent(
+                    descriptor.getId(), id -> new UpdateCapturingIndexAccessor(actualAccessor, initialUpdates.get(id)));
         }
 
-        public Map<Long,Collection<IndexEntryUpdate<?>>> snapshot()
-        {
-            Map<Long,Collection<IndexEntryUpdate<?>>> result = new HashMap<>();
-            indexes.forEach( ( indexId, index ) -> result.put( indexId, index.snapshot() ) );
+        public Map<Long, Collection<IndexEntryUpdate<?>>> snapshot() {
+            Map<Long, Collection<IndexEntryUpdate<?>>> result = new HashMap<>();
+            indexes.forEach((indexId, index) -> result.put(indexId, index.snapshot()));
             return result;
         }
     }
 
-    public static class UpdateCapturingIndexAccessor extends IndexAccessor.Delegating
-    {
+    public static class UpdateCapturingIndexAccessor extends IndexAccessor.Delegating {
         private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
-        UpdateCapturingIndexAccessor( IndexAccessor actual, Collection<IndexEntryUpdate<?>> initialUpdates )
-        {
-            super( actual );
-            if ( initialUpdates != null )
-            {
-                this.updates.addAll( initialUpdates );
+        UpdateCapturingIndexAccessor(IndexAccessor actual, Collection<IndexEntryUpdate<?>> initialUpdates) {
+            super(actual);
+            if (initialUpdates != null) {
+                this.updates.addAll(initialUpdates);
             }
         }
 
         @Override
-        public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
-        {
-            return wrap( super.newUpdater( mode, cursorContext, parallel ) );
+        public IndexUpdater newUpdater(IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
+            return wrap(super.newUpdater(mode, cursorContext, parallel));
         }
 
-        private IndexUpdater wrap( IndexUpdater actual )
-        {
-            return new UpdateCapturingIndexUpdater( actual, updates );
+        private IndexUpdater wrap(IndexUpdater actual) {
+            return new UpdateCapturingIndexUpdater(actual, updates);
         }
 
-        public Collection<IndexEntryUpdate<?>> snapshot()
-        {
-            return new ArrayList<>( updates );
+        public Collection<IndexEntryUpdate<?>> snapshot() {
+            return new ArrayList<>(updates);
         }
     }
 
-    public static class UpdateCapturingIndexUpdater extends DelegatingIndexUpdater
-    {
+    public static class UpdateCapturingIndexUpdater extends DelegatingIndexUpdater {
         private final Collection<IndexEntryUpdate<?>> updatesTarget;
 
-        UpdateCapturingIndexUpdater( IndexUpdater actual, Collection<IndexEntryUpdate<?>> updatesTarget )
-        {
-            super( actual );
+        UpdateCapturingIndexUpdater(IndexUpdater actual, Collection<IndexEntryUpdate<?>> updatesTarget) {
+            super(actual);
             this.updatesTarget = updatesTarget;
         }
 
         @Override
-        public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
-        {
-            super.process( update );
-            updatesTarget.add( update );
+        public void process(IndexEntryUpdate<?> update) throws IndexEntryConflictException {
+            super.process(update);
+            updatesTarget.add(update);
         }
     }
 
     @RecoveryExtension
-    private static class IndexExtensionFactory extends ExtensionFactory<IndexExtensionFactory.Dependencies>
-    {
+    private static class IndexExtensionFactory extends ExtensionFactory<IndexExtensionFactory.Dependencies> {
         private final IndexProvider indexProvider;
 
-        interface Dependencies
-        {
-        }
+        interface Dependencies {}
 
-        IndexExtensionFactory( IndexProvider indexProvider )
-        {
-            super( ExtensionType.DATABASE, "customExtension" );
+        IndexExtensionFactory(IndexProvider indexProvider) {
+            super(ExtensionType.DATABASE, "customExtension");
             this.indexProvider = indexProvider;
         }
 
         @Override
-        public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
-        {
+        public Lifecycle newInstance(ExtensionContext context, Dependencies dependencies) {
             return indexProvider;
         }
     }

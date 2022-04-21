@@ -26,8 +26,7 @@ import org.neo4j.graphdb.config.Setting;
  * Builder for constructing and starting Neo4j for test purposes.
  */
 @PublicApi
-public interface Neo4jBuilder extends Neo4jConfigurator<Neo4jBuilder>
-{
+public interface Neo4jBuilder extends Neo4jConfigurator<Neo4jBuilder> {
     /**
      * Start new neo4j instance. By default, the neo4j server will listen on random free port, and you can determine where to
      * connect using the {@link Neo4j#httpURI()} method. You could also specify explicit ports using the

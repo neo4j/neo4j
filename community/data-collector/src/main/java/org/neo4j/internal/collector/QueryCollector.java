@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QuerySnapshot;
@@ -39,20 +38,19 @@ import org.neo4j.scheduler.JobScheduler;
  *
  * Delegates to {@link RecentQueryBuffer} to hard limit the number of collected queries at any point in time.
  */
-class QueryCollector extends CollectorStateMachine<Iterator<TruncatedQuerySnapshot>> implements QueryExecutionMonitor
-{
+class QueryCollector extends CollectorStateMachine<Iterator<TruncatedQuerySnapshot>> implements QueryExecutionMonitor {
     private volatile boolean isCollecting;
     private final RecentQueryBuffer recentQueryBuffer;
     private final NamedDatabaseId databaseId;
     private final JobScheduler jobScheduler;
     private final int maxQueryTextSize;
 
-    QueryCollector( NamedDatabaseId databaseId,
-                    JobScheduler jobScheduler,
-                    RecentQueryBuffer recentQueryBuffer,
-                    int maxQueryTextSize )
-    {
-        super( true );
+    QueryCollector(
+            NamedDatabaseId databaseId,
+            JobScheduler jobScheduler,
+            RecentQueryBuffer recentQueryBuffer,
+            int maxQueryTextSize) {
+        super(true);
         this.databaseId = databaseId;
         this.jobScheduler = jobScheduler;
         this.maxQueryTextSize = maxQueryTextSize;
@@ -60,89 +58,77 @@ class QueryCollector extends CollectorStateMachine<Iterator<TruncatedQuerySnapsh
         isCollecting = false;
     }
 
-    long numSilentQueryDrops()
-    {
+    long numSilentQueryDrops() {
         return recentQueryBuffer.numSilentQueryDrops();
     }
 
     @Override
-    protected Result doCollect( Map<String,Object> config, long collectionId ) throws InvalidArgumentsException
-    {
-        int collectSeconds = QueryCollectorConfig.of( config ).collectSeconds;
-        if ( collectSeconds > 0 )
-        {
-            var monitoringParams = JobMonitoringParams.systemJob( databaseId.name(), "Timeout of query collection" );
-            jobScheduler.schedule( Group.DATA_COLLECTOR, monitoringParams, () -> QueryCollector.this.stop( collectionId ), collectSeconds, TimeUnit.SECONDS );
+    protected Result doCollect(Map<String, Object> config, long collectionId) throws InvalidArgumentsException {
+        int collectSeconds = QueryCollectorConfig.of(config).collectSeconds;
+        if (collectSeconds > 0) {
+            var monitoringParams = JobMonitoringParams.systemJob(databaseId.name(), "Timeout of query collection");
+            jobScheduler.schedule(
+                    Group.DATA_COLLECTOR,
+                    monitoringParams,
+                    () -> QueryCollector.this.stop(collectionId),
+                    collectSeconds,
+                    TimeUnit.SECONDS);
         }
         isCollecting = true;
-        return success( "Collection started." );
+        return success("Collection started.");
     }
 
     @Override
-    protected Result doStop()
-    {
+    protected Result doStop() {
         isCollecting = false;
-        return success( "Collection stopped." );
+        return success("Collection stopped.");
     }
 
     @Override
-    protected Result doClear()
-    {
-        recentQueryBuffer.clear( databaseId );
-        return success( "Data cleared." );
+    protected Result doClear() {
+        recentQueryBuffer.clear(databaseId);
+        return success("Data cleared.");
     }
 
     @Override
-    protected Iterator<TruncatedQuerySnapshot> doGetData()
-    {
+    protected Iterator<TruncatedQuerySnapshot> doGetData() {
         List<TruncatedQuerySnapshot> querySnapshots = new ArrayList<>();
-        recentQueryBuffer.foreach( databaseId, querySnapshots::add );
+        recentQueryBuffer.foreach(databaseId, querySnapshots::add);
         return querySnapshots.iterator();
     }
 
     // QueryExecutionMonitor
 
     @Override
-    public void startProcessing( ExecutingQuery query )
-    {
-    }
+    public void startProcessing(ExecutingQuery query) {}
 
     @Override
-    public void startExecution( ExecutingQuery query )
-    {
-    }
+    public void startExecution(ExecutingQuery query) {}
 
     @Override
-    public void endFailure( ExecutingQuery query, Throwable failure )
-    {
-    }
+    public void endFailure(ExecutingQuery query, Throwable failure) {}
 
     @Override
-    public void endFailure( ExecutingQuery query, String reason )
-    {
-    }
+    public void endFailure(ExecutingQuery query, String reason) {}
 
     @Override
-    public void endSuccess( ExecutingQuery query )
-    {
-        if ( isCollecting )
-        {
+    public void endSuccess(ExecutingQuery query) {
+        if (isCollecting) {
             QuerySnapshot snapshot = query.snapshot();
-            var databaseId = query.databaseId().orElse( null );
-            var queryText = snapshot.obfuscatedQueryText().orElse( null );
-            var parameters = snapshot.obfuscatedQueryParameters().orElse( null );
+            var databaseId = query.databaseId().orElse(null);
+            var queryText = snapshot.obfuscatedQueryText().orElse(null);
+            var parameters = snapshot.obfuscatedQueryParameters().orElse(null);
 
-            if ( databaseId != null && queryText != null && parameters != null )
-            {
-                recentQueryBuffer.produce(
-                    new TruncatedQuerySnapshot( databaseId,
-                                                queryText,
-                                                snapshot.queryPlanSupplier(),
-                                                parameters,
-                                                snapshot.elapsedTimeMicros(),
-                                                snapshot.compilationTimeMicros(),
-                                                snapshot.startTimestampMillis(),
-                                                maxQueryTextSize ) );
+            if (databaseId != null && queryText != null && parameters != null) {
+                recentQueryBuffer.produce(new TruncatedQuerySnapshot(
+                        databaseId,
+                        queryText,
+                        snapshot.queryPlanSupplier(),
+                        parameters,
+                        snapshot.elapsedTimeMicros(),
+                        snapshot.compilationTimeMicros(),
+                        snapshot.startTimestampMillis(),
+                        maxQueryTextSize));
             }
         }
     }

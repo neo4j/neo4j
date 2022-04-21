@@ -24,107 +24,89 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
-
 import org.neo4j.graphdb.spatial.Geometry;
 
 /**
  * Single instance of one of the storable primitives.
  */
-abstract class ScalarValue extends Value
-{
+abstract class ScalarValue extends Value {
     @Override
-    public final boolean equals( byte[] x )
-    {
+    public final boolean equals(byte[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( short[] x )
-    {
+    public final boolean equals(short[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( int[] x )
-    {
+    public final boolean equals(int[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( long[] x )
-    {
+    public final boolean equals(long[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( float[] x )
-    {
+    public final boolean equals(float[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( double[] x )
-    {
+    public final boolean equals(double[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( boolean[] x )
-    {
+    public final boolean equals(boolean[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( char[] x )
-    {
+    public final boolean equals(char[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( String[] x )
-    {
+    public final boolean equals(String[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( Geometry[] x )
-    {
+    public final boolean equals(Geometry[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( ZonedDateTime[] x )
-    {
+    public final boolean equals(ZonedDateTime[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( LocalDate[] x )
-    {
+    public final boolean equals(LocalDate[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( DurationValue[] x )
-    {
+    public final boolean equals(DurationValue[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( LocalDateTime[] x )
-    {
+    public final boolean equals(LocalDateTime[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( LocalTime[] x )
-    {
+    public final boolean equals(LocalTime[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( OffsetTime[] x )
-    {
+    public final boolean equals(OffsetTime[] x) {
         return false;
     }
 }

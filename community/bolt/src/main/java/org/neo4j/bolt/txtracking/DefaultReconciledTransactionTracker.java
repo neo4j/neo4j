@@ -19,25 +19,23 @@
  */
 package org.neo4j.bolt.txtracking;
 
+import static org.neo4j.util.Preconditions.checkArgument;
+import static org.neo4j.util.Preconditions.requireNonNegative;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
 
-import static org.neo4j.util.Preconditions.checkArgument;
-import static org.neo4j.util.Preconditions.requireNonNegative;
-
 /**
  * A {@link ReconciledTransactionTracker} used for standalone and clustered databases that have a reconciler and allow updates of the system database.
  * Updates can happen asynchronously and the task of this tracker is to keep track of all fully reconciled operations.
  */
-public class DefaultReconciledTransactionTracker implements ReconciledTransactionTracker
-{
+public class DefaultReconciledTransactionTracker implements ReconciledTransactionTracker {
     private static final int INITIAL_ARRAY_SIZE = 200;
     private static final long[] NO_METADATA = new long[0];
 
@@ -48,6 +46,7 @@ public class DefaultReconciledTransactionTracker implements ReconciledTransactio
      * Re-initialization can happen after a store copy of the system database.
      */
     private final ReadWriteLock initializationLock;
+
     private final InternalLog log;
 
     private long startingNumber;
@@ -55,112 +54,87 @@ public class DefaultReconciledTransactionTracker implements ReconciledTransactio
     private Collection<Long> outstanding = new ArrayList<>();
     private long fixedId = NO_RECONCILED_TRANSACTION_ID;
 
-    public DefaultReconciledTransactionTracker( LogService logService )
-    {
+    public DefaultReconciledTransactionTracker(LogService logService) {
         initializationLock = new ReentrantReadWriteLock();
-        log = logService.getInternalLog( getClass() );
+        log = logService.getInternalLog(getClass());
     }
 
     @Override
-    public void disable()
-    {
+    public void disable() {
         initializationLock.writeLock().lock();
-        try
-        {
-            if ( sequence == null )
-            {
+        try {
+            if (sequence == null) {
                 return;
             }
             fixedId = sequence.getHighestGapFreeNumber();
             sequence = null;
-        }
-        finally
-        {
+        } finally {
             initializationLock.writeLock().unlock();
         }
     }
 
     @Override
-    public void enable( long reconciledTransactionId )
-    {
-        requireNonNegative( reconciledTransactionId );
+    public void enable(long reconciledTransactionId) {
+        requireNonNegative(reconciledTransactionId);
 
         initializationLock.writeLock().lock();
-        try
-        {
-            if ( sequence == null )
-            {
-                log.info( "Enabling with transaction ID %s", reconciledTransactionId );
-            }
-            else
-            {
+        try {
+            if (sequence == null) {
+                log.info("Enabling with transaction ID %s", reconciledTransactionId);
+            } else {
                 // This isn't expected to be used, but we leave the code path for robustness.
-                log.warn( "Enabling when not disabled with %s to transaction ID %s", sequence, reconciledTransactionId );
+                log.warn("Enabling when not disabled with %s to transaction ID %s", sequence, reconciledTransactionId);
             }
-            sequence = new ArrayQueueOutOfOrderSequence( reconciledTransactionId, INITIAL_ARRAY_SIZE, NO_METADATA );
+            sequence = new ArrayQueueOutOfOrderSequence(reconciledTransactionId, INITIAL_ARRAY_SIZE, NO_METADATA);
             startingNumber = reconciledTransactionId;
-            for ( long txId : outstanding )
-            {
-                if ( txId > reconciledTransactionId )
-                {
-                    sequence.offer( txId, NO_METADATA );
+            for (long txId : outstanding) {
+                if (txId > reconciledTransactionId) {
+                    sequence.offer(txId, NO_METADATA);
                 }
             }
             outstanding.clear();
-        }
-        finally
-        {
+        } finally {
             initializationLock.writeLock().unlock();
         }
     }
 
     @Override
-    public long getLastReconciledTransactionId()
-    {
+    public long getLastReconciledTransactionId() {
         initializationLock.readLock().lock();
-        try
-        {
+        try {
             return sequence != null ? sequence.getHighestGapFreeNumber() : fixedId;
-        }
-        finally
-        {
+        } finally {
             initializationLock.readLock().unlock();
         }
     }
 
     @Override
-    public void offerReconciledTransactionId( long reconciledTransactionId )
-    {
-        requireNonNegative( reconciledTransactionId );
+    public void offerReconciledTransactionId(long reconciledTransactionId) {
+        requireNonNegative(reconciledTransactionId);
 
         initializationLock.readLock().lock();
-        try
-        {
-            if ( sequence == null )
-            {
-                log.info( "Outstanding ID %s", reconciledTransactionId );
-                outstanding.add( reconciledTransactionId );
-            }
-            else if ( reconciledTransactionId < startingNumber )
-            {
+        try {
+            if (sequence == null) {
+                log.info("Outstanding ID %s", reconciledTransactionId);
+                outstanding.add(reconciledTransactionId);
+            } else if (reconciledTransactionId < startingNumber) {
                 // this can happen when a store copy happens concurrently with a reconciliation
-                log.info( "Ignoring pre-enabled ID %s", reconciledTransactionId );
-            }
-            else
-            {
+                log.info("Ignoring pre-enabled ID %s", reconciledTransactionId);
+            } else {
                 var currentLastReconciledTxId = sequence.getHighestGapFreeNumber();
 
                 // gap-free ID should always be lower than the given ID
-                checkArgument( reconciledTransactionId > currentLastReconciledTxId,
-                        "Received illegal transaction ID %s which is lower than the current transaction ID %s. Sequence: %s", reconciledTransactionId,
-                        currentLastReconciledTxId, sequence );
+                checkArgument(
+                        reconciledTransactionId > currentLastReconciledTxId,
+                        "Received illegal transaction ID %s which is lower than the current transaction ID %s. Sequence: %s",
+                        reconciledTransactionId,
+                        currentLastReconciledTxId,
+                        sequence);
 
-                log.debug( "Updating %s with transaction ID %s", sequence, reconciledTransactionId );
-                sequence.offer( reconciledTransactionId, NO_METADATA );
+                log.debug("Updating %s with transaction ID %s", sequence, reconciledTransactionId);
+                sequence.offer(reconciledTransactionId, NO_METADATA);
             }
-        }
-        finally
-        {
+        } finally {
             initializationLock.readLock().unlock();
         }
     }

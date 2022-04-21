@@ -19,14 +19,18 @@
  */
 package org.neo4j.consistency.checker;
 
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.consistency_checker_fail_fast_threshold;
+import static org.neo4j.consistency.checker.ParallelExecution.DEFAULT_IDS_PER_CHUNK;
+import static org.neo4j.consistency.checker.SchemaChecker.moreDescriptiveRecordToStrings;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.internal.helpers.collection.Iterators.resourceIterator;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.RecordType;
@@ -78,26 +82,21 @@ import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.consistency_checker_fail_fast_threshold;
-import static org.neo4j.consistency.checker.ParallelExecution.DEFAULT_IDS_PER_CHUNK;
-import static org.neo4j.consistency.checker.SchemaChecker.moreDescriptiveRecordToStrings;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
-import static org.neo4j.internal.helpers.collection.Iterators.resourceIterator;
-
 /**
  * A consistency checker for a {@link RecordStorageEngine}, focused on keeping abstractions to a minimum and having clean and understandable
  * algorithms. Revolves around the {@link CacheAccess} which uses up {@code 11 * NodeStore#getHighId()}. The checking is split up into a couple
  * of checkers, mostly focused on a single store, e.g. nodes or relationships, which are run one after the other. Each checker's algorithm is
  * designed to try to maximize both CPU and I/O to its full extent, or rather at least maxing out one of them.
  */
-public class RecordStorageConsistencyChecker implements AutoCloseable
-{
+public class RecordStorageConsistencyChecker implements AutoCloseable {
     private static final String INDEX_STRUCTURE_CHECKER_TAG = "indexStructureChecker";
     private static final String COUNT_STORE_CONSISTENCY_CHECKER_TAG = "countStoreConsistencyChecker";
     private static final String REL_GROUP_STORE_CONSISTENCY_CHECKER_TAG = "relGroupStoreConsistencyChecker";
     private static final String SCHEMA_CONSISTENCY_CHECKER_TAG = "schemaConsistencyChecker";
     private static final String CONSISTENCY_CHECKER_TOKEN_LOADER_TAG = "consistencyCheckerTokenLoader";
-    static final int[] DEFAULT_SLOT_SIZES = {CacheSlots.ID_SLOT_SIZE, CacheSlots.ID_SLOT_SIZE, 1, 1, 1, 1, 1, 1 /*2 bits unused*/};
+    static final int[] DEFAULT_SLOT_SIZES = {
+        CacheSlots.ID_SLOT_SIZE, CacheSlots.ID_SLOT_SIZE, 1, 1, 1, 1, 1, 1 /*2 bits unused*/
+    };
 
     private final FileSystemAbstraction fileSystem;
     private final RecordDatabaseLayout databaseLayout;
@@ -118,11 +117,24 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
     private final IndexAccessors indexAccessors;
     private final InconsistencyReport report;
 
-    public RecordStorageConsistencyChecker( FileSystemAbstraction fileSystem, RecordDatabaseLayout databaseLayout, PageCache pageCache, NeoStores neoStores,
-            IndexProviderMap indexProviders, IndexAccessorLookup accessorLookup, IdGeneratorFactory idGeneratorFactory, ConsistencySummaryStatistics summary,
-            ProgressMonitorFactory progressFactory, Config config, int numberOfThreads, InternalLog log, boolean verbose, ConsistencyFlags consistencyFlags,
-            EntityBasedMemoryLimiter.Factory memoryLimit, MemoryTracker memoryTracker, CursorContextFactory contextFactory )
-    {
+    public RecordStorageConsistencyChecker(
+            FileSystemAbstraction fileSystem,
+            RecordDatabaseLayout databaseLayout,
+            PageCache pageCache,
+            NeoStores neoStores,
+            IndexProviderMap indexProviders,
+            IndexAccessorLookup accessorLookup,
+            IdGeneratorFactory idGeneratorFactory,
+            ConsistencySummaryStatistics summary,
+            ProgressMonitorFactory progressFactory,
+            Config config,
+            int numberOfThreads,
+            InternalLog log,
+            boolean verbose,
+            ConsistencyFlags consistencyFlags,
+            EntityBasedMemoryLimiter.Factory memoryLimit,
+            MemoryTracker memoryTracker,
+            CursorContextFactory contextFactory) {
         this.fileSystem = fileSystem;
         this.databaseLayout = databaseLayout;
         this.pageCache = pageCache;
@@ -133,49 +145,66 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
         this.log = log;
         this.consistencyFlags = consistencyFlags;
         this.contextFactory = contextFactory;
-        int stopCountThreshold = config.get( consistency_checker_fail_fast_threshold );
-        AtomicInteger stopCount = new AtomicInteger( 0 );
+        int stopCountThreshold = config.get(consistency_checker_fail_fast_threshold);
+        AtomicInteger stopCount = new AtomicInteger(0);
         ConsistencyReporter.Monitor monitor = ConsistencyReporter.NO_MONITOR;
-        if ( stopCountThreshold > 0 )
-        {
-            monitor = ( ignoredArg1, ignoredArg2, ignoredArg3 ) ->
-            {
-                if ( !isCancelled() && stopCount.incrementAndGet() >= stopCountThreshold )
-                {
-                    cancel( "Observed " + stopCount.get() + " inconsistencies." );
+        if (stopCountThreshold > 0) {
+            monitor = (ignoredArg1, ignoredArg2, ignoredArg3) -> {
+                if (!isCancelled() && stopCount.incrementAndGet() >= stopCountThreshold) {
+                    cancel("Observed " + stopCount.get() + " inconsistencies.");
                 }
             };
         }
-        TokenHolders tokenHolders = safeLoadTokens( neoStores, contextFactory );
-        this.report = new InconsistencyReport( new InconsistencyMessageLogger( log, moreDescriptiveRecordToStrings( neoStores, tokenHolders ) ), summary );
-        this.reporter = new ConsistencyReporter( report, monitor );
-        ParallelExecution execution = new ParallelExecution( numberOfThreads,
-                exception -> cancel( "Unexpected exception" ), // Exceptions should interrupt all threads to exit faster
-                DEFAULT_IDS_PER_CHUNK );
-        RecordLoading recordLoading = new RecordLoading( neoStores );
-        this.limiter = instantiateMemoryLimiter( memoryLimit );
-        this.cacheAccess = new DefaultCacheAccess( DefaultCacheAccess.defaultByteArray( limiter.rangeSize(), memoryTracker ), Counts.NONE, numberOfThreads );
-        this.observedCounts = new CountsState( neoStores, cacheAccess, memoryTracker );
-        this.progress = progressFactory.multipleParts( "Consistency check" );
-        this.indexAccessors = instantiateIndexAccessors( neoStores, indexProviders, tokenHolders, config );
-        this.context = new CheckerContext( neoStores, indexAccessors,
-                execution, reporter, cacheAccess, tokenHolders, recordLoading, observedCounts, limiter, progress, pageCache, memoryTracker, log,
-                verbose, consistencyFlags, contextFactory );
+        TokenHolders tokenHolders = safeLoadTokens(neoStores, contextFactory);
+        this.report = new InconsistencyReport(
+                new InconsistencyMessageLogger(log, moreDescriptiveRecordToStrings(neoStores, tokenHolders)), summary);
+        this.reporter = new ConsistencyReporter(report, monitor);
+        ParallelExecution execution = new ParallelExecution(
+                numberOfThreads,
+                exception -> cancel("Unexpected exception"), // Exceptions should interrupt all threads to exit faster
+                DEFAULT_IDS_PER_CHUNK);
+        RecordLoading recordLoading = new RecordLoading(neoStores);
+        this.limiter = instantiateMemoryLimiter(memoryLimit);
+        this.cacheAccess = new DefaultCacheAccess(
+                DefaultCacheAccess.defaultByteArray(limiter.rangeSize(), memoryTracker), Counts.NONE, numberOfThreads);
+        this.observedCounts = new CountsState(neoStores, cacheAccess, memoryTracker);
+        this.progress = progressFactory.multipleParts("Consistency check");
+        this.indexAccessors = instantiateIndexAccessors(neoStores, indexProviders, tokenHolders, config);
+        this.context = new CheckerContext(
+                neoStores,
+                indexAccessors,
+                execution,
+                reporter,
+                cacheAccess,
+                tokenHolders,
+                recordLoading,
+                observedCounts,
+                limiter,
+                progress,
+                pageCache,
+                memoryTracker,
+                log,
+                verbose,
+                consistencyFlags,
+                contextFactory);
     }
 
-    private IndexAccessors instantiateIndexAccessors( NeoStores neoStores, IndexProviderMap indexProviders, TokenHolders tokenHolders, Config config )
-    {
-        SchemaRuleAccess schemaRuleAccess =
-                SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, neoStores.getMetaDataStore() );
-        return new IndexAccessors( indexProviders, new SchemaRulesDescriptors( neoStores, schemaRuleAccess ), new IndexSamplingConfig( config ), tokenHolders,
-                                   contextFactory, neoStores.getOpenOptions() );
+    private IndexAccessors instantiateIndexAccessors(
+            NeoStores neoStores, IndexProviderMap indexProviders, TokenHolders tokenHolders, Config config) {
+        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess(
+                neoStores.getSchemaStore(), tokenHolders, neoStores.getMetaDataStore());
+        return new IndexAccessors(
+                indexProviders,
+                new SchemaRulesDescriptors(neoStores, schemaRuleAccess),
+                new IndexSamplingConfig(config),
+                tokenHolders,
+                contextFactory,
+                neoStores.getOpenOptions());
     }
 
-    public void check() throws ConsistencyCheckIncompleteException
-    {
+    public void check() throws ConsistencyCheckIncompleteException {
         assert !context.isCancelled();
-        try
-        {
+        try {
             consistencyCheckIndexes();
 
             context.initialize();
@@ -183,276 +212,301 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
             // Check schema - constraints and indexes, that sort of thing
             // This is done before instantiating the other checker instances because the schema checker will also
             // populate maps regarding mandatory properties which the node/relationship checkers uses
-            SchemaChecker schemaChecker = new SchemaChecker( context );
+            SchemaChecker schemaChecker = new SchemaChecker(context);
             MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties = new IntObjectHashMap<>();
             MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties = new IntObjectHashMap<>();
-            try ( var cursorContext = contextFactory.create( SCHEMA_CONSISTENCY_CHECKER_TAG );
-                  var storeCursors = new CachedStoreCursors( context.neoStores, cursorContext ) )
-            {
-                schemaChecker.check( mandatoryNodeProperties, mandatoryRelationshipProperties, cursorContext, storeCursors );
+            try (var cursorContext = contextFactory.create(SCHEMA_CONSISTENCY_CHECKER_TAG);
+                    var storeCursors = new CachedStoreCursors(context.neoStores, cursorContext)) {
+                schemaChecker.check(
+                        mandatoryNodeProperties, mandatoryRelationshipProperties, cursorContext, storeCursors);
             }
 
-            // Some pieces of check logic are extracted from this main class to reduce the size of this class. Instantiate those here first
-            NodeChecker nodeChecker = new NodeChecker( context, mandatoryNodeProperties );
-            NodeIndexChecker indexChecker = new NodeIndexChecker( context );
-            RelationshipIndexChecker relationshipIndexChecker = new RelationshipIndexChecker( context );
-            RelationshipChecker relationshipChecker = new RelationshipChecker( context, mandatoryRelationshipProperties );
-            RelationshipGroupChecker relationshipGroupChecker = new RelationshipGroupChecker( context );
-            RelationshipChainChecker relationshipChainChecker = new RelationshipChainChecker( context );
+            // Some pieces of check logic are extracted from this main class to reduce the size of this class.
+            // Instantiate those here first
+            NodeChecker nodeChecker = new NodeChecker(context, mandatoryNodeProperties);
+            NodeIndexChecker indexChecker = new NodeIndexChecker(context);
+            RelationshipIndexChecker relationshipIndexChecker = new RelationshipIndexChecker(context);
+            RelationshipChecker relationshipChecker = new RelationshipChecker(context, mandatoryRelationshipProperties);
+            RelationshipGroupChecker relationshipGroupChecker = new RelationshipGroupChecker(context);
+            RelationshipChainChecker relationshipChainChecker = new RelationshipChainChecker(context);
             ProgressMonitorFactory.Completer progressCompleter = progress.build();
 
             int numberOfRanges = limiter.numberOfRanges();
-            for ( int i = 1; limiter.hasNext(); i++ )
-            {
-                if ( isCancelled() )
-                {
+            for (int i = 1; limiter.hasNext(); i++) {
+                if (isCancelled()) {
                     break;
                 }
 
                 EntityBasedMemoryLimiter.CheckRange range = limiter.next();
-                if ( numberOfRanges > 1 )
-                {
-                    context.debug( "=== Checking range %d/%d (%s) ===", i, numberOfRanges, range );
+                if (numberOfRanges > 1) {
+                    context.debug("=== Checking range %d/%d (%s) ===", i, numberOfRanges, range);
                 }
                 context.initializeRange();
 
-                // Tell the cache that the pivot node id is the low end of this range. This will make all interactions with the cache
+                // Tell the cache that the pivot node id is the low end of this range. This will make all interactions
+                // with the cache
                 // take that into consideration when working with offset arrays where the index is based on node ids.
-                cacheAccess.setPivotId( range.from() );
+                cacheAccess.setPivotId(range.from());
 
-                if ( range.applicableForRelationshipBasedChecks() )
-                {
+                if (range.applicableForRelationshipBasedChecks()) {
                     LongRange relationshipRange = range.getRelationshipRange();
-                    context.runIfAllowed( relationshipIndexChecker, relationshipRange );
+                    context.runIfAllowed(relationshipIndexChecker, relationshipRange);
                     // We don't clear the cache here since it will be cleared before it is used again:
-                    // either in NodeIndexChecker, explicitly a few rows down before NodeChecker, or in next range of RelationshipIndexChecker.
+                    // either in NodeIndexChecker, explicitly a few rows down before NodeChecker, or in next range of
+                    // RelationshipIndexChecker.
                 }
 
-                if ( range.applicableForNodeBasedChecks() )
-                {
+                if (range.applicableForNodeBasedChecks()) {
                     LongRange nodeRange = range.getNodeRange();
                     // Go into a node-centric mode where the nodes themselves are checked and somewhat cached off-heap.
-                    // Then while we have the nodes loaded in cache do all other checking that has anything to do with nodes
+                    // Then while we have the nodes loaded in cache do all other checking that has anything to do with
+                    // nodes
                     // so that the "other" store can be checked sequentially and the random node lookups will be cheap
-                    context.runIfAllowed( indexChecker, nodeRange );
-                    cacheAccess.setCacheSlotSizesAndClear( DEFAULT_SLOT_SIZES );
-                    context.runIfAllowed( nodeChecker, nodeRange );
-                    context.runIfAllowed( relationshipGroupChecker, nodeRange );
-                    context.runIfAllowed( relationshipChecker, nodeRange );
-                    context.runIfAllowed( relationshipChainChecker, nodeRange );
+                    context.runIfAllowed(indexChecker, nodeRange);
+                    cacheAccess.setCacheSlotSizesAndClear(DEFAULT_SLOT_SIZES);
+                    context.runIfAllowed(nodeChecker, nodeRange);
+                    context.runIfAllowed(relationshipGroupChecker, nodeRange);
+                    context.runIfAllowed(relationshipChecker, nodeRange);
+                    context.runIfAllowed(relationshipChainChecker, nodeRange);
                 }
             }
 
-            if ( !isCancelled() )
-            {
-                // All counts we've observed while doing other checking along the way we compare against the counts store here
+            if (!isCancelled()) {
+                // All counts we've observed while doing other checking along the way we compare against the counts
+                // store here
                 checkCounts();
                 checkRelationshipGroupDegressStore();
             }
             progressCompleter.close();
-        }
-        catch ( Exception e )
-        {
-            cancel( "ConsistencyChecker failed unexpectedly" );
-            throw new ConsistencyCheckIncompleteException( e );
+        } catch (Exception e) {
+            cancel("ConsistencyChecker failed unexpectedly");
+            throw new ConsistencyCheckIncompleteException(e);
         }
     }
 
-    private void consistencyCheckIndexes()
-    {
-        if ( consistencyFlags.isCheckIndexStructure() )
-        {
-            try ( var cursorContext = contextFactory.create( INDEX_STRUCTURE_CHECKER_TAG ) )
-            {
+    private void consistencyCheckIndexes() {
+        if (consistencyFlags.isCheckIndexStructure()) {
+            try (var cursorContext = contextFactory.create(INDEX_STRUCTURE_CHECKER_TAG)) {
                 List<IdGenerator> idGenerators = new ArrayList<>();
-                idGeneratorFactory.visit( idGenerators::add );
+                idGeneratorFactory.visit(idGenerators::add);
 
-                ProgressListener progressListener = progressFactory.singlePart( "Index structure consistency check",
-                        indexAccessors.onlineRules().size() + ((indexAccessors.nodeLabelIndex() != null) ? 1 : 0) +
-                                ((indexAccessors.relationshipTypeIndex() != null) ? 1 : 0) + idGenerators.size() );
+                ProgressListener progressListener = progressFactory.singlePart(
+                        "Index structure consistency check",
+                        indexAccessors.onlineRules().size()
+                                + ((indexAccessors.nodeLabelIndex() != null) ? 1 : 0)
+                                + ((indexAccessors.relationshipTypeIndex() != null) ? 1 : 0)
+                                + idGenerators.size());
 
-                if ( indexAccessors.nodeLabelIndex() != null )
-                {
-                    consistencyCheckSingleCheckable( report, progressListener, indexAccessors.nodeLabelIndex(), RecordType.LABEL_SCAN_DOCUMENT, cursorContext );
+                if (indexAccessors.nodeLabelIndex() != null) {
+                    consistencyCheckSingleCheckable(
+                            report,
+                            progressListener,
+                            indexAccessors.nodeLabelIndex(),
+                            RecordType.LABEL_SCAN_DOCUMENT,
+                            cursorContext);
                 }
-                if ( indexAccessors.relationshipTypeIndex() != null )
-                {
-                    consistencyCheckSingleCheckable( report, progressListener, indexAccessors.relationshipTypeIndex(),
-                            RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT, cursorContext );
+                if (indexAccessors.relationshipTypeIndex() != null) {
+                    consistencyCheckSingleCheckable(
+                            report,
+                            progressListener,
+                            indexAccessors.relationshipTypeIndex(),
+                            RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT,
+                            cursorContext);
                 }
 
                 List<IndexDescriptor> rulesToRemove = new ArrayList<>();
-                for ( IndexDescriptor onlineRule : indexAccessors.onlineRules() )
-                {
-                    ConsistencyReporter.FormattingDocumentedHandler handler = ConsistencyReporter.formattingHandler( report, RecordType.INDEX );
-                    ReporterFactory reporterFactory = new ReporterFactory( handler );
-                    IndexAccessor accessor = indexAccessors.accessorFor( onlineRule );
-                    if ( !accessor.consistencyCheck( reporterFactory, cursorContext ) )
-                    {
-                        rulesToRemove.add( onlineRule );
+                for (IndexDescriptor onlineRule : indexAccessors.onlineRules()) {
+                    ConsistencyReporter.FormattingDocumentedHandler handler =
+                            ConsistencyReporter.formattingHandler(report, RecordType.INDEX);
+                    ReporterFactory reporterFactory = new ReporterFactory(handler);
+                    IndexAccessor accessor = indexAccessors.accessorFor(onlineRule);
+                    if (!accessor.consistencyCheck(reporterFactory, cursorContext)) {
+                        rulesToRemove.add(onlineRule);
                     }
                     handler.updateSummary();
-                    progressListener.add( 1 );
+                    progressListener.add(1);
                 }
-                for ( IndexDescriptor toRemove : rulesToRemove )
-                {
-                    indexAccessors.remove( toRemove );
+                for (IndexDescriptor toRemove : rulesToRemove) {
+                    indexAccessors.remove(toRemove);
                 }
 
-                for ( IdGenerator idGenerator : idGenerators )
-                {
-                    consistencyCheckSingleCheckable( report, progressListener, idGenerator, RecordType.ID_STORE, cursorContext );
+                for (IdGenerator idGenerator : idGenerators) {
+                    consistencyCheckSingleCheckable(
+                            report, progressListener, idGenerator, RecordType.ID_STORE, cursorContext);
                 }
             }
         }
     }
 
-    private EntityBasedMemoryLimiter instantiateMemoryLimiter( EntityBasedMemoryLimiter.Factory memoryLimit )
-    {
-        // The checker makes use of a large memory array to hold data per node. For large stores there may not be enough memory
-        // to hold all node data and in that case the checking will happen iteratively where one part of the node store is selected
-        // and checked and all other stores related to any of those nodes too. When that part is done the next part of the node store
+    private EntityBasedMemoryLimiter instantiateMemoryLimiter(EntityBasedMemoryLimiter.Factory memoryLimit) {
+        // The checker makes use of a large memory array to hold data per node. For large stores there may not be enough
+        // memory
+        // to hold all node data and in that case the checking will happen iteratively where one part of the node store
+        // is selected
+        // and checked and all other stores related to any of those nodes too. When that part is done the next part of
+        // the node store
         // is selected until all the nodes, e.g. all the data have been checked.
 
         long pageCacheMemory = pageCache.maxCachedPages() * pageCache.pageSize();
         long nodeCount = neoStores.getNodeStore().getHighId();
         long relationshipCount = neoStores.getRelationshipStore().getHighId();
-        return memoryLimit.create( pageCacheMemory, nodeCount, relationshipCount );
+        return memoryLimit.create(pageCacheMemory, nodeCount, relationshipCount);
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         context.cancel();
         observedCounts.close();
         indexAccessors.close();
     }
 
-    private void checkCounts()
-    {
-        try ( var cursorContext = contextFactory.create( COUNT_STORE_CONSISTENCY_CHECKER_TAG );
-              var countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, RecoveryCleanupWorkCollector.ignore(),
-                                                        new CountsBuilder()
-                {
-                    @Override
-                    public void initialize( CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
-                    {
-                        throw new UnsupportedOperationException(
-                                "Counts store needed rebuild, consistency checker will instead report broken or missing store" );
-                    }
+    private void checkCounts() {
+        try (var cursorContext = contextFactory.create(COUNT_STORE_CONSISTENCY_CHECKER_TAG);
+                var countsStore = new GBPTreeCountsStore(
+                        pageCache,
+                        databaseLayout.countStore(),
+                        fileSystem,
+                        RecoveryCleanupWorkCollector.ignore(),
+                        new CountsBuilder() {
+                            @Override
+                            public void initialize(
+                                    CountsAccessor.Updater updater,
+                                    CursorContext cursorContext,
+                                    MemoryTracker memoryTracker) {
+                                throw new UnsupportedOperationException(
+                                        "Counts store needed rebuild, consistency checker will instead report broken or missing store");
+                            }
 
-                    @Override
-                    public long lastCommittedTxId()
-                    {
-                        return neoStores.getMetaDataStore().getLastCommittedTransactionId();
-                    }
-                }, readOnly(), GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 100, NullLogProvider.getInstance(),
-                                                        contextFactory, neoStores.getOpenOptions() );
-              var checker = observedCounts.checker( reporter ) )
-        {
-            if ( context.consistencyFlags.isCheckGraph() )
-            {
-                countsStore.accept( checker, cursorContext );
+                            @Override
+                            public long lastCommittedTxId() {
+                                return neoStores.getMetaDataStore().getLastCommittedTransactionId();
+                            }
+                        },
+                        readOnly(),
+                        GBPTreeCountsStore.NO_MONITOR,
+                        databaseLayout.getDatabaseName(),
+                        100,
+                        NullLogProvider.getInstance(),
+                        contextFactory,
+                        neoStores.getOpenOptions());
+                var checker = observedCounts.checker(reporter)) {
+            if (context.consistencyFlags.isCheckGraph()) {
+                countsStore.accept(checker, cursorContext);
             }
-            consistencyCheckSingleCheckable( report, ProgressListener.NONE, countsStore, RecordType.COUNTS, cursorContext );
-        }
-        catch ( Exception e )
-        {
-            log.error( "Counts store is missing, broken or of an older format and will not be consistency checked", e );
-            summary.genericError( "Counts store is missing, broken or of an older format" );
+            consistencyCheckSingleCheckable(
+                    report, ProgressListener.NONE, countsStore, RecordType.COUNTS, cursorContext);
+        } catch (Exception e) {
+            log.error("Counts store is missing, broken or of an older format and will not be consistency checked", e);
+            summary.genericError("Counts store is missing, broken or of an older format");
         }
     }
 
-    private void checkRelationshipGroupDegressStore()
-    {
-        try ( var cursorContext = contextFactory.create( REL_GROUP_STORE_CONSISTENCY_CHECKER_TAG );
-              var relationshipGroupDegrees = new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem,
-                RecoveryCleanupWorkCollector.ignore(), new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder()
-        {
-            @Override
-            public void rebuild( RelationshipGroupDegreesStore.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
-            {
-                throw new UnsupportedOperationException(
-                        "Counts store needed rebuild, consistency checker will instead report broken or missing store" );
-            }
+    private void checkRelationshipGroupDegressStore() {
+        try (var cursorContext = contextFactory.create(REL_GROUP_STORE_CONSISTENCY_CHECKER_TAG);
+                var relationshipGroupDegrees = new GBPTreeRelationshipGroupDegreesStore(
+                        pageCache,
+                        databaseLayout.relationshipGroupDegreesStore(),
+                        fileSystem,
+                        RecoveryCleanupWorkCollector.ignore(),
+                        new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder() {
+                            @Override
+                            public void rebuild(
+                                    RelationshipGroupDegreesStore.Updater updater,
+                                    CursorContext cursorContext,
+                                    MemoryTracker memoryTracker) {
+                                throw new UnsupportedOperationException(
+                                        "Counts store needed rebuild, consistency checker will instead report broken or missing store");
+                            }
 
-            @Override
-            public long lastCommittedTxId()
-            {
-                return neoStores.getMetaDataStore().getLastCommittedTransactionId();
-            }
-        }, readOnly(), GBPTreeGenericCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 100, NullLogProvider.getInstance(),
-                                                                                       contextFactory, neoStores.getOpenOptions() ) )
-        {
-            consistencyCheckSingleCheckable( report, ProgressListener.NONE, relationshipGroupDegrees, RecordType.RELATIONSHIP_GROUP, cursorContext );
-        }
-        catch ( Exception e )
-        {
-            log.error( "Relationship group degrees is missing, broken or of an older format and will not be consistency checked", e );
-            summary.genericError( "Relationship group degrees store is missing, broken or of an older format" );
+                            @Override
+                            public long lastCommittedTxId() {
+                                return neoStores.getMetaDataStore().getLastCommittedTransactionId();
+                            }
+                        },
+                        readOnly(),
+                        GBPTreeGenericCountsStore.NO_MONITOR,
+                        databaseLayout.getDatabaseName(),
+                        100,
+                        NullLogProvider.getInstance(),
+                        contextFactory,
+                        neoStores.getOpenOptions())) {
+            consistencyCheckSingleCheckable(
+                    report,
+                    ProgressListener.NONE,
+                    relationshipGroupDegrees,
+                    RecordType.RELATIONSHIP_GROUP,
+                    cursorContext);
+        } catch (Exception e) {
+            log.error(
+                    "Relationship group degrees is missing, broken or of an older format and will not be consistency checked",
+                    e);
+            summary.genericError("Relationship group degrees store is missing, broken or of an older format");
         }
     }
 
-    private static TokenHolders safeLoadTokens( NeoStores neoStores, CursorContextFactory contextFactory )
-    {
+    private static TokenHolders safeLoadTokens(NeoStores neoStores, CursorContextFactory contextFactory) {
         TokenHolders tokenHolders = new TokenHolders(
-                new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
-                new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),
-                new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        try ( var cursorContext = contextFactory.create( CONSISTENCY_CHECKER_TOKEN_LOADER_TAG ) )
-        {
-            tokenHolders.relationshipTypeTokens().setInitialTokens( RecordLoading.safeLoadTokens( neoStores.getRelationshipTypeTokenStore(), cursorContext ) );
-            tokenHolders.labelTokens().setInitialTokens( RecordLoading.safeLoadTokens( neoStores.getLabelTokenStore(), cursorContext ) );
-            tokenHolders.propertyKeyTokens().setInitialTokens( RecordLoading.safeLoadTokens( neoStores.getPropertyKeyTokenStore(), cursorContext ) );
+                new DelegatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY),
+                new DelegatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL),
+                new DelegatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE));
+        try (var cursorContext = contextFactory.create(CONSISTENCY_CHECKER_TOKEN_LOADER_TAG)) {
+            tokenHolders
+                    .relationshipTypeTokens()
+                    .setInitialTokens(
+                            RecordLoading.safeLoadTokens(neoStores.getRelationshipTypeTokenStore(), cursorContext));
+            tokenHolders
+                    .labelTokens()
+                    .setInitialTokens(RecordLoading.safeLoadTokens(neoStores.getLabelTokenStore(), cursorContext));
+            tokenHolders
+                    .propertyKeyTokens()
+                    .setInitialTokens(
+                            RecordLoading.safeLoadTokens(neoStores.getPropertyKeyTokenStore(), cursorContext));
         }
         return tokenHolders;
     }
 
-    private void cancel( String message )
-    {
-        if ( !isCancelled() )
-        {
-            context.debug( "Stopping: %s", message );
+    private void cancel(String message) {
+        if (!isCancelled()) {
+            context.debug("Stopping: %s", message);
             context.cancel();
         }
     }
 
-    private boolean isCancelled()
-    {
+    private boolean isCancelled() {
         return context.isCancelled();
     }
 
-    private void consistencyCheckSingleCheckable( InconsistencyReport report, ProgressListener listener, ConsistencyCheckable checkable,
-            RecordType recordType, CursorContext cursorContext )
-    {
-        if ( consistencyFlags.isCheckIndexStructure() )
-        {
-            ConsistencyReporter.FormattingDocumentedHandler handler = ConsistencyReporter.formattingHandler( report, recordType );
-            ReporterFactory proxyFactory = new ReporterFactory( handler );
+    private void consistencyCheckSingleCheckable(
+            InconsistencyReport report,
+            ProgressListener listener,
+            ConsistencyCheckable checkable,
+            RecordType recordType,
+            CursorContext cursorContext) {
+        if (consistencyFlags.isCheckIndexStructure()) {
+            ConsistencyReporter.FormattingDocumentedHandler handler =
+                    ConsistencyReporter.formattingHandler(report, recordType);
+            ReporterFactory proxyFactory = new ReporterFactory(handler);
 
-            checkable.consistencyCheck( proxyFactory, cursorContext );
+            checkable.consistencyCheck(proxyFactory, cursorContext);
             handler.updateSummary();
-            listener.add( 1 );
+            listener.add(1);
         }
     }
 
-    private static class SchemaRulesDescriptors implements IndexDescriptorProvider
-    {
+    private static class SchemaRulesDescriptors implements IndexDescriptorProvider {
         private final NeoStores neoStores;
         private final SchemaRuleAccess schemaRuleAccess;
 
-        SchemaRulesDescriptors( NeoStores neoStores, SchemaRuleAccess schemaRuleAccess )
-        {
+        SchemaRulesDescriptors(NeoStores neoStores, SchemaRuleAccess schemaRuleAccess) {
             this.neoStores = neoStores;
             this.schemaRuleAccess = schemaRuleAccess;
         }
 
         @Override
-        public ResourceIterator<IndexDescriptor> indexDescriptors( CursorContext cursorContext )
-        {
-            var storeCursors = new CachedStoreCursors( neoStores, cursorContext );
-            var descriptorIterator = schemaRuleAccess.indexesGetAllIgnoreMalformed( storeCursors );
-            return resourceIterator( descriptorIterator, storeCursors::close );
+        public ResourceIterator<IndexDescriptor> indexDescriptors(CursorContext cursorContext) {
+            var storeCursors = new CachedStoreCursors(neoStores, cursorContext);
+            var descriptorIterator = schemaRuleAccess.indexesGetAllIgnoreMalformed(storeCursors);
+            return resourceIterator(descriptorIterator, storeCursors::close);
         }
     }
 }

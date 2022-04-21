@@ -19,14 +19,23 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
+
+import java.util.HashSet;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.util.HashSet;
-import java.util.Set;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -48,30 +57,21 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
-import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
-
 @PageCacheExtension
 @Neo4jLayoutExtension
-@ExtendWith( RandomExtension.class )
-class RecordRelationshipScanCursorTest
-{
+@ExtendWith(RandomExtension.class)
+class RecordRelationshipScanCursorTest {
     private static final long RELATIONSHIP_ID = 1L;
 
     @Inject
     private RandomSupport random;
+
     @Inject
     private FileSystemAbstraction fileSystem;
+
     @Inject
     private PageCache pageCache;
+
     @Inject
     private RecordDatabaseLayout databaseLayout;
 
@@ -79,106 +79,100 @@ class RecordRelationshipScanCursorTest
     private StoreCursors storeCursors;
 
     @AfterEach
-    void tearDown()
-    {
-        closeAllUnchecked( storeCursors, neoStores );
+    void tearDown() {
+        closeAllUnchecked(storeCursors, neoStores);
     }
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         StoreFactory storeFactory = getStoreFactory();
-        neoStores = storeFactory.openAllNeoStores( true );
-        storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
+        neoStores = storeFactory.openAllNeoStores(true);
+        storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
     }
 
     @Test
-    void retrieveUsedRelationship()
-    {
+    void retrieveUsedRelationship() {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        try ( var writeCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
-        {
-            createRelationshipRecord( RELATIONSHIP_ID, 1, relationshipStore, writeCursor, true );
+        try (var writeCursor = storeCursors.writeCursor(RELATIONSHIP_CURSOR)) {
+            createRelationshipRecord(RELATIONSHIP_ID, 1, relationshipStore, writeCursor, true);
         }
 
-        try ( RecordRelationshipScanCursor cursor = createRelationshipCursor() )
-        {
-            cursor.single( RELATIONSHIP_ID );
-            assertTrue( cursor.next() );
-            assertEquals( RELATIONSHIP_ID, cursor.entityReference() );
+        try (RecordRelationshipScanCursor cursor = createRelationshipCursor()) {
+            cursor.single(RELATIONSHIP_ID);
+            assertTrue(cursor.next());
+            assertEquals(RELATIONSHIP_ID, cursor.entityReference());
         }
     }
 
     @Test
-    void retrieveUnusedRelationship()
-    {
+    void retrieveUnusedRelationship() {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        relationshipStore.setHighId( 10 );
-        try ( var writeCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
-        {
-            createRelationshipRecord( RELATIONSHIP_ID, 1, relationshipStore, writeCursor, false );
+        relationshipStore.setHighId(10);
+        try (var writeCursor = storeCursors.writeCursor(RELATIONSHIP_CURSOR)) {
+            createRelationshipRecord(RELATIONSHIP_ID, 1, relationshipStore, writeCursor, false);
         }
 
-        try ( RecordRelationshipScanCursor cursor = createRelationshipCursor() )
-        {
-            cursor.single( RELATIONSHIP_ID );
-            assertFalse( cursor.next() );
+        try (RecordRelationshipScanCursor cursor = createRelationshipCursor()) {
+            cursor.single(RELATIONSHIP_ID);
+            assertFalse(cursor.next());
         }
     }
 
     @Test
-    void shouldScanAllInUseRelationships()
-    {
+    void shouldScanAllInUseRelationships() {
         // given
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         int count = 100;
-        relationshipStore.setHighId( count );
+        relationshipStore.setHighId(count);
         Set<Long> expected = new HashSet<>();
-        try ( var cursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
-        {
-            for ( long id = 0; id < count; id++ )
-            {
+        try (var cursor = storeCursors.writeCursor(RELATIONSHIP_CURSOR)) {
+            for (long id = 0; id < count; id++) {
                 boolean inUse = random.nextBoolean();
-                createRelationshipRecord( id, 1, relationshipStore, cursor, inUse );
-                if ( inUse )
-                {
-                    expected.add( id );
+                createRelationshipRecord(id, 1, relationshipStore, cursor, inUse);
+                if (inUse) {
+                    expected.add(id);
                 }
             }
         }
 
         // when
-        assertSeesRelationships( expected );
+        assertSeesRelationships(expected);
     }
 
-    private void assertSeesRelationships( Set<Long> expected )
-    {
-        try ( RecordRelationshipScanCursor cursor = createRelationshipCursor() )
-        {
+    private void assertSeesRelationships(Set<Long> expected) {
+        try (RecordRelationshipScanCursor cursor = createRelationshipCursor()) {
             cursor.scan();
-            while ( cursor.next() )
-            {
+            while (cursor.next()) {
                 // then
-                assertTrue( expected.remove( cursor.entityReference() ), cursor.toString() );
+                assertTrue(expected.remove(cursor.entityReference()), cursor.toString());
             }
         }
-        assertTrue( expected.isEmpty() );
+        assertTrue(expected.isEmpty());
     }
 
-    private static void createRelationshipRecord( long id, int type, RelationshipStore relationshipStore, PageCursor pageCursor, boolean used )
-    {
-        relationshipStore.updateRecord( new RelationshipRecord( id ).initialize( used, -1, 1, 2, type, -1, -1, -1, -1, true, true ), pageCursor, NULL_CONTEXT,
-                StoreCursors.NULL );
+    private static void createRelationshipRecord(
+            long id, int type, RelationshipStore relationshipStore, PageCursor pageCursor, boolean used) {
+        relationshipStore.updateRecord(
+                new RelationshipRecord(id).initialize(used, -1, 1, 2, type, -1, -1, -1, -1, true, true),
+                pageCursor,
+                NULL_CONTEXT,
+                StoreCursors.NULL);
     }
 
-    private StoreFactory getStoreFactory()
-    {
-        return new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() ),
-                pageCache, fileSystem, NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), writable(), EMPTY_LOG_TAIL );
+    private StoreFactory getStoreFactory() {
+        return new StoreFactory(
+                databaseLayout,
+                Config.defaults(),
+                new DefaultIdGeneratorFactory(fileSystem, immediate(), databaseLayout.getDatabaseName()),
+                pageCache,
+                fileSystem,
+                NullLogProvider.getInstance(),
+                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                writable(),
+                EMPTY_LOG_TAIL);
     }
 
-    private RecordRelationshipScanCursor createRelationshipCursor()
-    {
-        return new RecordRelationshipScanCursor( neoStores.getRelationshipStore(), NULL_CONTEXT );
+    private RecordRelationshipScanCursor createRelationshipCursor() {
+        return new RecordRelationshipScanCursor(neoStores.getRelationshipStore(), NULL_CONTEXT);
     }
 }

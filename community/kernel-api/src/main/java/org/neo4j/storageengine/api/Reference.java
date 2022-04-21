@@ -19,6 +19,4 @@
  */
 package org.neo4j.storageengine.api;
 
-public interface Reference
-{
-}
+public interface Reference {}

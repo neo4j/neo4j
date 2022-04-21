@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.extension;
 
+import static java.util.stream.Collectors.toList;
+import static org.neo4j.internal.helpers.collection.Iterables.stream;
+
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Objects;
-
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
@@ -32,45 +34,39 @@ import org.neo4j.kernel.impl.util.DependenciesProxy;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-import static java.util.stream.Collectors.toList;
-import static org.neo4j.internal.helpers.collection.Iterables.stream;
-
-public abstract class AbstractExtensions extends DependencyResolver.Adapter implements Lifecycle
-{
+public abstract class AbstractExtensions extends DependencyResolver.Adapter implements Lifecycle {
     private final ExtensionContext extensionContext;
     private final List<ExtensionFactory<?>> extensionFactories;
     private final Dependencies dependencies;
     private final LifeSupport life = new LifeSupport();
     private final ExtensionFailureStrategy extensionFailureStrategy;
 
-    AbstractExtensions( ExtensionContext extensionContext, Iterable<ExtensionFactory<?>> extensionFactories, Dependencies dependencies,
-            ExtensionFailureStrategy extensionFailureStrategy, ExtensionType extensionType )
-    {
+    AbstractExtensions(
+            ExtensionContext extensionContext,
+            Iterable<ExtensionFactory<?>> extensionFactories,
+            Dependencies dependencies,
+            ExtensionFailureStrategy extensionFailureStrategy,
+            ExtensionType extensionType) {
         this.extensionContext = extensionContext;
         this.extensionFailureStrategy = extensionFailureStrategy;
-        this.extensionFactories = stream( extensionFactories ).filter( e -> e.getExtensionType() == extensionType ).collect( toList() );
+        this.extensionFactories = stream(extensionFactories)
+                .filter(e -> e.getExtensionType() == extensionType)
+                .collect(toList());
         this.dependencies = dependencies;
     }
 
     @Override
-    public void init()
-    {
-        for ( ExtensionFactory<?> extensionFactory : extensionFactories )
-        {
-            try
-            {
-                Object extensionDependencies = getExtensionDependencies( extensionFactory );
-                Lifecycle dependency = newInstance( extensionContext, extensionFactory, extensionDependencies );
-                Objects.requireNonNull( dependency, extensionFactory + " returned a null extension." );
-                life.add( dependencies.satisfyDependency( dependency ) );
-            }
-            catch ( UnsatisfiedDependencyException exception )
-            {
-                extensionFailureStrategy.handle( extensionFactory, exception );
-            }
-            catch ( Throwable throwable )
-            {
-                extensionFailureStrategy.handle( extensionFactory, throwable );
+    public void init() {
+        for (ExtensionFactory<?> extensionFactory : extensionFactories) {
+            try {
+                Object extensionDependencies = getExtensionDependencies(extensionFactory);
+                Lifecycle dependency = newInstance(extensionContext, extensionFactory, extensionDependencies);
+                Objects.requireNonNull(dependency, extensionFactory + " returned a null extension.");
+                life.add(dependencies.satisfyDependency(dependency));
+            } catch (UnsatisfiedDependencyException exception) {
+                extensionFailureStrategy.handle(extensionFactory, exception);
+            } catch (Throwable throwable) {
+                extensionFailureStrategy.handle(extensionFactory, throwable);
             }
         }
 
@@ -78,59 +74,54 @@ public abstract class AbstractExtensions extends DependencyResolver.Adapter impl
     }
 
     @Override
-    public void start()
-    {
+    public void start() {
         life.start();
     }
 
     @Override
-    public void stop()
-    {
+    public void stop() {
         life.stop();
     }
 
     @Override
-    public void shutdown()
-    {
+    public void shutdown() {
         life.shutdown();
     }
 
     @Override
-    public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
-    {
-        Iterable<T> typeDependencies = resolveTypeDependencies( type );
-        return selector.select( type, typeDependencies );
+    public <T> T resolveDependency(Class<T> type, SelectionStrategy selector) {
+        Iterable<T> typeDependencies = resolveTypeDependencies(type);
+        return selector.select(type, typeDependencies);
     }
 
     @Override
-    public <T> Iterable<T> resolveTypeDependencies( Class<T> type )
-    {
-        return life.getLifecycleInstances().stream().filter( type::isInstance ).map( type::cast ).collect( toList() );
+    public <T> Iterable<T> resolveTypeDependencies(Class<T> type) {
+        return life.getLifecycleInstances().stream()
+                .filter(type::isInstance)
+                .map(type::cast)
+                .collect(toList());
     }
 
     @Override
-    public boolean containsDependency( Class<?> type )
-    {
-        return life.getLifecycleInstances().stream().anyMatch( type::isInstance );
+    public boolean containsDependency(Class<?> type) {
+        return life.getLifecycleInstances().stream().anyMatch(type::isInstance);
     }
 
-    private Object getExtensionDependencies( ExtensionFactory<?> factory )
-    {
+    private Object getExtensionDependencies(ExtensionFactory<?> factory) {
         // superclass is either ExtensionFactory or it's subclass that can be generic too
         Class<?> factoryType = factory.getClass().getSuperclass();
         Type genericSuperclass = factory.getClass().getGenericSuperclass();
-        while ( factoryType.getGenericSuperclass() instanceof ParameterizedType )
-        {
+        while (factoryType.getGenericSuperclass() instanceof ParameterizedType) {
             genericSuperclass = factoryType.getGenericSuperclass();
             factoryType = factoryType.getSuperclass();
         }
         Class<?> configurationClass = (Class<?>) ((ParameterizedType) genericSuperclass).getActualTypeArguments()[0];
-        return DependenciesProxy.dependencies( dependencies, configurationClass );
+        return DependenciesProxy.dependencies(dependencies, configurationClass);
     }
 
-    @SuppressWarnings( "unchecked" )
-    private static <T> Lifecycle newInstance( ExtensionContext extensionContext, ExtensionFactory<T> factory, Object dependencies )
-    {
-        return factory.newInstance( extensionContext, (T)dependencies );
+    @SuppressWarnings("unchecked")
+    private static <T> Lifecycle newInstance(
+            ExtensionContext extensionContext, ExtensionFactory<T> factory, Object dependencies) {
+        return factory.newInstance(extensionContext, (T) dependencies);
     }
 }

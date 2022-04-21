@@ -21,27 +21,22 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.cjk.CJKAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class CJK extends AnalyzerProvider
-{
-    public CJK()
-    {
-        super( "cjk" );
+public class CJK extends AnalyzerProvider {
+    public CJK() {
+        super("cjk");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
+    public Analyzer createAnalyzer() {
         return new CJKAnalyzer();
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return "CJK - Chinese/Japanese/Korean - analyzer. Terms are normalised and case-folded. Produces bi-grams, and filters out stop words.";
     }
 }

@@ -21,53 +21,45 @@ package org.neo4j.adversaries.fs;
 
 import java.io.IOException;
 import java.io.OutputStream;
-
 import org.neo4j.adversaries.Adversary;
 
-@SuppressWarnings( "unchecked" )
-public class AdversarialOutputStream extends OutputStream
-{
+@SuppressWarnings("unchecked")
+public class AdversarialOutputStream extends OutputStream {
     private final OutputStream outputStream;
     private final Adversary adversary;
 
-    public AdversarialOutputStream( OutputStream outputStream, Adversary adversary )
-    {
+    public AdversarialOutputStream(OutputStream outputStream, Adversary adversary) {
         this.outputStream = outputStream;
         this.adversary = adversary;
     }
 
     @Override
-    public void write( int b ) throws IOException
-    {
-        adversary.injectFailure( IOException.class );
-        outputStream.write( b );
+    public void write(int b) throws IOException {
+        adversary.injectFailure(IOException.class);
+        outputStream.write(b);
     }
 
     @Override
-    public void write( byte[] b ) throws IOException
-    {
-        adversary.injectFailure( NullPointerException.class, IndexOutOfBoundsException.class, IOException.class );
-        outputStream.write( b );
+    public void write(byte[] b) throws IOException {
+        adversary.injectFailure(NullPointerException.class, IndexOutOfBoundsException.class, IOException.class);
+        outputStream.write(b);
     }
 
     @Override
-    public void write( byte[] b, int off, int len ) throws IOException
-    {
-        adversary.injectFailure( NullPointerException.class, IndexOutOfBoundsException.class, IOException.class );
-        outputStream.write( b, off, len );
+    public void write(byte[] b, int off, int len) throws IOException {
+        adversary.injectFailure(NullPointerException.class, IndexOutOfBoundsException.class, IOException.class);
+        outputStream.write(b, off, len);
     }
 
     @Override
-    public void flush() throws IOException
-    {
-        adversary.injectFailure( IOException.class );
+    public void flush() throws IOException {
+        adversary.injectFailure(IOException.class);
         outputStream.flush();
     }
 
     @Override
-    public void close() throws IOException
-    {
-        adversary.injectFailure( IOException.class );
+    public void close() throws IOException {
+        adversary.injectFailure(IOException.class);
         outputStream.close();
     }
 }

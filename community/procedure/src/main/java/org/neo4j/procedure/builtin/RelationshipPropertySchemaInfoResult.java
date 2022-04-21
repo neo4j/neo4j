@@ -21,8 +21,7 @@ package org.neo4j.procedure.builtin;
 
 import java.util.List;
 
-public class RelationshipPropertySchemaInfoResult
-{
+public class RelationshipPropertySchemaInfoResult {
     /**
      * A relationship type
      */
@@ -43,11 +42,11 @@ public class RelationshipPropertySchemaInfoResult
      */
     public final boolean mandatory;
 
-    public RelationshipPropertySchemaInfoResult( String relType, String propertyName, List<String> cypherTypes, boolean mandatory )
-    {
+    public RelationshipPropertySchemaInfoResult(
+            String relType, String propertyName, List<String> cypherTypes, boolean mandatory) {
         this.relType = relType;
         this.propertyName = propertyName;
         this.propertyTypes = cypherTypes;
-        this.mandatory  = mandatory;
+        this.mandatory = mandatory;
     }
 }

@@ -19,11 +19,7 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,165 +31,134 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.test.scheduler.DaemonThreadFactory;
 import org.neo4j.util.concurrent.Futures;
 
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-class SequenceLockStressIT
-{
+class SequenceLockStressIT {
     private static ExecutorService executor;
     private static long lockAddr;
 
     @BeforeAll
-    static void initialise()
-    {
-        lockAddr = UnsafeUtil.allocateMemory( Long.BYTES, INSTANCE );
-        executor = Executors.newCachedThreadPool( new DaemonThreadFactory() );
+    static void initialise() {
+        lockAddr = UnsafeUtil.allocateMemory(Long.BYTES, INSTANCE);
+        executor = Executors.newCachedThreadPool(new DaemonThreadFactory());
     }
 
     @AfterAll
-    static void cleanup()
-    {
+    static void cleanup() {
         executor.shutdown();
-        UnsafeUtil.free( lockAddr, Long.BYTES, INSTANCE );
+        UnsafeUtil.free(lockAddr, Long.BYTES, INSTANCE);
     }
 
     @BeforeEach
-    void allocateLock()
-    {
-        UnsafeUtil.putLong( lockAddr, 0 );
+    void allocateLock() {
+        UnsafeUtil.putLong(lockAddr, 0);
     }
 
-    @RepeatedTest( 2 )
-    void stressTest() throws Exception
-    {
+    @RepeatedTest(2)
+    void stressTest() throws Exception {
         int[][] data = new int[10][10];
         AtomicBoolean stop = new AtomicBoolean();
         AtomicInteger writerId = new AtomicInteger();
 
-        abstract class Worker implements Runnable
-        {
+        abstract class Worker implements Runnable {
             @Override
-            public void run()
-            {
-                try
-                {
+            public void run() {
+                try {
                     doWork();
-                }
-                finally
-                {
-                    stop.set( true );
+                } finally {
+                    stop.set(true);
                 }
             }
 
             protected abstract void doWork();
         }
 
-        Worker reader = new Worker()
-        {
+        Worker reader = new Worker() {
             @Override
-            protected void doWork()
-            {
-                while ( !stop.get() )
-                {
+            protected void doWork() {
+                while (!stop.get()) {
                     ThreadLocalRandom rng = ThreadLocalRandom.current();
-                    int[] record = data[rng.nextInt( data.length )];
+                    int[] record = data[rng.nextInt(data.length)];
 
-                    long stamp = OffHeapPageLock.tryOptimisticReadLock( lockAddr );
+                    long stamp = OffHeapPageLock.tryOptimisticReadLock(lockAddr);
                     int value = record[0];
                     boolean consistent = true;
-                    for ( int i : record )
-                    {
+                    for (int i : record) {
                         consistent &= i == value;
                     }
-                    if ( OffHeapPageLock.validateReadLock( lockAddr, stamp ) && !consistent )
-                    {
-                        throw new AssertionError( "inconsistent read" );
+                    if (OffHeapPageLock.validateReadLock(lockAddr, stamp) && !consistent) {
+                        throw new AssertionError("inconsistent read");
                     }
                 }
             }
         };
 
-        Worker writer = new Worker()
-        {
+        Worker writer = new Worker() {
             private volatile long unused;
 
             @Override
-            protected void doWork()
-            {
+            protected void doWork() {
                 int id = writerId.getAndIncrement();
                 int counter = 1;
                 ThreadLocalRandom rng = ThreadLocalRandom.current();
-                int smallSpin = rng.nextInt( 5, 50 );
-                int bigSpin = rng.nextInt( 100, 1000 );
+                int smallSpin = rng.nextInt(5, 50);
+                int bigSpin = rng.nextInt(100, 1000);
 
-                while ( !stop.get() )
-                {
-                    if ( OffHeapPageLock.tryWriteLock( lockAddr ) )
-                    {
+                while (!stop.get()) {
+                    if (OffHeapPageLock.tryWriteLock(lockAddr)) {
                         int[] record = data[id];
-                        for ( int i = 0; i < record.length; i++ )
-                        {
+                        for (int i = 0; i < record.length; i++) {
                             record[i] = counter;
-                            for ( int j = 0; j < smallSpin; j++ )
-                            {
+                            for (int j = 0; j < smallSpin; j++) {
                                 unused = rng.nextLong();
                             }
                         }
-                        OffHeapPageLock.unlockWrite( lockAddr );
+                        OffHeapPageLock.unlockWrite(lockAddr);
                     }
 
-                    for ( int j = 0; j < bigSpin; j++ )
-                    {
+                    for (int j = 0; j < bigSpin; j++) {
                         unused = rng.nextLong();
                     }
                 }
             }
         };
 
-        Worker exclusive = new Worker()
-        {
+        Worker exclusive = new Worker() {
             private volatile long unused;
 
             @Override
-            protected void doWork()
-            {
+            protected void doWork() {
                 ThreadLocalRandom rng = ThreadLocalRandom.current();
-                int spin = rng.nextInt( 20, 2000 );
-                while ( !stop.get() )
-                {
-                    while ( !OffHeapPageLock.tryExclusiveLock( lockAddr ) )
-                    {
-                    }
+                int spin = rng.nextInt(20, 2000);
+                while (!stop.get()) {
+                    while (!OffHeapPageLock.tryExclusiveLock(lockAddr)) {}
                     long sumA = 0;
                     long sumB = 0;
-                    for ( int[] ints : data )
-                    {
-                        for ( int i : ints )
-                        {
+                    for (int[] ints : data) {
+                        for (int i : ints) {
                             sumA += i;
                         }
                     }
-                    for ( int i = 0; i < spin; i++ )
-                    {
+                    for (int i = 0; i < spin; i++) {
                         unused = rng.nextLong();
                     }
-                    for ( int[] record : data )
-                    {
-                        for ( int value : record )
-                        {
+                    for (int[] record : data) {
+                        for (int value : record) {
                             sumB += value;
                         }
-                        Arrays.fill( record, 0 );
+                        Arrays.fill(record, 0);
                     }
-                    OffHeapPageLock.unlockExclusive( lockAddr );
-                    if ( sumA != sumB )
-                    {
+                    OffHeapPageLock.unlockExclusive(lockAddr);
+                    if (sumA != sumB) {
                         throw new AssertionError(
-                                "Inconsistent exclusive lock. 'Sum A' = " + sumA + ", 'Sum B' = " + sumB );
+                                "Inconsistent exclusive lock. 'Sum A' = " + sumA + ", 'Sum B' = " + sumB);
                     }
                 }
             }
@@ -201,66 +166,56 @@ class SequenceLockStressIT
 
         List<Future<?>> readers = new ArrayList<>();
         List<Future<?>> writers = new ArrayList<>();
-        Future<?> exclusiveFuture = executor.submit( exclusive );
-        for ( int i = 0; i < 20; i++ )
-        {
-            readers.add( executor.submit( reader ) );
+        Future<?> exclusiveFuture = executor.submit(exclusive);
+        for (int i = 0; i < 20; i++) {
+            readers.add(executor.submit(reader));
         }
-        for ( int i = 0; i < data.length; i++ )
-        {
-            writers.add( executor.submit( writer ) );
+        for (int i = 0; i < data.length; i++) {
+            writers.add(executor.submit(writer));
         }
 
         long deadline = System.currentTimeMillis() + 1000;
-        while ( !stop.get() && System.currentTimeMillis() < deadline )
-        {
-            Thread.sleep( 20 );
+        while (!stop.get() && System.currentTimeMillis() < deadline) {
+            Thread.sleep(20);
         }
-        stop.set( true );
+        stop.set(true);
 
         exclusiveFuture.get();
-        Futures.getAll( writers );
-        Futures.getAll( readers );
+        Futures.getAll(writers);
+        Futures.getAll(readers);
     }
 
     @Test
-    void thoroughlyEnsureAtomicityOfUnlockExclusiveAndTakeWriteLock() throws Exception
-    {
-        for ( int i = 0; i < 30000; i++ )
-        {
+    void thoroughlyEnsureAtomicityOfUnlockExclusiveAndTakeWriteLock() throws Exception {
+        for (int i = 0; i < 30000; i++) {
             unlockExclusiveAndTakeWriteLockMustBeAtomic();
-            OffHeapPageLock.unlockWrite( lockAddr );
+            OffHeapPageLock.unlockWrite(lockAddr);
         }
     }
 
-    private static void unlockExclusiveAndTakeWriteLockMustBeAtomic() throws Exception
-    {
+    private static void unlockExclusiveAndTakeWriteLockMustBeAtomic() throws Exception {
         int threads = Runtime.getRuntime().availableProcessors() - 1;
-        CountDownLatch start = new CountDownLatch( threads );
+        CountDownLatch start = new CountDownLatch(threads);
         AtomicBoolean stop = new AtomicBoolean();
-        OffHeapPageLock.tryExclusiveLock( lockAddr );
-        Runnable runnable = () ->
-        {
-            while ( !stop.get() )
-            {
-                if ( OffHeapPageLock.tryExclusiveLock( lockAddr ) )
-                {
-                    OffHeapPageLock.unlockExclusive( lockAddr );
-                    throw new RuntimeException( "I should not have gotten that lock" );
+        OffHeapPageLock.tryExclusiveLock(lockAddr);
+        Runnable runnable = () -> {
+            while (!stop.get()) {
+                if (OffHeapPageLock.tryExclusiveLock(lockAddr)) {
+                    OffHeapPageLock.unlockExclusive(lockAddr);
+                    throw new RuntimeException("I should not have gotten that lock");
                 }
                 start.countDown();
             }
         };
 
         List<Future<?>> futures = new ArrayList<>();
-        for ( int i = 0; i < threads; i++ )
-        {
-            futures.add( executor.submit( runnable ) );
+        for (int i = 0; i < threads; i++) {
+            futures.add(executor.submit(runnable));
         }
 
         start.await();
-        OffHeapPageLock.unlockExclusiveAndTakeWriteLock( lockAddr );
-        stop.set( true );
-        Futures.getAll( futures );
+        OffHeapPageLock.unlockExclusiveAndTakeWriteLock(lockAddr);
+        stop.set(true);
+        Futures.getAll(futures);
     }
 }

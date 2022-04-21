@@ -28,7 +28,7 @@ import org.neo4j.values.AnyValue;
  * Used in conjunction with a {@link QuerySubscription}. The subscription will demand a number of records, {@link
  * QuerySubscription#request(long)}, and when there is data available the subscriber will receive a call chain like.
  *
- <pre>
+ * <pre>
  *     onResult(3)
  *     onRecord()
  *     onField(0, v1)
@@ -46,14 +46,13 @@ import org.neo4j.values.AnyValue;
  * <p>
  * Or if some error occurs along the way we will have a call to onError.
  */
-public interface QuerySubscriber
-{
+public interface QuerySubscriber {
     /**
      * Called at the beginning of a stream, guaranteed to be called exactly once.
      *
      * @param numberOfFields the number of fields each record of the stream will contain
      */
-    void onResult( int numberOfFields ) throws Exception;
+    void onResult(int numberOfFields) throws Exception;
 
     /**
      * Called whenever a new record is ready to be written
@@ -69,7 +68,7 @@ public interface QuerySubscriber
      *
      * @param value the value of the field at the current offset.
      */
-    void onField( int offset, AnyValue value ) throws Exception;
+    void onField(int offset, AnyValue value) throws Exception;
 
     /**
      * The current record has been completed
@@ -81,20 +80,16 @@ public interface QuerySubscriber
      *
      * @param throwable the error
      */
-    void onError( Throwable throwable ) throws Exception;
+    void onError(Throwable throwable) throws Exception;
 
     /**
      * Call onError while suppressing any new exception.
      */
-    static void safelyOnError( QuerySubscriber subscriber, Throwable t )
-    {
-        try
-        {
-            subscriber.onError( t );
-        }
-        catch ( Exception onErrorException )
-        {
-            t.addSuppressed( onErrorException );
+    static void safelyOnError(QuerySubscriber subscriber, Throwable t) {
+        try {
+            subscriber.onError(t);
+        } catch (Exception onErrorException) {
+            t.addSuppressed(onErrorException);
         }
     }
 
@@ -105,47 +100,28 @@ public interface QuerySubscriber
      * streamed to the subscriber.
      * @param statistics The query statistics of the results.
      */
-    void onResultCompleted( QueryStatistics statistics );
+    void onResultCompleted(QueryStatistics statistics);
 
     /**
      * Dummy implementation that will throw whenever it is being called.
      */
-    QuerySubscriber DO_NOTHING_SUBSCRIBER = new QuerySubscriber()
-    {
+    QuerySubscriber DO_NOTHING_SUBSCRIBER = new QuerySubscriber() {
         @Override
-        public void onResult( int numberOfFields )
-        {
-
-        }
+        public void onResult(int numberOfFields) {}
 
         @Override
-        public void onRecord()
-        {
-
-        }
+        public void onRecord() {}
 
         @Override
-        public void onField( int offset, AnyValue value )
-        {
-
-        }
+        public void onField(int offset, AnyValue value) {}
 
         @Override
-        public void onRecordCompleted()
-        {
-
-        }
+        public void onRecordCompleted() {}
 
         @Override
-        public void onError( Throwable throwable )
-        {
-
-        }
+        public void onError(Throwable throwable) {}
 
         @Override
-        public void onResultCompleted( QueryStatistics statistics )
-        {
-
-        }
+        public void onResultCompleted(QueryStatistics statistics) {}
     };
 }

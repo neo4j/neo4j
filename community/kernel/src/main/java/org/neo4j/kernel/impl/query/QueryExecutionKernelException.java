@@ -23,15 +23,12 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class QueryExecutionKernelException extends KernelException
-{
-    public <EX extends Throwable & Status.HasStatus> QueryExecutionKernelException( EX cause )
-    {
-        super( cause.status(), cause, cause.getMessage() );
+public class QueryExecutionKernelException extends KernelException {
+    public <EX extends Throwable & Status.HasStatus> QueryExecutionKernelException(EX cause) {
+        super(cause.status(), cause, cause.getMessage());
     }
 
-    public QueryExecutionException asUserException()
-    {
-        return new QueryExecutionException( getMessage(), this, status().code().serialize() );
+    public QueryExecutionException asUserException() {
+        return new QueryExecutionException(getMessage(), this, status().code().serialize());
     }
 }

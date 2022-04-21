@@ -19,13 +19,11 @@
  */
 package org.neo4j.test.extension.actors;
 
-import org.junit.jupiter.api.extension.ExtendWith;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.test.extension.Inject;
 
 /**
@@ -35,9 +33,7 @@ import org.neo4j.test.extension.Inject;
  * <p>
  * This makes it easy to write tests that use multiple threads.
  */
-@Target( {ElementType.TYPE} )
-@Retention( RetentionPolicy.RUNTIME )
-@ExtendWith( {ActorsSupportExtension.class} )
-public @interface ActorsExtension
-{
-}
+@Target({ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@ExtendWith({ActorsSupportExtension.class})
+public @interface ActorsExtension {}

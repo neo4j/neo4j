@@ -23,53 +23,44 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 
-public interface IndexPopulationFailure
-{
+public interface IndexPopulationFailure {
     String asString();
 
-    IndexPopulationFailedKernelException asIndexPopulationFailure( SchemaDescriptor descriptor, String indexUserDescriptor );
+    IndexPopulationFailedKernelException asIndexPopulationFailure(
+            SchemaDescriptor descriptor, String indexUserDescriptor);
 
-    static IndexPopulationFailure failure( final Throwable failure )
-    {
-        return new IndexPopulationFailure()
-        {
+    static IndexPopulationFailure failure(final Throwable failure) {
+        return new IndexPopulationFailure() {
             @Override
-            public String asString()
-            {
-                return Exceptions.stringify( failure );
+            public String asString() {
+                return Exceptions.stringify(failure);
             }
 
             @Override
             public IndexPopulationFailedKernelException asIndexPopulationFailure(
-                    SchemaDescriptor descriptor, String indexUserDescription )
-            {
-                return new IndexPopulationFailedKernelException( indexUserDescription, failure );
+                    SchemaDescriptor descriptor, String indexUserDescription) {
+                return new IndexPopulationFailedKernelException(indexUserDescription, failure);
             }
         };
     }
 
-    static IndexPopulationFailure failure( final String failure )
-    {
-        return new IndexPopulationFailure()
-        {
+    static IndexPopulationFailure failure(final String failure) {
+        return new IndexPopulationFailure() {
             @Override
-            public String asString()
-            {
+            public String asString() {
                 return failure;
             }
 
             @Override
             public IndexPopulationFailedKernelException asIndexPopulationFailure(
-                    SchemaDescriptor descriptor, String indexUserDescription )
-            {
-                return new IndexPopulationFailedKernelException( indexUserDescription, failure );
+                    SchemaDescriptor descriptor, String indexUserDescription) {
+                return new IndexPopulationFailedKernelException(indexUserDescription, failure);
             }
         };
     }
 
-    static String appendCauseOfFailure( String message, String causeOfFailure )
-    {
-        return String.format( "%s: Cause of failure:%n" +
-                "==================%n%s%n==================", message, causeOfFailure );
+    static String appendCauseOfFailure(String message, String causeOfFailure) {
+        return String.format(
+                "%s: Cause of failure:%n" + "==================%n%s%n==================", message, causeOfFailure);
     }
 }

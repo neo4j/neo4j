@@ -75,7 +75,11 @@ object ScopeTestHelper {
   def pathCollectionSymbol(name: String, symbolUses: SymbolUses): semantics.Symbol =
     pathCollectionSymbol(name, symbolUses.defVar, symbolUses.useVars: _*)
 
-  def intCollectionCollectionSymbol(name: String, definition: LogicalVariable, uses: LogicalVariable*): semantics.Symbol =
+  def intCollectionCollectionSymbol(
+    name: String,
+    definition: LogicalVariable,
+    uses: LogicalVariable*
+  ): semantics.Symbol =
     typedSymbol(name, TypeSpec.exact(CTList(CTList(CTInteger))), definition, uses: _*)
 
   def intCollectionCollectionSymbol(name: String, symbolUses: SymbolUses): semantics.Symbol =

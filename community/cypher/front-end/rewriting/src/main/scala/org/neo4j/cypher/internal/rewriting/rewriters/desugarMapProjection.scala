@@ -51,8 +51,7 @@ case class desugarMapProjection(state: SemanticState) extends Rewriter {
   override def apply(that: AnyRef): AnyRef = topDown(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
-    case e@MapProjection(id, items) =>
-
+    case e @ MapProjection(id, items) =>
       def propertySelect(propertyPosition: InputPosition, name: String): LiteralEntry = {
         val key = PropertyKeyName(name)(propertyPosition)
         val value = Property(id.copyId, key)(propertyPosition)
@@ -65,9 +64,9 @@ case class desugarMapProjection(state: SemanticState) extends Rewriter {
       var includeAllProps = false
 
       val mapExpressionItems = items.flatMap {
-        case x: LiteralEntry => Some(x)
-        case _: AllPropertiesSelector => includeAllProps = true; None
-        case PropertySelector(property: Variable) => Some(propertySelect(property.position, property.name))
+        case x: LiteralEntry                        => Some(x)
+        case _: AllPropertiesSelector               => includeAllProps = true; None
+        case PropertySelector(property: Variable)   => Some(propertySelect(property.position, property.name))
         case VariableSelector(identifier: Variable) => Some(identifierSelect(identifier))
       }
 
@@ -82,11 +81,13 @@ object desugarMapProjection extends StepSequencer.Step with ASTRewriterFactory {
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
+    PatternExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside PatternExpressions.
   )
 
-  override def getRewriter(semanticState: SemanticState,
-                           parameterTypeMapping: Map[String, CypherType],
-                           cypherExceptionFactory: CypherExceptionFactory,
-                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = desugarMapProjection(semanticState)
+  override def getRewriter(
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, CypherType],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Rewriter = desugarMapProjection(semanticState)
 }

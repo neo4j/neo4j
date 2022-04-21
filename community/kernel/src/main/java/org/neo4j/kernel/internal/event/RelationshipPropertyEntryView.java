@@ -19,24 +19,22 @@
  */
 package org.neo4j.kernel.internal.event;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-
-class RelationshipPropertyEntryView implements PropertyEntry<Relationship>
-{
-    static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipPropertyEntryView.class );
+class RelationshipPropertyEntryView implements PropertyEntry<Relationship> {
+    static final long SHALLOW_SIZE = shallowSizeOfInstance(RelationshipPropertyEntryView.class);
 
     private final Relationship relationship;
     private final String key;
     private final Value newValue;
     private final Value oldValue;
 
-    RelationshipPropertyEntryView( Relationship relationship, String key, Value newValue, Value oldValue )
-    {
+    RelationshipPropertyEntryView(Relationship relationship, String key, Value newValue, Value oldValue) {
         this.relationship = relationship;
         this.key = key;
         this.newValue = newValue;
@@ -44,41 +42,34 @@ class RelationshipPropertyEntryView implements PropertyEntry<Relationship>
     }
 
     @Override
-    public Relationship entity()
-    {
+    public Relationship entity() {
         return relationship;
     }
 
     @Override
-    public String key()
-    {
+    public String key() {
         return key;
     }
 
     @Override
-    public Object previouslyCommittedValue()
-    {
+    public Object previouslyCommittedValue() {
         return oldValue.asObjectCopy();
     }
 
     @Override
-    public Object value()
-    {
-        if ( newValue == null || newValue == Values.NO_VALUE )
-        {
-            throw new IllegalStateException( "This property has been removed, it has no value anymore: " + this );
+    public Object value() {
+        if (newValue == null || newValue == Values.NO_VALUE) {
+            throw new IllegalStateException("This property has been removed, it has no value anymore: " + this);
         }
         return newValue.asObjectCopy();
     }
 
     @Override
-    public String toString()
-    {
-        return "RelationshipPropertyEntryView{" +
-                "relId=" + relationship.getId() +
-                ", key='" + key + '\'' +
-                ", newValue=" + newValue +
-                ", oldValue=" + oldValue +
-                '}';
+    public String toString() {
+        return "RelationshipPropertyEntryView{" + "relId="
+                + relationship.getId() + ", key='"
+                + key + '\'' + ", newValue="
+                + newValue + ", oldValue="
+                + oldValue + '}';
     }
 }

@@ -19,18 +19,15 @@
  */
 package org.neo4j.internal.diagnostics;
 
-public abstract class NamedDiagnosticsProvider implements DiagnosticsProvider
-{
+public abstract class NamedDiagnosticsProvider implements DiagnosticsProvider {
     private final String name;
 
-    protected NamedDiagnosticsProvider( String name )
-    {
+    protected NamedDiagnosticsProvider(String name) {
         this.name = name;
     }
 
     @Override
-    public String getDiagnosticsName()
-    {
+    public String getDiagnosticsName() {
         return name;
     }
 }

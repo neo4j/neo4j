@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.debug
 
+import org.neo4j.codegen.api.CodeGeneration.GENERATED_SOURCE_LOCATION_PROPERTY
+import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
+
 import java.nio.file.FileVisitResult
 import java.nio.file.FileVisitResult.CONTINUE
 import java.nio.file.Files
@@ -26,9 +29,6 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
-
-import org.neo4j.codegen.api.CodeGeneration.GENERATED_SOURCE_LOCATION_PROPERTY
-import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 
 /**
  * This trait allows debugging generated queries, by generating queries through java source, then making sure that
@@ -62,13 +62,16 @@ trait SaveGeneratedSource extends CypherTestSupport {
     if (saveGeneratedSourceEnabled) {
       val cwd = Paths.get(".").normalize.toRealPath()
       // If CWD is set up correctly, we assign the generated source location
-      if (Files.isDirectory(cwd.resolve("src/test/scala").resolve(getClass.getName.replace('.', '/')).getParent)
-        && Files.isDirectory(cwd.resolve("target"))) {
+      if (
+        Files.isDirectory(cwd.resolve("src/test/scala").resolve(getClass.getName.replace('.', '/')).getParent)
+        && Files.isDirectory(cwd.resolve("target"))
+      ) {
         setLocation(cwd.resolve("target").resolve("generated-test-sources").resolve("cypher"))
       } else {
         throw new IllegalArgumentException(
           s"""Could not resolve directory for saving generated source code relative to current working directory '$cwd'.
-             |Make sure the working directory in your debug configuration is set to the directory of the Maven module containing the test.""".stripMargin)
+             |Make sure the working directory in your debug configuration is set to the directory of the Maven module containing the test.""".stripMargin
+        )
       }
     }
   }
@@ -84,16 +87,18 @@ trait SaveGeneratedSource extends CypherTestSupport {
       System.clearProperty(GENERATED_SOURCE_LOCATION_PROPERTY)
       if (!keepSourceFilesAfterTestFinishes) {
         generatedSources.foreach { location =>
-          Files.walkFileTree(location, new SimpleFileVisitor[Path] {
-            override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
-              Files.delete(file)
-              CONTINUE
+          Files.walkFileTree(
+            location,
+            new SimpleFileVisitor[Path] {
+              override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
+                Files.delete(file)
+                CONTINUE
+              }
             }
-          })
+          )
         }
       }
     }
     super.stopTest()
   }
 }
-

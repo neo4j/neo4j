@@ -36,6 +36,7 @@ class NodeIdSeekIterator(nodeIds: java.util.Iterator[AnyValue], query: QueryCont
   private var cachedNode: Long = computeNext()
   override def close(): Unit = {}
   override protected[this] def innerHasNext: Boolean = cachedNode != StatementConstants.NO_SUCH_NODE
+
   override def next(): Long = {
     if (innerHasNext) {
       val result = cachedNode
@@ -65,13 +66,17 @@ case class RelationshipState(id: Long, startNode: Long, endNode: Long, relType: 
   def flip: RelationshipState = copy(startNode = endNode, endNode = startNode)
 }
 
-class DirectedRelationshipIdSeekIterator(relIds: java.util.Iterator[AnyValue], read: Read, cursor: RelationshipScanCursor) extends ClosingLongIterator with RelationshipIterator {
+class DirectedRelationshipIdSeekIterator(
+  relIds: java.util.Iterator[AnyValue],
+  read: Read,
+  cursor: RelationshipScanCursor
+) extends ClosingLongIterator with RelationshipIterator {
   protected var cachedRelationship: RelationshipState = _
   protected var _next: Long = StatementConstants.NO_SUCH_RELATIONSHIP
   private var startNode = StatementConstants.NO_SUCH_NODE
   private var endNode = StatementConstants.NO_SUCH_NODE
   private var typ = StatementConstants.NO_SUCH_RELATIONSHIP_TYPE
-  override def close(): Unit = {cursor.close()}
+  override def close(): Unit = { cursor.close() }
 
   override protected[this] def innerHasNext: Boolean = {
     if (cachedRelationship == null) {
@@ -80,7 +85,10 @@ class DirectedRelationshipIdSeekIterator(relIds: java.util.Iterator[AnyValue], r
     _next != StatementConstants.NO_SUCH_RELATIONSHIP
   }
 
-  override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long, visitor: RelationshipVisitor[EXCEPTION]): Boolean = {
+  override def relationshipVisit[EXCEPTION <: Exception](
+    relationshipId: Long,
+    visitor: RelationshipVisitor[EXCEPTION]
+  ): Boolean = {
     visitor.visit(relationshipId, typeId(), startNodeId(), endNodeId())
     true
   }
@@ -122,10 +130,12 @@ class DirectedRelationshipIdSeekIterator(relIds: java.util.Iterator[AnyValue], r
         if (id >= 0) {
           read.singleRelationship(id, cursor)
           if (cursor.next()) {
-            cachedRelationship = RelationshipState(cursor.relationshipReference(),
+            cachedRelationship = RelationshipState(
+              cursor.relationshipReference(),
               cursor.sourceNodeReference(),
               cursor.targetNodeReference(),
-              cursor.`type`())
+              cursor.`type`()
+            )
             return cursor.relationshipReference()
           }
         }
@@ -135,11 +145,16 @@ class DirectedRelationshipIdSeekIterator(relIds: java.util.Iterator[AnyValue], r
   }
 }
 
-class UndirectedRelationshipIdSeekIterator(relIds: java.util.Iterator[AnyValue], read: Read, cursor: RelationshipScanCursor) extends DirectedRelationshipIdSeekIterator(relIds, read, cursor) {
+class UndirectedRelationshipIdSeekIterator(
+  relIds: java.util.Iterator[AnyValue],
+  read: Read,
+  cursor: RelationshipScanCursor
+) extends DirectedRelationshipIdSeekIterator(relIds, read, cursor) {
   private var emitSibling = false
   private var lastRel = -1L
 
   override protected[this] def innerHasNext: Boolean = emitSibling || super.innerHasNext
+
   override def next(): Long = {
     if (innerHasNext) {
       if (emitSibling) {

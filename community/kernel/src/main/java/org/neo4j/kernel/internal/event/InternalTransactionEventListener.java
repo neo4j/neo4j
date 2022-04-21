@@ -30,19 +30,16 @@ import org.neo4j.kernel.api.KernelTransaction;
  * Used as a marker interface for internal transaction event listener, which will get called for all transactions containing changes,
  * even transactions with only token changes (something which the public {@link TransactionEventListener} doesn't get).
  */
-public interface InternalTransactionEventListener<T> extends TransactionEventListener<T>
-{
+public interface InternalTransactionEventListener<T> extends TransactionEventListener<T> {
     /**
      * Difference is that the provided transaction is a {@link KernelTransaction}
      * Note that only one will be invoked
      * @see TransactionEventListener#beforeCommit(TransactionData, Transaction, GraphDatabaseService)
      */
-    default T beforeCommit( TransactionData data, KernelTransaction transaction, GraphDatabaseService databaseService ) throws Exception
-    {
-        return beforeCommit( data, transaction.internalTransaction(), databaseService );
+    default T beforeCommit(TransactionData data, KernelTransaction transaction, GraphDatabaseService databaseService)
+            throws Exception {
+        return beforeCommit(data, transaction.internalTransaction(), databaseService);
     }
 
-    class Adapter<T> extends TransactionEventListenerAdapter<T> implements InternalTransactionEventListener<T>
-    {
-    }
+    class Adapter<T> extends TransactionEventListenerAdapter<T> implements InternalTransactionEventListener<T> {}
 }

@@ -30,7 +30,11 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *     produce (leftRow merge rightRow)
  * }}}
  */
-case class CartesianProduct(override val left: LogicalPlan, override val right: LogicalPlan, fromSubquery: Boolean = false)(implicit idGen: IdGen) extends LogicalBinaryPlan(idGen) {
+case class CartesianProduct(
+  override val left: LogicalPlan,
+  override val right: LogicalPlan,
+  fromSubquery: Boolean = false
+)(implicit idGen: IdGen) extends LogicalBinaryPlan(idGen) {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)

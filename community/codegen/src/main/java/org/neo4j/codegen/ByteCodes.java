@@ -21,8 +21,7 @@ package org.neo4j.codegen;
 
 import java.nio.ByteBuffer;
 
-public interface ByteCodes
-{
+public interface ByteCodes {
     String name();
 
     ByteBuffer bytes();

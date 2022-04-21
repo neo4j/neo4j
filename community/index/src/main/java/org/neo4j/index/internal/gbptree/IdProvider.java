@@ -20,7 +20,6 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 
@@ -28,8 +27,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
  * Provide tree node (page) ids which can be used for storing tree node data.
  * Bytes on returned page ids must be empty (all zeros).
  */
-interface IdProvider
-{
+interface IdProvider {
     /**
      * Acquires a page id, guaranteed to currently not be used. The bytes on the page at this id
      * are all guaranteed to be zero at the point of returning from this method.
@@ -40,7 +38,7 @@ interface IdProvider
      * @return page id guaranteed to current not be used and whose bytes are all zeros.
      * @throws IOException on {@link PageCursor} error.
      */
-    long acquireNewId( long stableGeneration, long unstableGeneration, CursorContext cursorContext ) throws IOException;
+    long acquireNewId(long stableGeneration, long unstableGeneration, CursorContext cursorContext) throws IOException;
 
     /**
      * Releases a page id which has previously been used, but isn't anymore, effectively allowing
@@ -52,43 +50,34 @@ interface IdProvider
      * @param cursorContext underlying page cache cursor context
      * @throws IOException on {@link PageCursor} error.
      */
-    void releaseId( long stableGeneration, long unstableGeneration, long id, CursorContext cursorContext ) throws IOException;
+    void releaseId(long stableGeneration, long unstableGeneration, long id, CursorContext cursorContext)
+            throws IOException;
 
-    void visitFreelist( IdProviderVisitor visitor, CursorContext cursorContext ) throws IOException;
+    void visitFreelist(IdProviderVisitor visitor, CursorContext cursorContext) throws IOException;
 
     long lastId();
 
-    interface IdProviderVisitor
-    {
-        void beginFreelistPage( long pageId );
+    interface IdProviderVisitor {
+        void beginFreelistPage(long pageId);
 
-        void endFreelistPage( long pageId );
+        void endFreelistPage(long pageId);
 
-        void freelistEntry( long pageId, long generation, int pos );
+        void freelistEntry(long pageId, long generation, int pos);
 
-        void freelistEntryFromReleaseCache( long pageId );
+        void freelistEntryFromReleaseCache(long pageId);
 
-        class Adaptor implements IdProviderVisitor
-        {
+        class Adaptor implements IdProviderVisitor {
             @Override
-            public void beginFreelistPage( long pageId )
-            {
-            }
+            public void beginFreelistPage(long pageId) {}
 
             @Override
-            public void endFreelistPage( long pageId )
-            {
-            }
+            public void endFreelistPage(long pageId) {}
 
             @Override
-            public void freelistEntry( long pageId, long generation, int pos )
-            {
-            }
+            public void freelistEntry(long pageId, long generation, int pos) {}
 
             @Override
-            public void freelistEntryFromReleaseCache( long pageId )
-            {
-            }
+            public void freelistEntryFromReleaseCache(long pageId) {}
         }
     }
 }

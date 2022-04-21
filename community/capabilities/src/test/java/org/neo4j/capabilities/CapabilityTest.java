@@ -19,28 +19,26 @@
  */
 package org.neo4j.capabilities;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.capabilities.Type.STRING;
 
-class CapabilityTest
-{
+import org.junit.jupiter.api.Test;
+
+class CapabilityTest {
 
     @Test
-    void testCapability()
-    {
-        var capability = new Capability<>( Name.of( "dbms.test.capability" ), STRING );
+    void testCapability() {
+        var capability = new Capability<>(Name.of("dbms.test.capability"), STRING);
 
-        assertThat( capability.name() ).isEqualTo( Name.of( "dbms.test.capability" ) );
-        assertThat( capability.type() ).isEqualTo( STRING );
-        assertThat( capability.internal() ).isTrue();
-        assertThat( capability.description() ).isEmpty();
+        assertThat(capability.name()).isEqualTo(Name.of("dbms.test.capability"));
+        assertThat(capability.type()).isEqualTo(STRING);
+        assertThat(capability.internal()).isTrue();
+        assertThat(capability.description()).isEmpty();
 
-        capability.setDescription( "a description" );
+        capability.setDescription("a description");
         capability.setPublic();
 
-        assertThat( capability.description() ).isEqualTo( "a description" );
-        assertThat( capability.internal() ).isFalse();
+        assertThat(capability.description()).isEqualTo("a description");
+        assertThat(capability.internal()).isFalse();
     }
 }

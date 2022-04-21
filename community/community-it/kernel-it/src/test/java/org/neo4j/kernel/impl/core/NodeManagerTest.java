@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.internal.helpers.collection.Iterators.count;
 
 import java.util.Iterator;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -33,85 +34,72 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.internal.helpers.collection.Iterators.count;
-
 @ImpermanentDbmsExtension
-class NodeManagerTest
-{
+class NodeManagerTest {
     @Inject
     GraphDatabaseService db;
 
     @Test
-    void getAllNodesIteratorShouldPickUpHigherIdsThanHighIdWhenStarted() throws Exception
-    {
+    void getAllNodesIteratorShouldPickUpHigherIdsThanHighIdWhenStarted() throws Exception {
         // GIVEN
-        try ( var tx = db.beginTx() )
-        {
+        try (var tx = db.beginTx()) {
             tx.createNode();
             tx.createNode();
             tx.commit();
         }
 
         // WHEN iterator is started
-        try ( var tx = db.beginTx();
-              ResourceIterable<Node> allNodes = tx.getAllNodes() )
-        {
+        try (var tx = db.beginTx();
+                ResourceIterable<Node> allNodes = tx.getAllNodes()) {
             Iterator<Node> nodeIterator = allNodes.iterator();
             nodeIterator.next();
 
             // and WHEN another node is then added
-            Thread thread = new Thread( () ->
-            {
+            Thread thread = new Thread(() -> {
                 Transaction newTx = db.beginTx();
                 newTx.createNode();
                 newTx.commit();
-            } );
+            });
             thread.start();
             thread.join();
 
             // THEN the new node is picked up by the iterator
-            assertThat( count( nodeIterator ) ).isEqualTo( 2 );
+            assertThat(count(nodeIterator)).isEqualTo(2);
         }
     }
 
     @Test
-    void getAllRelationshipsIteratorShouldPickUpHigherIdsThanHighIdWhenStarted() throws Exception
-    {
+    void getAllRelationshipsIteratorShouldPickUpHigherIdsThanHighIdWhenStarted() throws Exception {
         // GIVEN
-        try ( var tx = db.beginTx() )
-        {
-            createRelationshipAssumingTxWith( tx, "key", 1 );
-            createRelationshipAssumingTxWith( tx, "key", 2 );
+        try (var tx = db.beginTx()) {
+            createRelationshipAssumingTxWith(tx, "key", 1);
+            createRelationshipAssumingTxWith(tx, "key", 2);
             tx.commit();
         }
 
         // WHEN
-        try ( var tx = db.beginTx();
-              ResourceIterable<Relationship> allRelationships = tx.getAllRelationships();
-              ResourceIterator<Relationship> relationships = allRelationships.iterator() )
-        {
+        try (var tx = db.beginTx();
+                ResourceIterable<Relationship> allRelationships = tx.getAllRelationships();
+                ResourceIterator<Relationship> relationships = allRelationships.iterator()) {
             relationships.next();
 
-            Thread thread = new Thread( () ->
-            {
+            Thread thread = new Thread(() -> {
                 Transaction newTx = db.beginTx();
-                createRelationshipAssumingTxWith( newTx, "key", 3 );
+                createRelationshipAssumingTxWith(newTx, "key", 3);
                 newTx.commit();
-            } );
+            });
             thread.start();
             thread.join();
 
             // THEN
-            assertThat( count( relationships ) ).isEqualTo( 2 );
+            assertThat(count(relationships)).isEqualTo(2);
         }
     }
 
-    private static void createRelationshipAssumingTxWith( Transaction transaction, String key, Object value )
-    {
+    private static void createRelationshipAssumingTxWith(Transaction transaction, String key, Object value) {
         Node a = transaction.createNode();
         Node b = transaction.createNode();
-        Relationship relationship = a.createRelationshipTo( b, RelationshipType.withName( "FOO" ) );
-        relationship.setProperty( key, value );
+        Relationship relationship = a.createRelationshipTo(b, RelationshipType.withName("FOO"));
+        relationship.setProperty(key, value);
     }
 }

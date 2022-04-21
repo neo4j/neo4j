@@ -19,18 +19,6 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.apache.commons.lang3.mutable.MutableLong;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.utils.TestDirectory;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -38,234 +26,221 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
+import java.io.IOException;
+import org.apache.commons.lang3.mutable.MutableLong;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.utils.TestDirectory;
+
 @PageCacheExtension
-class WriterTest
-{
+class WriterTest {
     @Inject
     private PageCache pageCache;
 
     @Inject
     private TestDirectory directory;
 
-    private GBPTree<MutableLong,MutableLong> tree;
+    private GBPTree<MutableLong, MutableLong> tree;
 
     @BeforeEach
-    void setupTree()
-    {
-        tree = new GBPTreeBuilder<>( pageCache, directory.file( "tree" ), longLayout().withFixedSize( true ).build() ).build();
+    void setupTree() {
+        tree = new GBPTreeBuilder<>(
+                        pageCache,
+                        directory.file("tree"),
+                        longLayout().withFixedSize(true).build())
+                .build();
     }
 
     @AfterEach
-    void closeTree() throws IOException
-    {
+    void closeTree() throws IOException {
         tree.close();
     }
 
     @Test
-    void shouldPutEntry() throws IOException
-    {
+    void shouldPutEntry() throws IOException {
         // when
         long key = 0;
         long value = 10;
-        try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL_CONTEXT ) )
-        {
-            writer.put( new MutableLong( key ), new MutableLong( value ) );
+        try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+            writer.put(new MutableLong(key), new MutableLong(value));
         }
 
         // then
-        try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ), NULL_CONTEXT ) )
-        {
-            assertTrue( cursor.next() );
-            assertEquals( key, cursor.key().longValue() );
-            assertEquals( value, cursor.value().longValue() );
-            assertFalse( cursor.next() );
+        try (Seeker<MutableLong, MutableLong> cursor =
+                tree.seek(new MutableLong(key), new MutableLong(key), NULL_CONTEXT)) {
+            assertTrue(cursor.next());
+            assertEquals(key, cursor.key().longValue());
+            assertEquals(value, cursor.value().longValue());
+            assertFalse(cursor.next());
         }
     }
 
     @Test
-    void shouldMergeNonExistentEntry() throws IOException
-    {
+    void shouldMergeNonExistentEntry() throws IOException {
         // when
         long key = 0;
         long value = 10;
-        try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL_CONTEXT ) )
-        {
-            writer.merge( new MutableLong( key ), new MutableLong( value ), ValueMergers.overwrite() );
+        try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+            writer.merge(new MutableLong(key), new MutableLong(value), ValueMergers.overwrite());
         }
 
         // then
-        try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ), NULL_CONTEXT ) )
-        {
-            assertTrue( cursor.next() );
-            assertEquals( key, cursor.key().longValue() );
-            assertEquals( value, cursor.value().longValue() );
-            assertFalse( cursor.next() );
+        try (Seeker<MutableLong, MutableLong> cursor =
+                tree.seek(new MutableLong(key), new MutableLong(key), NULL_CONTEXT)) {
+            assertTrue(cursor.next());
+            assertEquals(key, cursor.key().longValue());
+            assertEquals(value, cursor.value().longValue());
+            assertFalse(cursor.next());
         }
     }
 
     @Test
-    void shouldNotChangeEntryOnMergeExistentEntryWithUnchangingMerger() throws IOException
-    {
+    void shouldNotChangeEntryOnMergeExistentEntryWithUnchangingMerger() throws IOException {
         // given
         long key = 0;
         long value = 10;
-        try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL_CONTEXT ) )
-        {
-            writer.put( new MutableLong( key ), new MutableLong( value ) );
+        try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+            writer.put(new MutableLong(key), new MutableLong(value));
         }
 
         // when
-        try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL_CONTEXT ) )
-        {
-            writer.merge( new MutableLong( key ), new MutableLong( value + 1 ), ValueMergers.keepExisting() );
+        try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+            writer.merge(new MutableLong(key), new MutableLong(value + 1), ValueMergers.keepExisting());
         }
 
         // then
-        try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ), NULL_CONTEXT ) )
-        {
-            assertTrue( cursor.next() );
-            assertEquals( key, cursor.key().longValue() );
-            assertEquals( value, cursor.value().longValue() );
-            assertFalse( cursor.next() );
+        try (Seeker<MutableLong, MutableLong> cursor =
+                tree.seek(new MutableLong(key), new MutableLong(key), NULL_CONTEXT)) {
+            assertTrue(cursor.next());
+            assertEquals(key, cursor.key().longValue());
+            assertEquals(value, cursor.value().longValue());
+            assertFalse(cursor.next());
         }
     }
 
     @Test
-    void shouldChangeEntryOnMergeExistentEntryWithChangingMerger() throws IOException
-    {
+    void shouldChangeEntryOnMergeExistentEntryWithChangingMerger() throws IOException {
         // given
         long key = 0;
         long value = 10;
-        try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL_CONTEXT ) )
-        {
-            writer.put( new MutableLong( key ), new MutableLong( value ) );
+        try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+            writer.put(new MutableLong(key), new MutableLong(value));
         }
 
         // when
-        try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL_CONTEXT ) )
-        {
-            writer.merge( new MutableLong( key ), new MutableLong( value + 1 ), ValueMergers.overwrite() );
+        try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+            writer.merge(new MutableLong(key), new MutableLong(value + 1), ValueMergers.overwrite());
         }
 
         // then
-        try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ), NULL_CONTEXT ) )
-        {
-            assertTrue( cursor.next() );
-            assertEquals( key, cursor.key().longValue() );
-            assertEquals( value + 1, cursor.value().longValue() );
-            assertFalse( cursor.next() );
+        try (Seeker<MutableLong, MutableLong> cursor =
+                tree.seek(new MutableLong(key), new MutableLong(key), NULL_CONTEXT)) {
+            assertTrue(cursor.next());
+            assertEquals(key, cursor.key().longValue());
+            assertEquals(value + 1, cursor.value().longValue());
+            assertFalse(cursor.next());
         }
     }
 
     @Test
-    void shouldNotCreateEntryOnMergeIfExistsForNonExistentEntry() throws IOException
-    {
+    void shouldNotCreateEntryOnMergeIfExistsForNonExistentEntry() throws IOException {
         // when
         long key = 0;
         long value = 10;
-        try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL_CONTEXT ) )
-        {
-            writer.mergeIfExists( new MutableLong( key ), new MutableLong( value + 1 ), ValueMergers.overwrite() );
+        try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+            writer.mergeIfExists(new MutableLong(key), new MutableLong(value + 1), ValueMergers.overwrite());
         }
 
         // then
-        try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ), NULL_CONTEXT ) )
-        {
-            assertFalse( cursor.next() );
+        try (Seeker<MutableLong, MutableLong> cursor =
+                tree.seek(new MutableLong(key), new MutableLong(key), NULL_CONTEXT)) {
+            assertFalse(cursor.next());
         }
     }
 
     @Test
-    void shouldNotChangeEntryOnMergeIfExistsForExistentEntryWithUnchangingMerger() throws IOException
-    {
+    void shouldNotChangeEntryOnMergeIfExistsForExistentEntryWithUnchangingMerger() throws IOException {
         // given
         long key = 0;
         long value = 10;
-        try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL_CONTEXT ) )
-        {
-            writer.put( new MutableLong( key ), new MutableLong( value ) );
+        try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+            writer.put(new MutableLong(key), new MutableLong(value));
         }
 
         // when
-        try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL_CONTEXT ) )
-        {
-            writer.mergeIfExists( new MutableLong( key ), new MutableLong( value + 1 ), ValueMergers.keepExisting() );
+        try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+            writer.mergeIfExists(new MutableLong(key), new MutableLong(value + 1), ValueMergers.keepExisting());
         }
 
         // then
-        try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ), NULL_CONTEXT ) )
-        {
-            assertTrue( cursor.next() );
-            assertEquals( key, cursor.key().longValue() );
-            assertEquals( value, cursor.value().longValue() );
-            assertFalse( cursor.next() );
+        try (Seeker<MutableLong, MutableLong> cursor =
+                tree.seek(new MutableLong(key), new MutableLong(key), NULL_CONTEXT)) {
+            assertTrue(cursor.next());
+            assertEquals(key, cursor.key().longValue());
+            assertEquals(value, cursor.value().longValue());
+            assertFalse(cursor.next());
         }
     }
 
     @Test
-    void shouldChangeEntryOnMergeIfExistsForExistentEntryWithChangingMerger() throws IOException
-    {
+    void shouldChangeEntryOnMergeIfExistsForExistentEntryWithChangingMerger() throws IOException {
         // given
         long key = 0;
         long value = 10;
-        try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL_CONTEXT ) )
-        {
-            writer.put( new MutableLong( key ), new MutableLong( value ) );
+        try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+            writer.put(new MutableLong(key), new MutableLong(value));
         }
 
         // when
-        try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL_CONTEXT ) )
-        {
-            writer.mergeIfExists( new MutableLong( key ), new MutableLong( value + 1 ), ValueMergers.overwrite() );
+        try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+            writer.mergeIfExists(new MutableLong(key), new MutableLong(value + 1), ValueMergers.overwrite());
         }
 
         // then
-        try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ), NULL_CONTEXT ) )
-        {
-            assertTrue( cursor.next() );
-            assertEquals( key, cursor.key().longValue() );
-            assertEquals( value + 1, cursor.value().longValue() );
-            assertFalse( cursor.next() );
+        try (Seeker<MutableLong, MutableLong> cursor =
+                tree.seek(new MutableLong(key), new MutableLong(key), NULL_CONTEXT)) {
+            assertTrue(cursor.next());
+            assertEquals(key, cursor.key().longValue());
+            assertEquals(value + 1, cursor.value().longValue());
+            assertFalse(cursor.next());
         }
     }
 
     @Test
-    void shouldReturnNullRemovedValueIfNotFound() throws IOException
-    {
+    void shouldReturnNullRemovedValueIfNotFound() throws IOException {
         // given
         long key = 999;
         long value = 888;
-        try ( Writer<MutableLong, MutableLong> writer = tree.writer( NULL_CONTEXT ) )
-        {
-            writer.put( new MutableLong( key ), new MutableLong( value ) );
+        try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+            writer.put(new MutableLong(key), new MutableLong(value));
         }
 
         // when
-        try ( Writer<MutableLong, MutableLong> writer = tree.writer( NULL_CONTEXT ) )
-        {
-            MutableLong removedValue = writer.remove( new MutableLong( key + 1 ) );
+        try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+            MutableLong removedValue = writer.remove(new MutableLong(key + 1));
             // then
-            assertNull( removedValue );
+            assertNull(removedValue);
         }
     }
 
     @Test
-    void shouldReturnRemovedValueIfFound() throws IOException
-    {
+    void shouldReturnRemovedValueIfFound() throws IOException {
         // given
         long key = 999;
         long value = 888;
-        try ( Writer<MutableLong, MutableLong> writer = tree.writer( NULL_CONTEXT ) )
-        {
-            writer.put( new MutableLong( key ), new MutableLong( value ) );
+        try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+            writer.put(new MutableLong(key), new MutableLong(value));
         }
 
         // when
-        try ( Writer<MutableLong, MutableLong> writer = tree.writer( NULL_CONTEXT ) )
-        {
-            MutableLong removedValue = writer.remove( new MutableLong( key ) );
+        try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+            MutableLong removedValue = writer.remove(new MutableLong(key));
             // then
-            assertEquals( new MutableLong( value ), removedValue );
+            assertEquals(new MutableLong(value), removedValue);
         }
     }
 }

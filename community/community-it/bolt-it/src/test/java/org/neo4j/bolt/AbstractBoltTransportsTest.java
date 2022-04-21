@@ -19,8 +19,7 @@
  */
 package org.neo4j.bolt;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.params.provider.Arguments;
+import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,7 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.provider.Arguments;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.Neo4jPackV1;
 import org.neo4j.bolt.packstream.Neo4jPackV2;
@@ -41,19 +41,14 @@ import org.neo4j.bolt.testing.client.WebSocketConnection;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.HostnamePort;
 
-import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
-
-public abstract class AbstractBoltTransportsTest
-{
+public abstract class AbstractBoltTransportsTest {
     private static final List<Class<? extends TransportConnection>> CONNECTION_CLASSES = Arrays.asList(
             SocketConnection.class,
             WebSocketConnection.class,
             SecureSocketConnection.class,
-            SecureWebSocketConnection.class );
+            SecureWebSocketConnection.class);
 
-    private static final List<Neo4jPack> NEO4J_PACK_VERSIONS = Arrays.asList(
-            new Neo4jPackV1(),
-            new Neo4jPackV2() );
+    private static final List<Neo4jPack> NEO4J_PACK_VERSIONS = Arrays.asList(new Neo4jPackV1(), new Neo4jPackV2());
 
     public Class<? extends TransportConnection> connectionClass;
 
@@ -65,60 +60,50 @@ public abstract class AbstractBoltTransportsTest
     protected TransportConnection connection;
     protected TransportTestUtil util;
 
-    protected void initParameters( Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
-    {
+    protected void initParameters(
+            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
         this.connectionClass = connectionClass;
         this.neo4jPack = neo4jPack;
         this.name = name;
 
         connection = newConnection();
-        util = new TransportTestUtil( neo4jPack );
+        util = new TransportTestUtil(neo4jPack);
     }
 
     @AfterEach
-    public void disconnectFromDatabase() throws Exception
-    {
-        if ( connection != null )
-        {
+    public void disconnectFromDatabase() throws Exception {
+        if (connection != null) {
             connection.disconnect();
         }
     }
 
-    protected static Stream<Arguments> argumentsProvider()
-    {
+    protected static Stream<Arguments> argumentsProvider() {
         List<Arguments> result = new ArrayList<>();
 
-        for ( Class<? extends TransportConnection> connectionClass : CONNECTION_CLASSES )
-        {
-            for ( Neo4jPack neo4jPack : NEO4J_PACK_VERSIONS )
-            {
-                result.add( Arguments.of( connectionClass, neo4jPack, newName( connectionClass, neo4jPack ) ) );
+        for (Class<? extends TransportConnection> connectionClass : CONNECTION_CLASSES) {
+            for (Neo4jPack neo4jPack : NEO4J_PACK_VERSIONS) {
+                result.add(Arguments.of(connectionClass, neo4jPack, newName(connectionClass, neo4jPack)));
             }
         }
         return result.stream();
     }
 
-    protected TransportConnection newConnection() throws Exception
-    {
+    protected TransportConnection newConnection() throws Exception {
         return connectionClass.getDeclaredConstructor().newInstance();
     }
 
-    protected void reconnect() throws Exception
-    {
-        if ( connection != null )
-        {
+    protected void reconnect() throws Exception {
+        if (connection != null) {
             connection.disconnect();
         }
         connection = newConnection();
     }
 
-    protected Consumer<Map<Setting<?>,Object>> getSettingsFunction()
-    {
+    protected Consumer<Map<Setting<?>, Object>> getSettingsFunction() {
         return withOptionalBoltEncryption();
     }
 
-    private static String newName( Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack )
-    {
+    private static String newName(Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack) {
         return connectionClass.getSimpleName() + " & " + neo4jPack;
     }
 }

@@ -21,28 +21,23 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.SimpleAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Simple extends AnalyzerProvider
-{
-    public Simple()
-    {
-        super( "simple" );
+public class Simple extends AnalyzerProvider {
+    public Simple() {
+        super("simple");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
+    public Analyzer createAnalyzer() {
         return new SimpleAnalyzer();
     }
 
     @Override
-    public String description()
-    {
-        return "A simple analyzer that tokenizes at non-letter boundaries. No stemming or filtering. Works okay for most European languages, but is " +
-                "terrible for languages where words are not separated by spaces, such as many Asian languages.";
+    public String description() {
+        return "A simple analyzer that tokenizes at non-letter boundaries. No stemming or filtering. Works okay for most European languages, but is "
+                + "terrible for languages where words are not separated by spaces, such as many Asian languages.";
     }
 }

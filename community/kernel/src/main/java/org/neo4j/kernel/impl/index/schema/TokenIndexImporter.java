@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.IOUtils.closeAll;
+import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.internal.batchimport.IndexImporter;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -36,55 +39,52 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.IOUtils.closeAll;
-import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
-
-public class TokenIndexImporter implements IndexImporter
-{
+public class TokenIndexImporter implements IndexImporter {
     private static final String INDEX_TOKEN_IMPORTER_TAG = "indexTokenImporter";
     private final IndexUpdater updater;
     private final IndexDescriptor index;
     private final TokenIndexAccessor accessor;
     private final CursorContext cursorContext;
 
-    TokenIndexImporter( IndexDescriptor index, DatabaseLayout layout, FileSystemAbstraction fs, PageCache cache, CursorContextFactory contextFactory,
-                        ImmutableSet<OpenOption> openOptions )
-    {
+    TokenIndexImporter(
+            IndexDescriptor index,
+            DatabaseLayout layout,
+            FileSystemAbstraction fs,
+            PageCache cache,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> openOptions) {
         this.index = index;
-        this.accessor = tokenIndexAccessor( layout, fs, cache, contextFactory, openOptions );
-        this.cursorContext = contextFactory.create( INDEX_TOKEN_IMPORTER_TAG );
-        this.updater = accessor.newUpdater( ONLINE, cursorContext, false );
+        this.accessor = tokenIndexAccessor(layout, fs, cache, contextFactory, openOptions);
+        this.cursorContext = contextFactory.create(INDEX_TOKEN_IMPORTER_TAG);
+        this.updater = accessor.newUpdater(ONLINE, cursorContext, false);
     }
 
     @Override
-    public void add( long entity, long[] tokens )
-    {
-        try
-        {
-            updater.process( IndexEntryUpdate.change( entity, index, EMPTY_LONG_ARRAY, tokens ) );
-        }
-        catch ( IndexEntryConflictException e )
-        {
-            throw new RuntimeException( e );
+    public void add(long entity, long[] tokens) {
+        try {
+            updater.process(IndexEntryUpdate.change(entity, index, EMPTY_LONG_ARRAY, tokens));
+        } catch (IndexEntryConflictException e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
-    public void close() throws IOException
-    {
-        closeAll( updater, () -> accessor.force( cursorContext ), accessor );
+    public void close() throws IOException {
+        closeAll(updater, () -> accessor.force(cursorContext), accessor);
     }
 
-    private TokenIndexAccessor tokenIndexAccessor( DatabaseLayout layout, FileSystemAbstraction fs, PageCache pageCache,
-                                                   CursorContextFactory contextFactory,
-                                                   ImmutableSet<OpenOption> openOptions )
-    {
-        var context = DatabaseIndexContext.builder( pageCache, fs, contextFactory, layout.getDatabaseName() ).build();
-        IndexDirectoryStructure indexDirectoryStructure = IndexDirectoryStructure.directoriesByProvider( layout.databaseDirectory() )
-                                                                                 .forProvider( TokenIndexProvider.DESCRIPTOR );
-        IndexFiles indexFiles = TokenIndexProvider.indexFiles( index, fs, indexDirectoryStructure );
-        return new TokenIndexAccessor( context, indexFiles, index, immediate(), openOptions );
+    private TokenIndexAccessor tokenIndexAccessor(
+            DatabaseLayout layout,
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> openOptions) {
+        var context = DatabaseIndexContext.builder(pageCache, fs, contextFactory, layout.getDatabaseName())
+                .build();
+        IndexDirectoryStructure indexDirectoryStructure = IndexDirectoryStructure.directoriesByProvider(
+                        layout.databaseDirectory())
+                .forProvider(TokenIndexProvider.DESCRIPTOR);
+        IndexFiles indexFiles = TokenIndexProvider.indexFiles(index, fs, indexDirectoryStructure);
+        return new TokenIndexAccessor(context, indexFiles, index, immediate(), openOptions);
     }
 }

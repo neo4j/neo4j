@@ -21,11 +21,9 @@ package org.neo4j.bolt.runtime.scheduling;
 
 import org.neo4j.bolt.runtime.BoltConnection;
 
-public interface BoltConnectionLifetimeListener
-{
+public interface BoltConnectionLifetimeListener {
 
-    void created( BoltConnection connection );
+    void created(BoltConnection connection);
 
-    void closed( BoltConnection connection );
-
+    void closed(BoltConnection connection);
 }

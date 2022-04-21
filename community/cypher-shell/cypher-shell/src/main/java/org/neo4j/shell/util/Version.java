@@ -21,32 +21,26 @@ package org.neo4j.shell.util;
 
 import static java.lang.String.format;
 
-@SuppressWarnings( "WeakerAccess" )
-public record Version(int major, int minor, int patch) implements Comparable<Version>
-{
+@SuppressWarnings("WeakerAccess")
+public record Version(int major, int minor, int patch) implements Comparable<Version> {
     @Override
-    public int compareTo( Version o )
-    {
-        int comp = Integer.compare( major, o.major );
-        if ( comp == 0 )
-        {
-            comp = Integer.compare( minor, o.minor );
-            if ( comp == 0 )
-            {
-                comp = Integer.compare( patch, o.patch );
+    public int compareTo(Version o) {
+        int comp = Integer.compare(major, o.major);
+        if (comp == 0) {
+            comp = Integer.compare(minor, o.minor);
+            if (comp == 0) {
+                comp = Integer.compare(patch, o.patch);
             }
         }
         return comp;
     }
 
     @Override
-    public String toString()
-    {
-        return format( "%d.%d.%d", major, minor, patch );
+    public String toString() {
+        return format("%d.%d.%d", major, minor, patch);
     }
 
-    public String majorMinorString()
-    {
-        return format( "%d.%d", major, minor );
+    public String majorMinorString() {
+        return format("%d.%d", major, minor);
     }
 }

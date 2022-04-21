@@ -19,9 +19,9 @@
  */
 package org.neo4j.logging.log4j;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnOs;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.condition.OS.LINUX;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 import java.io.IOException;
 import java.nio.file.FileSystem;
@@ -30,187 +30,178 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.condition.OS.LINUX;
-import static org.neo4j.test.assertion.Assert.assertEventually;
-
 @TestDirectoryExtension
-class RotatingLogFileWriterTest
-{
+class RotatingLogFileWriterTest {
     @Inject
     private DefaultFileSystemAbstraction fs;
+
     @Inject
     private TestDirectory dir;
 
     private RotatingLogFileWriter writer;
 
     @AfterEach
-    void tearDown() throws IOException
-    {
+    void tearDown() throws IOException {
         writer.close();
     }
 
     @Test
-    void shouldRotateOnThreshold()
-    {
-        Path targetFile = dir.homePath().resolve( "test.log" );
-        Path targetFile1 = dir.homePath().resolve( "test.log.1" );
-        Path targetFile2 = dir.homePath().resolve( "test.log.2" );
+    void shouldRotateOnThreshold() {
+        Path targetFile = dir.homePath().resolve("test.log");
+        Path targetFile1 = dir.homePath().resolve("test.log.1");
+        Path targetFile2 = dir.homePath().resolve("test.log.2");
 
-        writer = new RotatingLogFileWriter( fs, targetFile, 10, 2, "", "myHeader%n" );
+        writer = new RotatingLogFileWriter(fs, targetFile, 10, 2, "", "myHeader%n");
 
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
+        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
 
-        writer.printf( "more than 10B that will trigger rotation on next written message" );
+        writer.printf("more than 10B that will trigger rotation on next written message");
 
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile1 ) ).isEqualTo( false );
+        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
+        assertThat(fs.fileExists(targetFile1)).isEqualTo(false);
 
-        writer.printf( "test string" );
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile1 ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile2 ) ).isEqualTo( false );
+        writer.printf("test string");
+        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
+        assertThat(fs.fileExists(targetFile1)).isEqualTo(true);
+        assertThat(fs.fileExists(targetFile2)).isEqualTo(false);
     }
 
     @Test
-    void rotationShouldRespectMaxArchives() throws IOException
-    {
-        Path targetFile = dir.homePath().resolve( "test.log" );
-        Path targetFile1 = dir.homePath().resolve( "test.log.1" );
-        Path targetFile2 = dir.homePath().resolve( "test.log.2" );
-        Path targetFile3 = dir.homePath().resolve( "test.log.3" );
+    void rotationShouldRespectMaxArchives() throws IOException {
+        Path targetFile = dir.homePath().resolve("test.log");
+        Path targetFile1 = dir.homePath().resolve("test.log.1");
+        Path targetFile2 = dir.homePath().resolve("test.log.2");
+        Path targetFile3 = dir.homePath().resolve("test.log.3");
 
-        writer = new RotatingLogFileWriter( fs, targetFile, 10, 2, "", "" );
+        writer = new RotatingLogFileWriter(fs, targetFile, 10, 2, "", "");
 
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
+        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
 
-        writer.printf( "test string 1" );
-        writer.printf( "test string 2" );
-        writer.printf( "test string 3" );
-        writer.printf( "test string 4" );
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile1 ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile2 ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile3 ) ).isEqualTo( false );
+        writer.printf("test string 1");
+        writer.printf("test string 2");
+        writer.printf("test string 3");
+        writer.printf("test string 4");
+        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
+        assertThat(fs.fileExists(targetFile1)).isEqualTo(true);
+        assertThat(fs.fileExists(targetFile2)).isEqualTo(true);
+        assertThat(fs.fileExists(targetFile3)).isEqualTo(false);
 
-        assertThat( Files.readAllLines( targetFile ) ).containsExactly( "test string 4" );
-        assertThat( Files.readAllLines( targetFile1 ) ).containsExactly( "test string 3" );
-        assertThat( Files.readAllLines( targetFile2 ) ).containsExactly( "test string 2" );
+        assertThat(Files.readAllLines(targetFile)).containsExactly("test string 4");
+        assertThat(Files.readAllLines(targetFile1)).containsExactly("test string 3");
+        assertThat(Files.readAllLines(targetFile2)).containsExactly("test string 2");
     }
 
     @Test
-    void rotationShouldCompressToZipIfRequested() throws IOException
-    {
-        Path targetFile = dir.homePath().resolve( "test.log" );
-        Path targetFile1 = dir.homePath().resolve( "test.log.1.zip" );
+    void rotationShouldCompressToZipIfRequested() throws IOException {
+        Path targetFile = dir.homePath().resolve("test.log");
+        Path targetFile1 = dir.homePath().resolve("test.log.1.zip");
 
-        writer = new RotatingLogFileWriter( fs, targetFile, 10, 2, ".zip", "" );
+        writer = new RotatingLogFileWriter(fs, targetFile, 10, 2, ".zip", "");
 
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
+        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
 
-        writer.printf( "test string 1" );
-        writer.printf( "test string 2" );
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
+        writer.printf("test string 1");
+        writer.printf("test string 2");
+        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
         // The files are compressed asynchronously after the log rotation so wait for the file to exist.
-        assertEventually( () -> fs.fileExists( targetFile1 ), bool -> bool, 5, TimeUnit.SECONDS  );
+        assertEventually(() -> fs.fileExists(targetFile1), bool -> bool, 5, TimeUnit.SECONDS);
         writer.close();
 
-        assertThat( Files.readAllLines( targetFile ) ).containsExactly( "test string 2" );
+        assertThat(Files.readAllLines(targetFile)).containsExactly("test string 2");
 
-        try ( FileSystem fileSystem = FileSystems.newFileSystem( targetFile1, this.getClass().getClassLoader() ) )
-        {
-            assertThat( Files.readAllLines( fileSystem.getPath( "test.log.1" ) ) ).containsExactly( "test string 1" );
+        try (FileSystem fileSystem =
+                FileSystems.newFileSystem(targetFile1, this.getClass().getClassLoader())) {
+            assertThat(Files.readAllLines(fileSystem.getPath("test.log.1"))).containsExactly("test string 1");
         }
     }
 
     @Test
-    @EnabledOnOs( {LINUX} )
-    void rotationShouldCompressToGzipIfRequested() throws IOException
-    {
-        Path targetFile = dir.homePath().resolve( "test.log" );
-        Path targetFile1 = dir.homePath().resolve( "test.log.1.gz" );
+    @EnabledOnOs({LINUX})
+    void rotationShouldCompressToGzipIfRequested() throws IOException {
+        Path targetFile = dir.homePath().resolve("test.log");
+        Path targetFile1 = dir.homePath().resolve("test.log.1.gz");
 
-        writer = new RotatingLogFileWriter( fs, targetFile, 10, 2, ".gz", "" );
+        writer = new RotatingLogFileWriter(fs, targetFile, 10, 2, ".gz", "");
 
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
+        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
 
-        writer.printf( "test string 1" );
-        writer.printf( "test string 2" );
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
+        writer.printf("test string 1");
+        writer.printf("test string 2");
+        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
         // The files are compressed asynchronously after the log rotation so wait for the file to exist.
-        assertEventually( () -> fs.fileExists( targetFile1 ), bool -> bool, 5, TimeUnit.SECONDS  );
+        assertEventually(() -> fs.fileExists(targetFile1), bool -> bool, 5, TimeUnit.SECONDS);
         writer.close();
 
-        assertThat( Files.readAllLines( targetFile ) ).containsExactly( "test string 2" );
+        assertThat(Files.readAllLines(targetFile)).containsExactly("test string 2");
 
-        try ( GZIPInputStream stream = new GZIPInputStream( Files.newInputStream( targetFile1 ) ) )
-        {
-            assertThat( UTF8.decode( stream.readAllBytes() ) ).isEqualTo( "test string 1" + System.lineSeparator() );
+        try (GZIPInputStream stream = new GZIPInputStream(Files.newInputStream(targetFile1))) {
+            assertThat(UTF8.decode(stream.readAllBytes())).isEqualTo("test string 1" + System.lineSeparator());
         }
     }
 
     @Test
-    void rotationShouldUseFileSuffixWithoutCompressionIfRequested() throws IOException
-    {
-        Path targetFile = dir.homePath().resolve( "test.log" );
-        Path targetFile1 = dir.homePath().resolve( "test.log.1.weird-%e.filesuffix" );
+    void rotationShouldUseFileSuffixWithoutCompressionIfRequested() throws IOException {
+        Path targetFile = dir.homePath().resolve("test.log");
+        Path targetFile1 = dir.homePath().resolve("test.log.1.weird-%e.filesuffix");
 
-        writer = new RotatingLogFileWriter( fs, targetFile, 10, 2, ".weird-%e.filesuffix", "" );
+        writer = new RotatingLogFileWriter(fs, targetFile, 10, 2, ".weird-%e.filesuffix", "");
 
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
+        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
 
-        writer.printf( "test string 1" );
-        writer.printf( "test string 2" );
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile1 ) ).isEqualTo( true );
+        writer.printf("test string 1");
+        writer.printf("test string 2");
+        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
+        assertThat(fs.fileExists(targetFile1)).isEqualTo(true);
         writer.close();
 
-        assertThat( Files.readAllLines( targetFile ) ).containsExactly( "test string 2" );
-        assertThat( Files.readAllLines( targetFile1 ) ).containsExactly( "test string 1" );
+        assertThat(Files.readAllLines(targetFile)).containsExactly("test string 2");
+        assertThat(Files.readAllLines(targetFile1)).containsExactly("test string 1");
     }
 
     @Test
-    void headerShouldBeUsedInEachFile() throws IOException
-    {
-        Path targetFile = dir.homePath().resolve( "test.log" );
-        Path targetFile1 = dir.homePath().resolve( "test.log.1" );
+    void headerShouldBeUsedInEachFile() throws IOException {
+        Path targetFile = dir.homePath().resolve("test.log");
+        Path targetFile1 = dir.homePath().resolve("test.log.1");
 
-        writer = new RotatingLogFileWriter( fs, targetFile, 10, 2, "", "my header%n" );
+        writer = new RotatingLogFileWriter(fs, targetFile, 10, 2, "", "my header%n");
 
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
+        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
 
-        writer.printf( "Long line that will get next message to be written to next file" );
-        writer.printf( "test2" );
+        writer.printf("Long line that will get next message to be written to next file");
+        writer.printf("test2");
 
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile1 ) ).isEqualTo( true );
+        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
+        assertThat(fs.fileExists(targetFile1)).isEqualTo(true);
 
-        assertThat( Files.readAllLines( targetFile1 ) ).containsExactly( "my header", "Long line that will get next message to be written to next file" );
-        assertThat( Files.readAllLines( targetFile ) ).containsExactly( "my header", "test2" );
+        assertThat(Files.readAllLines(targetFile1))
+                .containsExactly("my header", "Long line that will get next message to be written to next file");
+        assertThat(Files.readAllLines(targetFile)).containsExactly("my header", "test2");
     }
 
     @Test
-    void shouldHandleFormatStrings() throws IOException
-    {
-        Path targetFile = dir.homePath().resolve( "test.log" );
+    void shouldHandleFormatStrings() throws IOException {
+        Path targetFile = dir.homePath().resolve("test.log");
 
-        writer = new RotatingLogFileWriter( fs, targetFile, 100, 2, "","" );
+        writer = new RotatingLogFileWriter(fs, targetFile, 100, 2, "", "");
 
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
+        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
 
         String formatString = "%s,%d,%f";
-        Object[] formatArguments = new Object[]{"string", 1, 1.234567f};
+        Object[] formatArguments = new Object[] {"string", 1, 1.234567f};
 
-        writer.printf( formatString, formatArguments );
-        writer.printf( "test2" );
+        writer.printf(formatString, formatArguments);
+        writer.printf("test2");
 
-        assertThat( Files.readAllLines( targetFile ) ).containsExactly( String.format( formatString, formatArguments ), "test2" );
+        assertThat(Files.readAllLines(targetFile))
+                .containsExactly(String.format(formatString, formatArguments), "test2");
     }
 }

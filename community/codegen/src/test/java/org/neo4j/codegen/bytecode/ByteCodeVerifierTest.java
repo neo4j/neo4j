@@ -19,15 +19,6 @@
  */
 package org.neo4j.codegen.bytecode;
 
-
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.codegen.ClassGenerator;
-import org.neo4j.codegen.ClassHandle;
-import org.neo4j.codegen.CodeBlock;
-import org.neo4j.codegen.CodeGenerator;
-import org.neo4j.codegen.CompilationFailureException;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.codegen.CodeGenerationTest.PACKAGE;
@@ -36,24 +27,27 @@ import static org.neo4j.codegen.Parameter.param;
 import static org.neo4j.codegen.bytecode.ByteCode.BYTECODE;
 import static org.neo4j.codegen.bytecode.ByteCode.VERIFY_GENERATED_BYTECODE;
 
-class ByteCodeVerifierTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.codegen.ClassGenerator;
+import org.neo4j.codegen.ClassHandle;
+import org.neo4j.codegen.CodeBlock;
+import org.neo4j.codegen.CodeGenerator;
+import org.neo4j.codegen.CompilationFailureException;
+
+class ByteCodeVerifierTest {
     @Test
-    void shouldVerifyBytecode() throws Throwable
-    {
+    void shouldVerifyBytecode() throws Throwable {
         // given
-        CodeGenerator generator = generateCode( BYTECODE, VERIFY_GENERATED_BYTECODE );
+        CodeGenerator generator = generateCode(BYTECODE, VERIFY_GENERATED_BYTECODE);
 
         ClassHandle handle;
-        try ( ClassGenerator clazz = generator.generateClass( PACKAGE, "SimpleClass" );
-              CodeBlock code = clazz.generateMethod( Integer.class, "box", param( int.class, "value" ) ) )
-        {
+        try (ClassGenerator clazz = generator.generateClass(PACKAGE, "SimpleClass");
+                CodeBlock code = clazz.generateMethod(Integer.class, "box", param(int.class, "value"))) {
             handle = clazz.handle();
-            code.returns( code.load( "value" ) );
+            code.returns(code.load("value"));
         }
 
-        CompilationFailureException exception =
-                assertThrows( CompilationFailureException.class, handle::loadClass );
-        assertThat( exception.toString() ).contains( "box(I)" );
+        CompilationFailureException exception = assertThrows(CompilationFailureException.class, handle::loadClass);
+        assertThat(exception.toString()).contains("box(I)");
     }
 }

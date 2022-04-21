@@ -65,12 +65,19 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.Multiplier
 
 trait CardinalityCalculator[-T <: LogicalPlan] {
-  def apply(plan: T, state: LogicalPlanGenerator.State, planContext: PlanContext, labelsWithIds: Map[String, Int]): Cardinality
+
+  def apply(
+    plan: T,
+    state: LogicalPlanGenerator.State,
+    planContext: PlanContext,
+    labelsWithIds: Map[String, Int]
+  ): Cardinality
 }
 
 object CardinalityCalculator {
 
-  private val SAME_AS_LEFT: CardinalityCalculator[LogicalPlan] = (plan, state, _, _) => state.cardinalities(plan.lhs.get.id)
+  private val SAME_AS_LEFT: CardinalityCalculator[LogicalPlan] =
+    (plan, state, _, _) => state.cardinalities(plan.lhs.get.id)
 
   private val LEAF_CARDINALITY: CardinalityCalculator[LogicalPlan] =
     (_, state, _, _) => state.leafCardinalityMultiplier
@@ -119,14 +126,18 @@ object CardinalityCalculator {
         argumentIds = state.arguments
       )
       val qgsi = QueryGraphSolverInput(labelInfo = state.labelInfo, state.relTypeInfo)
-      val qgCardinalityModel = AssumeIndependenceQueryGraphCardinalityModel(planContext,
-        SimpleMetricsFactory.newSelectivityCalculator(planContext,
+      val qgCardinalityModel = AssumeIndependenceQueryGraphCardinalityModel(
+        planContext,
+        SimpleMetricsFactory.newSelectivityCalculator(
+          planContext,
           planningTextIndexesEnabled = GraphDatabaseInternalSettings.planning_text_indexes_enabled.defaultValue(),
           planningRangeIndexesEnabled = GraphDatabaseInternalSettings.planning_range_indexes_enabled.defaultValue(),
-          planningPointIndexesEnabled = GraphDatabaseInternalSettings.planning_point_indexes_enabled.defaultValue(),
+          planningPointIndexesEnabled = GraphDatabaseInternalSettings.planning_point_indexes_enabled.defaultValue()
         ),
-        IndependenceCombiner)
-      val expandCardinality = qgCardinalityModel(qg, qgsi, state.semanticTable, IndexCompatiblePredicatesProviderContext.default)
+        IndependenceCombiner
+      )
+      val expandCardinality =
+        qgCardinalityModel(qg, qgsi, state.semanticTable, IndexCompatiblePredicatesProviderContext.default)
       expandCardinality * inboundCardinality
   }
 

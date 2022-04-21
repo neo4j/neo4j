@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-
 import org.neo4j.collection.RawIterator;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingConsumer;
@@ -54,8 +53,7 @@ import org.neo4j.values.AnyValue;
  * directory at startup, but also allows programmatic registration of them - and then, of course, allows
  * invoking procedures.
  */
-public class GlobalProceduresRegistry extends LifecycleAdapter implements GlobalProcedures
-{
+public class GlobalProceduresRegistry extends LifecycleAdapter implements GlobalProcedures {
     private final ProcedureRegistry registry = new ProcedureRegistry();
     private final TypeCheckers typeCheckers;
     private final ComponentRegistry safeComponents = new ComponentRegistry();
@@ -66,22 +64,20 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     private final InternalLog log;
 
     @VisibleForTesting
-    public GlobalProceduresRegistry()
-    {
-        this( new SpecialBuiltInProcedures( "N/A", "N/A" ), null, NullLog.getInstance(), ProcedureConfig.DEFAULT );
+    public GlobalProceduresRegistry() {
+        this(new SpecialBuiltInProcedures("N/A", "N/A"), null, NullLog.getInstance(), ProcedureConfig.DEFAULT);
     }
 
     public GlobalProceduresRegistry(
-            ThrowingConsumer<GlobalProceduresRegistry,ProcedureException> builtin,
+            ThrowingConsumer<GlobalProceduresRegistry, ProcedureException> builtin,
             Path proceduresDirectory,
             InternalLog log,
-            ProcedureConfig config )
-    {
+            ProcedureConfig config) {
         this.builtin = builtin;
         this.proceduresDirectory = proceduresDirectory;
         this.log = log;
         this.typeCheckers = new TypeCheckers();
-        this.compiler = new ProcedureCompiler( typeCheckers, safeComponents, allComponents, log, config );
+        this.compiler = new ProcedureCompiler(typeCheckers, safeComponents, allComponents, log, config);
     }
 
     /**
@@ -89,9 +85,8 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param proc the procedure.
      */
     @Override
-    public void register( CallableProcedure proc ) throws ProcedureException
-    {
-        register( proc, false );
+    public void register(CallableProcedure proc) throws ProcedureException {
+        register(proc, false);
     }
 
     /**
@@ -99,9 +94,8 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param function the function.
      */
     @Override
-    public void register( CallableUserFunction function ) throws ProcedureException
-    {
-        register( function, false );
+    public void register(CallableUserFunction function) throws ProcedureException {
+        register(function, false);
     }
 
     /**
@@ -109,9 +103,8 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param function the function.
      */
     @Override
-    public void register( CallableUserAggregationFunction function ) throws ProcedureException
-    {
-        register( function, false );
+    public void register(CallableUserAggregationFunction function) throws ProcedureException {
+        register(function, false);
     }
 
     /**
@@ -119,9 +112,9 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param function the function.
      */
     @Override
-    public void register( CallableUserFunction function, boolean overrideCurrentImplementation ) throws ProcedureException
-    {
-        registry.register( function, overrideCurrentImplementation, false );
+    public void register(CallableUserFunction function, boolean overrideCurrentImplementation)
+            throws ProcedureException {
+        registry.register(function, overrideCurrentImplementation, false);
     }
 
     /**
@@ -129,9 +122,8 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param function the function.
      */
     @Override
-    public void registerBuiltIn( CallableUserFunction function ) throws ProcedureException
-    {
-        registry.register( function, false, true );
+    public void registerBuiltIn(CallableUserFunction function) throws ProcedureException {
+        registry.register(function, false, true);
     }
 
     /**
@@ -139,9 +131,9 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param function the function.
      */
     @Override
-    public void register( CallableUserAggregationFunction function, boolean overrideCurrentImplementation ) throws ProcedureException
-    {
-        registry.register( function, overrideCurrentImplementation, false );
+    public void register(CallableUserAggregationFunction function, boolean overrideCurrentImplementation)
+            throws ProcedureException {
+        registry.register(function, overrideCurrentImplementation, false);
     }
 
     /**
@@ -149,9 +141,8 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param proc the procedure.
      */
     @Override
-    public void register( CallableProcedure proc, boolean overrideCurrentImplementation ) throws ProcedureException
-    {
-        registry.register( proc, overrideCurrentImplementation );
+    public void register(CallableProcedure proc, boolean overrideCurrentImplementation) throws ProcedureException {
+        registry.register(proc, overrideCurrentImplementation);
     }
 
     /**
@@ -159,9 +150,8 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param proc the procedure class
      */
     @Override
-    public void registerProcedure( Class<?> proc ) throws KernelException
-    {
-        registerProcedure( proc, false );
+    public void registerProcedure(Class<?> proc) throws KernelException {
+        registerProcedure(proc, false);
     }
 
     /**
@@ -170,9 +160,8 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param overrideCurrentImplementation set to true if procedures within this class should override older procedures with the same name
      */
     @Override
-    public void registerProcedure( Class<?> proc, boolean overrideCurrentImplementation ) throws KernelException
-    {
-        registerProcedure( proc, overrideCurrentImplementation, null );
+    public void registerProcedure(Class<?> proc, boolean overrideCurrentImplementation) throws KernelException {
+        registerProcedure(proc, overrideCurrentImplementation, null);
     }
 
     /**
@@ -182,11 +171,10 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param warning the warning the procedure should generate when called
      */
     @Override
-    public void registerProcedure( Class<?> proc, boolean overrideCurrentImplementation, String warning ) throws KernelException
-    {
-        for ( CallableProcedure procedure : compiler.compileProcedure( proc, warning, true ) )
-        {
-            register( procedure, overrideCurrentImplementation );
+    public void registerProcedure(Class<?> proc, boolean overrideCurrentImplementation, String warning)
+            throws KernelException {
+        for (CallableProcedure procedure : compiler.compileProcedure(proc, warning, true)) {
+            register(procedure, overrideCurrentImplementation);
         }
     }
 
@@ -195,11 +183,10 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param func the function class
      */
     @Override
-    public void registerBuiltInFunctions( Class<?> func ) throws KernelException
-    {
-        for ( CallableUserFunction function : compiler.withoutNamingRestrictions().compileFunction( func, true ) )
-        {
-            register( function, false );
+    public void registerBuiltInFunctions(Class<?> func) throws KernelException {
+        for (CallableUserFunction function :
+                compiler.withoutNamingRestrictions().compileFunction(func, true)) {
+            register(function, false);
         }
     }
 
@@ -208,9 +195,8 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param func the function class
      */
     @Override
-    public void registerFunction( Class<?> func ) throws KernelException
-    {
-        registerFunction( func, false );
+    public void registerFunction(Class<?> func) throws KernelException {
+        registerFunction(func, false);
     }
 
     /**
@@ -218,11 +204,10 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param func the function class
      */
     @Override
-    public void registerAggregationFunction( Class<?> func, boolean overrideCurrentImplementation ) throws KernelException
-    {
-        for ( CallableUserAggregationFunction function : compiler.compileAggregationFunction( func ) )
-        {
-            register( function, overrideCurrentImplementation );
+    public void registerAggregationFunction(Class<?> func, boolean overrideCurrentImplementation)
+            throws KernelException {
+        for (CallableUserAggregationFunction function : compiler.compileAggregationFunction(func)) {
+            register(function, overrideCurrentImplementation);
         }
     }
 
@@ -231,9 +216,8 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param func the function class
      */
     @Override
-    public void registerAggregationFunction( Class<?> func ) throws KernelException
-    {
-        registerAggregationFunction( func, false );
+    public void registerAggregationFunction(Class<?> func) throws KernelException {
+        registerAggregationFunction(func, false);
     }
 
     /**
@@ -241,11 +225,9 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param func the function class
      */
     @Override
-    public void registerFunction( Class<?> func, boolean overrideCurrentImplementation ) throws KernelException
-    {
-        for ( CallableUserFunction function : compiler.compileFunction( func, false ) )
-        {
-            register( function, overrideCurrentImplementation );
+    public void registerFunction(Class<?> func, boolean overrideCurrentImplementation) throws KernelException {
+        for (CallableUserFunction function : compiler.compileFunction(func, false)) {
+            register(function, overrideCurrentImplementation);
         }
     }
 
@@ -258,9 +240,8 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      *         the mapping to Neo4jTypes
      */
     @Override
-    public void registerType( Class<?> javaClass, Neo4jTypes.AnyType type )
-    {
-        typeCheckers.registerType( javaClass, new TypeCheckers.DefaultValueConverter( type ) );
+    public void registerType(Class<?> javaClass, Neo4jTypes.AnyType type) {
+        typeCheckers.registerType(javaClass, new TypeCheckers.DefaultValueConverter(type));
     }
 
     /**
@@ -270,13 +251,12 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param safe set to false if this component can bypass security, true if it respects security
      */
     @Override
-    public <T> void registerComponent( Class<T> cls, ThrowingFunction<Context,T,ProcedureException> provider, boolean safe )
-    {
-        if ( safe )
-        {
-            safeComponents.register( cls, provider );
+    public <T> void registerComponent(
+            Class<T> cls, ThrowingFunction<Context, T, ProcedureException> provider, boolean safe) {
+        if (safe) {
+            safeComponents.register(cls, provider);
         }
-        allComponents.register( cls, provider );
+        allComponents.register(cls, provider);
     }
 
     /**
@@ -286,106 +266,89 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @return registered provider function if registered, null otherwise
      */
     @Override
-    public <T> ThrowingFunction<Context,T,ProcedureException> lookupComponentProvider( Class<T> cls, boolean safe )
-    {
+    public <T> ThrowingFunction<Context, T, ProcedureException> lookupComponentProvider(Class<T> cls, boolean safe) {
         var registry = safe ? safeComponents : allComponents;
-        return registry.providerFor( cls );
+        return registry.providerFor(cls);
     }
 
     @Override
-    public ProcedureHandle procedure( QualifiedName name ) throws ProcedureException
-    {
-        return registry.procedure( name );
+    public ProcedureHandle procedure(QualifiedName name) throws ProcedureException {
+        return registry.procedure(name);
     }
 
     @Override
-    public UserFunctionHandle function( QualifiedName name )
-    {
-        return registry.function( name );
+    public UserFunctionHandle function(QualifiedName name) {
+        return registry.function(name);
     }
 
     @Override
-    public UserFunctionHandle aggregationFunction( QualifiedName name )
-    {
-        return registry.aggregationFunction( name );
+    public UserFunctionHandle aggregationFunction(QualifiedName name) {
+        return registry.aggregationFunction(name);
     }
 
     @Override
-    public int[] getIdsOfFunctionsMatching( Predicate<CallableUserFunction> predicate )
-    {
-        return registry.getIdsOfFunctionsMatching( predicate );
+    public int[] getIdsOfFunctionsMatching(Predicate<CallableUserFunction> predicate) {
+        return registry.getIdsOfFunctionsMatching(predicate);
     }
 
     @Override
-    public int[] getIdsOfAggregatingFunctionsMatching( Predicate<CallableUserAggregationFunction> predicate )
-    {
-        return registry.getIdsOfAggregatingFunctionsMatching( predicate );
+    public int[] getIdsOfAggregatingFunctionsMatching(Predicate<CallableUserAggregationFunction> predicate) {
+        return registry.getIdsOfAggregatingFunctionsMatching(predicate);
     }
 
     @Override
-    public Set<ProcedureSignature> getAllProcedures()
-    {
+    public Set<ProcedureSignature> getAllProcedures() {
         return registry.getAllProcedures();
     }
 
     @Override
-    public int[] getIdsOfProceduresMatching( Predicate<CallableProcedure> predicate )
-    {
-        return registry.getIdsOfProceduresMatching( predicate );
+    public int[] getIdsOfProceduresMatching(Predicate<CallableProcedure> predicate) {
+        return registry.getIdsOfProceduresMatching(predicate);
     }
 
     @Override
-    public Stream<UserFunctionSignature> getAllNonAggregatingFunctions()
-    {
+    public Stream<UserFunctionSignature> getAllNonAggregatingFunctions() {
         return registry.getAllNonAggregatingFunctions();
     }
 
     @Override
-    public Stream<UserFunctionSignature> getAllAggregatingFunctions()
-    {
+    public Stream<UserFunctionSignature> getAllAggregatingFunctions() {
         return registry.getAllAggregatingFunctions();
     }
 
     @Override
-    public RawIterator<AnyValue[],ProcedureException> callProcedure( Context ctx, int id, AnyValue[] input, ResourceTracker resourceTracker )
-            throws ProcedureException
-    {
-        return registry.callProcedure( ctx, id, input, resourceTracker );
+    public RawIterator<AnyValue[], ProcedureException> callProcedure(
+            Context ctx, int id, AnyValue[] input, ResourceTracker resourceTracker) throws ProcedureException {
+        return registry.callProcedure(ctx, id, input, resourceTracker);
     }
 
     @Override
-    public AnyValue callFunction( Context ctx, int id, AnyValue[] input ) throws ProcedureException
-    {
-        return registry.callFunction( ctx, id, input );
+    public AnyValue callFunction(Context ctx, int id, AnyValue[] input) throws ProcedureException {
+        return registry.callFunction(ctx, id, input);
     }
 
     @Override
-    public UserAggregator createAggregationFunction( Context ctx, int id ) throws ProcedureException
-    {
-        return registry.createAggregationFunction( ctx, id );
+    public UserAggregator createAggregationFunction(Context ctx, int id) throws ProcedureException {
+        return registry.createAggregationFunction(ctx, id);
     }
 
     @Override
-    public void start() throws Exception
-    {
-        ProcedureJarLoader loader = new ProcedureJarLoader( compiler, log );
-        ProcedureJarLoader.Callables callables = loader.loadProceduresFromDir( proceduresDirectory );
-        for ( CallableProcedure procedure : callables.procedures() )
-        {
-            register( procedure );
+    public void start() throws Exception {
+        ProcedureJarLoader loader = new ProcedureJarLoader(compiler, log);
+        ProcedureJarLoader.Callables callables = loader.loadProceduresFromDir(proceduresDirectory);
+        for (CallableProcedure procedure : callables.procedures()) {
+            register(procedure);
         }
 
-        for ( CallableUserFunction function : callables.functions() )
-        {
-            register( function );
+        for (CallableUserFunction function : callables.functions()) {
+            register(function);
         }
 
-        for ( CallableUserAggregationFunction function : callables.aggregationFunctions() )
-        {
-            register( function );
+        for (CallableUserAggregationFunction function : callables.aggregationFunctions()) {
+            register(function);
         }
 
         // And register built-in procedures
-        builtin.accept( this );
+        builtin.accept(this);
     }
 }

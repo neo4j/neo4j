@@ -22,7 +22,6 @@ package org.neo4j.bolt.v44.messaging.decoder;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.AccessMode;
@@ -32,19 +31,29 @@ import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.bolt.v44.messaging.request.BeginMessage;
 import org.neo4j.values.virtual.MapValue;
 
-public class BeginMessageDecoder extends org.neo4j.bolt.v4.messaging.BeginMessageDecoder
-{
+public class BeginMessageDecoder extends org.neo4j.bolt.v4.messaging.BeginMessageDecoder {
 
-    public BeginMessageDecoder( BoltResponseHandler responseHandler, BookmarksParser bookmarksParser )
-    {
-        super( responseHandler, bookmarksParser );
+    public BeginMessageDecoder(BoltResponseHandler responseHandler, BookmarksParser bookmarksParser) {
+        super(responseHandler, bookmarksParser);
     }
 
     @Override
-    protected RequestMessage newBeginMessage( MapValue metadata, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
-                                              Map<String,Object> txMetadata, String databaseName ) throws BoltIOException
-    {
-        var impersonatedUser = MessageMetadataParser.parseImpersonatedUser( metadata );
-        return new BeginMessage( metadata, bookmarks, txTimeout, accessMode, txMetadata, databaseName, impersonatedUser ); // v4.4 Begin Message
+    protected RequestMessage newBeginMessage(
+            MapValue metadata,
+            List<Bookmark> bookmarks,
+            Duration txTimeout,
+            AccessMode accessMode,
+            Map<String, Object> txMetadata,
+            String databaseName)
+            throws BoltIOException {
+        var impersonatedUser = MessageMetadataParser.parseImpersonatedUser(metadata);
+        return new BeginMessage(
+                metadata,
+                bookmarks,
+                txTimeout,
+                accessMode,
+                txMetadata,
+                databaseName,
+                impersonatedUser); // v4.4 Begin Message
     }
 }

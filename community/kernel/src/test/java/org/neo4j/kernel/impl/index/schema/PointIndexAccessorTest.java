@@ -19,15 +19,24 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.impl.factory.Sets;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
+import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import java.util.stream.Stream;
-
+import org.eclipse.collections.impl.factory.Sets;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -50,209 +59,194 @@ import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
-import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
-import static org.neo4j.internal.schema.IndexPrototype.forSchema;
-import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
-
-class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey>
-{
+class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey> {
     private static final IndexSpecificSpaceFillingCurveSettings SPACE_FILLING_CURVE_SETTINGS =
-            IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
+            IndexSpecificSpaceFillingCurveSettings.fromConfig(Config.defaults());
     private static final StandardConfiguration CONFIGURATION = new StandardConfiguration();
-    private static final IndexDescriptor INDEX_DESCRIPTOR = forSchema( forLabel( 42, 666 ) ).withIndexType( IndexType.POINT )
-                                                                                            .withIndexProvider( PointIndexProvider.DESCRIPTOR )
-                                                                                            .withName( "index" )
-                                                                                            .materialise( 0 );
+    private static final IndexDescriptor INDEX_DESCRIPTOR = forSchema(forLabel(42, 666))
+            .withIndexType(IndexType.POINT)
+            .withIndexProvider(PointIndexProvider.DESCRIPTOR)
+            .withName("index")
+            .materialise(0);
     private static final IndexCapability INDEX_CAPABILITY = PointIndexProvider.CAPABILITY;
 
-    private static final PointLayout LAYOUT = new PointLayout( SPACE_FILLING_CURVE_SETTINGS );
+    private static final PointLayout LAYOUT = new PointLayout(SPACE_FILLING_CURVE_SETTINGS);
 
-    private static final ValueType[] SUPPORTED_TYPES = Stream.of( ValueType.values() )
-                                                             .filter( type -> type.valueGroup.category() == ValueCategory.GEOMETRY )
-                                                             .toArray( ValueType[]::new );
+    private static final ValueType[] SUPPORTED_TYPES = Stream.of(ValueType.values())
+            .filter(type -> type.valueGroup.category() == ValueCategory.GEOMETRY)
+            .toArray(ValueType[]::new);
 
-    private static final ValueType[] UNSUPPORTED_TYPES = Stream.of( ValueType.values() )
-                                                               .filter( type -> type.valueGroup.category() != ValueCategory.GEOMETRY )
-                                                               .toArray( ValueType[]::new );
+    private static final ValueType[] UNSUPPORTED_TYPES = Stream.of(ValueType.values())
+            .filter(type -> type.valueGroup.category() != ValueCategory.GEOMETRY)
+            .toArray(ValueType[]::new);
 
     @Override
-    ValueCreatorUtil<PointKey> createValueCreatorUtil()
-    {
-        return new ValueCreatorUtil<>( INDEX_DESCRIPTOR, SUPPORTED_TYPES, FRACTION_DUPLICATE_NON_UNIQUE );
+    ValueCreatorUtil<PointKey> createValueCreatorUtil() {
+        return new ValueCreatorUtil<>(INDEX_DESCRIPTOR, SUPPORTED_TYPES, FRACTION_DUPLICATE_NON_UNIQUE);
     }
 
     @Override
-    IndexCapability indexCapability()
-    {
+    IndexCapability indexCapability() {
         return INDEX_CAPABILITY;
     }
 
     @Override
-    IndexAccessor createAccessor( PageCache pageCache )
-    {
+    IndexAccessor createAccessor(PageCache pageCache) {
         RecoveryCleanupWorkCollector cleanup = RecoveryCleanupWorkCollector.immediate();
-        DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, contextFactory,
-                DEFAULT_DATABASE_NAME ).withReadOnlyChecker( writable() ).build();
-        return new PointIndexAccessor( context, indexFiles, layout, cleanup, INDEX_DESCRIPTOR, SPACE_FILLING_CURVE_SETTINGS, CONFIGURATION,
-                                       Sets.immutable.empty() );
+        DatabaseIndexContext context = DatabaseIndexContext.builder(
+                        pageCache, fs, contextFactory, DEFAULT_DATABASE_NAME)
+                .withReadOnlyChecker(writable())
+                .build();
+        return new PointIndexAccessor(
+                context,
+                indexFiles,
+                layout,
+                cleanup,
+                INDEX_DESCRIPTOR,
+                SPACE_FILLING_CURVE_SETTINGS,
+                CONFIGURATION,
+                Sets.immutable.empty());
     }
 
     @Override
-    IndexDescriptor indexDescriptor()
-    {
+    IndexDescriptor indexDescriptor() {
         return INDEX_DESCRIPTOR;
     }
 
     @Override
-    PointLayout layout()
-    {
+    PointLayout layout() {
         return LAYOUT;
     }
 
     @ParameterizedTest
-    @MethodSource( "unsupportedPredicates" )
-    void readerShouldThrowOnUnsupportedPredicates( PropertyIndexQuery predicate )
-    {
-        try ( var reader = accessor.newValueReader() )
-        {
-            assertThatThrownBy( () -> reader.query( new SimpleEntityValueClient(), NULL_CONTEXT, AccessMode.Static.ACCESS,
-                                                    unorderedValues(), predicate ),
-                                "%s is an unsupported query", predicate )
-                    .isInstanceOf( IllegalArgumentException.class )
-                    .hasMessageContaining( "Tried to query index with illegal query. Only %s, %s, and %s queries are supported by a point index",
-                                           IndexQueryType.ALL_ENTRIES, IndexQueryType.EXACT, IndexQueryType.BOUNDING_BOX );
+    @MethodSource("unsupportedPredicates")
+    void readerShouldThrowOnUnsupportedPredicates(PropertyIndexQuery predicate) {
+        try (var reader = accessor.newValueReader()) {
+            assertThatThrownBy(
+                            () -> reader.query(
+                                    new SimpleEntityValueClient(),
+                                    NULL_CONTEXT,
+                                    AccessMode.Static.ACCESS,
+                                    unorderedValues(),
+                                    predicate),
+                            "%s is an unsupported query",
+                            predicate)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining(
+                            "Tried to query index with illegal query. Only %s, %s, and %s queries are supported by a point index",
+                            IndexQueryType.ALL_ENTRIES, IndexQueryType.EXACT, IndexQueryType.BOUNDING_BOX);
         }
     }
 
     @ParameterizedTest
-    @MethodSource( "unsupportedOrders" )
-    void readerShouldThrowOnUnsupportedOrder( IndexOrder indexOrder )
-    {
-        try ( var reader = accessor.newValueReader() )
-        {
-            PropertyIndexQuery.ExactPredicate query = PropertyIndexQuery.exact( 0, PointValue.MAX_VALUE );
-            assertThatThrownBy( () -> reader.query( new SimpleEntityValueClient(), NULL_CONTEXT, AccessMode.Static.ACCESS,
-                                                    constrained( indexOrder, false ), query ),
-                                "order is not supported with point index" )
-                    .isInstanceOf( IllegalArgumentException.class )
-                    .hasMessageContainingAll( "Tried to query a point index with order", "Order is not supported by a point index" );
+    @MethodSource("unsupportedOrders")
+    void readerShouldThrowOnUnsupportedOrder(IndexOrder indexOrder) {
+        try (var reader = accessor.newValueReader()) {
+            PropertyIndexQuery.ExactPredicate query = PropertyIndexQuery.exact(0, PointValue.MAX_VALUE);
+            assertThatThrownBy(
+                            () -> reader.query(
+                                    new SimpleEntityValueClient(),
+                                    NULL_CONTEXT,
+                                    AccessMode.Static.ACCESS,
+                                    constrained(indexOrder, false),
+                                    query),
+                            "order is not supported with point index")
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll(
+                            "Tried to query a point index with order", "Order is not supported by a point index");
         }
     }
 
     @ParameterizedTest
-    @MethodSource( "unsupportedTypes" )
-    void updaterShouldIgnoreUnsupportedTypes( ValueType unsupportedType ) throws Exception
-    {
+    @MethodSource("unsupportedTypes")
+    void updaterShouldIgnoreUnsupportedTypes(ValueType unsupportedType) throws Exception {
         // given  an empty index
         // when   an unsupported value type is added
-        try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
-        {
-            final var unsupportedValue = random.randomValues().nextValueOfType( unsupportedType );
-            updater.process( IndexEntryUpdate.add( idGenerator().getAsLong(), INDEX_DESCRIPTOR, unsupportedValue ) );
+        try (var updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
+            final var unsupportedValue = random.randomValues().nextValueOfType(unsupportedType);
+            updater.process(IndexEntryUpdate.add(idGenerator().getAsLong(), INDEX_DESCRIPTOR, unsupportedValue));
         }
 
         // then   it should not be indexed, and thus not visible
-        try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL_CONTEXT ) )
-        {
-            assertThat( reader ).isEmpty();
+        try (var reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
+            assertThat(reader).isEmpty();
         }
     }
 
     @ParameterizedTest
-    @MethodSource( "unsupportedTypes" )
-    void updaterShouldChangeUnsupportedToSupportedByAdd( ValueType unsupportedType ) throws Exception
-    {
+    @MethodSource("unsupportedTypes")
+    void updaterShouldChangeUnsupportedToSupportedByAdd(ValueType unsupportedType) throws Exception {
         // given  an empty index
         // when   an unsupported value type is added
         final var entityId = idGenerator().getAsLong();
-        final var unsupportedValue = random.randomValues().nextValueOfType( unsupportedType );
-        try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
-        {
-            updater.process( IndexEntryUpdate.add( entityId, INDEX_DESCRIPTOR, unsupportedValue ) );
+        final var unsupportedValue = random.randomValues().nextValueOfType(unsupportedType);
+        try (var updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
+            updater.process(IndexEntryUpdate.add(entityId, INDEX_DESCRIPTOR, unsupportedValue));
         }
 
         // then   it should not be indexed, and thus not visible
-        try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL_CONTEXT ) )
-        {
-            assertThat( reader ).isEmpty();
+        try (var reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
+            assertThat(reader).isEmpty();
         }
 
         // when   the unsupported value type is changed to a supported value type
-        try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
-        {
-            final var supportedValue = random.randomValues().nextValueOfTypes( SUPPORTED_TYPES );
-            updater.process( IndexEntryUpdate.change( entityId, INDEX_DESCRIPTOR, unsupportedValue, supportedValue ) );
+        try (var updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
+            final var supportedValue = random.randomValues().nextValueOfTypes(SUPPORTED_TYPES);
+            updater.process(IndexEntryUpdate.change(entityId, INDEX_DESCRIPTOR, unsupportedValue, supportedValue));
         }
 
         // then   it should be added to the index, and thus now visible
-        try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL_CONTEXT ) )
-        {
-            assertThat( reader ).containsExactlyInAnyOrder( entityId );
+        try (var reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
+            assertThat(reader).containsExactlyInAnyOrder(entityId);
         }
     }
 
     @ParameterizedTest
-    @MethodSource( "unsupportedTypes" )
-    void updaterShouldChangeSupportedToUnsupportedByRemove( ValueType unsupportedType ) throws Exception
-    {
+    @MethodSource("unsupportedTypes")
+    void updaterShouldChangeSupportedToUnsupportedByRemove(ValueType unsupportedType) throws Exception {
         // given  an empty index
         // when   a supported value type is added
         final var entityId = idGenerator().getAsLong();
-        final var supportedValue = random.randomValues().nextValueOfTypes( SUPPORTED_TYPES );
-        try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
-        {
-            updater.process( IndexEntryUpdate.add( entityId, INDEX_DESCRIPTOR, supportedValue ) );
+        final var supportedValue = random.randomValues().nextValueOfTypes(SUPPORTED_TYPES);
+        try (var updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
+            updater.process(IndexEntryUpdate.add(entityId, INDEX_DESCRIPTOR, supportedValue));
         }
 
         // then   it should be added to the index, and thus visible
-        try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL_CONTEXT ) )
-        {
-            assertThat( reader ).containsExactlyInAnyOrder( entityId );
+        try (var reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
+            assertThat(reader).containsExactlyInAnyOrder(entityId);
         }
 
         // when   the supported value type is changed to an unsupported value type
-        try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
-        {
-            final var unsupportedValue = random.randomValues().nextValueOfType( unsupportedType );
-            updater.process( IndexEntryUpdate.change( entityId, INDEX_DESCRIPTOR, supportedValue, unsupportedValue ) );
+        try (var updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
+            final var unsupportedValue = random.randomValues().nextValueOfType(unsupportedType);
+            updater.process(IndexEntryUpdate.change(entityId, INDEX_DESCRIPTOR, supportedValue, unsupportedValue));
         }
 
         // then   it should be removed from the index, and thus no longer visible
-        try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL_CONTEXT ) )
-        {
-            assertThat( reader ).isEmpty();
+        try (var reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
+            assertThat(reader).isEmpty();
         }
     }
 
-    private static LongSupplier idGenerator()
-    {
-        return new AtomicLong( 0 )::incrementAndGet;
+    private static LongSupplier idGenerator() {
+        return new AtomicLong(0)::incrementAndGet;
     }
 
-    private static Stream<PropertyIndexQuery> unsupportedPredicates()
-    {
-        return Stream.of( PropertyIndexQuery.exists( 0 ),
-                          PropertyIndexQuery.stringPrefix( 0, Values.stringValue( "myValue" ) ),
-                          PropertyIndexQuery.stringSuffix( 0, Values.stringValue( "myValue" ) ),
-                          PropertyIndexQuery.stringContains( 0, Values.stringValue( "myValue" ) ),
-                          PropertyIndexQuery.fulltextSearch( "myValue" ) );
+    private static Stream<PropertyIndexQuery> unsupportedPredicates() {
+        return Stream.of(
+                PropertyIndexQuery.exists(0),
+                PropertyIndexQuery.stringPrefix(0, Values.stringValue("myValue")),
+                PropertyIndexQuery.stringSuffix(0, Values.stringValue("myValue")),
+                PropertyIndexQuery.stringContains(0, Values.stringValue("myValue")),
+                PropertyIndexQuery.fulltextSearch("myValue"));
     }
 
-    private static Stream<IndexOrder> unsupportedOrders()
-    {
-        return Stream.of( IndexOrder.DESCENDING,
-                          IndexOrder.ASCENDING );
+    private static Stream<IndexOrder> unsupportedOrders() {
+        return Stream.of(IndexOrder.DESCENDING, IndexOrder.ASCENDING);
     }
 
-    private static Stream<ValueType> unsupportedTypes()
-    {
-        return Arrays.stream( UNSUPPORTED_TYPES );
+    private static Stream<ValueType> unsupportedTypes() {
+        return Arrays.stream(UNSUPPORTED_TYPES);
     }
 }

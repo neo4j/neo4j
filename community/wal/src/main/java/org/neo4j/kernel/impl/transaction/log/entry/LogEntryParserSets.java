@@ -20,19 +20,17 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.util.EnumMap;
-
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.util.Preconditions;
 
-public class LogEntryParserSets
-{
-    private static final EnumMap<KernelVersion,LogEntryParserSet> PARSER_SETS = new EnumMap<>( KernelVersion.class );
-    static
-    {
-        PARSER_SETS.put( KernelVersion.V4_2, new LogEntryParserSetV4_2() );
-        PARSER_SETS.put( KernelVersion.V4_3_D4, new LogEntryParserSetV4_3() );
-        PARSER_SETS.put( KernelVersion.V4_4, new LogEntryParserSetV4_4() );
-        PARSER_SETS.put( KernelVersion.V5_0, new LogEntryParserSetV5_0() );
+public class LogEntryParserSets {
+    private static final EnumMap<KernelVersion, LogEntryParserSet> PARSER_SETS = new EnumMap<>(KernelVersion.class);
+
+    static {
+        PARSER_SETS.put(KernelVersion.V4_2, new LogEntryParserSetV4_2());
+        PARSER_SETS.put(KernelVersion.V4_3_D4, new LogEntryParserSetV4_3());
+        PARSER_SETS.put(KernelVersion.V4_4, new LogEntryParserSetV4_4());
+        PARSER_SETS.put(KernelVersion.V5_0, new LogEntryParserSetV5_0());
     }
 
     /**
@@ -40,10 +38,9 @@ public class LogEntryParserSets
      * all types of log entries.
      * @return LogEntryParserSet for the given {@code version}.
      */
-    public static LogEntryParserSet parserSet( KernelVersion version )
-    {
-        LogEntryParserSet parserSet = PARSER_SETS.get( version );
-        Preconditions.checkState( parserSet != null, "No log entries version matching %s", version );
+    public static LogEntryParserSet parserSet(KernelVersion version) {
+        LogEntryParserSet parserSet = PARSER_SETS.get(version);
+        Preconditions.checkState(parserSet != null, "No log entries version matching %s", version);
         return parserSet;
     }
 }

@@ -19,11 +19,25 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.impl.factory.Sets;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static org.apache.commons.lang3.ArrayUtils.toArray;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.allEntries;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
+import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
+import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
+import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
+import static org.neo4j.test.Race.throwing;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,7 +53,11 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
-
+import org.eclipse.collections.impl.factory.Sets;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
@@ -79,52 +97,35 @@ import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 
-import static org.apache.commons.lang3.ArrayUtils.toArray;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
-import static org.neo4j.internal.kernel.api.PropertyIndexQuery.allEntries;
-import static org.neo4j.internal.schema.IndexPrototype.forSchema;
-import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
-import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
-import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
-import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
-import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
-import static org.neo4j.test.Race.throwing;
-
 @PageCacheExtension
-@ExtendWith( RandomExtension.class )
-abstract class IndexPopulationStressTest
-{
-    private static final IndexProviderDescriptor PROVIDER = new IndexProviderDescriptor( "provider", "1.0" );
+@ExtendWith(RandomExtension.class)
+abstract class IndexPopulationStressTest {
+    private static final IndexProviderDescriptor PROVIDER = new IndexProviderDescriptor("provider", "1.0");
     private static final int THREADS = 50;
     private static final int MAX_BATCH_SIZE = 100;
     private static final int BATCHES_PER_THREAD = 100;
 
     @Inject
     private RandomSupport random;
+
     @Inject
     PageCache pageCache;
+
     CursorContextFactory contextFactory;
+
     @Inject
     FileSystemAbstraction fs;
+
     @Inject
     private TestDirectory testDirectory;
 
     private final Scheduler scheduler = new Scheduler();
     private final boolean hasValues;
-    private final Function<RandomValues,Value> valueGenerator;
-    private final Function<IndexPopulationStressTest,IndexProvider> providerCreator;
+    private final Function<RandomValues, Value> valueGenerator;
+    private final Function<IndexPopulationStressTest, IndexProvider> providerCreator;
     private IndexDescriptor descriptor;
     private IndexDescriptor descriptor2;
-    private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( 1000, 0.2, true );
+    private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig(1000, 0.2, true);
     private IndexPopulator populator;
     private IndexProvider indexProvider;
     private TokenNameLookup tokenNameLookup;
@@ -133,225 +134,222 @@ abstract class IndexPopulationStressTest
     abstract IndexType indexType();
 
     IndexPopulationStressTest(
-            boolean hasValues, Function<RandomValues,Value> valueGenerator, Function<IndexPopulationStressTest,IndexProvider> providerCreator )
-    {
+            boolean hasValues,
+            Function<RandomValues, Value> valueGenerator,
+            Function<IndexPopulationStressTest, IndexProvider> providerCreator) {
         this.hasValues = hasValues;
         this.valueGenerator = valueGenerator;
         this.providerCreator = providerCreator;
     }
 
-    IndexDirectoryStructure.Factory directory()
-    {
-        return directoriesBySubProvider( directoriesByProvider( testDirectory.homePath() ).forProvider( PROVIDER ) );
+    IndexDirectoryStructure.Factory directory() {
+        return directoriesBySubProvider(
+                directoriesByProvider(testDirectory.homePath()).forProvider(PROVIDER));
     }
 
     @BeforeEach
-    void setup() throws IOException, EntityNotFoundException
-    {
-        contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
-        indexProvider = providerCreator.apply( this );
+    void setup() throws IOException, EntityNotFoundException {
+        contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        indexProvider = providerCreator.apply(this);
         tokenNameLookup = SIMPLE_NAME_LOOKUP;
-        descriptor = indexProvider
-                .completeConfiguration( forSchema( forLabel( 0, 0 ), PROVIDER ).withIndexType( indexType() ).withName( "index_0" ).materialise( 0 ) );
-        descriptor2 = indexProvider
-                .completeConfiguration( forSchema( forLabel( 1, 0 ), PROVIDER ).withIndexType( indexType() ).withName( "index_1" ).materialise( 1 ) );
-        fs.mkdirs( indexProvider.directoryStructure().rootDirectory() );
-        populator = indexProvider.getPopulator( descriptor, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ), INSTANCE, tokenNameLookup,
-                                                Sets.immutable.empty() );
-        prevAccessCheck = UnsafeUtil.exchangeNativeAccessCheckEnabled( false );
+        descriptor = indexProvider.completeConfiguration(forSchema(forLabel(0, 0), PROVIDER)
+                .withIndexType(indexType())
+                .withName("index_0")
+                .materialise(0));
+        descriptor2 = indexProvider.completeConfiguration(forSchema(forLabel(1, 0), PROVIDER)
+                .withIndexType(indexType())
+                .withName("index_1")
+                .materialise(1));
+        fs.mkdirs(indexProvider.directoryStructure().rootDirectory());
+        populator = indexProvider.getPopulator(
+                descriptor,
+                samplingConfig,
+                heapBufferFactory((int) kibiBytes(40)),
+                INSTANCE,
+                tokenNameLookup,
+                Sets.immutable.empty());
+        prevAccessCheck = UnsafeUtil.exchangeNativeAccessCheckEnabled(false);
     }
 
     @AfterEach
-    void tearDown() throws Exception
-    {
-        UnsafeUtil.exchangeNativeAccessCheckEnabled( prevAccessCheck );
-        if ( populator != null )
-        {
-            populator.close( true, CursorContext.NULL_CONTEXT );
+    void tearDown() throws Exception {
+        UnsafeUtil.exchangeNativeAccessCheckEnabled(prevAccessCheck);
+        if (populator != null) {
+            populator.close(true, CursorContext.NULL_CONTEXT);
         }
 
         scheduler.shutdown();
     }
 
     @Test
-    void stressIt() throws Throwable
-    {
+    void stressIt() throws Throwable {
         Race race = new Race();
-        AtomicReferenceArray<List<ValueIndexEntryUpdate<?>>> lastBatches = new AtomicReferenceArray<>( THREADS );
+        AtomicReferenceArray<List<ValueIndexEntryUpdate<?>>> lastBatches = new AtomicReferenceArray<>(THREADS);
         Generator[] generators = new Generator[THREADS];
 
         populator.create();
-        CountDownLatch insertersDone = new CountDownLatch( THREADS );
-        ReadWriteLock updateLock = new ReentrantReadWriteLock( true );
-        for ( int i = 0; i < THREADS; i++ )
-        {
-            race.addContestant( inserter( lastBatches, generators, insertersDone, updateLock, i ), 1 );
+        CountDownLatch insertersDone = new CountDownLatch(THREADS);
+        ReadWriteLock updateLock = new ReentrantReadWriteLock(true);
+        for (int i = 0; i < THREADS; i++) {
+            race.addContestant(inserter(lastBatches, generators, insertersDone, updateLock, i), 1);
         }
         Collection<ValueIndexEntryUpdate<?>> updates = new ArrayList<>();
-        race.addContestant( updater( lastBatches, insertersDone, updateLock, updates ) );
+        race.addContestant(updater(lastBatches, insertersDone, updateLock, updates));
 
         race.go();
-        populator.scanCompleted( nullInstance, scheduler, CursorContext.NULL_CONTEXT );
-        populator.close( true, CursorContext.NULL_CONTEXT );
+        populator.scanCompleted(nullInstance, scheduler, CursorContext.NULL_CONTEXT);
+        populator.close(true, CursorContext.NULL_CONTEXT);
         populator = null; // to let the after-method know that we've closed it ourselves
 
         // then assert that a tree built by a single thread ends up exactly the same
-        buildReferencePopulatorSingleThreaded( generators, updates );
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup, Sets.immutable.empty() );
-              IndexAccessor referenceAccessor = indexProvider.getOnlineAccessor( descriptor2, samplingConfig, tokenNameLookup, Sets.immutable.empty() );
-              var reader = accessor.newValueReader();
-              var referenceReader = referenceAccessor.newValueReader() )
-        {
+        buildReferencePopulatorSingleThreaded(generators, updates);
+        try (IndexAccessor accessor = indexProvider.getOnlineAccessor(
+                        descriptor, samplingConfig, tokenNameLookup, Sets.immutable.empty());
+                IndexAccessor referenceAccessor = indexProvider.getOnlineAccessor(
+                        descriptor2, samplingConfig, tokenNameLookup, Sets.immutable.empty());
+                var reader = accessor.newValueReader();
+                var referenceReader = referenceAccessor.newValueReader()) {
             RecordingClient entries = new RecordingClient();
             RecordingClient referenceEntries = new RecordingClient();
-            reader.query( entries, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unordered( hasValues ), allEntries() );
-            referenceReader.query( referenceEntries, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unordered( hasValues ), allEntries() );
+            reader.query(
+                    entries, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unordered(hasValues), allEntries());
+            referenceReader.query(
+                    referenceEntries,
+                    QueryContext.NULL_CONTEXT,
+                    AccessMode.Static.READ,
+                    unordered(hasValues),
+                    allEntries());
 
-            exhaustAndSort( referenceEntries );
-            exhaustAndSort( entries );
+            exhaustAndSort(referenceEntries);
+            exhaustAndSort(entries);
 
             // a sanity check that we actually collected something
-            assertFalse( entries.records.isEmpty() );
+            assertFalse(entries.records.isEmpty());
 
-            assertThat( entries.records ).isEqualTo( referenceEntries.records );
+            assertThat(entries.records).isEqualTo(referenceEntries.records);
         }
     }
 
-    private void exhaustAndSort( RecordingClient client )
-    {
-        while ( client.next() )
-        {
+    private void exhaustAndSort(RecordingClient client) {
+        while (client.next()) {}
 
-        }
-
-        client.records.sort( Comparator.comparingLong( o -> o.entityId ) );
+        client.records.sort(Comparator.comparingLong(o -> o.entityId));
     }
 
-    private Runnable updater( AtomicReferenceArray<List<ValueIndexEntryUpdate<?>>> lastBatches, CountDownLatch insertersDone, ReadWriteLock updateLock,
-            Collection<ValueIndexEntryUpdate<?>> updates )
-    {
-        return throwing( () ->
-        {
+    private Runnable updater(
+            AtomicReferenceArray<List<ValueIndexEntryUpdate<?>>> lastBatches,
+            CountDownLatch insertersDone,
+            ReadWriteLock updateLock,
+            Collection<ValueIndexEntryUpdate<?>> updates) {
+        return throwing(() -> {
             // Entity ids that have been removed, so that additions can reuse them
             List<Long> removed = new ArrayList<>();
-            RandomValues randomValues = RandomValues.create( new Random( random.seed() + THREADS ) );
-            while ( insertersDone.getCount() > 0 )
-            {
+            RandomValues randomValues = RandomValues.create(new Random(random.seed() + THREADS));
+            while (insertersDone.getCount() > 0) {
                 // Do updates now and then
-                Thread.sleep( 10 );
+                Thread.sleep(10);
                 updateLock.writeLock().lock();
-                try ( IndexUpdater updater = populator.newPopulatingUpdater( CursorContext.NULL_CONTEXT ) )
-                {
-                    for ( int i = 0; i < THREADS; i++ )
-                    {
-                        List<ValueIndexEntryUpdate<?>> batch = lastBatches.get( i );
-                        if ( batch != null )
-                        {
+                try (IndexUpdater updater = populator.newPopulatingUpdater(CursorContext.NULL_CONTEXT)) {
+                    for (int i = 0; i < THREADS; i++) {
+                        List<ValueIndexEntryUpdate<?>> batch = lastBatches.get(i);
+                        if (batch != null) {
                             ValueIndexEntryUpdate<?> update = null;
-                            switch ( randomValues.nextInt( 3 ) )
-                            {
-                            case 0: // add
-                                if ( !removed.isEmpty() )
-                                {
-                                    Long id = removed.remove( randomValues.nextInt( removed.size() ) );
-                                    update = add( id, descriptor, valueGenerator.apply( randomValues ) );
-                                }
-                                break;
-                            case 1: // remove
-                                ValueIndexEntryUpdate<?> removal = batch.get( randomValues.nextInt( batch.size() ) );
-                                update = remove( removal.getEntityId(), descriptor, removal.values() );
-                                removed.add( removal.getEntityId() );
-                                break;
-                            case 2: // change
-                                removal = batch.get( randomValues.nextInt( batch.size() ) );
-                                change( removal.getEntityId(), descriptor, removal.values(), toArray( valueGenerator.apply( randomValues ) ) );
-                                break;
-                            default:
-                                throw new IllegalArgumentException();
+                            switch (randomValues.nextInt(3)) {
+                                case 0: // add
+                                    if (!removed.isEmpty()) {
+                                        Long id = removed.remove(randomValues.nextInt(removed.size()));
+                                        update = add(id, descriptor, valueGenerator.apply(randomValues));
+                                    }
+                                    break;
+                                case 1: // remove
+                                    ValueIndexEntryUpdate<?> removal = batch.get(randomValues.nextInt(batch.size()));
+                                    update = remove(removal.getEntityId(), descriptor, removal.values());
+                                    removed.add(removal.getEntityId());
+                                    break;
+                                case 2: // change
+                                    removal = batch.get(randomValues.nextInt(batch.size()));
+                                    change(
+                                            removal.getEntityId(),
+                                            descriptor,
+                                            removal.values(),
+                                            toArray(valueGenerator.apply(randomValues)));
+                                    break;
+                                default:
+                                    throw new IllegalArgumentException();
                             }
-                            if ( update != null )
-                            {
-                                updater.process( update );
-                                updates.add( update );
+                            if (update != null) {
+                                updater.process(update);
+                                updates.add(update);
                             }
                         }
                     }
-                }
-                finally
-                {
+                } finally {
                     updateLock.writeLock().unlock();
                 }
             }
-        } );
+        });
     }
 
-    private Runnable inserter( AtomicReferenceArray<List<ValueIndexEntryUpdate<?>>> lastBatches, Generator[] generators, CountDownLatch insertersDone,
-        ReadWriteLock updateLock, int slot )
-    {
+    private Runnable inserter(
+            AtomicReferenceArray<List<ValueIndexEntryUpdate<?>>> lastBatches,
+            Generator[] generators,
+            CountDownLatch insertersDone,
+            ReadWriteLock updateLock,
+            int slot) {
         int worstCaseEntriesPerThread = BATCHES_PER_THREAD * MAX_BATCH_SIZE;
-        return throwing( () ->
-        {
-            try
-            {
-                Generator generator = generators[slot] = new Generator( MAX_BATCH_SIZE, random.seed() + slot, slot * worstCaseEntriesPerThread );
-                for ( int j = 0; j < BATCHES_PER_THREAD; j++ )
-                {
-                    List<ValueIndexEntryUpdate<?>> batch = generator.batch( descriptor );
+        return throwing(() -> {
+            try {
+                Generator generator = generators[slot] =
+                        new Generator(MAX_BATCH_SIZE, random.seed() + slot, slot * worstCaseEntriesPerThread);
+                for (int j = 0; j < BATCHES_PER_THREAD; j++) {
+                    List<ValueIndexEntryUpdate<?>> batch = generator.batch(descriptor);
                     updateLock.readLock().lock();
-                    try
-                    {
-                        populator.add( batch, CursorContext.NULL_CONTEXT );
-                    }
-                    finally
-                    {
+                    try {
+                        populator.add(batch, CursorContext.NULL_CONTEXT);
+                    } finally {
                         updateLock.readLock().unlock();
                     }
-                    lastBatches.set( slot, batch );
+                    lastBatches.set(slot, batch);
                 }
-            }
-            finally
-            {
+            } finally {
                 // This helps the updater know when to stop updating
                 insertersDone.countDown();
             }
-        } );
+        });
     }
 
-    private void buildReferencePopulatorSingleThreaded( Generator[] generators, Collection<ValueIndexEntryUpdate<?>> updates )
-            throws IndexEntryConflictException, IOException
-    {
-        IndexPopulator referencePopulator = indexProvider.getPopulator( descriptor2, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ),
-                                                                        INSTANCE, tokenNameLookup, Sets.immutable.empty() );
+    private void buildReferencePopulatorSingleThreaded(
+            Generator[] generators, Collection<ValueIndexEntryUpdate<?>> updates)
+            throws IndexEntryConflictException, IOException {
+        IndexPopulator referencePopulator = indexProvider.getPopulator(
+                descriptor2,
+                samplingConfig,
+                heapBufferFactory((int) kibiBytes(40)),
+                INSTANCE,
+                tokenNameLookup,
+                Sets.immutable.empty());
         referencePopulator.create();
         boolean referenceSuccess = false;
-        try
-        {
-            for ( Generator generator : generators )
-            {
+        try {
+            for (Generator generator : generators) {
                 generator.reset();
-                for ( int i = 0; i < BATCHES_PER_THREAD; i++ )
-                {
-                    referencePopulator.add( generator.batch( descriptor2 ), CursorContext.NULL_CONTEXT );
+                for (int i = 0; i < BATCHES_PER_THREAD; i++) {
+                    referencePopulator.add(generator.batch(descriptor2), CursorContext.NULL_CONTEXT);
                 }
             }
-            try ( IndexUpdater updater = referencePopulator.newPopulatingUpdater( CursorContext.NULL_CONTEXT ) )
-            {
-                for ( ValueIndexEntryUpdate<?> update : updates )
-                {
-                    updater.process( update );
+            try (IndexUpdater updater = referencePopulator.newPopulatingUpdater(CursorContext.NULL_CONTEXT)) {
+                for (ValueIndexEntryUpdate<?> update : updates) {
+                    updater.process(update);
                 }
             }
             referenceSuccess = true;
-            referencePopulator.scanCompleted( nullInstance, scheduler, CursorContext.NULL_CONTEXT );
-        }
-        finally
-        {
-            referencePopulator.close( referenceSuccess, CursorContext.NULL_CONTEXT );
+            referencePopulator.scanCompleted(nullInstance, scheduler, CursorContext.NULL_CONTEXT);
+        } finally {
+            referencePopulator.close(referenceSuccess, CursorContext.NULL_CONTEXT);
         }
     }
 
-    private class Generator
-    {
+    private class Generator {
         private final int maxBatchSize;
         private final long seed;
         private final long startEntityId;
@@ -359,8 +357,7 @@ abstract class IndexPopulationStressTest
         private RandomValues randomValues;
         private long nextEntityId;
 
-        Generator( int maxBatchSize, long seed, long startEntityId )
-        {
+        Generator(int maxBatchSize, long seed, long startEntityId) {
             this.startEntityId = startEntityId;
             this.nextEntityId = startEntityId;
             this.maxBatchSize = maxBatchSize;
@@ -368,98 +365,86 @@ abstract class IndexPopulationStressTest
             reset();
         }
 
-        private void reset()
-        {
-            randomValues = RandomValues.create( new Random( seed ) );
+        private void reset() {
+            randomValues = RandomValues.create(new Random(seed));
             nextEntityId = startEntityId;
         }
 
-        List<ValueIndexEntryUpdate<?>> batch( IndexDescriptor descriptor )
-        {
-            int n = randomValues.nextInt( maxBatchSize ) + 1;
-            List<ValueIndexEntryUpdate<?>> updates = new ArrayList<>( n );
-            for ( int i = 0; i < n; i++ )
-            {
-                updates.add( add( nextEntityId++, descriptor, valueGenerator.apply( randomValues ) ) );
+        List<ValueIndexEntryUpdate<?>> batch(IndexDescriptor descriptor) {
+            int n = randomValues.nextInt(maxBatchSize) + 1;
+            List<ValueIndexEntryUpdate<?>> updates = new ArrayList<>(n);
+            for (int i = 0; i < n; i++) {
+                updates.add(add(nextEntityId++, descriptor, valueGenerator.apply(randomValues)));
             }
             return updates;
         }
     }
 
-    private static class Scheduler implements IndexPopulator.PopulationWorkScheduler
-    {
+    private static class Scheduler implements IndexPopulator.PopulationWorkScheduler {
         private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
 
         @Override
-        public <T> JobHandle<T> schedule( IndexPopulator.JobDescriptionSupplier descriptionSupplier, Callable<T> job )
-        {
-            return jobScheduler.schedule( Group.INDEX_POPULATION_WORK, new JobMonitoringParams( null, null, null ), job );
+        public <T> JobHandle<T> schedule(IndexPopulator.JobDescriptionSupplier descriptionSupplier, Callable<T> job) {
+            return jobScheduler.schedule(Group.INDEX_POPULATION_WORK, new JobMonitoringParams(null, null, null), job);
         }
 
-        void shutdown() throws Exception
-        {
+        void shutdown() throws Exception {
             jobScheduler.shutdown();
         }
     }
 
-    private static class RecordingClient extends SimpleEntityClient implements IndexProgressor.EntityValueClient
-    {
+    private static class RecordingClient extends SimpleEntityClient implements IndexProgressor.EntityValueClient {
         final List<IndexRecord> records = new ArrayList<>();
 
         @Override
-        public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, AccessMode accessMode,
-                boolean indexIncludesTransactionState, IndexQueryConstraints constraints, PropertyIndexQuery... query )
-        {
-            initialize( progressor );
+        public void initialize(
+                IndexDescriptor descriptor,
+                IndexProgressor progressor,
+                AccessMode accessMode,
+                boolean indexIncludesTransactionState,
+                IndexQueryConstraints constraints,
+                PropertyIndexQuery... query) {
+            initialize(progressor);
         }
 
         @Override
-        public boolean acceptEntity( long reference, float score, Value... values )
-        {
-            acceptEntity( reference );
-            records.add( new IndexRecord( reference, values ) );
+        public boolean acceptEntity(long reference, float score, Value... values) {
+            acceptEntity(reference);
+            records.add(new IndexRecord(reference, values));
             return true;
         }
 
         @Override
-        public boolean needsValues()
-        {
+        public boolean needsValues() {
             return true;
         }
     }
 
-    private static class IndexRecord
-    {
+    private static class IndexRecord {
         private final long entityId;
         private final Value[] values;
 
-        IndexRecord( long entityId, Value[] values )
-        {
+        IndexRecord(long entityId, Value[] values) {
             this.entityId = entityId;
             this.values = values;
         }
 
         @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
             }
-            if ( o == null || getClass() != o.getClass() )
-            {
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
             IndexRecord that = (IndexRecord) o;
-            return entityId == that.entityId &&
-                    Arrays.equals( values, that.values );
+            return entityId == that.entityId && Arrays.equals(values, that.values);
         }
 
         @Override
-        public int hashCode()
-        {
-            int result = Objects.hash( entityId );
-            result = 31 * result + Arrays.hashCode( values );
+        public int hashCode() {
+            int result = Objects.hash(entityId);
+            result = 31 * result + Arrays.hashCode(values);
             return result;
         }
     }

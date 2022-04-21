@@ -19,14 +19,14 @@
  */
 package org.neo4j.internal.collector
 
+import org.neo4j.graphdb.ExecutionPlanDescription
+import org.neo4j.values.virtual.MapValue
+
 import java.util
 import java.util.Spliterator
 import java.util.Spliterators
 import java.util.stream.Stream
 import java.util.stream.StreamSupport
-
-import org.neo4j.graphdb.ExecutionPlanDescription
-import org.neo4j.values.virtual.MapValue
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -39,10 +39,13 @@ import scala.jdk.CollectionConverters.IteratorHasAsJava
 object QueriesSection {
 
   sealed trait InvocationData
-  case class SingleInvocation(queryParameters: MapValue,
-                              elapsedTimeMicros: Long,
-                              compilationTimeMicros: Long,
-                              startTimestampMillis: Long) extends InvocationData
+
+  case class SingleInvocation(
+    queryParameters: MapValue,
+    elapsedTimeMicros: Long,
+    compilationTimeMicros: Long,
+    startTimestampMillis: Long
+  ) extends InvocationData
 
   case class ProfileData(dbHits: util.ArrayList[Long], rows: util.ArrayList[Long], params: util.Map[String, AnyRef])
 
@@ -55,9 +58,11 @@ object QueriesSection {
 
   private val QUERY_FILTER = "(?:(?i)call)\\s+(?:dbms\\.|db\\.stats\\.)".r
 
-  def retrieve(querySnapshots: java.util.Iterator[TruncatedQuerySnapshot],
-               anonymizer: QueryAnonymizer,
-               maxInvocations: Int): Stream[RetrieveResult] = {
+  def retrieve(
+    querySnapshots: java.util.Iterator[TruncatedQuerySnapshot],
+    anonymizer: QueryAnonymizer,
+    maxInvocations: Int
+  ): Stream[RetrieveResult] = {
     val queries = new mutable.HashMap[QueryKey, QueryData]()
     while (querySnapshots.hasNext) {
       val snapshot = querySnapshots.next()
@@ -65,10 +70,12 @@ object QueriesSection {
       if (QUERY_FILTER.findFirstMatchIn(queryString).isEmpty) {
         val queryKey = QueryKey(queryString, snapshot.fullQueryTextHash, snapshot.queryPlanSupplier.get())
         val snapshotList = queries.getOrElseUpdate(queryKey, new QueryData())
-        snapshotList.invocations += SingleInvocation(snapshot.queryParameters,
-                                                     snapshot.elapsedTimeMicros,
-                                                     snapshot.compilationTimeMicros,
-                                                     snapshot.startTimestampMillis)
+        snapshotList.invocations += SingleInvocation(
+          snapshot.queryParameters,
+          snapshot.elapsedTimeMicros,
+          snapshot.compilationTimeMicros,
+          snapshot.startTimestampMillis
+        )
       }
     }
 
@@ -87,7 +94,10 @@ object QueriesSection {
     }))
   }
 
-  private def planToMap(plan: ExecutionPlanDescription, estimatedRows: util.ArrayList[Double]): util.Map[String, AnyRef] = {
+  private def planToMap(
+    plan: ExecutionPlanDescription,
+    estimatedRows: util.ArrayList[Double]
+  ): util.Map[String, AnyRef] = {
     val data = new util.HashMap[String, AnyRef]()
     val id: Integer = estimatedRows.size
     estimatedRows.add(plan.getArguments.get("EstimatedRows").asInstanceOf[Double])
@@ -101,16 +111,19 @@ object QueriesSection {
         data.put("lhs", planToMap(children.get(0), estimatedRows))
         data.put("rhs", planToMap(children.get(1), estimatedRows))
       case x =>
-        throw new IllegalStateException("Cannot handle operators with more that 2 children, got "+x)
+        throw new IllegalStateException("Cannot handle operators with more that 2 children, got " + x)
     }
     data
   }
 
-  private def invocations(invocations: ArrayBuffer[QueriesSection.SingleInvocation],
-                          anonymizer: QueryAnonymizer
-                         ): util.ArrayList[util.Map[String, AnyRef]] = {
+  private def invocations(
+    invocations: ArrayBuffer[QueriesSection.SingleInvocation],
+    anonymizer: QueryAnonymizer
+  ): util.ArrayList[util.Map[String, AnyRef]] = {
     val result = new util.ArrayList[util.Map[String, AnyRef]]()
-    for (SingleInvocation(queryParameters, elapsedTimeMicros, compilationTimeMicros, startTimestampMillis) <- invocations) {
+    for (
+      SingleInvocation(queryParameters, elapsedTimeMicros, compilationTimeMicros, startTimestampMillis) <- invocations
+    ) {
       val data = new util.HashMap[String, AnyRef]()
       if (queryParameters.size() > 0)
         data.put("params", anonymizer.queryParams(queryParameters))
@@ -129,8 +142,7 @@ object QueriesSection {
     result
   }
 
-  private def invocationSummary(invocations: ArrayBuffer[QueriesSection.SingleInvocation]
-                               ): util.Map[String, AnyRef] = {
+  private def invocationSummary(invocations: ArrayBuffer[QueriesSection.SingleInvocation]): util.Map[String, AnyRef] = {
     val result = new util.HashMap[String, AnyRef]()
     val compileTime = new Stats
     val executionTime = new Stats

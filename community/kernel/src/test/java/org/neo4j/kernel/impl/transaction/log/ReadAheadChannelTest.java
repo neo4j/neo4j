@@ -19,15 +19,19 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.io.fs.ChecksumWriter.CHECKSUM_FACTORY;
+import static org.neo4j.io.fs.ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.zip.Checksum;
-
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.io.fs.ChecksumMismatchException;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.ReadAheadChannel;
@@ -40,273 +44,244 @@ import org.neo4j.io.memory.ScopedBuffer;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.io.fs.ChecksumWriter.CHECKSUM_FACTORY;
-import static org.neo4j.io.fs.ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-@ExtendWith( EphemeralFileSystemExtension.class )
-class ReadAheadChannelTest
-{
+@ExtendWith(EphemeralFileSystemExtension.class)
+class ReadAheadChannelTest {
     @Inject
     protected EphemeralFileSystemAbstraction fileSystem;
 
     @ParameterizedTest
-    @EnumSource( Constructors.class )
-    void shouldThrowExceptionForReadAfterEOFIfNotEnoughBytesExist( Constructor constructor ) throws Exception
-    {
+    @EnumSource(Constructors.class)
+    void shouldThrowExceptionForReadAfterEOFIfNotEnoughBytesExist(Constructor constructor) throws Exception {
         // Given
-        Path bytesReadTestFile = Path.of( "bytesReadTest.txt" );
-        StoreChannel storeChannel = fileSystem.write( bytesReadTestFile );
-        ByteBuffer buffer = ByteBuffers.allocate( 1, INSTANCE );
-        buffer.put( (byte) 1 );
+        Path bytesReadTestFile = Path.of("bytesReadTest.txt");
+        StoreChannel storeChannel = fileSystem.write(bytesReadTestFile);
+        ByteBuffer buffer = ByteBuffers.allocate(1, INSTANCE);
+        buffer.put((byte) 1);
         buffer.flip();
-        storeChannel.writeAll( buffer );
-        storeChannel.force( false );
+        storeChannel.writeAll(buffer);
+        storeChannel.force(false);
         storeChannel.close();
 
-        storeChannel = fileSystem.read( bytesReadTestFile );
+        storeChannel = fileSystem.read(bytesReadTestFile);
 
-        ReadAheadChannel<StoreChannel> channel = constructor.apply( storeChannel, DEFAULT_READ_AHEAD_SIZE );
-        assertEquals( (byte) 1, channel.get() );
+        ReadAheadChannel<StoreChannel> channel = constructor.apply(storeChannel, DEFAULT_READ_AHEAD_SIZE);
+        assertEquals((byte) 1, channel.get());
 
-        assertThrows( ReadPastEndException.class, channel::get );
-        assertThrows( ReadPastEndException.class, channel::get );
+        assertThrows(ReadPastEndException.class, channel::get);
+        assertThrows(ReadPastEndException.class, channel::get);
     }
 
     @ParameterizedTest
-    @EnumSource( Constructors.class )
-    void shouldReturnValueIfSufficientBytesAreBufferedEvenIfEOFHasBeenEncountered( Constructor constructor ) throws Exception
-    {
+    @EnumSource(Constructors.class)
+    void shouldReturnValueIfSufficientBytesAreBufferedEvenIfEOFHasBeenEncountered(Constructor constructor)
+            throws Exception {
         // Given
-        Path shortReadTestFile = Path.of( "shortReadTest.txt" );
-        StoreChannel storeChannel = fileSystem.write( shortReadTestFile );
-        ByteBuffer buffer = ByteBuffers.allocate( 1, INSTANCE );
-        buffer.put( (byte) 1 );
+        Path shortReadTestFile = Path.of("shortReadTest.txt");
+        StoreChannel storeChannel = fileSystem.write(shortReadTestFile);
+        ByteBuffer buffer = ByteBuffers.allocate(1, INSTANCE);
+        buffer.put((byte) 1);
         buffer.flip();
-        storeChannel.writeAll( buffer );
-        storeChannel.force( false );
+        storeChannel.writeAll(buffer);
+        storeChannel.force(false);
         storeChannel.close();
 
-        storeChannel = fileSystem.read( shortReadTestFile );
-        ReadAheadChannel<StoreChannel> channel = constructor.apply( storeChannel, DEFAULT_READ_AHEAD_SIZE );
+        storeChannel = fileSystem.read(shortReadTestFile);
+        ReadAheadChannel<StoreChannel> channel = constructor.apply(storeChannel, DEFAULT_READ_AHEAD_SIZE);
 
-        assertThrows( ReadPastEndException.class, channel::getShort );
-        assertEquals( (byte) 1, channel.get() );
-        assertThrows( ReadPastEndException.class, channel::get );
+        assertThrows(ReadPastEndException.class, channel::getShort);
+        assertEquals((byte) 1, channel.get());
+        assertThrows(ReadPastEndException.class, channel::get);
     }
 
     @ParameterizedTest
-    @EnumSource( Constructors.class )
-    void shouldHandleRunningOutOfBytesWhenRequestSpansMultipleFiles( Constructor constructor ) throws Exception
-    {
+    @EnumSource(Constructors.class)
+    void shouldHandleRunningOutOfBytesWhenRequestSpansMultipleFiles(Constructor constructor) throws Exception {
         // Given
-        StoreChannel storeChannel1 = fileSystem.write( Path.of( "foo.1" ) );
-        ByteBuffer buffer = ByteBuffers.allocate( 2, INSTANCE );
-        buffer.put( (byte) 0 );
-        buffer.put( (byte) 0 );
+        StoreChannel storeChannel1 = fileSystem.write(Path.of("foo.1"));
+        ByteBuffer buffer = ByteBuffers.allocate(2, INSTANCE);
+        buffer.put((byte) 0);
+        buffer.put((byte) 0);
         buffer.flip();
-        storeChannel1.writeAll( buffer );
-        storeChannel1.force( false );
+        storeChannel1.writeAll(buffer);
+        storeChannel1.force(false);
         storeChannel1.close();
 
         buffer.flip();
 
-        StoreChannel storeChannel2 = fileSystem.read( Path.of( "foo.2" ) );
-        buffer.put( (byte) 0 );
-        buffer.put( (byte) 1 );
+        StoreChannel storeChannel2 = fileSystem.read(Path.of("foo.2"));
+        buffer.put((byte) 0);
+        buffer.put((byte) 1);
         buffer.flip();
-        storeChannel2.writeAll( buffer );
-        storeChannel2.force( false );
+        storeChannel2.writeAll(buffer);
+        storeChannel2.force(false);
         storeChannel2.close();
 
-        storeChannel1 = fileSystem.read( Path.of( "foo.1" ) );
-        final StoreChannel storeChannel2Copy = fileSystem.read( Path.of( "foo.2" ) );
+        storeChannel1 = fileSystem.read(Path.of("foo.1"));
+        final StoreChannel storeChannel2Copy = fileSystem.read(Path.of("foo.2"));
 
-        HookedReadAheadChannel channel = constructor.apply( storeChannel1, DEFAULT_READ_AHEAD_SIZE );
+        HookedReadAheadChannel channel = constructor.apply(storeChannel1, DEFAULT_READ_AHEAD_SIZE);
         channel.nextChannelHook = storeChannel2Copy;
 
-        assertThrows( ReadPastEndException.class, channel::getLong );
-        assertEquals( 1, channel.getInt() );
-        assertThrows( ReadPastEndException.class, channel::get );
+        assertThrows(ReadPastEndException.class, channel::getLong);
+        assertEquals(1, channel.getInt());
+        assertThrows(ReadPastEndException.class, channel::get);
     }
 
     @ParameterizedTest
-    @EnumSource( Constructors.class )
-    void shouldReturnPositionWithinBufferedStream( Constructor constructor ) throws Exception
-    {
+    @EnumSource(Constructors.class)
+    void shouldReturnPositionWithinBufferedStream(Constructor constructor) throws Exception {
         // given
-        Path file = Path.of( "foo.txt" );
+        Path file = Path.of("foo.txt");
 
         int readAheadSize = 512;
         int fileSize = readAheadSize * 8;
 
-        createFile( fileSystem, file, fileSize );
-        ReadAheadChannel<StoreChannel> bufferedReader = constructor.apply( fileSystem.read( file ), readAheadSize );
+        createFile(fileSystem, file, fileSize);
+        ReadAheadChannel<StoreChannel> bufferedReader = constructor.apply(fileSystem.read(file), readAheadSize);
 
         // when
-        for ( int i = 0; i < fileSize / Long.BYTES; i++ )
-        {
-            assertEquals( Long.BYTES * i, bufferedReader.position() );
+        for (int i = 0; i < fileSize / Long.BYTES; i++) {
+            assertEquals(Long.BYTES * i, bufferedReader.position());
             bufferedReader.getLong();
         }
 
-        assertEquals( fileSize, bufferedReader.position() );
-        assertThrows( ReadPastEndException.class, bufferedReader::getLong );
-        assertEquals( fileSize, bufferedReader.position() );
+        assertEquals(fileSize, bufferedReader.position());
+        assertThrows(ReadPastEndException.class, bufferedReader::getLong);
+        assertEquals(fileSize, bufferedReader.position());
     }
 
     @ParameterizedTest
-    @EnumSource( Constructors.class )
-    void validateChecksumOverStream( Constructor constructor ) throws Exception
-    {
+    @EnumSource(Constructors.class)
+    void validateChecksumOverStream(Constructor constructor) throws Exception {
         // given
         Checksum checksum = CHECKSUM_FACTORY.get();
         int checksumValue;
-        Path file = Path.of( "foo.1" );
-        try ( StoreChannel storeChannel = fileSystem.write( file ) )
-        {
-            ByteBuffer buffer = ByteBuffers.allocate( 6, INSTANCE );
-            buffer.put( (byte) 1 );
-            checksum.update( 1 );
-            buffer.put( (byte) 2 );
-            checksum.update( 2 );
+        Path file = Path.of("foo.1");
+        try (StoreChannel storeChannel = fileSystem.write(file)) {
+            ByteBuffer buffer = ByteBuffers.allocate(6, INSTANCE);
+            buffer.put((byte) 1);
+            checksum.update(1);
+            buffer.put((byte) 2);
+            checksum.update(2);
             checksumValue = (int) checksum.getValue();
-            buffer.putInt( checksumValue );
+            buffer.putInt(checksumValue);
             buffer.flip();
-            storeChannel.writeAll( buffer );
-            storeChannel.force( false );
+            storeChannel.writeAll(buffer);
+            storeChannel.force(false);
         }
 
-        ReadAheadChannel<StoreChannel> bufferedReader = constructor.apply( fileSystem.read( file ), DEFAULT_READ_AHEAD_SIZE );
+        ReadAheadChannel<StoreChannel> bufferedReader =
+                constructor.apply(fileSystem.read(file), DEFAULT_READ_AHEAD_SIZE);
 
-        assertEquals( 1, bufferedReader.get() );
-        assertEquals( 2, bufferedReader.get() );
-        assertEquals( checksumValue, bufferedReader.endChecksumAndValidate() );
-        assertEquals( 6, bufferedReader.position() );
+        assertEquals(1, bufferedReader.get());
+        assertEquals(2, bufferedReader.get());
+        assertEquals(checksumValue, bufferedReader.endChecksumAndValidate());
+        assertEquals(6, bufferedReader.position());
     }
 
     @ParameterizedTest
-    @EnumSource( Constructors.class )
-    void throwOnInvalidChecksum( Constructor constructor ) throws Exception
-    {
+    @EnumSource(Constructors.class)
+    void throwOnInvalidChecksum(Constructor constructor) throws Exception {
         // given
         Checksum checksum = CHECKSUM_FACTORY.get();
-        Path file = Path.of( "foo.1" );
-        try ( StoreChannel storeChannel = fileSystem.write( file ) )
-        {
-            ByteBuffer buffer = ByteBuffers.allocate( 6, INSTANCE );
-            buffer.put( (byte) 1 );
-            checksum.update( 1 );
-            buffer.put( (byte) 2 );
-            checksum.update( 2 );
+        Path file = Path.of("foo.1");
+        try (StoreChannel storeChannel = fileSystem.write(file)) {
+            ByteBuffer buffer = ByteBuffers.allocate(6, INSTANCE);
+            buffer.put((byte) 1);
+            checksum.update(1);
+            buffer.put((byte) 2);
+            checksum.update(2);
             int notChecksumValue = (int) checksum.getValue() + 1;
-            buffer.putInt( notChecksumValue );
+            buffer.putInt(notChecksumValue);
             buffer.flip();
-            storeChannel.writeAll( buffer );
-            storeChannel.force( false );
+            storeChannel.writeAll(buffer);
+            storeChannel.force(false);
         }
 
-        ReadAheadChannel<StoreChannel> bufferedReader = constructor.apply( fileSystem.read( file ), DEFAULT_READ_AHEAD_SIZE );
+        ReadAheadChannel<StoreChannel> bufferedReader =
+                constructor.apply(fileSystem.read(file), DEFAULT_READ_AHEAD_SIZE);
 
-        assertEquals( 1, bufferedReader.get() );
-        assertEquals( 2, bufferedReader.get() );
-        assertThrows( ChecksumMismatchException.class, bufferedReader::endChecksumAndValidate );
+        assertEquals(1, bufferedReader.get());
+        assertEquals(2, bufferedReader.get());
+        assertThrows(ChecksumMismatchException.class, bufferedReader::endChecksumAndValidate);
     }
 
     @ParameterizedTest
-    @EnumSource( Constructors.class )
-    void checksumIsCalculatedCorrectlyOverBuffersLargerThanReadAheadSize( Constructor constructor ) throws Exception
-    {
+    @EnumSource(Constructors.class)
+    void checksumIsCalculatedCorrectlyOverBuffersLargerThanReadAheadSize(Constructor constructor) throws Exception {
         // given
         Checksum checksum = CHECKSUM_FACTORY.get();
         int checksumValue;
-        Path file = Path.of( "foo.1" );
+        Path file = Path.of("foo.1");
         int testSize = 100;
-        try ( StoreChannel storeChannel = fileSystem.write( file ) )
-        {
-            ByteBuffer buffer = ByteBuffers.allocate( testSize + 4, INSTANCE );
-            for ( int i = 0; i < testSize; i++ )
-            {
-                buffer.put( (byte) i );
-                checksum.update( i );
+        try (StoreChannel storeChannel = fileSystem.write(file)) {
+            ByteBuffer buffer = ByteBuffers.allocate(testSize + 4, INSTANCE);
+            for (int i = 0; i < testSize; i++) {
+                buffer.put((byte) i);
+                checksum.update(i);
             }
             checksumValue = (int) checksum.getValue();
-            buffer.putInt( checksumValue );
+            buffer.putInt(checksumValue);
             buffer.flip();
-            storeChannel.writeAll( buffer );
-            storeChannel.force( false );
+            storeChannel.writeAll(buffer);
+            storeChannel.force(false);
         }
 
-        ReadAheadChannel<StoreChannel> bufferedReader = constructor.apply( fileSystem.read( file ), testSize / 2 );
+        ReadAheadChannel<StoreChannel> bufferedReader = constructor.apply(fileSystem.read(file), testSize / 2);
 
         byte[] in = new byte[testSize];
-        bufferedReader.get( in, testSize );
-        for ( int i = 0; i < testSize; i++ )
-        {
-            assertEquals( i, in[i] );
+        bufferedReader.get(in, testSize);
+        for (int i = 0; i < testSize; i++) {
+            assertEquals(i, in[i]);
         }
-        assertEquals( checksumValue, bufferedReader.endChecksumAndValidate() );
+        assertEquals(checksumValue, bufferedReader.endChecksumAndValidate());
     }
 
-    private static void createFile( EphemeralFileSystemAbstraction fsa, Path name, int bufferSize ) throws IOException
-    {
-        StoreChannel storeChannel = fsa.write( name );
-        ByteBuffer buffer = ByteBuffers.allocate( bufferSize, INSTANCE );
-        for ( int i = 0; i < bufferSize; i++ )
-        {
-            buffer.put( (byte) i );
+    private static void createFile(EphemeralFileSystemAbstraction fsa, Path name, int bufferSize) throws IOException {
+        StoreChannel storeChannel = fsa.write(name);
+        ByteBuffer buffer = ByteBuffers.allocate(bufferSize, INSTANCE);
+        for (int i = 0; i < bufferSize; i++) {
+            buffer.put((byte) i);
         }
         buffer.flip();
-        storeChannel.writeAll( buffer );
+        storeChannel.writeAll(buffer);
         storeChannel.close();
     }
 
-    private static class HookedReadAheadChannel extends ReadAheadChannel<StoreChannel>
-    {
+    private static class HookedReadAheadChannel extends ReadAheadChannel<StoreChannel> {
         StoreChannel nextChannelHook;
 
-        HookedReadAheadChannel( StoreChannel channel, ScopedBuffer scopedBuffer )
-        {
-            super( channel, scopedBuffer );
+        HookedReadAheadChannel(StoreChannel channel, ScopedBuffer scopedBuffer) {
+            super(channel, scopedBuffer);
         }
 
         @Override
-        protected StoreChannel next( StoreChannel channel ) throws IOException
-        {
-            if ( nextChannelHook != null )
-            {
+        protected StoreChannel next(StoreChannel channel) throws IOException {
+            if (nextChannelHook != null) {
                 StoreChannel next = nextChannelHook;
                 nextChannelHook = null;
                 return next;
             }
-            return super.next( channel );
+            return super.next(channel);
         }
     }
 
-    interface Constructor
-    {
-        HookedReadAheadChannel apply( StoreChannel channel, int readAheadSize );
+    interface Constructor {
+        HookedReadAheadChannel apply(StoreChannel channel, int readAheadSize);
     }
 
-    enum Constructors implements Constructor
-    {
-        HEAP_BUFFER
-                {
-                    @Override
-                    public HookedReadAheadChannel apply( StoreChannel channel, int readAheadSize )
-                    {
-                        return new HookedReadAheadChannel( channel, new HeapScopedBuffer( readAheadSize, INSTANCE ) );
-                    }
-                },
-        DIRECT_BUFFER
-                {
-                    @Override
-                    public HookedReadAheadChannel apply( StoreChannel channel, int readAheadSize )
-                    {
-                        return new HookedReadAheadChannel( channel, new NativeScopedBuffer( readAheadSize, INSTANCE ) );
-                    }
-                },
+    enum Constructors implements Constructor {
+        HEAP_BUFFER {
+            @Override
+            public HookedReadAheadChannel apply(StoreChannel channel, int readAheadSize) {
+                return new HookedReadAheadChannel(channel, new HeapScopedBuffer(readAheadSize, INSTANCE));
+            }
+        },
+        DIRECT_BUFFER {
+            @Override
+            public HookedReadAheadChannel apply(StoreChannel channel, int readAheadSize) {
+                return new HookedReadAheadChannel(channel, new NativeScopedBuffer(readAheadSize, INSTANCE));
+            }
+        },
     }
 }

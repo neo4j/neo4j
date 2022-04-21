@@ -23,15 +23,11 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 
-public class DeadEndStep extends ProcessorStep<Object>
-{
-    public DeadEndStep( StageControl control, CursorContextFactory contextFactory )
-    {
-        super( control, "END", Configuration.DEFAULT, 1, contextFactory );
+public class DeadEndStep extends ProcessorStep<Object> {
+    public DeadEndStep(StageControl control, CursorContextFactory contextFactory) {
+        super(control, "END", Configuration.DEFAULT, 1, contextFactory);
     }
 
     @Override
-    protected void process( Object batch, BatchSender sender, CursorContext cursorContext )
-    {
-    }
+    protected void process(Object batch, BatchSender sender, CursorContext cursorContext) {}
 }

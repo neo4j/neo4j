@@ -22,370 +22,315 @@ package org.neo4j.graphdb.impl.notification;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.IndexHintException;
 import org.neo4j.exceptions.IndexHintException.IndexHintIndexType;
 
-public interface NotificationDetail
-{
+public interface NotificationDetail {
     String name();
 
     String value();
 
-    final class Factory
-    {
-        private Factory()
-        {
+    final class Factory {
+        private Factory() {}
+
+        public static NotificationDetail deprecatedName(final String oldName, final String newName) {
+            return createDeprecationNotificationDetail(oldName, newName);
         }
 
-        public static NotificationDetail deprecatedName( final String oldName, final String newName )
-        {
-            return createDeprecationNotificationDetail( oldName, newName );
+        public static NotificationDetail nodeAnyIndex(
+                final String variableName, final String labelName, final String... propertyKeyNames) {
+            String indexFormatString = IndexHintException.indexFormatString(
+                    variableName, labelName, Arrays.asList(propertyKeyNames), EntityType.NODE, IndexHintIndexType.ANY);
+            return createNotificationDetail("index", indexFormatString, true);
         }
 
-        public static NotificationDetail nodeAnyIndex( final String variableName, final String labelName, final String... propertyKeyNames )
-        {
-            String indexFormatString = IndexHintException.indexFormatString( variableName,
-                                                                             labelName,
-                                                                             Arrays.asList( propertyKeyNames ),
-                                                                             EntityType.NODE,
-                                                                             IndexHintIndexType.ANY );
-            return createNotificationDetail( "index", indexFormatString, true );
+        public static NotificationDetail nodeBtreeIndex(
+                final String variableName, final String labelName, final String... propertyKeyNames) {
+            String indexFormatString = IndexHintException.indexFormatString(
+                    variableName,
+                    labelName,
+                    Arrays.asList(propertyKeyNames),
+                    EntityType.NODE,
+                    IndexHintIndexType.BTREE);
+            return createNotificationDetail("index", indexFormatString, true);
         }
 
-        public static NotificationDetail nodeBtreeIndex( final String variableName, final String labelName, final String... propertyKeyNames )
-        {
-            String indexFormatString = IndexHintException.indexFormatString( variableName,
-                                                                             labelName,
-                                                                             Arrays.asList( propertyKeyNames ),
-                                                                             EntityType.NODE,
-                                                                             IndexHintIndexType.BTREE );
-            return createNotificationDetail( "index", indexFormatString, true );
+        public static NotificationDetail nodeTextIndex(
+                final String variableName, final String labelName, final String... propertyKeyNames) {
+            String indexFormatString = IndexHintException.indexFormatString(
+                    variableName, labelName, Arrays.asList(propertyKeyNames), EntityType.NODE, IndexHintIndexType.TEXT);
+            return createNotificationDetail("index", indexFormatString, true);
         }
 
-        public static NotificationDetail nodeTextIndex( final String variableName, final String labelName, final String... propertyKeyNames )
-        {
-            String indexFormatString = IndexHintException.indexFormatString( variableName,
-                                                                             labelName,
-                                                                             Arrays.asList( propertyKeyNames ),
-                                                                             EntityType.NODE,
-                                                                             IndexHintIndexType.TEXT );
-            return createNotificationDetail( "index", indexFormatString, true );
+        public static NotificationDetail nodeRangeIndex(
+                final String variableName, final String labelName, final String... propertyKeyNames) {
+            String indexFormatString = IndexHintException.indexFormatString(
+                    variableName,
+                    labelName,
+                    Arrays.asList(propertyKeyNames),
+                    EntityType.NODE,
+                    IndexHintIndexType.RANGE);
+            return createNotificationDetail("index", indexFormatString, true);
         }
 
-        public static NotificationDetail nodeRangeIndex( final String variableName, final String labelName, final String... propertyKeyNames )
-        {
-            String indexFormatString = IndexHintException.indexFormatString( variableName,
-                                                                             labelName,
-                                                                             Arrays.asList( propertyKeyNames ),
-                                                                             EntityType.NODE,
-                                                                             IndexHintIndexType.RANGE );
-            return createNotificationDetail( "index", indexFormatString, true );
+        public static NotificationDetail nodePointIndex(
+                final String variableName, final String labelName, final String... propertyKeyNames) {
+            String indexFormatString = IndexHintException.indexFormatString(
+                    variableName,
+                    labelName,
+                    Arrays.asList(propertyKeyNames),
+                    EntityType.NODE,
+                    IndexHintIndexType.POINT);
+            return createNotificationDetail("index", indexFormatString, true);
         }
 
-        public static NotificationDetail nodePointIndex( final String variableName, final String labelName, final String... propertyKeyNames )
-        {
-            String indexFormatString = IndexHintException.indexFormatString( variableName,
-                                                                             labelName,
-                                                                             Arrays.asList( propertyKeyNames ),
-                                                                             EntityType.NODE,
-                                                                             IndexHintIndexType.POINT );
-            return createNotificationDetail( "index", indexFormatString, true );
-        }
-        public static NotificationDetail relationshipAnyIndex( final String variableName, final String relationshipTypeName, final String... propertyKeyNames )
-        {
-            String indexFormatString = IndexHintException.indexFormatString( variableName,
-                                                                             relationshipTypeName,
-                                                                             Arrays.asList( propertyKeyNames ),
-                                                                             EntityType.RELATIONSHIP,
-                                                                             IndexHintIndexType.ANY );
-            return createNotificationDetail( "index", indexFormatString, true );
+        public static NotificationDetail relationshipAnyIndex(
+                final String variableName, final String relationshipTypeName, final String... propertyKeyNames) {
+            String indexFormatString = IndexHintException.indexFormatString(
+                    variableName,
+                    relationshipTypeName,
+                    Arrays.asList(propertyKeyNames),
+                    EntityType.RELATIONSHIP,
+                    IndexHintIndexType.ANY);
+            return createNotificationDetail("index", indexFormatString, true);
         }
 
-        public static NotificationDetail relationshipBtreeIndex( final String variableName, final String relationshipTypeName,
-                                                                 final String... propertyKeyNames )
-        {
-            String indexFormatString = IndexHintException.indexFormatString( variableName,
-                                                                             relationshipTypeName,
-                                                                             Arrays.asList( propertyKeyNames ),
-                                                                             EntityType.RELATIONSHIP,
-                                                                             IndexHintIndexType.BTREE );
-            return createNotificationDetail( "index", indexFormatString, true );
+        public static NotificationDetail relationshipBtreeIndex(
+                final String variableName, final String relationshipTypeName, final String... propertyKeyNames) {
+            String indexFormatString = IndexHintException.indexFormatString(
+                    variableName,
+                    relationshipTypeName,
+                    Arrays.asList(propertyKeyNames),
+                    EntityType.RELATIONSHIP,
+                    IndexHintIndexType.BTREE);
+            return createNotificationDetail("index", indexFormatString, true);
         }
 
-        public static NotificationDetail relationshipTextIndex( final String variableName, final String relationshipTypeName, final String... propertyKeyNames )
-        {
-            String indexFormatString = IndexHintException.indexFormatString( variableName,
-                                                                             relationshipTypeName,
-                                                                             Arrays.asList( propertyKeyNames ),
-                                                                             EntityType.RELATIONSHIP,
-                                                                             IndexHintIndexType.TEXT );
-            return createNotificationDetail( "index", indexFormatString, true );
+        public static NotificationDetail relationshipTextIndex(
+                final String variableName, final String relationshipTypeName, final String... propertyKeyNames) {
+            String indexFormatString = IndexHintException.indexFormatString(
+                    variableName,
+                    relationshipTypeName,
+                    Arrays.asList(propertyKeyNames),
+                    EntityType.RELATIONSHIP,
+                    IndexHintIndexType.TEXT);
+            return createNotificationDetail("index", indexFormatString, true);
         }
 
-        public static NotificationDetail relationshipRangeIndex( final String variableName, final String relationshipTypeName,
-                                                                 final String... propertyKeyNames )
-        {
-            String indexFormatString = IndexHintException.indexFormatString( variableName,
-                                                                             relationshipTypeName,
-                                                                             Arrays.asList( propertyKeyNames ),
-                                                                             EntityType.RELATIONSHIP,
-                                                                             IndexHintIndexType.RANGE );
-            return createNotificationDetail( "index", indexFormatString, true );
+        public static NotificationDetail relationshipRangeIndex(
+                final String variableName, final String relationshipTypeName, final String... propertyKeyNames) {
+            String indexFormatString = IndexHintException.indexFormatString(
+                    variableName,
+                    relationshipTypeName,
+                    Arrays.asList(propertyKeyNames),
+                    EntityType.RELATIONSHIP,
+                    IndexHintIndexType.RANGE);
+            return createNotificationDetail("index", indexFormatString, true);
         }
 
-        public static NotificationDetail relationshipPointIndex( final String variableName, final String relationshipTypeName,
-                                                                 final String... propertyKeyNames )
-        {
-            String indexFormatString = IndexHintException.indexFormatString( variableName,
-                                                                             relationshipTypeName,
-                                                                             Arrays.asList( propertyKeyNames ),
-                                                                             EntityType.RELATIONSHIP,
-                                                                             IndexHintIndexType.POINT );
-            return createNotificationDetail( "index", indexFormatString, true );
+        public static NotificationDetail relationshipPointIndex(
+                final String variableName, final String relationshipTypeName, final String... propertyKeyNames) {
+            String indexFormatString = IndexHintException.indexFormatString(
+                    variableName,
+                    relationshipTypeName,
+                    Arrays.asList(propertyKeyNames),
+                    EntityType.RELATIONSHIP,
+                    IndexHintIndexType.POINT);
+            return createNotificationDetail("index", indexFormatString, true);
         }
 
-        public static NotificationDetail label( final String labelName )
-        {
-            return createNotificationDetail( "the missing label name", labelName, true );
+        public static NotificationDetail label(final String labelName) {
+            return createNotificationDetail("the missing label name", labelName, true);
         }
 
-        public static NotificationDetail relationshipType( final String relType )
-        {
-            return createNotificationDetail( "the missing relationship type", relType, true );
+        public static NotificationDetail relationshipType(final String relType) {
+            return createNotificationDetail("the missing relationship type", relType, true);
         }
 
-        public static NotificationDetail procedureWarning( final String procedure, final String warning )
-        {
-            return createProcedureWarningNotificationDetail( procedure, warning );
+        public static NotificationDetail procedureWarning(final String procedure, final String warning) {
+            return createProcedureWarningNotificationDetail(procedure, warning);
         }
 
-        public static NotificationDetail propertyName( final String name )
-        {
-            return createNotificationDetail( "the missing property name", name, true );
+        public static NotificationDetail propertyName(final String name) {
+            return createNotificationDetail("the missing property name", name, true);
         }
 
-        public static NotificationDetail repeatedRel( final String name )
-        {
-            return createNotificationDetail( "the repeated relationship", name, true );
+        public static NotificationDetail repeatedRel(final String name) {
+            return createNotificationDetail("the repeated relationship", name, true);
         }
 
-        public static NotificationDetail shadowingVariable( final String name )
-        {
-            return createNotificationDetail( "the shadowing variable", name, true );
+        public static NotificationDetail shadowingVariable(final String name) {
+            return createNotificationDetail("the shadowing variable", name, true);
         }
 
-        public static NotificationDetail joinKey( List<String> identifiers )
-        {
+        public static NotificationDetail joinKey(List<String> identifiers) {
             boolean singular = identifiers.size() == 1;
             StringBuilder builder = new StringBuilder();
             boolean first = true;
-            for ( String identifier : identifiers )
-            {
-                if ( first )
-                {
+            for (String identifier : identifiers) {
+                if (first) {
                     first = false;
+                } else {
+                    builder.append(", ");
                 }
-                else
-                {
-                    builder.append( ", " );
-                }
-                builder.append( identifier );
+                builder.append(identifier);
             }
             return createNotificationDetail(
                     singular ? "hinted join key identifier" : "hinted join key identifiers",
                     builder.toString(),
-                    singular
-            );
+                    singular);
         }
 
-        public static NotificationDetail cartesianProduct( Set<String> identifiers )
-        {
-            return createNotificationDetail( identifiers, "identifier", "identifiers" );
+        public static NotificationDetail cartesianProduct(Set<String> identifiers) {
+            return createNotificationDetail(identifiers, "identifier", "identifiers");
         }
 
-        public static NotificationDetail nodeIndexSeekOrScan( Set<String> labels )
-        {
-            return createNotificationDetail( labels, "indexed label", "indexed labels" );
+        public static NotificationDetail nodeIndexSeekOrScan(Set<String> labels) {
+            return createNotificationDetail(labels, "indexed label", "indexed labels");
         }
 
-        public static NotificationDetail relationshipIndexSeekOrScan( Set<String> labels )
-        {
-            return createNotificationDetail( labels, "indexed relationship type", "indexed relationship types" );
+        public static NotificationDetail relationshipIndexSeekOrScan(Set<String> labels) {
+            return createNotificationDetail(labels, "indexed relationship type", "indexed relationship types");
         }
 
-        public static NotificationDetail message( String name, String message )
-        {
-            return new NotificationDetail()
-            {
+        public static NotificationDetail message(String name, String message) {
+            return new NotificationDetail() {
                 @Override
-                public String name()
-                {
+                public String name() {
                     return name;
                 }
 
                 @Override
-                public String value()
-                {
+                public String value() {
                     return message;
                 }
 
                 @Override
-                public String toString()
-                {
+                public String toString() {
                     return message;
                 }
             };
         }
 
-        public static NotificationDetail deprecatedField( final String procedure, final String field )
-        {
-            return new NotificationDetail()
-            {
+        public static NotificationDetail deprecatedField(final String procedure, final String field) {
+            return new NotificationDetail() {
                 @Override
-                public String name()
-                {
+                public String name() {
                     return procedure;
                 }
 
                 @Override
-                public String value()
-                {
+                public String value() {
                     return field;
                 }
 
                 @Override
-                public String toString()
-                {
-                    return String.format( "'%s' returned by '%s' is no longer supported.", field, procedure );
+                public String toString() {
+                    return String.format("'%s' returned by '%s' is no longer supported.", field, procedure);
                 }
             };
         }
 
-        public static NotificationDetail bindingVarLengthRelationship( final String element )
-        {
-            return new NotificationDetail()
-            {
+        public static NotificationDetail bindingVarLengthRelationship(final String element) {
+            return new NotificationDetail() {
                 @Override
-                public String name()
-                {
+                public String name() {
                     return element;
                 }
 
                 @Override
-                public String value()
-                {
+                public String value() {
                     return String.format(
                             "Binding a variable length relationship pattern to a variable ('%s') is deprecated and "
-                            + "will be unsupported in a future version. The recommended way is to bind the "
-                            + "whole path to a variable, then extract the relationships:%n"
-                            + "\tMATCH p = (...)-[...]-(...)%n"
-                            + "\tWITH *, relationships(p) AS %s",
-                            element, element );
+                                    + "will be unsupported in a future version. The recommended way is to bind the "
+                                    + "whole path to a variable, then extract the relationships:%n"
+                                    + "\tMATCH p = (...)-[...]-(...)%n"
+                                    + "\tWITH *, relationships(p) AS %s",
+                            element, element);
                 }
 
                 @Override
-                public String toString()
-                {
+                public String toString() {
                     return value();
                 }
             };
         }
 
-        private static NotificationDetail createNotificationDetail( Set<String> elements, String singularTerm,
-                                                                    String pluralTerm )
-        {
+        private static NotificationDetail createNotificationDetail(
+                Set<String> elements, String singularTerm, String pluralTerm) {
             StringBuilder builder = new StringBuilder();
-            builder.append( '(' );
+            builder.append('(');
             String separator = "";
-            for ( String element : elements )
-            {
-                builder.append( separator );
-                builder.append( element );
+            for (String element : elements) {
+                builder.append(separator);
+                builder.append(element);
                 separator = ", ";
             }
-            builder.append( ')' );
+            builder.append(')');
             boolean singular = elements.size() == 1;
-            return createNotificationDetail( singular ? singularTerm : pluralTerm, builder.toString(), singular );
+            return createNotificationDetail(singular ? singularTerm : pluralTerm, builder.toString(), singular);
         }
 
-        private static NotificationDetail createNotificationDetail( final String name, final String value,
-                                                                    final boolean singular )
-        {
-            return new NotificationDetail()
-            {
+        private static NotificationDetail createNotificationDetail(
+                final String name, final String value, final boolean singular) {
+            return new NotificationDetail() {
                 @Override
-                public String name()
-                {
+                public String name() {
                     return name;
                 }
 
                 @Override
-                public String value()
-                {
+                public String value() {
                     return value;
                 }
 
                 @Override
-                public String toString()
-                {
-                    return String.format( "%s %s %s", name, singular ? "is:" : "are:", value );
+                public String toString() {
+                    return String.format("%s %s %s", name, singular ? "is:" : "are:", value);
                 }
             };
         }
 
-        private static NotificationDetail createDeprecationNotificationDetail( final String oldName, final String newName )
-        {
-            return new NotificationDetail()
-            {
+        private static NotificationDetail createDeprecationNotificationDetail(
+                final String oldName, final String newName) {
+            return new NotificationDetail() {
                 @Override
-                public String name()
-                {
+                public String name() {
                     return oldName;
                 }
 
                 @Override
-                public String value()
-                {
+                public String value() {
                     return newName;
                 }
 
                 @Override
-                public String toString()
-                {
-                    if ( newName == null || newName.trim().isEmpty() )
-                    {
-                        return String.format( "'%s' is no longer supported", oldName );
-                    }
-                    else
-                    {
-                        return String.format( "'%s' has been replaced by '%s'", oldName, newName );
+                public String toString() {
+                    if (newName == null || newName.trim().isEmpty()) {
+                        return String.format("'%s' is no longer supported", oldName);
+                    } else {
+                        return String.format("'%s' has been replaced by '%s'", oldName, newName);
                     }
                 }
             };
         }
 
-        private static NotificationDetail createProcedureWarningNotificationDetail( String procedure, String warning )
-        {
-            return new NotificationDetail()
-            {
+        private static NotificationDetail createProcedureWarningNotificationDetail(String procedure, String warning) {
+            return new NotificationDetail() {
                 @Override
-                public String name()
-                {
+                public String name() {
                     return procedure;
                 }
 
                 @Override
-                public String value()
-                {
+                public String value() {
                     return warning;
                 }
 
                 @Override
-                public String toString()
-                {
-                    return String.format( warning, procedure );
+                public String toString() {
+                    return String.format(warning, procedure);
                 }
             };
         }

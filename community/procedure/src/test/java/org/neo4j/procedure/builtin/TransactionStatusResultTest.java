@@ -19,7 +19,20 @@
  */
 package org.neo4j.procedure.builtin;
 
-import org.junit.jupiter.api.Test;
+import static java.time.ZoneOffset.UTC;
+import static java.util.Collections.emptyMap;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.kernel.database.DatabaseIdFactory.from;
+import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
+import static org.neo4j.lock.LockType.SHARED;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 import java.net.InetSocketAddress;
 import java.time.ZoneId;
@@ -29,7 +42,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
@@ -81,290 +94,277 @@ import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
-import static java.time.ZoneOffset.UTC;
-import static java.util.Collections.emptyMap;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.commons.lang3.StringUtils.EMPTY;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.kernel.database.DatabaseIdFactory.from;
-import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
-import static org.neo4j.lock.LockType.SHARED;
-import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
+class TransactionStatusResultTest {
 
-class TransactionStatusResultTest
-{
-
-    private TestKernelTransactionHandle transactionHandle = new TransactionHandleWithLocks( new StubKernelTransaction() );
-    private final HashMap<KernelTransactionHandle,Optional<QuerySnapshot>> snapshotsMap = new HashMap<>();
-    private final TransactionDependenciesResolver blockerResolver = new TransactionDependenciesResolver( snapshotsMap );
+    private TestKernelTransactionHandle transactionHandle = new TransactionHandleWithLocks(new StubKernelTransaction());
+    private final HashMap<KernelTransactionHandle, Optional<QuerySnapshot>> snapshotsMap = new HashMap<>();
+    private final TransactionDependenciesResolver blockerResolver = new TransactionDependenciesResolver(snapshotsMap);
 
     @Test
-    void statusOfTransactionWithSingleQuery() throws InvalidArgumentsException
-    {
-        snapshotsMap.put( transactionHandle, Optional.of( createQuerySnapshot( 7L ) ) );
+    void statusOfTransactionWithSingleQuery() throws InvalidArgumentsException {
+        snapshotsMap.put(transactionHandle, Optional.of(createQuerySnapshot(7L)));
         TransactionStatusResult statusResult =
-                new TransactionStatusResult( "my-database", transactionHandle, blockerResolver, snapshotsMap, UTC );
+                new TransactionStatusResult("my-database", transactionHandle, blockerResolver, snapshotsMap, UTC);
 
-        checkTransactionStatus( statusResult, "testQuery", "query-7", "1970-01-01T00:00:01.984Z" );
+        checkTransactionStatus(statusResult, "testQuery", "query-7", "1970-01-01T00:00:01.984Z");
     }
 
     @Test
-    void statusOfTransactionWithoutRunningQuery() throws InvalidArgumentsException
-    {
-        snapshotsMap.put( transactionHandle, Optional.empty() );
+    void statusOfTransactionWithoutRunningQuery() throws InvalidArgumentsException {
+        snapshotsMap.put(transactionHandle, Optional.empty());
         TransactionStatusResult statusResult =
-                new TransactionStatusResult( "neo4j", transactionHandle, blockerResolver, snapshotsMap, UTC );
+                new TransactionStatusResult("neo4j", transactionHandle, blockerResolver, snapshotsMap, UTC);
 
-        checkTransactionStatusWithoutQueries( statusResult );
+        checkTransactionStatusWithoutQueries(statusResult);
     }
 
     @Test
-    void statusOfTransactionWithDifferentTimeZone() throws InvalidArgumentsException
-    {
-        snapshotsMap.put( transactionHandle, Optional.of( createQuerySnapshot( 7L ) ) );
+    void statusOfTransactionWithDifferentTimeZone() throws InvalidArgumentsException {
+        snapshotsMap.put(transactionHandle, Optional.of(createQuerySnapshot(7L)));
+        TransactionStatusResult statusResult = new TransactionStatusResult(
+                "my-database", transactionHandle, blockerResolver, snapshotsMap, ZoneId.of("UTC+1"));
+
+        checkTransactionStatus(statusResult, "testQuery", "query-7", "1970-01-01T01:00:01.984+01:00");
+    }
+
+    @Test
+    void emptyInitialisationStacktraceWhenTraceNotAvailable() throws InvalidArgumentsException {
+        snapshotsMap.put(transactionHandle, Optional.empty());
         TransactionStatusResult statusResult =
-                new TransactionStatusResult( "my-database", transactionHandle, blockerResolver, snapshotsMap, ZoneId.of( "UTC+1" ) );
-
-        checkTransactionStatus( statusResult, "testQuery", "query-7", "1970-01-01T01:00:01.984+01:00" );
+                new TransactionStatusResult("neo4j", transactionHandle, blockerResolver, snapshotsMap, UTC);
+        assertEquals(EMPTY, statusResult.initializationStackTrace);
     }
 
     @Test
-    void emptyInitialisationStacktraceWhenTraceNotAvailable() throws InvalidArgumentsException
-    {
-        snapshotsMap.put( transactionHandle, Optional.empty() );
-        TransactionStatusResult statusResult = new TransactionStatusResult( "neo4j", transactionHandle, blockerResolver, snapshotsMap, UTC );
-        assertEquals( EMPTY, statusResult.initializationStackTrace );
+    void includeInitialisationStacktraceWhenTraceAvailable() throws InvalidArgumentsException {
+        transactionHandle = new TransactionHandleWithLocks(new StubKernelTransaction(), true);
+        snapshotsMap.put(transactionHandle, Optional.empty());
+        TransactionStatusResult statusResult =
+                new TransactionStatusResult("neo4j", transactionHandle, blockerResolver, snapshotsMap, UTC);
+        assertThat(statusResult.initializationStackTrace).contains("Transaction initialization stacktrace.");
     }
 
     @Test
-    void includeInitialisationStacktraceWhenTraceAvailable() throws InvalidArgumentsException
-    {
-        transactionHandle = new TransactionHandleWithLocks( new StubKernelTransaction(), true );
-        snapshotsMap.put( transactionHandle, Optional.empty() );
-        TransactionStatusResult statusResult = new TransactionStatusResult( "neo4j", transactionHandle, blockerResolver, snapshotsMap, UTC );
-        assertThat( statusResult.initializationStackTrace ).contains( "Transaction initialization stacktrace." );
+    void emptyClientInfoForClosedTransaction() throws InvalidArgumentsException {
+        var handle = new TransactionHandleWithLocks(new StubKernelTransaction(), false, false);
+        snapshotsMap.put(handle, Optional.empty());
+        var statusResult = new TransactionStatusResult("neo4j", handle, blockerResolver, snapshotsMap, UTC);
+        assertThat(statusResult.protocol).isEmpty();
+        assertThat(statusResult.clientAddress).isEmpty();
+        assertThat(statusResult.requestUri).isEmpty();
+        assertThat(statusResult.connectionId).isEmpty();
     }
 
-    @Test
-    void emptyClientInfoForClosedTransaction() throws InvalidArgumentsException
-    {
-        var handle = new TransactionHandleWithLocks( new StubKernelTransaction(), false, false );
-        snapshotsMap.put( handle, Optional.empty() );
-        var statusResult = new TransactionStatusResult( "neo4j", handle, blockerResolver, snapshotsMap, UTC );
-        assertThat( statusResult.protocol ).isEmpty();
-        assertThat( statusResult.clientAddress ).isEmpty();
-        assertThat( statusResult.requestUri ).isEmpty();
-        assertThat( statusResult.connectionId ).isEmpty();
+    private static void checkTransactionStatusWithoutQueries(TransactionStatusResult statusResult) {
+        assertEquals("neo4j-transaction-8", statusResult.transactionId);
+        assertEquals("testUser", statusResult.username);
+        assertEquals(stringObjectEmptyMap(), statusResult.metaData);
+        assertEquals("1970-01-01T00:00:01.984Z", statusResult.startTime);
+        assertEquals("https", statusResult.protocol);
+        assertEquals("https-42", statusResult.connectionId);
+        assertEquals("localhost:1000", statusResult.clientAddress);
+        assertEquals("https://localhost:1001/path", statusResult.requestUri);
+        assertEquals(EMPTY, statusResult.currentQueryId);
+        assertEquals(EMPTY, statusResult.currentQuery);
+        assertEquals(1, statusResult.activeLockCount);
+        assertEquals("Running", statusResult.status);
+        assertEquals(stringObjectEmptyMap(), statusResult.resourceInformation);
+        assertEquals(1810L, statusResult.elapsedTimeMillis);
+        assertEquals(Long.valueOf(1L), statusResult.cpuTimeMillis);
+        assertEquals(0L, statusResult.waitTimeMillis);
+        assertEquals(Long.valueOf(1809), statusResult.idleTimeMillis);
+        assertNull(statusResult.allocatedBytes);
+        assertEquals(Long.valueOf(0), statusResult.allocatedDirectBytes);
+        assertEquals(0L, statusResult.pageHits);
+        assertEquals(0L, statusResult.pageFaults);
+        assertEquals("neo4j", statusResult.database);
     }
 
-    private static void checkTransactionStatusWithoutQueries( TransactionStatusResult statusResult )
-    {
-        assertEquals( "neo4j-transaction-8", statusResult.transactionId );
-        assertEquals( "testUser", statusResult.username );
-        assertEquals( stringObjectEmptyMap(), statusResult.metaData );
-        assertEquals( "1970-01-01T00:00:01.984Z", statusResult.startTime );
-        assertEquals( "https", statusResult.protocol );
-        assertEquals( "https-42", statusResult.connectionId );
-        assertEquals( "localhost:1000", statusResult.clientAddress );
-        assertEquals( "https://localhost:1001/path", statusResult.requestUri );
-        assertEquals( EMPTY, statusResult.currentQueryId );
-        assertEquals( EMPTY, statusResult.currentQuery );
-        assertEquals( 1, statusResult.activeLockCount );
-        assertEquals( "Running", statusResult.status );
-        assertEquals( stringObjectEmptyMap(), statusResult.resourceInformation );
-        assertEquals( 1810L, statusResult.elapsedTimeMillis );
-        assertEquals( Long.valueOf( 1L ), statusResult.cpuTimeMillis );
-        assertEquals( 0L, statusResult.waitTimeMillis );
-        assertEquals( Long.valueOf( 1809 ), statusResult.idleTimeMillis );
-        assertNull( statusResult.allocatedBytes );
-        assertEquals( Long.valueOf( 0 ), statusResult.allocatedDirectBytes );
-        assertEquals( 0L, statusResult.pageHits );
-        assertEquals( 0L, statusResult.pageFaults );
-        assertEquals( "neo4j", statusResult.database );
+    private static void checkTransactionStatus(
+            TransactionStatusResult statusResult, String currentQuery, String currentQueryId, String startTime) {
+        assertEquals("my-database-transaction-8", statusResult.transactionId);
+        assertEquals("testUser", statusResult.username);
+        assertEquals(stringObjectEmptyMap(), statusResult.metaData);
+        assertEquals(startTime, statusResult.startTime);
+        assertEquals("https", statusResult.protocol);
+        assertEquals("https-42", statusResult.connectionId);
+        assertEquals("localhost:1000", statusResult.clientAddress);
+        assertEquals("https://localhost:1001/path", statusResult.requestUri);
+        assertEquals(currentQueryId, statusResult.currentQueryId);
+        assertEquals(currentQuery, statusResult.currentQuery);
+        assertEquals(1, statusResult.activeLockCount);
+        assertEquals("Running", statusResult.status);
+        assertEquals(stringObjectEmptyMap(), statusResult.resourceInformation);
+        assertEquals(1810, statusResult.elapsedTimeMillis);
+        assertEquals(Long.valueOf(1), statusResult.cpuTimeMillis);
+        assertEquals(0L, statusResult.waitTimeMillis);
+        assertEquals(Long.valueOf(1809), statusResult.idleTimeMillis);
+        assertNull(statusResult.allocatedBytes);
+        assertEquals(Long.valueOf(0), statusResult.allocatedDirectBytes);
+        assertEquals(0, statusResult.pageHits);
+        assertEquals(0, statusResult.pageFaults);
+        assertEquals("my-database", statusResult.database);
     }
 
-    private static void checkTransactionStatus( TransactionStatusResult statusResult, String currentQuery, String currentQueryId, String startTime )
-    {
-        assertEquals( "my-database-transaction-8", statusResult.transactionId );
-        assertEquals( "testUser", statusResult.username );
-        assertEquals( stringObjectEmptyMap(), statusResult.metaData );
-        assertEquals( startTime, statusResult.startTime );
-        assertEquals( "https", statusResult.protocol );
-        assertEquals( "https-42", statusResult.connectionId );
-        assertEquals( "localhost:1000", statusResult.clientAddress );
-        assertEquals( "https://localhost:1001/path", statusResult.requestUri );
-        assertEquals( currentQueryId, statusResult.currentQueryId );
-        assertEquals( currentQuery, statusResult.currentQuery );
-        assertEquals( 1, statusResult.activeLockCount );
-        assertEquals( "Running", statusResult.status );
-        assertEquals( stringObjectEmptyMap(), statusResult.resourceInformation );
-        assertEquals( 1810, statusResult.elapsedTimeMillis );
-        assertEquals( Long.valueOf( 1 ), statusResult.cpuTimeMillis );
-        assertEquals( 0L, statusResult.waitTimeMillis );
-        assertEquals( Long.valueOf( 1809 ), statusResult.idleTimeMillis );
-        assertNull( statusResult.allocatedBytes );
-        assertEquals( Long.valueOf( 0 ), statusResult.allocatedDirectBytes );
-        assertEquals( 0, statusResult.pageHits );
-        assertEquals( 0, statusResult.pageFaults );
-        assertEquals( "my-database", statusResult.database );
-    }
-
-    private static Map<String,Object> stringObjectEmptyMap()
-    {
+    private static Map<String, Object> stringObjectEmptyMap() {
         return emptyMap();
     }
 
-    private static QuerySnapshot createQuerySnapshot( long queryId )
-    {
-        ExecutingQuery executingQuery = createExecutingQuery( queryId );
-        executingQuery.onObfuscatorReady( QueryObfuscator.PASSTHROUGH );
+    private static QuerySnapshot createQuerySnapshot(long queryId) {
+        ExecutingQuery executingQuery = createExecutingQuery(queryId);
+        executingQuery.onObfuscatorReady(QueryObfuscator.PASSTHROUGH);
         return executingQuery.snapshot();
     }
 
-    private static ExecutingQuery createExecutingQuery( long queryId )
-    {
-        return new ExecutingQuery( queryId, getTestConnectionInfo(), from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), "testUser", "testUser", "testQuery",
-                                   EMPTY_MAP,
-                                   stringObjectEmptyMap(), () -> 1L, () -> 1, () -> 2,
-                                   Thread.currentThread().getId(), Thread.currentThread().getName(),
-                                   new CountingNanoClock(), new CountingCpuClock(), true );
+    private static ExecutingQuery createExecutingQuery(long queryId) {
+        return new ExecutingQuery(
+                queryId,
+                getTestConnectionInfo(),
+                from(DEFAULT_DATABASE_NAME, UUID.randomUUID()),
+                "testUser",
+                "testUser",
+                "testQuery",
+                EMPTY_MAP,
+                stringObjectEmptyMap(),
+                () -> 1L,
+                () -> 1,
+                () -> 2,
+                Thread.currentThread().getId(),
+                Thread.currentThread().getName(),
+                new CountingNanoClock(),
+                new CountingCpuClock(),
+                true);
     }
 
-    private static HttpConnectionInfo getTestConnectionInfo()
-    {
-        return new HttpConnectionInfo( "https-42", "https", new InetSocketAddress( "localhost", 1000 ),
-                new InetSocketAddress( "localhost", 1001 ), "/path" );
+    private static HttpConnectionInfo getTestConnectionInfo() {
+        return new HttpConnectionInfo(
+                "https-42",
+                "https",
+                new InetSocketAddress("localhost", 1000),
+                new InetSocketAddress("localhost", 1001),
+                "/path");
     }
 
-    private static class TransactionHandleWithLocks extends TestKernelTransactionHandle
-    {
+    private static class TransactionHandleWithLocks extends TestKernelTransactionHandle {
         boolean hasInitTrace;
         boolean hasClientInfo;
 
-        TransactionHandleWithLocks( KernelTransaction tx )
-        {
-            this( tx, false, true );
+        TransactionHandleWithLocks(KernelTransaction tx) {
+            this(tx, false, true);
         }
 
-        TransactionHandleWithLocks( KernelTransaction tx, boolean hasInitTrace )
-        {
-            this( tx, hasInitTrace, true );
+        TransactionHandleWithLocks(KernelTransaction tx, boolean hasInitTrace) {
+            this(tx, hasInitTrace, true);
         }
 
-        TransactionHandleWithLocks( KernelTransaction tx, boolean hasInitTrace, boolean hasClientInfo )
-        {
-            super( tx );
+        TransactionHandleWithLocks(KernelTransaction tx, boolean hasInitTrace, boolean hasClientInfo) {
+            super(tx);
             this.hasInitTrace = hasInitTrace;
             this.hasClientInfo = hasClientInfo;
         }
 
         @Override
-        public TransactionInitializationTrace transactionInitialisationTrace()
-        {
-            if ( hasInitTrace )
-            {
+        public TransactionInitializationTrace transactionInitialisationTrace() {
+            if (hasInitTrace) {
                 return new TransactionInitializationTrace();
             }
             return super.transactionInitialisationTrace();
         }
 
         @Override
-        public Stream<ActiveLock> activeLocks()
-        {
-            return Stream.of( new ActiveLock( ResourceTypes.NODE, SHARED, 3, 3 ) );
+        public Stream<ActiveLock> activeLocks() {
+            return Stream.of(new ActiveLock(ResourceTypes.NODE, SHARED, 3, 3));
         }
 
         @Override
-        public TransactionExecutionStatistic transactionStatistic()
-        {
+        public TransactionExecutionStatistic transactionStatistic() {
             Dependencies dependencies = new Dependencies();
-            dependencies.satisfyDependency( mock( DefaultValueMapper.class ) );
-            KernelTransactionImplementation transaction = new KernelTransactionImplementation(
-                    Config.defaults(),
-                    mock( DatabaseTransactionEventListeners.class ),
-                    mock( ConstraintIndexCreator.class ), mock( GlobalProcedures.class ),
-                    mock( TransactionCommitProcess.class ), new DatabaseTransactionStats(),
-                    mock( Pool.class ), Clocks.fakeClock(),
-                    new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
-                    mock( DatabaseTracers.class, RETURNS_MOCKS ),
-                    mock( StorageEngine.class, RETURNS_MOCKS ), any -> CanWrite.INSTANCE,
-                    new CursorContextFactory( new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY ), ON_HEAP,
-                    new StandardConstraintSemantics(), mock( SchemaState.class ),
-                    mockedTokenHolders(), mock( IndexingService.class ),
-                    mock( IndexStatisticsStore.class ), dependencies,
-                    from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable(),
-                    TransactionExecutionMonitor.NO_OP, CommunitySecurityLog.NULL_LOG, KernelVersionRepository.LATEST, mock( DbmsRuntimeRepository.class ),
-                    new NoOpClient(), mock( KernelTransactions.class ), NullLogProvider.getInstance() )
-            {
-                @Override
-                public Statistics getStatistics()
-                {
-                    TestStatistics statistics = new TestStatistics( this, new AtomicReference<>( new CountingCpuClock() ) );
-                    statistics.init( Thread.currentThread().getId(), CursorContext.NULL_CONTEXT );
-                    return statistics;
-                }
-            };
-            return new TransactionExecutionStatistic( transaction, Clocks.fakeClock().forward( 2010, MILLISECONDS ), 200 );
+            dependencies.satisfyDependency(mock(DefaultValueMapper.class));
+            KernelTransactionImplementation transaction =
+                    new KernelTransactionImplementation(
+                            Config.defaults(),
+                            mock(DatabaseTransactionEventListeners.class),
+                            mock(ConstraintIndexCreator.class),
+                            mock(GlobalProcedures.class),
+                            mock(TransactionCommitProcess.class),
+                            new DatabaseTransactionStats(),
+                            mock(Pool.class),
+                            Clocks.fakeClock(),
+                            new AtomicReference<>(CpuClock.NOT_AVAILABLE),
+                            mock(DatabaseTracers.class, RETURNS_MOCKS),
+                            mock(StorageEngine.class, RETURNS_MOCKS),
+                            any -> CanWrite.INSTANCE,
+                            new CursorContextFactory(new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY),
+                            ON_HEAP,
+                            new StandardConstraintSemantics(),
+                            mock(SchemaState.class),
+                            mockedTokenHolders(),
+                            mock(IndexingService.class),
+                            mock(IndexStatisticsStore.class),
+                            dependencies,
+                            from(DEFAULT_DATABASE_NAME, UUID.randomUUID()),
+                            LeaseService.NO_LEASES,
+                            MemoryPools.NO_TRACKING,
+                            DatabaseReadOnlyChecker.writable(),
+                            TransactionExecutionMonitor.NO_OP,
+                            CommunitySecurityLog.NULL_LOG,
+                            KernelVersionRepository.LATEST,
+                            mock(DbmsRuntimeRepository.class),
+                            new NoOpClient(),
+                            mock(KernelTransactions.class),
+                            NullLogProvider.getInstance()) {
+                        @Override
+                        public Statistics getStatistics() {
+                            TestStatistics statistics =
+                                    new TestStatistics(this, new AtomicReference<>(new CountingCpuClock()));
+                            statistics.init(Thread.currentThread().getId(), CursorContext.NULL_CONTEXT);
+                            return statistics;
+                        }
+                    };
+            return new TransactionExecutionStatistic(
+                    transaction, Clocks.fakeClock().forward(2010, MILLISECONDS), 200);
         }
 
         @Override
-        public Optional<ClientConnectionInfo> clientInfo()
-        {
-            if ( hasClientInfo )
-            {
-                return Optional.of( getTestConnectionInfo() );
+        public Optional<ClientConnectionInfo> clientInfo() {
+            if (hasClientInfo) {
+                return Optional.of(getTestConnectionInfo());
             }
             return Optional.empty();
         }
     }
 
-    private static TokenHolders mockedTokenHolders()
-    {
-        return new TokenHolders(
-                mock( TokenHolder.class ),
-                mock( TokenHolder.class ),
-                mock( TokenHolder.class ) );
+    private static TokenHolders mockedTokenHolders() {
+        return new TokenHolders(mock(TokenHolder.class), mock(TokenHolder.class), mock(TokenHolder.class));
     }
 
-    private static class TestStatistics extends KernelTransactionImplementation.Statistics
-    {
+    private static class TestStatistics extends KernelTransactionImplementation.Statistics {
         @Override
-        protected void init( long threadId, CursorContext cursorContext )
-        {
-            super.init( threadId, cursorContext );
+        protected void init(long threadId, CursorContext cursorContext) {
+            super.init(threadId, cursorContext);
         }
 
-        TestStatistics( KernelTransactionImplementation transaction, AtomicReference<CpuClock> cpuClockRef )
-        {
-            super( transaction, cpuClockRef, false );
+        TestStatistics(KernelTransactionImplementation transaction, AtomicReference<CpuClock> cpuClockRef) {
+            super(transaction, cpuClockRef, false);
         }
     }
 
-    private static class CountingNanoClock extends SystemNanoClock
-    {
+    private static class CountingNanoClock extends SystemNanoClock {
         private long time;
 
         @Override
-        public long nanos()
-        {
-            time += MILLISECONDS.toNanos( 1 );
+        public long nanos() {
+            time += MILLISECONDS.toNanos(1);
             return time;
         }
     }
 
-    private static class CountingCpuClock implements CpuClock
-    {
+    private static class CountingCpuClock implements CpuClock {
         private long cpuTime;
 
         @Override
-        public long cpuTimeNanos( long threadId )
-        {
-            cpuTime += MILLISECONDS.toNanos( 1 );
+        public long cpuTimeNanos(long threadId) {
+            cpuTime += MILLISECONDS.toNanos(1);
             return cpuTime;
         }
     }

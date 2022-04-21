@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher
 
-import java.util.Properties
-
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
+
+import java.util.Properties
 
 class SystemPropertyTestSupportTest extends CypherFunSuite {
 
@@ -36,11 +36,12 @@ class SystemPropertyTestSupportTest extends CypherFunSuite {
       case (k, v) => (k, stringValue(systemProperties.setProperty(k, v)))
     }
 
-    private def stringValue(value: AnyRef) = if (null == value) {
-      null
-    } else {
-      value.toString
-    }
+    private def stringValue(value: AnyRef) =
+      if (null == value) {
+        null
+      } else {
+        value.toString
+      }
   }
 
   test("should get system properties") {
@@ -49,7 +50,7 @@ class SystemPropertyTestSupportTest extends CypherFunSuite {
         setSystemProperty("os.name" -> "Linux")
         getSystemProperty("os.name") should equal(("os.name", "Linux"))
       }
-    }) ()
+    })()
   }
 
   test("should return previous value when setting system properties") {
@@ -58,7 +59,7 @@ class SystemPropertyTestSupportTest extends CypherFunSuite {
         setSystemProperty("os.name" -> "Linux")
         setSystemProperty("os.name" -> "Mac OS") should equal(("os.name", "Linux"))
       }
-    }) ()
+    })()
   }
 
   test("should shadow system properties") {
@@ -69,7 +70,7 @@ class SystemPropertyTestSupportTest extends CypherFunSuite {
           getSystemProperty("os.name") should equal(("os.name", "Windows"))
         }
       }
-    }) ()
+    })()
   }
 
   test("should restore system properties") {
@@ -81,6 +82,6 @@ class SystemPropertyTestSupportTest extends CypherFunSuite {
         }
         getSystemProperty("os.name") should equal(("os.name", "Linux"))
       }
-    }) ()
+    })()
   }
 }

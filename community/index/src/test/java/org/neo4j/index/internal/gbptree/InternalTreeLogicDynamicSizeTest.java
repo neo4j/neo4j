@@ -19,98 +19,88 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 
-class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawBytes,RawBytes>
-{
+import java.io.IOException;
+import org.junit.jupiter.api.Test;
+
+class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawBytes, RawBytes> {
     @Override
-    protected ValueMerger<RawBytes,RawBytes> getAdder()
-    {
-        return ( existingKey, newKey, base, add ) ->
-        {
-            long baseSeed = layout.keySeed( base );
-            long addSeed = layout.keySeed( add );
-            RawBytes merged = layout.value( baseSeed + addSeed );
-            base.copyFrom( merged );
+    protected ValueMerger<RawBytes, RawBytes> getAdder() {
+        return (existingKey, newKey, base, add) -> {
+            long baseSeed = layout.keySeed(base);
+            long addSeed = layout.keySeed(add);
+            RawBytes merged = layout.value(baseSeed + addSeed);
+            base.copyFrom(merged);
             return ValueMerger.MergeResult.MERGED;
         };
     }
 
     @Override
-    protected TreeNode<RawBytes,RawBytes> getTreeNode( int pageSize, Layout<RawBytes,RawBytes> layout, OffloadStore<RawBytes,RawBytes> offloadStore )
-    {
-        return new TreeNodeDynamicSize<>( pageSize, layout, offloadStore );
+    protected TreeNode<RawBytes, RawBytes> getTreeNode(
+            int pageSize, Layout<RawBytes, RawBytes> layout, OffloadStore<RawBytes, RawBytes> offloadStore) {
+        return new TreeNodeDynamicSize<>(pageSize, layout, offloadStore);
     }
 
     @Override
-    protected TestLayout<RawBytes,RawBytes> getLayout()
-    {
+    protected TestLayout<RawBytes, RawBytes> getLayout() {
         return new SimpleByteArrayLayout();
     }
 
     @Test
-    void shouldFailToInsertTooLargeKeys()
-    {
+    void shouldFailToInsertTooLargeKeys() {
         RawBytes key = layout.newKey();
         RawBytes value = layout.newValue();
         key.bytes = new byte[node.keyValueSizeCap() + 1];
         value.bytes = new byte[0];
 
-        shouldFailToInsertTooLargeKeyAndValue( key, value );
+        shouldFailToInsertTooLargeKeyAndValue(key, value);
     }
 
     @Test
-    void shouldFailToInsertTooLargeKeyAndValueLargeKey()
-    {
+    void shouldFailToInsertTooLargeKeyAndValueLargeKey() {
         RawBytes key = layout.newKey();
         RawBytes value = layout.newValue();
         key.bytes = new byte[node.keyValueSizeCap()];
         value.bytes = new byte[1];
 
-        shouldFailToInsertTooLargeKeyAndValue( key, value );
+        shouldFailToInsertTooLargeKeyAndValue(key, value);
     }
 
     @Test
-    void shouldFailToInsertTooLargeKeyAndValueLargeValue()
-    {
+    void shouldFailToInsertTooLargeKeyAndValueLargeValue() {
         RawBytes key = layout.newKey();
         RawBytes value = layout.newValue();
         key.bytes = new byte[1];
         value.bytes = new byte[node.keyValueSizeCap()];
 
-        shouldFailToInsertTooLargeKeyAndValue( key, value );
+        shouldFailToInsertTooLargeKeyAndValue(key, value);
     }
 
-    private void shouldFailToInsertTooLargeKeyAndValue( RawBytes key, RawBytes value )
-    {
+    private void shouldFailToInsertTooLargeKeyAndValue(RawBytes key, RawBytes value) {
         initialize();
-        var e = assertThrows( IllegalArgumentException.class, () -> insert( key, value ) );
-        assertThat( e.getMessage() ).contains( "Index key-value size it too large. Please see index documentation for limitations." );
+        var e = assertThrows(IllegalArgumentException.class, () -> insert(key, value));
+        assertThat(e.getMessage())
+                .contains("Index key-value size it too large. Please see index documentation for limitations.");
     }
 
     @Test
-    void storeOnlyMinimalKeyDividerInInternal() throws IOException
-    {
+    void storeOnlyMinimalKeyDividerInInternal() throws IOException {
         // given
         initialize();
         long key = 0;
-        while ( numberOfRootSplits == 0 )
-        {
-            insert( key( key ), value( key ) );
+        while (numberOfRootSplits == 0) {
+            insert(key(key), value(key));
             key++;
         }
 
         // when
-        RawBytes rawBytes = keyAt( root.id(), 0, INTERNAL );
+        RawBytes rawBytes = keyAt(root.id(), 0, INTERNAL);
 
         // then
-        assertEquals( Long.BYTES, rawBytes.bytes.length, "expected no tail on internal key but was " + rawBytes );
+        assertEquals(Long.BYTES, rawBytes.bytes.length, "expected no tail on internal key but was " + rawBytes);
     }
 }

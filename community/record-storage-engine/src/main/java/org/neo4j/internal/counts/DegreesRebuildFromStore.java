@@ -19,10 +19,18 @@
  */
 package org.neo4j.internal.counts;
 
+import static java.lang.Long.max;
+import static org.neo4j.internal.batchimport.RecordIdIterator.forwards;
+import static org.neo4j.internal.batchimport.RecordIdIterator.withProgress;
+import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.NO_MONITOR;
+import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
+import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
+import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
+import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
+
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.cache.LongArray;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
@@ -50,20 +58,10 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.memory.MemoryTracker;
 
-import static java.lang.Long.max;
-import static org.neo4j.internal.batchimport.RecordIdIterator.forwards;
-import static org.neo4j.internal.batchimport.RecordIdIterator.withProgress;
-import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.NO_MONITOR;
-import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
-import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
-import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
-import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
-
 /**
  * Scans the store and rebuilds the {@link GBPTreeRelationshipGroupDegreesStore} contents if the file is missing.
  */
-public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder
-{
+public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder {
     private final PageCache pageCache;
     private final NeoStores neoStores;
     private final DatabaseLayout databaseLayout;
@@ -71,46 +69,55 @@ public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesS
     private final InternalLog log;
     private final Configuration processingConfig;
 
-    public DegreesRebuildFromStore( PageCache pageCache, NeoStores neoStores, DatabaseLayout databaseLayout, CursorContextFactory contextFactory,
-            InternalLogProvider logProvider, Configuration processingConfig )
-    {
+    public DegreesRebuildFromStore(
+            PageCache pageCache,
+            NeoStores neoStores,
+            DatabaseLayout databaseLayout,
+            CursorContextFactory contextFactory,
+            InternalLogProvider logProvider,
+            Configuration processingConfig) {
         this.pageCache = pageCache;
         this.neoStores = neoStores;
         this.databaseLayout = databaseLayout;
         this.contextFactory = contextFactory;
-        this.log = logProvider.getLog( DegreesRebuildFromStore.class );
+        this.log = logProvider.getLog(DegreesRebuildFromStore.class);
         this.processingConfig = processingConfig;
     }
 
     @Override
-    public long lastCommittedTxId()
-    {
+    public long lastCommittedTxId() {
         return neoStores.getMetaDataStore().getLastCommittedTransactionId();
     }
 
     @Override
-    public void rebuild( RelationshipGroupDegreesStore.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
-    {
-        log.warn( "Missing relationship degrees store, rebuilding it." );
-        NumberArrayFactory numberArrayFactory =
-                NumberArrayFactories.auto( pageCache, contextFactory, databaseLayout.databaseDirectory(), true, NO_MONITOR, NullLog.getInstance(),
-                        databaseLayout.getDatabaseName() );
-        try ( GroupDegreesCache cache = new GroupDegreesCache( numberArrayFactory, neoStores.getNodeStore().getHighId(), memoryTracker ) )
-        {
-            LogProgressReporter progress = new LogProgressReporter( log );
-            progress.start( neoStores.getRelationshipGroupStore().getHighId() + neoStores.getRelationshipStore().getHighId() );
-            superviseDynamicExecution( new PrepareCacheStage( processingConfig, neoStores.getRelationshipGroupStore(), cache, contextFactory, progress ) );
-            if ( cache.hasAnyGroup() )
-            {
-                superviseDynamicExecution( new CalculateDegreesStage( processingConfig, neoStores.getRelationshipStore(), cache, contextFactory, progress ) );
+    public void rebuild(
+            RelationshipGroupDegreesStore.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+        log.warn("Missing relationship degrees store, rebuilding it.");
+        NumberArrayFactory numberArrayFactory = NumberArrayFactories.auto(
+                pageCache,
+                contextFactory,
+                databaseLayout.databaseDirectory(),
+                true,
+                NO_MONITOR,
+                NullLog.getInstance(),
+                databaseLayout.getDatabaseName());
+        try (GroupDegreesCache cache = new GroupDegreesCache(
+                numberArrayFactory, neoStores.getNodeStore().getHighId(), memoryTracker)) {
+            LogProgressReporter progress = new LogProgressReporter(log);
+            progress.start(neoStores.getRelationshipGroupStore().getHighId()
+                    + neoStores.getRelationshipStore().getHighId());
+            superviseDynamicExecution(new PrepareCacheStage(
+                    processingConfig, neoStores.getRelationshipGroupStore(), cache, contextFactory, progress));
+            if (cache.hasAnyGroup()) {
+                superviseDynamicExecution(new CalculateDegreesStage(
+                        processingConfig, neoStores.getRelationshipStore(), cache, contextFactory, progress));
             }
-            cache.writeTo( updater );
+            cache.writeTo(updater);
         }
-        log.warn( "Relationship degrees store rebuild completed." );
+        log.warn("Relationship degrees store rebuild completed.");
     }
 
-    private static class GroupDegreesCache implements AutoCloseable
-    {
+    private static class GroupDegreesCache implements AutoCloseable {
         private static final int SHIFT_DIRECTION_BITS = 32;
         private static final int NUM_GROUP_DATA_FIELDS = 3;
         private static final int DIRECTION_OUTGOING = 0;
@@ -122,51 +129,45 @@ public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesS
         private final AtomicLong nextGroupLocation = new AtomicLong();
         private final long highNodeId;
 
-        GroupDegreesCache( NumberArrayFactory numberArrayFactory, long highNodeId, MemoryTracker memoryTracker )
-        {
+        GroupDegreesCache(NumberArrayFactory numberArrayFactory, long highNodeId, MemoryTracker memoryTracker) {
             this.highNodeId = highNodeId;
-            this.nodeCache = numberArrayFactory.newLongArray( highNodeId, -1, memoryTracker );
-            this.groupCache = numberArrayFactory.newDynamicLongArray( max( 1_000_000, highNodeId / 10 ), 0, memoryTracker );
+            this.nodeCache = numberArrayFactory.newLongArray(highNodeId, -1, memoryTracker);
+            this.groupCache = numberArrayFactory.newDynamicLongArray(max(1_000_000, highNodeId / 10), 0, memoryTracker);
         }
 
         @Override
-        public void close()
-        {
-            IOUtils.closeAllUnchecked( nodeCache, groupCache );
+        public void close() {
+            IOUtils.closeAllUnchecked(nodeCache, groupCache);
         }
 
-        void addGroup( RelationshipGroupRecord groupRecord, StripedLatches latches )
-        {
+        void addGroup(RelationshipGroupRecord groupRecord, StripedLatches latches) {
             // One long for the type + "has external degrees" bits
             // One long for the next pointer
             // One long for the groupId
             // N longs for the count slots
-            int slotsForCounts = slotsForDegrees( groupRecord );
-            long groupIndex = nextGroupLocation.getAndAdd( NUM_GROUP_DATA_FIELDS + slotsForCounts );
-            groupCache.set( groupIndex, buildGroup( groupRecord ) );
-            groupCache.set( groupIndex + 2, groupRecord.getId() );
+            int slotsForCounts = slotsForDegrees(groupRecord);
+            long groupIndex = nextGroupLocation.getAndAdd(NUM_GROUP_DATA_FIELDS + slotsForCounts);
+            groupCache.set(groupIndex, buildGroup(groupRecord));
+            groupCache.set(groupIndex + 2, groupRecord.getId());
 
             long owningNode = groupRecord.getOwningNode();
             long existingGroupIndex;
-            try ( LatchResource latch = latches.acquire( owningNode ) )
-            {
-                existingGroupIndex = nodeCache.get( owningNode );
-                nodeCache.set( owningNode, groupIndex );
+            try (LatchResource latch = latches.acquire(owningNode)) {
+                existingGroupIndex = nodeCache.get(owningNode);
+                nodeCache.set(owningNode, groupIndex);
             }
-            groupCache.set( groupIndex + 1, existingGroupIndex );
+            groupCache.set(groupIndex + 1, existingGroupIndex);
         }
 
-        private long buildGroup( RelationshipGroupRecord groupRecord )
-        {
+        private long buildGroup(RelationshipGroupRecord groupRecord) {
             long group = groupRecord.getType();
-            group |= groupRecord.hasExternalDegreesOut() ? directionBitMask( DIRECTION_OUTGOING ) : 0;
-            group |= groupRecord.hasExternalDegreesIn() ? directionBitMask( DIRECTION_INCOMING ) : 0;
-            group |= groupRecord.hasExternalDegreesLoop() ? directionBitMask( DIRECTION_LOOP ) : 0;
+            group |= groupRecord.hasExternalDegreesOut() ? directionBitMask(DIRECTION_OUTGOING) : 0;
+            group |= groupRecord.hasExternalDegreesIn() ? directionBitMask(DIRECTION_INCOMING) : 0;
+            group |= groupRecord.hasExternalDegreesLoop() ? directionBitMask(DIRECTION_LOOP) : 0;
             return group;
         }
 
-        private int slotsForDegrees( RelationshipGroupRecord groupRecord )
-        {
+        private int slotsForDegrees(RelationshipGroupRecord groupRecord) {
             int slots = 0;
             slots += groupRecord.hasExternalDegreesOut() ? 1 : 0;
             slots += groupRecord.hasExternalDegreesIn() ? 1 : 0;
@@ -174,221 +175,205 @@ public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesS
             return slots;
         }
 
-        private void include( long node, int type, int directionBit, StripedLatches latches )
-        {
-            long groupIndex = nodeCache.get( node );
-            while ( groupIndex != -1 )
-            {
-                long group = groupCache.get( groupIndex );
-                if ( typeOf( group ) == type )
-                {
-                    long directionSlot = slotForDirection( group, directionBit );
-                    if ( directionSlot == -1 )
-                    {
+        private void include(long node, int type, int directionBit, StripedLatches latches) {
+            long groupIndex = nodeCache.get(node);
+            while (groupIndex != -1) {
+                long group = groupCache.get(groupIndex);
+                if (typeOf(group) == type) {
+                    long directionSlot = slotForDirection(group, directionBit);
+                    if (directionSlot == -1) {
                         // Type/direction combination not tracked, skip it
                         return;
                     }
 
                     // Time to include it in the count
-                    try ( LatchResource latch = latches.acquire( groupIndex ) )
-                    {
-                        long prevCount = groupCache.get( groupIndex + directionSlot );
-                        groupCache.set( groupIndex + directionSlot, prevCount + 1 );
+                    try (LatchResource latch = latches.acquire(groupIndex)) {
+                        long prevCount = groupCache.get(groupIndex + directionSlot);
+                        groupCache.set(groupIndex + directionSlot, prevCount + 1);
                         break;
                     }
                 }
-                groupIndex = groupCache.get( groupIndex + 1 );
+                groupIndex = groupCache.get(groupIndex + 1);
             }
         }
 
-        private int slotForDirection( long group, int directionBit )
-        {
-            if ( !hasDirectionBit( group, directionBit ) )
-            {
+        private int slotForDirection(long group, int directionBit) {
+            if (!hasDirectionBit(group, directionBit)) {
                 return -1;
             }
             int slot = 0;
-            for ( int i = 0; i < directionBit; i++ )
-            {
-                if ( hasDirectionBit( group, i ) )
-                {
+            for (int i = 0; i < directionBit; i++) {
+                if (hasDirectionBit(group, i)) {
                     slot++;
                 }
             }
             return NUM_GROUP_DATA_FIELDS + slot;
         }
 
-        private boolean hasDirectionBit( long group, int directionBit )
-        {
-            return (group & directionBitMask( directionBit )) != 0;
+        private boolean hasDirectionBit(long group, int directionBit) {
+            return (group & directionBitMask(directionBit)) != 0;
         }
 
-        private long directionBitMask( int directionBit )
-        {
+        private long directionBitMask(int directionBit) {
             return 1L << (SHIFT_DIRECTION_BITS + directionBit);
         }
 
-        private int typeOf( long group )
-        {
+        private int typeOf(long group) {
             return (int) group;
         }
 
-        void writeTo( RelationshipGroupDegreesStore.Updater updater )
-        {
-            for ( long node = 0; node < highNodeId; node++ )
-            {
-                long groupIndex = nodeCache.get( node );
-                while ( groupIndex != -1 )
-                {
-                    long group = groupCache.get( groupIndex );
-                    long groupId = groupCache.get( groupIndex + 2 );
+        void writeTo(RelationshipGroupDegreesStore.Updater updater) {
+            for (long node = 0; node < highNodeId; node++) {
+                long groupIndex = nodeCache.get(node);
+                while (groupIndex != -1) {
+                    long group = groupCache.get(groupIndex);
+                    long groupId = groupCache.get(groupIndex + 2);
                     long slot = groupIndex + NUM_GROUP_DATA_FIELDS;
-                    if ( hasDirectionBit( group, DIRECTION_OUTGOING ) )
-                    {
-                        updater.increment( groupId, OUTGOING, groupCache.get( slot ) );
+                    if (hasDirectionBit(group, DIRECTION_OUTGOING)) {
+                        updater.increment(groupId, OUTGOING, groupCache.get(slot));
                         slot++;
                     }
-                    if ( hasDirectionBit( group, DIRECTION_INCOMING ) )
-                    {
-                        updater.increment( groupId, INCOMING, groupCache.get( slot ) );
+                    if (hasDirectionBit(group, DIRECTION_INCOMING)) {
+                        updater.increment(groupId, INCOMING, groupCache.get(slot));
                         slot++;
                     }
-                    if ( hasDirectionBit( group, DIRECTION_LOOP ) )
-                    {
-                        updater.increment( groupId, LOOP, groupCache.get( slot ) );
+                    if (hasDirectionBit(group, DIRECTION_LOOP)) {
+                        updater.increment(groupId, LOOP, groupCache.get(slot));
                     }
-                    groupIndex = groupCache.get( groupIndex + 1 );
+                    groupIndex = groupCache.get(groupIndex + 1);
                 }
             }
         }
 
-        boolean hasAnyGroup()
-        {
+        boolean hasAnyGroup() {
             return nextGroupLocation.get() > 0;
         }
     }
 
-    private static class PrepareCacheStage extends Stage
-    {
-        PrepareCacheStage( Configuration config, RelationshipGroupStore store, GroupDegreesCache cache, CursorContextFactory cursorContextFactory,
-                LogProgressReporter progress )
-        {
-            super( "Prepare cache", null, config, Step.RECYCLE_BATCHES );
-            add( new BatchFeedStep( control(), config, withProgress( forwards( store.getNumberOfReservedLowIds(), store.getHighId(), config ), progress ),
-                    store.getRecordSize() ) );
-            add( new ReadRecordsStep<>( control(), config, false, store, cursorContextFactory ) );
-            add( new PrepareCacheStep( control(), config, cache, cursorContextFactory ) );
+    private static class PrepareCacheStage extends Stage {
+        PrepareCacheStage(
+                Configuration config,
+                RelationshipGroupStore store,
+                GroupDegreesCache cache,
+                CursorContextFactory cursorContextFactory,
+                LogProgressReporter progress) {
+            super("Prepare cache", null, config, Step.RECYCLE_BATCHES);
+            add(new BatchFeedStep(
+                    control(),
+                    config,
+                    withProgress(forwards(store.getNumberOfReservedLowIds(), store.getHighId(), config), progress),
+                    store.getRecordSize()));
+            add(new ReadRecordsStep<>(control(), config, false, store, cursorContextFactory));
+            add(new PrepareCacheStep(control(), config, cache, cursorContextFactory));
         }
     }
 
-    private static class PrepareCacheStep extends ProcessorStep<RelationshipGroupRecord[]>
-    {
+    private static class PrepareCacheStep extends ProcessorStep<RelationshipGroupRecord[]> {
         private final StripedLatches latches = new StripedLatches();
         private final GroupDegreesCache cache;
 
-        PrepareCacheStep( StageControl control, Configuration config, GroupDegreesCache cache, CursorContextFactory cursorContextFactory )
-        {
-            super( control, "PREPARE", config, config.maxNumberOfProcessors(), cursorContextFactory );
+        PrepareCacheStep(
+                StageControl control,
+                Configuration config,
+                GroupDegreesCache cache,
+                CursorContextFactory cursorContextFactory) {
+            super(control, "PREPARE", config, config.maxNumberOfProcessors(), cursorContextFactory);
             this.cache = cache;
         }
 
         @Override
-        protected void process( RelationshipGroupRecord[] batch, BatchSender sender, CursorContext cursorContext ) throws Throwable
-        {
-            for ( RelationshipGroupRecord record : batch )
-            {
-                if ( record.inUse() && (record.hasExternalDegreesOut() || record.hasExternalDegreesIn() || record.hasExternalDegreesLoop()) )
-                {
-                    cache.addGroup( record, latches );
+        protected void process(RelationshipGroupRecord[] batch, BatchSender sender, CursorContext cursorContext)
+                throws Throwable {
+            for (RelationshipGroupRecord record : batch) {
+                if (record.inUse()
+                        && (record.hasExternalDegreesOut()
+                                || record.hasExternalDegreesIn()
+                                || record.hasExternalDegreesLoop())) {
+                    cache.addGroup(record, latches);
                 }
             }
         }
     }
 
-    private static class CalculateDegreesStage extends Stage
-    {
-        CalculateDegreesStage( Configuration config, RelationshipStore store, GroupDegreesCache cache, CursorContextFactory cursorContextFactory,
-                LogProgressReporter progress )
-        {
-            super( "Calculate degrees", null, config, Step.RECYCLE_BATCHES );
-            add( new BatchFeedStep( control(), config, withProgress( forwards( 0, store.getHighId(), config ), progress ), store.getRecordSize() ) );
-            add( new ReadRecordsStep<>( control(), config, false, store, cursorContextFactory ) );
-            add( new CalculateDegreesStep( control(), config, cache, cursorContextFactory ) );
+    private static class CalculateDegreesStage extends Stage {
+        CalculateDegreesStage(
+                Configuration config,
+                RelationshipStore store,
+                GroupDegreesCache cache,
+                CursorContextFactory cursorContextFactory,
+                LogProgressReporter progress) {
+            super("Calculate degrees", null, config, Step.RECYCLE_BATCHES);
+            add(new BatchFeedStep(
+                    control(),
+                    config,
+                    withProgress(forwards(0, store.getHighId(), config), progress),
+                    store.getRecordSize()));
+            add(new ReadRecordsStep<>(control(), config, false, store, cursorContextFactory));
+            add(new CalculateDegreesStep(control(), config, cache, cursorContextFactory));
         }
     }
 
-    private static class CalculateDegreesStep extends ProcessorStep<RelationshipRecord[]>
-    {
+    private static class CalculateDegreesStep extends ProcessorStep<RelationshipRecord[]> {
         private final StripedLatches latches = new StripedLatches();
         private final GroupDegreesCache cache;
 
-        CalculateDegreesStep( StageControl control, Configuration config, GroupDegreesCache cache, CursorContextFactory cursorContextFactory )
-        {
-            super( control, "CALCULATE", config, config.maxNumberOfProcessors(), cursorContextFactory );
+        CalculateDegreesStep(
+                StageControl control,
+                Configuration config,
+                GroupDegreesCache cache,
+                CursorContextFactory cursorContextFactory) {
+            super(control, "CALCULATE", config, config.maxNumberOfProcessors(), cursorContextFactory);
             this.cache = cache;
         }
 
         @Override
-        protected void process( RelationshipRecord[] batch, BatchSender sender, CursorContext cursorContext ) throws Throwable
-        {
-            for ( RelationshipRecord record : batch )
-            {
-                if ( record.inUse() )
-                {
-                    if ( record.getFirstNode() == record.getSecondNode() )
-                    {
-                        process( record.getFirstNode(), record.getType(), GroupDegreesCache.DIRECTION_LOOP );
-                    }
-                    else
-                    {
-                        process( record.getFirstNode(), record.getType(), GroupDegreesCache.DIRECTION_OUTGOING );
-                        process( record.getSecondNode(), record.getType(), GroupDegreesCache.DIRECTION_INCOMING );
+        protected void process(RelationshipRecord[] batch, BatchSender sender, CursorContext cursorContext)
+                throws Throwable {
+            for (RelationshipRecord record : batch) {
+                if (record.inUse()) {
+                    if (record.getFirstNode() == record.getSecondNode()) {
+                        process(record.getFirstNode(), record.getType(), GroupDegreesCache.DIRECTION_LOOP);
+                    } else {
+                        process(record.getFirstNode(), record.getType(), GroupDegreesCache.DIRECTION_OUTGOING);
+                        process(record.getSecondNode(), record.getType(), GroupDegreesCache.DIRECTION_INCOMING);
                     }
                 }
             }
         }
 
-        private void process( long node, int type, int directionBit )
-        {
-            cache.include( node, type, directionBit, latches );
+        private void process(long node, int type, int directionBit) {
+            cache.include(node, type, directionBit, latches);
         }
     }
 
-    private static class StripedLatches
-    {
+    private static class StripedLatches {
         private static final int NUM_LATCHES = 1024;
-        private static final int LATCH_STRIPE_MASK = Integer.highestOneBit( NUM_LATCHES ) - 1;
+        private static final int LATCH_STRIPE_MASK = Integer.highestOneBit(NUM_LATCHES) - 1;
 
         private final LatchResource[] latches = new LatchResource[NUM_LATCHES];
 
-        StripedLatches()
-        {
-            for ( int i = 0; i < latches.length; i++ )
-            {
+        StripedLatches() {
+            for (int i = 0; i < latches.length; i++) {
                 latches[i] = new LatchResource();
             }
         }
 
-        LatchResource acquire( long id )
-        {
+        LatchResource acquire(long id) {
             int index = (int) (id & LATCH_STRIPE_MASK);
             return latches[index].acquire();
         }
     }
 
-    private static class LatchResource implements AutoCloseable
-    {
+    private static class LatchResource implements AutoCloseable {
         private final Lock lock = new ReentrantLock();
 
-        LatchResource acquire()
-        {
+        LatchResource acquire() {
             lock.lock();
             return this;
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             lock.unlock();
         }
     }

@@ -19,8 +19,13 @@
  */
 package org.neo4j.graphdb;
 
-import java.util.function.Predicate;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.StreamSupport.stream;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.function.Predicates.alwaysTrue;
+import static org.neo4j.graphdb.schema.IndexType.LOOKUP;
 
+import java.util.function.Predicate;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.TokenWrite;
@@ -33,106 +38,109 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.StreamSupport.stream;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.function.Predicates.alwaysTrue;
-import static org.neo4j.graphdb.schema.IndexType.LOOKUP;
-
-public class IndexingTestUtil
-{
-    public static void assertOnlyDefaultTokenIndexesExists( GraphDatabaseService db )
-    {
-        try ( var tx = db.beginTx() )
-        {
-            assertThat( stream( tx.schema().getIndexes().spliterator(), false ).count() ).isEqualTo( 2 );
-            assertDefaultTokenIndexesExists( db );
+public class IndexingTestUtil {
+    public static void assertOnlyDefaultTokenIndexesExists(GraphDatabaseService db) {
+        try (var tx = db.beginTx()) {
+            assertThat(stream(tx.schema().getIndexes().spliterator(), false).count())
+                    .isEqualTo(2);
+            assertDefaultTokenIndexesExists(db);
         }
     }
 
-    public static void assertDefaultTokenIndexesExists( GraphDatabaseService db )
-    {
-        try ( var tx = db.beginTx() )
-        {
-            var lookupIndexes = stream( tx.schema().getIndexes().spliterator(), false )
-                    .filter( idx -> idx.getIndexType() == LOOKUP ).collect( toList() );
-            assertThat( lookupIndexes.stream().anyMatch( IndexDefinition::isNodeIndex ) ).isTrue();
-            assertThat( lookupIndexes.stream().anyMatch( IndexDefinition::isRelationshipIndex ) ).isTrue();
+    public static void assertDefaultTokenIndexesExists(GraphDatabaseService db) {
+        try (var tx = db.beginTx()) {
+            var lookupIndexes = stream(tx.schema().getIndexes().spliterator(), false)
+                    .filter(idx -> idx.getIndexType() == LOOKUP)
+                    .collect(toList());
+            assertThat(lookupIndexes.stream().anyMatch(IndexDefinition::isNodeIndex))
+                    .isTrue();
+            assertThat(lookupIndexes.stream().anyMatch(IndexDefinition::isRelationshipIndex))
+                    .isTrue();
         }
     }
 
-    public static void dropAllIndexes( GraphDatabaseService db )
-    {
-        dropIndexes( db, alwaysTrue() );
+    public static void dropAllIndexes(GraphDatabaseService db) {
+        dropIndexes(db, alwaysTrue());
     }
 
-    public static void dropTokenIndexes( GraphDatabaseService db )
-    {
-        dropIndexes( db, index -> index.isRelationshipIndex() || index.isNodeIndex() );
+    public static void dropTokenIndexes(GraphDatabaseService db) {
+        dropIndexes(db, index -> index.isRelationshipIndex() || index.isNodeIndex());
     }
 
-    private static void dropIndexes( GraphDatabaseService db, Predicate<IndexDefinition> condition )
-    {
-        try ( var tx = db.beginTx() )
-        {
-            tx.schema().getIndexes().forEach( index ->
-            {
-                if ( condition.test( index ) )
-                {
+    private static void dropIndexes(GraphDatabaseService db, Predicate<IndexDefinition> condition) {
+        try (var tx = db.beginTx()) {
+            tx.schema().getIndexes().forEach(index -> {
+                if (condition.test(index)) {
                     index.drop();
                 }
-            } );
+            });
             tx.commit();
         }
     }
 
-    public static IndexDescriptor createNodePropIndexWithSpecifiedProvider( TransactionImpl tx, IndexProviderDescriptor provider, Label label, String prop )
-            throws KernelException
-    {
+    public static IndexDescriptor createNodePropIndexWithSpecifiedProvider(
+            TransactionImpl tx, IndexProviderDescriptor provider, Label label, String prop) throws KernelException {
         KernelTransaction kernelTransaction = tx.kernelTransaction();
         TokenWrite tokenWrite = kernelTransaction.tokenWrite();
-        IndexPrototype prototype = IndexPrototype.forSchema( SchemaDescriptors.forLabel( tokenWrite.labelGetOrCreateForName( label.name() ),
-                        tokenWrite.propertyKeyGetOrCreateForName( prop ) ), provider );
-        return kernelTransaction.schemaWrite().indexCreate( prototype );
+        IndexPrototype prototype = IndexPrototype.forSchema(
+                SchemaDescriptors.forLabel(
+                        tokenWrite.labelGetOrCreateForName(label.name()),
+                        tokenWrite.propertyKeyGetOrCreateForName(prop)),
+                provider);
+        return kernelTransaction.schemaWrite().indexCreate(prototype);
     }
 
-    public static IndexDescriptor createNodePropIndexWithSpecifiedProvider( TransactionImpl tx, IndexProviderDescriptor provider, Label label, String prop,
-            IndexType indexType ) throws KernelException
-    {
+    public static IndexDescriptor createNodePropIndexWithSpecifiedProvider(
+            TransactionImpl tx, IndexProviderDescriptor provider, Label label, String prop, IndexType indexType)
+            throws KernelException {
         KernelTransaction kernelTransaction = tx.kernelTransaction();
         TokenWrite tokenWrite = kernelTransaction.tokenWrite();
-        IndexPrototype prototype = IndexPrototype.forSchema( SchemaDescriptors.forLabel( tokenWrite.labelGetOrCreateForName( label.name() ),
-                tokenWrite.propertyKeyGetOrCreateForName( prop ) ), provider ).withIndexType( indexType );
-        return kernelTransaction.schemaWrite().indexCreate( prototype );
+        IndexPrototype prototype = IndexPrototype.forSchema(
+                        SchemaDescriptors.forLabel(
+                                tokenWrite.labelGetOrCreateForName(label.name()),
+                                tokenWrite.propertyKeyGetOrCreateForName(prop)),
+                        provider)
+                .withIndexType(indexType);
+        return kernelTransaction.schemaWrite().indexCreate(prototype);
     }
 
-    public static IndexDescriptor createNodePropIndexWithSpecifiedProvider( TransactionImpl tx, IndexProviderDescriptor provider, Label label,
-            String prop, String name ) throws KernelException
-    {
+    public static IndexDescriptor createNodePropIndexWithSpecifiedProvider(
+            TransactionImpl tx, IndexProviderDescriptor provider, Label label, String prop, String name)
+            throws KernelException {
         KernelTransaction kernelTransaction = tx.kernelTransaction();
         TokenWrite tokenWrite = kernelTransaction.tokenWrite();
-        IndexPrototype prototype = IndexPrototype.forSchema( SchemaDescriptors.forLabel( tokenWrite.labelGetOrCreateForName( label.name() ),
-                tokenWrite.propertyKeyGetOrCreateForName( prop ) ), provider ).withName( name );
-        return kernelTransaction.schemaWrite().indexCreate( prototype );
+        IndexPrototype prototype = IndexPrototype.forSchema(
+                        SchemaDescriptors.forLabel(
+                                tokenWrite.labelGetOrCreateForName(label.name()),
+                                tokenWrite.propertyKeyGetOrCreateForName(prop)),
+                        provider)
+                .withName(name);
+        return kernelTransaction.schemaWrite().indexCreate(prototype);
     }
 
-    public static ConstraintDescriptor createNodePropUniqueConstraintWithSpecifiedProvider( TransactionImpl tx, IndexProviderDescriptor provider, Label label,
-            String prop ) throws KernelException
-    {
+    public static ConstraintDescriptor createNodePropUniqueConstraintWithSpecifiedProvider(
+            TransactionImpl tx, IndexProviderDescriptor provider, Label label, String prop) throws KernelException {
         KernelTransaction kernelTransaction = tx.kernelTransaction();
         TokenWrite tokenWrite = kernelTransaction.tokenWrite();
-        IndexPrototype prototype = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( tokenWrite.labelGetOrCreateForName( label.name() ),
-                tokenWrite.propertyKeyGetOrCreateForName( prop ) ), provider );
-        return kernelTransaction.schemaWrite().uniquePropertyConstraintCreate( prototype );
+        IndexPrototype prototype = IndexPrototype.uniqueForSchema(
+                SchemaDescriptors.forLabel(
+                        tokenWrite.labelGetOrCreateForName(label.name()),
+                        tokenWrite.propertyKeyGetOrCreateForName(prop)),
+                provider);
+        return kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(prototype);
     }
 
-    public static ConstraintDescriptor createNodePropUniqueConstraintWithSpecifiedProvider( TransactionImpl tx, IndexProviderDescriptor provider, Label label,
-            String prop, String name ) throws KernelException
-    {
+    public static ConstraintDescriptor createNodePropUniqueConstraintWithSpecifiedProvider(
+            TransactionImpl tx, IndexProviderDescriptor provider, Label label, String prop, String name)
+            throws KernelException {
         KernelTransaction kernelTransaction = tx.kernelTransaction();
         TokenWrite tokenWrite = kernelTransaction.tokenWrite();
-        IndexPrototype prototype = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( tokenWrite.labelGetOrCreateForName( label.name() ),
-                tokenWrite.propertyKeyGetOrCreateForName( prop ) ), provider ).withName( name );
-        return kernelTransaction.schemaWrite().uniquePropertyConstraintCreate( prototype );
+        IndexPrototype prototype = IndexPrototype.uniqueForSchema(
+                        SchemaDescriptors.forLabel(
+                                tokenWrite.labelGetOrCreateForName(label.name()),
+                                tokenWrite.propertyKeyGetOrCreateForName(prop)),
+                        provider)
+                .withName(name);
+        return kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(prototype);
     }
 }

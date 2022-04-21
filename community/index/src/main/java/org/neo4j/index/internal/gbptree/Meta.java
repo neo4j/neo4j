@@ -19,14 +19,13 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import java.io.IOException;
+import static java.lang.String.format;
+import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 
+import java.io.IOException;
 import org.neo4j.index.internal.gbptree.TreeNodeSelector.Factory;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
-
-import static java.lang.String.format;
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 
 /**
  * About versioning (i.e. the format version {@code int}):
@@ -48,8 +47,7 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
  * {@link #CURRENT_STATE_VERSION} and {@link #CURRENT_GBPTREE_VERSION} aren't used yet because they have
  * never needed to be versioned yet, but remain reserved for future use. The are fixed at 0 a.t.m.
  */
-public class Meta
-{
+public class Meta {
     static final byte CURRENT_STATE_VERSION = 0;
     static final byte CURRENT_GBPTREE_VERSION = 0;
 
@@ -70,9 +68,15 @@ public class Meta
     private final int layoutMajorVersion;
     private final int layoutMinorVersion;
 
-    private Meta( byte formatIdentifier, byte formatVersion, byte unusedVersionSlot3, byte unusedVersionSlot4,
-            int payloadSize, long layoutIdentifier, int layoutMajorVersion, int layoutMinorVersion )
-    {
+    private Meta(
+            byte formatIdentifier,
+            byte formatVersion,
+            byte unusedVersionSlot3,
+            byte unusedVersionSlot4,
+            int payloadSize,
+            long layoutIdentifier,
+            int layoutMajorVersion,
+            int layoutMinorVersion) {
         this.formatIdentifier = formatIdentifier;
         this.formatVersion = formatVersion;
         this.unusedVersionSlot3 = unusedVersionSlot3;
@@ -83,19 +87,29 @@ public class Meta
         this.layoutMinorVersion = layoutMinorVersion;
     }
 
-    Meta( byte formatIdentifier, byte formatVersion, int payloadSize, Layout<?,?> layout )
-    {
-        this( formatIdentifier, formatVersion, UNUSED_VERSION, UNUSED_VERSION,
-                payloadSize, layout.identifier(), layout.majorVersion(), layout.minorVersion() );
+    Meta(byte formatIdentifier, byte formatVersion, int payloadSize, Layout<?, ?> layout) {
+        this(
+                formatIdentifier,
+                formatVersion,
+                UNUSED_VERSION,
+                UNUSED_VERSION,
+                payloadSize,
+                layout.identifier(),
+                layout.majorVersion(),
+                layout.minorVersion());
     }
 
-    private static Meta parseMeta( int format, int payloadSize, long layoutIdentifier, int majorVersion, int minorVersion )
-    {
-        return new Meta( extractIndividualVersion( format, SHIFT_FORMAT_IDENTIFIER ),
-                extractIndividualVersion( format, SHIFT_FORMAT_VERSION ),
-                extractIndividualVersion( format, SHIFT_UNUSED_VERSION_SLOT_3 ),
-                extractIndividualVersion( format, SHIFT_UNUSED_VERSION_SLOT_4 ),
-                payloadSize, layoutIdentifier, majorVersion, minorVersion );
+    private static Meta parseMeta(
+            int format, int payloadSize, long layoutIdentifier, int majorVersion, int minorVersion) {
+        return new Meta(
+                extractIndividualVersion(format, SHIFT_FORMAT_IDENTIFIER),
+                extractIndividualVersion(format, SHIFT_FORMAT_VERSION),
+                extractIndividualVersion(format, SHIFT_UNUSED_VERSION_SLOT_3),
+                extractIndividualVersion(format, SHIFT_UNUSED_VERSION_SLOT_4),
+                payloadSize,
+                layoutIdentifier,
+                majorVersion,
+                minorVersion);
     }
 
     /**
@@ -106,64 +120,64 @@ public class Meta
      * @return {@link Meta} instance with all meta information.
      * @throws IOException on {@link PageCursor} I/O error.
      */
-    static Meta read( PageCursor cursor ) throws IOException
-    {
+    static Meta read(PageCursor cursor) throws IOException {
         int format;
         int payloadSize;
         long layoutIdentifier;
         int layoutMajorVersion;
         int layoutMinorVersion;
-        try
-        {
-            do
-            {
+        try {
+            do {
                 format = cursor.getInt();
                 payloadSize = cursor.getInt();
                 layoutIdentifier = cursor.getLong();
                 layoutMajorVersion = cursor.getInt();
                 layoutMinorVersion = cursor.getInt();
-            }
-            while ( cursor.shouldRetry() );
-            checkOutOfBounds( cursor );
+            } while (cursor.shouldRetry());
+            checkOutOfBounds(cursor);
             cursor.checkAndClearCursorException();
-        }
-        catch ( CursorException e )
-        {
-            throw new MetadataMismatchException( "Tried to open, but caught an error while reading meta data. File is expected " +
-                    "to be corrupt, try to rebuild.", e );
+        } catch (CursorException e) {
+            throw new MetadataMismatchException(
+                    "Tried to open, but caught an error while reading meta data. File is expected "
+                            + "to be corrupt, try to rebuild.",
+                    e);
         }
 
-        return parseMeta( format, payloadSize, layoutIdentifier, layoutMajorVersion, layoutMinorVersion );
+        return parseMeta(format, payloadSize, layoutIdentifier, layoutMajorVersion, layoutMinorVersion);
     }
 
-    public void verify( Layout<?,?> layout )
-    {
-        if ( unusedVersionSlot3 != Meta.UNUSED_VERSION )
-        {
-            throw new MetadataMismatchException( "Unexpected version " + unusedVersionSlot3 + " for unused version slot 3" );
+    public void verify(Layout<?, ?> layout) {
+        if (unusedVersionSlot3 != Meta.UNUSED_VERSION) {
+            throw new MetadataMismatchException(
+                    "Unexpected version " + unusedVersionSlot3 + " for unused version slot 3");
         }
-        if ( unusedVersionSlot4 != Meta.UNUSED_VERSION )
-        {
-            throw new MetadataMismatchException( "Unexpected version " + unusedVersionSlot4 + " for unused version slot 4" );
-        }
-
-        if ( !layout.compatibleWith( layoutIdentifier, layoutMajorVersion, layoutMinorVersion ) )
-        {
-            throw new MetadataMismatchException( format(
-                    "Tried to open using layout not compatible with " +
-                    "what the index was created with. Created with: layoutIdentifier=%d,majorVersion=%d,minorVersion=%d. " +
-                    "Opened with layoutIdentifier=%d,majorVersion=%d,minorVersion=%d",
-                    layoutIdentifier, layoutMajorVersion, layoutMinorVersion,
-                    layout.identifier(), layout.majorVersion(), layout.minorVersion() ) );
+        if (unusedVersionSlot4 != Meta.UNUSED_VERSION) {
+            throw new MetadataMismatchException(
+                    "Unexpected version " + unusedVersionSlot4 + " for unused version slot 4");
         }
 
-        Factory formatByLayout = TreeNodeSelector.selectByLayout( layout );
-        if ( formatByLayout.formatIdentifier() != formatIdentifier ||
-             formatByLayout.formatVersion() != formatVersion )
-        {
-            throw new MetadataMismatchException( format( "Tried to open using layout not compatible with what index was created with. " +
-                    "Created with formatIdentifier:%d,formatVersion:%d. Opened with formatIdentifier:%d,formatVersion%d",
-                    formatIdentifier, formatVersion, formatByLayout.formatIdentifier(), formatByLayout.formatVersion() ) );
+        if (!layout.compatibleWith(layoutIdentifier, layoutMajorVersion, layoutMinorVersion)) {
+            throw new MetadataMismatchException(format(
+                    "Tried to open using layout not compatible with "
+                            + "what the index was created with. Created with: layoutIdentifier=%d,majorVersion=%d,minorVersion=%d. "
+                            + "Opened with layoutIdentifier=%d,majorVersion=%d,minorVersion=%d",
+                    layoutIdentifier,
+                    layoutMajorVersion,
+                    layoutMinorVersion,
+                    layout.identifier(),
+                    layout.majorVersion(),
+                    layout.minorVersion()));
+        }
+
+        Factory formatByLayout = TreeNodeSelector.selectByLayout(layout);
+        if (formatByLayout.formatIdentifier() != formatIdentifier || formatByLayout.formatVersion() != formatVersion) {
+            throw new MetadataMismatchException(format(
+                    "Tried to open using layout not compatible with what index was created with. "
+                            + "Created with formatIdentifier:%d,formatVersion:%d. Opened with formatIdentifier:%d,formatVersion%d",
+                    formatIdentifier,
+                    formatVersion,
+                    formatByLayout.formatIdentifier(),
+                    formatByLayout.formatVersion()));
         }
     }
 
@@ -172,63 +186,52 @@ public class Meta
      *
      * @param cursor {@link PageCursor} to read meta information from.
      */
-    void write( PageCursor cursor )
-    {
-        cursor.putInt( allVersionsCombined() );
-        cursor.putInt( getPayloadSize() );
-        cursor.putLong( getLayoutIdentifier() );
-        cursor.putInt( getLayoutMajorVersion() );
-        cursor.putInt( getLayoutMinorVersion() );
-        checkOutOfBounds( cursor );
+    void write(PageCursor cursor) {
+        cursor.putInt(allVersionsCombined());
+        cursor.putInt(getPayloadSize());
+        cursor.putLong(getLayoutIdentifier());
+        cursor.putInt(getLayoutMajorVersion());
+        cursor.putInt(getLayoutMinorVersion());
+        checkOutOfBounds(cursor);
     }
 
-    private static byte extractIndividualVersion( int format, int shift )
-    {
+    private static byte extractIndividualVersion(int format, int shift) {
         return (byte) ((format >>> shift) & MASK_BYTE);
     }
 
-    private int allVersionsCombined()
-    {
+    private int allVersionsCombined() {
         return formatIdentifier << SHIFT_FORMAT_IDENTIFIER | formatVersion << SHIFT_FORMAT_VERSION;
     }
 
-    int getPayloadSize()
-    {
+    int getPayloadSize() {
         return payloadSize;
     }
 
-    byte getFormatIdentifier()
-    {
+    byte getFormatIdentifier() {
         return formatIdentifier;
     }
 
-    byte getFormatVersion()
-    {
+    byte getFormatVersion() {
         return formatVersion;
     }
 
-    byte getUnusedVersionSlot3()
-    {
+    byte getUnusedVersionSlot3() {
         return unusedVersionSlot3;
     }
 
-    byte getUnusedVersionSlot4()
-    {
+    byte getUnusedVersionSlot4() {
         return unusedVersionSlot4;
     }
 
-    long getLayoutIdentifier()
-    {
+    long getLayoutIdentifier() {
         return layoutIdentifier;
     }
 
-    int getLayoutMajorVersion()
-    {
+    int getLayoutMajorVersion() {
         return layoutMajorVersion;
     }
 
-    int getLayoutMinorVersion()
-    {
+    int getLayoutMinorVersion() {
         return layoutMinorVersion;
     }
 }

@@ -22,8 +22,7 @@ package org.neo4j.internal.schema;
 /**
  * Something that can complete the configuration of index descriptors, by adding any missing configurations, and assigning them capabilities.
  */
-public interface IndexConfigCompleter
-{
+public interface IndexConfigCompleter {
     /**
      * Since indexes can now have provider-specific settings and configurations, the provider needs to have an opportunity to inspect and validate the index
      * descriptor before an index is created. The provider also uses this opportunity to assign capabilities to the index.
@@ -35,5 +34,5 @@ public interface IndexConfigCompleter
      * @param index The descriptor of an index that we are about to create, and we wish to its configuration be completed by its chosen index provider.
      * @return An index descriptor with a completed configuration.
      */
-    IndexDescriptor completeConfiguration( IndexDescriptor index );
+    IndexDescriptor completeConfiguration(IndexDescriptor index);
 }

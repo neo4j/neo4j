@@ -19,9 +19,20 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static java.lang.Math.toIntExact;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -29,7 +40,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -53,28 +66,14 @@ import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.token.api.NamedToken;
 
-import static java.lang.Math.toIntExact;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @EphemeralPageCacheExtension
-abstract class TokenStoreTestTemplate<R extends TokenRecord>
-{
+abstract class TokenStoreTestTemplate<R extends TokenRecord> {
     @Inject
     private EphemeralFileSystemAbstraction fs;
+
     @Inject
     private TestDirectory dir;
+
     @Inject
     private PageCache pageCache;
 
@@ -83,182 +82,187 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
     protected StoreCursors storeCursors;
 
     @BeforeEach
-    void setUp() throws IOException
-    {
-        Path file = dir.file( "label-tokens.db" );
-        Path idFile = dir.file( "label-tokens.db.id" );
-        Path namesFile = dir.file( "label-tokens.db.names" );
-        Path namesIdFile = dir.file( "label-tokens.db.names.id" );
+    void setUp() throws IOException {
+        Path file = dir.file("label-tokens.db");
+        Path idFile = dir.file("label-tokens.db.id");
+        Path namesFile = dir.file("label-tokens.db.names");
+        Path namesIdFile = dir.file("label-tokens.db.names.id");
 
-        IdGeneratorFactory generatorFactory = new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME );
+        IdGeneratorFactory generatorFactory = new DefaultIdGeneratorFactory(fs, immediate(), DEFAULT_DATABASE_NAME);
         InternalLogProvider logProvider = NullLogProvider.getInstance();
 
         RecordFormats formats = RecordFormatSelector.defaultFormat();
         Config config = Config.defaults();
-        nameStore = new DynamicStringStore( namesFile, namesIdFile, config, RecordIdType.LABEL_TOKEN_NAME, generatorFactory, pageCache, logProvider,
-                TokenStore.NAME_STORE_BLOCK_SIZE, formats.dynamic(), formats.storeVersion(), writable(), DEFAULT_DATABASE_NAME, immutable.empty() );
-        store = instantiateStore( file, idFile, generatorFactory, pageCache, logProvider, nameStore, formats, config );
-        CursorContextFactory contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
-        nameStore.initialise( true, contextFactory );
-        store.initialise( true, contextFactory );
-        nameStore.start( NULL_CONTEXT );
-        store.start( NULL_CONTEXT );
-        storeCursors = createCursors( store, nameStore );
+        nameStore = new DynamicStringStore(
+                namesFile,
+                namesIdFile,
+                config,
+                RecordIdType.LABEL_TOKEN_NAME,
+                generatorFactory,
+                pageCache,
+                logProvider,
+                TokenStore.NAME_STORE_BLOCK_SIZE,
+                formats.dynamic(),
+                formats.storeVersion(),
+                writable(),
+                DEFAULT_DATABASE_NAME,
+                immutable.empty());
+        store = instantiateStore(file, idFile, generatorFactory, pageCache, logProvider, nameStore, formats, config);
+        CursorContextFactory contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+        nameStore.initialise(true, contextFactory);
+        store.initialise(true, contextFactory);
+        nameStore.start(NULL_CONTEXT);
+        store.start(NULL_CONTEXT);
+        storeCursors = createCursors(store, nameStore);
     }
 
     protected abstract PageCursor storeCursor();
 
-    protected abstract StoreCursors createCursors( TokenStore<R> store, DynamicStringStore nameStore );
+    protected abstract StoreCursors createCursors(TokenStore<R> store, DynamicStringStore nameStore);
 
-    protected abstract TokenStore<R> instantiateStore( Path file, Path idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
-            InternalLogProvider logProvider, DynamicStringStore nameStore, RecordFormats formats, Config config );
+    protected abstract TokenStore<R> instantiateStore(
+            Path file,
+            Path idFile,
+            IdGeneratorFactory generatorFactory,
+            PageCache pageCache,
+            InternalLogProvider logProvider,
+            DynamicStringStore nameStore,
+            RecordFormats formats,
+            Config config);
 
     @AfterEach
-    void tearDown() throws IOException
-    {
-        IOUtils.closeAll( store, nameStore );
+    void tearDown() throws IOException {
+        IOUtils.closeAll(store, nameStore);
     }
 
     @Test
-    void forceGetRecordSkipInUseCheck() throws IOException
-    {
+    void forceGetRecordSkipInUseCheck() throws IOException {
         createEmptyPageZero();
-        R record = store.getRecordByCursor( 7, store.newRecord(), FORCE, storeCursor() );
-        assertFalse( record.inUse(), "Record should not be in use" );
+        R record = store.getRecordByCursor(7, store.newRecord(), FORCE, storeCursor());
+        assertFalse(record.inUse(), "Record should not be in use");
     }
 
     @Test
-    void getRecordWithNormalModeMustThrowIfTheRecordIsNotInUse() throws IOException
-    {
+    void getRecordWithNormalModeMustThrowIfTheRecordIsNotInUse() throws IOException {
         createEmptyPageZero();
 
-        assertThrows( InvalidRecordException.class, () ->
-        {
-            store.getRecordByCursor( 7, store.newRecord(), NORMAL, storeCursor() );
-        } );
+        assertThrows(InvalidRecordException.class, () -> {
+            store.getRecordByCursor(7, store.newRecord(), NORMAL, storeCursor());
+        });
     }
 
     @Test
-    void tokensMustNotBeInternalByDefault()
-    {
-        R tokenRecord = createInUseRecord( allocateNameRecords( "MyToken" ) );
-        storeToken( tokenRecord );
+    void tokensMustNotBeInternalByDefault() {
+        R tokenRecord = createInUseRecord(allocateNameRecords("MyToken"));
+        storeToken(tokenRecord);
 
-        R readBack = store.getRecordByCursor( tokenRecord.getId(), store.newRecord(), NORMAL, storeCursor() );
-        store.ensureHeavy( readBack, storeCursors );
-        assertThat( readBack ).isEqualTo( tokenRecord );
-        assertThat( tokenRecord.isInternal() ).isEqualTo( false );
-        assertThat( readBack.isInternal() ).isEqualTo( false );
+        R readBack = store.getRecordByCursor(tokenRecord.getId(), store.newRecord(), NORMAL, storeCursor());
+        store.ensureHeavy(readBack, storeCursors);
+        assertThat(readBack).isEqualTo(tokenRecord);
+        assertThat(tokenRecord.isInternal()).isEqualTo(false);
+        assertThat(readBack.isInternal()).isEqualTo(false);
     }
 
     @Test
-    void tokensMustPreserveTheirInternalFlag()
-    {
-        R tokenRecord = createInUseRecord( allocateNameRecords( "MyInternalToken" ) );
-        tokenRecord.setInternal( true );
-        storeToken( tokenRecord );
+    void tokensMustPreserveTheirInternalFlag() {
+        R tokenRecord = createInUseRecord(allocateNameRecords("MyInternalToken"));
+        tokenRecord.setInternal(true);
+        storeToken(tokenRecord);
 
-        R readBack = store.getRecordByCursor( tokenRecord.getId(), store.newRecord(), NORMAL, storeCursor() );
-        store.ensureHeavy( readBack, storeCursors );
-        assertThat( readBack ).isEqualTo( tokenRecord );
-        assertThat( tokenRecord.isInternal() ).isEqualTo( true );
-        assertThat( readBack.isInternal() ).isEqualTo( true );
+        R readBack = store.getRecordByCursor(tokenRecord.getId(), store.newRecord(), NORMAL, storeCursor());
+        store.ensureHeavy(readBack, storeCursors);
+        assertThat(readBack).isEqualTo(tokenRecord);
+        assertThat(tokenRecord.isInternal()).isEqualTo(true);
+        assertThat(readBack.isInternal()).isEqualTo(true);
 
-        NamedToken token = store.getToken( toIntExact( tokenRecord.getId() ), storeCursors );
-        assertThat( token.name() ).isEqualTo( "MyInternalToken" );
-        assertThat( token.id() ).isIn( toIntExact( tokenRecord.getId() ) );
-        assertTrue( token.isInternal() );
+        NamedToken token = store.getToken(toIntExact(tokenRecord.getId()), storeCursors);
+        assertThat(token.name()).isEqualTo("MyInternalToken");
+        assertThat(token.id()).isIn(toIntExact(tokenRecord.getId()));
+        assertTrue(token.isInternal());
     }
 
     @Test
-    void gettingAllReadableTokensAndAllTokensMustAlsoReturnTokensThatAreInternal()
-    {
-        R tokenA = createInUseRecord( allocateNameRecords( "TokenA" ) );
-        R tokenB = createInUseRecord( allocateNameRecords( "TokenB" ) );
-        R tokenC = createInUseRecord( allocateNameRecords( "TokenC" ) );
-        tokenC.setInternal( true );
-        R tokenD = createInUseRecord( allocateNameRecords( "TokenD" ) );
+    void gettingAllReadableTokensAndAllTokensMustAlsoReturnTokensThatAreInternal() {
+        R tokenA = createInUseRecord(allocateNameRecords("TokenA"));
+        R tokenB = createInUseRecord(allocateNameRecords("TokenB"));
+        R tokenC = createInUseRecord(allocateNameRecords("TokenC"));
+        tokenC.setInternal(true);
+        R tokenD = createInUseRecord(allocateNameRecords("TokenD"));
 
-        storeToken( tokenA );
-        storeToken( tokenB );
-        storeToken( tokenC );
-        storeToken( tokenD );
+        storeToken(tokenA);
+        storeToken(tokenB);
+        storeToken(tokenC);
+        storeToken(tokenD);
 
-        R readA = store.getRecordByCursor( tokenA.getId(), store.newRecord(), NORMAL, storeCursor() );
-        R readB = store.getRecordByCursor( tokenB.getId(), store.newRecord(), NORMAL, storeCursor() );
-        R readC = store.getRecordByCursor( tokenC.getId(), store.newRecord(), NORMAL, storeCursor() );
-        R readD = store.getRecordByCursor( tokenD.getId(), store.newRecord(), NORMAL, storeCursor() );
-        store.ensureHeavy( readA, storeCursors );
-        store.ensureHeavy( readB, storeCursors );
-        store.ensureHeavy( readC, storeCursors );
-        store.ensureHeavy( readD, storeCursors );
+        R readA = store.getRecordByCursor(tokenA.getId(), store.newRecord(), NORMAL, storeCursor());
+        R readB = store.getRecordByCursor(tokenB.getId(), store.newRecord(), NORMAL, storeCursor());
+        R readC = store.getRecordByCursor(tokenC.getId(), store.newRecord(), NORMAL, storeCursor());
+        R readD = store.getRecordByCursor(tokenD.getId(), store.newRecord(), NORMAL, storeCursor());
+        store.ensureHeavy(readA, storeCursors);
+        store.ensureHeavy(readB, storeCursors);
+        store.ensureHeavy(readC, storeCursors);
+        store.ensureHeavy(readD, storeCursors);
 
-        assertThat( readA ).isEqualTo( tokenA );
-        assertThat( readA.isInternal() ).isEqualTo( tokenA.isInternal() );
-        assertThat( readB ).isEqualTo( tokenB );
-        assertThat( readB.isInternal() ).isEqualTo( tokenB.isInternal() );
-        assertThat( readC ).isEqualTo( tokenC );
-        assertThat( readC.isInternal() ).isEqualTo( tokenC.isInternal() );
-        assertThat( readD ).isEqualTo( tokenD );
-        assertThat( readD.isInternal() ).isEqualTo( tokenD.isInternal() );
+        assertThat(readA).isEqualTo(tokenA);
+        assertThat(readA.isInternal()).isEqualTo(tokenA.isInternal());
+        assertThat(readB).isEqualTo(tokenB);
+        assertThat(readB.isInternal()).isEqualTo(tokenB.isInternal());
+        assertThat(readC).isEqualTo(tokenC);
+        assertThat(readC.isInternal()).isEqualTo(tokenC.isInternal());
+        assertThat(readD).isEqualTo(tokenD);
+        assertThat(readD.isInternal()).isEqualTo(tokenD.isInternal());
 
-        Iterator<NamedToken> itr = store.getAllReadableTokens( storeCursors ).iterator();
-        assertTrue( itr.hasNext() );
-        assertThat( itr.next() ).isEqualTo( new NamedToken( "TokenA", 0 ) );
-        assertTrue( itr.hasNext() );
-        assertThat( itr.next() ).isEqualTo( new NamedToken( "TokenB", 1 ) );
-        assertTrue( itr.hasNext() );
-        assertThat( itr.next() ).isEqualTo( new NamedToken( "TokenC", 2, true ) );
-        assertTrue( itr.hasNext() );
-        assertThat( itr.next() ).isEqualTo( new NamedToken( "TokenD", 3 ) );
+        Iterator<NamedToken> itr = store.getAllReadableTokens(storeCursors).iterator();
+        assertTrue(itr.hasNext());
+        assertThat(itr.next()).isEqualTo(new NamedToken("TokenA", 0));
+        assertTrue(itr.hasNext());
+        assertThat(itr.next()).isEqualTo(new NamedToken("TokenB", 1));
+        assertTrue(itr.hasNext());
+        assertThat(itr.next()).isEqualTo(new NamedToken("TokenC", 2, true));
+        assertTrue(itr.hasNext());
+        assertThat(itr.next()).isEqualTo(new NamedToken("TokenD", 3));
 
-        itr = store.getTokens( storeCursors ).iterator();
-        assertTrue( itr.hasNext() );
-        assertThat( itr.next() ).isEqualTo( new NamedToken( "TokenA", 0 ) );
-        assertTrue( itr.hasNext() );
-        assertThat( itr.next() ).isEqualTo( new NamedToken( "TokenB", 1 ) );
-        assertTrue( itr.hasNext() );
-        assertThat( itr.next() ).isEqualTo( new NamedToken( "TokenC", 2, true ) );
-        assertTrue( itr.hasNext() );
-        assertThat( itr.next() ).isEqualTo( new NamedToken( "TokenD", 3 ) );
+        itr = store.getTokens(storeCursors).iterator();
+        assertTrue(itr.hasNext());
+        assertThat(itr.next()).isEqualTo(new NamedToken("TokenA", 0));
+        assertTrue(itr.hasNext());
+        assertThat(itr.next()).isEqualTo(new NamedToken("TokenB", 1));
+        assertTrue(itr.hasNext());
+        assertThat(itr.next()).isEqualTo(new NamedToken("TokenC", 2, true));
+        assertTrue(itr.hasNext());
+        assertThat(itr.next()).isEqualTo(new NamedToken("TokenD", 3));
     }
 
-    private R createInUseRecord( List<DynamicRecord> nameRecords )
-    {
+    private R createInUseRecord(List<DynamicRecord> nameRecords) {
         R tokenRecord = store.newRecord();
-        tokenRecord.setId( store.nextId( NULL_CONTEXT ) );
-        tokenRecord.initialize( true, nameRecords.get( 0 ).getIntId() );
-        tokenRecord.addNameRecords( nameRecords );
+        tokenRecord.setId(store.nextId(NULL_CONTEXT));
+        tokenRecord.initialize(true, nameRecords.get(0).getIntId());
+        tokenRecord.addNameRecords(nameRecords);
         tokenRecord.setCreated();
         return tokenRecord;
     }
 
-    private void createEmptyPageZero() throws IOException
-    {
-        try ( PageCursor cursor = store.pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
-        {
+    private void createEmptyPageZero() throws IOException {
+        try (PageCursor cursor = store.pagedFile.io(0, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
             // Create an empty page in the file. All records in here will look like they are unused.
-            assertTrue( cursor.next() );
+            assertTrue(cursor.next());
         }
     }
 
-    private List<DynamicRecord> allocateNameRecords( String tokenName )
-    {
+    private List<DynamicRecord> allocateNameRecords(String tokenName) {
         List<DynamicRecord> nameRecords = new ArrayList<>();
-        nameStore.allocateRecordsFromBytes( nameRecords, tokenName.getBytes( StandardCharsets.UTF_8 ), NULL_CONTEXT, INSTANCE );
+        nameStore.allocateRecordsFromBytes(
+                nameRecords, tokenName.getBytes(StandardCharsets.UTF_8), NULL_CONTEXT, INSTANCE);
         return nameRecords;
     }
 
-    private void storeToken( R tokenRecord )
-    {
-        try ( var pageCursor = nameStore.openPageCursorForWriting( 0, NULL_CONTEXT );
-              var storeCursor = store.openPageCursorForWriting( 0, NULL_CONTEXT ) )
-        {
-            for ( DynamicRecord nameRecord : tokenRecord.getNameRecords() )
-            {
-                nameStore.updateRecord( nameRecord, pageCursor, NULL_CONTEXT, storeCursors );
+    private void storeToken(R tokenRecord) {
+        try (var pageCursor = nameStore.openPageCursorForWriting(0, NULL_CONTEXT);
+                var storeCursor = store.openPageCursorForWriting(0, NULL_CONTEXT)) {
+            for (DynamicRecord nameRecord : tokenRecord.getNameRecords()) {
+                nameStore.updateRecord(nameRecord, pageCursor, NULL_CONTEXT, storeCursors);
             }
-            store.updateRecord( tokenRecord, storeCursor, NULL_CONTEXT, storeCursors );
+            store.updateRecord(tokenRecord, storeCursor, NULL_CONTEXT, storeCursors);
         }
     }
 }

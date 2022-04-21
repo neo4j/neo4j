@@ -19,46 +19,40 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import org.neo4j.internal.helpers.collection.LongRange;
-import org.neo4j.kernel.impl.transaction.log.files.LogFile;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFileInformation;
-
 import static java.lang.Math.min;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 import static org.neo4j.util.Preconditions.requireNonNegative;
 
-public class ThresholdBasedPruneStrategy implements LogPruneStrategy
-{
+import org.neo4j.internal.helpers.collection.LongRange;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFileInformation;
+
+public class ThresholdBasedPruneStrategy implements LogPruneStrategy {
     private final LogFile logFile;
     private final Threshold threshold;
     private final TransactionLogFileInformation logFileInformation;
 
-    ThresholdBasedPruneStrategy( LogFile logFile, Threshold threshold )
-    {
+    ThresholdBasedPruneStrategy(LogFile logFile, Threshold threshold) {
         this.logFile = logFile;
         this.logFileInformation = logFile.getLogFileInformation();
         this.threshold = threshold;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return threshold.toString();
     }
 
     @Override
-    public synchronized LongRange findLogVersionsToDelete( long upToVersion )
-    {
-        if ( upToVersion == INITIAL_LOG_VERSION )
-        {
+    public synchronized LongRange findLogVersionsToDelete(long upToVersion) {
+        if (upToVersion == INITIAL_LOG_VERSION) {
             return LongRange.EMPTY_RANGE;
         }
 
         threshold.init();
         long lowestLogVersion = logFile.getLowestLogVersion();
-        ThresholdEvaluationResult thresholdResult = pruneThresholdReached( upToVersion, lowestLogVersion );
-        if ( !thresholdResult.reached() )
-        {
+        ThresholdEvaluationResult thresholdResult = pruneThresholdReached(upToVersion, lowestLogVersion);
+        if (!thresholdResult.reached()) {
             return LongRange.EMPTY_RANGE;
         }
 
@@ -74,55 +68,45 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
          * This if statement does nothing more complicated than checking if the next-to-last log would be pruned
          * and simply skipping it if so.
          */
-        return LongRange.range( lowestLogVersion, min( thresholdResult.logVersion(), upToVersion - 2 ) );
+        return LongRange.range(lowestLogVersion, min(thresholdResult.logVersion(), upToVersion - 2));
     }
 
-    private ThresholdEvaluationResult pruneThresholdReached( long upToVersion, long lowestLogVersion )
-    {
-        for ( long version = upToVersion - 1; version >= lowestLogVersion; version-- )
-        {
-            if ( threshold.reached( logFile.getLogFileForVersion( version ), version, logFileInformation ) )
-            {
-                return ThresholdEvaluationResult.reached( version );
+    private ThresholdEvaluationResult pruneThresholdReached(long upToVersion, long lowestLogVersion) {
+        for (long version = upToVersion - 1; version >= lowestLogVersion; version--) {
+            if (threshold.reached(logFile.getLogFileForVersion(version), version, logFileInformation)) {
+                return ThresholdEvaluationResult.reached(version);
             }
         }
         return ThresholdEvaluationResult.notReached();
     }
 
-    private static class ThresholdEvaluationResult
-    {
+    private static class ThresholdEvaluationResult {
         private static final int NON_EXISTING_LOG_VERSION = -1;
 
-        private static ThresholdEvaluationResult notReached()
-        {
+        private static ThresholdEvaluationResult notReached() {
             return new ThresholdEvaluationResult();
         }
 
-        private static ThresholdEvaluationResult reached( long version )
-        {
-            requireNonNegative( version );
-            return new ThresholdEvaluationResult( version );
+        private static ThresholdEvaluationResult reached(long version) {
+            requireNonNegative(version);
+            return new ThresholdEvaluationResult(version);
         }
 
         private final long logVersion;
 
-        private ThresholdEvaluationResult()
-        {
-            this( NON_EXISTING_LOG_VERSION );
+        private ThresholdEvaluationResult() {
+            this(NON_EXISTING_LOG_VERSION);
         }
 
-        private ThresholdEvaluationResult( long logVersion )
-        {
+        private ThresholdEvaluationResult(long logVersion) {
             this.logVersion = logVersion;
         }
 
-        boolean reached()
-        {
+        boolean reached() {
             return logVersion != NON_EXISTING_LOG_VERSION;
         }
 
-        long logVersion()
-        {
+        long logVersion() {
             return logVersion;
         }
     }

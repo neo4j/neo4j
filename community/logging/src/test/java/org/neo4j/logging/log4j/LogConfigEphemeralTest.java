@@ -19,54 +19,49 @@
  */
 package org.neo4j.logging.log4j;
 
-import org.apache.logging.log4j.spi.ExtendedLogger;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Scanner;
-
+import org.apache.logging.log4j.spi.ExtendedLogger;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Level;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 @EphemeralTestDirectoryExtension
-class LogConfigEphemeralTest
-{
+class LogConfigEphemeralTest {
     @Inject
     private FileSystemAbstraction fs;
+
     @Inject
     private TestDirectory dir;
 
     private Neo4jLoggerContext ctx;
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         ctx.close();
     }
 
     @Test
-    void shouldLogToEphemeralFileSystemAbstraction() throws IOException
-    {
-        Path targetFile = dir.homePath().resolve( "debug.log" );
+    void shouldLogToEphemeralFileSystemAbstraction() throws IOException {
+        Path targetFile = dir.homePath().resolve("debug.log");
 
-        ctx = LogConfig.createBuilder( fs, targetFile, Level.DEBUG ).build();
-        ExtendedLogger logger = ctx.getLogger( "test" );
-        logger.warn( "test" );
+        ctx = LogConfig.createBuilder(fs, targetFile, Level.DEBUG).build();
+        ExtendedLogger logger = ctx.getLogger("test");
+        logger.warn("test");
 
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
-        try ( InputStream inputStream = fs.openAsInputStream( targetFile ) )
-        {
-            Scanner scanner = new Scanner( inputStream );
+        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
+        try (InputStream inputStream = fs.openAsInputStream(targetFile)) {
+            Scanner scanner = new Scanner(inputStream);
             String line = scanner.nextLine();
-            assertThat( line ).contains( "WARN  [test] test" );
+            assertThat(line).contains("WARN  [test] test");
         }
     }
 }

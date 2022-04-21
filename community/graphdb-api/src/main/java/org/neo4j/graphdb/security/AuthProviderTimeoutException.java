@@ -24,24 +24,20 @@ import org.neo4j.kernel.api.exceptions.Status;
 /**
  * Thrown when a request for authentication or authorization against an external server timed out.
  */
-public class AuthProviderTimeoutException extends RuntimeException implements Status.HasStatus
-{
+public class AuthProviderTimeoutException extends RuntimeException implements Status.HasStatus {
     private static final Status statusCode = Status.Security.AuthProviderTimeout;
 
-    public AuthProviderTimeoutException( String msg )
-    {
-        super( msg );
+    public AuthProviderTimeoutException(String msg) {
+        super(msg);
     }
 
-    public AuthProviderTimeoutException( String msg, Throwable cause )
-    {
-        super( msg, cause );
+    public AuthProviderTimeoutException(String msg, Throwable cause) {
+        super(msg, cause);
     }
 
     /** The Neo4j status code associated with this exception type. */
     @Override
-    public Status status()
-    {
+    public Status status() {
         return statusCode;
     }
 }

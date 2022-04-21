@@ -32,68 +32,68 @@ import org.neo4j.values.storable.Values.stringValue
 class GenericCaseTest extends CypherFunSuite {
 
   test("case_with_single_alternative_works") {
-    //GIVEN
+    // GIVEN
     val caseExpr = case_(
       (1, 1) -> "one"
     )
 
-    //WHEN
+    // WHEN
     val result = caseExpr(CypherRow.empty, QueryStateHelper.empty)
 
-    //THEN
+    // THEN
     result should equal(stringValue("one"))
   }
 
   test("case_with_two_alternatives_picks_the_second") {
-    //GIVEN
+    // GIVEN
     val caseExpr = case_(
       (1, 2) -> "one",
       (2, 2) -> "two"
     )
 
-    //WHEN
+    // WHEN
     val result = caseExpr(CypherRow.empty, QueryStateHelper.empty)
 
-    //THEN
+    // THEN
     result should equal(stringValue("two"))
   }
 
   test("case_with_no_match_returns_null") {
-    //GIVEN
+    // GIVEN
     val caseExpr = case_(
       (1, 2) -> "one",
       (2, 3) -> "two"
     )
 
-    //WHEN
+    // WHEN
     val result = caseExpr(CypherRow.empty, QueryStateHelper.empty)
 
-    //THEN
+    // THEN
     result should equal(NO_VALUE)
   }
 
   test("case_with_no_match_returns_default") {
-    //GIVEN
+    // GIVEN
     val caseExpr = case_(
       (1, 2) -> "one",
       (2, 3) -> "two"
     ) defaultsTo "other"
 
-    //WHEN
+    // WHEN
     val result = caseExpr(CypherRow.empty, QueryStateHelper.empty)
 
-    //THEN
+    // THEN
     result should equal(stringValue("other"))
   }
 
   test("case_with_a_single_null_value_uses_the_default") {
-    //GIVEN CASE WHEN null THEN 42 ELSE "defaults"
-    val caseExpr = GenericCase(IndexedSeq(CoercedPredicate(Null())->literal(42)), Some(literal("defaults")))
+    // GIVEN CASE WHEN null THEN 42 ELSE "defaults"
+    val caseExpr = GenericCase(IndexedSeq(CoercedPredicate(Null()) -> literal(42)), Some(literal("defaults")))
 
-    //WHEN
+    // WHEN
     val result = caseExpr(CypherRow.empty, QueryStateHelper.empty)
 
-    //THEN
+    // THEN
     assert(result === stringValue("defaults"))
   }
 

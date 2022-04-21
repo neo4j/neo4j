@@ -20,7 +20,6 @@
 package org.neo4j.graphdb.event;
 
 import java.util.Map;
-
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -33,8 +32,7 @@ import org.neo4j.graphdb.Relationship;
  * in the transaction data at all.
  */
 @PublicApi
-public interface TransactionData
-{
+public interface TransactionData {
     /**
      * Get the nodes that were created during the transaction.
      *
@@ -55,7 +53,7 @@ public interface TransactionData
      * in this transaction.
      * @return whether or not {@code node} is deleted in this transaction.
      */
-    boolean isDeleted( Node node );
+    boolean isDeleted(Node node);
 
     /**
      * Get the properties that had a value assigned or overwritten on a node
@@ -126,7 +124,7 @@ public interface TransactionData
      * @return whether or not {@code relationship} is deleted in this
      *         transaction.
      */
-    boolean isDeleted( Relationship relationship );
+    boolean isDeleted(Relationship relationship);
 
     /**
      * Get the properties that had a value assigned on a relationship during the
@@ -173,16 +171,15 @@ public interface TransactionData
      *
      * @return The application specific meta-data map associated with this transaction.
      */
-    Map<String,Object> metaData();
+    Map<String, Object> metaData();
 
     /**
      * Return transaction id that assigned during transaction commit process.
      * @return transaction id.
      * @throws IllegalStateException if transaction id is not assigned yet
      */
-    default long getTransactionId()
-    {
-        throw new IllegalStateException( "Transaction id is not available." );
+    default long getTransactionId() {
+        throw new IllegalStateException("Transaction id is not available.");
     }
 
     /**
@@ -190,8 +187,7 @@ public interface TransactionData
      * @return transaction commit time
      * @throws IllegalStateException if commit time is not assigned yet
      */
-    default long getCommitTime()
-    {
-        throw new IllegalStateException( "Transaction commit time it not available." );
+    default long getCommitTime() {
+        throw new IllegalStateException("Transaction commit time it not available.");
     }
 }

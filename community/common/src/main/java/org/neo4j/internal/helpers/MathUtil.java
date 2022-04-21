@@ -23,14 +23,12 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Comparator;
 
-public final class MathUtil
-{
+public final class MathUtil {
     public static final double DEFAULT_EPSILON = 1.0E-8;
 
     private static final long NON_DOUBLE_LONG = 0xFFE0_0000_0000_0000L; // doubles are exact integers up to 53 bits
 
-    private MathUtil()
-    {
+    private MathUtil() {
         throw new AssertionError();
     }
 
@@ -39,13 +37,11 @@ public final class MathUtil
      * @param n The values in the set
      * @return the ratio of n[0] to the sum all n, 0 if result is {@link Double#NaN}
      */
-    public static double portion( double... n )
-    {
+    public static double portion(double... n) {
         assert n.length > 0;
 
         double first = n[0];
-        if ( Math.abs( first ) < DEFAULT_EPSILON )
-        {
+        if (Math.abs(first) < DEFAULT_EPSILON) {
             return 0d;
         }
         double total = Arrays.stream(n).sum();
@@ -53,21 +49,17 @@ public final class MathUtil
     }
 
     // Tested by PropertyValueComparisonTest
-    public static int compareDoubleAgainstLong( double lhs, long rhs )
-    {
-        if ( (NON_DOUBLE_LONG & rhs ) != NON_DOUBLE_LONG )
-        {
-            if ( Double.isNaN( lhs ) )
-            {
+    public static int compareDoubleAgainstLong(double lhs, long rhs) {
+        if ((NON_DOUBLE_LONG & rhs) != NON_DOUBLE_LONG) {
+            if (Double.isNaN(lhs)) {
                 return +1;
             }
-            if ( Double.isInfinite( lhs ) )
-            {
+            if (Double.isInfinite(lhs)) {
                 return lhs < 0 ? -1 : +1;
             }
-            return BigDecimal.valueOf( lhs ).compareTo( BigDecimal.valueOf( rhs ) );
+            return BigDecimal.valueOf(lhs).compareTo(BigDecimal.valueOf(rhs));
         }
-        return Double.compare( lhs, rhs );
+        return Double.compare(lhs, rhs);
     }
 
     /**
@@ -78,11 +70,9 @@ public final class MathUtil
      * @return the provided integer minus one
      * @throws ArithmeticException if the resulting integer would be less than zero
      */
-    public static int decrementExactNotPastZero( int value )
-    {
-        if ( value == 0 )
-        {
-            throw new ArithmeticException( "integer underflow past zero" );
+    public static int decrementExactNotPastZero(int value) {
+        if (value == 0) {
+            throw new ArithmeticException("integer underflow past zero");
         }
         return value - 1;
     }
@@ -90,32 +80,27 @@ public final class MathUtil
     /**
      * Compares two numbers given some amount of allowed error.
      */
-    public static int compare( double x, double y, double eps )
-    {
-        return equals( x, y, eps ) ? 0 : x < y ? -1 : 1;
+    public static int compare(double x, double y, double eps) {
+        return equals(x, y, eps) ? 0 : x < y ? -1 : 1;
     }
 
     /**
      * Returns true if both arguments are equal or within the range of allowed error (inclusive)
      */
-    public static boolean equals( double x, double y, double eps )
-    {
-        return Math.abs( x - y ) <= eps;
+    public static boolean equals(double x, double y, double eps) {
+        return Math.abs(x - y) <= eps;
     }
 
-    public static class CommonToleranceComparator implements Comparator<Double>
-    {
+    public static class CommonToleranceComparator implements Comparator<Double> {
         private final double epsilon;
 
-        public CommonToleranceComparator( double epsilon )
-        {
+        public CommonToleranceComparator(double epsilon) {
             this.epsilon = epsilon;
         }
 
         @Override
-        public int compare( Double x, Double y )
-        {
-            return MathUtil.compare( x, y, epsilon );
+        public int compare(Double x, Double y) {
+            return MathUtil.compare(x, y, epsilon);
         }
     }
 }

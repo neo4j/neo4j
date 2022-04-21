@@ -24,50 +24,38 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 /**
  * Represents the process of appending a check point to the transaction log.
  */
-public interface LogCheckPointEvent extends LogForceEvents, LogRotateEvents, AutoCloseable
-{
-    LogCheckPointEvent NULL = new LogCheckPointEvent()
-    {
+public interface LogCheckPointEvent extends LogForceEvents, LogRotateEvents, AutoCloseable {
+    LogCheckPointEvent NULL = new LogCheckPointEvent() {
         @Override
-        public LogRotateEvent beginLogRotate()
-        {
+        public LogRotateEvent beginLogRotate() {
             return LogRotateEvent.NULL;
         }
 
         @Override
-        public LogForceWaitEvent beginLogForceWait()
-        {
+        public LogForceWaitEvent beginLogForceWait() {
             return LogForceWaitEvent.NULL;
         }
 
         @Override
-        public LogForceEvent beginLogForce()
-        {
+        public LogForceEvent beginLogForce() {
             return LogForceEvent.NULL;
         }
 
         @Override
-        public void checkpointCompleted( long checkpointMillis )
-        {
-        }
+        public void checkpointCompleted(long checkpointMillis) {}
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
 
         @Override
-        public void appendToLogFile( LogPosition positionBeforeCheckpoint, LogPosition positionAfterCheckpoint )
-        {
-
-        }
+        public void appendToLogFile(LogPosition positionBeforeCheckpoint, LogPosition positionAfterCheckpoint) {}
     };
 
     /**
      * Notify about completion of checkpoint that took {@code checkpointMillis} to complete
      * @param checkpointMillis checkpoint duration
      */
-    void checkpointCompleted( long checkpointMillis );
+    void checkpointCompleted(long checkpointMillis);
 
     /**
      * Marks the end of the check pointing process.
@@ -81,5 +69,5 @@ public interface LogCheckPointEvent extends LogForceEvents, LogRotateEvents, Aut
      * @param positionBeforeCheckpoint start position
      * @param positionAfterCheckpoint end position
      */
-    void appendToLogFile( LogPosition positionBeforeCheckpoint, LogPosition positionAfterCheckpoint );
+    void appendToLogFile(LogPosition positionBeforeCheckpoint, LogPosition positionAfterCheckpoint);
 }

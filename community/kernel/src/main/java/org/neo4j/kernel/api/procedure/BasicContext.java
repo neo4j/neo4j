@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.api.procedure;
 
+import static java.util.Objects.requireNonNull;
+
 import java.time.Clock;
 import java.util.function.Function;
-
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
@@ -31,10 +32,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.ValueMapper;
 
-import static java.util.Objects.requireNonNull;
-
-public class BasicContext implements Context
-{
+public class BasicContext implements Context {
     private final DependencyResolver resolver;
     private final InternalTransaction transaction;
     private final SecurityContext securityContext;
@@ -42,11 +40,13 @@ public class BasicContext implements Context
     private final Thread thread;
     private final ProcedureCallContext procedureCallContext;
 
-    private BasicContext( DependencyResolver resolver,
+    private BasicContext(
+            DependencyResolver resolver,
             InternalTransaction transaction,
-            SecurityContext securityContext, ValueMapper<Object> valueMapper,
-            Thread thread, ProcedureCallContext procedureCallContext )
-    {
+            SecurityContext securityContext,
+            ValueMapper<Object> valueMapper,
+            Thread thread,
+            ProcedureCallContext procedureCallContext) {
         this.resolver = resolver;
         this.transaction = transaction;
         this.securityContext = securityContext;
@@ -56,94 +56,83 @@ public class BasicContext implements Context
     }
 
     @Override
-    public ValueMapper<Object> valueMapper()
-    {
+    public ValueMapper<Object> valueMapper() {
         return valueMapper;
     }
 
     @Override
-    public SecurityContext securityContext()
-    {
+    public SecurityContext securityContext() {
         return securityContext;
     }
 
     @Override
-    public DependencyResolver dependencyResolver()
-    {
+    public DependencyResolver dependencyResolver() {
         return resolver;
     }
 
     @Override
-    public GraphDatabaseAPI graphDatabaseAPI()
-    {
-        return resolver.resolveDependency( GraphDatabaseAPI.class );
+    public GraphDatabaseAPI graphDatabaseAPI() {
+        return resolver.resolveDependency(GraphDatabaseAPI.class);
     }
 
     @Override
-    public Thread thread()
-    {
+    public Thread thread() {
         return thread;
     }
 
     @Override
-    public InternalTransaction internalTransaction() throws ProcedureException
-    {
-        return throwIfNull( "Transaction", transaction );
+    public InternalTransaction internalTransaction() throws ProcedureException {
+        return throwIfNull("Transaction", transaction);
     }
 
     @Override
-    public InternalTransaction internalTransactionOrNull()
-    {
+    public InternalTransaction internalTransactionOrNull() {
         return transaction;
     }
 
     @Override
-    public Clock systemClock() throws ProcedureException
-    {
-        return throwIfNull( "SystemClock", transaction.kernelTransaction(), t -> t.clocks().systemClock() );
+    public Clock systemClock() throws ProcedureException {
+        return throwIfNull(
+                "SystemClock", transaction.kernelTransaction(), t -> t.clocks().systemClock());
     }
 
     @Override
-    public Clock statementClock() throws ProcedureException
-    {
-        return throwIfNull( "StatementClock", transaction.kernelTransaction(), t -> t.clocks().statementClock() );
+    public Clock statementClock() throws ProcedureException {
+        return throwIfNull("StatementClock", transaction.kernelTransaction(), t -> t.clocks()
+                .statementClock());
     }
 
     @Override
-    public Clock transactionClock() throws ProcedureException
-    {
-        return throwIfNull( "TransactionClock", transaction.kernelTransaction(), t -> t.clocks().transactionClock() );
+    public Clock transactionClock() throws ProcedureException {
+        return throwIfNull("TransactionClock", transaction.kernelTransaction(), t -> t.clocks()
+                .transactionClock());
     }
 
     @Override
-    public ProcedureCallContext procedureCallContext()
-    {
+    public ProcedureCallContext procedureCallContext() {
         return procedureCallContext;
     }
 
-    public static ContextBuilder buildContext( DependencyResolver dependencyResolver, ValueMapper<Object> valueMapper )
-    {
-        return new ContextBuilder( dependencyResolver, valueMapper );
+    public static ContextBuilder buildContext(DependencyResolver dependencyResolver, ValueMapper<Object> valueMapper) {
+        return new ContextBuilder(dependencyResolver, valueMapper);
     }
 
-    @SuppressWarnings( "unchecked" )
-    private static <T, U> T throwIfNull( String name, U value ) throws ProcedureException
-    {
-        return throwIfNull( name, value, v -> (T) v );
+    @SuppressWarnings("unchecked")
+    private static <T, U> T throwIfNull(String name, U value) throws ProcedureException {
+        return throwIfNull(name, value, v -> (T) v);
     }
 
-    private static <T, U> T throwIfNull( String name, U value, Function<U,T> producer ) throws ProcedureException
-    {
-        if ( value == null )
-        {
-            throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
-                    "There is no `%s` in the current procedure call context.", name );
+    private static <T, U> T throwIfNull(String name, U value, Function<U, T> producer) throws ProcedureException {
+        if (value == null) {
+            throw new ProcedureException(
+                    Status.Procedure.ProcedureCallFailed,
+                    "There is no `%s` in the current procedure call context.",
+                    name);
         }
-        return producer.apply( value );
+        return producer.apply(value);
     }
 
-    public static class ContextBuilder
-    {
+    public static class ContextBuilder {
         private DependencyResolver resolver;
         private InternalTransaction transaction;
         private SecurityContext securityContext = SecurityContext.AUTH_DISABLED;
@@ -151,37 +140,32 @@ public class BasicContext implements Context
         private ValueMapper<Object> valueMapper;
         private ProcedureCallContext procedureCallContext;
 
-        private ContextBuilder( DependencyResolver resolver, ValueMapper<Object> valueMapper )
-        {
+        private ContextBuilder(DependencyResolver resolver, ValueMapper<Object> valueMapper) {
             this.resolver = resolver;
             this.valueMapper = valueMapper;
         }
 
-        public ContextBuilder withTransaction( InternalTransaction internalTransaction )
-        {
+        public ContextBuilder withTransaction(InternalTransaction internalTransaction) {
             this.transaction = internalTransaction;
             return this;
         }
 
-        public ContextBuilder withSecurityContext( SecurityContext securityContext )
-        {
+        public ContextBuilder withSecurityContext(SecurityContext securityContext) {
             this.securityContext = securityContext;
             return this;
         }
 
-        public ContextBuilder withProcedureCallContext( ProcedureCallContext procedureContext )
-        {
+        public ContextBuilder withProcedureCallContext(ProcedureCallContext procedureContext) {
             this.procedureCallContext = procedureContext;
             return this;
         }
 
-        public Context context()
-        {
-            requireNonNull( resolver );
-            requireNonNull( securityContext );
-            requireNonNull( valueMapper );
-            requireNonNull( thread );
-            return new BasicContext( resolver, transaction, securityContext, valueMapper, thread, procedureCallContext );
+        public Context context() {
+            requireNonNull(resolver);
+            requireNonNull(securityContext);
+            requireNonNull(valueMapper);
+            requireNonNull(thread);
+            return new BasicContext(resolver, transaction, securityContext, valueMapper, thread, procedureCallContext);
         }
     }
 }

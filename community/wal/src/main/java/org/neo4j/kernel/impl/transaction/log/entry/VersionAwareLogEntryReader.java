@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import java.io.IOException;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
+import java.io.IOException;
 import org.neo4j.io.fs.PositionableChannel;
 import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.kernel.KernelVersion;
@@ -30,83 +31,72 @@ import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChecks
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.util.FeatureToggles;
 
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
-
 /**
  * Reads {@link LogEntry log entries} off of a channel. Supported versions can be read intermixed.
  */
-public class VersionAwareLogEntryReader implements LogEntryReader
-{
-    private static final boolean VERIFY_CHECKSUM_CHAIN = FeatureToggles.flag( LogEntryReader.class, "verifyChecksumChain", false );
+public class VersionAwareLogEntryReader implements LogEntryReader {
+    private static final boolean VERIFY_CHECKSUM_CHAIN =
+            FeatureToggles.flag(LogEntryReader.class, "verifyChecksumChain", false);
     private final CommandReaderFactory commandReaderFactory;
     private final LogPositionMarker positionMarker;
     private final boolean verifyChecksumChain;
     private LogEntryParserSet parserSet;
     private int lastTxChecksum = BASE_TX_CHECKSUM;
 
-    public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory )
-    {
-        this( commandReaderFactory, true );
+    public VersionAwareLogEntryReader(CommandReaderFactory commandReaderFactory) {
+        this(commandReaderFactory, true);
     }
 
-    public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory, boolean verifyChecksumChain )
-    {
+    public VersionAwareLogEntryReader(CommandReaderFactory commandReaderFactory, boolean verifyChecksumChain) {
         this.commandReaderFactory = commandReaderFactory;
         this.positionMarker = new LogPositionMarker();
         this.verifyChecksumChain = verifyChecksumChain;
     }
 
     @Override
-    public LogEntry readLogEntry( ReadableClosablePositionAwareChecksumChannel channel ) throws IOException
-    {
-        try
-        {
-            channel.getCurrentPosition( positionMarker );
+    public LogEntry readLogEntry(ReadableClosablePositionAwareChecksumChannel channel) throws IOException {
+        try {
+            channel.getCurrentPosition(positionMarker);
 
             byte versionCode = channel.get();
-            if ( versionCode == 0 )
-            {
+            if (versionCode == 0) {
                 // we reached the end of available records but still have space available in pre-allocated file
-                // we reset channel position to restore last read byte in case someone would like to re-read or check it again if possible
+                // we reset channel position to restore last read byte in case someone would like to re-read or check it
+                // again if possible
                 // and we report that we reach end of record stream from our point of view
-                if ( channel instanceof PositionableChannel )
-                {
-                    resetChannelPosition( channel );
-                }
-                else
-                {
-                    throw new IllegalStateException( "Log reader expects positionable channel to be able to reset offset. Current channel: " + channel );
+                if (channel instanceof PositionableChannel) {
+                    resetChannelPosition(channel);
+                } else {
+                    throw new IllegalStateException(
+                            "Log reader expects positionable channel to be able to reset offset. Current channel: "
+                                    + channel);
                 }
                 return null;
             }
-            if ( parserSet == null || parserSet.getIntroductionVersion().version() != versionCode )
-            {
-                try
-                {
-                    parserSet = LogEntryParserSets.parserSet( KernelVersion.getForVersion( versionCode ) );
-                }
-                catch ( IllegalArgumentException e )
-                {
+            if (parserSet == null || parserSet.getIntroductionVersion().version() != versionCode) {
+                try {
+                    parserSet = LogEntryParserSets.parserSet(KernelVersion.getForVersion(versionCode));
+                } catch (IllegalArgumentException e) {
                     String msg;
-                    if ( versionCode > KernelVersion.LATEST.version() )
-                    {
-                        msg = String.format( "Log file contains entries with prefix %d, and the highest supported prefix is %s. This " +
-                                             "indicates that the log files originates from an newer version of neo4j, which we don't support " +
-                                             "downgrading from.", versionCode, KernelVersion.LATEST );
+                    if (versionCode > KernelVersion.LATEST.version()) {
+                        msg = String.format(
+                                "Log file contains entries with prefix %d, and the highest supported prefix is %s. This "
+                                        + "indicates that the log files originates from an newer version of neo4j, which we don't support "
+                                        + "downgrading from.",
+                                versionCode, KernelVersion.LATEST);
+                    } else {
+                        msg = String.format(
+                                "Log file contains entries with prefix %d, and the lowest supported prefix is %s. This "
+                                        + "indicates that the log files originates from an older version of neo4j, which we don't support "
+                                        + "migrations from.",
+                                versionCode, KernelVersion.EARLIEST);
                     }
-                    else
-                    {
-                        msg = String.format( "Log file contains entries with prefix %d, and the lowest supported prefix is %s. This " +
-                                             "indicates that the log files originates from an older version of neo4j, which we don't support " +
-                                             "migrations from.", versionCode, KernelVersion.EARLIEST );
-                    }
-                    throw new UnsupportedLogVersionException( msg );
+                    throw new UnsupportedLogVersionException(msg);
                 }
                 // Since checksum is calculated over the whole entry we need to rewind and begin
                 // a new checksum segment if we change version parser.
-                if ( channel instanceof PositionableChannel )
-                {
-                    resetChannelPosition( channel );
+                if (channel instanceof PositionableChannel) {
+                    resetChannelPosition(channel);
                     channel.beginChecksum();
                     channel.get();
                 }
@@ -115,70 +105,54 @@ public class VersionAwareLogEntryReader implements LogEntryReader
             byte typeCode = channel.get();
 
             LogEntry entry;
-            try
-            {
-                var entryReader = parserSet.select( typeCode );
-                entry = entryReader.parse( parserSet.getIntroductionVersion(), channel, positionMarker, commandReaderFactory );
-            }
-            catch ( ReadPastEndException e )
-            {   // Make these exceptions slip by straight out to the outer handler
+            try {
+                var entryReader = parserSet.select(typeCode);
+                entry = entryReader.parse(
+                        parserSet.getIntroductionVersion(), channel, positionMarker, commandReaderFactory);
+            } catch (ReadPastEndException e) { // Make these exceptions slip by straight out to the outer handler
                 throw e;
-            }
-            catch ( Exception e )
-            {   // Tag all other exceptions with log position and other useful information
+            } catch (Exception e) { // Tag all other exceptions with log position and other useful information
                 LogPosition position = positionMarker.newPosition();
                 var message = e.getMessage() + ". At position " + position + " and entry version " + versionCode;
-                if ( e instanceof UnsupportedLogVersionException )
-                {
-                    throw new UnsupportedLogVersionException( message, e );
+                if (e instanceof UnsupportedLogVersionException) {
+                    throw new UnsupportedLogVersionException(message, e);
                 }
-                throw new IOException( message, e );
+                throw new IOException(message, e);
             }
 
-            verifyChecksumChain( entry );
+            verifyChecksumChain(entry);
             return entry;
-        }
-        catch ( ReadPastEndException e )
-        {
+        } catch (ReadPastEndException e) {
             return null;
         }
     }
 
-    private void verifyChecksumChain( LogEntry e )
-    {
-        if ( VERIFY_CHECKSUM_CHAIN && verifyChecksumChain )
-        {
-            if ( e instanceof LogEntryStart )
-            {
+    private void verifyChecksumChain(LogEntry e) {
+        if (VERIFY_CHECKSUM_CHAIN && verifyChecksumChain) {
+            if (e instanceof LogEntryStart) {
                 int previousChecksum = ((LogEntryStart) e).getPreviousChecksum();
-                if ( lastTxChecksum != BASE_TX_CHECKSUM )
-                {
-                    if ( previousChecksum != lastTxChecksum )
-                    {
-                        throw new IllegalStateException( "The checksum chain is broken. " + positionMarker );
+                if (lastTxChecksum != BASE_TX_CHECKSUM) {
+                    if (previousChecksum != lastTxChecksum) {
+                        throw new IllegalStateException("The checksum chain is broken. " + positionMarker);
                     }
                 }
-            }
-            else if ( e instanceof LogEntryCommit )
-            {
+            } else if (e instanceof LogEntryCommit) {
                 lastTxChecksum = ((LogEntryCommit) e).getChecksum();
             }
         }
     }
 
-    private void resetChannelPosition( ReadableClosablePositionAwareChecksumChannel channel ) throws IOException
-    {
-        //take current position
-        channel.getCurrentPosition( positionMarker );
+    private void resetChannelPosition(ReadableClosablePositionAwareChecksumChannel channel) throws IOException {
+        // take current position
+        channel.getCurrentPosition(positionMarker);
         PositionableChannel positionableChannel = (PositionableChannel) channel;
-        positionableChannel.setCurrentPosition( positionMarker.getByteOffset() - 1 );
+        positionableChannel.setCurrentPosition(positionMarker.getByteOffset() - 1);
         // refresh with reset position
-        channel.getCurrentPosition( positionMarker );
+        channel.getCurrentPosition(positionMarker);
     }
 
     @Override
-    public LogPosition lastPosition()
-    {
+    public LogPosition lastPosition() {
         return positionMarker.newPosition();
     }
 }

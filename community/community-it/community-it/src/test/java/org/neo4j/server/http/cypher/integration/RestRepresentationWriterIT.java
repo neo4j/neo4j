@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.http.cypher.integration;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.server.http.cypher.entity.HttpNode;
 import org.neo4j.server.http.cypher.format.DefaultJsonFactory;
@@ -35,33 +35,28 @@ import org.neo4j.server.http.cypher.format.api.RecordEvent;
 import org.neo4j.server.http.cypher.format.output.json.ResultDataContent;
 import org.neo4j.server.http.cypher.format.output.json.ResultDataContentWriter;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-class RestRepresentationWriterIT
-{
+class RestRepresentationWriterIT {
     private JsonGenerator jsonGenerator;
     private ByteArrayOutputStream stream;
     private ResultDataContentWriter contentWriter;
 
     @BeforeEach
-    void createOutputFormat() throws Exception
-    {
+    void createOutputFormat() throws Exception {
         stream = new ByteArrayOutputStream();
-        this.jsonGenerator = DefaultJsonFactory.INSTANCE.get().createGenerator( stream );
-        this.contentWriter = ResultDataContent.rest.writer( new URI( "http://localhost/" ) );
+        this.jsonGenerator = DefaultJsonFactory.INSTANCE.get().createGenerator(stream);
+        this.contentWriter = ResultDataContent.rest.writer(new URI("http://localhost/"));
     }
 
     @Test
-    void canFormatNode() throws IOException
-    {
-        final Node n = new HttpNode( 0 );
-        RecordEvent recordEvent = new RecordEvent( Collections.singletonList( "key" ), k -> n );
+    void canFormatNode() throws IOException {
+        final Node n = new HttpNode(0);
+        RecordEvent recordEvent = new RecordEvent(Collections.singletonList("key"), k -> n);
         jsonGenerator.writeStartObject();
-        this.contentWriter.write( jsonGenerator, recordEvent );
+        this.contentWriter.write(jsonGenerator, recordEvent);
         jsonGenerator.writeEndObject();
         jsonGenerator.flush();
         jsonGenerator.close();
 
-        assertTrue( stream.toString().matches( ".*\"self\"\\w*:\\w*\"http://localhost/node/0\",.*" ) );
+        assertTrue(stream.toString().matches(".*\"self\"\\w*:\\w*\"http://localhost/node/0\",.*"));
     }
 }

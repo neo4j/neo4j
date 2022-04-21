@@ -26,39 +26,40 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
-public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat<RelationshipGroupRecord>
-{
-   /* Record layout
-    *
-    * [type+inUse+highbits,next,firstOut,firstIn,firstLoop,owningNode] = 25B
-    *
-    * One record holds first relationship links (out,in,loop) to relationships for one type for one entity.
-    */
+public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat<RelationshipGroupRecord> {
+    /* Record layout
+     *
+     * [type+inUse+highbits,next,firstOut,firstIn,firstLoop,owningNode] = 25B
+     *
+     * One record holds first relationship links (out,in,loop) to relationships for one type for one entity.
+     */
 
     public static final int RECORD_SIZE = 25;
 
-    public RelationshipGroupRecordFormat()
-    {
-        this( false );
+    public RelationshipGroupRecordFormat() {
+        this(false);
     }
 
-    public RelationshipGroupRecordFormat( boolean pageAligned )
-    {
-        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, StandardFormatSettings.RELATIONSHIP_GROUP_MAXIMUM_ID_BITS, pageAligned );
+    public RelationshipGroupRecordFormat(boolean pageAligned) {
+        super(
+                fixedRecordSize(RECORD_SIZE),
+                0,
+                IN_USE_BIT,
+                StandardFormatSettings.RELATIONSHIP_GROUP_MAXIMUM_ID_BITS,
+                pageAligned);
     }
 
     @Override
-    public void read( RelationshipGroupRecord record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage )
-    {
+    public void read(
+            RelationshipGroupRecord record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage) {
         // [    ,   x] in use
         // [    ,xxx ] high next id bits
         // [ xxx,    ] high firstOut bits
         // [x   ,    ] has external degrees (out)
         long headerByte = cursor.getByte();
-        boolean inUse = isInUse( (byte) headerByte );
-        record.setInUse( inUse );
-        if ( mode.shouldLoad( inUse ) )
-        {
+        boolean inUse = isInUse((byte) headerByte);
+        record.setInUse(inUse);
+        if (mode.shouldLoad(inUse)) {
             // [    ,   x] has external degrees (in)
             // [    ,xxx ] high firstIn bits
             // [ xxx,    ] high firstLoop bits
@@ -70,7 +71,7 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
             long nextOutLowBits = cursor.getInt() & 0xFFFFFFFFL;
             long nextInLowBits = cursor.getInt() & 0xFFFFFFFFL;
             long nextLoopLowBits = cursor.getInt() & 0xFFFFFFFFL;
-            long owningNode = (cursor.getInt() & 0xFFFFFFFFL) | (((long)cursor.getByte()) << 32);
+            long owningNode = (cursor.getInt() & 0xFFFFFFFFL) | (((long) cursor.getByte()) << 32);
 
             long nextMod = (headerByte & 0xE) << 31;
             long nextOutMod = (headerByte & 0x70) << 28;
@@ -81,31 +82,35 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
             boolean hasExternalDegreesIn = (highByte & 0x1) != 0;
             boolean hasExternalDegreesLoop = (highByte & 0x80) != 0;
 
-            record.initialize( inUse, type,
-                    BaseRecordFormat.longFromIntAndMod( nextOutLowBits, nextOutMod ),
-                    BaseRecordFormat.longFromIntAndMod( nextInLowBits, nextInMod ),
-                    BaseRecordFormat.longFromIntAndMod( nextLoopLowBits, nextLoopMod ),
+            record.initialize(
+                    inUse,
+                    type,
+                    BaseRecordFormat.longFromIntAndMod(nextOutLowBits, nextOutMod),
+                    BaseRecordFormat.longFromIntAndMod(nextInLowBits, nextInMod),
+                    BaseRecordFormat.longFromIntAndMod(nextLoopLowBits, nextLoopMod),
                     owningNode,
-                    BaseRecordFormat.longFromIntAndMod( nextLowBits, nextMod ) );
-            record.setHasExternalDegreesOut( hasExternalDegreesOut );
-            record.setHasExternalDegreesIn( hasExternalDegreesIn );
-            record.setHasExternalDegreesLoop( hasExternalDegreesLoop );
+                    BaseRecordFormat.longFromIntAndMod(nextLowBits, nextMod));
+            record.setHasExternalDegreesOut(hasExternalDegreesOut);
+            record.setHasExternalDegreesIn(hasExternalDegreesIn);
+            record.setHasExternalDegreesLoop(hasExternalDegreesLoop);
         }
     }
 
     @Override
-    public void write( RelationshipGroupRecord record, PageCursor cursor, int recordSize, int recordsPerPage )
-    {
-        if ( record.inUse() )
-        {
-            long nextMod = record.getNext() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 :
-                           (record.getNext() & 0x700000000L) >> 31;
-            long nextOutMod = record.getFirstOut() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 :
-                              (record.getFirstOut() & 0x700000000L) >> 28;
-            long nextInMod = record.getFirstIn() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 :
-                             (record.getFirstIn() & 0x700000000L) >> 31;
-            long nextLoopMod = record.getFirstLoop() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 :
-                               (record.getFirstLoop() & 0x700000000L) >> 28;
+    public void write(RelationshipGroupRecord record, PageCursor cursor, int recordSize, int recordsPerPage) {
+        if (record.inUse()) {
+            long nextMod = record.getNext() == Record.NO_NEXT_RELATIONSHIP.intValue()
+                    ? 0
+                    : (record.getNext() & 0x700000000L) >> 31;
+            long nextOutMod = record.getFirstOut() == Record.NO_NEXT_RELATIONSHIP.intValue()
+                    ? 0
+                    : (record.getFirstOut() & 0x700000000L) >> 28;
+            long nextInMod = record.getFirstIn() == Record.NO_NEXT_RELATIONSHIP.intValue()
+                    ? 0
+                    : (record.getFirstIn() & 0x700000000L) >> 31;
+            long nextLoopMod = record.getFirstLoop() == Record.NO_NEXT_RELATIONSHIP.intValue()
+                    ? 0
+                    : (record.getFirstLoop() & 0x700000000L) >> 28;
             long hasExternalDegreesOutMod = record.hasExternalDegreesOut() ? 0x80 : 0;
             long hasExternalDegreesInMod = record.hasExternalDegreesIn() ? 0x1 : 0;
             long hasExternalDegreesLoopMod = record.hasExternalDegreesLoop() ? 0x80 : 0;
@@ -114,37 +119,33 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
             // [    ,xxx ] high next id bits
             // [ xxx,    ] high firstOut bits
             // [x   ,    ] has external degrees (out)
-            cursor.putByte( (byte) (hasExternalDegreesOutMod | nextOutMod | nextMod | 1) );
+            cursor.putByte((byte) (hasExternalDegreesOutMod | nextOutMod | nextMod | 1));
 
             // [    ,   x] has external degrees (in)
             // [    ,xxx ] high firstIn bits
             // [ xxx,    ] high firstLoop bits
             // [x   ,    ] has external degrees (loop)
-            cursor.putByte( (byte) (hasExternalDegreesLoopMod | nextLoopMod | nextInMod | hasExternalDegreesInMod) );
+            cursor.putByte((byte) (hasExternalDegreesLoopMod | nextLoopMod | nextInMod | hasExternalDegreesInMod));
 
-            cursor.putShort( (short) record.getType() );
-            cursor.putInt( (int) record.getNext() );
-            cursor.putInt( (int) record.getFirstOut() );
-            cursor.putInt( (int) record.getFirstIn() );
-            cursor.putInt( (int) record.getFirstLoop() );
-            cursor.putInt( (int) record.getOwningNode() );
-            cursor.putByte( (byte) (record.getOwningNode() >> 32) );
-        }
-        else
-        {
-            markAsUnused( cursor );
+            cursor.putShort((short) record.getType());
+            cursor.putInt((int) record.getNext());
+            cursor.putInt((int) record.getFirstOut());
+            cursor.putInt((int) record.getFirstIn());
+            cursor.putInt((int) record.getFirstLoop());
+            cursor.putInt((int) record.getOwningNode());
+            cursor.putByte((byte) (record.getOwningNode() >> 32));
+        } else {
+            markAsUnused(cursor);
         }
     }
 
     @Override
-    public RelationshipGroupRecord newRecord()
-    {
-        return new RelationshipGroupRecord( -1 );
+    public RelationshipGroupRecord newRecord() {
+        return new RelationshipGroupRecord(-1);
     }
 
     @Override
-    public long getNextRecordReference( RelationshipGroupRecord record )
-    {
+    public long getNextRecordReference(RelationshipGroupRecord record) {
         return record.getNext();
     }
 }

@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.constraints;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -35,72 +37,60 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @DbmsExtension
-class ConstraintCreationIT
-{
+class ConstraintCreationIT {
     @Inject
     private GraphDatabaseAPI db;
+
     @Inject
     private IndexProviderMap indexProviderMap;
 
-    private static final Label LABEL = Label.label( "label1" );
+    private static final Label LABEL = Label.label("label1");
     private long indexId;
     private long nbrIndexesOnStart;
 
     @BeforeEach
-    void setUp()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            nbrIndexesOnStart = Iterables.count( tx.schema().getIndexes() );
+    void setUp() {
+        try (Transaction tx = db.beginTx()) {
+            nbrIndexesOnStart = Iterables.count(tx.schema().getIndexes());
             // The id the index belonging to the constraint should get
             indexId = nbrIndexesOnStart + 1;
         }
     }
 
     @Test
-    void shouldNotLeaveNativeIndexFilesHangingAroundIfConstraintCreationFails()
-    {
+    void shouldNotLeaveNativeIndexFilesHangingAroundIfConstraintCreationFails() {
         // given
         attemptAndFailConstraintCreation();
 
         // then
-        Path indexDir = indexProviderMap.getDefaultProvider().directoryStructure().directoryForIndex( indexId );
+        Path indexDir =
+                indexProviderMap.getDefaultProvider().directoryStructure().directoryForIndex(indexId);
 
-        assertFalse( Files.exists( indexDir ) );
+        assertFalse(Files.exists(indexDir));
     }
 
-    private void attemptAndFailConstraintCreation()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( int i = 0; i < 2; i++ )
-            {
-                Node node1 = tx.createNode( LABEL );
-                node1.setProperty( "prop", true );
+    private void attemptAndFailConstraintCreation() {
+        try (Transaction tx = db.beginTx()) {
+            for (int i = 0; i < 2; i++) {
+                Node node1 = tx.createNode(LABEL);
+                node1.setProperty("prop", true);
             }
 
             tx.commit();
         }
 
         // when
-        assertThrows( ConstraintViolationException.class, () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.schema().constraintFor( LABEL ).assertPropertyIsUnique( "prop" ).create();
+        assertThrows(ConstraintViolationException.class, () -> {
+            try (Transaction tx = db.beginTx()) {
+                tx.schema().constraintFor(LABEL).assertPropertyIsUnique("prop").create();
                 tx.commit();
             }
-        } );
+        });
 
         // then
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertEquals( nbrIndexesOnStart, Iterables.count( tx.schema().getIndexes() ) );
+        try (Transaction tx = db.beginTx()) {
+            assertEquals(nbrIndexesOnStart, Iterables.count(tx.schema().getIndexes()));
         }
     }
 }

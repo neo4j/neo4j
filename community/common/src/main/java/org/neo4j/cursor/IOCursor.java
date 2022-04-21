@@ -21,7 +21,6 @@ package org.neo4j.cursor;
 
 import java.io.IOException;
 
-public interface IOCursor<T> extends RawCursor<T,IOException>
-{
+public interface IOCursor<T> extends RawCursor<T, IOException> {
     // empty
 }

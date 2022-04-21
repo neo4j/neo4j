@@ -24,8 +24,7 @@ import java.io.IOException;
 /**
  * Extends the {@link ReadableChannel} with a way to validate checksum over parts. The checksum will be calculated over all of the {@code .get*()} methods.
  */
-public interface ReadableChecksumChannel extends ReadableChannel
-{
+public interface ReadableChecksumChannel extends ReadableChannel {
     /**
      * Mark position from where checksum should be calculated from.
      */

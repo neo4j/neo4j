@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -38,57 +37,47 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
 @ServiceProvider
-public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineReportProvider
-{
+public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineReportProvider {
     private FileSystemAbstraction fs;
     private Config config;
     private DatabaseLayout databaseLayout;
 
-    public KernelDiagnosticsOfflineReportProvider()
-    {
-        super( "logs", "plugins", "tree", "tx", "version" );
+    public KernelDiagnosticsOfflineReportProvider() {
+        super("logs", "plugins", "tree", "tx", "version");
     }
 
     @Override
-    public void init( FileSystemAbstraction fs, String defaultDatabaseName, Config config, Path storeDirectory )
-    {
+    public void init(FileSystemAbstraction fs, String defaultDatabaseName, Config config, Path storeDirectory) {
         this.fs = fs;
         this.config = config;
-        this.databaseLayout = DatabaseLayout.ofFlat( storeDirectory.resolve( defaultDatabaseName ) );
+        this.databaseLayout = DatabaseLayout.ofFlat(storeDirectory.resolve(defaultDatabaseName));
     }
 
     @Override
-    protected List<DiagnosticsReportSource> provideSources( Set<String> classifiers )
-    {
+    protected List<DiagnosticsReportSource> provideSources(Set<String> classifiers) {
         List<DiagnosticsReportSource> sources = new ArrayList<>();
-        if ( classifiers.contains( "logs" ) )
-        {
-            getLogFiles( sources );
+        if (classifiers.contains("logs")) {
+            getLogFiles(sources);
         }
-        if ( classifiers.contains( "plugins" ) )
-        {
-            listPlugins( sources );
+        if (classifiers.contains("plugins")) {
+            listPlugins(sources);
         }
-        if ( classifiers.contains( "tree" ) )
-        {
-            listDataDirectory( sources );
+        if (classifiers.contains("tree")) {
+            listDataDirectory(sources);
         }
-        if ( classifiers.contains( "tx" ) )
-        {
-            getTransactionLogFiles( sources );
+        if (classifiers.contains("tx")) {
+            getTransactionLogFiles(sources);
         }
-        if ( classifiers.contains( "version" ) )
-        {
-            getVersion( sources );
+        if (classifiers.contains("version")) {
+            getVersion(sources);
         }
 
         return sources;
     }
 
-    private static void getVersion( List<DiagnosticsReportSource> sources )
-    {
+    private static void getVersion(List<DiagnosticsReportSource> sources) {
         Supplier<String> neo4jVersion = () -> "neo4j " + Version.getNeo4jVersion() + System.lineSeparator();
-        sources.add( DiagnosticsReportSources.newDiagnosticsString( "version.txt", neo4jVersion ) );
+        sources.add(DiagnosticsReportSources.newDiagnosticsString("version.txt", neo4jVersion));
     }
 
     /**
@@ -96,43 +85,32 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
      *
      * @param sources destination of the sources.
      */
-    private void listPlugins( List<DiagnosticsReportSource> sources )
-    {
-        Path pluginDirectory = config.get( GraphDatabaseSettings.plugin_dir );
-        if ( fs.fileExists( pluginDirectory ) )
-        {
+    private void listPlugins(List<DiagnosticsReportSource> sources) {
+        Path pluginDirectory = config.get(GraphDatabaseSettings.plugin_dir);
+        if (fs.fileExists(pluginDirectory)) {
             StringBuilder sb = new StringBuilder();
-            sb.append( "List of plugin directory:" ).append( System.lineSeparator() );
-            try
-            {
-                listContentOfDirectory( pluginDirectory, "  ", sb );
-            }
-            catch ( IOException e )
-            {
-                sb.append( e.getMessage() ).append( System.lineSeparator() );
+            sb.append("List of plugin directory:").append(System.lineSeparator());
+            try {
+                listContentOfDirectory(pluginDirectory, "  ", sb);
+            } catch (IOException e) {
+                sb.append(e.getMessage()).append(System.lineSeparator());
             }
 
-            sources.add( DiagnosticsReportSources.newDiagnosticsString( "plugins.txt", sb::toString ) );
+            sources.add(DiagnosticsReportSources.newDiagnosticsString("plugins.txt", sb::toString));
         }
     }
 
-    private void listContentOfDirectory( Path directory, String prefix, StringBuilder sb ) throws IOException
-    {
-        if ( !fs.isDirectory( directory ) )
-        {
+    private void listContentOfDirectory(Path directory, String prefix, StringBuilder sb) throws IOException {
+        if (!fs.isDirectory(directory)) {
             return;
         }
 
-        Path[] files = fs.listFiles( directory );
-        for ( Path file : files )
-        {
-            if ( fs.isDirectory( file ) )
-            {
-                listContentOfDirectory( file, prefix + file.getFileSystem().getSeparator() + file.getFileName(), sb );
-            }
-            else
-            {
-                sb.append( prefix ).append( file.getFileName() ).append( System.lineSeparator() );
+        Path[] files = fs.listFiles(directory);
+        for (Path file : files) {
+            if (fs.isDirectory(file)) {
+                listContentOfDirectory(file, prefix + file.getFileSystem().getSeparator() + file.getFileName(), sb);
+            } else {
+                sb.append(prefix).append(file.getFileName()).append(System.lineSeparator());
             }
         }
     }
@@ -142,15 +120,15 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
      *
      * @param sources destination of the sources.
      */
-    private void listDataDirectory( List<DiagnosticsReportSource> sources )
-    {
+    private void listDataDirectory(List<DiagnosticsReportSource> sources) {
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
-        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, databaseLayout );
+        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics(storageEngineFactory, fs, databaseLayout);
 
         List<String> files = new ArrayList<>();
-        storeFiles.dump( files::add );
+        storeFiles.dump(files::add);
 
-        sources.add( DiagnosticsReportSources.newDiagnosticsString( "tree.txt", () -> String.join( System.lineSeparator(), files ) ) );
+        sources.add(DiagnosticsReportSources.newDiagnosticsString(
+                "tree.txt", () -> String.join(System.lineSeparator(), files)));
     }
 
     /**
@@ -158,28 +136,24 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
      *
      * @param sources destination of the sources.
      */
-    private void getLogFiles( List<DiagnosticsReportSource> sources )
-    {
+    private void getLogFiles(List<DiagnosticsReportSource> sources) {
         // debug.log
-        Path debugLogFile = config.get( GraphDatabaseSettings.store_internal_log_path );
-        if ( fs.fileExists( debugLogFile ) )
-        {
-            sources.addAll( DiagnosticsReportSources.newDiagnosticsRotatingFile( "logs/", fs, debugLogFile ) );
+        Path debugLogFile = config.get(GraphDatabaseSettings.store_internal_log_path);
+        if (fs.fileExists(debugLogFile)) {
+            sources.addAll(DiagnosticsReportSources.newDiagnosticsRotatingFile("logs/", fs, debugLogFile));
         }
 
         // neo4j.log
-        Path neo4jLog = config.get( GraphDatabaseSettings.store_user_log_path );
-        if ( fs.fileExists( neo4jLog ) )
-        {
-            sources.addAll( DiagnosticsReportSources.newDiagnosticsRotatingFile( "logs/", fs, neo4jLog ) );
+        Path neo4jLog = config.get(GraphDatabaseSettings.store_user_log_path);
+        if (fs.fileExists(neo4jLog)) {
+            sources.addAll(DiagnosticsReportSources.newDiagnosticsRotatingFile("logs/", fs, neo4jLog));
         }
 
         // gc.log
-        Path logDirectory = config.get( GraphDatabaseSettings.logs_directory );
-        Path gcLog = logDirectory.resolve( "gc.log" );
-        if ( fs.fileExists( gcLog ) )
-        {
-            sources.addAll( DiagnosticsReportSources.newDiagnosticsRotatingFile( "logs/", fs, gcLog ) );
+        Path logDirectory = config.get(GraphDatabaseSettings.logs_directory);
+        Path gcLog = logDirectory.resolve("gc.log");
+        if (fs.fileExists(gcLog)) {
+            sources.addAll(DiagnosticsReportSources.newDiagnosticsRotatingFile("logs/", fs, gcLog));
         }
         // there are other rotation schemas but nothing we can predict...
     }
@@ -189,20 +163,16 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
      *
      * @param sources destination of the sources.
      */
-    private void getTransactionLogFiles( List<DiagnosticsReportSource> sources )
-    {
-        try
-        {
-            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.databaseDirectory(), fs ).build();
-            for ( Path file : logFiles.logFiles() )
-            {
-                sources.add( DiagnosticsReportSources.newDiagnosticsFile( "tx/" + file.getFileName(), fs, file ) );
+    private void getTransactionLogFiles(List<DiagnosticsReportSource> sources) {
+        try {
+            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.databaseDirectory(), fs)
+                    .build();
+            for (Path file : logFiles.logFiles()) {
+                sources.add(DiagnosticsReportSources.newDiagnosticsFile("tx/" + file.getFileName(), fs, file));
             }
-        }
-        catch ( IOException e )
-        {
-            sources.add( DiagnosticsReportSources
-                    .newDiagnosticsString( "tx.txt", () -> "Error getting tx logs: " + e.getMessage() ) );
+        } catch (IOException e) {
+            sources.add(DiagnosticsReportSources.newDiagnosticsString(
+                    "tx.txt", () -> "Error getting tx logs: " + e.getMessage()));
         }
     }
 }

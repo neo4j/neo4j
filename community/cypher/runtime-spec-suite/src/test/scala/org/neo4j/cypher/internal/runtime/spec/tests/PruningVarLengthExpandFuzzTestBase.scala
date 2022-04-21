@@ -35,9 +35,9 @@ import scala.collection.immutable.IndexedSeq
 import scala.util.Random
 
 abstract class PruningVarLengthExpandFuzzTestBase[CONTEXT <: RuntimeContext](
-                                                                              edition: Edition[CONTEXT],
-                                                                              runtime: CypherRuntime[CONTEXT],
-                                                                            ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT]
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
   private val population: Int = 1000
   private val seed = System.currentTimeMillis()
   private val random = new Random(seed)
@@ -109,8 +109,10 @@ abstract class PruningVarLengthExpandFuzzTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("from"))
       .build()
 
-    val distinctVarExpandResult = consume(execute(distinctQuery, runtime, inputValues(Array(startNode)))).map(_.toList).toSet
-    val pruningVarExpandResult = consume(execute(pruningQuery, runtime, inputValues(Array(startNode)))).map(_.toList).toSet
+    val distinctVarExpandResult =
+      consume(execute(distinctQuery, runtime, inputValues(Array(startNode)))).map(_.toList).toSet
+    val pruningVarExpandResult =
+      consume(execute(pruningQuery, runtime, inputValues(Array(startNode)))).map(_.toList).toSet
 
     if (distinctVarExpandResult != pruningVarExpandResult) {
       val missingFromNew = distinctVarExpandResult -- pruningVarExpandResult
@@ -139,9 +141,9 @@ abstract class PruningVarLengthExpandFuzzTestBase[CONTEXT <: RuntimeContext](
     val max = min + 1 + r.nextInt(3)
 
     val pattern = direction match {
-      case OUTGOING => s"(from)-[*$min..$max]->(to)"
+      case OUTGOING                   => s"(from)-[*$min..$max]->(to)"
       case SemanticDirection.INCOMING => s"(from)<-[*$min..$max]-(to)"
-      case SemanticDirection.BOTH => s"(from)-[*$min..$max]-(to)"
+      case SemanticDirection.BOTH     => s"(from)-[*$min..$max]-(to)"
     }
     val pruningQuery = new LogicalQueryBuilder(this)
       .produceResults("from", "to")
@@ -156,8 +158,10 @@ abstract class PruningVarLengthExpandFuzzTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("from"))
       .build()
 
-    val distinctVarExpandResult = consume(execute(distinctQuery, runtime, inputValues(Array(startNode)))).map(_.toList).toSet
-    val pruningVarExpandResult = consume(execute(pruningQuery, runtime, inputValues(Array(startNode)))).map(_.toList).toSet
+    val distinctVarExpandResult =
+      consume(execute(distinctQuery, runtime, inputValues(Array(startNode)))).map(_.toList).toSet
+    val pruningVarExpandResult =
+      consume(execute(pruningQuery, runtime, inputValues(Array(startNode)))).map(_.toList).toSet
 
     if (distinctVarExpandResult != pruningVarExpandResult) {
       val missingFromNew = distinctVarExpandResult -- pruningVarExpandResult

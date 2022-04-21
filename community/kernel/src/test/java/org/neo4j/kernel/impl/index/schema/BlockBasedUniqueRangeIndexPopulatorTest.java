@@ -19,21 +19,18 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulatorTestCases.rangeBlockBasedPopulatorFactory;
+
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.values.storable.ValueType;
 
-import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulatorTestCases.rangeBlockBasedPopulatorFactory;
-
-class BlockBasedUniqueRangeIndexPopulatorTest extends NativeUniqueIndexPopulatorTest<RangeKey>
-{
-    BlockBasedUniqueRangeIndexPopulatorTest()
-    {
-        super( rangeBlockBasedPopulatorFactory(), ValueType.values(), new RangeLayout( 1 ) );
+class BlockBasedUniqueRangeIndexPopulatorTest extends NativeUniqueIndexPopulatorTest<RangeKey> {
+    BlockBasedUniqueRangeIndexPopulatorTest() {
+        super(rangeBlockBasedPopulatorFactory(), ValueType.values(), new RangeLayout(1));
     }
 
     @Override
-    IndexType indexType()
-    {
+    IndexType indexType() {
         return IndexType.RANGE;
     }
 }

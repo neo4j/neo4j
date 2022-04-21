@@ -25,16 +25,14 @@ import java.util.EventListener;
 /**
  * {@link FileWatcher} listener that allow receive state change updates for registered resources.
  */
-public interface FileWatchEventListener extends EventListener
-{
+public interface FileWatchEventListener extends EventListener {
     /**
      * Notification about deletion of file with provided name
      *
      * @param key watched resource key
      * @param fileName deleted file name
      */
-    default void fileDeleted( WatchKey key, String fileName )
-    {
+    default void fileDeleted(WatchKey key, String fileName) {
         // no-op
     }
 
@@ -44,8 +42,7 @@ public interface FileWatchEventListener extends EventListener
      * @param key watched resource key
      * @param fileName updated file name
      */
-    default void fileModified( WatchKey key, String fileName )
-    {
+    default void fileModified(WatchKey key, String fileName) {
         // no-op
     }
 }

@@ -26,25 +26,20 @@ import org.neo4j.annotations.api.PublicApi;
  * yet multiple were found.
  */
 @PublicApi
-public class MultipleFoundException extends RuntimeException
-{
-    public MultipleFoundException()
-    {
+public class MultipleFoundException extends RuntimeException {
+    public MultipleFoundException() {
         super();
     }
 
-    public MultipleFoundException( String message )
-    {
-        super( message );
+    public MultipleFoundException(String message) {
+        super(message);
     }
 
-    public MultipleFoundException( String message, Throwable cause )
-    {
-        super( message, cause );
+    public MultipleFoundException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public MultipleFoundException( Throwable cause )
-    {
-        super( cause );
+    public MultipleFoundException(Throwable cause) {
+        super(cause);
     }
 }

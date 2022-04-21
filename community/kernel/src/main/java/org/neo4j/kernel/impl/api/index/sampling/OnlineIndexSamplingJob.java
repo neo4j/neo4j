@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
+import static java.lang.String.format;
+import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
+
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -29,11 +32,7 @@ import org.neo4j.kernel.impl.util.DurationLogger;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 
-import static java.lang.String.format;
-import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
-
-class OnlineIndexSamplingJob implements IndexSamplingJob
-{
+class OnlineIndexSamplingJob implements IndexSamplingJob {
     private static final String INDEX_SAMPLER_TAG = "indexSampler";
     private final long indexId;
     private final IndexProxy indexProxy;
@@ -43,64 +42,57 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
     private final String indexName;
     private final CursorContextFactory contextFactory;
 
-    OnlineIndexSamplingJob( long indexId, IndexProxy indexProxy, IndexStatisticsStore indexStatisticsStore, String indexUserDescription, String indexName,
-            InternalLogProvider logProvider, CursorContextFactory contextFactory )
-    {
+    OnlineIndexSamplingJob(
+            long indexId,
+            IndexProxy indexProxy,
+            IndexStatisticsStore indexStatisticsStore,
+            String indexUserDescription,
+            String indexName,
+            InternalLogProvider logProvider,
+            CursorContextFactory contextFactory) {
         this.indexId = indexId;
         this.indexProxy = indexProxy;
         this.indexStatisticsStore = indexStatisticsStore;
-        this.log = logProvider.getLog( getClass() );
+        this.log = logProvider.getLog(getClass());
         this.indexUserDescription = indexUserDescription;
         this.indexName = indexName;
         this.contextFactory = contextFactory;
     }
 
     @Override
-    public long indexId()
-    {
+    public long indexId() {
         return indexId;
     }
 
     @Override
-    public String indexName()
-    {
+    public String indexName() {
         return indexName;
     }
 
     @Override
-    public void run()
-    {
-        try ( DurationLogger durationLogger = new DurationLogger( log, "Sampling index " + indexUserDescription ) )
-        {
-            try
-            {
-                try ( var reader = indexProxy.newValueReader();
-                      var cursorContext = contextFactory.create( INDEX_SAMPLER_TAG );
-                      IndexSampler sampler = reader.createSampler() )
-                {
-                    IndexSample sample = sampler.sampleIndex( cursorContext );
+    public void run() {
+        try (DurationLogger durationLogger = new DurationLogger(log, "Sampling index " + indexUserDescription)) {
+            try {
+                try (var reader = indexProxy.newValueReader();
+                        var cursorContext = contextFactory.create(INDEX_SAMPLER_TAG);
+                        IndexSampler sampler = reader.createSampler()) {
+                    IndexSample sample = sampler.sampleIndex(cursorContext);
 
                     // check again if the index is online before saving the counts in the store
-                    if ( indexProxy.getState() == ONLINE )
-                    {
-                        indexStatisticsStore.replaceStats( indexId, sample );
+                    if (indexProxy.getState() == ONLINE) {
+                        indexStatisticsStore.replaceStats(indexId, sample);
                         durationLogger.markAsFinished();
-                        log.debug(
-                                format( "Sampled index %s with %d unique values in sample of avg size %d taken from " +
-                                        "index containing %d entries",
-                                        indexUserDescription, sample.uniqueValues(), sample.sampleSize(),
-                                        sample.indexSize() ) );
-                    }
-                    else
-                    {
-                        durationLogger.markAsAborted( "Index no longer ONLINE" );
+                        log.debug(format(
+                                "Sampled index %s with %d unique values in sample of avg size %d taken from "
+                                        + "index containing %d entries",
+                                indexUserDescription, sample.uniqueValues(), sample.sampleSize(), sample.indexSize()));
+                    } else {
+                        durationLogger.markAsAborted("Index no longer ONLINE");
                     }
                 }
-            }
-            catch ( IndexNotFoundKernelException e )
-            {
+            } catch (IndexNotFoundKernelException e) {
                 durationLogger.markAsAborted(
-                        "Attempted to sample missing/already deleted index " + indexUserDescription );
+                        "Attempted to sample missing/already deleted index " + indexUserDescription);
             }
         }
     }

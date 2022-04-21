@@ -19,139 +19,127 @@
  */
 package org.neo4j.bolt.v3.messaging.request;
 
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.time.Duration;
-import java.util.Map;
-
-import org.neo4j.bolt.messaging.BoltIOException;
-import org.neo4j.bolt.runtime.AccessMode;
-import org.neo4j.kernel.impl.util.ValueUtils;
-import org.neo4j.values.virtual.MapValue;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
-public abstract class AbstractTransactionInitiatingMessage
-{
+import java.io.IOException;
+import java.time.Duration;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.bolt.runtime.AccessMode;
+import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.values.virtual.MapValue;
+
+public abstract class AbstractTransactionInitiatingMessage {
     @Test
-    void shouldParseEmptyTransactionMetadataCorrectly() throws Throwable
-    {
+    void shouldParseEmptyTransactionMetadataCorrectly() throws Throwable {
         // When
         TransactionInitiatingMessage message = createMessage();
 
         // Then
-        assertEquals( Map.of(), message.transactionMetadata() );
+        assertEquals(Map.of(), message.transactionMetadata());
     }
 
     @Test
-    void shouldThrowExceptionIfFailedToParseTransactionMetadataCorrectly() throws Throwable
-    {
+    void shouldThrowExceptionIfFailedToParseTransactionMetadataCorrectly() throws Throwable {
         // Given
-        Map<String,Object> msgMetadata = map( "tx_metadata", "invalid value type" );
-        MapValue meta = ValueUtils.asMapValue( msgMetadata );
+        Map<String, Object> msgMetadata = map("tx_metadata", "invalid value type");
+        MapValue meta = ValueUtils.asMapValue(msgMetadata);
         // When & Then
-        BoltIOException exception = assertThrows( BoltIOException.class, () -> createMessage( meta ) );
-        assertThat( exception.getMessage() ).startsWith( "Expecting transaction metadata value to be a Map value" );
+        BoltIOException exception = assertThrows(BoltIOException.class, () -> createMessage(meta));
+        assertThat(exception.getMessage()).startsWith("Expecting transaction metadata value to be a Map value");
     }
 
     @Test
-    void shouldParseTransactionMetadataCorrectly() throws Throwable
-    {
+    void shouldParseTransactionMetadataCorrectly() throws Throwable {
         // Given
-        Map<String,Object> txMetadata = map( "creation-time", Duration.ofMillis( 4321L ) );
-        Map<String,Object> msgMetadata = map( "tx_metadata", txMetadata );
-        MapValue meta = ValueUtils.asMapValue( msgMetadata );
+        Map<String, Object> txMetadata = map("creation-time", Duration.ofMillis(4321L));
+        Map<String, Object> msgMetadata = map("tx_metadata", txMetadata);
+        MapValue meta = ValueUtils.asMapValue(msgMetadata);
 
         // When
         TransactionInitiatingMessage beginMessage = createMessage(meta);
 
         // Then
-        assertThat( beginMessage.transactionMetadata().toString() ).isEqualTo( txMetadata.toString() );
+        assertThat(beginMessage.transactionMetadata().toString()).isEqualTo(txMetadata.toString());
     }
 
     @Test
-    void shouldThrowExceptionIfFailedToParseTransactionTimeoutCorrectly() throws Throwable
-    {
+    void shouldThrowExceptionIfFailedToParseTransactionTimeoutCorrectly() throws Throwable {
         // Given
-        Map<String,Object> msgMetadata = map( "tx_timeout", "invalid value type" );
-        MapValue meta = ValueUtils.asMapValue( msgMetadata );
+        Map<String, Object> msgMetadata = map("tx_timeout", "invalid value type");
+        MapValue meta = ValueUtils.asMapValue(msgMetadata);
         // When & Then
-        BoltIOException exception = assertThrows( BoltIOException.class, () -> createMessage( meta ) );
-        assertThat( exception.getMessage() ).startsWith( "Expecting transaction timeout value to be a Long value" );
+        BoltIOException exception = assertThrows(BoltIOException.class, () -> createMessage(meta));
+        assertThat(exception.getMessage()).startsWith("Expecting transaction timeout value to be a Long value");
     }
 
     @Test
-    void shouldParseTransactionTimeoutCorrectly() throws Throwable
-    {
+    void shouldParseTransactionTimeoutCorrectly() throws Throwable {
         // Given
-        Map<String,Object> msgMetadata = map( "tx_timeout", 123456L );
-        MapValue meta = ValueUtils.asMapValue( msgMetadata );
+        Map<String, Object> msgMetadata = map("tx_timeout", 123456L);
+        MapValue meta = ValueUtils.asMapValue(msgMetadata);
 
         // When
-        TransactionInitiatingMessage beginMessage = createMessage( meta );
+        TransactionInitiatingMessage beginMessage = createMessage(meta);
 
         // Then
-        assertThat( beginMessage.transactionTimeout().toMillis() ).isEqualTo( 123456L );
+        assertThat(beginMessage.transactionTimeout().toMillis()).isEqualTo(123456L);
     }
 
     @Test
-    void shouldThrowExceptionIfFailedToParseAccessModeCorrectly() throws Throwable
-    {
+    void shouldThrowExceptionIfFailedToParseAccessModeCorrectly() throws Throwable {
         // Given
-        Map<String,Object> msgMetadata = map( "mode", 666 );
-        MapValue meta = ValueUtils.asMapValue( msgMetadata );
+        Map<String, Object> msgMetadata = map("mode", 666);
+        MapValue meta = ValueUtils.asMapValue(msgMetadata);
         // When & Then
-        BoltIOException exception = assertThrows( BoltIOException.class, () -> createMessage( meta ) );
-        assertThat( exception.getMessage() ).startsWith( "Expecting access mode value to be a String value" );
+        BoltIOException exception = assertThrows(BoltIOException.class, () -> createMessage(meta));
+        assertThat(exception.getMessage()).startsWith("Expecting access mode value to be a String value");
     }
 
     @Test
-    void shouldParseNoAccessModeCorrectly() throws Throwable
-    {
+    void shouldParseNoAccessModeCorrectly() throws Throwable {
         // Given
-        Map<String,Object> msgMetadata = map();
-        MapValue meta = ValueUtils.asMapValue( msgMetadata );
+        Map<String, Object> msgMetadata = map();
+        MapValue meta = ValueUtils.asMapValue(msgMetadata);
 
         // When
-        TransactionInitiatingMessage beginMessage = createMessage( meta );
+        TransactionInitiatingMessage beginMessage = createMessage(meta);
 
         // Then
-        assertThat( beginMessage.getAccessMode() ).isEqualTo( AccessMode.WRITE );
+        assertThat(beginMessage.getAccessMode()).isEqualTo(AccessMode.WRITE);
     }
 
     @Test
-    void shouldParseReadAccessModeCorrectly() throws Throwable
-    {
+    void shouldParseReadAccessModeCorrectly() throws Throwable {
         // Given
-        Map<String,Object> msgMetadata = map("mode", "r" );
-        MapValue meta = ValueUtils.asMapValue( msgMetadata );
+        Map<String, Object> msgMetadata = map("mode", "r");
+        MapValue meta = ValueUtils.asMapValue(msgMetadata);
 
         // When
-        TransactionInitiatingMessage beginMessage = createMessage( meta );
+        TransactionInitiatingMessage beginMessage = createMessage(meta);
 
         // Then
-        assertThat( beginMessage.getAccessMode() ).isEqualTo( AccessMode.READ );
+        assertThat(beginMessage.getAccessMode()).isEqualTo(AccessMode.READ);
     }
 
     @Test
-    void shouldParseWriteAccessModeCorrectly() throws Throwable
-    {
+    void shouldParseWriteAccessModeCorrectly() throws Throwable {
         // Given
-        Map<String,Object> msgMetadata = map("mode", "w" );
-        MapValue meta = ValueUtils.asMapValue( msgMetadata );
+        Map<String, Object> msgMetadata = map("mode", "w");
+        MapValue meta = ValueUtils.asMapValue(msgMetadata);
 
         // When
-        TransactionInitiatingMessage beginMessage = createMessage( meta );
+        TransactionInitiatingMessage beginMessage = createMessage(meta);
 
         // Then
-        assertThat( beginMessage.getAccessMode() ).isEqualTo( AccessMode.WRITE );
+        assertThat(beginMessage.getAccessMode()).isEqualTo(AccessMode.WRITE);
     }
 
     protected abstract TransactionInitiatingMessage createMessage() throws IOException;
 
-    protected abstract TransactionInitiatingMessage createMessage( MapValue meta ) throws IOException;
+    protected abstract TransactionInitiatingMessage createMessage(MapValue meta) throws IOException;
 }

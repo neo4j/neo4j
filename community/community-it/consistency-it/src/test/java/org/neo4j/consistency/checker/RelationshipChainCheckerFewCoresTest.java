@@ -19,11 +19,9 @@
  */
 package org.neo4j.consistency.checker;
 
-class RelationshipChainCheckerFewCoresTest extends RelationshipChainCheckerTest
-{
+class RelationshipChainCheckerFewCoresTest extends RelationshipChainCheckerTest {
     @Override
-    int numberOfThreads()
-    {
+    int numberOfThreads() {
         return 1;
     }
 }

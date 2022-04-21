@@ -41,10 +41,11 @@ class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers 
   val prettifier: Prettifier = Prettifier(ExpressionStringifier(
     alwaysParens = true,
     alwaysBacktick = true,
-    sensitiveParamsAsParams = true,
+    sensitiveParamsAsParams = true
   ))
 
-  override val scenarios: Seq[Scenario] = BaseFeatureTestHolder.allAcceptanceScenarios ++ BaseFeatureTestHolder.allTckScenarios
+  override val scenarios: Seq[Scenario] =
+    BaseFeatureTestHolder.allAcceptanceScenarios ++ BaseFeatureTestHolder.allTckScenarios
 
   override def denylist: Seq[DenylistEntry] = Seq(
     // Does not parse
@@ -108,7 +109,7 @@ class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers 
     """Feature "ExistentialSubquery3 - Nested existential subquery": Scenario "Nested full existential subquery with pattern predicate"""",
     """Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery"""",
     """Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery with aggregation"""",
-    """Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery with update clause should fail"""",
+    """Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery with update clause should fail""""
   ).map(DenylistEntry(_))
 
   // We don't execute tests that are expected to fail
@@ -127,7 +128,11 @@ class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers 
   }
 
   private def parse(query: String): Statement = {
-    canonicalizeUnaliasedReturnItem(JavaCCParser.parse(query, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator))
+    canonicalizeUnaliasedReturnItem(JavaCCParser.parse(
+      query,
+      OpenCypherExceptionFactory(None),
+      new AnonymousVariableNameGenerator
+    ))
   }
 
   /**

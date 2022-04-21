@@ -57,11 +57,11 @@ trait ChainableBinaryOperatorExpression extends BinaryOperatorExpression {
   self: Expression =>
 }
 
-trait MultiOperatorExpression  extends OperatorExpression {
+trait MultiOperatorExpression extends OperatorExpression {
   self: Expression =>
 
   def exprs: collection.Seq[Expression]
 
-  override def asCanonicalStringVal: String = s"$canonicalOperatorSymbol( ${exprs.map(_.asCanonicalStringVal).mkString(", ")}"
+  override def asCanonicalStringVal: String =
+    s"$canonicalOperatorSymbol( ${exprs.map(_.asCanonicalStringVal).mkString(", ")}"
 }
-

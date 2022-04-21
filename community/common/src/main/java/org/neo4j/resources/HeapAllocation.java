@@ -22,10 +22,9 @@ package org.neo4j.resources;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 
-public abstract class HeapAllocation
-{
+public abstract class HeapAllocation {
     public static final HeapAllocation NOT_AVAILABLE = new HeapAllocationNotAvailable();
-    public static final HeapAllocation HEAP_ALLOCATION = tryLoad( ManagementFactory.getThreadMXBean(), NOT_AVAILABLE );
+    public static final HeapAllocation HEAP_ALLOCATION = tryLoad(ManagementFactory.getThreadMXBean(), NOT_AVAILABLE);
 
     /**
      * Returns number of allocated bytes by the thread.
@@ -34,9 +33,8 @@ public abstract class HeapAllocation
      *         the thread to get the used CPU time for.
      * @return number of allocated bytes for specified thread.
      */
-    public final long allocatedBytes( Thread thread )
-    {
-        return allocatedBytes( thread.getId() );
+    public final long allocatedBytes(Thread thread) {
+        return allocatedBytes(thread.getId());
     }
 
     /**
@@ -46,36 +44,29 @@ public abstract class HeapAllocation
      *         the id of the thread to get the allocation information for.
      * @return number of allocated bytes for specified threadId.
      */
-    public abstract long allocatedBytes( long threadId );
+    public abstract long allocatedBytes(long threadId);
 
     /**
      * We use reflection to reference the classes. Mentioning {@code HotSpotThreadImpl} or {@code SunManagementHeapAllocation} as class
      * references would cause a class loader error on VMs that do not support that.
      */
-    @SuppressWarnings( "SameParameterValue" )
-    private static HeapAllocation tryLoad( ThreadMXBean bean, HeapAllocation fallback )
-    {
-        try
-        {
-            if ( bean.getClass().getName().equals( "com.sun.management.internal.HotSpotThreadImpl" ) )
-            {
-                return (HeapAllocation) Class.forName( "org.neo4j.resources.SunManagementHeapAllocation" )
-                        .getDeclaredMethod( "load", ThreadMXBean.class )
-                        .invoke( null, bean );
+    @SuppressWarnings("SameParameterValue")
+    private static HeapAllocation tryLoad(ThreadMXBean bean, HeapAllocation fallback) {
+        try {
+            if (bean.getClass().getName().equals("com.sun.management.internal.HotSpotThreadImpl")) {
+                return (HeapAllocation) Class.forName("org.neo4j.resources.SunManagementHeapAllocation")
+                        .getDeclaredMethod("load", ThreadMXBean.class)
+                        .invoke(null, bean);
             }
-        }
-        catch ( Throwable e )
-        {
+        } catch (Throwable e) {
             // We are on a VM that don't support this, use the fallback
         }
         return fallback;
     }
 
-    private static class HeapAllocationNotAvailable extends HeapAllocation
-    {
+    private static class HeapAllocationNotAvailable extends HeapAllocation {
         @Override
-        public long allocatedBytes( long threadId )
-        {
+        public long allocatedBytes(long threadId) {
             return -1;
         }
     }

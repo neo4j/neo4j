@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.traversal;
 import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.Map;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -38,97 +37,85 @@ import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
 import org.neo4j.graphdb.traversal.UniquenessFilter;
 
-class BidirectionalTraverserIterator extends AbstractTraverserIterator
-{
+class BidirectionalTraverserIterator extends AbstractTraverserIterator {
     private final BranchCollisionDetector collisionDetector;
     private Iterator<Path> foundPaths;
     private SideSelector selector;
-    private final Map<Direction, Side> sides = new EnumMap<>( Direction.class );
+    private final Map<Direction, Side> sides = new EnumMap<>(Direction.class);
     private final BidirectionalUniquenessFilter uniqueness;
 
-    private record Side( MonoDirectionalTraversalDescription description )
-    {
-    }
+    private record Side(MonoDirectionalTraversalDescription description) {}
 
-    BidirectionalTraverserIterator( MonoDirectionalTraversalDescription start,
-                                    MonoDirectionalTraversalDescription end,
-                                    SideSelectorPolicy sideSelector,
-                                    org.neo4j.graphdb.traversal.BranchCollisionPolicy collisionPolicy,
-                                    PathEvaluator collisionEvaluator, int maxDepth,
-                                    Iterable<Node> startNodes, Iterable<Node> endNodes )
-    {
-        this.sides.put( Direction.OUTGOING, new Side( start ) );
-        this.sides.put( Direction.INCOMING, new Side( end ) );
-        this.uniqueness = makeSureStartAndEndHasSameUniqueness( start, end );
+    BidirectionalTraverserIterator(
+            MonoDirectionalTraversalDescription start,
+            MonoDirectionalTraversalDescription end,
+            SideSelectorPolicy sideSelector,
+            org.neo4j.graphdb.traversal.BranchCollisionPolicy collisionPolicy,
+            PathEvaluator collisionEvaluator,
+            int maxDepth,
+            Iterable<Node> startNodes,
+            Iterable<Node> endNodes) {
+        this.sides.put(Direction.OUTGOING, new Side(start));
+        this.sides.put(Direction.INCOMING, new Side(end));
+        this.uniqueness = makeSureStartAndEndHasSameUniqueness(start, end);
 
         // A little chicken-and-egg problem. This happens when constructing the start/end
         // selectors and they initially call evaluate() and isUniqueFirst, where the selector is used.
         // Solved this way for now, to have it return the start side to begin with.
-        this.selector = fixedSide( Direction.OUTGOING );
+        this.selector = fixedSide(Direction.OUTGOING);
         BranchSelector startSelector = start.branchOrdering.create(
-                new AsOneStartBranch( this, startNodes, start.initialState, start.uniqueness ), start.expander );
-        this.selector = fixedSide( Direction.INCOMING );
+                new AsOneStartBranch(this, startNodes, start.initialState, start.uniqueness), start.expander);
+        this.selector = fixedSide(Direction.INCOMING);
         BranchSelector endSelector = end.branchOrdering.create(
-                new AsOneStartBranch( this, endNodes, end.initialState, start.uniqueness ), end.expander );
+                new AsOneStartBranch(this, endNodes, end.initialState, start.uniqueness), end.expander);
 
-        this.selector = sideSelector.create( startSelector, endSelector, maxDepth );
-        this.collisionDetector = collisionPolicy.create( collisionEvaluator, uniqueness::checkFull );
+        this.selector = sideSelector.create(startSelector, endSelector, maxDepth);
+        this.collisionDetector = collisionPolicy.create(collisionEvaluator, uniqueness::checkFull);
     }
 
-    private static BidirectionalUniquenessFilter makeSureStartAndEndHasSameUniqueness( MonoDirectionalTraversalDescription
-            start,
-            MonoDirectionalTraversalDescription end )
-    {
-        if ( !start.uniqueness.equals( end.uniqueness ) )
-        {
-            throw new IllegalArgumentException( "Start and end uniqueness factories differ, they need to be the " +
-                    "same currently. Start side has " + start.uniqueness + ", end side has " + end.uniqueness );
+    private static BidirectionalUniquenessFilter makeSureStartAndEndHasSameUniqueness(
+            MonoDirectionalTraversalDescription start, MonoDirectionalTraversalDescription end) {
+        if (!start.uniqueness.equals(end.uniqueness)) {
+            throw new IllegalArgumentException("Start and end uniqueness factories differ, they need to be the "
+                    + "same currently. Start side has " + start.uniqueness + ", end side has " + end.uniqueness);
         }
 
-        boolean parameterDiffers = start.uniquenessParameter == null || end.uniquenessParameter == null ?
-                start.uniquenessParameter != end.uniquenessParameter :
-                !start.uniquenessParameter.equals( end.uniquenessParameter );
-        if ( parameterDiffers )
-        {
-            throw new IllegalArgumentException( "Start and end uniqueness parameters differ, they need to be the " +
-                    "same currently. Start side has " + start.uniquenessParameter + ", " +
-                    "end side has " + end.uniquenessParameter );
+        boolean parameterDiffers = start.uniquenessParameter == null || end.uniquenessParameter == null
+                ? start.uniquenessParameter != end.uniquenessParameter
+                : !start.uniquenessParameter.equals(end.uniquenessParameter);
+        if (parameterDiffers) {
+            throw new IllegalArgumentException("Start and end uniqueness parameters differ, they need to be the "
+                    + "same currently. Start side has "
+                    + start.uniquenessParameter + ", " + "end side has "
+                    + end.uniquenessParameter);
         }
 
-        UniquenessFilter uniqueness = start.uniqueness.create( start.uniquenessParameter );
-        if ( !(uniqueness instanceof BidirectionalUniquenessFilter) )
-        {
-            throw new IllegalArgumentException( "You must supply a BidirectionalUniquenessFilter, " +
-                    "not just a UniquenessFilter." );
+        UniquenessFilter uniqueness = start.uniqueness.create(start.uniquenessParameter);
+        if (!(uniqueness instanceof BidirectionalUniquenessFilter)) {
+            throw new IllegalArgumentException(
+                    "You must supply a BidirectionalUniquenessFilter, " + "not just a UniquenessFilter.");
         }
         return (BidirectionalUniquenessFilter) uniqueness;
     }
 
-    private static SideSelector fixedSide( final Direction direction )
-    {
-        return new SideSelector()
-        {
+    private static SideSelector fixedSide(final Direction direction) {
+        return new SideSelector() {
             @Override
-            public TraversalBranch next( TraversalContext metadata )
-            {
+            public TraversalBranch next(TraversalContext metadata) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public Direction currentSide()
-            {
+            public Direction currentSide() {
                 return direction;
             }
         };
     }
 
     @Override
-    protected Path fetchNextOrNull()
-    {
-        if ( foundPaths != null )
-        {
-            if ( foundPaths.hasNext() )
-            {
+    protected Path fetchNextOrNull() {
+        if (foundPaths != null) {
+            if (foundPaths.hasNext()) {
                 numberOfPathsReturned++;
                 return foundPaths.next();
             }
@@ -136,19 +123,15 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
         }
 
         TraversalBranch result;
-        while ( true )
-        {
-            result = selector.next( this );
-            if ( result == null )
-            {
+        while (true) {
+            result = selector.next(this);
+            if (result == null) {
                 return null;
             }
-            Iterable<Path> pathCollisions = collisionDetector.evaluate( result, selector.currentSide() );
-            if ( pathCollisions != null )
-            {
+            Iterable<Path> pathCollisions = collisionDetector.evaluate(result, selector.currentSide());
+            if (pathCollisions != null) {
                 foundPaths = pathCollisions.iterator();
-                if ( foundPaths.hasNext() )
-                {
+                if (foundPaths.hasNext()) {
                     numberOfPathsReturned++;
                     return foundPaths.next();
                 }
@@ -156,26 +139,22 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
         }
     }
 
-    private Side currentSideDescription()
-    {
-        return sides.get( selector.currentSide() );
+    private Side currentSideDescription() {
+        return sides.get(selector.currentSide());
     }
 
     @Override
-    public Evaluation evaluate( TraversalBranch branch, BranchState state )
-    {
-        return currentSideDescription().description.evaluator.evaluate( branch, state );
+    public Evaluation evaluate(TraversalBranch branch, BranchState state) {
+        return currentSideDescription().description.evaluator.evaluate(branch, state);
     }
 
     @Override
-    public boolean isUniqueFirst( TraversalBranch branch )
-    {
-        return uniqueness.checkFirst( branch );
+    public boolean isUniqueFirst(TraversalBranch branch) {
+        return uniqueness.checkFirst(branch);
     }
 
     @Override
-    public boolean isUnique( TraversalBranch branch )
-    {
-        return uniqueness.check( branch );
+    public boolean isUnique(TraversalBranch branch) {
+        return uniqueness.check(branch);
     }
 }

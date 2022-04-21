@@ -19,56 +19,48 @@
  */
 package org.neo4j.configuration.pagecache;
 
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.configuration.Config;
-import org.neo4j.memory.ScopedMemoryTracker;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_buffered_flush_enabled;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-class ConfigurableIOBufferFactoryTest
-{
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.Config;
+import org.neo4j.memory.ScopedMemoryTracker;
+
+class ConfigurableIOBufferFactoryTest {
     @Test
-    void createDisabledBufferCanBeDisabled()
-    {
-        var config = Config.defaults( pagecache_buffered_flush_enabled, false );
-        var bufferFactory = new ConfigurableIOBufferFactory( config, INSTANCE );
-        try ( var ioBuffer = bufferFactory.createBuffer() )
-        {
-            assertFalse( ioBuffer.isEnabled() );
+    void createDisabledBufferCanBeDisabled() {
+        var config = Config.defaults(pagecache_buffered_flush_enabled, false);
+        var bufferFactory = new ConfigurableIOBufferFactory(config, INSTANCE);
+        try (var ioBuffer = bufferFactory.createBuffer()) {
+            assertFalse(ioBuffer.isEnabled());
         }
     }
 
     @Test
-    void disabledBufferDoesNotConsumeMemory()
-    {
-        var config = Config.defaults( pagecache_buffered_flush_enabled, false );
-        var memoryTracker = new ScopedMemoryTracker( INSTANCE );
-        var bufferFactory = new ConfigurableIOBufferFactory( config, INSTANCE );
-        try ( var ioBuffer = bufferFactory.createBuffer() )
-        {
-            assertFalse( ioBuffer.isEnabled() );
-            assertThat( memoryTracker.usedNativeMemory() ).isZero();
+    void disabledBufferDoesNotConsumeMemory() {
+        var config = Config.defaults(pagecache_buffered_flush_enabled, false);
+        var memoryTracker = new ScopedMemoryTracker(INSTANCE);
+        var bufferFactory = new ConfigurableIOBufferFactory(config, INSTANCE);
+        try (var ioBuffer = bufferFactory.createBuffer()) {
+            assertFalse(ioBuffer.isEnabled());
+            assertThat(memoryTracker.usedNativeMemory()).isZero();
         }
     }
 
     @Test
     @Disabled
-    void defaultBufferCreation()
-    {
+    void defaultBufferCreation() {
         var config = Config.defaults();
-        var memoryTracker = new ScopedMemoryTracker( INSTANCE );
-        var bufferFactory = new ConfigurableIOBufferFactory( config, memoryTracker );
-        try ( var ioBuffer = bufferFactory.createBuffer() )
-        {
-            assertTrue( ioBuffer.isEnabled() );
-            assertThat( memoryTracker.usedNativeMemory() ).isGreaterThan( 0 );
+        var memoryTracker = new ScopedMemoryTracker(INSTANCE);
+        var bufferFactory = new ConfigurableIOBufferFactory(config, memoryTracker);
+        try (var ioBuffer = bufferFactory.createBuffer()) {
+            assertTrue(ioBuffer.isEnabled());
+            assertThat(memoryTracker.usedNativeMemory()).isGreaterThan(0);
         }
-        assertThat( memoryTracker.usedNativeMemory() ).isZero();
+        assertThat(memoryTracker.usedNativeMemory()).isZero();
     }
 }

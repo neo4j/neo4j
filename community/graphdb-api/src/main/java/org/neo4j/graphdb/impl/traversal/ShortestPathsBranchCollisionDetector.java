@@ -20,30 +20,24 @@
 package org.neo4j.graphdb.impl.traversal;
 
 import java.util.function.Predicate;
-
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 
-public class ShortestPathsBranchCollisionDetector extends StandardBranchCollisionDetector
-{
+public class ShortestPathsBranchCollisionDetector extends StandardBranchCollisionDetector {
     private int depth = -1;
 
-    public ShortestPathsBranchCollisionDetector( Evaluator evaluator, Predicate<Path> pathPredicate )
-    {
-        super( evaluator, pathPredicate );
+    public ShortestPathsBranchCollisionDetector(Evaluator evaluator, Predicate<Path> pathPredicate) {
+        super(evaluator, pathPredicate);
     }
 
     @Override
-    protected boolean includePath( Path path, TraversalBranch startBranch, TraversalBranch endBranch )
-    {
-        if ( !super.includePath( path, startBranch, endBranch ) )
-        {
+    protected boolean includePath(Path path, TraversalBranch startBranch, TraversalBranch endBranch) {
+        if (!super.includePath(path, startBranch, endBranch)) {
             return false;
         }
 
-        if ( depth == -1 )
-        {
+        if (depth == -1) {
             depth = path.length();
             return true;
         }

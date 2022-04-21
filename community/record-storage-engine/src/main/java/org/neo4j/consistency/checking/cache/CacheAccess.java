@@ -20,7 +20,6 @@
 package org.neo4j.consistency.checking.cache;
 
 import java.util.Collection;
-
 import org.neo4j.consistency.statistics.Counts;
 import org.neo4j.consistency.statistics.Counts.Type;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -37,13 +36,11 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
  * The cache is a compact representation of records, tied to an id, for example nodeId. There can be multiple
  * cached values per id, selected by {@code slot}.
  */
-public interface CacheAccess
-{
+public interface CacheAccess {
     /**
      * Client per thread for accessing cache and counts for statistics
      */
-    interface Client
-    {
+    interface Client {
         /**
          * Gets a cached value, put there with {@link #putToCache(long, long...)} or
          * {@link #putToCacheSingle(long, int, long)}.
@@ -52,7 +49,7 @@ public interface CacheAccess
          * @param slot which cache slot for this id.
          * @return the cached value.
          */
-        long getFromCache( long id, int slot );
+        long getFromCache(long id, int slot);
 
         /**
          * Gets a cached value, put there with {@link #putToCache(long, long...)} or
@@ -63,7 +60,7 @@ public interface CacheAccess
          * @param slot which cache slot for this id.
          * @return false if slot value is 0, true otherwise.
          */
-        boolean getBooleanFromCache( long id, int slot );
+        boolean getBooleanFromCache(long id, int slot);
 
         /**
          * Caches all values for an id, i.e. fills all slots.
@@ -71,7 +68,7 @@ public interface CacheAccess
          * @param id the entity id these cached values will be tied to.
          * @param cacheFields the values to cache, one per slot.
          */
-        void putToCache( long id, long... cacheFields );
+        void putToCache(long id, long... cacheFields);
 
         /**
          * Caches a single value for an id and slot.
@@ -80,21 +77,21 @@ public interface CacheAccess
          * @param slot the slot for the given {@code id}.
          * @param value the value to cache for this id and slot.
          */
-        void putToCacheSingle( long id, int slot, long value );
+        void putToCacheSingle(long id, int slot, long value);
 
         /**
          * Clears the cached values for the specified {@code id}.
          *
          * @param id the entity id to clear the cached values for.
          */
-        void clearCache( long id );
+        void clearCache(long id);
 
         /**
          * Caches a {@link Collection} of {@link PropertyRecord} for later checking.
          *
          * @param properties property records to cache for this thread.
          */
-        void putPropertiesToCache( Collection<PropertyRecord> properties );
+        void putPropertiesToCache(Collection<PropertyRecord> properties);
 
         /**
          * Gets a cached {@link PropertyRecord} of a specific {@code id}, see {@link #putPropertiesToCache(Collection)}.
@@ -102,7 +99,7 @@ public interface CacheAccess
          * @param id the property record id to look for.
          * @return cached {@link PropertyRecord} {@link PropertyRecord#getId() id}, or {@code null} if not found.
          */
-        PropertyRecord getPropertyFromCache( long id );
+        PropertyRecord getPropertyFromCache(long id);
 
         /**
          * @return cached properties.
@@ -114,7 +111,7 @@ public interface CacheAccess
          *
          * @param type counts type.
          */
-        void incAndGetCount( Counts.Type type );
+        void incAndGetCount(Counts.Type type);
 
         /**
          * Some consistency check stages splits the id range into segments, one per thread.
@@ -125,7 +122,7 @@ public interface CacheAccess
          * @return {@code true} if the thread represented by this client should process the record
          * of the given {@code id}, otherwise {@code false}.
          */
-        boolean withinBounds( long id );
+        boolean withinBounds(long id);
     }
 
     /**
@@ -148,7 +145,7 @@ public interface CacheAccess
      *
      * @param forward {@code true} if the current scanning is forwards, otherwise it's backwards.
      */
-    void setForward( boolean forward );
+    void setForward(boolean forward);
 
     /**
      * Clears all cached values.
@@ -160,124 +157,93 @@ public interface CacheAccess
      *
      * @param slotSize defines how many and how big the slots are for cached values that are put after this call.
      */
-    void setCacheSlotSizes( int... slotSize );
+    void setCacheSlotSizes(int... slotSize);
 
     /**
      * Sets the slot sizes of the cached values. Also clears the cache.
      *
      * @param slotSize defines how many and how big the slots are for cached values that are put after this call.
      */
-    void setCacheSlotSizesAndClear( int... slotSize );
+    void setCacheSlotSizesAndClear(int... slotSize);
 
     /**
      * Sets the node id that is 0, such that all cache interactions uses this pivot node id to calculate the actual node id.
      * This is because the node id is used as index into the cache and the cache may be used to run multiple iterations over
      * a store, where only parts of the store is checked.
      */
-    void setPivotId( long pivotId );
+    void setPivotId(long pivotId);
 
-    void prepareForProcessingOfSingleStore( long recordsPerCPU );
+    void prepareForProcessingOfSingleStore(long recordsPerCPU);
 
-    Client EMPTY_CLIENT = new Client()
-    {
+    Client EMPTY_CLIENT = new Client() {
         @Override
-        public void putPropertiesToCache( Collection<PropertyRecord> properties )
-        {
-        }
+        public void putPropertiesToCache(Collection<PropertyRecord> properties) {}
 
         @Override
-        public void putToCache( long id, long... cacheFields )
-        {
-        }
+        public void putToCache(long id, long... cacheFields) {}
 
         @Override
-        public void putToCacheSingle( long id, int slot, long value )
-        {
-        }
+        public void putToCacheSingle(long id, int slot, long value) {}
 
         @Override
-        public void clearCache( long id )
-        {
-        }
+        public void clearCache(long id) {}
 
         @Override
-        public void incAndGetCount( Type type )
-        {
-        }
+        public void incAndGetCount(Type type) {}
 
         @Override
-        public PropertyRecord getPropertyFromCache( long id )
-        {
+        public PropertyRecord getPropertyFromCache(long id) {
             return null;
         }
 
         @Override
-        public Iterable<PropertyRecord> getPropertiesFromCache()
-        {
+        public Iterable<PropertyRecord> getPropertiesFromCache() {
             return null;
         }
 
         @Override
-        public long getFromCache( long id, int slot )
-        {
+        public long getFromCache(long id, int slot) {
             return 0;
         }
 
         @Override
-        public boolean getBooleanFromCache( long id, int slot )
-        {
+        public boolean getBooleanFromCache(long id, int slot) {
             return false;
         }
 
         @Override
-        public boolean withinBounds( long id )
-        {
+        public boolean withinBounds(long id) {
             return false;
         }
     };
 
-    CacheAccess EMPTY = new CacheAccess()
-    {
+    CacheAccess EMPTY = new CacheAccess() {
         @Override
-        public Client client()
-        {
+        public Client client() {
             return EMPTY_CLIENT;
         }
 
         @Override
-        public void setForward( boolean forward )
-        {
-        }
+        public void setForward(boolean forward) {}
 
         @Override
-        public void setCacheSlotSizes( int... slotSizes )
-        {
-        }
+        public void setCacheSlotSizes(int... slotSizes) {}
 
         @Override
-        public void setCacheSlotSizesAndClear( int... slotSizes )
-        {
-        }
+        public void setCacheSlotSizesAndClear(int... slotSizes) {}
 
         @Override
-        public boolean isForward()
-        {
+        public boolean isForward() {
             return false;
         }
 
         @Override
-        public void clearCache()
-        {
-        }
+        public void clearCache() {}
 
         @Override
-        public void prepareForProcessingOfSingleStore( long recordsPerCPU )
-        {
-        }
+        public void prepareForProcessingOfSingleStore(long recordsPerCPU) {}
 
         @Override
-        public void setPivotId( long pivotId )
-        {
-        }
+        public void setPivotId(long pivotId) {}
     };
 }

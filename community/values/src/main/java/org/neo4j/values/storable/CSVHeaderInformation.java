@@ -25,7 +25,6 @@ package org.neo4j.values.storable;
  * Values that have been assigned in the header act as default values and
  * can be overridden in individual rows.
  */
-public interface CSVHeaderInformation
-{
-    void assign( String key, Object value );
+public interface CSVHeaderInformation {
+    void assign(String key, Object value);
 }

@@ -42,25 +42,25 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
    * Compile a query
    * @return the execution plan
    */
-  def buildPlan(logicalQuery: LogicalQuery,
-                runtime: CypherRuntime[CONTEXT]): ExecutionPlan
+  def buildPlan(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT]): ExecutionPlan
 
   /**
    * Compile a query
    * @return the execution plan and the used runtime context
    */
-  def buildPlanAndContext(logicalQuery: LogicalQuery,
-                          runtime: CypherRuntime[CONTEXT]): (ExecutionPlan, CONTEXT)
+  def buildPlanAndContext(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT]): (ExecutionPlan, CONTEXT)
 
   /**
    * Execute an pre-compiled query with an ExecutionPlan
    */
-  def execute(executablePlan: ExecutionPlan): RecordingRuntimeResult = execute(executablePlan, readOnly = true, implicitTx = false)
+  def execute(executablePlan: ExecutionPlan): RecordingRuntimeResult =
+    execute(executablePlan, readOnly = true, implicitTx = false)
 
   /**
    * Execute an pre-compiled query with an ExecutionPlan
    */
-  def execute(executablePlan: ExecutionPlan, readOnly: Boolean): RecordingRuntimeResult = execute(executablePlan, readOnly, implicitTx = false)
+  def execute(executablePlan: ExecutionPlan, readOnly: Boolean): RecordingRuntimeResult =
+    execute(executablePlan, readOnly, implicitTx = false)
 
   /**
    * Execute an pre-compiled query with an ExecutionPlan
@@ -70,89 +70,99 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
   /**
    * Execute a Logical query.
    */
-  def execute(logicalQuery: LogicalQuery,
-              runtime: CypherRuntime[CONTEXT]
-             ): RecordingRuntimeResult = execute(logicalQuery, runtime, NoInput)
+  def execute(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT]): RecordingRuntimeResult =
+    execute(logicalQuery, runtime, NoInput)
 
   /**
    * Execute a Logical query with some input.
    */
-  def execute(logicalQuery: LogicalQuery,
-              runtime: CypherRuntime[CONTEXT],
-              input: InputValues): RecordingRuntimeResult = execute(logicalQuery, runtime, input.stream())
+  def execute(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT], input: InputValues): RecordingRuntimeResult =
+    execute(logicalQuery, runtime, input.stream())
 
   /**
    * Execute a Logical query with some input stream.
    */
-  def execute(logicalQuery: LogicalQuery,
-              runtime: CypherRuntime[CONTEXT],
-              inputStream: InputDataStream): RecordingRuntimeResult
+  def execute(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    inputStream: InputDataStream
+  ): RecordingRuntimeResult
 
   /**
    * Execute a Logical query with a custom subscriber.
    */
-  def execute(logicalQuery: LogicalQuery,
-              runtime: CypherRuntime[CONTEXT],
-              subscriber: QuerySubscriber): RuntimeResult = execute(logicalQuery, runtime, NoInput, subscriber)
+  def execute(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT], subscriber: QuerySubscriber): RuntimeResult =
+    execute(logicalQuery, runtime, NoInput, subscriber)
 
   /**
    * Execute a Logical query with a custom subscriber and some input.
    */
-  def execute(logicalQuery: LogicalQuery,
-              runtime: CypherRuntime[CONTEXT],
-              input: InputDataStream,
-              subscriber: QuerySubscriber): RuntimeResult
+  def execute(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    input: InputDataStream,
+    subscriber: QuerySubscriber
+  ): RuntimeResult
 
   /**
    * Execute a logical query in its own transaction. Return the result already materialized.
    */
-  def executeAndConsumeTransactionally(logicalQuery: LogicalQuery,
-                                       runtime: CypherRuntime[CONTEXT],
-                                       parameters: Map[String, Any] = Map.empty,
-                                       profileAssertion: Option[QueryProfile => Unit] = None
-                                      ): IndexedSeq[Array[AnyValue]]
+  def executeAndConsumeTransactionally(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    parameters: Map[String, Any] = Map.empty,
+    profileAssertion: Option[QueryProfile => Unit] = None
+  ): IndexedSeq[Array[AnyValue]]
 
   /**
    * Execute a Logical query with some input. Return the result andthe context.
    */
-  def executeAndContext(logicalQuery: LogicalQuery,
-                        runtime: CypherRuntime[CONTEXT],
-                        input: InputValues
-                       ): (RecordingRuntimeResult, CONTEXT)
+  def executeAndContext(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    input: InputValues
+  ): (RecordingRuntimeResult, CONTEXT)
 
   /**
    * Execute a Logical query with some input. Return the result and the execution plan description
    */
-  def executeAndExplain(logicalQuery: LogicalQuery,
-                        runtime: CypherRuntime[CONTEXT],
-                        input: InputValues): (RecordingRuntimeResult, InternalPlanDescription)
+  def executeAndExplain(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    input: InputValues
+  ): (RecordingRuntimeResult, InternalPlanDescription)
+
   /**
    * Profile a Logical query with some input.
    */
-  def profile(logicalQuery: LogicalQuery,
-              runtime: CypherRuntime[CONTEXT],
-              input: InputValues): RecordingRuntimeResult = profile(logicalQuery, runtime, input.stream())
+  def profile(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT], input: InputValues): RecordingRuntimeResult =
+    profile(logicalQuery, runtime, input.stream())
+
   /**
    * Profile a Logical query with some input stream.
    */
-  def profile(logicalQuery: LogicalQuery,
-              runtime: CypherRuntime[CONTEXT],
-              inputDataStream: InputDataStream = NoInput): RecordingRuntimeResult
+  def profile(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    inputDataStream: InputDataStream = NoInput
+  ): RecordingRuntimeResult
 
-  def profile(executionPlan: ExecutionPlan,
-              inputDataStream: InputDataStream,
-              readOnly: Boolean): RecordingRuntimeResult
+  def profile(executionPlan: ExecutionPlan, inputDataStream: InputDataStream, readOnly: Boolean): RecordingRuntimeResult
 
   /**
    * Profile a Logical query with some input stream without recording the result.
    */
-  def profileNonRecording(logicalQuery: LogicalQuery,
-                          runtime: CypherRuntime[CONTEXT],
-                          inputDataStream: InputDataStream = NoInput): NonRecordingRuntimeResult
+  def profileNonRecording(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    inputDataStream: InputDataStream = NoInput
+  ): NonRecordingRuntimeResult
 
-  def profileWithSubscriber(logicalQuery: LogicalQuery,
-                            runtime: CypherRuntime[CONTEXT],
-                            subscriber: QuerySubscriber,
-                            inputDataStream: InputDataStream = NoInput): RuntimeResult
+  def profileWithSubscriber(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    subscriber: QuerySubscriber,
+    inputDataStream: InputDataStream = NoInput
+  ): RuntimeResult
 
 }

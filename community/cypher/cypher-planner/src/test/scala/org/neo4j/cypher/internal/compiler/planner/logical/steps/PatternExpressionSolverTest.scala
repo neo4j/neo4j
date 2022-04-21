@@ -59,14 +59,14 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
     // when
     val solver = PatternExpressionSolver.solverFor(source, context)
-    val expressions = Map("x" -> patExpr1).map{ case (k,v) => (k, removeGeneratedNamesAndParamsOnTree(solver.solve(v, Some(k)))) }
+    val expressions = Map("x" -> patExpr1).map { case (k, v) =>
+      (k, removeGeneratedNamesAndParamsOnTree(solver.solve(v, Some(k))))
+    }
     val resultPlan = removeGeneratedNamesAndParamsOnTree(solver.rewrittenPlan())
 
     // then
     resultPlan should beLike {
-      case RollUpApply(`source`,
-      Projection(`otherSide`, MapKeys("varToCollect")),
-      "x", "varToCollect") => ()
+      case RollUpApply(`source`, Projection(`otherSide`, MapKeys("varToCollect")), "x", "varToCollect") => ()
     }
     expressions should equal(Map("x" -> varFor("x")))
   }
@@ -90,17 +90,19 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val source = newMockedLogicalPlan(context.planningAttributes, "a")
 
     val solver = PatternExpressionSolver.solverFor(source, context)
-    val expressions = Map("x" -> patExpr1, "y" -> patExpr2).map{ case (k,v) => (k, removeGeneratedNamesAndParamsOnTree(solver.solve(v, Some(k)))) }
+    val expressions = Map("x" -> patExpr1, "y" -> patExpr2).map { case (k, v) =>
+      (k, removeGeneratedNamesAndParamsOnTree(solver.solve(v, Some(k))))
+    }
     val resultPlan = removeGeneratedNamesAndParamsOnTree(solver.rewrittenPlan())
 
     // then
     resultPlan should beLike {
       case RollUpApply(
-      RollUpApply(`source`,
-      Projection(`b1`, MapKeys("varToCollect")),
-      "x", "varToCollect"),
-      Projection(`b2`, MapKeys("varToCollect2")),
-      "y", "varToCollect2") => ()
+          RollUpApply(`source`, Projection(`b1`, MapKeys("varToCollect")), "x", "varToCollect"),
+          Projection(`b2`, MapKeys("varToCollect2")),
+          "y",
+          "varToCollect2"
+        ) => ()
     }
     expressions should equal(Map("x" -> varFor("x"), "y" -> varFor("y")))
   }
@@ -116,17 +118,19 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
     val stringToEquals1 = Map("x" -> equals(patExpr1, patExpr2))
     val solver = PatternExpressionSolver.solverFor(source, context)
-    val expressions = stringToEquals1.map{ case (k,v) => (k, removeGeneratedNamesAndParamsOnTree(solver.solve(v, Some(k)))) }
+    val expressions = stringToEquals1.map { case (k, v) =>
+      (k, removeGeneratedNamesAndParamsOnTree(solver.solve(v, Some(k))))
+    }
     val resultPlan = removeGeneratedNamesAndParamsOnTree(solver.rewrittenPlan())
 
     // then
     resultPlan should beLike {
       case RollUpApply(
-      RollUpApply(`source`,
-      Projection(`b1`, MapKeys("varToCollect")),
-      "collectionName", "varToCollect"),
-      Projection(`b2`, MapKeys("varToCollect2")),
-      "collectionName2", "varToCollect2") => ()
+          RollUpApply(`source`, Projection(`b1`, MapKeys("varToCollect")), "collectionName", "varToCollect"),
+          Projection(`b2`, MapKeys("varToCollect2")),
+          "collectionName2",
+          "varToCollect2"
+        ) => ()
     }
 
     expressions should equal(Map("x" -> equals(varFor("collectionName"), varFor("collectionName2"))))
@@ -149,11 +153,11 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     // then
     resultPlan should beLike {
       case RollUpApply(
-      RollUpApply(`source`,
-      Projection(`b1`, MapKeys("varToCollect")),
-      "collectionName", "varToCollect"),
-      Projection(`b2`, MapKeys("varToCollect2")),
-      "collectionName2", "varToCollect2") => ()
+          RollUpApply(`source`, Projection(`b1`, MapKeys("varToCollect")), "collectionName", "varToCollect"),
+          Projection(`b2`, MapKeys("varToCollect2")),
+          "collectionName2",
+          "varToCollect2"
+        ) => ()
     }
 
     expression should equal(equals(varFor("collectionName"), varFor("collectionName2")))
@@ -162,24 +166,28 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
   private def logicalPlanningContext(strategy: QueryGraphSolver): LogicalPlanningContext =
     newMockedLogicalPlanningContext(newMockedPlanContext(), semanticTable = new SemanticTable(), strategy = strategy)
 
-  private def newPatExpr(left: String, position: Int,
-                         rightOffset: Int,
-                         relOffset: Int,
-                         dir: SemanticDirection,
-                         varToCollect: String,
-                         collectionName: String): PatternExpression = {
-      def getNameAndPosition(rightE: Either[Int, String]) = rightE match {
-        case Left(i) => (Some(varFor(s"  REL$i")), DummyPosition(i))
-        case Right(name) => (Some(varFor(name)), pos)
-      }
-
-      val (right, rightPos) = getNameAndPosition(Left(rightOffset))
-      val (relName, relPos) = getNameAndPosition(Left(relOffset))
-
-      PatternExpression(RelationshipsPattern(RelationshipChain(
-        NodePattern(Some(varFor(left)), None, None, None) _,
-        RelationshipPattern(relName, Seq.empty, None, None, None, dir)(relPos),
-        NodePattern(right, None, None, None)(rightPos)) _)(DummyPosition(position)))(Set.empty, varToCollect, collectionName)
+  private def newPatExpr(
+    left: String,
+    position: Int,
+    rightOffset: Int,
+    relOffset: Int,
+    dir: SemanticDirection,
+    varToCollect: String,
+    collectionName: String
+  ): PatternExpression = {
+    def getNameAndPosition(rightE: Either[Int, String]) = rightE match {
+      case Left(i)     => (Some(varFor(s"  REL$i")), DummyPosition(i))
+      case Right(name) => (Some(varFor(name)), pos)
     }
+
+    val (right, rightPos) = getNameAndPosition(Left(rightOffset))
+    val (relName, relPos) = getNameAndPosition(Left(relOffset))
+
+    PatternExpression(RelationshipsPattern(RelationshipChain(
+      NodePattern(Some(varFor(left)), None, None, None) _,
+      RelationshipPattern(relName, Seq.empty, None, None, None, dir)(relPos),
+      NodePattern(right, None, None, None)(rightPos)
+    ) _)(DummyPosition(position)))(Set.empty, varToCollect, collectionName)
+  }
 
 }

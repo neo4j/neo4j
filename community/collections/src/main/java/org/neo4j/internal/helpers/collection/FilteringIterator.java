@@ -28,25 +28,20 @@ import java.util.function.Predicate;
  *
  * @param <T> the type of items in the iteration.
  */
-public class FilteringIterator<T> extends PrefetchingIterator<T>
-{
+public class FilteringIterator<T> extends PrefetchingIterator<T> {
     private final Iterator<T> source;
     private final Predicate<T> predicate;
 
-    public FilteringIterator( Iterator<T> source, Predicate<T> predicate )
-    {
+    public FilteringIterator(Iterator<T> source, Predicate<T> predicate) {
         this.source = source;
         this.predicate = predicate;
     }
 
     @Override
-    protected T fetchNextOrNull()
-    {
-        while ( source.hasNext() )
-        {
+    protected T fetchNextOrNull() {
+        while (source.hasNext()) {
             T testItem = source.next();
-            if ( predicate.test( testItem ) )
-            {
+            if (predicate.test(testItem)) {
                 return testItem;
             }
         }

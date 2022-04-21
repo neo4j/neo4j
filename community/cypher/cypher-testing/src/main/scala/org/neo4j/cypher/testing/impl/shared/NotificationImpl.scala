@@ -28,7 +28,7 @@ case class NotificationImpl(
   title: String,
   description: String,
   severity: SeverityLevel,
-  position: InputPosition,
+  position: InputPosition
 ) extends Notification {
   override def getCode: String = code
   override def getTitle: String = title
@@ -38,15 +38,15 @@ case class NotificationImpl(
 }
 
 object NotificationImpl {
+
   def fromRaw(
     code: String,
     title: String,
     description: String,
     severity: String,
-    position: InputPosition,
+    position: InputPosition
   ): NotificationImpl =
     NotificationImpl(code, title, description, SeverityLevel.valueOf(severity), position)
-
 
   def fromRaw(
     code: String,
@@ -55,7 +55,7 @@ object NotificationImpl {
     severity: String,
     posOffset: Int,
     posLine: Int,
-    posColumn: Int,
+    posColumn: Int
   ): NotificationImpl =
     fromRaw(code, title, description, severity, new InputPosition(posOffset, posLine, posColumn))
 }

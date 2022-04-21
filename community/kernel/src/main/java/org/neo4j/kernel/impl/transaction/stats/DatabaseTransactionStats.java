@@ -21,15 +21,12 @@ package org.neo4j.kernel.impl.transaction.stats;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
-
 import org.neo4j.kernel.impl.api.transaction.monitor.TransactionSizeMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 
-public class DatabaseTransactionStats implements TransactionMonitor, TransactionCounters
-{
+public class DatabaseTransactionStats implements TransactionMonitor, TransactionCounters {
     @FunctionalInterface
-    public interface Factory
-    {
+    public interface Factory {
         DatabaseTransactionStats create();
     }
 
@@ -46,177 +43,140 @@ public class DatabaseTransactionStats implements TransactionMonitor, Transaction
     private volatile TransactionSizeMonitor transactionSizeCallback = NullTransactionSizeCallback.INSTANCE;
 
     @Override
-    public void transactionStarted()
-    {
+    public void transactionStarted() {
         startedTransactionCount.increment();
         long active = activeReadTransactionCount.incrementAndGet();
-        peakTransactionCount = Math.max( peakTransactionCount, active );
+        peakTransactionCount = Math.max(peakTransactionCount, active);
     }
 
     @Override
-    public void transactionFinished( boolean committed, boolean write )
-    {
-        if ( write )
-        {
+    public void transactionFinished(boolean committed, boolean write) {
+        if (write) {
             activeWriteTransactionCount.decrement();
-        }
-        else
-        {
+        } else {
             activeReadTransactionCount.decrementAndGet();
         }
-        if ( committed )
-        {
-            incrementCounter( committedReadTransactionCount, committedWriteTransactionCount, write );
-        }
-        else
-        {
-            incrementCounter( rolledBackReadTransactionCount, rolledBackWriteTransactionCount, write );
+        if (committed) {
+            incrementCounter(committedReadTransactionCount, committedWriteTransactionCount, write);
+        } else {
+            incrementCounter(rolledBackReadTransactionCount, rolledBackWriteTransactionCount, write);
         }
     }
 
     @Override
-    public void transactionTerminated( boolean write )
-    {
-        incrementCounter( terminatedReadTransactionCount, terminatedWriteTransactionCount, write );
+    public void transactionTerminated(boolean write) {
+        incrementCounter(terminatedReadTransactionCount, terminatedWriteTransactionCount, write);
     }
 
     @Override
-    public void upgradeToWriteTransaction()
-    {
+    public void upgradeToWriteTransaction() {
         activeReadTransactionCount.decrementAndGet();
         activeWriteTransactionCount.increment();
     }
 
     @Override
-    public long getPeakConcurrentNumberOfTransactions()
-    {
+    public long getPeakConcurrentNumberOfTransactions() {
         return peakTransactionCount;
     }
 
     @Override
-    public long getNumberOfStartedTransactions()
-    {
+    public long getNumberOfStartedTransactions() {
         return startedTransactionCount.longValue();
     }
 
     @Override
-    public long getNumberOfCommittedTransactions()
-    {
+    public long getNumberOfCommittedTransactions() {
         return getNumberOfCommittedReadTransactions() + getNumberOfCommittedWriteTransactions();
     }
 
     @Override
-    public long getNumberOfCommittedReadTransactions()
-    {
+    public long getNumberOfCommittedReadTransactions() {
         return committedReadTransactionCount.longValue();
     }
 
     @Override
-    public long getNumberOfCommittedWriteTransactions()
-    {
+    public long getNumberOfCommittedWriteTransactions() {
         return committedWriteTransactionCount.longValue();
     }
 
     @Override
-    public long getNumberOfActiveTransactions()
-    {
+    public long getNumberOfActiveTransactions() {
         return getNumberOfActiveReadTransactions() + getNumberOfActiveWriteTransactions();
     }
 
     @Override
-    public long getNumberOfActiveReadTransactions()
-    {
+    public long getNumberOfActiveReadTransactions() {
         return activeReadTransactionCount.longValue();
     }
 
     @Override
-    public long getNumberOfActiveWriteTransactions()
-    {
+    public long getNumberOfActiveWriteTransactions() {
         return activeWriteTransactionCount.longValue();
     }
 
     @Override
-    public long getNumberOfTerminatedTransactions()
-    {
+    public long getNumberOfTerminatedTransactions() {
         return getNumberOfTerminatedReadTransactions() + getNumberOfTerminatedWriteTransactions();
     }
 
     @Override
-    public long getNumberOfTerminatedReadTransactions()
-    {
+    public long getNumberOfTerminatedReadTransactions() {
         return terminatedReadTransactionCount.longValue();
     }
 
     @Override
-    public long getNumberOfTerminatedWriteTransactions()
-    {
+    public long getNumberOfTerminatedWriteTransactions() {
         return terminatedWriteTransactionCount.longValue();
     }
 
     @Override
-    public long getNumberOfRolledBackTransactions()
-    {
+    public long getNumberOfRolledBackTransactions() {
         return getNumberOfRolledBackReadTransactions() + getNumberOfRolledBackWriteTransactions();
     }
 
     @Override
-    public long getNumberOfRolledBackReadTransactions()
-    {
+    public long getNumberOfRolledBackReadTransactions() {
         return rolledBackReadTransactionCount.longValue();
     }
 
     @Override
-    public long getNumberOfRolledBackWriteTransactions()
-    {
+    public long getNumberOfRolledBackWriteTransactions() {
         return rolledBackWriteTransactionCount.longValue();
     }
 
     @Override
-    public void setTransactionSizeCallback( TransactionSizeMonitor transactionSizeMonitor )
-    {
-        this.transactionSizeCallback = transactionSizeMonitor != null ? transactionSizeMonitor : NullTransactionSizeCallback.INSTANCE;
+    public void setTransactionSizeCallback(TransactionSizeMonitor transactionSizeMonitor) {
+        this.transactionSizeCallback =
+                transactionSizeMonitor != null ? transactionSizeMonitor : NullTransactionSizeCallback.INSTANCE;
     }
 
     @Override
-    public void addHeapTransactionSize( long transactionSizeHeap )
-    {
-        transactionSizeCallback.addHeapTransactionSize( transactionSizeHeap );
+    public void addHeapTransactionSize(long transactionSizeHeap) {
+        transactionSizeCallback.addHeapTransactionSize(transactionSizeHeap);
     }
 
     @Override
-    public void addNativeTransactionSize( long transactionSizeNative )
-    {
-        transactionSizeCallback.addNativeTransactionSize( transactionSizeNative );
+    public void addNativeTransactionSize(long transactionSizeNative) {
+        transactionSizeCallback.addNativeTransactionSize(transactionSizeNative);
     }
 
-    private static void incrementCounter( LongAdder readCount, LongAdder writeCount, boolean write )
-    {
-        if ( write )
-        {
+    private static void incrementCounter(LongAdder readCount, LongAdder writeCount, boolean write) {
+        if (write) {
             writeCount.increment();
-        }
-        else
-        {
+        } else {
             readCount.increment();
         }
     }
 
-    private static class NullTransactionSizeCallback implements TransactionSizeMonitor
-    {
+    private static class NullTransactionSizeCallback implements TransactionSizeMonitor {
         private static final TransactionSizeMonitor INSTANCE = new NullTransactionSizeCallback();
 
-        private NullTransactionSizeCallback()
-        {
-        }
+        private NullTransactionSizeCallback() {}
 
         @Override
-        public void addHeapTransactionSize( long transactionSizeHeap )
-        {
-        }
+        public void addHeapTransactionSize(long transactionSizeHeap) {}
 
         @Override
-        public void addNativeTransactionSize( long transactionSizeNative )
-        {
-        }
+        public void addNativeTransactionSize(long transactionSizeNative) {}
     }
 }

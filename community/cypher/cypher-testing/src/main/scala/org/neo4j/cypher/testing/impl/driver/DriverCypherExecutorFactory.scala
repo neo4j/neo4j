@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.testing.impl.driver
 
-import java.net.URI
-
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.connectors.BoltConnector
@@ -33,15 +31,23 @@ import org.neo4j.driver.GraphDatabase
 import org.neo4j.driver.SessionConfig
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 
-case class DriverCypherExecutorFactory(private val databaseManagementService: DatabaseManagementService, private val config: Config) extends CypherExecutorFactory {
+import java.net.URI
+
+case class DriverCypherExecutorFactory(
+  private val databaseManagementService: DatabaseManagementService,
+  private val config: Config
+) extends CypherExecutorFactory {
 
   private val driver: Driver = {
     val connectorPortRegister =
-      databaseManagementService.database(config.get(GraphDatabaseSettings.default_database)).asInstanceOf[GraphDatabaseAPI]
+      databaseManagementService.database(config.get(GraphDatabaseSettings.default_database)).asInstanceOf[
+        GraphDatabaseAPI
+      ]
         .getDependencyResolver.resolveDependency(classOf[ConnectorPortRegister])
 
     val boltURI =
-      if (config.get(BoltConnector.enabled)) URI.create(s"bolt://${connectorPortRegister.getLocalAddress(BoltConnector.NAME)}/")
+      if (config.get(BoltConnector.enabled))
+        URI.create(s"bolt://${connectorPortRegister.getLocalAddress(BoltConnector.NAME)}/")
       else throw new IllegalStateException("Bolt connector is not configured")
 
     GraphDatabase.driver(boltURI)

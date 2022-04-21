@@ -50,22 +50,22 @@ abstract class DeleteExpressionTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   private val function =
-    new BasicUserFunction(UserFunctionSignature.functionSignature( "findNodeToDelete")
+    new BasicUserFunction(UserFunctionSignature.functionSignature("findNodeToDelete")
       .in("nodes", Neo4jTypes.NTList(Neo4jTypes.NTNode))
-      .out(Neo4jTypes.NTList(Neo4jTypes.NTNode)
-      ).build()) {
-    override def apply(ctx: Context,
-                       input: Array[AnyValue]): AnyValue = {
-      val iterator = input(0).asInstanceOf[ListValue].iterator()
-      while (iterator.hasNext) {
-        val node = iterator.next().asInstanceOf[VirtualNodeValue]
-        if (!tx.kernelTransaction().dataRead().nodeDeletedInTransaction(node.id())) {
-          return node
+      .out(Neo4jTypes.NTList(Neo4jTypes.NTNode)).build()) {
+
+      override def apply(ctx: Context, input: Array[AnyValue]): AnyValue = {
+        val iterator = input(0).asInstanceOf[ListValue].iterator()
+        while (iterator.hasNext) {
+          val node = iterator.next().asInstanceOf[VirtualNodeValue]
+          if (!tx.kernelTransaction().dataRead().nodeDeletedInTransaction(node.id())) {
+            return node
+          }
         }
+        null
       }
-      null
     }
-  }
+
   override protected def initTest(): Unit = {
     registerFunction(function)
   }
@@ -118,7 +118,7 @@ abstract class DeleteExpressionTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("map")
       .withRows(expectedRows)
-      .withStatistics(relationshipsDeleted = 3*3)
+      .withStatistics(relationshipsDeleted = 3 * 3)
     Iterables.count(tx.getAllRelationships) shouldBe 0
   }
 
@@ -161,12 +161,12 @@ abstract class DeleteExpressionTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
 
-    val thrown = the [ConstraintViolationException] thrownBy restartTx()
+    val thrown = the[ConstraintViolationException] thrownBy restartTx()
     thrown.getMessage should include regex "Cannot delete.*because it still has relationships"
 
     val tx = runtimeTestSupport.startNewTx()
     // Nodes and relationships should still be there
-    Iterables.count(tx.getAllNodes) shouldBe 3*2
+    Iterables.count(tx.getAllNodes) shouldBe 3 * 2
     Iterables.count(tx.getAllRelationships) shouldBe 3
   }
 

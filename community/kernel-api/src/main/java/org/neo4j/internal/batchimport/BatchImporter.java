@@ -20,13 +20,11 @@
 package org.neo4j.internal.batchimport;
 
 import java.io.IOException;
-
 import org.neo4j.internal.batchimport.input.Input;
 
 /**
  * Imports graph data given as {@link Input}.
  */
-public interface BatchImporter
-{
-    void doImport( Input input ) throws IOException;
+public interface BatchImporter {
+    void doImport(Input input) throws IOException;
 }

@@ -22,11 +22,10 @@ package org.neo4j.codegen;
 /**
  * Writes classes into some serialized representation.
  */
-public interface ClassWriter
-{
-    MethodWriter method( MethodDeclaration method );
+public interface ClassWriter {
+    MethodWriter method(MethodDeclaration method);
 
-    void field( FieldReference field, Expression value );
+    void field(FieldReference field, Expression value);
 
     void done();
 }

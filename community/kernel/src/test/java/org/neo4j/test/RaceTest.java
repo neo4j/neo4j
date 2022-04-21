@@ -19,14 +19,6 @@
  */
 package org.neo4j.test;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BooleanSupplier;
-
-import org.neo4j.util.concurrent.Runnables;
-
 import static java.lang.Thread.sleep;
 import static java.util.concurrent.ThreadLocalRandom.current;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,133 +29,123 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.test.Race.throwing;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
+import org.junit.jupiter.api.Test;
+import org.neo4j.util.concurrent.Runnables;
+
 /**
  * Test of a test utility {@link Race}.
  */
-class RaceTest
-{
+class RaceTest {
     @Test
-    void shouldWaitForAllContestantsToComplete() throws Throwable
-    {
+    void shouldWaitForAllContestantsToComplete() throws Throwable {
         // GIVEN
         Race race = new Race();
         final AtomicInteger completed = new AtomicInteger();
         int count = 5;
-        race.addContestants( count, throwing( () ->
-        {
-            sleep( current().nextInt( 100 ) );
+        race.addContestants(count, throwing(() -> {
+            sleep(current().nextInt(100));
             completed.incrementAndGet();
-        } ) );
+        }));
 
         // WHEN
         race.go();
 
         // THEN
-        assertEquals( count, completed.get() );
+        assertEquals(count, completed.get());
     }
 
     @Test
-    void shouldConsultEndCondition() throws Throwable
-    {
+    void shouldConsultEndCondition() throws Throwable {
         // GIVEN
-        CallCountBooleanSupplier endCondition = new CallCountBooleanSupplier( 100 );
-        Race race = new Race().withEndCondition( endCondition );
-        race.addContestants( 20, throwing( () -> sleep( 10 ) ) );
+        CallCountBooleanSupplier endCondition = new CallCountBooleanSupplier(100);
+        Race race = new Race().withEndCondition(endCondition);
+        race.addContestants(20, throwing(() -> sleep(10)));
 
         // WHEN
         race.go();
 
         // THEN
-        assertTrue( endCondition.callCount.get() >= 100 );
+        assertTrue(endCondition.callCount.get() >= 100);
     }
 
     @Test
-    void shouldHaveMultipleEndConditions() throws Throwable
-    {
+    void shouldHaveMultipleEndConditions() throws Throwable {
         // GIVEN
-        ControlledBooleanSupplier endCondition1 = spy( new ControlledBooleanSupplier( false ) );
-        ControlledBooleanSupplier endCondition2 = spy( new ControlledBooleanSupplier( false ) );
-        ControlledBooleanSupplier endCondition3 = spy( new ControlledBooleanSupplier( false ) );
-        Race race = new Race().withEndCondition( endCondition1, endCondition2, endCondition3 );
-        race.addContestant( () -> endCondition2.set( true ) );
-        race.addContestants( 3, Runnables.EMPTY_RUNNABLE );
+        ControlledBooleanSupplier endCondition1 = spy(new ControlledBooleanSupplier(false));
+        ControlledBooleanSupplier endCondition2 = spy(new ControlledBooleanSupplier(false));
+        ControlledBooleanSupplier endCondition3 = spy(new ControlledBooleanSupplier(false));
+        Race race = new Race().withEndCondition(endCondition1, endCondition2, endCondition3);
+        race.addContestant(() -> endCondition2.set(true));
+        race.addContestants(3, Runnables.EMPTY_RUNNABLE);
 
         // WHEN
         race.go();
 
         // THEN
-        verify( endCondition1, atLeast( 4 ) ).getAsBoolean();
-        verify( endCondition2, atLeast( 4 ) ).getAsBoolean();
+        verify(endCondition1, atLeast(4)).getAsBoolean();
+        verify(endCondition2, atLeast(4)).getAsBoolean();
     }
 
     @Test
-    void shouldBreakOnError()
-    {
+    void shouldBreakOnError() {
         // GIVEN
         String error = "Noooo";
         Race race = new Race();
-        race.withEndCondition( () -> false ); // <-- never end
-        race.addContestant( () ->
-        {
-            throw new RuntimeException( error );
-        } );
-        race.addContestants( 3, () -> { } );
+        race.withEndCondition(() -> false); // <-- never end
+        race.addContestant(() -> {
+            throw new RuntimeException(error);
+        });
+        race.addContestants(3, () -> {});
 
         // WHEN/THEN
-        Exception exception = assertThrows( Exception.class, race::go );
-        assertEquals( error, exception.getMessage() );
+        Exception exception = assertThrows(Exception.class, race::go);
+        assertEquals(error, exception.getMessage());
     }
 
     @Test
-    void shouldRunFailureAction()
-    {
+    void shouldRunFailureAction() {
         // GIVEN
         AtomicBoolean failureActionRun = new AtomicBoolean();
-        Race race = new Race().withFailureAction( t -> failureActionRun.set( true ) );
-        race.addContestant( () ->
-        {
+        Race race = new Race().withFailureAction(t -> failureActionRun.set(true));
+        race.addContestant(() -> {
             throw new RuntimeException();
-        } );
+        });
 
         // WHEN/THEN
-        assertThrows( Exception.class, race::go );
-        assertTrue( failureActionRun.get() );
+        assertThrows(Exception.class, race::go);
+        assertTrue(failureActionRun.get());
     }
 
-    public static class ControlledBooleanSupplier implements BooleanSupplier
-    {
+    public static class ControlledBooleanSupplier implements BooleanSupplier {
         private volatile boolean value;
 
-        ControlledBooleanSupplier( boolean initialValue )
-        {
+        ControlledBooleanSupplier(boolean initialValue) {
             this.value = initialValue;
         }
 
-        public void set( boolean value )
-        {
+        public void set(boolean value) {
             this.value = value;
         }
 
         @Override
-        public boolean getAsBoolean()
-        {
+        public boolean getAsBoolean() {
             return value;
         }
     }
 
-    public static class CallCountBooleanSupplier implements BooleanSupplier
-    {
+    public static class CallCountBooleanSupplier implements BooleanSupplier {
         private final int callCountTriggeringTrueEndCondition;
         private final AtomicInteger callCount = new AtomicInteger();
 
-        CallCountBooleanSupplier( int callCountTriggeringTrueEndCondition )
-        {
+        CallCountBooleanSupplier(int callCountTriggeringTrueEndCondition) {
             this.callCountTriggeringTrueEndCondition = callCountTriggeringTrueEndCondition;
         }
 
         @Override
-        public boolean getAsBoolean()
-        {
+        public boolean getAsBoolean() {
             return callCount.incrementAndGet() >= callCountTriggeringTrueEndCondition;
         }
     }

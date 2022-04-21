@@ -22,9 +22,14 @@ import org.neo4j.cypher.internal.util.symbols.CTBoolean
 
 case object Exists extends Function {
   def name = "exists"
+
   override val signatures = Vector(
-    TypeSignature(this, CTAny, CTBoolean,
+    TypeSignature(
+      this,
+      CTAny,
+      CTBoolean,
       "Returns true if a match for the pattern exists in the graph.",
-      Category.PREDICATE)
+      Category.PREDICATE
+    )
   )
 }

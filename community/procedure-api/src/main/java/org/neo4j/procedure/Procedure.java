@@ -23,7 +23,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
 import org.neo4j.annotations.api.PublicApi;
 
 /**
@@ -106,11 +105,10 @@ import org.neo4j.annotations.api.PublicApi;
  * procedures may be called concurrently, meaning you need to take care to ensure the state you store in
  * static fields can be safely accessed by multiple callers simultaneously.
  */
-@Target( ElementType.METHOD )
-@Retention( RetentionPolicy.RUNTIME )
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
 @PublicApi
-public @interface Procedure
-{
+public @interface Procedure {
     /**
      * The namespace and name for the procedure, as a period-separated
      * string. For instance {@code myprocedures.myprocedure}.

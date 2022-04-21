@@ -24,17 +24,12 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 /**
  * Configuration options around reading CSV data, or similar.
  */
-public class Configuration
-{
-    public static final Configuration COMMAS = newBuilder()
-            .withDelimiter( ',' )
-            .withArrayDelimiter( ';' )
-            .build();
+public class Configuration {
+    public static final Configuration COMMAS =
+            newBuilder().withDelimiter(',').withArrayDelimiter(';').build();
 
-    public static final Configuration TABS = newBuilder()
-            .withDelimiter( '\t' )
-            .withArrayDelimiter( ',' )
-            .build();
+    public static final Configuration TABS =
+            newBuilder().withDelimiter('\t').withArrayDelimiter(',').build();
 
     public static final boolean DEFAULT_LEGACY_STYLE_QUOTING = false;
 
@@ -47,8 +42,7 @@ public class Configuration
     private final boolean emptyQuotedStringsAsNull;
     private final boolean legacyStyleQuoting;
 
-    private Configuration( Builder b )
-    {
+    private Configuration(Builder b) {
         this.quotationCharacter = b.quotationCharacter;
         this.delimiter = b.delimiter;
         this.arrayDelimiter = b.arrayDelimiter;
@@ -59,50 +53,43 @@ public class Configuration
         this.legacyStyleQuoting = b.legacyStyleQuoting;
     }
 
-    public char quotationCharacter()
-    {
+    public char quotationCharacter() {
         return quotationCharacter;
     }
 
-    public char delimiter()
-    {
+    public char delimiter() {
         return delimiter;
     }
 
-    public char arrayDelimiter()
-    {
+    public char arrayDelimiter() {
         return arrayDelimiter;
     }
 
     /**
      * Data buffer size.
      */
-    public int bufferSize()
-    {
+    public int bufferSize() {
         return bufferSize;
     }
 
     /**
      * Whether or not fields are allowed to have newline characters in them, i.e. span multiple lines.
      */
-    public boolean multilineFields()
-    {
+    public boolean multilineFields() {
         return multilineFields;
     }
 
     /**
      * Whether or not strings should be trimmed for whitespaces.
      */
-    public boolean trimStrings()
-    {
+    public boolean trimStrings() {
         return trimStrings;
     }
 
     /**
      * @return {@code true} for treating empty strings, i.e. {@code ""} as null, instead of an empty string.
      */
-    public boolean emptyQuotedStringsAsNull()
-    {
+    public boolean emptyQuotedStringsAsNull() {
         return emptyQuotedStringsAsNull;
     }
 
@@ -115,91 +102,78 @@ public class Configuration
      * "standard" RFC for CSV parsing, see https://tools.ietf.org/html/rfc4180. This also makes it impossible
      * to enter some combinations of characters, e.g. <code>"""abc\"""</code>, when expecting <code>"abc\"</code>.
      */
-    public boolean legacyStyleQuoting()
-    {
+    public boolean legacyStyleQuoting() {
         return legacyStyleQuoting;
     }
 
-    public Builder toBuilder()
-    {
+    public Builder toBuilder() {
         return new Builder()
-                .withQuotationCharacter( quotationCharacter )
-                .withDelimiter( delimiter )
-                .withArrayDelimiter( arrayDelimiter )
-                .withBufferSize( bufferSize )
-                .withMultilineFields( multilineFields )
-                .withTrimStrings( trimStrings )
-                .withEmptyQuotedStringsAsNull( emptyQuotedStringsAsNull )
-                .withLegacyStyleQuoting( legacyStyleQuoting );
+                .withQuotationCharacter(quotationCharacter)
+                .withDelimiter(delimiter)
+                .withArrayDelimiter(arrayDelimiter)
+                .withBufferSize(bufferSize)
+                .withMultilineFields(multilineFields)
+                .withTrimStrings(trimStrings)
+                .withEmptyQuotedStringsAsNull(emptyQuotedStringsAsNull)
+                .withLegacyStyleQuoting(legacyStyleQuoting);
     }
 
-    public static Builder newBuilder()
-    {
+    public static Builder newBuilder() {
         return new Builder();
     }
 
-    public static class Builder
-    {
+    public static class Builder {
         private char quotationCharacter = '"';
         private char delimiter = ',';
         private char arrayDelimiter = ';';
-        private int bufferSize = (int) mebiBytes( 4 );
+        private int bufferSize = (int) mebiBytes(4);
         private boolean multilineFields;
         private boolean trimStrings;
         private boolean emptyQuotedStringsAsNull;
         private boolean legacyStyleQuoting = DEFAULT_LEGACY_STYLE_QUOTING;
 
-        public Builder withQuotationCharacter( char quotationCharacter )
-        {
+        public Builder withQuotationCharacter(char quotationCharacter) {
             this.quotationCharacter = quotationCharacter;
             return this;
         }
 
-        public Builder withDelimiter( char delimiter )
-        {
+        public Builder withDelimiter(char delimiter) {
             this.delimiter = delimiter;
             return this;
         }
 
-        public Builder withArrayDelimiter( char arrayDelimiter )
-        {
+        public Builder withArrayDelimiter(char arrayDelimiter) {
             this.arrayDelimiter = arrayDelimiter;
             return this;
         }
 
-        public Builder withBufferSize( int bufferSize )
-        {
+        public Builder withBufferSize(int bufferSize) {
             this.bufferSize = bufferSize;
             return this;
         }
 
-        public Builder withMultilineFields( boolean multilineFields )
-        {
+        public Builder withMultilineFields(boolean multilineFields) {
             this.multilineFields = multilineFields;
             return this;
         }
 
-        public Builder withTrimStrings( boolean trimStrings )
-        {
+        public Builder withTrimStrings(boolean trimStrings) {
             this.trimStrings = trimStrings;
             return this;
         }
 
-        public Builder withEmptyQuotedStringsAsNull( boolean emptyQuotedStringsAsNull )
-        {
+        public Builder withEmptyQuotedStringsAsNull(boolean emptyQuotedStringsAsNull) {
             this.emptyQuotedStringsAsNull = emptyQuotedStringsAsNull;
             return this;
         }
 
-        public Builder withLegacyStyleQuoting( boolean legacyStyleQuoting )
-        {
+        public Builder withLegacyStyleQuoting(boolean legacyStyleQuoting) {
             this.legacyStyleQuoting = legacyStyleQuoting;
             return this;
         }
 
-        public Configuration build()
-        {
-            return new Configuration( this );
+        public Configuration build() {
+            return new Configuration(this);
         }
     }
 }

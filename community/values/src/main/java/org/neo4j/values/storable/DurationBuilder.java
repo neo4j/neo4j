@@ -21,8 +21,7 @@ package org.neo4j.values.storable;
 
 import org.neo4j.values.StructureBuilder;
 
-abstract class DurationBuilder<Input, Result> implements StructureBuilder<Input,Result>
-{
+abstract class DurationBuilder<Input, Result> implements StructureBuilder<Input, Result> {
     private Input years;
     private Input months;
     private Input weeks;
@@ -35,60 +34,47 @@ abstract class DurationBuilder<Input, Result> implements StructureBuilder<Input,
     private Input nanoseconds;
 
     @Override
-    public final StructureBuilder<Input,Result> add( String field, Input value )
-    {
-        switch ( field.toLowerCase() )
-        {
-        case "years":
-            this.years = value;
-            break;
-        case "months":
-            this.months = value;
-            break;
-        case "weeks":
-            this.weeks = value;
-            break;
-        case "days":
-            this.days = value;
-            break;
-        case "hours":
-            this.hours = value;
-            break;
-        case "minutes":
-            this.minutes = value;
-            break;
-        case "seconds":
-            this.seconds = value;
-            break;
-        case "milliseconds":
-            this.milliseconds = value;
-            break;
-        case "microseconds":
-            this.microseconds = value;
-            break;
-        case "nanoseconds":
-            this.nanoseconds = value;
-            break;
-        default:
-            throw new IllegalStateException( "Unknown field: " + field );
+    public final StructureBuilder<Input, Result> add(String field, Input value) {
+        switch (field.toLowerCase()) {
+            case "years":
+                this.years = value;
+                break;
+            case "months":
+                this.months = value;
+                break;
+            case "weeks":
+                this.weeks = value;
+                break;
+            case "days":
+                this.days = value;
+                break;
+            case "hours":
+                this.hours = value;
+                break;
+            case "minutes":
+                this.minutes = value;
+                break;
+            case "seconds":
+                this.seconds = value;
+                break;
+            case "milliseconds":
+                this.milliseconds = value;
+                break;
+            case "microseconds":
+                this.microseconds = value;
+                break;
+            case "nanoseconds":
+                this.nanoseconds = value;
+                break;
+            default:
+                throw new IllegalStateException("Unknown field: " + field);
         }
         return this;
     }
 
     @Override
-    public final Result build()
-    {
-        return create(
-                years,
-                months,
-                weeks,
-                days,
-                hours,
-                minutes,
-                seconds,
-                milliseconds,
-                microseconds,
-                nanoseconds );
+    public final Result build() {
+        return create(years, months, weeks, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds);
     }
 
     abstract Result create(
@@ -101,5 +87,5 @@ abstract class DurationBuilder<Input, Result> implements StructureBuilder<Input,
             Input seconds,
             Input milliseconds,
             Input microseconds,
-            Input nanoseconds );
+            Input nanoseconds);
 }

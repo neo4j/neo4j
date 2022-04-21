@@ -19,159 +19,128 @@
  */
 package org.neo4j.bolt.packstream;
 
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
-
 import org.neo4j.io.memory.ByteBuffers;
 
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-public class BufferedChannelOutput implements PackOutput
-{
+public class BufferedChannelOutput implements PackOutput {
     private final ByteBuffer buffer;
     private WritableByteChannel channel;
 
-    public BufferedChannelOutput( int bufferSize )
-    {
-        this.buffer = ByteBuffers.allocate( bufferSize, INSTANCE );
+    public BufferedChannelOutput(int bufferSize) {
+        this.buffer = ByteBuffers.allocate(bufferSize, INSTANCE);
     }
 
-    public BufferedChannelOutput( WritableByteChannel channel )
-    {
-        this( channel, 1024 );
+    public BufferedChannelOutput(WritableByteChannel channel) {
+        this(channel, 1024);
     }
 
-    public BufferedChannelOutput( WritableByteChannel channel, int bufferSize )
-    {
-        this( bufferSize );
-        reset( channel );
+    public BufferedChannelOutput(WritableByteChannel channel, int bufferSize) {
+        this(bufferSize);
+        reset(channel);
     }
 
-    public void reset( WritableByteChannel channel )
-    {
+    public void reset(WritableByteChannel channel) {
         this.channel = channel;
     }
 
     @Override
-    public void beginMessage()
-    {
-    }
+    public void beginMessage() {}
 
     @Override
-    public void messageSucceeded() throws IOException
-    {
-    }
+    public void messageSucceeded() throws IOException {}
 
     @Override
-    public void messageFailed()
-    {
-    }
+    public void messageFailed() {}
 
     @Override
-    public void messageReset()
-    {
-    }
+    public void messageReset() {}
 
     @Override
-    public BufferedChannelOutput flush() throws IOException
-    {
+    public BufferedChannelOutput flush() throws IOException {
         buffer.flip();
-        do
-        {
-            channel.write( buffer );
-        }
-        while ( buffer.remaining() > 0 );
+        do {
+            channel.write(buffer);
+        } while (buffer.remaining() > 0);
         buffer.clear();
         return this;
     }
 
     @Override
-    public PackOutput writeBytes( ByteBuffer data ) throws IOException
-    {
-        while ( data.remaining() > 0 )
-        {
-            if ( buffer.remaining() == 0 )
-            {
+    public PackOutput writeBytes(ByteBuffer data) throws IOException {
+        while (data.remaining() > 0) {
+            if (buffer.remaining() == 0) {
                 flush();
             }
 
             int oldLimit = data.limit();
-            data.limit( data.position() + Math.min( buffer.remaining(), data.remaining() ) );
+            data.limit(data.position() + Math.min(buffer.remaining(), data.remaining()));
 
-            buffer.put( data );
+            buffer.put(data);
 
-            data.limit( oldLimit );
+            data.limit(oldLimit);
         }
         return this;
     }
 
     @Override
-    public PackOutput writeBytes( byte[] data, int offset, int length ) throws IOException
-    {
-        if ( offset + length > data.length )
-        {
-            throw new IOException( "Asked to write " + length + " bytes, but there is only " +
-                                   ( data.length - offset ) + " bytes available in data provided." );
+    public PackOutput writeBytes(byte[] data, int offset, int length) throws IOException {
+        if (offset + length > data.length) {
+            throw new IOException("Asked to write " + length + " bytes, but there is only " + (data.length - offset)
+                    + " bytes available in data provided.");
         }
-        return writeBytes( ByteBuffer.wrap( data, offset, length ) );
+        return writeBytes(ByteBuffer.wrap(data, offset, length));
     }
 
     @Override
-    public PackOutput writeByte( byte value ) throws IOException
-    {
-        ensure( 1 );
-        buffer.put( value );
+    public PackOutput writeByte(byte value) throws IOException {
+        ensure(1);
+        buffer.put(value);
         return this;
     }
 
     @Override
-    public PackOutput writeShort( short value ) throws IOException
-    {
-        ensure( 2 );
-        buffer.putShort( value );
+    public PackOutput writeShort(short value) throws IOException {
+        ensure(2);
+        buffer.putShort(value);
         return this;
     }
 
     @Override
-    public PackOutput writeInt( int value ) throws IOException
-    {
-        ensure( 4 );
-        buffer.putInt( value );
+    public PackOutput writeInt(int value) throws IOException {
+        ensure(4);
+        buffer.putInt(value);
         return this;
     }
 
     @Override
-    public PackOutput writeLong( long value ) throws IOException
-    {
-        ensure( 8 );
-        buffer.putLong( value );
+    public PackOutput writeLong(long value) throws IOException {
+        ensure(8);
+        buffer.putLong(value);
         return this;
     }
 
     @Override
-    public PackOutput writeDouble( double value ) throws IOException
-    {
-        ensure( 8 );
-        buffer.putDouble( value );
+    public PackOutput writeDouble(double value) throws IOException {
+        ensure(8);
+        buffer.putDouble(value);
         return this;
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         buffer.clear();
 
-        if ( channel != null )
-        {
+        if (channel != null) {
             channel.close();
         }
     }
 
-    private void ensure( int size ) throws IOException
-    {
-        if ( buffer.remaining() < size )
-        {
+    private void ensure(int size) throws IOException {
+        if (buffer.remaining() < size) {
             flush();
         }
     }

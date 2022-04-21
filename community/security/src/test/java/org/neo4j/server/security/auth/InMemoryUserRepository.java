@@ -20,27 +20,22 @@
 package org.neo4j.server.security.auth;
 
 import java.util.ArrayList;
-
 import org.neo4j.kernel.impl.security.User;
 
 /** A user repository implementation that just stores users in memory */
-public class InMemoryUserRepository extends AbstractUserRepository
-{
+public class InMemoryUserRepository extends AbstractUserRepository {
     @Override
-    protected void persistUsers()
-    {
+    protected void persistUsers() {
         // Nothing to do
     }
 
     @Override
-    protected ListSnapshot<User> readPersistedUsers()
-    {
+    protected ListSnapshot<User> readPersistedUsers() {
         return null;
     }
 
     @Override
-    public ListSnapshot<User> getSnapshot()
-    {
-        return new ListSnapshot<>( lastLoaded.get(), new ArrayList<>( users ) );
+    public ListSnapshot<User> getSnapshot() {
+        return new ListSnapshot<>(lastLoaded.get(), new ArrayList<>(users));
     }
 }

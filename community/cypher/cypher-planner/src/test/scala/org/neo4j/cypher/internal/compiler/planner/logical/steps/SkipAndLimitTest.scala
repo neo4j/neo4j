@@ -44,7 +44,8 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val (query, context, startPlan) = queryGraphWith(
       Set("n"),
       solved("n"),
-      projection = regularProjection(skip = Some(x)))
+      projection = regularProjection(skip = Some(x))
+    )
 
     // when
     val result = skipAndLimit(startPlan, query, context)
@@ -61,7 +62,8 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val (query, context, startPlan) = queryGraphWith(
       Set("n"),
       solved("n"),
-      projection = regularProjection(limit = Some(x)))
+      projection = regularProjection(limit = Some(x))
+    )
 
     // when
     val result = skipAndLimit(startPlan, query, context)
@@ -78,7 +80,8 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val (query, context, startPlan) = queryGraphWith(
       Set("n"),
       solved("n"),
-      projection = regularProjection(skip = Some(y), limit = Some(x)))
+      projection = regularProjection(skip = Some(y), limit = Some(x))
+    )
 
     // when
     val result = skipAndLimit(startPlan, query, context)
@@ -96,11 +99,12 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private def solved(patternNodes: String*): SinglePlannerQuery =
     RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(patternNodes: _*))
 
-  private def queryGraphWith(patternNodesInQG: Set[String],
-                             solved: SinglePlannerQuery,
-                             projection: QueryProjection,
-                             interestingOrder: InterestingOrder = InterestingOrder.empty):
-  (RegularSinglePlannerQuery, LogicalPlanningContext, LogicalPlan) = {
+  private def queryGraphWith(
+    patternNodesInQG: Set[String],
+    solved: SinglePlannerQuery,
+    projection: QueryProjection,
+    interestingOrder: InterestingOrder = InterestingOrder.empty
+  ): (RegularSinglePlannerQuery, LogicalPlanningContext, LogicalPlan) = {
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
 
     val qg = QueryGraph(patternNodes = patternNodesInQG)

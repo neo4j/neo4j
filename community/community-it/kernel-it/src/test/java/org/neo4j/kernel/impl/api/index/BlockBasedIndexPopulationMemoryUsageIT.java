@@ -19,12 +19,16 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.jupiter.api.Test;
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -37,36 +41,28 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
-import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.io.ByteUnit.kibiBytes;
-
-@DbmsExtension( configurationCallback = "configure" )
-class BlockBasedIndexPopulationMemoryUsageIT
-{
-    private static final long TEST_BLOCK_SIZE = kibiBytes( 64 );
+@DbmsExtension(configurationCallback = "configure")
+class BlockBasedIndexPopulationMemoryUsageIT {
+    private static final long TEST_BLOCK_SIZE = kibiBytes(64);
     private static final String[] KEYS = {"key1", "key2", "key3", "key4"};
-    private static final Label[] LABELS = {label( "Label1" ), label( "Label2" ), label( "Label3" ), label( "Label4" )};
+    private static final Label[] LABELS = {label("Label1"), label("Label2"), label("Label3"), label("Label4")};
 
     @Inject
     private GraphDatabaseAPI db;
+
     @Inject
     private Monitors monitors;
 
     @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( GraphDatabaseInternalSettings.index_populator_block_size, TEST_BLOCK_SIZE );
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseInternalSettings.index_populator_block_size, TEST_BLOCK_SIZE);
     }
 
     @Test
-    void shouldKeepMemoryConsumptionLowDuringPopulation() throws InterruptedException
-    {
+    void shouldKeepMemoryConsumptionLowDuringPopulation() throws InterruptedException {
         // given
         IndexPopulationMemoryUsageMonitor monitor = new IndexPopulationMemoryUsageMonitor();
-        monitors.addMonitorListener( monitor );
+        monitors.addMonitorListener(monitor);
         someData();
 
         // when
@@ -76,40 +72,30 @@ class BlockBasedIndexPopulationMemoryUsageIT
         // then all in all the peak memory usage with the introduction of the more sophisticated ByteBufferFactory
         // given all parameters of data size, number of workers and number of indexes will amount
         // to a maximum of 10 MiB. Previously this would easily be 10-fold of that for this scenario.
-        long targetMemoryConsumption = TEST_BLOCK_SIZE * (8 /*mergeFactor*/ + 1 /*write buffer*/) * 8 /*numberOfWorkers*/;
-        assertThat( monitor.peakDirectMemoryUsage ).isLessThan( targetMemoryConsumption * 2 + 1 );
+        long targetMemoryConsumption =
+                TEST_BLOCK_SIZE * (8 /*mergeFactor*/ + 1 /*write buffer*/) * 8 /*numberOfWorkers*/;
+        assertThat(monitor.peakDirectMemoryUsage).isLessThan(targetMemoryConsumption * 2 + 1);
     }
 
-    private void createLotsOfIndexesInOneTransaction()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
+    private void createLotsOfIndexesInOneTransaction() {
+        try (Transaction tx = db.beginTx()) {
             var schema = tx.schema();
-            for ( Label label : LABELS )
-            {
-                for ( String key : KEYS )
-                {
-                    schema.indexFor( label ).on( key ).create();
+            for (Label label : LABELS) {
+                for (String key : KEYS) {
+                    schema.indexFor(label).on(key).create();
                 }
             }
             tx.commit();
         }
-        while ( true )
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.schema().awaitIndexesOnline( 1, SECONDS );
+        while (true) {
+            try (Transaction tx = db.beginTx()) {
+                tx.schema().awaitIndexesOnline(1, SECONDS);
                 break;
-            }
-            catch ( IllegalStateException e )
-            {
+            } catch (IllegalStateException e) {
                 // Just wait longer
-                try
-                {
-                    Thread.sleep( 100 );
-                }
-                catch ( InterruptedException e1 )
-                {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e1) {
                     // Not sure we can do anything about this, other than just break this loop
                     break;
                 }
@@ -117,46 +103,36 @@ class BlockBasedIndexPopulationMemoryUsageIT
         }
     }
 
-    private void someData() throws InterruptedException
-    {
+    private void someData() throws InterruptedException {
         int threads = Runtime.getRuntime().availableProcessors();
-        ExecutorService executor = Executors.newFixedThreadPool( threads );
-        for ( int i = 0; i < threads; i++ )
-        {
-            executor.submit( () ->
-            {
-                for ( int t = 0; t < 100; t++ )
-                {
-                    try ( Transaction tx = db.beginTx() )
-                    {
-                        for ( int n = 0; n < 100; n++ )
-                        {
-                            Node node = tx.createNode( LABELS );
-                            for ( String key : KEYS )
-                            {
-                                node.setProperty( key, format( "some value %d", n ) );
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        for (int i = 0; i < threads; i++) {
+            executor.submit(() -> {
+                for (int t = 0; t < 100; t++) {
+                    try (Transaction tx = db.beginTx()) {
+                        for (int n = 0; n < 100; n++) {
+                            Node node = tx.createNode(LABELS);
+                            for (String key : KEYS) {
+                                node.setProperty(key, format("some value %d", n));
                             }
                         }
                         tx.commit();
                     }
                 }
-            } );
+            });
         }
         executor.shutdown();
-        while ( !executor.awaitTermination( 1, SECONDS ) )
-        {
+        while (!executor.awaitTermination(1, SECONDS)) {
             // Just wait longer
         }
     }
 
-    private static class IndexPopulationMemoryUsageMonitor extends IndexMonitor.MonitorAdapter
-    {
+    private static class IndexPopulationMemoryUsageMonitor extends IndexMonitor.MonitorAdapter {
         private volatile long peakDirectMemoryUsage;
-        private final CountDownLatch called = new CountDownLatch( 1 );
+        private final CountDownLatch called = new CountDownLatch(1);
 
         @Override
-        public void populationJobCompleted( long peakDirectMemoryUsage )
-        {
+        public void populationJobCompleted(long peakDirectMemoryUsage) {
             this.peakDirectMemoryUsage = peakDirectMemoryUsage;
             // We need a count on this one because index will come online slightly before we get a call to this method
             called.countDown();

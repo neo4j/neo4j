@@ -19,8 +19,11 @@
  */
 package org.neo4j.bolt.v3.runtime;
 
-import java.util.UUID;
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
+import static org.neo4j.util.Preconditions.checkState;
+import static org.neo4j.values.storable.Values.stringArray;
 
+import java.util.UUID;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
@@ -30,10 +33,6 @@ import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
-import static org.neo4j.util.Preconditions.checkState;
-import static org.neo4j.values.storable.Values.stringArray;
-
 /**
  * The READY state indicates that the connection is ready to accept a
  * new RUN request. This is the "normal" state for a connection and
@@ -42,9 +41,8 @@ import static org.neo4j.values.storable.Values.stringArray;
  * must be executed in series and each must wait for the previous
  * statement to complete.
  */
-public class ReadyState extends FailSafeBoltStateMachineState
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( ReadyState.class );
+public class ReadyState extends FailSafeBoltStateMachineState {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(ReadyState.class);
 
     protected BoltStateMachineState streamingState;
     protected BoltStateMachineState txReadyState;
@@ -53,70 +51,76 @@ public class ReadyState extends FailSafeBoltStateMachineState
     public static final String FIRST_RECORD_AVAILABLE_KEY = "t_first";
 
     @Override
-    public BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Exception
-    {
+    public BoltStateMachineState processUnsafe(RequestMessage message, StateMachineContext context) throws Exception {
         context.connectionState().ensureNoPendingTerminationNotice();
 
-        if ( message instanceof RunMessage )
-        {
-            return processRunMessage( (RunMessage) message, context );
+        if (message instanceof RunMessage) {
+            return processRunMessage((RunMessage) message, context);
         }
-        if ( message instanceof BeginMessage )
-        {
-            return processBeginMessage( (BeginMessage) message, context );
+        if (message instanceof BeginMessage) {
+            return processBeginMessage((BeginMessage) message, context);
         }
         return null;
     }
 
     @Override
-    public String name()
-    {
+    public String name() {
         return "READY";
     }
 
-    public void setStreamingState( BoltStateMachineState streamingState )
-    {
+    public void setStreamingState(BoltStateMachineState streamingState) {
         this.streamingState = streamingState;
     }
 
-    public void setTransactionReadyState( BoltStateMachineState txReadyState )
-    {
+    public void setTransactionReadyState(BoltStateMachineState txReadyState) {
         this.txReadyState = txReadyState;
     }
 
-    protected BoltStateMachineState processRunMessage( RunMessage message, StateMachineContext context ) throws Exception
-    {
+    protected BoltStateMachineState processRunMessage(RunMessage message, StateMachineContext context)
+            throws Exception {
         long start = context.clock().millis();
         var programId = UUID.randomUUID().toString();
-        context.connectionState().setCurrentTransactionId( programId );
-        var result = context.getTransactionManager().runProgram( programId, context.getLoginContext(), ABSENT_DB_NAME,
-                                                                 message.statement(), message.params(), message.bookmarks(),
-                                                                 message.getAccessMode().equals( AccessMode.READ ),
-                                                                 message.transactionMetadata(), message.transactionTimeout(), context.connectionId() );
+        context.connectionState().setCurrentTransactionId(programId);
+        var result = context.getTransactionManager()
+                .runProgram(
+                        programId,
+                        context.getLoginContext(),
+                        ABSENT_DB_NAME,
+                        message.statement(),
+                        message.params(),
+                        message.bookmarks(),
+                        message.getAccessMode().equals(AccessMode.READ),
+                        message.transactionMetadata(),
+                        message.transactionTimeout(),
+                        context.connectionId());
         long end = context.clock().millis();
 
-        context.connectionState().onMetadata( FIELDS_KEY, stringArray( result.statementMetadata().fieldNames() ) );
-        context.connectionState().onMetadata( FIRST_RECORD_AVAILABLE_KEY, Values.longValue( end - start ) );
+        context.connectionState()
+                .onMetadata(FIELDS_KEY, stringArray(result.statementMetadata().fieldNames()));
+        context.connectionState().onMetadata(FIRST_RECORD_AVAILABLE_KEY, Values.longValue(end - start));
 
         return streamingState;
     }
 
-    protected BoltStateMachineState processBeginMessage( BeginMessage message, StateMachineContext context ) throws Exception
-    {
-        String transactionId = context.getTransactionManager().begin( context.getLoginContext(), ABSENT_DB_NAME,
-                                                                      message.bookmarks(), message.getAccessMode().equals( AccessMode.READ ),
-                                                                      message.transactionMetadata(), message.transactionTimeout(),
-                                                                      context.connectionId() );
-        context.connectionState().setCurrentTransactionId( transactionId );
+    protected BoltStateMachineState processBeginMessage(BeginMessage message, StateMachineContext context)
+            throws Exception {
+        String transactionId = context.getTransactionManager()
+                .begin(
+                        context.getLoginContext(),
+                        ABSENT_DB_NAME,
+                        message.bookmarks(),
+                        message.getAccessMode().equals(AccessMode.READ),
+                        message.transactionMetadata(),
+                        message.transactionTimeout(),
+                        context.connectionId());
+        context.connectionState().setCurrentTransactionId(transactionId);
         return txReadyState;
     }
 
     @Override
-    protected void assertInitialized()
-    {
-        checkState( streamingState != null, "Streaming state not set" );
-        checkState( txReadyState != null, "TransactionReady state not set" );
+    protected void assertInitialized() {
+        checkState(streamingState != null, "Streaming state not set");
+        checkState(txReadyState != null, "TransactionReady state not set");
         super.assertInitialized();
     }
-
 }

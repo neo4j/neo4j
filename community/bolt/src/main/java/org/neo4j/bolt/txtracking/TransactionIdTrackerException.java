@@ -21,24 +21,20 @@ package org.neo4j.bolt.txtracking;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class TransactionIdTrackerException extends RuntimeException implements Status.HasStatus
-{
+public class TransactionIdTrackerException extends RuntimeException implements Status.HasStatus {
     private final Status status;
 
-    TransactionIdTrackerException( Status status, String message )
-    {
-        this( status, message, null );
+    TransactionIdTrackerException(Status status, String message) {
+        this(status, message, null);
     }
 
-    TransactionIdTrackerException( Status status, String message, Throwable cause )
-    {
-        super( message, cause );
+    TransactionIdTrackerException(Status status, String message, Throwable cause) {
+        super(message, cause);
         this.status = status;
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return status;
     }
 }

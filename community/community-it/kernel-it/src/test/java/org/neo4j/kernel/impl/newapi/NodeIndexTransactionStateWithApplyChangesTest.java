@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -41,160 +41,158 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
-
-public class NodeIndexTransactionStateWithApplyChangesTest extends IndexTransactionStateWithApplyChangesTestBase
-{
+public class NodeIndexTransactionStateWithApplyChangesTest extends IndexTransactionStateWithApplyChangesTestBase {
     private static final String DEFAULT_LABEL = "label";
 
     @ParameterizedTest
-    @MethodSource( "parameters" )
-    void applyChangesShouldAddLabelsInIndexTxState( IndexType indexType, boolean needsValues ) throws Exception
-    {
-        createIndex( indexType );
+    @MethodSource("parameters")
+    void applyChangesShouldAddLabelsInIndexTxState(IndexType indexType, boolean needsValues) throws Exception {
+        createIndex(indexType);
 
         Set<EntityWithProps> expected = new HashSet<>();
         EntityWithProps entityWithProps;
         long node;
-        try ( var tx = beginTransaction() )
-        {
+        try (var tx = beginTransaction()) {
             Write write = tx.dataWrite();
             node = write.nodeCreate();
-            entityWithProps = setPropsOnEntity( tx, node, "books", "looks" );
+            entityWithProps = setPropsOnEntity(tx, node, "books", "looks");
             tx.commit();
         }
-        expected.add( entityWithProps );
+        expected.add(entityWithProps);
 
-        try ( var tx = beginTransaction() )
-        {
-            tx.dataWrite().nodeAddLabel( entityWithProps.entityId(), tx.tokenWrite().labelGetOrCreateForName( DEFAULT_LABEL ) );
+        try (var tx = beginTransaction()) {
+            tx.dataWrite()
+                    .nodeAddLabel(entityWithProps.entityId(), tx.tokenWrite().labelGetOrCreateForName(DEFAULT_LABEL));
 
-            IndexDescriptor index = tx.schemaRead().indexGetForName( INDEX_NAME );
-            assertEntityAndValueForScan( expected, tx, index, needsValues, "something", "else" );
+            IndexDescriptor index = tx.schemaRead().indexGetForName(INDEX_NAME);
+            assertEntityAndValueForScan(expected, tx, index, needsValues, "something", "else");
         }
     }
 
     @ParameterizedTest
-    @MethodSource( "parameters" )
-    void applyChangesShouldRemoveLabelsInIndexTxState( IndexType indexType, boolean needsValues ) throws Exception
-    {
-        createIndex( indexType );
+    @MethodSource("parameters")
+    void applyChangesShouldRemoveLabelsInIndexTxState(IndexType indexType, boolean needsValues) throws Exception {
+        createIndex(indexType);
 
         EntityWithProps entityWithProps;
-        try ( var tx = beginTransaction() )
-        {
-            entityWithProps = entityWithProps( tx, "books", "looks" );
+        try (var tx = beginTransaction()) {
+            entityWithProps = entityWithProps(tx, "books", "looks");
             tx.commit();
         }
 
         Set<EntityWithProps> expected = new HashSet<>();
-        try ( var tx = beginTransaction() )
-        {
-            tx.dataWrite().nodeRemoveLabel( entityWithProps.entityId(), tx.tokenWrite().labelGetOrCreateForName( DEFAULT_LABEL ) );
+        try (var tx = beginTransaction()) {
+            tx.dataWrite()
+                    .nodeRemoveLabel(
+                            entityWithProps.entityId(), tx.tokenWrite().labelGetOrCreateForName(DEFAULT_LABEL));
 
-            IndexDescriptor index = tx.schemaRead().indexGetForName( INDEX_NAME );
-            assertEntityAndValueForScan( expected, tx, index, needsValues, "something", "else" );
+            IndexDescriptor index = tx.schemaRead().indexGetForName(INDEX_NAME);
+            assertEntityAndValueForScan(expected, tx, index, needsValues, "something", "else");
         }
     }
 
     @Override
-    EntityWithProps entityWithProps( KernelTransaction tx, Object val, Object val2 ) throws Exception
-    {
+    EntityWithProps entityWithProps(KernelTransaction tx, Object val, Object val2) throws Exception {
         Write write = tx.dataWrite();
         long node = write.nodeCreate();
-        int nodeLabel = tx.tokenWrite().labelGetOrCreateForName( DEFAULT_LABEL );
-        write.nodeAddLabel( node, nodeLabel );
-        return setPropsOnEntity( tx, node, val, val2 );
+        int nodeLabel = tx.tokenWrite().labelGetOrCreateForName(DEFAULT_LABEL);
+        write.nodeAddLabel(node, nodeLabel);
+        return setPropsOnEntity(tx, node, val, val2);
     }
 
     @Override
-    void createIndex( IndexType indexType )
-    {
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            tx.schema().indexFor( Label.label( DEFAULT_LABEL ) ).on( PROP1 ).on( PROP2 ).withIndexType( indexType ).withName( INDEX_NAME ).create();
+    void createIndex(IndexType indexType) {
+        try (Transaction tx = graphDb.beginTx()) {
+            tx.schema()
+                    .indexFor(Label.label(DEFAULT_LABEL))
+                    .on(PROP1)
+                    .on(PROP2)
+                    .withIndexType(indexType)
+                    .withName(INDEX_NAME)
+                    .create();
             tx.commit();
         }
 
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+        try (Transaction tx = graphDb.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
         }
     }
 
     @Override
-    void deleteEntity( KernelTransaction tx, long entity ) throws Exception
-    {
-        tx.dataWrite().nodeDelete( entity );
+    void deleteEntity(KernelTransaction tx, long entity) throws Exception {
+        tx.dataWrite().nodeDelete(entity);
     }
 
     @Override
-    void removeProperties( KernelTransaction tx, long entity ) throws Exception
-    {
-        int prop1Key = tx.tokenWrite().propertyKeyGetOrCreateForName( PROP1 );
-        int prop2Key = tx.tokenWrite().propertyKeyGetOrCreateForName( PROP2 );
+    void removeProperties(KernelTransaction tx, long entity) throws Exception {
+        int prop1Key = tx.tokenWrite().propertyKeyGetOrCreateForName(PROP1);
+        int prop2Key = tx.tokenWrite().propertyKeyGetOrCreateForName(PROP2);
         MutableIntObjectMap<Value> propertiesToSet = IntObjectMaps.mutable.empty();
-        propertiesToSet.put( prop1Key, Values.NO_VALUE );
-        propertiesToSet.put( prop2Key, Values.NO_VALUE );
-        tx.dataWrite().nodeApplyChanges( entity, IntSets.immutable.empty(), IntSets.immutable.empty(), propertiesToSet );
+        propertiesToSet.put(prop1Key, Values.NO_VALUE);
+        propertiesToSet.put(prop2Key, Values.NO_VALUE);
+        tx.dataWrite().nodeApplyChanges(entity, IntSets.immutable.empty(), IntSets.immutable.empty(), propertiesToSet);
     }
 
     @Override
-    EntityWithProps setProperties( KernelTransaction tx, long entity, Object val, Object val2 ) throws Exception
-    {
-        return setPropsOnEntity( tx, entity, val, val2 );
+    EntityWithProps setProperties(KernelTransaction tx, long entity, Object val, Object val2) throws Exception {
+        return setPropsOnEntity(tx, entity, val, val2);
     }
 
-    private EntityWithProps setPropsOnEntity( KernelTransaction tx, long entity, Object val, Object val2 )
-            throws KernelException
-    {
-        int prop1Key = tx.tokenWrite().propertyKeyGetOrCreateForName( PROP1 );
-        int prop2Key = tx.tokenWrite().propertyKeyGetOrCreateForName( PROP2 );
+    private EntityWithProps setPropsOnEntity(KernelTransaction tx, long entity, Object val, Object val2)
+            throws KernelException {
+        int prop1Key = tx.tokenWrite().propertyKeyGetOrCreateForName(PROP1);
+        int prop2Key = tx.tokenWrite().propertyKeyGetOrCreateForName(PROP2);
         MutableIntObjectMap<Value> propertiesToSet = IntObjectMaps.mutable.empty();
-        Value value1 = Values.of( val );
-        propertiesToSet.put( prop1Key, value1 );
-        Value value2 = Values.of( val2 );
-        propertiesToSet.put( prop2Key, value2 );
-        tx.dataWrite().nodeApplyChanges( entity, IntSets.immutable.empty(), IntSets.immutable.empty(), propertiesToSet );
-        return new EntityWithProps( entity, value1, value2 );
+        Value value1 = Values.of(val);
+        propertiesToSet.put(prop1Key, value1);
+        Value value2 = Values.of(val2);
+        propertiesToSet.put(prop2Key, value2);
+        tx.dataWrite().nodeApplyChanges(entity, IntSets.immutable.empty(), IntSets.immutable.empty(), propertiesToSet);
+        return new EntityWithProps(entity, value1, value2);
     }
 
     @Override
-    void assertEntityAndValueForScan( Set<EntityWithProps> expected, KernelTransaction tx, IndexDescriptor index, boolean needsValues,
-            Object anotherValueFoundByQuery, Object anotherValueFoundByQuery2 ) throws Exception
-    {
-        IndexReadSession indexSession = tx.dataRead().indexReadSession( index );
-        try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor( tx.cursorContext(), tx.memoryTracker() ) )
-        {
-            tx.dataRead().nodeIndexScan( indexSession, nodes, unordered( needsValues ) );
-            assertEntityAndValue( expected, tx, needsValues, anotherValueFoundByQuery, anotherValueFoundByQuery2, new NodeCursorAdapter( nodes ) );
+    void assertEntityAndValueForScan(
+            Set<EntityWithProps> expected,
+            KernelTransaction tx,
+            IndexDescriptor index,
+            boolean needsValues,
+            Object anotherValueFoundByQuery,
+            Object anotherValueFoundByQuery2)
+            throws Exception {
+        IndexReadSession indexSession = tx.dataRead().indexReadSession(index);
+        try (NodeValueIndexCursor nodes =
+                tx.cursors().allocateNodeValueIndexCursor(tx.cursorContext(), tx.memoryTracker())) {
+            tx.dataRead().nodeIndexScan(indexSession, nodes, unordered(needsValues));
+            assertEntityAndValue(
+                    expected,
+                    tx,
+                    needsValues,
+                    anotherValueFoundByQuery,
+                    anotherValueFoundByQuery2,
+                    new NodeCursorAdapter(nodes));
         }
     }
 
-    static class NodeCursorAdapter implements EntityValueIndexCursor
-    {
+    static class NodeCursorAdapter implements EntityValueIndexCursor {
         private final NodeValueIndexCursor nodes;
 
-        NodeCursorAdapter( NodeValueIndexCursor nodes )
-        {
+        NodeCursorAdapter(NodeValueIndexCursor nodes) {
             this.nodes = nodes;
         }
 
         @Override
-        public boolean next()
-        {
+        public boolean next() {
             return nodes.next();
         }
 
         @Override
-        public Value propertyValue( int offset )
-        {
-            return nodes.propertyValue( offset );
+        public Value propertyValue(int offset) {
+            return nodes.propertyValue(offset);
         }
 
         @Override
-        public long entityReference()
-        {
+        public long entityReference() {
             return nodes.nodeReference();
         }
     }

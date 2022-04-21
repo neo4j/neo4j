@@ -20,64 +20,53 @@
 package org.neo4j.io.pagecache.tracing;
 
 import java.io.IOException;
-
 import org.neo4j.io.pagecache.PageSwapper;
 
 /**
  * The eviction of a page has begun.
  */
-public interface EvictionEvent extends AutoCloseablePageCacheTracerEvent
-{
+public interface EvictionEvent extends AutoCloseablePageCacheTracerEvent {
     /**
      * An EvictionEvent that does nothing other than return the FlushEventOpportunity.NULL.
      */
-    EvictionEvent NULL = new EvictionEvent()
-    {
+    EvictionEvent NULL = new EvictionEvent() {
         @Override
-        public void setFilePageId( long filePageId )
-        {
-        }
+        public void setFilePageId(long filePageId) {}
 
         @Override
-        public void setSwapper( PageSwapper swapper )
-        {
-        }
+        public void setSwapper(PageSwapper swapper) {}
 
         @Override
-        public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator )
-        {
+        public FlushEvent beginFlush(
+                long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator) {
             return FlushEvent.NULL;
         }
 
         @Override
-        public void setException( IOException exception )
-        {
-        }
+        public void setException(IOException exception) {}
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
     };
 
     /**
      * The file page id the evicted page was bound to.
      */
-    void setFilePageId( long filePageId );
+    void setFilePageId(long filePageId);
 
     /**
      * The swapper the evicted page was bound to.
      */
-    void setSwapper( PageSwapper swapper );
+    void setSwapper(PageSwapper swapper);
 
     /**
      * Begin flushing the given page.
      */
-    FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator );
+    FlushEvent beginFlush(long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator);
 
     /**
      * Indicates that the eviction caused an exception to be thrown.
      * This can happen if some kind of IO error occurs.
      */
-    void setException( IOException exception );
+    void setException(IOException exception);
 }

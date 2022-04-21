@@ -26,32 +26,23 @@ import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 /**
  * A {@link LuceneIndexPopulatingUpdater} used for non-unique Lucene schema indexes.
  */
-public class NonUniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulatingUpdater
-{
+public class NonUniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulatingUpdater {
 
-    public NonUniqueLuceneIndexPopulatingUpdater( LuceneIndexWriter writer, IndexUpdateIgnoreStrategy ignoreStrategy )
-    {
-        super( writer, ignoreStrategy );
+    public NonUniqueLuceneIndexPopulatingUpdater(LuceneIndexWriter writer, IndexUpdateIgnoreStrategy ignoreStrategy) {
+        super(writer, ignoreStrategy);
     }
 
     @Override
-    protected void added( ValueIndexEntryUpdate<?> update )
-    {
-    }
+    protected void added(ValueIndexEntryUpdate<?> update) {}
 
     @Override
-    protected void changed( ValueIndexEntryUpdate<?> update )
-    {
-    }
+    protected void changed(ValueIndexEntryUpdate<?> update) {}
 
     @Override
-    protected void removed( ValueIndexEntryUpdate<?> update )
-    {
-    }
+    protected void removed(ValueIndexEntryUpdate<?> update) {}
 
     @Override
-    public void close()
-    {
-        //writer is not closed here as it's shared with the populator
+    public void close() {
+        // writer is not closed here as it's shared with the populator
     }
 }

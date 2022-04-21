@@ -23,10 +23,14 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class RepeatedPropertyInSchemaException extends RepeatedSchemaComponentException
-{
-    public RepeatedPropertyInSchemaException( SchemaDescriptor schema, OperationContext context, TokenNameLookup tokenNameLookup )
-    {
-        super( Status.Schema.RepeatedPropertyInCompositeSchema, schema, context, SchemaComponent.PROPERTY, tokenNameLookup );
+public class RepeatedPropertyInSchemaException extends RepeatedSchemaComponentException {
+    public RepeatedPropertyInSchemaException(
+            SchemaDescriptor schema, OperationContext context, TokenNameLookup tokenNameLookup) {
+        super(
+                Status.Schema.RepeatedPropertyInCompositeSchema,
+                schema,
+                context,
+                SchemaComponent.PROPERTY,
+                tokenNameLookup);
     }
 }

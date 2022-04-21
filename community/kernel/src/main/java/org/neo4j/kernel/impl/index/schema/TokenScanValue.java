@@ -22,8 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 /**
  * A small bit set of maximum 64 bits. Used in {@link TokenScanLayout}.
  */
-class TokenScanValue
-{
+class TokenScanValue {
     static final int RANGE_SIZE = Long.SIZE;
     static final int RANGE_SIZE_BYTES = Long.BYTES;
 
@@ -37,8 +36,7 @@ class TokenScanValue
      *
      * @param index index into the bit set of the bit to set.
      */
-    TokenScanValue set( int index )
-    {
+    TokenScanValue set(int index) {
         long mask = 1L << index;
         bits |= mask;
         return this;
@@ -51,8 +49,7 @@ class TokenScanValue
      * @param other value containing bits to add.
      * @return this instance, now with added bits from {@code other}.
      */
-    TokenScanValue add( TokenScanValue other )
-    {
+    TokenScanValue add(TokenScanValue other) {
         bits |= other.bits;
         return this;
     }
@@ -65,8 +62,7 @@ class TokenScanValue
      * @param other value containing bits to remove.
      * @return this instance, now with removed bits from {@code other}.
      */
-    TokenScanValue remove( TokenScanValue other )
-    {
+    TokenScanValue remove(TokenScanValue other) {
         bits &= ~other.bits;
         return this;
     }
@@ -74,22 +70,19 @@ class TokenScanValue
     /**
      * Clears all bits in this bit set.
      */
-    void clear()
-    {
+    void clear() {
         bits = 0;
     }
 
     /**
      * @return {@code true} if no bit in this range is set, otherwise {@code false}.
      */
-    boolean isEmpty()
-    {
+    boolean isEmpty() {
         return bits == 0;
     }
 
     @Override
-    public String toString()
-    {
-        return Long.toBinaryString( bits );
+    public String toString() {
+        return Long.toBinaryString(bits);
     }
 }

@@ -19,21 +19,19 @@
  */
 package org.neo4j.fabric.executor;
 
-import reactor.core.publisher.Mono;
-
 import org.neo4j.kernel.api.exceptions.Status;
+import reactor.core.publisher.Mono;
 
 /**
  * A transaction executing against a single database.
  * Fabric transactions are composite transactions consisting of transactions of this type.
  */
-public interface SingleDbTransaction
-{
+public interface SingleDbTransaction {
     Mono<Void> commit();
 
     Mono<Void> rollback();
 
-    Mono<Void> terminate( Status reason );
+    Mono<Void> terminate(Status reason);
 
     Location getLocation();
 }

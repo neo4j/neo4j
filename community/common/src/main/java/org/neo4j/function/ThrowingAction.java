@@ -26,8 +26,7 @@ import org.neo4j.internal.helpers.Exceptions;
  *
  * @param <E> The type of exception this action may throw.
  */
-public interface ThrowingAction<E extends Exception>
-{
+public interface ThrowingAction<E extends Exception> {
     /**
      * Apply the action for some or all of its side-effects to take place, possibly throwing an exception.
      *
@@ -35,29 +34,20 @@ public interface ThrowingAction<E extends Exception>
      */
     void apply() throws E;
 
-    static <E extends Exception> ThrowingAction<E> noop()
-    {
-        return () ->
-        {
-        };
+    static <E extends Exception> ThrowingAction<E> noop() {
+        return () -> {};
     }
 
-    static void executeAll( ThrowingAction<?>... actions ) throws Exception
-    {
+    static void executeAll(ThrowingAction<?>... actions) throws Exception {
         Exception error = null;
-        for ( final ThrowingAction<?> action : actions )
-        {
-            try
-            {
+        for (final ThrowingAction<?> action : actions) {
+            try {
                 action.apply();
-            }
-            catch ( Exception e )
-            {
-                error = Exceptions.chain( error, e );
+            } catch (Exception e) {
+                error = Exceptions.chain(error, e);
             }
         }
-        if ( error != null )
-        {
+        if (error != null) {
             throw error;
         }
     }

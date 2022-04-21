@@ -24,19 +24,16 @@ import org.neo4j.kernel.api.exceptions.Status;
 /**
  * Signals that a transaction failed and has been rolled back and has specifically reported status.
  */
-public class TransactionStatusFailureException extends TransactionFailureException implements Status.HasStatus
-{
+public class TransactionStatusFailureException extends TransactionFailureException implements Status.HasStatus {
     private final Status status;
 
-    public TransactionStatusFailureException( Status status, String message, Exception exception )
-    {
-        super( message, exception );
+    public TransactionStatusFailureException(Status status, String message, Exception exception) {
+        super(message, exception);
         this.status = status;
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return status;
     }
 }

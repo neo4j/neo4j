@@ -457,12 +457,11 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   // ==========================================================================
 
   protected var paramCount = 0
-  protected val pos : InputPosition = InputPosition.NONE
+  protected val pos: InputPosition = InputPosition.NONE
 
   def string: Gen[String] =
     if (simpleStrings) alphaLowerChar.map(_.toString)
     else listOf(char).map(_.mkString)
-
 
   // IDENTIFIERS
   // ==========================================================================
@@ -554,9 +553,9 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _variable: Gen[Variable] = {
     val nameGen = allowedVarNames match {
-      case None => _identifier
+      case None        => _identifier
       case Some(Seq()) => const("").suchThat(_ => false)
-      case Some(names) =>  oneOf(names)
+      case Some(names) => oneOf(names)
     }
     for {
       name <- nameGen
@@ -631,9 +630,9 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _mapProjectionElement: Gen[MapProjectionElement] =
     oneOf(
-      for {key <- _propertyKeyName; exp <- _expression} yield LiteralEntry(key, exp)(pos),
-      for {id <- _variable} yield VariableSelector(id)(pos),
-      for {id <- _variable} yield PropertySelector(id)(pos),
+      for { key <- _propertyKeyName; exp <- _expression } yield LiteralEntry(key, exp)(pos),
+      for { id <- _variable } yield VariableSelector(id)(pos),
+      for { id <- _variable } yield PropertySelector(id)(pos),
       const(AllPropertiesSelector()(pos))
     )
 
@@ -847,7 +846,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     frequency(
       5 -> oneOf[LabelExpression](
         lzy(LabelExpression.Wildcard()(pos)),
-        lzy(_labelName.map(LabelExpression.Label(_)(pos))),
+        lzy(_labelName.map(LabelExpression.Label(_)(pos)))
       ),
       1 -> oneOf[LabelExpression](
         lzy(_labelExpressionConjunction),
@@ -866,7 +865,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     properties <- option(oneOf(_map, _parameter))
     predicate <- variable match {
       case Some(_) => option(_expression) // Only generate WHERE if we have a variable name.
-      case None => const(None)
+      case None    => const(None)
     }
   } yield NodePattern(variable, None, properties, predicate)(pos)
 
@@ -889,7 +888,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     properties <- option(oneOf(_map, _parameter))
     direction <- _semanticDirection
     predicate <- variable match {
-      case None => const(None)
+      case None    => const(None)
       case Some(_) => option(_expression) // Only generate WHERE if we have a variable name.
     }
   } yield RelationshipPattern(variable, types, length, properties, predicate, direction, legacyTypeSeparator = false)(pos)
@@ -1003,7 +1002,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _yieldItem: Gen[ReturnItem] = for {
     var1 <- _variable
     item <- UnaliasedReturnItem(var1, "")(pos)
-  }  yield item
+  } yield item
 
   def _match: Gen[Match] = for {
     optional <- boolean
@@ -1056,7 +1055,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     expressions <- oneOrMore(_expression)
     forced <- boolean
   } yield Delete(expressions, forced)(pos)
-
 
   def _mergeAction: Gen[MergeAction] = for {
     set <- _set
@@ -1166,7 +1164,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     lzy(_call),
     lzy(_foreach),
     lzy(_loadCsv),
-    lzy(_subqueryCall),
+    lzy(_subqueryCall)
   )
 
   def _singleQuery: Gen[SingleQuery] = for {
@@ -1209,19 +1207,29 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _constraintInfo: Gen[(ShowConstraintType, YieldOrWhere)] = for {
     unfilteredYields <- _eitherYieldOrWhere
-    types            <- oneOf(AllConstraints, UniqueConstraints, ExistsConstraints(ValidSyntax), NodeExistsConstraints(ValidSyntax), RelExistsConstraints(ValidSyntax), NodeKeyConstraints)
+    types <- oneOf(
+      AllConstraints,
+      UniqueConstraints,
+      ExistsConstraints(ValidSyntax),
+      NodeExistsConstraints(ValidSyntax),
+      RelExistsConstraints(ValidSyntax),
+      NodeKeyConstraints
+    )
   } yield (types, unfilteredYields)
 
   def _showIndexes: Gen[Query] = for {
     indexType <- _indexType
-    use       <- option(_use)
-    yields    <- _eitherYieldOrWhere
+    use <- option(_use)
+    yields <- _eitherYieldOrWhere
   } yield {
     val showClauses = yields match {
-      case Some(Right(w))           => Seq(ShowIndexesClause(indexType, brief = false, verbose = false, Some(w), hasYield = false)(pos))
-      case Some(Left((y, Some(r)))) => Seq(ShowIndexesClause(indexType, brief = false, verbose = false, None, hasYield = true)(pos), y, r)
-      case Some(Left((y, None)))    => Seq(ShowIndexesClause(indexType, brief = false, verbose = false, None, hasYield = true)(pos), y)
-      case _                        => Seq(ShowIndexesClause(indexType, brief = false, verbose = false, None, hasYield = false)(pos))
+      case Some(Right(w)) =>
+        Seq(ShowIndexesClause(indexType, brief = false, verbose = false, Some(w), hasYield = false)(pos))
+      case Some(Left((y, Some(r)))) =>
+        Seq(ShowIndexesClause(indexType, brief = false, verbose = false, None, hasYield = true)(pos), y, r)
+      case Some(Left((y, None))) =>
+        Seq(ShowIndexesClause(indexType, brief = false, verbose = false, None, hasYield = true)(pos), y)
+      case _ => Seq(ShowIndexesClause(indexType, brief = false, verbose = false, None, hasYield = false)(pos))
     }
     val fullClauses = use.map(u => u +: showClauses).getOrElse(showClauses)
     Query(SingleQuery(fullClauses)(pos))(pos)
@@ -1229,23 +1237,26 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _showConstraints: Gen[Query] = for {
     (constraintType, yields) <- _constraintInfo
-    use                      <- option(_use)
+    use <- option(_use)
   } yield {
     val showClauses = yields match {
-      case Some(Right(w))           => Seq(ShowConstraintsClause(constraintType, brief = false, verbose = false, Some(w), hasYield = false)(pos))
-      case Some(Left((y, Some(r)))) => Seq(ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = true)(pos), y, r)
-      case Some(Left((y, None)))    => Seq(ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = true)(pos), y)
-      case _                        => Seq(ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = false)(pos))
+      case Some(Right(w)) =>
+        Seq(ShowConstraintsClause(constraintType, brief = false, verbose = false, Some(w), hasYield = false)(pos))
+      case Some(Left((y, Some(r)))) =>
+        Seq(ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = true)(pos), y, r)
+      case Some(Left((y, None))) =>
+        Seq(ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = true)(pos), y)
+      case _ => Seq(ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = false)(pos))
     }
     val fullClauses = use.map(u => u +: showClauses).getOrElse(showClauses)
     Query(SingleQuery(fullClauses)(pos))(pos)
   }
 
   def _showProcedures: Gen[Query] = for {
-    name    <- _identifier
-    exec    <- option(oneOf(CurrentUser, User(name)))
-    yields  <- _eitherYieldOrWhere
-    use     <- option(_use)
+    name <- _identifier
+    exec <- option(oneOf(CurrentUser, User(name)))
+    yields <- _eitherYieldOrWhere
+    use <- option(_use)
   } yield {
     val showClauses = yields match {
       case Some(Right(w))           => Seq(ShowProceduresClause(exec, Some(w), hasYield = false)(pos))
@@ -1258,11 +1269,11 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   }
 
   def _showFunctions: Gen[Query] = for {
-    name     <- _identifier
+    name <- _identifier
     funcType <- oneOf(AllFunctions, BuiltInFunctions, UserDefinedFunctions)
-    exec     <- option(oneOf(CurrentUser, User(name)))
-    yields   <- _eitherYieldOrWhere
-    use      <- option(_use)
+    exec <- option(oneOf(CurrentUser, User(name)))
+    yields <- _eitherYieldOrWhere
+    use <- option(_use)
   } yield {
     val showClauses = yields match {
       case Some(Right(w))           => Seq(ShowFunctionsClause(funcType, exec, Some(w), hasYield = false)(pos))
@@ -1276,10 +1287,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _showTransactions: Gen[Query] = for {
     idList <- zeroOrMore(string)
-    param  <- _parameter
-    ids    <- oneOf(Left(idList), Right(param))
+    param <- _parameter
+    ids <- oneOf(Left(idList), Right(param))
     yields <- _eitherYieldOrWhere
-    use    <- option(_use)
+    use <- option(_use)
   } yield {
     val showClauses = yields match {
       case Some(Right(w))           => Seq(ShowTransactionsClause(ids, Some(w), hasYield = false)(pos))
@@ -1292,12 +1303,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   }
 
   def _terminateTransactions: Gen[Query] = for {
-    idList  <- zeroOrMore(string)
-    param   <- _parameter
-    ids     <- oneOf(Left(idList), Right(param))
-    yields  <- option(_yield)
+    idList <- zeroOrMore(string)
+    param <- _parameter
+    ids <- oneOf(Left(idList), Right(param))
+    yields <- option(_yield)
     returns <- option(_return)
-    use     <- option(_use)
+    use <- option(_use)
   } yield {
     val terminateClauses = (yields, returns) match {
       case (Some(y), Some(r)) => Seq(TerminateTransactionsClause(ids, hasYield = true, None)(pos), y, r)
@@ -1308,7 +1319,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     Query(SingleQuery(fullClauses)(pos))(pos)
   }
 
-  def _showCommands: Gen[Query] = oneOf(_showIndexes, _showConstraints, _showProcedures, _showFunctions, _showTransactions, _terminateTransactions)
+  def _showCommands: Gen[Query] =
+    oneOf(_showIndexes, _showConstraints, _showProcedures, _showFunctions, _showTransactions, _terminateTransactions)
 
   // Schema commands
   // ----------------------------------
@@ -1323,60 +1335,137 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield props
 
   def _createIndex: Gen[CreateIndex] = for {
-    variable          <- _variable
-    labelName         <- _labelName
-    labels            <- _listOfLabels
-    relType           <- _relTypeName
-    types             <- _listOfRelTypes
-    props             <- _listOfProperties
-    name              <- option(_identifier)
-    ifExistsDo        <- _ifExistsDo
-    options           <- _optionsMapAsEither
-    fromDefault       <- boolean
-    use               <- option(_use)
-    rangeNodeIndex    = CreateRangeNodeIndex(variable, labelName, props, name, ifExistsDo, options, fromDefault, use)(pos)
-    rangeRelIndex     = CreateRangeRelationshipIndex(variable, relType, props, name, ifExistsDo, options, fromDefault, use)(pos)
-    lookupNodeIndex   = CreateLookupIndex(variable, isNodeIndex = true, FunctionInvocation(FunctionName(Labels.name)(pos), distinct = false, IndexedSeq(variable))(pos), name, ifExistsDo, options, use)(pos)
-    lookupRelIndex    = CreateLookupIndex(variable, isNodeIndex = false, FunctionInvocation(FunctionName(Type.name)(pos), distinct = false, IndexedSeq(variable))(pos), name, ifExistsDo, options, use)(pos)
+    variable <- _variable
+    labelName <- _labelName
+    labels <- _listOfLabels
+    relType <- _relTypeName
+    types <- _listOfRelTypes
+    props <- _listOfProperties
+    name <- option(_identifier)
+    ifExistsDo <- _ifExistsDo
+    options <- _optionsMapAsEither
+    fromDefault <- boolean
+    use <- option(_use)
+    rangeNodeIndex = CreateRangeNodeIndex(variable, labelName, props, name, ifExistsDo, options, fromDefault, use)(pos)
+    rangeRelIndex =
+      CreateRangeRelationshipIndex(variable, relType, props, name, ifExistsDo, options, fromDefault, use)(pos)
+    lookupNodeIndex = CreateLookupIndex(
+      variable,
+      isNodeIndex = true,
+      FunctionInvocation(FunctionName(Labels.name)(pos), distinct = false, IndexedSeq(variable))(pos),
+      name,
+      ifExistsDo,
+      options,
+      use
+    )(pos)
+    lookupRelIndex = CreateLookupIndex(
+      variable,
+      isNodeIndex = false,
+      FunctionInvocation(FunctionName(Type.name)(pos), distinct = false, IndexedSeq(variable))(pos),
+      name,
+      ifExistsDo,
+      options,
+      use
+    )(pos)
     fulltextNodeIndex = CreateFulltextNodeIndex(variable, labels, props, name, ifExistsDo, options, use)(pos)
-    fulltextRelIndex  = CreateFulltextRelationshipIndex(variable, types, props, name, ifExistsDo, options, use)(pos)
-    textNodeIndex     = CreateTextNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
-    textRelIndex      = CreateTextRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
-    pointNodeIndex    = CreatePointNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
-    pointRelIndex     = CreatePointRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
-    command           <- oneOf(rangeNodeIndex, rangeRelIndex, lookupNodeIndex, lookupRelIndex, fulltextNodeIndex, fulltextRelIndex,
-                               textNodeIndex, textRelIndex, pointNodeIndex, pointRelIndex)
+    fulltextRelIndex = CreateFulltextRelationshipIndex(variable, types, props, name, ifExistsDo, options, use)(pos)
+    textNodeIndex = CreateTextNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
+    textRelIndex = CreateTextRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
+    pointNodeIndex = CreatePointNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
+    pointRelIndex = CreatePointRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
+    command <- oneOf(
+      rangeNodeIndex,
+      rangeRelIndex,
+      lookupNodeIndex,
+      lookupRelIndex,
+      fulltextNodeIndex,
+      fulltextRelIndex,
+      textNodeIndex,
+      textRelIndex,
+      pointNodeIndex,
+      pointRelIndex
+    )
   } yield command
 
   def _dropIndex: Gen[DropIndexOnName] = for {
-    name     <- _identifier
+    name <- _identifier
     ifExists <- boolean
-    use      <- option(_use)
+    use <- option(_use)
   } yield DropIndexOnName(name, ifExists, use)(pos)
 
   def _createConstraint: Gen[SchemaCommand] = for {
-    variable            <- _variable
-    labelName           <- _labelName
-    relTypeName         <- _relTypeName
-    props               <- _listOfProperties
-    prop                <- _variableProperty
-    name                <- option(_identifier)
-    ifExistsDo          <- _ifExistsDo
-    containsOn          <- boolean
-    options             <- _optionsMapAsEither
-    use                 <- option(_use)
-    nodeKey             = CreateNodeKeyConstraint(variable, labelName, props, name, ifExistsDo, options, containsOn, ConstraintVersion2, use)(pos)
-    uniqueness          = CreateUniquePropertyConstraint(variable, labelName, Seq(prop), name, ifExistsDo, options, containsOn, ConstraintVersion2, use)(pos)
-    compositeUniqueness = CreateUniquePropertyConstraint(variable, labelName, props, name, ifExistsDo, options, containsOn, ConstraintVersion2, use)(pos)
-    nodeExistence       = CreateNodePropertyExistenceConstraint(variable, labelName, prop, name, ifExistsDo, options, containsOn, ConstraintVersion2, use)(pos)
-    relExistence        = CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, prop, name, ifExistsDo, options, containsOn, ConstraintVersion2, use)(pos)
-    command             <- oneOf(nodeKey, uniqueness, compositeUniqueness, nodeExistence, relExistence)
+    variable <- _variable
+    labelName <- _labelName
+    relTypeName <- _relTypeName
+    props <- _listOfProperties
+    prop <- _variableProperty
+    name <- option(_identifier)
+    ifExistsDo <- _ifExistsDo
+    containsOn <- boolean
+    options <- _optionsMapAsEither
+    use <- option(_use)
+    nodeKey = CreateNodeKeyConstraint(
+      variable,
+      labelName,
+      props,
+      name,
+      ifExistsDo,
+      options,
+      containsOn,
+      ConstraintVersion2,
+      use
+    )(pos)
+    uniqueness = CreateUniquePropertyConstraint(
+      variable,
+      labelName,
+      Seq(prop),
+      name,
+      ifExistsDo,
+      options,
+      containsOn,
+      ConstraintVersion2,
+      use
+    )(pos)
+    compositeUniqueness = CreateUniquePropertyConstraint(
+      variable,
+      labelName,
+      props,
+      name,
+      ifExistsDo,
+      options,
+      containsOn,
+      ConstraintVersion2,
+      use
+    )(pos)
+    nodeExistence = CreateNodePropertyExistenceConstraint(
+      variable,
+      labelName,
+      prop,
+      name,
+      ifExistsDo,
+      options,
+      containsOn,
+      ConstraintVersion2,
+      use
+    )(pos)
+    relExistence = CreateRelationshipPropertyExistenceConstraint(
+      variable,
+      relTypeName,
+      prop,
+      name,
+      ifExistsDo,
+      options,
+      containsOn,
+      ConstraintVersion2,
+      use
+    )(pos)
+    command <- oneOf(nodeKey, uniqueness, compositeUniqueness, nodeExistence, relExistence)
   } yield command
 
   def _dropConstraint: Gen[DropConstraintOnName] = for {
-    name     <- _identifier
+    name <- _identifier
     ifExists <- boolean
-    use      <- option(_use)
+    use <- option(_use)
   } yield DropConstraintOnName(name, ifExists, use)(pos)
 
   def _indexCommand: Gen[SchemaCommand] = oneOf(_createIndex, _dropIndex)
@@ -1389,13 +1478,13 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   // ----------------------------------
 
   def _nameAsEither: Gen[Either[String, Parameter]] = for {
-    name  <- _identifier
+    name <- _identifier
     param <- _stringParameter
     finalName <- oneOf(Left(name), Right(param))
   } yield finalName
 
   def _optionsMapAsEither: Gen[Options] = for {
-    map  <- oneOrMore(tuple(_identifier, _expression)).map(_.toMap)
+    map <- oneOrMore(tuple(_identifier, _expression)).map(_.toMap)
     param <- _mapParameter
     finalMap <- oneOf(OptionsMap(map), OptionsParam(param), NoOptions)
   } yield finalMap
@@ -1404,9 +1493,11 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     names <- oneOrMore(_nameAsEither)
   } yield names
 
-  def _password: Gen[Expression] = oneOf(_sensitiveStringParameter, _sensitiveAutoStringParameter, _sensitiveStringLiteral)
+  def _password: Gen[Expression] =
+    oneOf(_sensitiveStringParameter, _sensitiveAutoStringParameter, _sensitiveStringLiteral)
 
-  def _ifExistsDo: Gen[IfExistsDo] = oneOf(IfExistsReplace, IfExistsDoNothing, IfExistsThrowError, IfExistsInvalidSyntax)
+  def _ifExistsDo: Gen[IfExistsDo] =
+    oneOf(IfExistsReplace, IfExistsDoNothing, IfExistsThrowError, IfExistsInvalidSyntax)
 
   // User commands
 
@@ -1419,21 +1510,21 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield ShowCurrentUser(yields)(pos)
 
   def _eitherYieldOrWhere: Gen[YieldOrWhere] = for {
-    yields  <- _yield
-    where   <- _where
+    yields <- _yield
+    where <- _where
     returns <- option(_return)
-    eyw     <- oneOf(Seq(Left((yields, returns)), Right(where)))
-    oeyw    <- option(eyw)
+    eyw <- oneOf(Seq(Left((yields, returns)), Right(where)))
+    oeyw <- option(eyw)
   } yield oeyw
 
   def _createUser: Gen[CreateUser] = for {
-    userName              <- _nameAsEither
-    isEncryptedPassword   <- boolean
-    password              <- _password
+    userName <- _nameAsEither
+    isEncryptedPassword <- boolean
+    password <- _password
     requirePasswordChange <- boolean
-    suspended             <- option(boolean)
-    homeDatabase          <- option(_setHomeDatabaseAction)
-    ifExistsDo            <- _ifExistsDo
+    suspended <- option(boolean)
+    homeDatabase <- option(_setHomeDatabaseAction)
+    ifExistsDo <- _ifExistsDo
     // requirePasswordChange is parsed as 'Some(true)' if omitted in query,
     // prettifier explicitly adds it so 'None' would be prettified and re-parsed to 'Some(true)'
     // hence the explicit 'Some(requirePasswordChange)'
@@ -1441,8 +1532,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _renameUser: Gen[RenameUser] = for {
     fromUserName <- _nameAsEither
-    toUserName   <- _nameAsEither
-    ifExists     <- boolean
+    toUserName <- _nameAsEither
+    ifExists <- boolean
   } yield RenameUser(fromUserName, toUserName, ifExists)(pos)
 
   def _dropUser: Gen[DropUser] = for {
@@ -1451,14 +1542,17 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield DropUser(userName, ifExists)(pos)
 
   def _alterUser: Gen[AlterUser] = for {
-    userName              <- _nameAsEither
-    ifExists              <- boolean
-    password              <- option(_password)
+    userName <- _nameAsEither
+    ifExists <- boolean
+    password <- option(_password)
     requirePasswordChange <- option(boolean)
-    isEncryptedPassword   <- if (password.isEmpty) const(None) else some(boolean)
-    suspended             <- option(boolean)
+    isEncryptedPassword <- if (password.isEmpty) const(None) else some(boolean)
+    suspended <- option(boolean)
     // All four are not allowed to be None and REMOVE HOME DATABASE is only valid by itself
-    homeDatabase          <- if (password.isEmpty && requirePasswordChange.isEmpty && suspended.isEmpty) oneOf(some(_setHomeDatabaseAction), some(RemoveHomeDatabaseAction)) else option(_setHomeDatabaseAction)
+    homeDatabase <-
+      if (password.isEmpty && requirePasswordChange.isEmpty && suspended.isEmpty)
+        oneOf(some(_setHomeDatabaseAction), some(RemoveHomeDatabaseAction))
+      else option(_setHomeDatabaseAction)
   } yield AlterUser(userName, isEncryptedPassword, password, UserOptions(requirePasswordChange, suspended, homeDatabase), ifExists)(pos)
 
   def _setHomeDatabaseAction: Gen[SetHomeDatabaseAction] = _nameAsEither.map(db => SetHomeDatabaseAction(db))
@@ -1482,20 +1576,20 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _showRoles: Gen[ShowRoles] = for {
     withUsers <- boolean
-    showAll   <- boolean
+    showAll <- boolean
     yields <- _eitherYieldOrWhere
   } yield ShowRoles(withUsers, showAll, yields)(pos)
 
   def _createRole: Gen[CreateRole] = for {
-    roleName     <- _nameAsEither
+    roleName <- _nameAsEither
     fromRoleName <- option(_nameAsEither)
-    ifExistsDo   <- _ifExistsDo
+    ifExistsDo <- _ifExistsDo
   } yield CreateRole(roleName, fromRoleName, ifExistsDo)(pos)
 
   def _renameRole: Gen[RenameRole] = for {
     fromRoleName <- _nameAsEither
-    toRoleName   <- _nameAsEither
-    ifExists     <- boolean
+    toRoleName <- _nameAsEither
+    ifExists <- boolean
   } yield RenameRole(fromRoleName, toRoleName, ifExists)(pos)
 
   def _dropRole: Gen[DropRole] = for {
@@ -1528,26 +1622,73 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _dbmsAction: Gen[DbmsAction] = oneOf(
     AllDbmsAction,
-    ExecuteProcedureAction, ExecuteBoostedProcedureAction, ExecuteAdminProcedureAction,
-    ExecuteFunctionAction, ExecuteBoostedFunctionAction,
+    ExecuteProcedureAction,
+    ExecuteBoostedProcedureAction,
+    ExecuteAdminProcedureAction,
+    ExecuteFunctionAction,
+    ExecuteBoostedFunctionAction,
     ImpersonateUserAction,
-    AllUserActions, ShowUserAction, CreateUserAction, RenameUserAction, SetUserStatusAction, SetUserHomeDatabaseAction, SetPasswordsAction, AlterUserAction, DropUserAction,
-    AllRoleActions, ShowRoleAction, CreateRoleAction, RenameRoleAction, DropRoleAction, AssignRoleAction, RemoveRoleAction,
-    AllDatabaseManagementActions, CreateDatabaseAction, DropDatabaseAction, AlterDatabaseAction , SetDatabaseAccessAction,
-    AllPrivilegeActions, ShowPrivilegeAction, AssignPrivilegeAction, RemovePrivilegeAction
+    AllUserActions,
+    ShowUserAction,
+    CreateUserAction,
+    RenameUserAction,
+    SetUserStatusAction,
+    SetUserHomeDatabaseAction,
+    SetPasswordsAction,
+    AlterUserAction,
+    DropUserAction,
+    AllRoleActions,
+    ShowRoleAction,
+    CreateRoleAction,
+    RenameRoleAction,
+    DropRoleAction,
+    AssignRoleAction,
+    RemoveRoleAction,
+    AllDatabaseManagementActions,
+    CreateDatabaseAction,
+    DropDatabaseAction,
+    AlterDatabaseAction,
+    SetDatabaseAccessAction,
+    AllPrivilegeActions,
+    ShowPrivilegeAction,
+    AssignPrivilegeAction,
+    RemovePrivilegeAction
   )
 
   def _databaseAction: Gen[DatabaseAction] = oneOf(
-    StartDatabaseAction, StopDatabaseAction,
-    AllDatabaseAction, AccessDatabaseAction,
-    AllIndexActions, CreateIndexAction, DropIndexAction, ShowIndexAction,
-    AllConstraintActions, CreateConstraintAction, DropConstraintAction, ShowConstraintAction,
-    AllTokenActions, CreateNodeLabelAction, CreateRelationshipTypeAction, CreatePropertyKeyAction,
-    AllTransactionActions, ShowTransactionAction, TerminateTransactionAction
+    StartDatabaseAction,
+    StopDatabaseAction,
+    AllDatabaseAction,
+    AccessDatabaseAction,
+    AllIndexActions,
+    CreateIndexAction,
+    DropIndexAction,
+    ShowIndexAction,
+    AllConstraintActions,
+    CreateConstraintAction,
+    DropConstraintAction,
+    ShowConstraintAction,
+    AllTokenActions,
+    CreateNodeLabelAction,
+    CreateRelationshipTypeAction,
+    CreatePropertyKeyAction,
+    AllTransactionActions,
+    ShowTransactionAction,
+    TerminateTransactionAction
   )
 
   def _graphAction: Gen[GraphAction] = oneOf(
-    TraverseAction, ReadAction, MatchAction, MergeAdminAction, CreateElementAction, DeleteElementAction, WriteAction, RemoveLabelAction, SetLabelAction, SetPropertyAction, AllGraphAction
+    TraverseAction,
+    ReadAction,
+    MatchAction,
+    MergeAdminAction,
+    CreateElementAction,
+    DeleteElementAction,
+    WriteAction,
+    RemoveLabelAction,
+    SetLabelAction,
+    SetPropertyAction,
+    AllGraphAction
   )
 
   def _dbmsQualifier(dbmsAction: DbmsAction): Gen[List[PrivilegeQualifier]] =
@@ -1569,7 +1710,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       // impersonation
       for {
         userNames <- _listOfNameOfEither
-        qualifier <- frequency( 7 -> userNames.map(UserQualifier(_)(pos)), 3 -> List(UserAllQualifier()(pos)))
+        qualifier <- frequency(7 -> userNames.map(UserQualifier(_)(pos)), 3 -> List(UserAllQualifier()(pos)))
       } yield qualifier
     } else {
       // All other dbms privileges have AllQualifier
@@ -1580,7 +1721,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     if (haveUserQualifier) {
       for {
         userNames <- _listOfNameOfEither
-        qualifier <- frequency( 7 -> userNames.map(UserQualifier(_)(pos)), 3 -> List(UserAllQualifier()(pos)))
+        qualifier <- frequency(7 -> userNames.map(UserQualifier(_)(pos)), 3 -> List(UserAllQualifier()(pos)))
       } yield qualifier
     } else {
       List(AllDatabasesQualifier()(pos))
@@ -1588,12 +1729,18 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _graphQualifier: Gen[List[GraphPrivilegeQualifier]] = for {
     qualifierNames <- oneOrMore(_identifier)
-    qualifier <- oneOf(qualifierNames.map(RelationshipQualifier(_)(pos)), List(RelationshipAllQualifier()(pos)),
-                       qualifierNames.map(LabelQualifier(_)(pos)), List(LabelAllQualifier()(pos)),
-                       qualifierNames.map(ElementQualifier(_)(pos)), List(ElementsAllQualifier()(pos)))
+    qualifier <- oneOf(
+      qualifierNames.map(RelationshipQualifier(_)(pos)),
+      List(RelationshipAllQualifier()(pos)),
+      qualifierNames.map(LabelQualifier(_)(pos)),
+      List(LabelAllQualifier()(pos)),
+      qualifierNames.map(ElementQualifier(_)(pos)),
+      List(ElementsAllQualifier()(pos))
+    )
   } yield qualifier
 
-  def _graphQualifierAndResource(graphAction: GraphAction): Gen[(List[GraphPrivilegeQualifier], Option[ActionResource])] =
+  def _graphQualifierAndResource(graphAction: GraphAction)
+    : Gen[(List[GraphPrivilegeQualifier], Option[ActionResource])] =
     if (graphAction == AllGraphAction) {
       // ALL GRAPH PRIVILEGES has AllQualifier and no resource
       (List(AllQualifier()(pos)), None)
@@ -1603,79 +1750,89 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     } else if (graphAction == SetLabelAction || graphAction == RemoveLabelAction) {
       // SET/REMOVE LABEL have AllLabelQualifier and label resource
       for {
-        resourceNames  <- oneOrMore(_identifier)
-        resource       <- oneOf(LabelsResource(resourceNames)(pos), AllLabelResource()(pos))
+        resourceNames <- oneOrMore(_identifier)
+        resource <- oneOf(LabelsResource(resourceNames)(pos), AllLabelResource()(pos))
       } yield (List(LabelAllQualifier()(pos)), Some(resource))
-    } else if (graphAction == TraverseAction || graphAction == CreateElementAction || graphAction == DeleteElementAction) {
+    } else if (
+      graphAction == TraverseAction || graphAction == CreateElementAction || graphAction == DeleteElementAction
+    ) {
       // TRAVERSE, CREATE/DELETE ELEMENT have any graph qualifier and no resource
       for {
-        qualifier      <- _graphQualifier
+        qualifier <- _graphQualifier
       } yield (qualifier, None)
     } else {
       // READ, MATCH, MERGE, SET PROPERTY have any graph qualifier and property resource
       for {
-        qualifier      <- _graphQualifier
-        resourceNames  <- oneOrMore(_identifier)
-        resource       <- oneOf(PropertiesResource(resourceNames)(pos), AllPropertyResource()(pos))
+        qualifier <- _graphQualifier
+        resourceNames <- oneOrMore(_identifier)
+        resource <- oneOf(PropertiesResource(resourceNames)(pos), AllPropertyResource()(pos))
       } yield (qualifier, Some(resource))
     }
 
   def _showPrivileges: Gen[ShowPrivileges] = for {
-    names      <- _listOfNameOfEither
-    showRole   = ShowRolesPrivileges(names)(pos)
-    showUser1  = ShowUsersPrivileges(names)(pos)
-    showUser2  = ShowUserPrivileges(None)(pos)
-    showAll    = ShowAllPrivileges()(pos)
-    scope      <- oneOf(showRole, showUser1, showUser2, showAll)
-    yields     <- _eitherYieldOrWhere
+    names <- _listOfNameOfEither
+    showRole = ShowRolesPrivileges(names)(pos)
+    showUser1 = ShowUsersPrivileges(names)(pos)
+    showUser2 = ShowUserPrivileges(None)(pos)
+    showAll = ShowAllPrivileges()(pos)
+    scope <- oneOf(showRole, showUser1, showUser2, showAll)
+    yields <- _eitherYieldOrWhere
   } yield ShowPrivileges(scope, yields)(pos)
 
   def _showPrivilegeCommands: Gen[ShowPrivilegeCommands] = for {
-    names      <- _listOfNameOfEither
-    showRole   = ShowRolesPrivileges(names)(pos)
-    showUser1  = ShowUsersPrivileges(names)(pos)
-    showUser2  = ShowUserPrivileges(None)(pos)
-    showAll    = ShowAllPrivileges()(pos)
-    scope      <- oneOf(showRole, showUser1, showUser2, showAll)
-    asRevoke   <- boolean
-    yields     <- _eitherYieldOrWhere
+    names <- _listOfNameOfEither
+    showRole = ShowRolesPrivileges(names)(pos)
+    showUser1 = ShowUsersPrivileges(names)(pos)
+    showUser2 = ShowUserPrivileges(None)(pos)
+    showAll = ShowAllPrivileges()(pos)
+    scope <- oneOf(showRole, showUser1, showUser2, showAll)
+    asRevoke <- boolean
+    yields <- _eitherYieldOrWhere
   } yield ShowPrivilegeCommands(scope, asRevoke, yields)(pos)
 
   def _dbmsPrivilege: Gen[PrivilegeCommand] = for {
-    dbmsAction      <- _dbmsAction
-    qualifier       <- _dbmsQualifier(dbmsAction)
-    roleNames       <- _listOfNameOfEither
-    revokeType      <- _revokeType
-    dbmsGrant       = GrantPrivilege.dbmsAction(dbmsAction, roleNames, qualifier)(pos)
-    dbmsDeny        = DenyPrivilege.dbmsAction(dbmsAction, roleNames, qualifier)(pos)
-    dbmsRevoke      = RevokePrivilege.dbmsAction(dbmsAction, roleNames, revokeType, qualifier)(pos)
-    dbms            <- oneOf(dbmsGrant, dbmsDeny, dbmsRevoke)
+    dbmsAction <- _dbmsAction
+    qualifier <- _dbmsQualifier(dbmsAction)
+    roleNames <- _listOfNameOfEither
+    revokeType <- _revokeType
+    dbmsGrant = GrantPrivilege.dbmsAction(dbmsAction, roleNames, qualifier)(pos)
+    dbmsDeny = DenyPrivilege.dbmsAction(dbmsAction, roleNames, qualifier)(pos)
+    dbmsRevoke = RevokePrivilege.dbmsAction(dbmsAction, roleNames, revokeType, qualifier)(pos)
+    dbms <- oneOf(dbmsGrant, dbmsDeny, dbmsRevoke)
   } yield dbms
 
   def _databasePrivilege: Gen[PrivilegeCommand] = for {
-    databaseAction      <- _databaseAction
-    namedScope          <- _listOfNameOfEither.map(_.map(n => NamedDatabaseScope(n)(pos)))
-    databaseScope       <- oneOf(namedScope, List(AllDatabasesScope()(pos)), List(DefaultDatabaseScope()(pos)), List(HomeDatabaseScope()(pos)))
-    databaseQualifier   <- _databaseQualifier(databaseAction.isInstanceOf[TransactionManagementAction])
-    roleNames           <- _listOfNameOfEither
-    revokeType          <- _revokeType
-    databaseGrant       = GrantPrivilege.databaseAction(databaseAction, databaseScope, roleNames, databaseQualifier)(pos)
-    databaseDeny        = DenyPrivilege.databaseAction(databaseAction, databaseScope, roleNames, databaseQualifier)(pos)
-    databaseRevoke      = RevokePrivilege.databaseAction(databaseAction, databaseScope, roleNames, revokeType, databaseQualifier)(pos)
-    database            <- oneOf(databaseGrant, databaseDeny, databaseRevoke)
+    databaseAction <- _databaseAction
+    namedScope <- _listOfNameOfEither.map(_.map(n => NamedDatabaseScope(n)(pos)))
+    databaseScope <- oneOf(
+      namedScope,
+      List(AllDatabasesScope()(pos)),
+      List(DefaultDatabaseScope()(pos)),
+      List(HomeDatabaseScope()(pos))
+    )
+    databaseQualifier <- _databaseQualifier(databaseAction.isInstanceOf[TransactionManagementAction])
+    roleNames <- _listOfNameOfEither
+    revokeType <- _revokeType
+    databaseGrant = GrantPrivilege.databaseAction(databaseAction, databaseScope, roleNames, databaseQualifier)(pos)
+    databaseDeny = DenyPrivilege.databaseAction(databaseAction, databaseScope, roleNames, databaseQualifier)(pos)
+    databaseRevoke =
+      RevokePrivilege.databaseAction(databaseAction, databaseScope, roleNames, revokeType, databaseQualifier)(pos)
+    database <- oneOf(databaseGrant, databaseDeny, databaseRevoke)
   } yield database
 
   def _graphPrivilege: Gen[PrivilegeCommand] = for {
-    graphAction                 <- _graphAction
-    namedScope                  <- _listOfNameOfEither.map(_.map(n => NamedGraphScope(n)(pos)))
-    graphScope                  <- oneOf(namedScope, List(AllGraphsScope()(pos)), List(DefaultGraphScope()(pos)), List(HomeGraphScope()(pos)))
-    (qualifier, maybeResource)  <- _graphQualifierAndResource(graphAction)
-    roleNames                   <- _listOfNameOfEither
-    revokeType                  <- _revokeType
-    graphGrant                  = GrantPrivilege.graphAction(graphAction, maybeResource, graphScope, qualifier, roleNames)(pos)
-    graphDeny                   = DenyPrivilege.graphAction(graphAction, maybeResource, graphScope, qualifier, roleNames)(pos)
-    graphRevoke                 = RevokePrivilege.graphAction(graphAction, maybeResource, graphScope, qualifier, roleNames, revokeType)(pos)
-    graph                       <- oneOf(graphGrant, graphDeny, graphRevoke)
+    graphAction <- _graphAction
+    namedScope <- _listOfNameOfEither.map(_.map(n => NamedGraphScope(n)(pos)))
+    graphScope <-
+      oneOf(namedScope, List(AllGraphsScope()(pos)), List(DefaultGraphScope()(pos)), List(HomeGraphScope()(pos)))
+    (qualifier, maybeResource) <- _graphQualifierAndResource(graphAction)
+    roleNames <- _listOfNameOfEither
+    revokeType <- _revokeType
+    graphGrant = GrantPrivilege.graphAction(graphAction, maybeResource, graphScope, qualifier, roleNames)(pos)
+    graphDeny = DenyPrivilege.graphAction(graphAction, maybeResource, graphScope, qualifier, roleNames)(pos)
+    graphRevoke =
+      RevokePrivilege.graphAction(graphAction, maybeResource, graphScope, qualifier, roleNames, revokeType)(pos)
+    graph <- oneOf(graphGrant, graphDeny, graphRevoke)
   } yield graph
 
   def _privilegeCommand: Gen[AdministrationCommand] = oneOf(
@@ -1690,7 +1847,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _showDatabase: Gen[ShowDatabase] = for {
     dbName <- _nameAsEither
-    scope  <- oneOf(NamedDatabaseScope(dbName)(pos), AllDatabasesScope()(pos), DefaultDatabaseScope()(pos), HomeDatabaseScope()(pos))
+    scope <- oneOf(
+      NamedDatabaseScope(dbName)(pos),
+      AllDatabasesScope()(pos),
+      DefaultDatabaseScope()(pos),
+      HomeDatabaseScope()(pos)
+    )
     yields <- _eitherYieldOrWhere
   } yield ShowDatabase(scope, yields)(pos)
 
@@ -1704,7 +1866,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _dropDatabase: Gen[DropDatabase] = for {
     dbName <- _nameAsEither
     ifExists <- boolean
-    additionalAction <- Gen.oneOf( DumpData, DestroyData )
+    additionalAction <- Gen.oneOf(DumpData, DestroyData)
     wait <- _waitUntilComplete
   } yield DropDatabase(dbName, ifExists, additionalAction, wait)(pos)
 
@@ -1769,7 +1931,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _adminCommand: Gen[AdministrationCommand] = for {
     command <- oneOf(_userCommand, _roleCommand, _privilegeCommand, _multiDatabaseCommand, _aliasCommands)
-    use     <- frequency(1 -> some(_use), 9 -> const(None))
+    use <- frequency(1 -> some(_use), 9 -> const(None))
   } yield command.withGraph(use)
 
   // Top level statement

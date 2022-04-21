@@ -19,18 +19,16 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Execution;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
-@Execution( CONCURRENT )
-class TokenScanValueTest
-{
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+
+@Execution(CONCURRENT)
+class TokenScanValueTest {
     @Test
-    void shouldAddBits()
-    {
+    void shouldAddBits() {
         // GIVEN
         TokenScanValue value = new TokenScanValue();
         value.bits = 0b0000__1000_0100__0010_0001;
@@ -38,15 +36,14 @@ class TokenScanValueTest
         // WHEN
         TokenScanValue other = new TokenScanValue();
         other.bits = 0b1100__0100_0100__0100_0100;
-        value.add( other );
+        value.add(other);
 
         // THEN
-        assertEquals( 0b1100__1100_0100__0110_0101, value.bits );
+        assertEquals(0b1100__1100_0100__0110_0101, value.bits);
     }
 
     @Test
-    void shouldRemoveBits()
-    {
+    void shouldRemoveBits() {
         // GIVEN
         TokenScanValue value = new TokenScanValue();
         value.bits = 0b1100__1000_0100__0010_0001;
@@ -54,9 +51,9 @@ class TokenScanValueTest
         // WHEN
         TokenScanValue other = new TokenScanValue();
         other.bits = 0b1000__0100_0100__0100_0100;
-        value.remove( other );
+        value.remove(other);
 
         // THEN
-        assertEquals( 0b0100__1000_0000__0010_0001, value.bits );
+        assertEquals(0b0100__1000_0000__0010_0001, value.bits);
     }
 }

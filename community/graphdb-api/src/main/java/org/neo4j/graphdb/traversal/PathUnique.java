@@ -21,22 +21,17 @@ package org.neo4j.graphdb.traversal;
 
 import org.neo4j.graphdb.Path;
 
-class PathUnique extends AbstractUniquenessFilter
-{
-    PathUnique( PrimitiveTypeFetcher type )
-    {
-        super( type );
+class PathUnique extends AbstractUniquenessFilter {
+    PathUnique(PrimitiveTypeFetcher type) {
+        super(type);
     }
 
     @Override
-    public boolean check( TraversalBranch source )
-    {
-        long idToCompare = type.getId( source );
-        while ( source.length() > 0 )
-        {
+    public boolean check(TraversalBranch source) {
+        long idToCompare = type.getId(source);
+        while (source.length() > 0) {
             source = source.parent();
-            if ( type.idEquals( source, idToCompare ) )
-            {
+            if (type.idEquals(source, idToCompare)) {
                 return false;
             }
         }
@@ -44,8 +39,7 @@ class PathUnique extends AbstractUniquenessFilter
     }
 
     @Override
-    public boolean checkFull( Path path )
-    {
-        return !type.containsDuplicates( path );
+    public boolean checkFull(Path path) {
+        return !type.containsDuplicates(path);
     }
 }

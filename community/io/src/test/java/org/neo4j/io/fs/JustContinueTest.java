@@ -19,21 +19,18 @@
  */
 package org.neo4j.io.fs;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
+import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-class JustContinueTest
-{
+class JustContinueTest {
     @Test
-    void shouldJustContinue() throws IOException
-    {
-        assertThat( FileVisitors.justContinue().preVisitDirectory( null, null ) ).isEqualTo( FileVisitResult.CONTINUE );
-        assertThat( FileVisitors.justContinue().visitFile( null, null ) ).isEqualTo( FileVisitResult.CONTINUE );
-        assertThat( FileVisitors.justContinue().visitFileFailed( null, null ) ).isEqualTo( FileVisitResult.CONTINUE );
-        assertThat( FileVisitors.justContinue().postVisitDirectory( null, null ) ).isEqualTo( FileVisitResult.CONTINUE );
+    void shouldJustContinue() throws IOException {
+        assertThat(FileVisitors.justContinue().preVisitDirectory(null, null)).isEqualTo(FileVisitResult.CONTINUE);
+        assertThat(FileVisitors.justContinue().visitFile(null, null)).isEqualTo(FileVisitResult.CONTINUE);
+        assertThat(FileVisitors.justContinue().visitFileFailed(null, null)).isEqualTo(FileVisitResult.CONTINUE);
+        assertThat(FileVisitors.justContinue().postVisitDirectory(null, null)).isEqualTo(FileVisitResult.CONTINUE);
     }
 }

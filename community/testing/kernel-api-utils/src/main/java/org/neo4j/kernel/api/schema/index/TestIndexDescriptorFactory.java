@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.schema.index;
 
 import java.util.concurrent.ThreadLocalRandom;
-
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -35,121 +34,105 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
 
-public class TestIndexDescriptorFactory
-{
-    private TestIndexDescriptorFactory()
-    {
+public class TestIndexDescriptorFactory {
+    private TestIndexDescriptorFactory() {}
+
+    public static IndexDescriptor forSchema(SchemaDescriptor schema) {
+        return forSchema(IndexType.RANGE, schema);
     }
 
-    public static IndexDescriptor forSchema( SchemaDescriptor schema )
-    {
-        return forSchema( IndexType.RANGE, schema );
-    }
-
-    public static IndexDescriptor forSchema( IndexType indexType, SchemaDescriptor schema )
-    {
+    public static IndexDescriptor forSchema(IndexType indexType, SchemaDescriptor schema) {
         final var id = randomId();
-        final var index = IndexPrototype.forSchema( schema ).withIndexType( indexType ).withName( "index_" + id ).materialise( id );
-        return TestIndexConfigCompleter.INSTANCE.completeConfiguration( index );
+        final var index = IndexPrototype.forSchema(schema)
+                .withIndexType(indexType)
+                .withName("index_" + id)
+                .materialise(id);
+        return TestIndexConfigCompleter.INSTANCE.completeConfiguration(index);
     }
 
-    public static IndexDescriptor uniqueForSchema( SchemaDescriptor schema )
-    {
-        return uniqueForSchema( IndexType.RANGE, schema );
+    public static IndexDescriptor uniqueForSchema(SchemaDescriptor schema) {
+        return uniqueForSchema(IndexType.RANGE, schema);
     }
 
-    public static IndexDescriptor uniqueForSchema( IndexType indexType, SchemaDescriptor schema )
-    {
+    public static IndexDescriptor uniqueForSchema(IndexType indexType, SchemaDescriptor schema) {
         final var id = randomId();
-        final var index = IndexPrototype.uniqueForSchema( schema ).withIndexType( indexType ).withName( "index_" + id ).materialise( id );
-        return TestIndexConfigCompleter.INSTANCE.completeConfiguration( index );
+        final var index = IndexPrototype.uniqueForSchema(schema)
+                .withIndexType(indexType)
+                .withName("index_" + id)
+                .materialise(id);
+        return TestIndexConfigCompleter.INSTANCE.completeConfiguration(index);
     }
 
-    public static IndexDescriptor forLabel( int labelId, int... propertyIds )
-    {
-        return forSchema( SchemaDescriptors.forLabel( labelId, propertyIds ) );
+    public static IndexDescriptor forLabel(int labelId, int... propertyIds) {
+        return forSchema(SchemaDescriptors.forLabel(labelId, propertyIds));
     }
 
-    public static IndexDescriptor forLabel( IndexType indexType, int labelId, int... propertyIds )
-    {
-        return forSchema( indexType, SchemaDescriptors.forLabel( labelId, propertyIds ) );
+    public static IndexDescriptor forLabel(IndexType indexType, int labelId, int... propertyIds) {
+        return forSchema(indexType, SchemaDescriptors.forLabel(labelId, propertyIds));
     }
 
-    public static IndexDescriptor forRelType( int relTypeId, int... propertyIds )
-    {
-        return forSchema( SchemaDescriptors.forRelType( relTypeId, propertyIds ) );
+    public static IndexDescriptor forRelType(int relTypeId, int... propertyIds) {
+        return forSchema(SchemaDescriptors.forRelType(relTypeId, propertyIds));
     }
 
-    public static IndexDescriptor uniqueForLabel( int labelId, int... propertyIds )
-    {
-        return uniqueForSchema( SchemaDescriptors.forLabel( labelId, propertyIds ) );
+    public static IndexDescriptor uniqueForLabel(int labelId, int... propertyIds) {
+        return uniqueForSchema(SchemaDescriptors.forLabel(labelId, propertyIds));
     }
 
-    public static IndexDescriptor uniqueForLabel( IndexType indexType, int labelId, int... propertyIds )
-    {
-        return uniqueForSchema( indexType, SchemaDescriptors.forLabel( labelId, propertyIds ) );
+    public static IndexDescriptor uniqueForLabel(IndexType indexType, int labelId, int... propertyIds) {
+        return uniqueForSchema(indexType, SchemaDescriptors.forLabel(labelId, propertyIds));
     }
 
-    private static int randomId()
-    {
-        return ThreadLocalRandom.current().nextInt( 1, 1000 );
+    private static int randomId() {
+        return ThreadLocalRandom.current().nextInt(1, 1000);
     }
 
-    private static class TestIndexConfigCompleter implements IndexConfigCompleter
-    {
+    private static class TestIndexConfigCompleter implements IndexConfigCompleter {
         public static final TestIndexConfigCompleter INSTANCE = new TestIndexConfigCompleter();
 
-        private static final IndexCapability CAPABILITY = new IndexCapability()
-        {
+        private static final IndexCapability CAPABILITY = new IndexCapability() {
             @Override
-            public IndexOrderCapability orderCapability( ValueCategory... valueCategories )
-            {
+            public IndexOrderCapability orderCapability(ValueCategory... valueCategories) {
                 return IndexOrderCapability.NONE;
             }
 
             @Override
-            public IndexValueCapability valueCapability( ValueCategory... valueCategories )
-            {
+            public IndexValueCapability valueCapability(ValueCategory... valueCategories) {
                 return IndexValueCapability.NO;
             }
 
             @Override
-            public boolean areValueCategoriesAccepted( ValueCategory... valueCategories )
-            {
-                Preconditions.requireNonEmpty( valueCategories );
-                Preconditions.requireNoNullElements( valueCategories );
+            public boolean areValueCategoriesAccepted(ValueCategory... valueCategories) {
+                Preconditions.requireNonEmpty(valueCategories);
+                Preconditions.requireNoNullElements(valueCategories);
                 return true;
             }
 
             @Override
-            public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
-            {
+            public boolean isQuerySupported(IndexQueryType queryType, ValueCategory valueCategory) {
                 return true;
             }
 
             @Override
-            public double getCostMultiplier( IndexQueryType... queryTypes )
-            {
+            public double getCostMultiplier(IndexQueryType... queryTypes) {
                 return 1.0;
             }
 
             @Override
-            public boolean supportPartitionedScan( IndexQuery... queries )
-            {
-                Preconditions.requireNonEmpty( queries );
-                Preconditions.requireNoNullElements( queries );
+            public boolean supportPartitionedScan(IndexQuery... queries) {
+                Preconditions.requireNonEmpty(queries);
+                Preconditions.requireNoNullElements(queries);
                 return false;
             }
         };
 
-        private TestIndexConfigCompleter()
-        {
-        }
+        private TestIndexConfigCompleter() {}
 
         @Override
-        public IndexDescriptor completeConfiguration( IndexDescriptor index )
-        {
-            return index.getCapability().equals( IndexCapability.NO_CAPABILITY ) ? index.withIndexCapability( CAPABILITY ) : index;
+        public IndexDescriptor completeConfiguration(IndexDescriptor index) {
+            return index.getCapability().equals(IndexCapability.NO_CAPABILITY)
+                    ? index.withIndexCapability(CAPABILITY)
+                    : index;
         }
     }
 }

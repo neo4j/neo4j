@@ -19,55 +19,46 @@
  */
 package org.neo4j.kernel.api.net;
 
-import java.util.List;
-
 import static java.util.Collections.emptyList;
+
+import java.util.List;
 
 /**
  * Container for all established and active network connections to the database.
  */
-public interface NetworkConnectionTracker
-{
-    String newConnectionId( String connector );
+public interface NetworkConnectionTracker {
+    String newConnectionId(String connector);
 
-    void add( TrackedNetworkConnection connection );
+    void add(TrackedNetworkConnection connection);
 
-    void remove( TrackedNetworkConnection connection );
+    void remove(TrackedNetworkConnection connection);
 
-    TrackedNetworkConnection get( String id );
+    TrackedNetworkConnection get(String id);
 
     List<TrackedNetworkConnection> activeConnections();
 
-    NetworkConnectionTracker NO_OP = new NetworkConnectionTracker()
-    {
+    NetworkConnectionTracker NO_OP = new NetworkConnectionTracker() {
         private final NetworkConnectionIdGenerator idGenerator = new NetworkConnectionIdGenerator();
 
         @Override
-        public String newConnectionId( String connector )
-        {
+        public String newConnectionId(String connector) {
             // need to generate a valid ID because it appears in logs, bolt messages, etc.
-            return idGenerator.newConnectionId( connector );
+            return idGenerator.newConnectionId(connector);
         }
 
         @Override
-        public void add( TrackedNetworkConnection connection )
-        {
-        }
+        public void add(TrackedNetworkConnection connection) {}
 
         @Override
-        public void remove( TrackedNetworkConnection connection )
-        {
-        }
+        public void remove(TrackedNetworkConnection connection) {}
 
         @Override
-        public TrackedNetworkConnection get( String id )
-        {
+        public TrackedNetworkConnection get(String id) {
             return null;
         }
 
         @Override
-        public List<TrackedNetworkConnection> activeConnections()
-        {
+        public List<TrackedNetworkConnection> activeConnections() {
             return emptyList();
         }
     };

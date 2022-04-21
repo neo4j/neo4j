@@ -19,32 +19,27 @@
  */
 package org.neo4j.collection;
 
-import org.junit.jupiter.api.Test;
+import static java.util.Arrays.asList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.junit.jupiter.api.Test;
 
-import static java.util.Arrays.asList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class RawIteratorTest
-{
+class RawIteratorTest {
     @Test
-    void shouldCreateSimpleRawIterator()
-    {
-        assertEquals( Collections.emptyList(), list( RawIterator.of() ) );
-        assertEquals( Collections.singletonList( 1 ), list( RawIterator.of(1) ) );
-        assertEquals( asList(1,2), list( RawIterator.of( 1,2 ) ) );
-        assertEquals( asList(1,2,3), list( RawIterator.of( 1,2,3 ) ) );
+    void shouldCreateSimpleRawIterator() {
+        assertEquals(Collections.emptyList(), list(RawIterator.of()));
+        assertEquals(Collections.singletonList(1), list(RawIterator.of(1)));
+        assertEquals(asList(1, 2), list(RawIterator.of(1, 2)));
+        assertEquals(asList(1, 2, 3), list(RawIterator.of(1, 2, 3)));
     }
 
-    private static List<Integer> list( RawIterator<Integer, RuntimeException> iter )
-    {
+    private static List<Integer> list(RawIterator<Integer, RuntimeException> iter) {
         List<Integer> out = new ArrayList<>();
-        while ( iter.hasNext() )
-        {
-            out.add( iter.next() );
+        while (iter.hasNext()) {
+            out.add(iter.next());
         }
         return out;
     }

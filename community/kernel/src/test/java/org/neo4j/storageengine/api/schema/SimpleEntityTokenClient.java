@@ -21,30 +21,26 @@ package org.neo4j.storageengine.api.schema;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
-
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
-public class SimpleEntityTokenClient extends SimpleEntityClient implements IndexProgressor.EntityTokenClient
-{
+public class SimpleEntityTokenClient extends SimpleEntityClient implements IndexProgressor.EntityTokenClient {
     @Override
-    public void initialize( IndexProgressor progressor, int token, IndexOrder order )
-    {
-        super.initialize( progressor );
+    public void initialize(IndexProgressor progressor, int token, IndexOrder order) {
+        super.initialize(progressor);
     }
 
     @Override
-    public void initialize( IndexProgressor progressor, int token, LongIterator added, LongSet removed, AccessMode accessMode )
-    {
-        super.initialize( progressor );
+    public void initialize(
+            IndexProgressor progressor, int token, LongIterator added, LongSet removed, AccessMode accessMode) {
+        super.initialize(progressor);
     }
 
     @Override
-    public boolean acceptEntity( long reference, TokenSet tokens )
-    {
-        acceptEntity( reference );
+    public boolean acceptEntity(long reference, TokenSet tokens) {
+        acceptEntity(reference);
         return true;
     }
 }

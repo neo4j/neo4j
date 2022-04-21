@@ -22,20 +22,17 @@ package org.neo4j.internal.recordstorage;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 
-public class RecordStorageCommandReaderFactory implements CommandReaderFactory
-{
+public class RecordStorageCommandReaderFactory implements CommandReaderFactory {
     public static final RecordStorageCommandReaderFactory INSTANCE = new RecordStorageCommandReaderFactory();
-    public static final LogCommandSerialization LATEST_LOG_SERIALIZATION = INSTANCE.get( KernelVersion.LATEST );
+    public static final LogCommandSerialization LATEST_LOG_SERIALIZATION = INSTANCE.get(KernelVersion.LATEST);
 
     @Override
-    public LogCommandSerialization get( KernelVersion version )
-    {
-        return switch ( version )
-                {
-                    case V4_2 -> LogCommandSerializationV4_2.INSTANCE;
-                    case V4_3_D4 -> LogCommandSerializationV4_3_D3.INSTANCE;
-                    case V4_4 -> LogCommandSerializationV4_4.INSTANCE;
-                    case V5_0 -> LogCommandSerializationV5_0.INSTANCE;
-                };
+    public LogCommandSerialization get(KernelVersion version) {
+        return switch (version) {
+            case V4_2 -> LogCommandSerializationV4_2.INSTANCE;
+            case V4_3_D4 -> LogCommandSerializationV4_3_D3.INSTANCE;
+            case V4_4 -> LogCommandSerializationV4_4.INSTANCE;
+            case V5_0 -> LogCommandSerializationV5_0.INSTANCE;
+        };
     }
 }

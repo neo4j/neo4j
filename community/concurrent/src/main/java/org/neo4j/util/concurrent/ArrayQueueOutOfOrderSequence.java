@@ -24,8 +24,7 @@ import java.util.Arrays;
 /**
  * A crude, synchronized implementation of OutOfOrderSequence. Please implement a faster one if need be.
  */
-public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
-{
+public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence {
     // odd means updating, even means no one is updating
     private volatile int version;
     private volatile long highestGapFreeNumber;
@@ -34,90 +33,77 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     private long[] metaArray;
     private volatile long highestEverSeen;
 
-    public ArrayQueueOutOfOrderSequence( long startingNumber, int initialArraySize, long[] initialMeta )
-    {
+    public ArrayQueueOutOfOrderSequence(long startingNumber, int initialArraySize, long[] initialMeta) {
         this.highestGapFreeNumber = startingNumber;
         this.highestEverSeen = startingNumber;
-        this.highestGapFreeMeta = Arrays.copyOf( initialMeta, initialMeta.length );
-        this.metaArray = Arrays.copyOf( initialMeta, initialMeta.length );
-        this.outOfOrderQueue = new SequenceArray( initialMeta.length + 1, initialArraySize );
+        this.highestGapFreeMeta = Arrays.copyOf(initialMeta, initialMeta.length);
+        this.metaArray = Arrays.copyOf(initialMeta, initialMeta.length);
+        this.outOfOrderQueue = new SequenceArray(initialMeta.length + 1, initialArraySize);
     }
 
     @Override
-    public synchronized boolean offer( long number, long[] meta )
-    {
-        highestEverSeen = Math.max( highestEverSeen, number );
-        if ( highestGapFreeNumber + 1 == number )
-        {
+    public synchronized boolean offer(long number, long[] meta) {
+        highestEverSeen = Math.max(highestEverSeen, number);
+        if (highestGapFreeNumber + 1 == number) {
             version++;
-            highestGapFreeNumber = outOfOrderQueue.pollHighestGapFree( number, metaArray );
-            highestGapFreeMeta = highestGapFreeNumber == number ? meta : Arrays.copyOf( metaArray, metaArray.length );
+            highestGapFreeNumber = outOfOrderQueue.pollHighestGapFree(number, metaArray);
+            highestGapFreeMeta = highestGapFreeNumber == number ? meta : Arrays.copyOf(metaArray, metaArray.length);
             version++;
             return true;
         }
 
-        if ( number <= highestGapFreeNumber )
-        {
-            throw new IllegalStateException( "Was offered " + number + ", but highest gap-free is " + highestGapFreeNumber +
-                    " and was only expecting values higher than that" );
+        if (number <= highestGapFreeNumber) {
+            throw new IllegalStateException("Was offered " + number + ", but highest gap-free is "
+                    + highestGapFreeNumber + " and was only expecting values higher than that");
         }
-        outOfOrderQueue.offer( highestGapFreeNumber, number, pack( meta ) );
+        outOfOrderQueue.offer(highestGapFreeNumber, number, pack(meta));
         return false;
     }
 
     @Override
-    public long highestEverSeen()
-    {
+    public long highestEverSeen() {
         return this.highestEverSeen;
     }
 
-    private long[] pack( long[] meta )
-    {
+    private long[] pack(long[] meta) {
         metaArray = meta;
         return metaArray;
     }
 
     @Override
-    public long[] get()
-    {
+    public long[] get() {
         long number;
         long[] meta;
-        while ( true )
-        {
+        while (true) {
             int versionBefore = version;
-            if ( (versionBefore & 1) == 1 )
-            {   // Someone else is updating those values as we speak, go another round
+            if ((versionBefore & 1) == 1) { // Someone else is updating those values as we speak, go another round
                 continue;
             }
 
             number = highestGapFreeNumber;
             meta = highestGapFreeMeta;
-            if ( version == versionBefore )
-            {   // We read a consistent version of these two values
+            if (version == versionBefore) { // We read a consistent version of these two values
                 break;
             }
         }
 
-        return createResult( number, meta );
+        return createResult(number, meta);
     }
 
-    private static long[] createResult( long number, long[] meta )
-    {
+    private static long[] createResult(long number, long[] meta) {
         long[] result = new long[meta.length + 1];
         result[0] = number;
-        System.arraycopy( meta, 0, result, 1, meta.length );
+        System.arraycopy(meta, 0, result, 1, meta.length);
         return result;
     }
 
     @Override
-    public long getHighestGapFreeNumber()
-    {
+    public long getHighestGapFreeNumber() {
         return highestGapFreeNumber;
     }
 
     @Override
-    public synchronized void set( long number, long[] meta )
-    {
+    public synchronized void set(long number, long[] meta) {
         highestEverSeen = number;
         highestGapFreeNumber = number;
         highestGapFreeMeta = meta;
@@ -125,29 +111,25 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     }
 
     @Override
-    public synchronized Snapshot snapshot()
-    {
+    public synchronized Snapshot snapshot() {
         long[] highestGapFree = get();
         long[][] idsOutOfOrder = outOfOrderQueue.snapshot();
-        return new Snapshot()
-        {
+        return new Snapshot() {
             @Override
-            public long[] highestGapFree()
-            {
+            public long[] highestGapFree() {
                 return highestGapFree;
             }
 
             @Override
-            public long[][] idsOutOfOrder()
-            {
+            public long[][] idsOutOfOrder() {
                 return idsOutOfOrder;
             }
         };
     }
 
     @Override
-    public synchronized String toString()
-    {
-        return String.format( "out-of-order-sequence:%d %d [%s]", highestEverSeen, highestGapFreeNumber, outOfOrderQueue );
+    public synchronized String toString() {
+        return String.format(
+                "out-of-order-sequence:%d %d [%s]", highestEverSeen, highestGapFreeNumber, outOfOrderQueue);
     }
 }

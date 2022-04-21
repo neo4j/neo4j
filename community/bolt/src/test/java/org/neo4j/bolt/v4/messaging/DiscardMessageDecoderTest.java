@@ -19,58 +19,53 @@
  */
 package org.neo4j.bolt.v4.messaging;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Collections;
-
-import org.neo4j.bolt.packstream.Neo4jPack;
-import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.messaging.RequestMessageDecoder;
-import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.bolt.packstream.PackedInputArray;
-import org.neo4j.kernel.impl.util.ValueUtils;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory.encode;
 import static org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory.newNeo4jPack;
 
-class DiscardMessageDecoderTest
-{
-    private final BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
-    private final RequestMessageDecoder decoder = new DiscardMessageDecoder( responseHandler );
+import java.util.Collections;
+import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.messaging.RequestMessage;
+import org.neo4j.bolt.messaging.RequestMessageDecoder;
+import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.packstream.PackedInputArray;
+import org.neo4j.bolt.runtime.BoltResponseHandler;
+import org.neo4j.kernel.impl.util.ValueUtils;
+
+class DiscardMessageDecoderTest {
+    private final BoltResponseHandler responseHandler = mock(BoltResponseHandler.class);
+    private final RequestMessageDecoder decoder = new DiscardMessageDecoder(responseHandler);
 
     @Test
-    void shouldReturnCorrectSignature()
-    {
-        assertEquals( DiscardMessage.SIGNATURE, decoder.signature() );
+    void shouldReturnCorrectSignature() {
+        assertEquals(DiscardMessage.SIGNATURE, decoder.signature());
     }
 
     @Test
-    void shouldReturnConnectResponseHandler()
-    {
-        assertEquals( responseHandler, decoder.responseHandler() );
+    void shouldReturnConnectResponseHandler() {
+        assertEquals(responseHandler, decoder.responseHandler());
     }
 
     @Test
-    void shouldDecodeBeginMessage() throws Exception
-    {
-        DiscardMessage originalMessage = new DiscardMessage( ValueUtils.asMapValue( Collections.singletonMap( "n", Long.MAX_VALUE ) ) );
-        assertOriginalMessageEqualsToDecoded( originalMessage, decoder );
+    void shouldDecodeBeginMessage() throws Exception {
+        DiscardMessage originalMessage =
+                new DiscardMessage(ValueUtils.asMapValue(Collections.singletonMap("n", Long.MAX_VALUE)));
+        assertOriginalMessageEqualsToDecoded(originalMessage, decoder);
     }
 
-    private static void assertOriginalMessageEqualsToDecoded( RequestMessage originalMessage, RequestMessageDecoder decoder ) throws Exception
-    {
+    private static void assertOriginalMessageEqualsToDecoded(
+            RequestMessage originalMessage, RequestMessageDecoder decoder) throws Exception {
         Neo4jPack neo4jPack = newNeo4jPack();
 
-        PackedInputArray input = new PackedInputArray( encode( neo4jPack, originalMessage ) );
-        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
+        PackedInputArray input = new PackedInputArray(encode(neo4jPack, originalMessage));
+        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker(input);
 
         // these two steps are executed before decoding in order to select a correct decoder
         unpacker.unpackStructHeader();
         unpacker.unpackStructSignature();
 
-        RequestMessage deserializedMessage = decoder.decode( unpacker );
-        assertEquals( originalMessage, deserializedMessage );
+        RequestMessage deserializedMessage = decoder.decode(unpacker);
+        assertEquals(originalMessage, deserializedMessage);
     }
 }

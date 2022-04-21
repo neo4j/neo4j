@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport;
 
 import java.util.function.Predicate;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
@@ -33,56 +32,52 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
  * initially creating the relationship records. Setting prev pointers at that time would incur
  * random access and so that is done here separately with help from {@link NodeRelationshipCache}.
  */
-public class RelationshipLinkbackStep extends RelationshipLinkStep
-{
-    public RelationshipLinkbackStep( StageControl control, Configuration config,
-            NodeRelationshipCache cache, Predicate<RelationshipRecord> filter, int nodeTypes,
-            StatsProvider... additionalStatsProvider )
-    {
-        super( control, config, cache, filter, nodeTypes, false, additionalStatsProvider );
+public class RelationshipLinkbackStep extends RelationshipLinkStep {
+    public RelationshipLinkbackStep(
+            StageControl control,
+            Configuration config,
+            NodeRelationshipCache cache,
+            Predicate<RelationshipRecord> filter,
+            int nodeTypes,
+            StatsProvider... additionalStatsProvider) {
+        super(control, config, cache, filter, nodeTypes, false, additionalStatsProvider);
     }
 
     @Override
-    protected void linkStart( RelationshipRecord record )
-    {
+    protected void linkStart(RelationshipRecord record) {
         int typeId = record.getType();
-        long firstPrevRel = cache.getAndPutRelationship( record.getFirstNode(),
-                typeId, Direction.OUTGOING, record.getId(), false );
-        if ( firstPrevRel == IdMapper.ID_NOT_FOUND )
-        {   // First one
-            record.setFirstInFirstChain( true );
-            firstPrevRel = cache.getCount( record.getFirstNode(), typeId, Direction.OUTGOING );
+        long firstPrevRel =
+                cache.getAndPutRelationship(record.getFirstNode(), typeId, Direction.OUTGOING, record.getId(), false);
+        if (firstPrevRel == IdMapper.ID_NOT_FOUND) { // First one
+            record.setFirstInFirstChain(true);
+            firstPrevRel = cache.getCount(record.getFirstNode(), typeId, Direction.OUTGOING);
         }
-        record.setFirstPrevRel( firstPrevRel );
+        record.setFirstPrevRel(firstPrevRel);
     }
 
     @Override
-    protected void linkEnd( RelationshipRecord record )
-    {
+    protected void linkEnd(RelationshipRecord record) {
         int typeId = record.getType();
-        long secondPrevRel = cache.getAndPutRelationship( record.getSecondNode(),
-                typeId, Direction.INCOMING, record.getId(), false );
-        if ( secondPrevRel == IdMapper.ID_NOT_FOUND )
-        {   // First one
-            record.setFirstInSecondChain( true );
-            secondPrevRel = cache.getCount( record.getSecondNode(), typeId, Direction.INCOMING );
+        long secondPrevRel =
+                cache.getAndPutRelationship(record.getSecondNode(), typeId, Direction.INCOMING, record.getId(), false);
+        if (secondPrevRel == IdMapper.ID_NOT_FOUND) { // First one
+            record.setFirstInSecondChain(true);
+            secondPrevRel = cache.getCount(record.getSecondNode(), typeId, Direction.INCOMING);
         }
-        record.setSecondPrevRel( secondPrevRel );
+        record.setSecondPrevRel(secondPrevRel);
     }
 
     @Override
-    protected void linkLoop( RelationshipRecord record )
-    {
+    protected void linkLoop(RelationshipRecord record) {
         int typeId = record.getType();
-        long prevRel = cache.getAndPutRelationship( record.getFirstNode(),
-                typeId, Direction.BOTH, record.getId(), false );
-        if ( prevRel == IdMapper.ID_NOT_FOUND )
-        {   // First one
-            record.setFirstInFirstChain( true );
-            record.setFirstInSecondChain( true );
-            prevRel = cache.getCount( record.getFirstNode(), typeId, Direction.BOTH );
+        long prevRel =
+                cache.getAndPutRelationship(record.getFirstNode(), typeId, Direction.BOTH, record.getId(), false);
+        if (prevRel == IdMapper.ID_NOT_FOUND) { // First one
+            record.setFirstInFirstChain(true);
+            record.setFirstInSecondChain(true);
+            prevRel = cache.getCount(record.getFirstNode(), typeId, Direction.BOTH);
         }
-        record.setFirstPrevRel( prevRel );
-        record.setSecondPrevRel( prevRel );
+        record.setFirstPrevRel(prevRel);
+        record.setSecondPrevRel(prevRel);
     }
 }

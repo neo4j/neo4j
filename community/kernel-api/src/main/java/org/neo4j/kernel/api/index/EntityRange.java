@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.api.index;
 
-public record EntityRange( long fromInclusive, long toExclusive )
-{
-    public static final EntityRange FULL = new EntityRange( Long.MIN_VALUE, Long.MAX_VALUE );
+public record EntityRange(long fromInclusive, long toExclusive) {
+    public static final EntityRange FULL = new EntityRange(Long.MIN_VALUE, Long.MAX_VALUE);
 
-    public static EntityRange from( long fromInclusive )
-    {
-        return new EntityRange( fromInclusive, Long.MAX_VALUE );
+    public static EntityRange from(long fromInclusive) {
+        return new EntityRange(fromInclusive, Long.MAX_VALUE);
     }
 }

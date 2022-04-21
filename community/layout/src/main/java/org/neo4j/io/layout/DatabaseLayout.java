@@ -29,11 +29,10 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 
 /**
  * File layout representation of the particular database. Facade for any kind of file lookup for a particular database storage implementation.
@@ -44,8 +43,7 @@ import org.neo4j.io.fs.FileUtils;
  * @see Neo4jLayout
  * @see DatabaseFile
  */
-public class DatabaseLayout
-{
+public class DatabaseLayout {
     private static final String DATABASE_LOCK_FILENAME = "database_lock";
     private static final String BACKUP_TOOLS_FOLDER = "tools";
     private static final String QUARANTINE_MARKER_FILENAME = "quarantine_marker";
@@ -54,170 +52,138 @@ public class DatabaseLayout
     private final Neo4jLayout neo4jLayout;
     private final String databaseName;
 
-    public static DatabaseLayout ofFlat( Path databaseDirectory )
-    {
-        Path canonical = FileUtils.getCanonicalFile( databaseDirectory );
+    public static DatabaseLayout ofFlat(Path databaseDirectory) {
+        Path canonical = FileUtils.getCanonicalFile(databaseDirectory);
         Path home = canonical.getParent();
         String dbName = canonical.getFileName().toString();
-        return Neo4jLayout.ofFlat( home ).databaseLayout( dbName );
+        return Neo4jLayout.ofFlat(home).databaseLayout(dbName);
     }
 
-    public static DatabaseLayout of( Config config )
-    {
-        return Neo4jLayout.of( config ).databaseLayout( config.get( GraphDatabaseSettings.default_database ) );
+    public static DatabaseLayout of(Config config) {
+        return Neo4jLayout.of(config).databaseLayout(config.get(GraphDatabaseSettings.default_database));
     }
 
-    static DatabaseLayout of( Neo4jLayout neo4jLayout, String databaseName )
-    {
-        return new DatabaseLayout( neo4jLayout, databaseName );
+    static DatabaseLayout of(Neo4jLayout neo4jLayout, String databaseName) {
+        return new DatabaseLayout(neo4jLayout, databaseName);
     }
 
-    protected DatabaseLayout( Neo4jLayout neo4jLayout, String databaseName )
-    {
-        var normalizedName = new NormalizedDatabaseName( databaseName ).name();
+    protected DatabaseLayout(Neo4jLayout neo4jLayout, String databaseName) {
+        var normalizedName = new NormalizedDatabaseName(databaseName).name();
         this.neo4jLayout = neo4jLayout;
-        this.databaseDirectory = FileUtils.getCanonicalFile( neo4jLayout.databasesDirectory().resolve( normalizedName ) );
+        this.databaseDirectory =
+                FileUtils.getCanonicalFile(neo4jLayout.databasesDirectory().resolve(normalizedName));
         this.databaseName = normalizedName;
     }
 
-    public Path getTransactionLogsDirectory()
-    {
-        return neo4jLayout.transactionLogsRootDirectory().resolve( getDatabaseName() );
+    public Path getTransactionLogsDirectory() {
+        return neo4jLayout.transactionLogsRootDirectory().resolve(getDatabaseName());
     }
 
-    public Path getScriptDirectory()
-    {
-        return neo4jLayout.scriptRootDirectory().resolve( getDatabaseName() );
+    public Path getScriptDirectory() {
+        return neo4jLayout.scriptRootDirectory().resolve(getDatabaseName());
     }
 
-    public Path databaseLockFile()
-    {
-        return databaseDirectory().resolve( DATABASE_LOCK_FILENAME );
+    public Path databaseLockFile() {
+        return databaseDirectory().resolve(DATABASE_LOCK_FILENAME);
     }
 
-    public Path quarantineMarkerFile()
-    {
-        return databaseDirectory().resolve( QUARANTINE_MARKER_FILENAME );
+    public Path quarantineMarkerFile() {
+        return databaseDirectory().resolve(QUARANTINE_MARKER_FILENAME);
     }
 
-    public String getDatabaseName()
-    {
+    public String getDatabaseName() {
         return databaseName;
     }
 
-    public Neo4jLayout getNeo4jLayout()
-    {
+    public Neo4jLayout getNeo4jLayout() {
         return neo4jLayout;
     }
 
-    public Path databaseDirectory()
-    {
+    public Path databaseDirectory() {
         return databaseDirectory;
     }
 
-    public Path backupToolsFolder()
-    {
-        return databaseDirectory().resolve( BACKUP_TOOLS_FOLDER );
+    public Path backupToolsFolder() {
+        return databaseDirectory().resolve(BACKUP_TOOLS_FOLDER);
     }
 
-    public Path indexStatisticsStore()
-    {
-        return file( CommonDatabaseFile.INDEX_STATISTICS_STORE.getName() );
+    public Path indexStatisticsStore() {
+        return file(CommonDatabaseFile.INDEX_STATISTICS_STORE.getName());
     }
 
-    public Path metadataStore()
-    {
-        return file( CommonDatabaseFile.METADATA_STORE.getName() );
+    public Path metadataStore() {
+        return file(CommonDatabaseFile.METADATA_STORE.getName());
     }
 
-    public Set<Path> idFiles()
-    {
+    public Set<Path> idFiles() {
         return databaseFiles()
-                .filter( DatabaseFile::hasIdFile )
-                .flatMap( value -> idFile( value ).stream() )
-                .collect( Collectors.toSet() );
+                .filter(DatabaseFile::hasIdFile)
+                .flatMap(value -> idFile(value).stream())
+                .collect(Collectors.toSet());
     }
 
-    public Set<Path> storeFiles()
-    {
-        return databaseFiles()
-                .map( this::file )
-                .collect( Collectors.toSet() );
+    public Set<Path> storeFiles() {
+        return databaseFiles().map(this::file).collect(Collectors.toSet());
     }
 
-    protected Stream<DatabaseFile> databaseFiles()
-    {
-        throw new IllegalStateException( "Can not check database files for a plain DatabaseLayout." );
+    protected Stream<DatabaseFile> databaseFiles() {
+        throw new IllegalStateException("Can not check database files for a plain DatabaseLayout.");
     }
 
-    public Optional<Path> idFile( DatabaseFile file )
-    {
-        return file.hasIdFile() ? Optional.of( idFile( file.getName() ) ) : Optional.empty();
+    public Optional<Path> idFile(DatabaseFile file) {
+        return file.hasIdFile() ? Optional.of(idFile(file.getName())) : Optional.empty();
     }
 
-    public Path file( String fileName )
-    {
-        return databaseDirectory.resolve( fileName );
+    public Path file(String fileName) {
+        return databaseDirectory.resolve(fileName);
     }
 
-    public Path file( DatabaseFile databaseFile )
-    {
-        return file( databaseFile.getName() );
+    public Path file(DatabaseFile databaseFile) {
+        return file(databaseFile.getName());
     }
 
-    public Stream<Path> allFiles( DatabaseFile databaseFile )
-    {
-        return Stream.concat( idFile( databaseFile ).stream(), Stream.of( file( databaseFile ) ) );
+    public Stream<Path> allFiles(DatabaseFile databaseFile) {
+        return Stream.concat(idFile(databaseFile).stream(), Stream.of(file(databaseFile)));
     }
 
-    public Path[] listDatabaseFiles( Predicate<? super Path> filter )
-    {
-        try ( Stream<Path> list = Files.list( databaseDirectory ) )
-        {
-            return list.filter( filter ).toArray( Path[]::new );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+    public Path[] listDatabaseFiles(Predicate<? super Path> filter) {
+        try (Stream<Path> list = Files.list(databaseDirectory)) {
+            return list.filter(filter).toArray(Path[]::new);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    protected Path idFile( String name )
-    {
-        return file( idFileName( name ) );
+    protected Path idFile(String name) {
+        return file(idFileName(name));
     }
 
-    private static String idFileName( String storeName )
-    {
+    private static String idFileName(String storeName) {
         return storeName + ".id";
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( databaseDirectory, neo4jLayout );
+    public int hashCode() {
+        return Objects.hash(databaseDirectory, neo4jLayout);
     }
 
     @Override
-    public String toString()
-    {
-        return "DatabaseLayout{" + "databaseDirectory=" + databaseDirectory + ", transactionLogsDirectory=" + getTransactionLogsDirectory() + '}';
+    public String toString() {
+        return "DatabaseLayout{" + "databaseDirectory=" + databaseDirectory + ", transactionLogsDirectory="
+                + getTransactionLogsDirectory() + '}';
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         DatabaseLayout that = (DatabaseLayout) o;
-        return Objects.equals( databaseDirectory, that.databaseDirectory ) &&
-               Objects.equals( neo4jLayout, that.neo4jLayout ) &&
-               getTransactionLogsDirectory().equals( that.getTransactionLogsDirectory() );
+        return Objects.equals(databaseDirectory, that.databaseDirectory)
+                && Objects.equals(neo4jLayout, that.neo4jLayout)
+                && getTransactionLogsDirectory().equals(that.getTransactionLogsDirectory());
     }
 }

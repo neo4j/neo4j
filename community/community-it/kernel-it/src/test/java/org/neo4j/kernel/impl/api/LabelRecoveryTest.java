@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.graphdb.Label.label;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -33,23 +36,17 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.graphdb.Label.label;
-
-@ExtendWith( EphemeralFileSystemExtension.class )
-class LabelRecoveryTest
-{
+@ExtendWith(EphemeralFileSystemExtension.class)
+class LabelRecoveryTest {
     @Inject
     private EphemeralFileSystemAbstraction filesystem;
+
     private GraphDatabaseService database;
     private DatabaseManagementService managementService;
 
     @AfterEach
-    void tearDown()
-    {
-        if ( managementService != null )
-        {
+    void tearDown() {
+        if (managementService != null) {
             managementService.shutdown();
         }
     }
@@ -65,48 +62,51 @@ class LabelRecoveryTest
      * next time that record would be ensured heavy.
      */
     @Test
-    void shouldRecoverNodeWithDynamicLabelRecords()
-    {
+    void shouldRecoverNodeWithDynamicLabelRecords() {
         // GIVEN
-        managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( filesystem ).impermanent().build();
-        database = managementService.database( DEFAULT_DATABASE_NAME );
+        managementService = new TestDatabaseManagementServiceBuilder()
+                .setFileSystem(filesystem)
+                .impermanent()
+                .build();
+        database = managementService.database(DEFAULT_DATABASE_NAME);
         Node node;
-        Label[] labels = new Label[] { label( "a" ),
-                label( "b" ),
-                label( "c" ),
-                label( "d" ),
-                label( "e" ),
-                label( "f" ),
-                label( "g" ),
-                label( "h" ),
-                label( "i" ),
-                label( "j" ),
-                label( "k" ) };
-        try ( Transaction tx = database.beginTx() )
-        {
-            node = tx.createNode( labels );
+        Label[] labels = new Label[] {
+            label("a"),
+            label("b"),
+            label("c"),
+            label("d"),
+            label("e"),
+            label("f"),
+            label("g"),
+            label("h"),
+            label("i"),
+            label("j"),
+            label("k")
+        };
+        try (Transaction tx = database.beginTx()) {
+            node = tx.createNode(labels);
             tx.commit();
         }
 
         // WHEN
-        try ( Transaction tx = database.beginTx() )
-        {
-            node = tx.getNodeById( node.getId() );
-            node.setProperty( "prop", "value" );
+        try (Transaction tx = database.beginTx()) {
+            node = tx.getNodeById(node.getId());
+            node.setProperty("prop", "value");
             tx.commit();
         }
         EphemeralFileSystemAbstraction snapshot = filesystem.snapshot();
         managementService.shutdown();
-        managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( snapshot ).impermanent().build();
-        database = managementService.database( DEFAULT_DATABASE_NAME );
+        managementService = new TestDatabaseManagementServiceBuilder()
+                .setFileSystem(snapshot)
+                .impermanent()
+                .build();
+        database = managementService.database(DEFAULT_DATABASE_NAME);
 
         // THEN
-        try ( Transaction tx = database.beginTx() )
-        {
-            node = tx.getNodeById( node.getId() );
-            for ( Label label : labels )
-            {
-                assertTrue( node.hasLabel( label ) );
+        try (Transaction tx = database.beginTx()) {
+            node = tx.getNodeById(node.getId());
+            for (Label label : labels) {
+                assertTrue(node.hasLabel(label));
             }
         }
     }

@@ -19,25 +19,23 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
+import static org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl.createMutableLongDiffSetsImpl;
+
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.memory.MemoryTracker;
 
-import static org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl.createMutableLongDiffSetsImpl;
-
-public class TrackableDiffSets
-{
-    public static MutableLongDiffSets newMutableLongDiffSets( CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
-    {
-        return createMutableLongDiffSetsImpl( collectionsFactory, memoryTracker );
+public class TrackableDiffSets {
+    public static MutableLongDiffSets newMutableLongDiffSets(
+            CollectionsFactory collectionsFactory, MemoryTracker memoryTracker) {
+        return createMutableLongDiffSetsImpl(collectionsFactory, memoryTracker);
     }
 
-    public static RemovalsCountingDiffSets newRemovalsCountingDiffSets( CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
-    {
-        return RemovalsCountingDiffSets.newRemovalsCountingDiffSets( collectionsFactory, memoryTracker );
+    public static RemovalsCountingDiffSets newRemovalsCountingDiffSets(
+            CollectionsFactory collectionsFactory, MemoryTracker memoryTracker) {
+        return RemovalsCountingDiffSets.newRemovalsCountingDiffSets(collectionsFactory, memoryTracker);
     }
 
-    public static <T> MutableDiffSets<T> newMutableDiffSets( MemoryTracker memoryTracker )
-    {
-        return MutableDiffSetsImpl.newMutableDiffSets( memoryTracker );
+    public static <T> MutableDiffSets<T> newMutableDiffSets(MemoryTracker memoryTracker) {
+        return MutableDiffSetsImpl.newMutableDiffSets(memoryTracker);
     }
 }

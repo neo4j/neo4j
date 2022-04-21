@@ -23,27 +23,21 @@ import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 
-public class IntegerEvaluator implements CostEvaluator<Integer>
-{
+public class IntegerEvaluator implements CostEvaluator<Integer> {
     private String costPropertyName;
 
-    public IntegerEvaluator( String costPropertyName )
-    {
+    public IntegerEvaluator(String costPropertyName) {
         super();
         this.costPropertyName = costPropertyName;
     }
 
     @Override
-    public Integer getCost( Relationship relationship, Direction direction )
-    {
-        Object costProp = relationship.getProperty( costPropertyName );
-        if ( costProp instanceof Number )
-        {
+    public Integer getCost(Relationship relationship, Direction direction) {
+        Object costProp = relationship.getProperty(costPropertyName);
+        if (costProp instanceof Number) {
             return ((Number) costProp).intValue();
-        }
-        else
-        {
-            return Integer.parseInt( costProp.toString() );
+        } else {
+            return Integer.parseInt(costProp.toString());
         }
     }
 }

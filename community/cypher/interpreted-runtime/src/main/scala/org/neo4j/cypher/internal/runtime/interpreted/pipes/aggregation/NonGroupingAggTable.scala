@@ -34,12 +34,18 @@ import org.neo4j.memory.MemoryTracker
  *
  * @param aggregations all aggregation columns
  */
-class NonGroupingAggTable(aggregations: Array[AggregatingCol],
-                          state: QueryState,
-                          rowFactory: CypherRowFactory,
-                          operatorId: Id) extends AggregationTable {
-  private val aggregationFunctions = new Array[AggregationFunction](aggregations.length) // We do not track this allocation, but it should be negligable
-  private val scopedMemoryTracker: MemoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(operatorId.x).getScopedMemoryTracker
+class NonGroupingAggTable(
+  aggregations: Array[AggregatingCol],
+  state: QueryState,
+  rowFactory: CypherRowFactory,
+  operatorId: Id
+) extends AggregationTable {
+
+  private val aggregationFunctions =
+    new Array[AggregationFunction](aggregations.length) // We do not track this allocation, but it should be negligable
+
+  private val scopedMemoryTracker: MemoryTracker =
+    state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(operatorId.x).getScopedMemoryTracker
 
   protected def close(): Unit = {
     scopedMemoryTracker.close()
@@ -80,7 +86,9 @@ class NonGroupingAggTable(aggregations: Array[AggregatingCol],
 }
 
 object NonGroupingAggTable {
+
   case class Factory(aggregations: Array[AggregatingCol]) extends AggregationTableFactory {
+
     override def table(state: QueryState, rowFactory: CypherRowFactory, operatorId: Id): AggregationTable =
       new NonGroupingAggTable(aggregations, state, rowFactory, operatorId)
   }

@@ -20,7 +20,6 @@
 package org.neo4j.test;
 
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -30,55 +29,47 @@ import org.neo4j.graphdb.schema.AnyTokens;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 
-public class GraphDatabaseServiceCleaner
-{
-    private GraphDatabaseServiceCleaner()
-    {
+public class GraphDatabaseServiceCleaner {
+    private GraphDatabaseServiceCleaner() {
         throw new UnsupportedOperationException();
     }
 
-    public static void cleanDatabaseContent( GraphDatabaseService db )
-    {
-        cleanupSchema( db );
-        cleanupAllRelationshipsAndNodes( db );
+    public static void cleanDatabaseContent(GraphDatabaseService db) {
+        cleanupSchema(db);
+        cleanupAllRelationshipsAndNodes(db);
     }
 
-    public static void cleanupSchema( GraphDatabaseService db )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( ConstraintDefinition constraint : tx.schema().getConstraints() )
-            {
+    public static void cleanupSchema(GraphDatabaseService db) {
+        try (Transaction tx = db.beginTx()) {
+            for (ConstraintDefinition constraint : tx.schema().getConstraints()) {
                 constraint.drop();
             }
 
-            for ( IndexDefinition index : tx.schema().getIndexes() )
-            {
+            for (IndexDefinition index : tx.schema().getIndexes()) {
                 index.drop();
             }
             tx.commit();
         }
         // re-create the default indexes
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( AnyTokens.ANY_RELATIONSHIP_TYPES ).withName( "rti" ).create();
-            tx.schema().indexFor( AnyTokens.ANY_LABELS ).withName( "lti" ).create();
+        try (Transaction tx = db.beginTx()) {
+            tx.schema()
+                    .indexFor(AnyTokens.ANY_RELATIONSHIP_TYPES)
+                    .withName("rti")
+                    .create();
+            tx.schema().indexFor(AnyTokens.ANY_LABELS).withName("lti").create();
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(1, TimeUnit.MINUTES);
         }
     }
 
-    public static void cleanupAllRelationshipsAndNodes( GraphDatabaseService db )
-    {
-        try ( Transaction tx = db.beginTx();
-              ResourceIterable<Relationship> allRelationships = tx.getAllRelationships();
-              ResourceIterable<Node> allNodes = tx.getAllNodes() )
-        {
-            allRelationships.forEach( Relationship::delete );
-            allNodes.forEach( Node::delete );
+    public static void cleanupAllRelationshipsAndNodes(GraphDatabaseService db) {
+        try (Transaction tx = db.beginTx();
+                ResourceIterable<Relationship> allRelationships = tx.getAllRelationships();
+                ResourceIterable<Node> allNodes = tx.getAllNodes()) {
+            allRelationships.forEach(Relationship::delete);
+            allNodes.forEach(Node::delete);
             tx.commit();
         }
     }

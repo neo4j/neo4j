@@ -24,36 +24,30 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 
-public class SystemNanoClock extends Clock
-{
+public class SystemNanoClock extends Clock {
     static final SystemNanoClock INSTANCE = new SystemNanoClock();
 
-    protected SystemNanoClock()
-    {
+    protected SystemNanoClock() {
         // please use shared instance
     }
 
     @Override
-    public ZoneId getZone()
-    {
+    public ZoneId getZone() {
         return ZoneOffset.UTC;
     }
 
     @Override
-    public Clock withZone( ZoneId zone )
-    {
-        return Clock.system( zone ); // the users of this method do not need a NanoClock
+    public Clock withZone(ZoneId zone) {
+        return Clock.system(zone); // the users of this method do not need a NanoClock
     }
 
     @Override
-    public Instant instant()
-    {
-        return Instant.ofEpochMilli( millis() );
+    public Instant instant() {
+        return Instant.ofEpochMilli(millis());
     }
 
     @Override
-    public long millis()
-    {
+    public long millis() {
         return System.currentTimeMillis();
     }
 
@@ -62,13 +56,11 @@ public class SystemNanoClock extends Clock
      *
      * @return current nano time of the system.
      */
-    public long nanos()
-    {
+    public long nanos() {
         return System.nanoTime();
     }
 
-    public Stopwatch startStopWatch()
-    {
-        return new Stopwatch( System::nanoTime );
+    public Stopwatch startStopWatch() {
+        return new Stopwatch(System::nanoTime);
     }
 }

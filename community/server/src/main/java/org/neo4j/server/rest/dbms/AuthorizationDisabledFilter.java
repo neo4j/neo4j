@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.rest.dbms;
 
+import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
+
 import java.io.IOException;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -27,47 +29,38 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
-
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 import org.neo4j.server.web.JettyHttpConnection;
 
-import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
-
-public class AuthorizationDisabledFilter extends AuthorizationFilter
-{
+public class AuthorizationDisabledFilter extends AuthorizationFilter {
     @Override
-    public void doFilter( ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain )
-            throws IOException, ServletException
-    {
-        validateRequestType( servletRequest );
-        validateResponseType( servletResponse );
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
+            throws IOException, ServletException {
+        validateRequestType(servletRequest);
+        validateResponseType(servletResponse);
 
         final HttpServletRequest request = (HttpServletRequest) servletRequest;
         final HttpServletResponse response = (HttpServletResponse) servletResponse;
 
-        try
-        {
-            ClientConnectionInfo connectionInfo = HttpConnectionInfoFactory.create( request );
-            LoginContext loginContext = getAuthDisabledLoginContext( connectionInfo );
-            String userAgent = request.getHeader( HttpHeaders.USER_AGENT );
+        try {
+            ClientConnectionInfo connectionInfo = HttpConnectionInfoFactory.create(request);
+            LoginContext loginContext = getAuthDisabledLoginContext(connectionInfo);
+            String userAgent = request.getHeader(HttpHeaders.USER_AGENT);
 
-            JettyHttpConnection.updateUserForCurrentConnection( loginContext.subject().executingUser(), userAgent );
+            JettyHttpConnection.updateUserForCurrentConnection(
+                    loginContext.subject().executingUser(), userAgent);
 
             filterChain.doFilter(
-                    new AuthorizedRequestWrapper( BASIC_AUTH, "neo4j", request, loginContext ),
-                    servletResponse );
-        }
-        catch ( AuthorizationViolationException e )
-        {
-            unauthorizedAccess( e.getMessage() ).accept( response );
+                    new AuthorizedRequestWrapper(BASIC_AUTH, "neo4j", request, loginContext), servletResponse);
+        } catch (AuthorizationViolationException e) {
+            unauthorizedAccess(e.getMessage()).accept(response);
         }
     }
 
-    protected LoginContext getAuthDisabledLoginContext( ClientConnectionInfo connectionInfo )
-    {
-        return LoginContext.fullAccess( connectionInfo );
+    protected LoginContext getAuthDisabledLoginContext(ClientConnectionInfo connectionInfo) {
+        return LoginContext.fullAccess(connectionInfo);
     }
 }

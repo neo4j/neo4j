@@ -22,7 +22,6 @@ package org.neo4j.dbms.database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 @FunctionalInterface
-public interface DatabaseContextFactory<DB>
-{
-    DB create( NamedDatabaseId namedDatabaseId, DatabaseOptions databaseOptions );
+public interface DatabaseContextFactory<DB> {
+    DB create(NamedDatabaseId namedDatabaseId, DatabaseOptions databaseOptions);
 }

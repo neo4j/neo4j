@@ -49,7 +49,7 @@ case object normalizeArgumentOrder extends Rewriter with StepSequencer.Step with
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
+    PatternExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside PatternExpressions.
   )
 
   override def apply(that: AnyRef): AnyRef = instance(that)
@@ -57,7 +57,7 @@ case object normalizeArgumentOrder extends Rewriter with StepSequencer.Step with
   private val instance: Rewriter = topDown(Rewriter.lift {
 
     // move id(n) on equals to the left
-    case predicate @ Equals(func@FunctionInvocation(_, _, _, _), _) if func.function == functions.Id =>
+    case predicate @ Equals(func @ FunctionInvocation(_, _, _, _), _) if func.function == functions.Id =>
       predicate
 
     case predicate @ Equals(lhs, rhs @ FunctionInvocation(_, _, _, _)) if rhs.function == functions.Id =>
@@ -80,8 +80,10 @@ case object normalizeArgumentOrder extends Rewriter with StepSequencer.Step with
       }
   })
 
-  override def getRewriter(semanticState: SemanticState,
-                           parameterTypeMapping: Map[String, CypherType],
-                           cypherExceptionFactory: CypherExceptionFactory,
-                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = instance
+  override def getRewriter(
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, CypherType],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Rewriter = instance
 }

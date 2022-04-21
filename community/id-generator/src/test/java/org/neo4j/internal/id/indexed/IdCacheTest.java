@@ -19,56 +19,49 @@
  */
 package org.neo4j.internal.id.indexed;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.internal.id.IdSlotDistribution;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
 
-class IdCacheTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.id.IdSlotDistribution;
+
+class IdCacheTest {
     @Test
-    void shouldReportCorrectSpaceAvailableById()
-    {
+    void shouldReportCorrectSpaceAvailableById() {
         // given
-        IdCache cache = new IdCache( new IdSlotDistribution.Slot( 8, 1 ), new IdSlotDistribution.Slot( 8, 4 ) );
-        assertThat( cache.availableSpaceById() ).isEqualTo( 40 );
+        IdCache cache = new IdCache(new IdSlotDistribution.Slot(8, 1), new IdSlotDistribution.Slot(8, 4));
+        assertThat(cache.availableSpaceById()).isEqualTo(40);
 
         // when
-        PendingIdQueue toOffer = new PendingIdQueue( cache.slotsByAvailableSpace() );
-        toOffer.offer( 1, 4 );
-        toOffer.offer( 10, 6 );
-        cache.offer( toOffer, NO_MONITOR );
+        PendingIdQueue toOffer = new PendingIdQueue(cache.slotsByAvailableSpace());
+        toOffer.offer(1, 4);
+        toOffer.offer(10, 6);
+        cache.offer(toOffer, NO_MONITOR);
 
         // then
-        assertThat( cache.availableSpaceById() ).isEqualTo( 30 );
+        assertThat(cache.availableSpaceById()).isEqualTo(30);
     }
 
     @Test
-    void shouldReportCorrectSlotsByAvailableSpace()
-    {
+    void shouldReportCorrectSlotsByAvailableSpace() {
         // given
         IdCache cache = new IdCache(
-                new IdSlotDistribution.Slot( 8, 1 ),
-                new IdSlotDistribution.Slot( 8, 2 ),
-                new IdSlotDistribution.Slot( 4, 4 ) );
-        assertThat( cache.slotsByAvailableSpace() ).isEqualTo( new IdSlotDistribution.Slot[]{
-                new IdSlotDistribution.Slot( 8, 1 ),
-                new IdSlotDistribution.Slot( 8, 2 ),
-                new IdSlotDistribution.Slot( 4, 4 )} );
+                new IdSlotDistribution.Slot(8, 1),
+                new IdSlotDistribution.Slot(8, 2),
+                new IdSlotDistribution.Slot(4, 4));
+        assertThat(cache.slotsByAvailableSpace()).isEqualTo(new IdSlotDistribution.Slot[] {
+            new IdSlotDistribution.Slot(8, 1), new IdSlotDistribution.Slot(8, 2), new IdSlotDistribution.Slot(4, 4)
+        });
 
         // when
-        PendingIdQueue toOffer = new PendingIdQueue( cache.slotsByAvailableSpace() );
-        toOffer.offer( 1, 4 );
-        toOffer.offer( 10, 6 );
-        cache.offer( toOffer, NO_MONITOR );
+        PendingIdQueue toOffer = new PendingIdQueue(cache.slotsByAvailableSpace());
+        toOffer.offer(1, 4);
+        toOffer.offer(10, 6);
+        cache.offer(toOffer, NO_MONITOR);
 
         // then
-        assertThat( cache.slotsByAvailableSpace() ).isEqualTo( new IdSlotDistribution.Slot[]{
-                new IdSlotDistribution.Slot( 8, 1 ),
-                new IdSlotDistribution.Slot( 7, 2 ),
-                new IdSlotDistribution.Slot( 2, 4 )} );
+        assertThat(cache.slotsByAvailableSpace()).isEqualTo(new IdSlotDistribution.Slot[] {
+            new IdSlotDistribution.Slot(8, 1), new IdSlotDistribution.Slot(7, 2), new IdSlotDistribution.Slot(2, 4)
+        });
     }
 }
-

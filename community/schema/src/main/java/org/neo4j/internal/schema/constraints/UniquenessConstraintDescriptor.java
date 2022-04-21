@@ -19,14 +19,13 @@
  */
 package org.neo4j.internal.schema.constraints;
 
-public interface UniquenessConstraintDescriptor extends IndexBackedConstraintDescriptor
-{
+public interface UniquenessConstraintDescriptor extends IndexBackedConstraintDescriptor {
     @Override
-    UniquenessConstraintDescriptor withId( long id );
+    UniquenessConstraintDescriptor withId(long id);
 
     @Override
-    UniquenessConstraintDescriptor withName( String name );
+    UniquenessConstraintDescriptor withName(String name);
 
     @Override
-    UniquenessConstraintDescriptor withOwnedIndexId( long id );
+    UniquenessConstraintDescriptor withOwnedIndexId(long id);
 }

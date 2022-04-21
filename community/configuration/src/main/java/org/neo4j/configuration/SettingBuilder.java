@@ -24,8 +24,7 @@ import org.neo4j.graphdb.config.Setting;
 /**
  * Provides methods to construct new settings. Setting are service loaded from all classes the implements the {@link SettingsDeclaration} interface.
  */
-public interface SettingBuilder<T>
-{
+public interface SettingBuilder<T> {
     /**
      * Start construction of a new setting.
      *
@@ -36,9 +35,8 @@ public interface SettingBuilder<T>
      *
      * @return A new builder, call {@link #build()} to complete.
      */
-    static <T> SettingBuilder<T> newBuilder( String name, SettingValueParser<T> parser, T defaultValue )
-    {
-        return new SettingImpl.Builder<>( name, parser, defaultValue );
+    static <T> SettingBuilder<T> newBuilder(String name, SettingValueParser<T> parser, T defaultValue) {
+        return new SettingImpl.Builder<>(name, parser, defaultValue);
     }
 
     /**
@@ -70,14 +68,14 @@ public interface SettingBuilder<T>
      *
      * @return The builder.
      */
-    SettingBuilder<T> setDependency( Setting<T> setting );
+    SettingBuilder<T> setDependency(Setting<T> setting);
 
     /**
      * Add a constraint to the setting value. You can define multiple.
      * @param constraint A constraint to apply to the setting value.
      * @return The builder.
      */
-    SettingBuilder<T> addConstraint( SettingConstraint<T> constraint );
+    SettingBuilder<T> addConstraint(SettingConstraint<T> constraint);
 
     /**
      * Finalize the construction of the setting.
@@ -85,4 +83,3 @@ public interface SettingBuilder<T>
      */
     Setting<T> build();
 }
-

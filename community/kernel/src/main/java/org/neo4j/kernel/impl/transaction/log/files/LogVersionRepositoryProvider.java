@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import org.neo4j.storageengine.api.LogVersionRepository;
 
 @FunctionalInterface
-public interface LogVersionRepositoryProvider
-{
-    LogVersionRepository logVersionRepository( LogFiles logFiles );
+public interface LogVersionRepositoryProvider {
+    LogVersionRepository logVersionRepository(LogFiles logFiles);
 }

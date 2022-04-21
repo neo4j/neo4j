@@ -20,6 +20,7 @@
 package org.neo4j.cypher.testing.api
 
 import org.neo4j.kernel.api.exceptions.Status
+
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
 /**
@@ -29,13 +30,15 @@ import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 case class CypherExecutorException(status: Status, message: String) extends RuntimeException(message)
 
 object CypherExecutorException {
+
   trait ExceptionConverter {
 
-    def convertExceptions[T](code: => T): T = try {
-      code
-    } catch {
-      case t: Throwable => throw asExecutorException(t).getOrElse(t)
-    }
+    def convertExceptions[T](code: => T): T =
+      try {
+        code
+      } catch {
+        case t: Throwable => throw asExecutorException(t).getOrElse(t)
+      }
 
     def statusOf(code: String): Option[Status] =
       Status.Code.all.asScala.find(status => status.code.serialize == code)

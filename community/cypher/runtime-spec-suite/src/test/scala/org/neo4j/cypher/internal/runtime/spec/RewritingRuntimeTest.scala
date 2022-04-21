@@ -51,18 +51,21 @@ trait RewritingRuntimeTest[CONTEXT <: RuntimeContext] {
   }
 
   class RewritingRuntimeTestSupport[CONTEXT <: RuntimeContext](
-                                                                graphDb: GraphDatabaseService,
-                                                                edition: Edition[CONTEXT],
-                                                                workloadMode: Boolean,
-                                                                logProvider: InternalLogProvider,
-                                                                debugOptions: CypherDebugOptions = CypherDebugOptions.default,
+    graphDb: GraphDatabaseService,
+    edition: Edition[CONTEXT],
+    workloadMode: Boolean,
+    logProvider: InternalLogProvider,
+    debugOptions: CypherDebugOptions = CypherDebugOptions.default
   ) extends RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider, debugOptions) {
 
     override def buildPlan(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT]): ExecutionPlan = {
       super.buildPlan(rewriteLogicalQuery(logicalQuery), runtime)
     }
 
-    override def buildPlanAndContext(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT]): (ExecutionPlan, CONTEXT) = {
+    override def buildPlanAndContext(
+      logicalQuery: LogicalQuery,
+      runtime: CypherRuntime[CONTEXT]
+    ): (ExecutionPlan, CONTEXT) = {
       super.buildPlanAndContext(rewriteLogicalQuery(logicalQuery), runtime)
     }
   }

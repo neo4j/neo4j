@@ -58,9 +58,25 @@ import org.neo4j.graphdb.Direction
 import scala.annotation.nowarn
 
 trait ExpressionConverter {
-  def toCommandExpression(id: Id, expression: Expression, self: ExpressionConverters): Option[commands.expressions.Expression]
-  def toCommandProjection(id: Id, projections: Map[String, Expression], self: ExpressionConverters): Option[CommandProjection]
-  def toGroupingExpression(id: Id, groupings: Map[String, Expression], orderToLeverage: collection.Seq[Expression], self: ExpressionConverters): Option[GroupingExpression]
+
+  def toCommandExpression(
+    id: Id,
+    expression: Expression,
+    self: ExpressionConverters
+  ): Option[commands.expressions.Expression]
+
+  def toCommandProjection(
+    id: Id,
+    projections: Map[String, Expression],
+    self: ExpressionConverters
+  ): Option[CommandProjection]
+
+  def toGroupingExpression(
+    id: Id,
+    groupings: Map[String, Expression],
+    orderToLeverage: collection.Seq[Expression],
+    self: ExpressionConverters
+  ): Option[GroupingExpression]
 }
 
 trait ExpressionConversionLogger {
@@ -85,7 +101,7 @@ class ExpressionConverters(converters: ExpressionConverter*) {
     converters foreach { c: ExpressionConverter =>
       c.toCommandExpression(id, expression, this) match {
         case Some(x) => return x
-        case None =>
+        case None    =>
       }
     }
 
@@ -97,7 +113,7 @@ class ExpressionConverters(converters: ExpressionConverter*) {
     converters foreach { c: ExpressionConverter =>
       c.toCommandProjection(id, projections, this) match {
         case Some(x) => return x
-        case None =>
+        case None    =>
       }
     }
 
@@ -105,11 +121,15 @@ class ExpressionConverters(converters: ExpressionConverter*) {
   }
 
   @nowarn("msg=return statement")
-  def toGroupingExpression(id: Id, groupings: Map[String, internal.expressions.Expression], orderToLeverage: Seq[internal.expressions.Expression]): GroupingExpression = {
+  def toGroupingExpression(
+    id: Id,
+    groupings: Map[String, internal.expressions.Expression],
+    orderToLeverage: Seq[internal.expressions.Expression]
+  ): GroupingExpression = {
     converters foreach { c: ExpressionConverter =>
       c.toGroupingExpression(id, groupings, orderToLeverage, this) match {
         case Some(x) => return x
-        case None =>
+        case None    =>
       }
     }
 
@@ -120,9 +140,9 @@ class ExpressionConverters(converters: ExpressionConverter*) {
     case e: internal.expressions.PatternExpression => predicates.NonEmpty(toCommandExpression(id, e))
     case e: internal.expressions.ListComprehension => predicates.NonEmpty(toCommandExpression(id, e))
     case e => toCommandExpression(id, e) match {
-      case c: Predicate => c
-      case c => predicates.CoercedPredicate(c)
-    }
+        case c: Predicate => c
+        case c            => predicates.CoercedPredicate(c)
+      }
   }
 
   def toCommandPredicate(id: Id, expression: Option[internal.expressions.Expression]): Predicate =
@@ -131,16 +151,16 @@ class ExpressionConverters(converters: ExpressionConverter*) {
   def toCommandSeekArgs(id: Id, seek: SeekableArgs): SeekArgs = seek match {
     case SingleSeekableArg(expr) => SingleSeekArg(toCommandExpression(id, expr))
     case ManySeekableArgs(expr) => expr match {
-      case coll: internal.expressions.ListLiteral =>
-        ZeroOneOrMany(coll.expressions) match {
-          case Zero => SeekArgs.empty
-          case One(value) => SingleSeekArg(toCommandExpression(id, value))
-          case Many(_) => ManySeekArgs(toCommandExpression(id, coll))
-        }
+        case coll: internal.expressions.ListLiteral =>
+          ZeroOneOrMany(coll.expressions) match {
+            case Zero       => SeekArgs.empty
+            case One(value) => SingleSeekArg(toCommandExpression(id, value))
+            case Many(_)    => ManySeekArgs(toCommandExpression(id, coll))
+          }
 
-      case _ =>
-        ManySeekArgs(toCommandExpression(id, expr))
-    }
+        case _ =>
+          ManySeekArgs(toCommandExpression(id, expr))
+      }
   }
 
   def toCommandProjectedPath(e: internal.expressions.PathExpression): ProjectedPath = {
@@ -149,7 +169,12 @@ class ExpressionConverters(converters: ExpressionConverter*) {
       case internal.expressions.NodePathStep(node: LogicalVariable, next) =>
         singleNodeProjector(node.name, project(next))
 
-      case internal.expressions.SingleRelationshipPathStep(rel: LogicalVariable, _, Some(target: LogicalVariable), next) =>
+      case internal.expressions.SingleRelationshipPathStep(
+          rel: LogicalVariable,
+          _,
+          Some(target: LogicalVariable),
+          next
+        ) =>
         singleRelationshipWithKnownTargetProjector(rel.name, target.name, project(next))
 
       case internal.expressions.SingleRelationshipPathStep(rel: LogicalVariable, SemanticDirection.INCOMING, _, next) =>
@@ -182,9 +207,10 @@ class ExpressionConverters(converters: ExpressionConverter*) {
 }
 
 object DirectionConverter {
+
   def toGraphDb(dir: SemanticDirection): Direction = dir match {
     case SemanticDirection.INCOMING => Direction.INCOMING
     case SemanticDirection.OUTGOING => Direction.OUTGOING
-    case SemanticDirection.BOTH => Direction.BOTH
+    case SemanticDirection.BOTH     => Direction.BOTH
   }
 }

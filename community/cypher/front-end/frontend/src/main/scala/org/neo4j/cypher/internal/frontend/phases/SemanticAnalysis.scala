@@ -36,10 +36,11 @@ case object TokensResolved extends StepSequencer.Condition
  * Do variable binding, typing, type checking and other semantic checks.
  */
 case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
-  extends Phase[BaseContext, BaseState, BaseState] {
+    extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
-    val startState = SemanticState.clean.withFeatures(features: _*).withErrorMessageProvider(context.errorMessageProvider)
+    val startState =
+      SemanticState.clean.withFeatures(features: _*).withErrorMessageProvider(context.errorMessageProvider)
 
     val SemanticCheckResult(state, errors) = SemanticChecker.check(from.statement(), startState)
     if (warn) state.notifications.foreach(context.notificationLogger.log)
@@ -48,21 +49,23 @@ case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
 
     val table = from.maybeSemanticTable match {
       case Some(existingTable) =>
-      // We might already have a SemanticTable from a previous run, and that might already have tokens.
-      // We don't want to lose these
+        // We might already have a SemanticTable from a previous run, and that might already have tokens.
+        // We don't want to lose these
         existingTable.copy(types = state.typeTable, recordedScopes = state.recordedScopes.view.mapValues(_.scope).toMap)
-      case None => SemanticTable(types = state.typeTable, recordedScopes = state.recordedScopes.view.mapValues(_.scope).toMap)
+      case None =>
+        SemanticTable(types = state.typeTable, recordedScopes = state.recordedScopes.view.mapValues(_.scope).toMap)
     }
 
-    val rewrittenStatement = if (errors.isEmpty) {
-      // Some expressions record some semantic information in themselves.
-      // This is done by the recordScopes rewriter.
-      // We need to apply it after each pass of SemanticAnalysis.
-      from.statement().endoRewrite(recordScopes(state))
-    } else {
-      // If we have errors we should rather avoid running recordScopes, since the state might be incomplete.
-      from.statement()
-    }
+    val rewrittenStatement =
+      if (errors.isEmpty) {
+        // Some expressions record some semantic information in themselves.
+        // This is done by the recordScopes rewriter.
+        // We need to apply it after each pass of SemanticAnalysis.
+        from.statement().endoRewrite(recordScopes(state))
+      } else {
+        // If we have errors we should rather avoid running recordScopes, since the state might be incomplete.
+        from.statement()
+      }
     from
       .withStatement(rewrittenStatement)
       .withSemanticState(state)
@@ -71,7 +74,8 @@ case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
 
   override def phase: CompilationPhaseTracer.CompilationPhase = SEMANTIC_CHECK
 
-  override def postConditions = Set(BaseContains[SemanticState], StatementCondition(containsNoNodesOfType[UnaliasedReturnItem]))
+  override def postConditions =
+    Set(BaseContains[SemanticState], StatementCondition(containsNoNodesOfType[UnaliasedReturnItem]))
 }
 
 case object SemanticAnalysis extends StepSequencer.Step with PlanPipelineTransformerFactory {
@@ -81,6 +85,8 @@ case object SemanticAnalysis extends StepSequencer.Step with PlanPipelineTransfo
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def getTransformer(pushdownPropertyReads: Boolean,
-                              semanticFeatures: Seq[SemanticFeature]): Transformer[BaseContext, BaseState, BaseState] = SemanticAnalysis(warn = false, semanticFeatures: _*)
+  override def getTransformer(
+    pushdownPropertyReads: Boolean,
+    semanticFeatures: Seq[SemanticFeature]
+  ): Transformer[BaseContext, BaseState, BaseState] = SemanticAnalysis(warn = false, semanticFeatures: _*)
 }

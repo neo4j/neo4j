@@ -20,7 +20,6 @@
 package org.neo4j.bolt.v3.messaging;
 
 import java.io.IOException;
-
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResult;
@@ -28,72 +27,58 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
 
-public class ResultHandler extends MessageProcessingHandler
-{
-    public ResultHandler( BoltResponseMessageWriter handler, BoltConnection connection, InternalLog log )
-    {
-        super( handler, connection, log );
+public class ResultHandler extends MessageProcessingHandler {
+    public ResultHandler(BoltResponseMessageWriter handler, BoltConnection connection, InternalLog log) {
+        super(handler, connection, log);
     }
 
     @Override
-    public boolean onPullRecords( final BoltResult result, final long size ) throws Throwable
-    {
-        return markHasMore( result.handleRecords( new RecordWritingBoltResultRecordConsumer(), size ) );
+    public boolean onPullRecords(final BoltResult result, final long size) throws Throwable {
+        return markHasMore(result.handleRecords(new RecordWritingBoltResultRecordConsumer(), size));
     }
 
     @Override
-    public boolean onDiscardRecords( BoltResult result, long size ) throws Throwable
-    {
-        return markHasMore( result.discardRecords( new RecordDiscardingBoltResultRecordConsumer(), size ) );
+    public boolean onDiscardRecords(BoltResult result, long size) throws Throwable {
+        return markHasMore(result.discardRecords(new RecordDiscardingBoltResultRecordConsumer(), size));
     }
 
-    private class RecordWritingBoltResultRecordConsumer implements BoltResult.RecordConsumer
-    {
+    private class RecordWritingBoltResultRecordConsumer implements BoltResult.RecordConsumer {
         @Override
-        public void addMetadata( String key, AnyValue value )
-        {
-            onMetadata( key, value );
+        public void addMetadata(String key, AnyValue value) {
+            onMetadata(key, value);
         }
 
         @Override
-        public void beginRecord( int numberOfFields ) throws IOException
-        {
-            messageWriter.beginRecord( numberOfFields );
+        public void beginRecord(int numberOfFields) throws IOException {
+            messageWriter.beginRecord(numberOfFields);
         }
 
         @Override
-        public void consumeField( AnyValue value ) throws IOException
-        {
-            messageWriter.consumeField( value );
+        public void consumeField(AnyValue value) throws IOException {
+            messageWriter.consumeField(value);
         }
 
         @Override
-        public void endRecord() throws IOException
-        {
+        public void endRecord() throws IOException {
             messageWriter.endRecord();
         }
 
         @Override
-        public void onError() throws IOException
-        {
+        public void onError() throws IOException {
             messageWriter.onError();
         }
     }
 
-    private class RecordDiscardingBoltResultRecordConsumer extends BoltResult.DiscardingRecordConsumer
-    {
+    private class RecordDiscardingBoltResultRecordConsumer extends BoltResult.DiscardingRecordConsumer {
         @Override
-        public void addMetadata( String key, AnyValue value )
-        {
-            onMetadata( key, value );
+        public void addMetadata(String key, AnyValue value) {
+            onMetadata(key, value);
         }
     }
 
-    private boolean markHasMore( boolean hasMore )
-    {
-        if ( hasMore )
-        {
-            onMetadata( "has_more", BooleanValue.TRUE );
+    private boolean markHasMore(boolean hasMore) {
+        if (hasMore) {
+            onMetadata("has_more", BooleanValue.TRUE);
         }
         return hasMore;
     }

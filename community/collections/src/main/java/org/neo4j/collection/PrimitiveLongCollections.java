@@ -19,11 +19,7 @@
  */
 package org.neo4j.collection;
 
-import org.eclipse.collections.api.LongIterable;
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import static java.util.Arrays.copyOf;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -32,114 +28,96 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.function.LongPredicate;
-
+import org.eclipse.collections.api.LongIterable;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.helpers.collection.Iterators;
-
-import static java.util.Arrays.copyOf;
 
 /**
  * Basic and common primitive int collection utils and manipulations.
  */
-public final class PrimitiveLongCollections
-{
+public final class PrimitiveLongCollections {
     public static final long[] EMPTY_LONG_ARRAY = new long[0];
 
-    private PrimitiveLongCollections()
-    {
+    private PrimitiveLongCollections() {
         // nop
     }
 
-    public static LongIterator single( long item )
-    {
-        return new SingleLongIterator( item );
+    public static LongIterator single(long item) {
+        return new SingleLongIterator(item);
     }
 
-    private static final class SingleLongIterator implements LongIterator
-    {
+    private static final class SingleLongIterator implements LongIterator {
         private final long item;
         private boolean consumed;
 
-        SingleLongIterator( long item )
-        {
+        SingleLongIterator(long item) {
             this.item = item;
         }
 
         @Override
-        public long next()
-        {
-            if ( consumed )
-            {
-                throw new NoSuchElementException( "No such element" );
+        public long next() {
+            if (consumed) {
+                throw new NoSuchElementException("No such element");
             }
             consumed = true;
             return item;
         }
 
         @Override
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             return !consumed;
         }
     }
 
-    public static LongIterator iterator( final long... items )
-    {
-        return new PrimitiveLongResourceCollections.AbstractPrimitiveLongBaseResourceIterator( Resource.EMPTY )
-        {
+    public static LongIterator iterator(final long... items) {
+        return new PrimitiveLongResourceCollections.AbstractPrimitiveLongBaseResourceIterator(Resource.EMPTY) {
             private int index = -1;
 
             @Override
-            protected boolean fetchNext()
-            {
+            protected boolean fetchNext() {
                 index++;
-                return index < items.length && next( items[index] );
+                return index < items.length && next(items[index]);
             }
         };
     }
 
-    public static LongIterator reverseIterator( final long... items )
-    {
-        return new PrimitiveLongResourceCollections.AbstractPrimitiveLongBaseResourceIterator( Resource.EMPTY )
-        {
+    public static LongIterator reverseIterator(final long... items) {
+        return new PrimitiveLongResourceCollections.AbstractPrimitiveLongBaseResourceIterator(Resource.EMPTY) {
             private int index = items.length;
 
             @Override
-            protected boolean fetchNext()
-            {
+            protected boolean fetchNext() {
                 index--;
-                return index >= 0 && next( items[index] );
+                return index >= 0 && next(items[index]);
             }
         };
     }
 
     // Concating
-    public static LongIterator concat( LongIterator... longIterators )
-    {
-        return concat( Iterators.iterator( longIterators ) );
+    public static LongIterator concat(LongIterator... longIterators) {
+        return concat(Iterators.iterator(longIterators));
     }
 
-    public static LongIterator concat( Iterator<LongIterator> primitiveLongIterators )
-    {
-        return new PrimitiveLongConcatenatingIterator( primitiveLongIterators );
+    public static LongIterator concat(Iterator<LongIterator> primitiveLongIterators) {
+        return new PrimitiveLongConcatenatingIterator(primitiveLongIterators);
     }
 
-    public static LongIterator filter( LongIterator source, final LongPredicate filter )
-    {
-        return new AbstractPrimitiveLongFilteringIterator( source )
-        {
+    public static LongIterator filter(LongIterator source, final LongPredicate filter) {
+        return new AbstractPrimitiveLongFilteringIterator(source) {
             @Override
-            public boolean test( long item )
-            {
-                return filter.test( item );
+            public boolean test(long item) {
+                return filter.test(item);
             }
         };
     }
 
     // Range
-    public static LongIterator range( long start, long end )
-    {
-        return new PrimitiveLongRangeIterator( start, end );
+    public static LongIterator range(long start, long end) {
+        return new PrimitiveLongRangeIterator(start, end);
     }
 
     /**
@@ -150,97 +128,76 @@ public final class PrimitiveLongCollections
      * @param iterator of items.
      * @return index of found item or -1 if not found.
      */
-    public static int indexOf( LongIterator iterator, long item )
-    {
-        for ( int i = 0; iterator.hasNext(); i++ )
-        {
-            if ( item == iterator.next() )
-            {
+    public static int indexOf(LongIterator iterator, long item) {
+        for (int i = 0; iterator.hasNext(); i++) {
+            if (item == iterator.next()) {
                 return i;
             }
         }
         return -1;
     }
 
-    public static MutableLongSet asSet( Collection<Long> collection )
-    {
-        final MutableLongSet set = new LongHashSet( collection.size() );
-        for ( Long next : collection )
-        {
-            set.add( next );
+    public static MutableLongSet asSet(Collection<Long> collection) {
+        final MutableLongSet set = new LongHashSet(collection.size());
+        for (Long next : collection) {
+            set.add(next);
         }
         return set;
     }
 
-    public static MutableLongSet asSet( LongIterator iterator )
-    {
+    public static MutableLongSet asSet(LongIterator iterator) {
         MutableLongSet set = new LongHashSet();
-        while ( iterator.hasNext() )
-        {
-            set.add( iterator.next() );
+        while (iterator.hasNext()) {
+            set.add(iterator.next());
         }
         return set;
     }
 
-    public static int count( LongIterator iterator )
-    {
+    public static int count(LongIterator iterator) {
         int count = 0;
-        while ( iterator.hasNext() )
-        {   // Just loop through this
+        while (iterator.hasNext()) { // Just loop through this
             iterator.next();
             count++;
         }
         return count;
     }
 
-    public static long[] closingAsArray( PrimitiveLongResourceIterator iterator )
-    {
-        try ( iterator )
-        {
-            return asArray( iterator );
+    public static long[] closingAsArray(PrimitiveLongResourceIterator iterator) {
+        try (iterator) {
+            return asArray(iterator);
         }
     }
 
-    public static long[] asArray( LongIterator iterator )
-    {
+    public static long[] asArray(LongIterator iterator) {
         long[] array = new long[8];
         int i = 0;
-        for ( ; iterator.hasNext(); i++ )
-        {
-            if ( i >= array.length )
-            {
-                array = copyOf( array, i << 1 );
+        for (; iterator.hasNext(); i++) {
+            if (i >= array.length) {
+                array = copyOf(array, i << 1);
             }
             array[i] = iterator.next();
         }
 
-        if ( i < array.length )
-        {
-            array = copyOf( array, i );
+        if (i < array.length) {
+            array = copyOf(array, i);
         }
         return array;
     }
 
-    public static long[] asArray( Iterator<Long> iterator )
-    {
-        return asArray( toPrimitiveIterator( iterator ) );
+    public static long[] asArray(Iterator<Long> iterator) {
+        return asArray(toPrimitiveIterator(iterator));
     }
 
-    private static LongIterator toPrimitiveIterator( final Iterator<Long> iterator )
-    {
-        return new AbstractPrimitiveLongBaseIterator()
-        {
+    private static LongIterator toPrimitiveIterator(final Iterator<Long> iterator) {
+        return new AbstractPrimitiveLongBaseIterator() {
             @Override
-            protected boolean fetchNext()
-            {
-                if ( iterator.hasNext() )
-                {
+            protected boolean fetchNext() {
+                if (iterator.hasNext()) {
                     Long nextValue = iterator.next();
-                    if ( null == nextValue )
-                    {
-                        throw new IllegalArgumentException( "Cannot convert null Long to primitive long" );
+                    if (null == nextValue) {
+                        throw new IllegalArgumentException("Cannot convert null Long to primitive long");
                     }
-                    return next( nextValue );
+                    return next(nextValue);
                 }
                 return false;
             }
@@ -255,29 +212,22 @@ public final class PrimitiveLongCollections
      * @param resource {@link Resource} to close in {@link PrimitiveLongResourceIterator#close()}
      * @return Wrapped {@link LongIterator}.
      */
-    public static PrimitiveLongResourceIterator resourceIterator( final LongIterator iterator,
-            final Resource resource )
-    {
-        return new PrimitiveLongResourceIterator()
-        {
+    public static PrimitiveLongResourceIterator resourceIterator(final LongIterator iterator, final Resource resource) {
+        return new PrimitiveLongResourceIterator() {
             @Override
-            public void close()
-            {
-                if ( resource != null )
-                {
+            public void close() {
+                if (resource != null) {
                     resource.close();
                 }
             }
 
             @Override
-            public long next()
-            {
+            public long next() {
                 return iterator.next();
             }
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return iterator.hasNext();
             }
         };
@@ -289,9 +239,8 @@ public final class PrimitiveLongCollections
      * @param set {@link LongSet} set of primitive values.
      * @return a {@link Set} containing all items.
      */
-    public static Set<Long> toSet( LongSet set )
-    {
-        return toSet( set.longIterator() );
+    public static Set<Long> toSet(LongSet set) {
+        return toSet(set.longIterator());
     }
 
     /**
@@ -300,22 +249,18 @@ public final class PrimitiveLongCollections
      * @param iterator {@link LongIterator} to pull values from.
      * @return a {@link Set} containing all items.
      */
-    public static Set<Long> toSet( LongIterator iterator )
-    {
+    public static Set<Long> toSet(LongIterator iterator) {
         Set<Long> set = new HashSet<>();
-        while ( iterator.hasNext() )
-        {
-            addUnique( set, iterator.next() );
+        while (iterator.hasNext()) {
+            addUnique(set, iterator.next());
         }
         return set;
     }
 
-    private static <T, C extends Collection<T>> void addUnique( C collection, T item )
-    {
-        if ( !collection.add( item ) )
-        {
-            throw new IllegalStateException( "Encountered an already added item:" + item +
-                    " when adding items uniquely to a collection:" + collection );
+    private static <T, C extends Collection<T>> void addUnique(C collection, T item) {
+        if (!collection.add(item)) {
+            throw new IllegalStateException("Encountered an already added item:" + item
+                    + " when adding items uniquely to a collection:" + collection);
         }
     }
 
@@ -325,41 +270,34 @@ public final class PrimitiveLongCollections
      * @param values sorted array of long values.
      * @return the provided array if no duplicates were found, otherwise a new shorter array w/o duplicates.
      */
-    public static long[] deduplicate( long[] values )
-    {
-        if ( values.length < 2 )
-        {
+    public static long[] deduplicate(long[] values) {
+        if (values.length < 2) {
             return values;
         }
         long lastValue = values[0];
         int uniqueIndex = 1;
-        for ( int i = 1; i < values.length; i++ )
-        {
+        for (int i = 1; i < values.length; i++) {
             long currentValue = values[i];
-            if ( currentValue != lastValue )
-            {
+            if (currentValue != lastValue) {
                 values[uniqueIndex] = currentValue;
                 lastValue = currentValue;
                 uniqueIndex++;
             }
         }
-        return uniqueIndex < values.length ? Arrays.copyOf( values, uniqueIndex ) : values;
+        return uniqueIndex < values.length ? Arrays.copyOf(values, uniqueIndex) : values;
     }
 
     /**
      * Base iterator for simpler implementations of {@link LongIterator}s.
      */
-    public abstract static class AbstractPrimitiveLongBaseIterator implements LongIterator
-    {
+    public abstract static class AbstractPrimitiveLongBaseIterator implements LongIterator {
         private boolean hasNextDecided;
         private boolean hasNext;
         protected long next;
 
         @Override
-        public boolean hasNext()
-        {
-            if ( !hasNextDecided )
-            {
+        public boolean hasNext() {
+            if (!hasNextDecided) {
                 hasNext = fetchNext();
                 hasNextDecided = true;
             }
@@ -367,11 +305,9 @@ public final class PrimitiveLongCollections
         }
 
         @Override
-        public long next()
-        {
-            if ( !hasNext() )
-            {
-                throw new NoSuchElementException( "No more elements in " + this );
+        public long next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException("No more elements in " + this);
             }
             hasNextDecided = false;
             return next;
@@ -396,97 +332,78 @@ public final class PrimitiveLongCollections
          * </pre>
          * @param nextItem the next item found.
          */
-        protected boolean next( long nextItem )
-        {
+        protected boolean next(long nextItem) {
             next = nextItem;
             hasNext = true;
             return true;
         }
     }
 
-    public static class PrimitiveLongConcatenatingIterator extends AbstractPrimitiveLongBaseIterator
-    {
+    public static class PrimitiveLongConcatenatingIterator extends AbstractPrimitiveLongBaseIterator {
         private final Iterator<? extends LongIterator> iterators;
         private LongIterator currentIterator;
 
-        PrimitiveLongConcatenatingIterator( Iterator<? extends LongIterator> iterators )
-        {
+        PrimitiveLongConcatenatingIterator(Iterator<? extends LongIterator> iterators) {
             this.iterators = iterators;
         }
 
         @Override
-        protected boolean fetchNext()
-        {
-            if ( currentIterator == null || !currentIterator.hasNext() )
-            {
-                while ( iterators.hasNext() )
-                {
+        protected boolean fetchNext() {
+            if (currentIterator == null || !currentIterator.hasNext()) {
+                while (iterators.hasNext()) {
                     currentIterator = iterators.next();
-                    if ( currentIterator.hasNext() )
-                    {
+                    if (currentIterator.hasNext()) {
                         break;
                     }
                 }
             }
-            return (currentIterator != null && currentIterator.hasNext()) && next( currentIterator.next() );
+            return (currentIterator != null && currentIterator.hasNext()) && next(currentIterator.next());
         }
     }
 
     public abstract static class AbstractPrimitiveLongFilteringIterator extends AbstractPrimitiveLongBaseIterator
-            implements LongPredicate
-    {
+            implements LongPredicate {
         protected final LongIterator source;
 
-        AbstractPrimitiveLongFilteringIterator( LongIterator source )
-        {
+        AbstractPrimitiveLongFilteringIterator(LongIterator source) {
             this.source = source;
         }
 
         @Override
-        protected boolean fetchNext()
-        {
-            while ( source.hasNext() )
-            {
+        protected boolean fetchNext() {
+            while (source.hasNext()) {
                 long testItem = source.next();
-                if ( test( testItem ) )
-                {
-                    return next( testItem );
+                if (test(testItem)) {
+                    return next(testItem);
                 }
             }
             return false;
         }
     }
 
-    public static class PrimitiveLongRangeIterator extends AbstractPrimitiveLongBaseIterator
-    {
+    public static class PrimitiveLongRangeIterator extends AbstractPrimitiveLongBaseIterator {
         private long current;
         private final long end;
 
-        PrimitiveLongRangeIterator( long start, long end )
-        {
+        PrimitiveLongRangeIterator(long start, long end) {
             this.current = start;
             this.end = end;
         }
 
         @Override
-        protected boolean fetchNext()
-        {
-            try
-            {
-                return current <= end && next( current );
-            }
-            finally
-            {
+        protected boolean fetchNext() {
+            try {
+                return current <= end && next(current);
+            } finally {
                 current++;
             }
         }
     }
 
-    public static MutableLongSet mergeToSet( LongIterable a, LongIterable b )
-    {
-        final MutableLongSet set = new LongHashSet( a.size() + b.size() );
-        set.addAll( a );
-        set.addAll( b );
+    public static MutableLongSet mergeToSet(LongIterable a, LongIterable b) {
+        final MutableLongSet set = new LongHashSet(a.size() + b.size());
+        set.addAll(a);
+        set.addAll(b);
         return set;
     }
 }

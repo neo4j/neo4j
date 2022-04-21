@@ -21,10 +21,8 @@ package org.neo4j.bolt.v3.messaging.response;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class FatalFailureMessage extends FailureMessage
-{
-    public FatalFailureMessage( Status status, String message )
-    {
-        super( status, message );
+public class FatalFailureMessage extends FailureMessage {
+    public FatalFailureMessage(Status status, String message) {
+        super(status, message);
     }
 }

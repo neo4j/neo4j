@@ -21,18 +21,17 @@ package org.neo4j.cypher.internal.profiling;
 
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 
-public abstract class OperatorProfileEvent implements AutoCloseable, KernelReadTracer
-{
+public abstract class OperatorProfileEvent implements AutoCloseable, KernelReadTracer {
     @Override
     public abstract void dbHit();
 
-    public abstract void dbHits( long hits );
+    public abstract void dbHits(long hits);
 
     public abstract void row();
 
-    public abstract void row( boolean hasRow );
+    public abstract void row(boolean hasRow);
 
-    public abstract void rows( long n );
+    public abstract void rows(long n);
 
     // AutoCloseable
 
@@ -42,50 +41,42 @@ public abstract class OperatorProfileEvent implements AutoCloseable, KernelReadT
     // KernelReadTracer
 
     @Override
-    public void onNode( long nodeReference )
-    {
+    public void onNode(long nodeReference) {
         dbHit();
     }
 
     @Override
-    public void onAllNodesScan()
-    {
+    public void onAllNodesScan() {
         dbHit();
     }
 
     @Override
-    public void onLabelScan( int label )
-    {
+    public void onLabelScan(int label) {
         dbHit();
     }
 
     @Override
-    public void onRelationshipTypeScan( int type )
-    {
+    public void onRelationshipTypeScan(int type) {
         dbHit();
     }
 
     @Override
-    public void onRelationship( long relationshipReference )
-    {
+    public void onRelationship(long relationshipReference) {
         dbHit();
     }
 
     @Override
-    public void onProperty( int propertyKey )
-    {
+    public void onProperty(int propertyKey) {
         dbHit();
     }
 
     @Override
-    public void onIndexSeek()
-    {
+    public void onIndexSeek() {
         dbHit();
     }
 
     @Override
-    public void onHasLabel( int label )
-    {
+    public void onHasLabel(int label) {
         dbHit();
     }
 }

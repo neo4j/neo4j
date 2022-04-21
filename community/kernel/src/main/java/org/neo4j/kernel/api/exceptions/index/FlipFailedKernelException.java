@@ -22,15 +22,12 @@ package org.neo4j.kernel.api.exceptions.index;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public abstract class FlipFailedKernelException extends KernelException
-{
-    public FlipFailedKernelException( Throwable cause, String message, Object... parameters )
-    {
-        super( Status.Schema.IndexCreationFailed, cause, message, parameters );
+public abstract class FlipFailedKernelException extends KernelException {
+    public FlipFailedKernelException(Throwable cause, String message, Object... parameters) {
+        super(Status.Schema.IndexCreationFailed, cause, message, parameters);
     }
 
-    public FlipFailedKernelException( String message, Object... parameters )
-    {
-        super( Status.Schema.IndexCreationFailed, message, parameters );
+    public FlipFailedKernelException(String message, Object... parameters) {
+        super(Status.Schema.IndexCreationFailed, message, parameters);
     }
 }

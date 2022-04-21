@@ -19,80 +19,67 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import static java.lang.Math.toIntExact;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.impl.util.collection.Memory;
 import org.neo4j.kernel.impl.util.collection.MemoryAllocator;
 import org.neo4j.memory.MemoryTracker;
 
-import static java.lang.Math.toIntExact;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-class TestMemoryAllocator implements MemoryAllocator
-{
+class TestMemoryAllocator implements MemoryAllocator {
     @Override
-    public Memory allocate( long size, boolean zeroed, MemoryTracker memoryTracker )
-    {
-        final ByteBuffer buf = ByteBuffers.allocate( toIntExact( size ), INSTANCE );
-        if ( zeroed )
-        {
-            Arrays.fill( buf.array(), (byte) 0 );
+    public Memory allocate(long size, boolean zeroed, MemoryTracker memoryTracker) {
+        final ByteBuffer buf = ByteBuffers.allocate(toIntExact(size), INSTANCE);
+        if (zeroed) {
+            Arrays.fill(buf.array(), (byte) 0);
         }
-        return new MemoryImpl( buf, memoryTracker );
+        return new MemoryImpl(buf, memoryTracker);
     }
 
-    static class MemoryImpl implements Memory
-    {
+    static class MemoryImpl implements Memory {
         final ByteBuffer buf;
 
-        MemoryImpl( ByteBuffer buf, MemoryTracker memoryTracker )
-        {
+        MemoryImpl(ByteBuffer buf, MemoryTracker memoryTracker) {
             this.buf = buf;
-            memoryTracker.allocateNative( buf.capacity() );
+            memoryTracker.allocateNative(buf.capacity());
         }
 
         @Override
-        public long readLong( long offset )
-        {
-            return buf.getLong( toIntExact( offset ) );
+        public long readLong(long offset) {
+            return buf.getLong(toIntExact(offset));
         }
 
         @Override
-        public void writeLong( long offset, long value )
-        {
-            buf.putLong( toIntExact( offset ), value );
+        public void writeLong(long offset, long value) {
+            buf.putLong(toIntExact(offset), value);
         }
 
         @Override
-        public void clear()
-        {
-            Arrays.fill( buf.array(), (byte) 0 );
+        public void clear() {
+            Arrays.fill(buf.array(), (byte) 0);
         }
 
         @Override
-        public long size()
-        {
+        public long size() {
             return buf.capacity();
         }
 
         @Override
-        public void free( MemoryTracker memoryTracker )
-        {
-            memoryTracker.releaseNative( buf.capacity() );
+        public void free(MemoryTracker memoryTracker) {
+            memoryTracker.releaseNative(buf.capacity());
         }
 
         @Override
-        public Memory copy( MemoryTracker memoryTracker )
-        {
-            ByteBuffer copyBuf = ByteBuffer.wrap( Arrays.copyOf( buf.array(), buf.array().length ) );
-            return new MemoryImpl( copyBuf, memoryTracker );
+        public Memory copy(MemoryTracker memoryTracker) {
+            ByteBuffer copyBuf = ByteBuffer.wrap(Arrays.copyOf(buf.array(), buf.array().length));
+            return new MemoryImpl(copyBuf, memoryTracker);
         }
 
         @Override
-        public ByteBuffer asByteBuffer()
-        {
+        public ByteBuffer asByteBuffer() {
             return buf;
         }
     }

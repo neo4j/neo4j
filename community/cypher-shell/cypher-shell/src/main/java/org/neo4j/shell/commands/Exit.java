@@ -19,38 +19,35 @@
  */
 package org.neo4j.shell.commands;
 
-import java.util.List;
+import static org.neo4j.shell.Main.EXIT_SUCCESS;
 
+import java.util.List;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.printer.AnsiFormattedText;
 
-import static org.neo4j.shell.Main.EXIT_SUCCESS;
-
 /**
  * Command to exit the logger. Equivalent to hitting Ctrl-D.
  */
-public class Exit implements Command
-{
+public class Exit implements Command {
     @Override
-    public void execute( final List<String> args ) throws ExitException, CommandException
-    {
-        requireArgumentCount( args, 0 );
-        throw new ExitException( EXIT_SUCCESS );
+    public void execute(final List<String> args) throws ExitException, CommandException {
+        requireArgumentCount(args, 0);
+        throw new ExitException(EXIT_SUCCESS);
     }
 
-    public static class Factory implements Command.Factory
-    {
+    public static class Factory implements Command.Factory {
         @Override
-        public Metadata metadata()
-        {
-            var help = AnsiFormattedText.from( "Exit the logger. Corresponds to entering " ).bold( "CTRL-D" ).append( "." ).formattedString();
-            return new Metadata( ":exit", "Exit the logger", "", help, List.of( ":quit" ) );
+        public Metadata metadata() {
+            var help = AnsiFormattedText.from("Exit the logger. Corresponds to entering ")
+                    .bold("CTRL-D")
+                    .append(".")
+                    .formattedString();
+            return new Metadata(":exit", "Exit the logger", "", help, List.of(":quit"));
         }
 
         @Override
-        public Command executor( Arguments args )
-        {
+        public Command executor(Arguments args) {
             return new Exit();
         }
     }

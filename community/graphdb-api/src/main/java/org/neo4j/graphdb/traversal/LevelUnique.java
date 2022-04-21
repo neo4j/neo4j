@@ -23,34 +23,28 @@ import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-
 import org.neo4j.graphdb.Path;
 
-class LevelUnique extends AbstractUniquenessFilter
-{
+class LevelUnique extends AbstractUniquenessFilter {
     private final MutableIntObjectMap<MutableLongSet> idsPerLevel = new IntObjectHashMap<>();
 
-    LevelUnique( PrimitiveTypeFetcher type )
-    {
-        super( type );
+    LevelUnique(PrimitiveTypeFetcher type) {
+        super(type);
     }
 
     @Override
-    public boolean check( TraversalBranch branch )
-    {
+    public boolean check(TraversalBranch branch) {
         int level = branch.length();
-        MutableLongSet levelIds = idsPerLevel.get( level );
-        if ( levelIds == null )
-        {
+        MutableLongSet levelIds = idsPerLevel.get(level);
+        if (levelIds == null) {
             levelIds = new LongHashSet();
-            idsPerLevel.put( level, levelIds );
+            idsPerLevel.put(level, levelIds);
         }
-        return levelIds.add( type.getId( branch ) );
+        return levelIds.add(type.getId(branch));
     }
 
     @Override
-    public boolean checkFull( Path path )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public boolean checkFull(Path path) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 }

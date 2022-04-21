@@ -19,6 +19,8 @@
  */
 package org.neo4j.consistency.checker;
 
+import static org.neo4j.consistency.checker.RecordLoading.safeGetNodeLabels;
+
 import org.neo4j.common.EntityType;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -27,66 +29,58 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.consistency.checker.RecordLoading.safeGetNodeLabels;
-
-public class NodeIndexChecker extends IndexChecker<NodeRecord>
-{
-    NodeIndexChecker( CheckerContext context )
-    {
-        super( context, EntityType.NODE, "Node" );
+public class NodeIndexChecker extends IndexChecker<NodeRecord> {
+    NodeIndexChecker(CheckerContext context) {
+        super(context, EntityType.NODE, "Node");
     }
 
     @Override
-    CommonAbstractStore<NodeRecord,?> store()
-    {
+    CommonAbstractStore<NodeRecord, ?> store() {
         return context.neoStores.getNodeStore();
     }
 
     @Override
-    long highId()
-    {
+    long highId() {
         return context.highNodeId;
     }
 
     @Override
-    NodeRecord getEntity( StoreCursors storeCursors, long entityId )
-    {
-        return context.recordLoader.node( entityId, storeCursors );
+    NodeRecord getEntity(StoreCursors storeCursors, long entityId) {
+        return context.recordLoader.node(entityId, storeCursors);
     }
 
     @Override
-    long[] getEntityTokens( CheckerContext context, StoreCursors storeCursors, NodeRecord record, RecordReader<DynamicRecord> additionalReader )
-    {
-        return safeGetNodeLabels( context, storeCursors, record.getId(), record.getLabelField(), additionalReader );
+    long[] getEntityTokens(
+            CheckerContext context,
+            StoreCursors storeCursors,
+            NodeRecord record,
+            RecordReader<DynamicRecord> additionalReader) {
+        return safeGetNodeLabels(context, storeCursors, record.getId(), record.getLabelField(), additionalReader);
     }
 
     @Override
-    RecordReader<DynamicRecord> additionalEntityTokenReader( CursorContext cursorContext )
-    {
-        return new RecordReader<>( context.neoStores.getNodeStore().getDynamicLabelStore(), false, cursorContext );
+    RecordReader<DynamicRecord> additionalEntityTokenReader(CursorContext cursorContext) {
+        return new RecordReader<>(context.neoStores.getNodeStore().getDynamicLabelStore(), false, cursorContext);
     }
 
     @Override
-    void reportEntityNotInUse( ConsistencyReport.IndexConsistencyReport report, NodeRecord record )
-    {
-        report.nodeNotInUse( record );
+    void reportEntityNotInUse(ConsistencyReport.IndexConsistencyReport report, NodeRecord record) {
+        report.nodeNotInUse(record);
     }
 
     @Override
-    void reportIndexedIncorrectValues( ConsistencyReport.IndexConsistencyReport report, NodeRecord record, Object[] propertyValues )
-    {
-        report.nodeIndexedWithWrongValues( record, propertyValues );
+    void reportIndexedIncorrectValues(
+            ConsistencyReport.IndexConsistencyReport report, NodeRecord record, Object[] propertyValues) {
+        report.nodeIndexedWithWrongValues(record, propertyValues);
     }
 
     @Override
-    void reportIndexedWhenShouldNot( ConsistencyReport.IndexConsistencyReport report, NodeRecord record )
-    {
-        report.nodeIndexedWhenShouldNot( record );
+    void reportIndexedWhenShouldNot(ConsistencyReport.IndexConsistencyReport report, NodeRecord record) {
+        report.nodeIndexedWhenShouldNot(record);
     }
 
     @Override
-    ConsistencyReport.PrimitiveConsistencyReport getReport( NodeRecord cursor, ConsistencyReport.Reporter reporter )
-    {
-        return reporter.forNode( cursor );
+    ConsistencyReport.PrimitiveConsistencyReport getReport(NodeRecord cursor, ConsistencyReport.Reporter reporter) {
+        return reporter.forNode(cursor);
     }
 }

@@ -19,17 +19,15 @@
  */
 package org.neo4j.test.extension.guard;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.junit.Ignore;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class IgnoreNewTestWithOldAnnotation
-{
+class IgnoreNewTestWithOldAnnotation {
     @Ignore
     @Test
-    void anything()
-    {
-        assertEquals( 0L, 0L );
+    void anything() {
+        assertEquals(0L, 0L);
     }
 }

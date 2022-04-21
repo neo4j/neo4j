@@ -19,43 +19,35 @@
  */
 package org.neo4j.graphalgo.impl.util;
 
+import static org.neo4j.graphdb.Direction.OUTGOING;
+
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 
-import static org.neo4j.graphdb.Direction.OUTGOING;
-
-public class DijkstraSelectorFactory extends BestFirstSelectorFactory<Double, Double>
-{
+public class DijkstraSelectorFactory extends BestFirstSelectorFactory<Double, Double> {
     private final CostEvaluator<Double> evaluator;
 
-    public DijkstraSelectorFactory( PathInterest<Double> interest, CostEvaluator<Double> evaluator )
-    {
-        super( interest );
+    public DijkstraSelectorFactory(PathInterest<Double> interest, CostEvaluator<Double> evaluator) {
+        super(interest);
         this.evaluator = evaluator;
     }
 
     @Override
-    protected Double calculateValue( TraversalBranch next )
-    {
-        return next.length() == 0 ? 0d : evaluator.getCost(
-                next.lastRelationship(), OUTGOING );
+    protected Double calculateValue(TraversalBranch next) {
+        return next.length() == 0 ? 0d : evaluator.getCost(next.lastRelationship(), OUTGOING);
     }
 
     @Override
-    protected Double addPriority( TraversalBranch source,
-            Double currentAggregatedValue, Double value )
-    {
-        return withDefault( currentAggregatedValue, 0d ) + withDefault( value, 0d );
+    protected Double addPriority(TraversalBranch source, Double currentAggregatedValue, Double value) {
+        return withDefault(currentAggregatedValue, 0d) + withDefault(value, 0d);
     }
 
-    private static <T> T withDefault( T valueOrNull, T valueIfNull )
-    {
+    private static <T> T withDefault(T valueOrNull, T valueIfNull) {
         return valueOrNull != null ? valueOrNull : valueIfNull;
     }
 
     @Override
-    protected Double getStartData()
-    {
+    protected Double getStartData() {
         return 0d;
     }
 }

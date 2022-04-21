@@ -19,50 +19,45 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
-
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-class GroupCacheTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
+
+class GroupCacheTest {
     @Test
-    void shouldHandleSingleByteCount()
-    {
+    void shouldHandleSingleByteCount() {
         // given
         int max = 256;
-        GroupCache cache = GroupCache.select( NumberArrayFactories.HEAP, 100, max, INSTANCE );
+        GroupCache cache = GroupCache.select(NumberArrayFactories.HEAP, 100, max, INSTANCE);
 
         // when
-        assertSetAndGet( cache, 10, 45 );
-        assertSetAndGet( cache, 100, 145 );
-        assertSetAndGet( cache, 1000, 245 );
+        assertSetAndGet(cache, 10, 45);
+        assertSetAndGet(cache, 100, 145);
+        assertSetAndGet(cache, 1000, 245);
 
         // then
-        assertThrows(ArithmeticException.class, () -> cache.set( 10000, 345 ) );
+        assertThrows(ArithmeticException.class, () -> cache.set(10000, 345));
     }
 
     @Test
-    void shouldSwitchToTwoByteVersionBeyondSingleByteGroupIds()
-    {
+    void shouldSwitchToTwoByteVersionBeyondSingleByteGroupIds() {
         // given
         int max = 257;
-        GroupCache cache = GroupCache.select( NumberArrayFactories.HEAP, 100, max, INSTANCE );
+        GroupCache cache = GroupCache.select(NumberArrayFactories.HEAP, 100, max, INSTANCE);
 
         // when
-        assertSetAndGet( cache, 10, 123 );
-        assertSetAndGet( cache, 100, 1234 );
-        assertSetAndGet( cache, 1000, 12345 );
-        assertSetAndGet( cache, 10000, 0xFFFF );
+        assertSetAndGet(cache, 10, 123);
+        assertSetAndGet(cache, 100, 1234);
+        assertSetAndGet(cache, 1000, 12345);
+        assertSetAndGet(cache, 10000, 0xFFFF);
 
         // then
-        assertThrows(ArithmeticException.class, () -> cache.set( 100000, 123456 ) );
+        assertThrows(ArithmeticException.class, () -> cache.set(100000, 123456));
     }
 
-    private static void assertSetAndGet( GroupCache cache, long nodeId, int groupId )
-    {
-        cache.set( nodeId, groupId );
+    private static void assertSetAndGet(GroupCache cache, long nodeId, int groupId) {
+        cache.set(nodeId, groupId);
     }
 }

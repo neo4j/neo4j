@@ -19,18 +19,16 @@
  */
 package org.neo4j.graphdb.schema;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.StopwordAnalyzerBase;
+import static java.util.Objects.requireNonNull;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.Service;
 import org.neo4j.service.NamedService;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * This is the base-class for all service-loadable factory classes, that build the Lucene Analyzer instances that are available to the fulltext schema index.
@@ -57,8 +55,7 @@ import static java.util.Objects.requireNonNull;
  */
 @Service
 @PublicApi
-public abstract class AnalyzerProvider implements NamedService
-{
+public abstract class AnalyzerProvider implements NamedService {
     private final String name;
 
     /**
@@ -70,14 +67,12 @@ public abstract class AnalyzerProvider implements NamedService
      *
      * @param name The name of this analyzer provider, which will be used for analyzer settings values for identifying which implementation to use.
      */
-    protected AnalyzerProvider( String name )
-    {
-        this.name = requireNonNull( name );
+    protected AnalyzerProvider(String name) {
+        this.name = requireNonNull(name);
     }
 
     @Override
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
@@ -89,18 +84,15 @@ public abstract class AnalyzerProvider implements NamedService
     /**
      * @return A description of this analyzer.
      */
-    public String description()
-    {
+    public String description() {
         return "";
     }
 
-    public List<String> stopwords()
-    {
+    public List<String> stopwords() {
         Analyzer analyzer = createAnalyzer();
-        if ( analyzer instanceof StopwordAnalyzerBase stopwordAnalyzer )
-        {
+        if (analyzer instanceof StopwordAnalyzerBase stopwordAnalyzer) {
             CharArraySet stopwords = stopwordAnalyzer.getStopwordSet();
-            return stopwords.stream().map( obj -> new String( (char[]) obj ) ).collect( Collectors.toList() );
+            return stopwords.stream().map(obj -> new String((char[]) obj)).collect(Collectors.toList());
         }
         return List.of();
     }
@@ -114,13 +106,12 @@ public abstract class AnalyzerProvider implements NamedService
      * @param stopSet The stop-word set to clean up.
      * @return the cleaned-up stop-word set.
      */
-    public static CharArraySet cleanStopWordSet( CharArraySet stopSet )
-    {
-        CharArraySet result = new CharArraySet( stopSet.size(), false );
+    public static CharArraySet cleanStopWordSet(CharArraySet stopSet) {
+        CharArraySet result = new CharArraySet(stopSet.size(), false);
         stopSet.stream()
-                .map( cs -> new String( (char[]) cs ).trim() )
-                .filter( s -> !(s.isBlank() || s.contains( "#" ) || s.contains( " " )) )
-                .forEach( result::add );
+                .map(cs -> new String((char[]) cs).trim())
+                .filter(s -> !(s.isBlank() || s.contains("#") || s.contains(" ")))
+                .forEach(result::add);
         return result;
     }
 }

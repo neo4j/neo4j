@@ -19,33 +19,31 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class GenerationTest
-{
+import org.junit.jupiter.api.Test;
+
+class GenerationTest {
     @Test
-    void shouldSetLowGenerations()
-    {
-        shouldComposeAndDecomposeGeneration( GenerationSafePointer.MIN_GENERATION, GenerationSafePointer.MIN_GENERATION + 1 );
+    void shouldSetLowGenerations() {
+        shouldComposeAndDecomposeGeneration(
+                GenerationSafePointer.MIN_GENERATION, GenerationSafePointer.MIN_GENERATION + 1);
     }
 
     @Test
-    void shouldSetHighGenerations()
-    {
-        shouldComposeAndDecomposeGeneration( GenerationSafePointer.MAX_GENERATION - 1, GenerationSafePointer.MAX_GENERATION );
+    void shouldSetHighGenerations() {
+        shouldComposeAndDecomposeGeneration(
+                GenerationSafePointer.MAX_GENERATION - 1, GenerationSafePointer.MAX_GENERATION);
     }
 
-    private static void shouldComposeAndDecomposeGeneration( long stable, long unstable )
-    {
+    private static void shouldComposeAndDecomposeGeneration(long stable, long unstable) {
         // WHEN
-        long generation = Generation.generation( stable, unstable );
-        long readStable = Generation.stableGeneration( generation );
-        long readUnstable = Generation.unstableGeneration( generation );
+        long generation = Generation.generation(stable, unstable);
+        long readStable = Generation.stableGeneration(generation);
+        long readUnstable = Generation.unstableGeneration(generation);
 
         // THEN
-        assertEquals( stable, readStable );
-        assertEquals( unstable, readUnstable );
+        assertEquals(stable, readStable);
+        assertEquals(unstable, readUnstable);
     }
 }

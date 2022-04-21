@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.stats;
 
-public interface TransactionLogCounters
-{
+public interface TransactionLogCounters {
     /**
      * Total number of bytes appended to transaction logs as result of applying transactions
      * @return total number of appended bytes

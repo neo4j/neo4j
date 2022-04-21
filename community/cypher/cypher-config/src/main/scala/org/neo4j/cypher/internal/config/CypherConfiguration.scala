@@ -44,20 +44,22 @@ object CypherConfiguration {
     val divergenceThreshold = config.get(GraphDatabaseSettings.query_statistics_divergence_threshold).doubleValue()
     val targetThreshold = config.get(GraphDatabaseInternalSettings.query_statistics_divergence_target).doubleValue()
     val minReplanInterval = config.get(GraphDatabaseSettings.cypher_min_replan_interval).toMillis.longValue()
-    val targetReplanInterval = config.get(GraphDatabaseInternalSettings.cypher_replan_interval_target).toMillis.longValue()
+    val targetReplanInterval =
+      config.get(GraphDatabaseInternalSettings.cypher_replan_interval_target).toMillis.longValue()
     val divergenceAlgorithm = config.get(GraphDatabaseInternalSettings.cypher_replan_algorithm)
     StatsDivergenceCalculatorConfig(
       divergenceAlgorithm,
       divergenceThreshold,
       targetThreshold,
       minReplanInterval,
-      targetReplanInterval)
+      targetReplanInterval
+    )
   }
 }
 
 class CypherConfiguration private (val config: Config) {
 
-  //static configurations
+  // static configurations
   val version: CypherVersion = CypherVersion.fromConfig(config)
   val planner: CypherPlannerOption = CypherPlannerOption.fromConfig(config)
   val runtime: CypherRuntimeOption = CypherRuntimeOption.fromConfig(config)
@@ -67,8 +69,12 @@ class CypherConfiguration private (val config: Config) {
   val useErrorsOverWarnings: Boolean = config.get(GraphDatabaseSettings.cypher_hints_error)
   val idpMaxTableSize: Int = config.get(GraphDatabaseInternalSettings.cypher_idp_solver_table_threshold).toInt
   val idpIterationDuration: Long = config.get(GraphDatabaseInternalSettings.cypher_idp_solver_duration_threshold).toLong
-  val errorIfShortestPathFallbackUsedAtRuntime: Boolean = config.get(GraphDatabaseSettings.forbid_exhaustive_shortestpath)
-  val errorIfShortestPathHasCommonNodesAtRuntime: Boolean = config.get(GraphDatabaseSettings.forbid_shortestpath_common_nodes)
+
+  val errorIfShortestPathFallbackUsedAtRuntime: Boolean =
+    config.get(GraphDatabaseSettings.forbid_exhaustive_shortestpath)
+
+  val errorIfShortestPathHasCommonNodesAtRuntime: Boolean =
+    config.get(GraphDatabaseSettings.forbid_shortestpath_common_nodes)
   val legacyCsvQuoteEscaping: Boolean = config.get(GraphDatabaseSettings.csv_legacy_quote_escaping)
   val csvBufferSize: Int = config.get(GraphDatabaseSettings.csv_buffer_size).intValue()
   val expressionEngineOption: CypherExpressionEngineOption = CypherExpressionEngineOption.fromConfig(config)
@@ -79,22 +85,41 @@ class CypherConfiguration private (val config: Config) {
   val schedulerTracingFile: File = config.get(GraphDatabaseInternalSettings.pipelined_scheduler_trace_filename).toFile
   val recompilationLimit: Int = config.get(GraphDatabaseInternalSettings.cypher_expression_recompilation_limit)
   val operatorEngine: CypherOperatorEngineOption = CypherOperatorEngineOption.fromConfig(config)
-  val interpretedPipesFallback: CypherInterpretedPipesFallbackOption = CypherInterpretedPipesFallbackOption.fromConfig(config)
-  val operatorFusionOverPipelineLimit: Int = config.get(GraphDatabaseInternalSettings.cypher_pipelined_operator_fusion_over_pipeline_limit).intValue()
+
+  val interpretedPipesFallback: CypherInterpretedPipesFallbackOption =
+    CypherInterpretedPipesFallbackOption.fromConfig(config)
+
+  val operatorFusionOverPipelineLimit: Int =
+    config.get(GraphDatabaseInternalSettings.cypher_pipelined_operator_fusion_over_pipeline_limit).intValue()
   val memoryTrackingController: MemoryTrackingController = new ConfigMemoryTrackingController(config)
   val enableMonitors: Boolean = config.get(GraphDatabaseInternalSettings.cypher_enable_runtime_monitors)
-  val disallowSplittingTop: Boolean = config.get(GraphDatabaseInternalSettings.cypher_splitting_top_behavior) == GraphDatabaseInternalSettings.SplittingTopBehavior.DISALLOW
-  val enableExtraSemanticFeatures: Set[String] = config.get(GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features).asScala.toSet
+
+  val disallowSplittingTop: Boolean = config.get(
+    GraphDatabaseInternalSettings.cypher_splitting_top_behavior
+  ) == GraphDatabaseInternalSettings.SplittingTopBehavior.DISALLOW
+
+  val enableExtraSemanticFeatures: Set[String] =
+    config.get(GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features).asScala.toSet
   val planningTextIndexesEnabled: Boolean = config.get(GraphDatabaseInternalSettings.planning_text_indexes_enabled)
   val planningRangeIndexesEnabled: Boolean = config.get(GraphDatabaseInternalSettings.planning_range_indexes_enabled)
   val planningPointIndexesEnabled: Boolean = config.get(GraphDatabaseInternalSettings.planning_point_indexes_enabled)
-  val varExpandRelationshipIdSetThreshold = config.get(GraphDatabaseInternalSettings.var_expand_relationship_id_set_threshold)
 
-  //dynamic configurations
+  val varExpandRelationshipIdSetThreshold =
+    config.get(GraphDatabaseInternalSettings.var_expand_relationship_id_set_threshold)
+
+  // dynamic configurations
   private var _obfuscateLiterals: Boolean = config.get(GraphDatabaseSettings.log_queries_obfuscate_literals)
   private var _renderPlanDescription: Boolean = config.get(GraphDatabaseSettings.cypher_render_plan_descriptions)
-  config.addListener[java.lang.Boolean](GraphDatabaseSettings.log_queries_obfuscate_literals, (_: java.lang.Boolean, newValue: java.lang.Boolean) => _obfuscateLiterals = newValue)
-  config.addListener[java.lang.Boolean](GraphDatabaseSettings.cypher_render_plan_descriptions, (_: java.lang.Boolean, newValue: java.lang.Boolean) => _renderPlanDescription = newValue)
+
+  config.addListener[java.lang.Boolean](
+    GraphDatabaseSettings.log_queries_obfuscate_literals,
+    (_: java.lang.Boolean, newValue: java.lang.Boolean) => _obfuscateLiterals = newValue
+  )
+
+  config.addListener[java.lang.Boolean](
+    GraphDatabaseSettings.cypher_render_plan_descriptions,
+    (_: java.lang.Boolean, newValue: java.lang.Boolean) => _renderPlanDescription = newValue
+  )
 
   def obfuscateLiterals: Boolean = _obfuscateLiterals
   def renderPlanDescription: Boolean = _renderPlanDescription

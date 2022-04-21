@@ -23,8 +23,7 @@ package org.neo4j.graphdb.traversal;
  * Provides a context for {@link TraversalBranch}es which they need to
  * move further and report their progress.
  */
-public interface TraversalContext extends TraversalMetadata
-{
+public interface TraversalContext extends TraversalMetadata {
     /**
      * Reports that one more relationship has been traversed in this
      * traversal.
@@ -44,7 +43,7 @@ public interface TraversalContext extends TraversalMetadata
      * @return {@code true} if the branch is considered unique and is
      * allowed to progress in this traversal.
      */
-    boolean isUniqueFirst( TraversalBranch branch );
+    boolean isUniqueFirst(TraversalBranch branch);
 
     /**
      * Used for all except branches to check adherence to the traversal
@@ -54,7 +53,7 @@ public interface TraversalContext extends TraversalMetadata
      * @return {@code true} if the branch is considered unique and is
      * allowed to progress in this traversal.
      */
-    boolean isUnique( TraversalBranch branch );
+    boolean isUnique(TraversalBranch branch);
 
     /**
      * Evaluates a {@link TraversalBranch} whether or not to include it in the
@@ -65,5 +64,5 @@ public interface TraversalContext extends TraversalMetadata
      * @param <STATE> the type of the state object.
      * @return an {@link Evaluation} of the branch in this traversal.
      */
-    <STATE> Evaluation evaluate( TraversalBranch branch, BranchState<STATE> state );
+    <STATE> Evaluation evaluate(TraversalBranch branch, BranchState<STATE> state);
 }

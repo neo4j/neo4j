@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.recovery;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -49,108 +51,95 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-
 @EphemeralTestDirectoryExtension
-class KernelRecoveryTest
-{
+class KernelRecoveryTest {
     @Inject
     private EphemeralFileSystemAbstraction fileSystem;
+
     @Inject
     private TestDirectory testDirectory;
+
     private DatabaseManagementService managementService;
 
     @AfterEach
-    void cleanUp()
-    {
-        if ( managementService != null )
-        {
+    void cleanUp() {
+        if (managementService != null) {
             managementService.shutdown();
         }
     }
 
     @Test
-    void shouldHandleWritesProperlyAfterRecovery() throws Exception
-    {
+    void shouldHandleWritesProperlyAfterRecovery() throws Exception {
         // Given
-        GraphDatabaseService db = newDB( fileSystem, "main" );
+        GraphDatabaseService db = newDB(fileSystem, "main");
         // We don't want to include any transactions that may have run on start-up since they
         // will have run on start-up of rebuilt db already.
-        long txIdToExtractFrom = getLastClosedTransactionId( (GraphDatabaseAPI) db ) + 1;
-        long node1 = createNode( db, "k", "v1" );
+        long txIdToExtractFrom = getLastClosedTransactionId((GraphDatabaseAPI) db) + 1;
+        long node1 = createNode(db, "k", "v1");
 
         // And given the power goes out
         List<TransactionRepresentation> transactions = new ArrayList<>();
         long node2;
-        try ( EphemeralFileSystemAbstraction crashedFs = fileSystem.snapshot() )
-        {
+        try (EphemeralFileSystemAbstraction crashedFs = fileSystem.snapshot()) {
             managementService.shutdown();
-            db = newDB( crashedFs, "main" );
-            node2 = createNode( db, "k", "v2" );
-            extractTransactions( (GraphDatabaseAPI) db, transactions, txIdToExtractFrom );
+            db = newDB(crashedFs, "main");
+            node2 = createNode(db, "k", "v2");
+            extractTransactions((GraphDatabaseAPI) db, transactions, txIdToExtractFrom);
             managementService.shutdown();
         }
 
         // Then both those nodes should be there, i.e. they are properly there in the log
-        GraphDatabaseService rebuilt = newDB( fileSystem, "rebuilt" );
-        applyTransactions( transactions, (GraphDatabaseAPI) rebuilt );
-        try ( Transaction tx = rebuilt.beginTx() )
-        {
-            assertEquals( "v1", tx.getNodeById( node1 ).getProperty( "k" ) );
-            assertEquals( "v2", tx.getNodeById( node2 ).getProperty( "k" ) );
+        GraphDatabaseService rebuilt = newDB(fileSystem, "rebuilt");
+        applyTransactions(transactions, (GraphDatabaseAPI) rebuilt);
+        try (Transaction tx = rebuilt.beginTx()) {
+            assertEquals("v1", tx.getNodeById(node1).getProperty("k"));
+            assertEquals("v2", tx.getNodeById(node2).getProperty("k"));
             tx.commit();
         }
     }
 
-    private static void applyTransactions( List<TransactionRepresentation> transactions, GraphDatabaseAPI rebuilt ) throws TransactionFailureException
-    {
+    private static void applyTransactions(List<TransactionRepresentation> transactions, GraphDatabaseAPI rebuilt)
+            throws TransactionFailureException {
         DependencyResolver dependencyResolver = rebuilt.getDependencyResolver();
-        StorageEngine storageEngine = dependencyResolver.resolveDependency( StorageEngine.class );
-        TransactionCommitProcess commitProcess = dependencyResolver.resolveDependency( TransactionCommitProcess.class );
-        try ( var storeCursors = storageEngine.createStorageCursors( NULL_CONTEXT ) )
-        {
-            for ( TransactionRepresentation transaction : transactions )
-            {
-                commitProcess.commit( new TransactionToApply( transaction, NULL_CONTEXT, storeCursors ), CommitEvent.NULL,
-                        TransactionApplicationMode.EXTERNAL );
+        StorageEngine storageEngine = dependencyResolver.resolveDependency(StorageEngine.class);
+        TransactionCommitProcess commitProcess = dependencyResolver.resolveDependency(TransactionCommitProcess.class);
+        try (var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
+            for (TransactionRepresentation transaction : transactions) {
+                commitProcess.commit(
+                        new TransactionToApply(transaction, NULL_CONTEXT, storeCursors),
+                        CommitEvent.NULL,
+                        TransactionApplicationMode.EXTERNAL);
             }
         }
     }
 
-    private static void extractTransactions( GraphDatabaseAPI db, List<TransactionRepresentation> transactions, long txIdToStartFrom )
-            throws java.io.IOException
-    {
-        LogicalTransactionStore txStore = db.getDependencyResolver().resolveDependency( LogicalTransactionStore.class );
-        try ( TransactionCursor cursor = txStore.getTransactions( txIdToStartFrom ) )
-        {
-            cursor.forAll( tx -> transactions.add( tx.getTransactionRepresentation() ) );
+    private static void extractTransactions(
+            GraphDatabaseAPI db, List<TransactionRepresentation> transactions, long txIdToStartFrom)
+            throws java.io.IOException {
+        LogicalTransactionStore txStore = db.getDependencyResolver().resolveDependency(LogicalTransactionStore.class);
+        try (TransactionCursor cursor = txStore.getTransactions(txIdToStartFrom)) {
+            cursor.forAll(tx -> transactions.add(tx.getTransactionRepresentation()));
         }
     }
 
-    private static long getLastClosedTransactionId( GraphDatabaseAPI database )
-    {
-        MetadataProvider metaDataStore = database.getDependencyResolver().resolveDependency( MetadataProvider.class );
+    private static long getLastClosedTransactionId(GraphDatabaseAPI database) {
+        MetadataProvider metaDataStore = database.getDependencyResolver().resolveDependency(MetadataProvider.class);
         return metaDataStore.getLastClosedTransaction().transactionId();
     }
 
-    private GraphDatabaseService newDB( FileSystemAbstraction fs, String name )
-    {
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.directory( name ) )
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+    private GraphDatabaseService newDB(FileSystemAbstraction fs, String name) {
+        managementService = new TestDatabaseManagementServiceBuilder(testDirectory.directory(name))
+                .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
                 .impermanent()
                 .build();
-        return managementService.database( DEFAULT_DATABASE_NAME );
+        return managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    private static long createNode( GraphDatabaseService db, String key, Object value )
-    {
+    private static long createNode(GraphDatabaseService db, String key, Object value) {
         long nodeId;
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode();
-            node.setProperty( key, value );
+            node.setProperty(key, value);
             nodeId = node.getId();
             tx.commit();
         }

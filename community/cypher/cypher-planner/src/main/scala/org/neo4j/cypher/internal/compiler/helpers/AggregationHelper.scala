@@ -29,8 +29,9 @@ import org.neo4j.cypher.internal.expressions.Variable
 import scala.annotation.tailrec
 
 object AggregationHelper {
+
   private def check[T](aggregationFunction: FunctionInvocation, result: Expression => T, otherResult: T): T = {
-    //.head works since min and max (the only functions we care about) always have one argument
+    // .head works since min and max (the only functions we care about) always have one argument
     aggregationFunction.args.head match {
       case prop: Property =>
         result(prop)
@@ -41,7 +42,12 @@ object AggregationHelper {
     }
   }
 
-  def checkMinOrMax[T](aggregation: Expression, minResult: Expression => T, maxResult: Expression => T, otherResult: T): T = {
+  def checkMinOrMax[T](
+    aggregation: Expression,
+    minResult: Expression => T,
+    maxResult: Expression => T,
+    otherResult: T
+  ): T = {
     aggregation match {
       case f: FunctionInvocation =>
         f.name match {
@@ -55,7 +61,10 @@ object AggregationHelper {
     }
   }
 
-  def extractProperties(aggregationExpressions: Map[String, Expression], renamings: Map[String, Expression]): Set[PropertyAccess] = {
+  def extractProperties(
+    aggregationExpressions: Map[String, Expression],
+    renamings: Map[String, Expression]
+  ): Set[PropertyAccess] = {
     aggregationExpressions.values.flatMap {
       extractPropertyForValue(_, renamings).map {
         case Property(Variable(varName), PropertyKeyName(propName)) => PropertyAccess(varName, propName)
@@ -64,12 +73,13 @@ object AggregationHelper {
     }.toSet
   }
 
-  def extractPropertyForValue(expression: Expression,
-                              renamings: Map[String, Expression]): Option[Property] = {
+  def extractPropertyForValue(expression: Expression, renamings: Map[String, Expression]): Option[Property] = {
     @tailrec
-    def inner(expression: Expression,
-              renamings: Map[String, Expression],
-              property: Option[Property] = None): Option[Property] = {
+    def inner(
+      expression: Expression,
+      renamings: Map[String, Expression],
+      property: Option[Property] = None
+    ): Option[Property] = {
       expression match {
         case FunctionInvocation(_, _, _, Seq(expr, _*)) =>
           // Cannot handle a function inside an aggregation
@@ -77,12 +87,12 @@ object AggregationHelper {
             None
           else
             inner(expr, renamings)
-        case prop@Property(Variable(varName), _) =>
+        case prop @ Property(Variable(varName), _) =>
           if (renamings.contains(varName))
             inner(renamings(varName), renamings, Some(prop))
           else
             Some(prop)
-        case variable@Variable(varName) =>
+        case variable @ Variable(varName) =>
           if (renamings.contains(varName) && renamings(varName) != variable)
             inner(renamings(varName), renamings)
           else if (property.nonEmpty)

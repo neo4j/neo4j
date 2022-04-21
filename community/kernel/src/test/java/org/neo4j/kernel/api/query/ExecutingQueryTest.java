@@ -19,7 +19,15 @@
  */
 package org.neo4j.kernel.api.query;
 
-import org.junit.jupiter.api.Test;
+import static java.util.Collections.emptyList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.kernel.database.DatabaseIdFactory.from;
+import static org.neo4j.lock.LockType.SHARED;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 import java.time.ZonedDateTime;
 import java.util.Collections;
@@ -27,7 +35,7 @@ import java.util.OptionalLong;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
@@ -41,370 +49,369 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 import org.neo4j.values.virtual.MapValue;
 
-import static java.util.Collections.emptyList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.kernel.database.DatabaseIdFactory.from;
-import static org.neo4j.lock.LockType.SHARED;
-import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
-
-class ExecutingQueryTest
-{
-    private final FakeClock clock = Clocks.fakeClock( ZonedDateTime.parse( "2016-12-03T15:10:00+01:00" ) );
-    private final FakeCpuClock cpuClock = new FakeCpuClock().add( randomLong( 0x1_0000_0000L ) );
+class ExecutingQueryTest {
+    private final FakeClock clock = Clocks.fakeClock(ZonedDateTime.parse("2016-12-03T15:10:00+01:00"));
+    private final FakeCpuClock cpuClock = new FakeCpuClock().add(randomLong(0x1_0000_0000L));
     private final PageCursorCountersStub page = new PageCursorCountersStub();
-    private final ExecutingQuery query = createExecutingQuery( 1, "hello world", page, clock, cpuClock );
+    private final ExecutingQuery query = createExecutingQuery(1, "hello world", page, clock, cpuClock);
     private long lockCount;
 
     @Test
-    void shouldReportElapsedTime()
-    {
+    void shouldReportElapsedTime() {
         // when
-        clock.forward( 10, TimeUnit.MILLISECONDS );
+        clock.forward(10, TimeUnit.MILLISECONDS);
         long elapsedTime = query.snapshot().elapsedTimeMicros();
 
         // then
-        assertEquals( 10_000, elapsedTime );
+        assertEquals(10_000, elapsedTime);
     }
 
     @Test
-    void shouldTransitionBetweenStates()
-    {
+    void shouldTransitionBetweenStates() {
         // initial
-        assertEquals( "parsing", query.snapshot().status() );
+        assertEquals("parsing", query.snapshot().status());
 
         // when
-        query.onObfuscatorReady( null );
+        query.onObfuscatorReady(null);
 
         // then
-        assertEquals( "planning", query.snapshot().status() );
+        assertEquals("planning", query.snapshot().status());
 
         // when
-        query.onCompilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), null );
+        query.onCompilationCompleted(new CompilerInfo("the-planner", "the-runtime", emptyList()), null);
 
         // then
-        assertEquals( "planned", query.snapshot().status() );
+        assertEquals("planned", query.snapshot().status());
 
         // when
-        query.onExecutionStarted( new FakeMemoryTracker() );
+        query.onExecutionStarted(new FakeMemoryTracker());
 
         // then
-        assertEquals( "running", query.snapshot().status() );
+        assertEquals("running", query.snapshot().status());
 
         // when
-        try ( LockWaitEvent ignored = lock( "NODE", 17 ) )
-        {
+        try (LockWaitEvent ignored = lock("NODE", 17)) {
             // then
-            assertEquals( "waiting", query.snapshot().status() );
+            assertEquals("waiting", query.snapshot().status());
         }
         // then
-        assertEquals( "running", query.snapshot().status() );
+        assertEquals("running", query.snapshot().status());
     }
 
     @Test
-    void shouldReportPlanningTime()
-    {
+    void shouldReportPlanningTime() {
         // when
-        clock.forward( 124, TimeUnit.MICROSECONDS );
+        clock.forward(124, TimeUnit.MICROSECONDS);
 
         // then
-        query.onObfuscatorReady( null );
+        query.onObfuscatorReady(null);
         QuerySnapshot snapshot = query.snapshot();
-        assertEquals( snapshot.compilationTimeMicros(), snapshot.elapsedTimeMicros() );
+        assertEquals(snapshot.compilationTimeMicros(), snapshot.elapsedTimeMicros());
 
         // when
-        clock.forward( 16, TimeUnit.MICROSECONDS );
-        query.onCompilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), null );
-        clock.forward( 200, TimeUnit.MICROSECONDS );
+        clock.forward(16, TimeUnit.MICROSECONDS);
+        query.onCompilationCompleted(new CompilerInfo("the-planner", "the-runtime", emptyList()), null);
+        clock.forward(200, TimeUnit.MICROSECONDS);
 
         // then
         snapshot = query.snapshot();
-        assertEquals( 140, snapshot.compilationTimeMicros() );
-        assertEquals( 340, snapshot.elapsedTimeMicros() );
+        assertEquals(140, snapshot.compilationTimeMicros());
+        assertEquals(340, snapshot.elapsedTimeMicros());
     }
 
     @Test
-    void shouldReportWaitTime()
-    {
+    void shouldReportWaitTime() {
         // given
-        query.onObfuscatorReady( null );
-        query.onCompilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), null );
-        query.onExecutionStarted( new FakeMemoryTracker() );
+        query.onObfuscatorReady(null);
+        query.onCompilationCompleted(new CompilerInfo("the-planner", "the-runtime", emptyList()), null);
+        query.onExecutionStarted(new FakeMemoryTracker());
 
         // then
-        assertEquals( "running", query.snapshot().status() );
+        assertEquals("running", query.snapshot().status());
 
         // when
-        clock.forward( 10, TimeUnit.SECONDS );
-        try ( LockWaitEvent ignored = lock( "NODE", 17 ) )
-        {
-            clock.forward( 5, TimeUnit.SECONDS );
+        clock.forward(10, TimeUnit.SECONDS);
+        try (LockWaitEvent ignored = lock("NODE", 17)) {
+            clock.forward(5, TimeUnit.SECONDS);
 
             // then
             QuerySnapshot snapshot = query.snapshot();
-            assertEquals( "waiting", snapshot.status() );
-            assertThat( snapshot.resourceInformation() ).containsEntry( "waitTimeMillis", 5_000L ).
-                    containsEntry( "resourceType", "NODE" ).
-                    containsEntry( "transactionId", 10L ).
-                    containsEntry( "resourceIds", new long[]{ 17 } );
-            assertEquals( 5_000_000, snapshot.waitTimeMicros() );
+            assertEquals("waiting", snapshot.status());
+            assertThat(snapshot.resourceInformation())
+                    .containsEntry("waitTimeMillis", 5_000L)
+                    .containsEntry("resourceType", "NODE")
+                    .containsEntry("transactionId", 10L)
+                    .containsEntry("resourceIds", new long[] {17});
+            assertEquals(5_000_000, snapshot.waitTimeMicros());
         }
         {
             QuerySnapshot snapshot = query.snapshot();
-            assertEquals( "running", snapshot.status() );
-            assertEquals( 5_000_000, snapshot.waitTimeMicros() );
+            assertEquals("running", snapshot.status());
+            assertEquals(5_000_000, snapshot.waitTimeMicros());
         }
 
         // when
-        clock.forward( 2, TimeUnit.SECONDS );
-        try ( LockWaitEvent ignored = lock( "RELATIONSHIP", 612 ) )
-        {
-            clock.forward( 1, TimeUnit.SECONDS );
+        clock.forward(2, TimeUnit.SECONDS);
+        try (LockWaitEvent ignored = lock("RELATIONSHIP", 612)) {
+            clock.forward(1, TimeUnit.SECONDS);
 
             // then
             QuerySnapshot snapshot = query.snapshot();
-            assertEquals( "waiting", snapshot.status() );
-            assertThat( snapshot.resourceInformation() ).containsEntry( "waitTimeMillis", 1_000L ).
-                    containsEntry( "resourceType", "RELATIONSHIP" ).
-                    containsEntry( "transactionId", 10L ).
-                    containsEntry( "resourceIds", new long[]{612} );
-            assertEquals( 6_000_000, snapshot.waitTimeMicros() );
+            assertEquals("waiting", snapshot.status());
+            assertThat(snapshot.resourceInformation())
+                    .containsEntry("waitTimeMillis", 1_000L)
+                    .containsEntry("resourceType", "RELATIONSHIP")
+                    .containsEntry("transactionId", 10L)
+                    .containsEntry("resourceIds", new long[] {612});
+            assertEquals(6_000_000, snapshot.waitTimeMicros());
         }
         {
             QuerySnapshot snapshot = query.snapshot();
-            assertEquals( "running", snapshot.status() );
-            assertEquals( 6_000_000, snapshot.waitTimeMicros() );
+            assertEquals("running", snapshot.status());
+            assertEquals(6_000_000, snapshot.waitTimeMicros());
         }
     }
 
     @Test
-    void shouldReportCpuTime()
-    {
+    void shouldReportCpuTime() {
         // given
-        cpuClock.add( 60, TimeUnit.MICROSECONDS );
+        cpuClock.add(60, TimeUnit.MICROSECONDS);
 
         // when
         long cpuTime = query.snapshot().cpuTimeMicros().getAsLong();
 
         // then
-        assertEquals( 60, cpuTime );
+        assertEquals(60, cpuTime);
     }
 
     @Test
-    void shouldNotReportCpuTimeIfUnavailable()
-    {
+    void shouldNotReportCpuTimeIfUnavailable() {
         // given
-        ExecutingQuery query = new ExecutingQuery( 17,
-                                                   ClientConnectionInfo.EMBEDDED_CONNECTION, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), "neo4j", "neo4j",
-                                                   "hello world",
-                                                   EMPTY_MAP,
-                                                   Collections.emptyMap(),
-                                                   () -> lockCount, () -> 0, () -> 1,
-                                                   Thread.currentThread().getId(),
-                                                   Thread.currentThread().getName(),
-                                                   clock,
-                                                   FakeCpuClock.NOT_AVAILABLE,
-                                                   true );
+        ExecutingQuery query = new ExecutingQuery(
+                17,
+                ClientConnectionInfo.EMBEDDED_CONNECTION,
+                from(DEFAULT_DATABASE_NAME, UUID.randomUUID()),
+                "neo4j",
+                "neo4j",
+                "hello world",
+                EMPTY_MAP,
+                Collections.emptyMap(),
+                () -> lockCount,
+                () -> 0,
+                () -> 1,
+                Thread.currentThread().getId(),
+                Thread.currentThread().getName(),
+                clock,
+                FakeCpuClock.NOT_AVAILABLE,
+                true);
 
         // when
         QuerySnapshot snapshot = query.snapshot();
 
         // then
-        assertEquals( snapshot.cpuTimeMicros(), OptionalLong.empty() );
-        assertEquals( snapshot.idleTimeMicros(), OptionalLong.empty() );
+        assertEquals(snapshot.cpuTimeMicros(), OptionalLong.empty());
+        assertEquals(snapshot.idleTimeMicros(), OptionalLong.empty());
     }
 
     @Test
-    void shouldNotReportHeapAllocationIfNotTracked()
-    {
+    void shouldNotReportHeapAllocationIfNotTracked() {
         // given
-        ExecutingQuery query = new ExecutingQuery( 17,
-                                                   ClientConnectionInfo.EMBEDDED_CONNECTION, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ),
-                                                   "neo4j", "neo4j", "hello world",
-                                                   EMPTY_MAP,
-                                                   Collections.emptyMap(),
-                                                   () -> lockCount,
-                                                   () -> 0,
-                                                   () -> 1,
-                                                   Thread.currentThread().getId(),
-                                                   Thread.currentThread().getName(),
-                                                   clock,
-                                                   FakeCpuClock.NOT_AVAILABLE,
-                                                   false );
+        ExecutingQuery query = new ExecutingQuery(
+                17,
+                ClientConnectionInfo.EMBEDDED_CONNECTION,
+                from(DEFAULT_DATABASE_NAME, UUID.randomUUID()),
+                "neo4j",
+                "neo4j",
+                "hello world",
+                EMPTY_MAP,
+                Collections.emptyMap(),
+                () -> lockCount,
+                () -> 0,
+                () -> 1,
+                Thread.currentThread().getId(),
+                Thread.currentThread().getName(),
+                clock,
+                FakeCpuClock.NOT_AVAILABLE,
+                false);
 
         // when
         QuerySnapshot snapshot = query.snapshot();
 
         // then
-        assertEquals( HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED, snapshot.allocatedBytes() );
+        assertEquals(HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED, snapshot.allocatedBytes());
     }
 
     @Test
-    void shouldReportZeroHeapAllocationIfTracked()
-    {
+    void shouldReportZeroHeapAllocationIfTracked() {
         // given
-        ExecutingQuery query = new ExecutingQuery( 17,
-                                                   ClientConnectionInfo.EMBEDDED_CONNECTION, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ),
-                                                   "neo4j", "neo4j", "hello world",
-                                                   EMPTY_MAP,
-                                                   Collections.emptyMap(),
-                                                   () -> lockCount,
-                                                   () -> 0,
-                                                   () -> 1,
-                                                   Thread.currentThread().getId(),
-                                                   Thread.currentThread().getName(),
-                                                   clock,
-                                                   FakeCpuClock.NOT_AVAILABLE,
-                                                   true );
+        ExecutingQuery query = new ExecutingQuery(
+                17,
+                ClientConnectionInfo.EMBEDDED_CONNECTION,
+                from(DEFAULT_DATABASE_NAME, UUID.randomUUID()),
+                "neo4j",
+                "neo4j",
+                "hello world",
+                EMPTY_MAP,
+                Collections.emptyMap(),
+                () -> lockCount,
+                () -> 0,
+                () -> 1,
+                Thread.currentThread().getId(),
+                Thread.currentThread().getName(),
+                clock,
+                FakeCpuClock.NOT_AVAILABLE,
+                true);
 
         // when
         QuerySnapshot snapshot = query.snapshot();
 
         // then
-        assertEquals( 0L, snapshot.allocatedBytes() );
+        assertEquals(0L, snapshot.allocatedBytes());
     }
 
     @Test
-    void shouldReportLockCount()
-    {
+    void shouldReportLockCount() {
         // given
         lockCount = 11;
 
         // then
-        assertEquals( 11, query.snapshot().activeLockCount() );
+        assertEquals(11, query.snapshot().activeLockCount());
 
         // given
         lockCount = 2;
 
         // then
-        assertEquals( 2, query.snapshot().activeLockCount() );
+        assertEquals(2, query.snapshot().activeLockCount());
     }
 
     @Test
-    void shouldReportPageHitsAndFaults()
-    {
+    void shouldReportPageHitsAndFaults() {
         // given
-        page.hits( 7 );
-        page.faults( 3 );
+        page.hits(7);
+        page.faults(3);
 
         // when
         QuerySnapshot snapshot = query.snapshot();
 
         // then
-        assertEquals( 7, snapshot.pageHits() );
-        assertEquals( 3, snapshot.pageFaults() );
+        assertEquals(7, snapshot.pageHits());
+        assertEquals(3, snapshot.pageFaults());
 
         // when
-        page.hits( 2 );
-        page.faults( 5 );
+        page.hits(2);
+        page.faults(5);
         snapshot = query.snapshot();
 
         // then
-        assertEquals( 9, snapshot.pageHits() );
-        assertEquals( 8, snapshot.pageFaults() );
+        assertEquals(9, snapshot.pageHits());
+        assertEquals(8, snapshot.pageFaults());
     }
 
     @Test
-    void includeQueryExecutorThreadName()
-    {
+    void includeQueryExecutorThreadName() {
         String queryDescription = query.toString();
-        assertTrue( queryDescription.contains( "threadExecutingTheQueryName=" + Thread.currentThread().getName() ) );
+        assertTrue(queryDescription.contains(
+                "threadExecutingTheQueryName=" + Thread.currentThread().getName()));
     }
 
     @Test
-    void shouldNotAllowCompletingCompilationMultipleTimes()
-    {
-        query.onObfuscatorReady( null );
-        query.onCompilationCompleted( null, null );
-        assertThatIllegalStateException().isThrownBy( () -> query.onCompilationCompleted( null, null ) );
+    void shouldNotAllowCompletingCompilationMultipleTimes() {
+        query.onObfuscatorReady(null);
+        query.onCompilationCompleted(null, null);
+        assertThatIllegalStateException().isThrownBy(() -> query.onCompilationCompleted(null, null));
     }
 
     @Test
-    void shouldNotAllowStartingExecutionWithoutCompilation()
-    {
-        assertThatIllegalStateException().isThrownBy( () -> query.onExecutionStarted( null ) );
+    void shouldNotAllowStartingExecutionWithoutCompilation() {
+        assertThatIllegalStateException().isThrownBy(() -> query.onExecutionStarted(null));
     }
 
     @Test
-    void shouldAllowRetryingAfterStartingExecutiong()
-    {
-        assertEquals( "parsing", query.snapshot().status() );
+    void shouldAllowRetryingAfterStartingExecutiong() {
+        assertEquals("parsing", query.snapshot().status());
 
-        query.onObfuscatorReady( null );
-        assertEquals( "planning", query.snapshot().status() );
+        query.onObfuscatorReady(null);
+        assertEquals("planning", query.snapshot().status());
 
-        query.onCompilationCompleted( null, null );
-        assertEquals( "planned", query.snapshot().status() );
+        query.onCompilationCompleted(null, null);
+        assertEquals("planned", query.snapshot().status());
 
-        query.onExecutionStarted( new FakeMemoryTracker() );
-        assertEquals( "running", query.snapshot().status() );
+        query.onExecutionStarted(new FakeMemoryTracker());
+        assertEquals("running", query.snapshot().status());
 
         query.onRetryAttempted();
-        assertEquals( "parsing", query.snapshot().status() );
+        assertEquals("parsing", query.snapshot().status());
     }
 
     @Test
-    void shouldNotAllowRetryingWithoutStartingExecuting()
-    {
-        query.onObfuscatorReady(null );
-        query.onCompilationCompleted( null, null );
-        assertThatIllegalStateException().isThrownBy( query::onRetryAttempted );
+    void shouldNotAllowRetryingWithoutStartingExecuting() {
+        query.onObfuscatorReady(null);
+        query.onCompilationCompleted(null, null);
+        assertThatIllegalStateException().isThrownBy(query::onRetryAttempted);
     }
 
-    private LockWaitEvent lock( String resourceType, long resourceId )
-    {
-        return query.lockTracer().waitForLock( SHARED, resourceType( resourceType ), 10, resourceId );
+    private LockWaitEvent lock(String resourceType, long resourceId) {
+        return query.lockTracer().waitForLock(SHARED, resourceType(resourceType), 10, resourceId);
     }
 
-    static ResourceType resourceType( String name )
-    {
-        return new ResourceType()
-        {
+    static ResourceType resourceType(String name) {
+        return new ResourceType() {
             @Override
-            public String toString()
-            {
+            public String toString() {
                 return name();
             }
 
             @Override
-            public int typeId()
-            {
-                throw new UnsupportedOperationException( "not used" );
+            public int typeId() {
+                throw new UnsupportedOperationException("not used");
             }
 
             @Override
-            public String name()
-            {
+            public String name() {
                 return name;
             }
         };
     }
 
-    @SuppressWarnings( "SameParameterValue" )
-    private static long randomLong( long bound )
-    {
-        return ThreadLocalRandom.current().nextLong( bound );
+    @SuppressWarnings("SameParameterValue")
+    private static long randomLong(long bound) {
+        return ThreadLocalRandom.current().nextLong(bound);
     }
 
-    private ExecutingQuery createExecutingQuery( int queryId, String hello_world, PageCursorCountersStub page,
-            FakeClock clock, FakeCpuClock cpuClock )
-    {
-        return createExecutingQuery( queryId, hello_world, page, clock, cpuClock, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), EMPTY_MAP );
+    private ExecutingQuery createExecutingQuery(
+            int queryId, String hello_world, PageCursorCountersStub page, FakeClock clock, FakeCpuClock cpuClock) {
+        return createExecutingQuery(
+                queryId, hello_world, page, clock, cpuClock, from(DEFAULT_DATABASE_NAME, UUID.randomUUID()), EMPTY_MAP);
     }
 
-    private ExecutingQuery createExecutingQuery( int queryId, String hello_world, PageCursorCountersStub page,
-            FakeClock clock, FakeCpuClock cpuClock, NamedDatabaseId dbID, MapValue params )
-    {
-        return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, dbID, "neo4j", "neo4j", hello_world,
-                                   params, Collections.emptyMap(), () -> lockCount, page::hits, page::faults, Thread.currentThread().getId(),
-                                   Thread.currentThread().getName(), clock, cpuClock, true );
+    private ExecutingQuery createExecutingQuery(
+            int queryId,
+            String hello_world,
+            PageCursorCountersStub page,
+            FakeClock clock,
+            FakeCpuClock cpuClock,
+            NamedDatabaseId dbID,
+            MapValue params) {
+        return new ExecutingQuery(
+                queryId,
+                ClientConnectionInfo.EMBEDDED_CONNECTION,
+                dbID,
+                "neo4j",
+                "neo4j",
+                hello_world,
+                params,
+                Collections.emptyMap(),
+                () -> lockCount,
+                page::hits,
+                page::faults,
+                Thread.currentThread().getId(),
+                Thread.currentThread().getName(),
+                clock,
+                cpuClock,
+                true);
     }
 
-    private static class PageCursorCountersStub implements PageCursorCounters
-    {
+    private static class PageCursorCountersStub implements PageCursorCounters {
         private long faults;
         private long pins;
         private long unpins;
@@ -416,126 +423,104 @@ class ExecutingQueryTest
         private long flushes;
 
         @Override
-        public long faults()
-        {
+        public long faults() {
             return faults;
         }
 
         @Override
-        public long failedFaults()
-        {
+        public long failedFaults() {
             return 0;
         }
 
         @Override
-        public long noFaults()
-        {
+        public long noFaults() {
             return 0;
         }
 
-        public void faults( long increment )
-        {
+        public void faults(long increment) {
             faults += increment;
         }
 
         @Override
-        public long pins()
-        {
+        public long pins() {
             return pins;
         }
 
-        public void pins( long increment )
-        {
+        public void pins(long increment) {
             pins += increment;
         }
 
         @Override
-        public long unpins()
-        {
+        public long unpins() {
             return unpins;
         }
 
-        public void unpins( long increment )
-        {
+        public void unpins(long increment) {
             unpins += increment;
         }
 
         @Override
-        public long hits()
-        {
+        public long hits() {
             return hits;
         }
 
-        public void hits( long increment )
-        {
+        public void hits(long increment) {
             hits += increment;
         }
 
         @Override
-        public long bytesRead()
-        {
+        public long bytesRead() {
             return bytesRead;
         }
 
-        public void bytesRead( long increment )
-        {
+        public void bytesRead(long increment) {
             bytesRead += increment;
         }
 
         @Override
-        public long evictions()
-        {
+        public long evictions() {
             return evictions;
         }
 
-        public void evictions( long increment )
-        {
+        public void evictions(long increment) {
             evictions += increment;
         }
 
         @Override
-        public long evictionExceptions()
-        {
+        public long evictionExceptions() {
             return evictionExceptions;
         }
 
-        public void evictionExceptions( long increment )
-        {
+        public void evictionExceptions(long increment) {
             evictionExceptions += increment;
         }
 
         @Override
-        public long bytesWritten()
-        {
+        public long bytesWritten() {
             return bytesWritten;
         }
 
-        public void bytesWritten( long increment )
-        {
+        public void bytesWritten(long increment) {
             bytesWritten += increment;
         }
 
         @Override
-        public long flushes()
-        {
+        public long flushes() {
             return flushes;
         }
 
         @Override
-        public long merges()
-        {
+        public long merges() {
             return 0;
         }
 
-        public void flushes( long increment )
-        {
+        public void flushes(long increment) {
             flushes += increment;
         }
 
         @Override
-        public double hitRatio()
-        {
-            return MathUtil.portion( hits(), faults() );
+        public double hitRatio() {
+            return MathUtil.portion(hits(), faults());
         }
     }
 }

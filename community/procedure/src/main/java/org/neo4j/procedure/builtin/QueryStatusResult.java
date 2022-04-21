@@ -19,13 +19,14 @@
  */
 package org.neo4j.procedure.builtin;
 
+import static java.util.Collections.singletonList;
+
 import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.CRS;
@@ -41,21 +42,19 @@ import org.neo4j.memory.HeapHighWaterMarkTracker;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.MapValue;
 
-import static java.util.Collections.singletonList;
-
-public class QueryStatusResult
-{
+public class QueryStatusResult {
     public final String queryId;
     public final String username;
-    public final Map<String,Object> metaData;
+    public final Map<String, Object> metaData;
     public final String query;
-    public final Map<String,Object> parameters;
+    public final Map<String, Object> parameters;
     /** @since Neo4j 3.2 */
     public final String planner;
     /** @since Neo4j 3.2 */
     public final String runtime;
     /** @since Neo4j 3.2 */
-    public final List<Map<String,String>> indexes;
+    public final List<Map<String, String>> indexes;
+
     public final String startTime;
     /** @since Neo4j 3.2 */
     public final String protocol;
@@ -66,7 +65,7 @@ public class QueryStatusResult
     /** @since Neo4j 3.2 */
     public final String status;
     /** @since Neo4j 3.2 */
-    public final Map<String,Object> resourceInformation;
+    public final Map<String, Object> resourceInformation;
     /** @since Neo4j 3.2 */
     public final long activeLockCount;
     /** @since Neo4j 3.2 */
@@ -90,20 +89,21 @@ public class QueryStatusResult
     /** @since Neo4j 4.4 */
     public final String transactionId;
 
-    QueryStatusResult( ExecutingQuery query, TransactionalEntityFactory manager, ZoneId zoneId, String database ) throws InvalidArgumentsException
-    {
-        this( query.snapshot(), manager, zoneId, database );
+    QueryStatusResult(ExecutingQuery query, TransactionalEntityFactory manager, ZoneId zoneId, String database)
+            throws InvalidArgumentsException {
+        this(query.snapshot(), manager, zoneId, database);
     }
 
-    private QueryStatusResult( QuerySnapshot query, TransactionalEntityFactory manager, ZoneId zoneId, String database ) throws InvalidArgumentsException
-    {
-        this.queryId = new QueryId( query.internalQueryId() ).toString();
+    private QueryStatusResult(QuerySnapshot query, TransactionalEntityFactory manager, ZoneId zoneId, String database)
+            throws InvalidArgumentsException {
+        this.queryId = new QueryId(query.internalQueryId()).toString();
         this.username = query.executingUsername();
-        this.query = query.obfuscatedQueryText().orElse( null );
+        this.query = query.obfuscatedQueryText().orElse(null);
         this.database = database;
-        this.parameters = asRawMap( query.obfuscatedQueryParameters().orElse( MapValue.EMPTY ), new ParameterWriter( manager ) );
-        this.startTime = ProceduresTimeFormatHelper.formatTime( query.startTimestampMillis(), zoneId );
-        this.elapsedTimeMillis = asMillis( query.elapsedTimeMicros() );
+        this.parameters =
+                asRawMap(query.obfuscatedQueryParameters().orElse(MapValue.EMPTY), new ParameterWriter(manager));
+        this.startTime = ProceduresTimeFormatHelper.formatTime(query.startTimestampMillis(), zoneId);
+        this.elapsedTimeMillis = asMillis(query.elapsedTimeMicros());
         ClientConnectionInfo clientConnection = query.clientConnection();
         this.protocol = clientConnection.protocol();
         this.clientAddress = clientConnection.clientAddress();
@@ -114,9 +114,9 @@ public class QueryStatusResult
         this.status = query.status();
         this.resourceInformation = query.resourceInformation();
         this.activeLockCount = query.activeLockCount();
-        this.waitTimeMillis = asMillis( query.waitTimeMicros() );
+        this.waitTimeMillis = asMillis(query.waitTimeMicros());
         OptionalLong idleTimeMicros = query.idleTimeMicros();
-        this.idleTimeMillis = idleTimeMicros.isPresent() ? asMillis( idleTimeMicros.getAsLong() ) : null;
+        this.idleTimeMillis = idleTimeMicros.isPresent() ? asMillis(idleTimeMicros.getAsLong()) : null;
         this.planner = query.planner();
         this.runtime = query.runtime();
         this.indexes = query.indexes();
@@ -125,68 +125,58 @@ public class QueryStatusResult
         this.pageHits = query.pageHits();
         this.pageFaults = query.pageFaults();
         this.connectionId = clientConnection.connectionId();
-        // queries run over bolt may not have a transaction bound to it until the query router (fabric) has routed the query
+        // queries run over bolt may not have a transaction bound to it until the query router (fabric) has routed the
+        // query
         // see FabricKernelTransaction.makeChildTransactionalContext
-        this.transactionId = query.transactionId() >= 0 ? new TransactionId( database, query.transactionId() ).toString() : null;
+        this.transactionId =
+                query.transactionId() >= 0 ? new TransactionId(database, query.transactionId()).toString() : null;
     }
 
-    private static Long asMillis( Long micros )
-    {
-        return micros == null ? null : TimeUnit.MICROSECONDS.toMillis( micros );
+    private static Long asMillis(Long micros) {
+        return micros == null ? null : TimeUnit.MICROSECONDS.toMillis(micros);
     }
 
-    private static Map<String,Object> asRawMap( MapValue mapValue, ParameterWriter writer )
-    {
-        HashMap<String,Object> map = new HashMap<>();
-        mapValue.foreach( ( s, value ) ->
-        {
-            value.writeTo( writer );
-            map.put( s, writer.value() );
-        } );
+    private static Map<String, Object> asRawMap(MapValue mapValue, ParameterWriter writer) {
+        HashMap<String, Object> map = new HashMap<>();
+        mapValue.foreach((s, value) -> {
+            value.writeTo(writer);
+            map.put(s, writer.value());
+        });
         return map;
     }
 
-    private static class ParameterWriter extends BaseToObjectValueWriter<RuntimeException>
-    {
+    private static class ParameterWriter extends BaseToObjectValueWriter<RuntimeException> {
         private final TransactionalEntityFactory entityFactory;
 
-        private ParameterWriter( TransactionalEntityFactory entityFactory )
-        {
+        private ParameterWriter(TransactionalEntityFactory entityFactory) {
             this.entityFactory = entityFactory;
         }
 
         @Override
-        protected Node newNodeEntityById( long id )
-        {
-            return entityFactory.newNodeEntity( id );
+        protected Node newNodeEntityById(long id) {
+            return entityFactory.newNodeEntity(id);
         }
 
         @Override
-        protected Relationship newRelationshipEntityById( long id )
-        {
-            return entityFactory.newRelationshipEntity( id );
+        protected Relationship newRelationshipEntityById(long id) {
+            return entityFactory.newRelationshipEntity(id);
         }
 
         @Override
-        protected Point newPoint( CoordinateReferenceSystem crs, double[] coordinate )
-        {
-            return new Point()
-            {
+        protected Point newPoint(CoordinateReferenceSystem crs, double[] coordinate) {
+            return new Point() {
                 @Override
-                public String getGeometryType()
-                {
+                public String getGeometryType() {
                     return "Point";
                 }
 
                 @Override
-                public List<Coordinate> getCoordinates()
-                {
-                    return singletonList( new Coordinate( coordinate ) );
+                public List<Coordinate> getCoordinates() {
+                    return singletonList(new Coordinate(coordinate));
                 }
 
                 @Override
-                public CRS getCRS()
-                {
+                public CRS getCRS() {
                     return crs;
                 }
             };

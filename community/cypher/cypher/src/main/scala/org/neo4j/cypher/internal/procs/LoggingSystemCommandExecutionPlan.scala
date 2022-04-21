@@ -32,13 +32,20 @@ import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
 
-case class LoggingSystemCommandExecutionPlan(source: ExecutionPlan, commandString: String, logger: (String, SecurityContext) => Unit) extends ExecutionPlan {
-  override def run(ctx: QueryContext,
-                   executionMode: ExecutionMode,
-                   params: MapValue,
-                   prePopulateResults: Boolean,
-                   ignore: InputDataStream,
-                   subscriber: QuerySubscriber): RuntimeResult = {
+case class LoggingSystemCommandExecutionPlan(
+  source: ExecutionPlan,
+  commandString: String,
+  logger: (String, SecurityContext) => Unit
+) extends ExecutionPlan {
+
+  override def run(
+    ctx: QueryContext,
+    executionMode: ExecutionMode,
+    params: MapValue,
+    prePopulateResults: Boolean,
+    ignore: InputDataStream,
+    subscriber: QuerySubscriber
+  ): RuntimeResult = {
 
     val securityContext = ctx.transactionalContext.securityContext
     val sourceResult = source.run(ctx, executionMode, params, prePopulateResults, ignore, subscriber)

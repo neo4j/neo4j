@@ -37,7 +37,6 @@ class ToStringFunctionTest extends CypherFunSuite with ScalaCheckDrivenPropertyC
     Seq((toString, "toString"), (toStringOrNull, "toStringOrNull"))
 
   tests.foreach { case (toStringFn, name) =>
-
     test(s"$name: should return null if argument is null") {
       assert(toStringFn(null) === NO_VALUE)
     }
@@ -79,7 +78,9 @@ class ToStringFunctionTest extends CypherFunSuite with ScalaCheckDrivenPropertyC
 
   test("should throw an exception if the argument is an object which cannot be converted to a string") {
     val caughtException = the[CypherTypeException] thrownBy toString(List(1, 24))
-    caughtException.getMessage should startWith("Invalid input for function 'toString()': Expected a String, Number, Boolean, Temporal or Duration, got: ")
+    caughtException.getMessage should startWith(
+      "Invalid input for function 'toString()': Expected a String, Number, Boolean, Temporal or Duration, got: "
+    )
   }
 
   // toStringOrNull
@@ -105,9 +106,11 @@ class ToStringFunctionTest extends CypherFunSuite with ScalaCheckDrivenPropertyC
       v <- Gen.oneOf(Gen.numStr, Gen.alphaStr, Gen.posNum[Double], Gen.posNum[Int])
     } yield v
 
-    forAll(generator) { s => {
-      toStringOrNull(s) should (be(a[TextValue]) or equal(NO_VALUE))
-    }}
+    forAll(generator) { s =>
+      {
+        toStringOrNull(s) should (be(a[TextValue]) or equal(NO_VALUE))
+      }
+    }
   }
 
   private def toString(orig: Any) = {

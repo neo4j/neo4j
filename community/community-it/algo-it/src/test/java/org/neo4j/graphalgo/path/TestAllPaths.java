@@ -19,8 +19,9 @@
  */
 package org.neo4j.graphalgo.path;
 
-import org.junit.jupiter.api.Test;
+import static org.neo4j.graphalgo.GraphAlgoFactory.allPaths;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphalgo.BasicEvaluationContext;
 import org.neo4j.graphalgo.EvaluationContext;
 import org.neo4j.graphalgo.Neo4jAlgoTestCase;
@@ -29,62 +30,75 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Transaction;
 
-import static org.neo4j.graphalgo.GraphAlgoFactory.allPaths;
-
-class TestAllPaths extends Neo4jAlgoTestCase
-{
+class TestAllPaths extends Neo4jAlgoTestCase {
     @Test
-    void testCircularGraph()
-    {
+    void testCircularGraph() {
         /* Layout
          *
          * (a)---(b)===(c)---(e)
          *         \   /
          *          (d)
          */
-        try ( Transaction transaction = graphDb.beginTx() )
-        {
-            graph.makeEdge( transaction, "a", "b" );
-            graph.makeEdge( transaction, "b", "c" );
-            graph.makeEdge( transaction, "b", "c" );
-            graph.makeEdge( transaction, "b", "d" );
-            graph.makeEdge( transaction, "c", "d" );
-            graph.makeEdge( transaction, "c", "e" );
-            var context = new BasicEvaluationContext( transaction, graphDb );
+        try (Transaction transaction = graphDb.beginTx()) {
+            graph.makeEdge(transaction, "a", "b");
+            graph.makeEdge(transaction, "b", "c");
+            graph.makeEdge(transaction, "b", "c");
+            graph.makeEdge(transaction, "b", "d");
+            graph.makeEdge(transaction, "c", "d");
+            graph.makeEdge(transaction, "c", "e");
+            var context = new BasicEvaluationContext(transaction, graphDb);
 
-            PathFinder<Path> finder = instantiatePathFinder( context, 10 );
-            Iterable<Path> paths = finder.findAllPaths( graph.getNode( transaction, "a" ), graph.getNode( transaction, "e" ) );
-            assertPaths( paths, "a,b,c,e", "a,b,c,e", "a,b,d,c,e", "a,b,c,d,b,c,e", "a,b,c,d,b,c,e", "a,b,c,b,d,c,e", "a,b,c,b,d,c,e", "a,b,d,c,b,c,e",
-                    "a,b,d,c,b,c,e" );
+            PathFinder<Path> finder = instantiatePathFinder(context, 10);
+            Iterable<Path> paths =
+                    finder.findAllPaths(graph.getNode(transaction, "a"), graph.getNode(transaction, "e"));
+            assertPaths(
+                    paths,
+                    "a,b,c,e",
+                    "a,b,c,e",
+                    "a,b,d,c,e",
+                    "a,b,c,d,b,c,e",
+                    "a,b,c,d,b,c,e",
+                    "a,b,c,b,d,c,e",
+                    "a,b,c,b,d,c,e",
+                    "a,b,d,c,b,c,e",
+                    "a,b,d,c,b,c,e");
             transaction.commit();
         }
     }
 
     @Test
-    void testTripleRelationshipGraph()
-    {
+    void testTripleRelationshipGraph() {
         /* Layout
          *          ___
          * (a)---(b)===(c)---(d)
          */
-        try ( Transaction transaction = graphDb.beginTx() )
-        {
-            graph.makeEdge( transaction, "a", "b" );
-            graph.makeEdge( transaction, "b", "c" );
-            graph.makeEdge( transaction, "b", "c" );
-            graph.makeEdge( transaction, "b", "c" );
-            graph.makeEdge( transaction, "c", "d" );
-            var context = new BasicEvaluationContext( transaction, graphDb );
+        try (Transaction transaction = graphDb.beginTx()) {
+            graph.makeEdge(transaction, "a", "b");
+            graph.makeEdge(transaction, "b", "c");
+            graph.makeEdge(transaction, "b", "c");
+            graph.makeEdge(transaction, "b", "c");
+            graph.makeEdge(transaction, "c", "d");
+            var context = new BasicEvaluationContext(transaction, graphDb);
 
-            PathFinder<Path> finder = instantiatePathFinder( context, 10 );
-            Iterable<Path> paths = finder.findAllPaths( graph.getNode( transaction, "a" ), graph.getNode( transaction, "d" ) );
-            assertPaths( paths, "a,b,c,d", "a,b,c,d", "a,b,c,d", "a,b,c,b,c,d", "a,b,c,b,c,d", "a,b,c,b,c,d", "a,b,c,b,c,d", "a,b,c,b,c,d", "a,b,c,b,c,d" );
+            PathFinder<Path> finder = instantiatePathFinder(context, 10);
+            Iterable<Path> paths =
+                    finder.findAllPaths(graph.getNode(transaction, "a"), graph.getNode(transaction, "d"));
+            assertPaths(
+                    paths,
+                    "a,b,c,d",
+                    "a,b,c,d",
+                    "a,b,c,d",
+                    "a,b,c,b,c,d",
+                    "a,b,c,b,c,d",
+                    "a,b,c,b,c,d",
+                    "a,b,c,b,c,d",
+                    "a,b,c,b,c,d",
+                    "a,b,c,b,c,d");
             transaction.commit();
         }
     }
 
-    private static PathFinder<Path> instantiatePathFinder( EvaluationContext context, int maxDepth )
-    {
-        return allPaths( context, PathExpanders.allTypesAndDirections(), maxDepth );
+    private static PathFinder<Path> instantiatePathFinder(EvaluationContext context, int maxDepth) {
+        return allPaths(context, PathExpanders.allTypesAndDirections(), maxDepth);
     }
 }

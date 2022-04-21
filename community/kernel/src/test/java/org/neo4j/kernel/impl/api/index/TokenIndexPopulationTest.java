@@ -19,17 +19,27 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.common.Subject.AUTH_DISABLED;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.api.index.StoreScan.NO_EXTERNAL_UPDATES;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -54,31 +64,19 @@ import org.neo4j.test.InMemoryTokens;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.common.Subject.AUTH_DISABLED;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.api.index.StoreScan.NO_EXTERNAL_UPDATES;
+@ExtendWith(JobSchedulerExtension.class)
+class TokenIndexPopulationTest {
+    private final IndexStoreView storeView = mock(IndexStoreView.class);
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
 
-@ExtendWith( JobSchedulerExtension.class )
-class TokenIndexPopulationTest
-{
-    private final IndexStoreView storeView = mock( IndexStoreView.class );
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
-
-    private final IndexDescriptor valueIndex = TestIndexDescriptorFactory.forLabel( 1, 1 );
-    private final IndexPopulator valueIndexPopulator = mock( IndexPopulator.class );
+    private final IndexDescriptor valueIndex = TestIndexDescriptorFactory.forLabel(1, 1);
+    private final IndexPopulator valueIndexPopulator = mock(IndexPopulator.class);
 
     private IndexDescriptor tokenIndex;
-    private final IndexPopulator tokenIndexPopulator = mock( IndexPopulator.class );
+    private final IndexPopulator tokenIndexPopulator = mock(IndexPopulator.class);
 
-    private final ArgumentCaptor<Collection<? extends IndexEntryUpdate<?>>> indexUpdates = ArgumentCaptor.forClass( Collection.class );
+    private final ArgumentCaptor<Collection<? extends IndexEntryUpdate<?>>> indexUpdates =
+            ArgumentCaptor.forClass(Collection.class);
 
     private MultipleIndexPopulator multipleIndexPopulator;
 
@@ -86,44 +84,51 @@ class TokenIndexPopulationTest
     private JobScheduler jobScheduler;
 
     @BeforeEach
-    void beforeEach()
-    {
-        tokenIndex = IndexPrototype.forSchema( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR )
-                                   .withName( "label_index" )
-                                   .withIndexType( IndexType.LOOKUP )
-                                   .materialise( 123 );
+    void beforeEach() {
+        tokenIndex = IndexPrototype.forSchema(
+                        SchemaDescriptors.forAnyEntityTokens(EntityType.NODE), TokenIndexProvider.DESCRIPTOR)
+                .withName("label_index")
+                .withIndexType(IndexType.LOOKUP)
+                .materialise(123);
 
-        multipleIndexPopulator = new MultipleIndexPopulator( storeView, NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), jobScheduler,
-                new InMemoryTokens(), CONTEXT_FACTORY, EmptyMemoryTracker.INSTANCE, "", AUTH_DISABLED, Config.defaults() );
+        multipleIndexPopulator = new MultipleIndexPopulator(
+                storeView,
+                NullLogProvider.getInstance(),
+                EntityType.NODE,
+                mock(SchemaState.class),
+                jobScheduler,
+                new InMemoryTokens(),
+                CONTEXT_FACTORY,
+                EmptyMemoryTracker.INSTANCE,
+                "",
+                AUTH_DISABLED,
+                Config.defaults());
     }
 
     @Test
-    void testBasicTokenIndexPopulation() throws Exception
-    {
-        addIndexPopulator( tokenIndexPopulator, tokenIndex );
+    void testBasicTokenIndexPopulation() throws Exception {
+        addIndexPopulator(tokenIndexPopulator, tokenIndex);
 
-        mockTokenStore( batch ->
-        {
-            batch.addRecord( 1, new long[]{123} );
-            batch.addRecord( 2, new long[]{123, 111} );
-            batch.addRecord( 3, new long[]{111} );
-        } );
+        mockTokenStore(batch -> {
+            batch.addRecord(1, new long[] {123});
+            batch.addRecord(2, new long[] {123, 111});
+            batch.addRecord(3, new long[] {111});
+        });
 
-        multipleIndexPopulator.create( CursorContext.NULL_CONTEXT );
-        multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY ).run( NO_EXTERNAL_UPDATES );
+        multipleIndexPopulator.create(CursorContext.NULL_CONTEXT);
+        multipleIndexPopulator.createStoreScan(CONTEXT_FACTORY).run(NO_EXTERNAL_UPDATES);
 
-        verify( tokenIndexPopulator ).add( indexUpdates.capture(), any() );
+        verify(tokenIndexPopulator).add(indexUpdates.capture(), any());
 
         var indexUpdateBatches = indexUpdates.getAllValues();
-        assertEquals( 1, indexUpdateBatches.size() );
-        Set<? extends IndexEntryUpdate<?>> indexEntryUpdates = new HashSet<>( indexUpdateBatches.get( 0 ) );
+        assertEquals(1, indexUpdateBatches.size());
+        Set<? extends IndexEntryUpdate<?>> indexEntryUpdates = new HashSet<>(indexUpdateBatches.get(0));
         Set<? extends IndexEntryUpdate<?>> expectedUpdates = Set.of(
-                IndexEntryUpdate.change( 1, tokenIndex, new long[]{}, new long[]{123} ),
-                IndexEntryUpdate.change( 2, tokenIndex, new long[]{}, new long[]{123, 111} ),
-                IndexEntryUpdate.change( 3, tokenIndex, new long[]{}, new long[]{111} )
-        );
+                IndexEntryUpdate.change(1, tokenIndex, new long[] {}, new long[] {123}),
+                IndexEntryUpdate.change(2, tokenIndex, new long[] {}, new long[] {123, 111}),
+                IndexEntryUpdate.change(3, tokenIndex, new long[] {}, new long[] {111}));
 
-        assertEquals( expectedUpdates, indexEntryUpdates );
+        assertEquals(expectedUpdates, indexEntryUpdates);
     }
 
     /*
@@ -133,127 +138,105 @@ class TokenIndexPopulationTest
      * so one token change does not potentially result in two events in token index populator.
      */
     @Test
-    void tokenIndexPopulationShouldIgnoreEntityUpdates() throws Exception
-    {
-        addIndexPopulator( tokenIndexPopulator, tokenIndex );
-        addIndexPopulator( valueIndexPopulator, valueIndex );
+    void tokenIndexPopulationShouldIgnoreEntityUpdates() throws Exception {
+        addIndexPopulator(tokenIndexPopulator, tokenIndex);
+        addIndexPopulator(valueIndexPopulator, valueIndex);
 
         // of course a real store would also generate
         // TokenIndexEntryUpdate for ID  1 and tokens long[]{1}
         // in this situation, but we want to test that the token index population
         // is driven only by TokenIndexEntryUpdates and ignores EntityUpdates
-        mockPropertyStore( batch -> batch.addRecord( 1, new long[]{1}, Map.of(1, Values.stringValue( "Hello" )) ) );
+        mockPropertyStore(batch -> batch.addRecord(1, new long[] {1}, Map.of(1, Values.stringValue("Hello"))));
 
-        multipleIndexPopulator.create( CursorContext.NULL_CONTEXT );
-        multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY ).run( NO_EXTERNAL_UPDATES );
+        multipleIndexPopulator.create(CursorContext.NULL_CONTEXT);
+        multipleIndexPopulator.createStoreScan(CONTEXT_FACTORY).run(NO_EXTERNAL_UPDATES);
 
-        verify( tokenIndexPopulator, never() ).add( indexUpdates.capture(), any() );
-        verify( valueIndexPopulator ).add( any(), any() );
+        verify(tokenIndexPopulator, never()).add(indexUpdates.capture(), any());
+        verify(valueIndexPopulator).add(any(), any());
     }
 
     @Test
-    void shouldNotPassConsumerForValueIndexUpdatesToStoreWhenNoValueIndexPopulating()
-    {
-        addIndexPopulator( tokenIndexPopulator, tokenIndex );
+    void shouldNotPassConsumerForValueIndexUpdatesToStoreWhenNoValueIndexPopulating() {
+        addIndexPopulator(tokenIndexPopulator, tokenIndex);
 
-        mockTokenStore( batch -> batch.addRecord( 1, new long[]{123} ) );
+        mockTokenStore(batch -> batch.addRecord(1, new long[] {123}));
 
-        multipleIndexPopulator.create( CursorContext.NULL_CONTEXT );
-        multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY ).run( NO_EXTERNAL_UPDATES );
+        multipleIndexPopulator.create(CursorContext.NULL_CONTEXT);
+        multipleIndexPopulator.createStoreScan(CONTEXT_FACTORY).run(NO_EXTERNAL_UPDATES);
 
-        verify( storeView ).visitNodes( any(), any(), isNull(), any(), anyBoolean(), anyBoolean(), any(), any() );
+        verify(storeView).visitNodes(any(), any(), isNull(), any(), anyBoolean(), anyBoolean(), any(), any());
     }
 
     @Test
-    void shouldNotPassConsumerForTokenIndexUpdatesToStoreWhenNoTokenIndexPopulating()
-    {
-        addIndexPopulator( valueIndexPopulator, valueIndex );
+    void shouldNotPassConsumerForTokenIndexUpdatesToStoreWhenNoTokenIndexPopulating() {
+        addIndexPopulator(valueIndexPopulator, valueIndex);
 
-        mockPropertyStore( batch -> batch.addRecord( 1, new long[]{1}, Map.of(1, Values.stringValue( "Hello" )) ) );
+        mockPropertyStore(batch -> batch.addRecord(1, new long[] {1}, Map.of(1, Values.stringValue("Hello"))));
 
-        multipleIndexPopulator.create( CursorContext.NULL_CONTEXT );
-        multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY ).run( NO_EXTERNAL_UPDATES );
+        multipleIndexPopulator.create(CursorContext.NULL_CONTEXT);
+        multipleIndexPopulator.createStoreScan(CONTEXT_FACTORY).run(NO_EXTERNAL_UPDATES);
 
-        verify( storeView ).visitNodes( any(), any(), any(), isNull(), anyBoolean(), anyBoolean(), any(), any() );
+        verify(storeView).visitNodes(any(), any(), any(), isNull(), anyBoolean(), anyBoolean(), any(), any());
     }
 
-    private void mockPropertyStore( Consumer<PropertyScanConsumer.Batch> updates )
-    {
-        when( storeView.visitNodes( any(), any(), any(), any(), anyBoolean(), anyBoolean(), any(), any() ) ).thenAnswer( invocation ->
-        {
-            PropertyScanConsumer consumerArg = invocation.getArgument( 2 );
-            return new IndexEntryUpdateScan( () ->
-            {
-                if ( consumerArg != null )
-                {
-                    var batch = consumerArg.newBatch();
-                    updates.accept( batch );
-                    batch.process();
-                }
-            } );
-        } );
+    private void mockPropertyStore(Consumer<PropertyScanConsumer.Batch> updates) {
+        when(storeView.visitNodes(any(), any(), any(), any(), anyBoolean(), anyBoolean(), any(), any()))
+                .thenAnswer(invocation -> {
+                    PropertyScanConsumer consumerArg = invocation.getArgument(2);
+                    return new IndexEntryUpdateScan(() -> {
+                        if (consumerArg != null) {
+                            var batch = consumerArg.newBatch();
+                            updates.accept(batch);
+                            batch.process();
+                        }
+                    });
+                });
     }
 
-    private void mockTokenStore( Consumer<TokenScanConsumer.Batch> updates )
-    {
-        when( storeView.visitNodes( any(), any(), any(), any(), anyBoolean(), anyBoolean(), any(), any() ) ).thenAnswer( invocation ->
-        {
-            TokenScanConsumer consumerArg = invocation.getArgument( 3 );
-            return new IndexEntryUpdateScan( () ->
-            {
-                if ( consumerArg != null )
-                {
-                    var batch = consumerArg.newBatch();
-                    updates.accept( batch );
-                    batch.process();
-                }
-            } );
-        } );
+    private void mockTokenStore(Consumer<TokenScanConsumer.Batch> updates) {
+        when(storeView.visitNodes(any(), any(), any(), any(), anyBoolean(), anyBoolean(), any(), any()))
+                .thenAnswer(invocation -> {
+                    TokenScanConsumer consumerArg = invocation.getArgument(3);
+                    return new IndexEntryUpdateScan(() -> {
+                        if (consumerArg != null) {
+                            var batch = consumerArg.newBatch();
+                            updates.accept(batch);
+                            batch.process();
+                        }
+                    });
+                });
     }
 
-    private void addIndexPopulator( IndexPopulator populator, IndexDescriptor descriptor )
-    {
+    private void addIndexPopulator(IndexPopulator populator, IndexDescriptor descriptor) {
         IndexProxyStrategy indexProxyStrategy;
-        if ( descriptor.getIndexType() == IndexType.LOOKUP )
-        {
-            indexProxyStrategy = new TokenIndexProxyStrategy( descriptor, new InMemoryTokens(), false );
-        }
-        else
-        {
-            indexProxyStrategy = new ValueIndexProxyStrategy( TestIndexDescriptorFactory.forLabel( 1, 1 ),
-                    mock( IndexStatisticsStore.class ),
-                    new InMemoryTokens() );
+        if (descriptor.getIndexType() == IndexType.LOOKUP) {
+            indexProxyStrategy = new TokenIndexProxyStrategy(descriptor, new InMemoryTokens(), false);
+        } else {
+            indexProxyStrategy = new ValueIndexProxyStrategy(
+                    TestIndexDescriptorFactory.forLabel(1, 1), mock(IndexStatisticsStore.class), new InMemoryTokens());
         }
 
-        multipleIndexPopulator.addPopulator( populator,
-                indexProxyStrategy,
-                mock( FlippableIndexProxy.class ),
-                mock( FailedIndexProxyFactory.class ) );
+        multipleIndexPopulator.addPopulator(
+                populator, indexProxyStrategy, mock(FlippableIndexProxy.class), mock(FailedIndexProxyFactory.class));
     }
 
-    private static class IndexEntryUpdateScan implements StoreScan
-    {
+    private static class IndexEntryUpdateScan implements StoreScan {
         final Runnable action;
 
-        IndexEntryUpdateScan( Runnable action )
-        {
+        IndexEntryUpdateScan(Runnable action) {
             this.action = action;
         }
 
         @Override
-        public void run( ExternalUpdatesCheck externalUpdatesCheck )
-        {
+        public void run(ExternalUpdatesCheck externalUpdatesCheck) {
             action.run();
         }
 
         @Override
-        public void stop()
-        {
-        }
+        public void stop() {}
 
         @Override
-        public PopulationProgress getProgress()
-        {
+        public PopulationProgress getProgress() {
             return PopulationProgress.NONE;
         }
     }

@@ -19,115 +19,106 @@
  */
 package org.neo4j.bolt.messaging.util;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
-class PrimitiveLongIntKeyValueArrayTest
-{
+import org.junit.jupiter.api.Test;
+
+class PrimitiveLongIntKeyValueArrayTest {
     private static final int DEFAULT_VALUE = -1;
 
     @Test
-    void testEnsureCapacity()
-    {
+    void testEnsureCapacity() {
         PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray();
-        assertThat( map.capacity() ).isEqualTo( PrimitiveLongIntKeyValueArray.DEFAULT_INITIAL_CAPACITY );
+        assertThat(map.capacity()).isEqualTo(PrimitiveLongIntKeyValueArray.DEFAULT_INITIAL_CAPACITY);
 
-        map.ensureCapacity( 10 );
-        assertThat( map.capacity() ).isGreaterThanOrEqualTo( 10 );
+        map.ensureCapacity(10);
+        assertThat(map.capacity()).isGreaterThanOrEqualTo(10);
 
-        map.ensureCapacity( 100 );
-        assertThat( map.capacity() ).isGreaterThanOrEqualTo( 100 );
+        map.ensureCapacity(100);
+        assertThat(map.capacity()).isGreaterThanOrEqualTo(100);
 
-        map.ensureCapacity( 1000 );
-        assertThat( map.capacity() ).isGreaterThanOrEqualTo( 1000 );
+        map.ensureCapacity(1000);
+        assertThat(map.capacity()).isGreaterThanOrEqualTo(1000);
     }
 
     @Test
-    void testSize()
-    {
+    void testSize() {
         PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray();
-        assertThat( map.size() ).isEqualTo( 0 );
+        assertThat(map.size()).isEqualTo(0);
 
-        map.putIfAbsent( 1, 100 );
-        map.putIfAbsent( 2, 200 );
-        map.putIfAbsent( 3, 300 );
-        assertThat( map.size() ).isEqualTo( 3 );
+        map.putIfAbsent(1, 100);
+        map.putIfAbsent(2, 200);
+        map.putIfAbsent(3, 300);
+        assertThat(map.size()).isEqualTo(3);
     }
 
     @Test
-    void testGetOrDefault()
-    {
+    void testGetOrDefault() {
         PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray();
-        map.putIfAbsent( 1, 100 );
-        map.putIfAbsent( 2, 200 );
-        map.putIfAbsent( 3, 300 );
+        map.putIfAbsent(1, 100);
+        map.putIfAbsent(2, 200);
+        map.putIfAbsent(3, 300);
 
-        assertThat( map.getOrDefault( 1, DEFAULT_VALUE ) ).isEqualTo( 100 );
-        assertThat( map.getOrDefault( 2, DEFAULT_VALUE ) ).isEqualTo( 200 );
-        assertThat( map.getOrDefault( 3, DEFAULT_VALUE ) ).isEqualTo( 300 );
-        assertThat( map.getOrDefault( 4, DEFAULT_VALUE ) ).isEqualTo( DEFAULT_VALUE );
+        assertThat(map.getOrDefault(1, DEFAULT_VALUE)).isEqualTo(100);
+        assertThat(map.getOrDefault(2, DEFAULT_VALUE)).isEqualTo(200);
+        assertThat(map.getOrDefault(3, DEFAULT_VALUE)).isEqualTo(300);
+        assertThat(map.getOrDefault(4, DEFAULT_VALUE)).isEqualTo(DEFAULT_VALUE);
     }
 
     @Test
-    void testPutIfAbsent()
-    {
+    void testPutIfAbsent() {
         PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray();
 
-        assertThat( map.putIfAbsent( 1, 100 ) ).isEqualTo( true );
-        assertThat( map.putIfAbsent( 2, 200 ) ).isEqualTo( true );
-        assertThat( map.putIfAbsent( 3, 300 ) ).isEqualTo( true );
-        assertThat( map.size() ).isEqualTo( 3 );
-        assertThat( map.keys() ).isEqualTo( new long[]{1, 2, 3} );
+        assertThat(map.putIfAbsent(1, 100)).isEqualTo(true);
+        assertThat(map.putIfAbsent(2, 200)).isEqualTo(true);
+        assertThat(map.putIfAbsent(3, 300)).isEqualTo(true);
+        assertThat(map.size()).isEqualTo(3);
+        assertThat(map.keys()).isEqualTo(new long[] {1, 2, 3});
 
-        assertThat( map.putIfAbsent( 2, 2000 ) ).isEqualTo( false );
-        assertThat( map.putIfAbsent( 3, 3000 ) ).isEqualTo( false );
-        assertThat( map.putIfAbsent( 4, 4000 ) ).isEqualTo( true );
-        assertThat( map.size() ).isEqualTo( 4 );
-        assertThat( map.keys() ).isEqualTo( new long[]{1, 2, 3, 4} );
-        assertThat( map.getOrDefault( 2, DEFAULT_VALUE ) ).isEqualTo( 200 );
-        assertThat( map.getOrDefault( 3, DEFAULT_VALUE ) ).isEqualTo( 300 );
-        assertThat( map.getOrDefault( 4, DEFAULT_VALUE ) ).isEqualTo( 4000 );
+        assertThat(map.putIfAbsent(2, 2000)).isEqualTo(false);
+        assertThat(map.putIfAbsent(3, 3000)).isEqualTo(false);
+        assertThat(map.putIfAbsent(4, 4000)).isEqualTo(true);
+        assertThat(map.size()).isEqualTo(4);
+        assertThat(map.keys()).isEqualTo(new long[] {1, 2, 3, 4});
+        assertThat(map.getOrDefault(2, DEFAULT_VALUE)).isEqualTo(200);
+        assertThat(map.getOrDefault(3, DEFAULT_VALUE)).isEqualTo(300);
+        assertThat(map.getOrDefault(4, DEFAULT_VALUE)).isEqualTo(4000);
     }
 
     @Test
-    void testReset()
-    {
+    void testReset() {
         PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray();
-        map.putIfAbsent( 1, 100 );
-        map.putIfAbsent( 2, 200 );
-        map.putIfAbsent( 3, 300 );
+        map.putIfAbsent(1, 100);
+        map.putIfAbsent(2, 200);
+        map.putIfAbsent(3, 300);
 
-        map.reset( 1000 );
-        assertThat( map.size() ).isEqualTo( 0 );
-        assertThat( map.capacity() ).isGreaterThanOrEqualTo( 1000 );
+        map.reset(1000);
+        assertThat(map.size()).isEqualTo(0);
+        assertThat(map.capacity()).isGreaterThanOrEqualTo(1000);
     }
 
     @Test
-    void testKeys()
-    {
+    void testKeys() {
         PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray();
-        map.putIfAbsent( 1, 100 );
-        map.putIfAbsent( 2, 200 );
-        map.putIfAbsent( 3, 300 );
-        map.putIfAbsent( 2, 200 );
-        map.putIfAbsent( 3, 300 );
-        map.putIfAbsent( 8, 800 );
-        map.putIfAbsent( 7, 700 );
-        map.putIfAbsent( 6, 600 );
-        map.putIfAbsent( 5, 500 );
+        map.putIfAbsent(1, 100);
+        map.putIfAbsent(2, 200);
+        map.putIfAbsent(3, 300);
+        map.putIfAbsent(2, 200);
+        map.putIfAbsent(3, 300);
+        map.putIfAbsent(8, 800);
+        map.putIfAbsent(7, 700);
+        map.putIfAbsent(6, 600);
+        map.putIfAbsent(5, 500);
 
-        assertThat( map.size() ).isEqualTo( 7 );
-        assertThat( map.keys() ).isEqualTo( new long[]{1, 2, 3, 8, 7, 6, 5} );
+        assertThat(map.size()).isEqualTo(7);
+        assertThat(map.keys()).isEqualTo(new long[] {1, 2, 3, 8, 7, 6, 5});
     }
 
     @Test
-    void testGrowth()
-    {
-        PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray( 10 );
-        for ( int i = 0; i < 100; i++ )
-        {
-            map.putIfAbsent( i, i );
+    void testGrowth() {
+        PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray(10);
+        for (int i = 0; i < 100; i++) {
+            map.putIfAbsent(i, i);
         }
     }
 }

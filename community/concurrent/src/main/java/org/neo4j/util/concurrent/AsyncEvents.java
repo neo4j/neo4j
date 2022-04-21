@@ -40,30 +40,27 @@ import java.util.function.Consumer;
  *
  * @param <T> The type of events the {@code AsyncEvents} will process.
  */
-public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, Runnable
-{
-    public interface Monitor
-    {
-        void eventCount( long count );
+public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, Runnable {
+    public interface Monitor {
+        void eventCount(long count);
 
-        Monitor NONE = count ->
-        {
-        };
+        Monitor NONE = count -> {};
     }
 
     // TODO use VarHandles in Java 9
-    private static final AtomicReferenceFieldUpdater<AsyncEvents,AsyncEvent> STACK_UPDATER =
-            AtomicReferenceFieldUpdater.newUpdater( AsyncEvents.class, AsyncEvent.class, "stack" );
-    private static final Sentinel END_SENTINEL = new Sentinel( "END" );
-    private static final Sentinel SHUTDOWN_SENTINEL = new Sentinel( "SHUTDOWN" );
+    private static final AtomicReferenceFieldUpdater<AsyncEvents, AsyncEvent> STACK_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(AsyncEvents.class, AsyncEvent.class, "stack");
+    private static final Sentinel END_SENTINEL = new Sentinel("END");
+    private static final Sentinel SHUTDOWN_SENTINEL = new Sentinel("SHUTDOWN");
 
     private final Consumer<T> eventConsumer;
     private final Monitor monitor;
     private final BinaryLatch startupLatch;
     private final BinaryLatch shutdownLatch;
 
-    @SuppressWarnings( {"unused", "FieldCanBeLocal"} )
+    @SuppressWarnings({"unused", "FieldCanBeLocal"})
     private volatile AsyncEvent stack; // Accessed via AtomicReferenceFieldUpdater
+
     private volatile Thread backgroundThread;
     private volatile boolean shutdown;
 
@@ -72,8 +69,7 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
      *
      * @param eventConsumer The {@link Consumer} used for processing the events that are sent in.
      */
-    public AsyncEvents( Consumer<T> eventConsumer, Monitor monitor )
-    {
+    public AsyncEvents(Consumer<T> eventConsumer, Monitor monitor) {
         this.eventConsumer = eventConsumer;
         this.monitor = monitor;
         this.startupLatch = new BinaryLatch();
@@ -82,85 +78,67 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
     }
 
     @Override
-    public void send( T event )
-    {
-        AsyncEvent prev = STACK_UPDATER.getAndSet( this, event );
+    public void send(T event) {
+        AsyncEvent prev = STACK_UPDATER.getAndSet(this, event);
         assert prev != null;
         event.next = prev;
-        if ( prev == END_SENTINEL )
-        {
-            LockSupport.unpark( backgroundThread );
-        }
-        else if ( prev == SHUTDOWN_SENTINEL )
-        {
-            AsyncEvent events = STACK_UPDATER.getAndSet( this, SHUTDOWN_SENTINEL );
-            process( events );
+        if (prev == END_SENTINEL) {
+            LockSupport.unpark(backgroundThread);
+        } else if (prev == SHUTDOWN_SENTINEL) {
+            AsyncEvent events = STACK_UPDATER.getAndSet(this, SHUTDOWN_SENTINEL);
+            process(events);
         }
     }
 
     @Override
-    public void run()
-    {
+    public void run() {
         assert backgroundThread == null : "A thread is already running " + backgroundThread;
         backgroundThread = Thread.currentThread();
         startupLatch.release();
 
-        try
-        {
-            do
-            {
-                AsyncEvent events = STACK_UPDATER.getAndSet( this, END_SENTINEL );
-                process( events );
-                if ( stack == END_SENTINEL && !shutdown )
-                {
-                    LockSupport.park( this );
+        try {
+            do {
+                AsyncEvent events = STACK_UPDATER.getAndSet(this, END_SENTINEL);
+                process(events);
+                if (stack == END_SENTINEL && !shutdown) {
+                    LockSupport.park(this);
                 }
-            }
-            while ( !shutdown );
+            } while (!shutdown);
 
-            AsyncEvent events = STACK_UPDATER.getAndSet( this, SHUTDOWN_SENTINEL );
-            process( events );
-        }
-        finally
-        {
+            AsyncEvent events = STACK_UPDATER.getAndSet(this, SHUTDOWN_SENTINEL);
+            process(events);
+        } finally {
             backgroundThread = null;
             shutdownLatch.release();
         }
     }
 
-    private void process( AsyncEvent events )
-    {
-        events = reverseAndStripEndMark( events );
+    private void process(AsyncEvent events) {
+        events = reverseAndStripEndMark(events);
 
-        while ( events != null )
-        {
-            @SuppressWarnings( "unchecked" )
+        while (events != null) {
+            @SuppressWarnings("unchecked")
             T event = (T) events;
-            eventConsumer.accept( event );
+            eventConsumer.accept(event);
             events = events.next;
         }
     }
 
-    private AsyncEvent reverseAndStripEndMark( AsyncEvent events )
-    {
+    private AsyncEvent reverseAndStripEndMark(AsyncEvent events) {
         AsyncEvent result = null;
         long count = 0;
-        while ( events != END_SENTINEL && events != SHUTDOWN_SENTINEL )
-        {
+        while (events != END_SENTINEL && events != SHUTDOWN_SENTINEL) {
             AsyncEvent next;
-            do
-            {
+            do {
                 next = events.next;
-            }
-            while ( next == null );
+            } while (next == null);
             events.next = result;
             result = events;
             events = next;
             count++;
         }
-        if ( count > 0 )
-        {
-            monitor.eventCount( count );
+        if (count > 0) {
+            monitor.eventCount(count);
         }
         return result;
     }
@@ -170,35 +148,29 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
      * <p>
      * This call does not block or otherwise wait for the background thread to terminate.
      */
-    public void shutdown()
-    {
+    public void shutdown() {
         assert !shutdown : "Already shut down";
         shutdown = true;
-        LockSupport.unpark( backgroundThread );
+        LockSupport.unpark(backgroundThread);
     }
 
-    public void awaitStartup()
-    {
+    public void awaitStartup() {
         startupLatch.await();
     }
 
-    public void awaitTermination()
-    {
+    public void awaitTermination() {
         shutdownLatch.await();
     }
 
-    private static class Sentinel extends AsyncEvent
-    {
+    private static class Sentinel extends AsyncEvent {
         private final String str;
 
-        Sentinel( String identifier )
-        {
+        Sentinel(String identifier) {
             this.str = "AsyncEvent/Sentinel[" + identifier + "]";
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return str;
         }
     }

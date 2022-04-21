@@ -50,7 +50,7 @@ object groupInequalityPredicates extends (collection.Seq[Predicate] => collectio
     // categorize predicates according to whether they contain an inequality on a property or not
     val (propertyInequalities, otherPredicates) = inputPredicates.partition {
       case Predicate(_, InequalityExpression(Property(_: Variable, _), _)) => true
-      case _ => false
+      case _                                                               => false
     }
 
     // group by property lookup
@@ -60,7 +60,7 @@ object groupInequalityPredicates extends (collection.Seq[Predicate] => collectio
 
     // collect together all inequalities over some property lookup
     val rewrittenPropertyInequalities = predicatesGroupedByProperty.collect {
-      case (prop@Property(variable: Variable, _), groupInequalities) =>
+      case (prop @ Property(variable: Variable, _), groupInequalities) =>
         val dependencies = groupInequalities.flatMap(_.dependencies).toSet
         val inequalityExpressions = groupInequalities.collect {
           case Predicate(_, ie: InequalityExpression) => ie

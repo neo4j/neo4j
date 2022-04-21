@@ -19,8 +19,7 @@
  */
 package org.neo4j.values.storable;
 
-public enum ValueCategory
-{
+public enum ValueCategory {
     NUMBER,
     NUMBER_ARRAY,
     TEXT,

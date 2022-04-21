@@ -20,48 +20,41 @@
 package org.neo4j.internal.batchimport.cache;
 
 import java.util.Arrays;
-
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 
 /**
  * A {@code long[]} on heap, abstracted into a {@link IntArray}.
  */
-public class HeapIntArray extends HeapNumberArray<IntArray> implements IntArray
-{
+public class HeapIntArray extends HeapNumberArray<IntArray> implements IntArray {
     private final int[] array;
     private final int defaultValue;
 
-    public HeapIntArray( int length, int defaultValue, long base, MemoryTracker memoryTracker )
-    {
-        super( Integer.BYTES, base );
+    public HeapIntArray(int length, int defaultValue, long base, MemoryTracker memoryTracker) {
+        super(Integer.BYTES, base);
         this.defaultValue = defaultValue;
         this.array = new int[length];
-        memoryTracker.allocateHeap( HeapEstimator.sizeOf( array ) );
+        memoryTracker.allocateHeap(HeapEstimator.sizeOf(array));
         clear();
     }
 
     @Override
-    public long length()
-    {
+    public long length() {
         return array.length;
     }
 
     @Override
-    public int get( long index )
-    {
-        return array[index( index )];
+    public int get(long index) {
+        return array[index(index)];
     }
 
     @Override
-    public void set( long index, int value )
-    {
-        array[index( index )] = value;
+    public void set(long index, int value) {
+        array[index(index)] = value;
     }
 
     @Override
-    public void clear()
-    {
-        Arrays.fill( array, defaultValue );
+    public void clear() {
+        Arrays.fill(array, defaultValue);
     }
 }

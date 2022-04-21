@@ -37,13 +37,18 @@ object PatternConverters {
 
   object DestructResult { def empty: DestructResult = DestructResult(Seq.empty, Seq.empty, Seq.empty) }
 
-  case class DestructResult(nodeIds: Seq[String], rels: Seq[PatternRelationship], shortestPaths: Seq[ShortestPathPattern]) {
+  case class DestructResult(
+    nodeIds: Seq[String],
+    rels: Seq[PatternRelationship],
+    shortestPaths: Seq[ShortestPathPattern]
+  ) {
     def addNodeId(newId: String*): DestructResult = copy(nodeIds = nodeIds ++ newId)
     def addRel(r: PatternRelationship*): DestructResult = copy(rels = rels ++ r)
     def addShortestPaths(r: ShortestPathPattern*): DestructResult = copy(shortestPaths = shortestPaths ++ r)
   }
 
   implicit class PatternElementDestructor(val pattern: PatternElement) extends AnyVal {
+
     def destructed: DestructResult = pattern match {
       case relchain: RelationshipChain => relchain.destructedRelationshipChain
       case node: NodePattern           => node.destructedNodePattern
@@ -51,15 +56,20 @@ object PatternConverters {
   }
 
   implicit class NodePatternConverter(val node: NodePattern) extends AnyVal {
+
     def destructedNodePattern: DestructResult =
       DestructResult(nodeIds = Seq(node.variable.get.name), Seq.empty, Seq.empty)
   }
 
   implicit class RelationshipChainDestructor(val chain: RelationshipChain) extends AnyVal {
-    def destructedRelationshipChain: DestructResult = {
-      val rightNodeName = chain.rightNode.variable.getOrElse(throw new IllegalArgumentException("Missing variable in node pattern")).name
 
-      val relationshipName = chain.relationship.variable.getOrElse(throw new IllegalArgumentException("Missing variable in relationship pattern")).name
+    def destructedRelationshipChain: DestructResult = {
+      val rightNodeName =
+        chain.rightNode.variable.getOrElse(throw new IllegalArgumentException("Missing variable in node pattern")).name
+
+      val relationshipName = chain.relationship.variable.getOrElse(
+        throw new IllegalArgumentException("Missing variable in relationship pattern")
+      ).name
       val relationshipDirection = chain.relationship.direction
       val relationshipTypes = chain.relationship.types
       val relationshipLength = chain.relationship.length.asPatternLength
@@ -69,45 +79,52 @@ object PatternConverters {
 
         // (a)->[r]->(b)
         case leftNode: NodePattern =>
-          val leftNodeName = leftNode.variable.getOrElse(throw new IllegalArgumentException("Missing variable in node pattern")).name
-          val relationship = PatternRelationship(relationshipName, (leftNodeName, rightNodeName), relationshipDirection, relationshipTypes, relationshipLength)
+          val leftNodeName =
+            leftNode.variable.getOrElse(throw new IllegalArgumentException("Missing variable in node pattern")).name
+          val relationship = PatternRelationship(
+            relationshipName,
+            (leftNodeName, rightNodeName),
+            relationshipDirection,
+            relationshipTypes,
+            relationshipLength
+          )
           DestructResult(Seq(leftNodeName, rightNodeName), Seq(relationship), Seq.empty)
 
         // ...->[r]->(b)
-        case leftChain:RelationshipChain =>
+        case leftChain: RelationshipChain =>
           val destructed = leftChain.destructedRelationshipChain
           val leftNodeName = destructed.rels.last.right
-          val newRelationship = PatternRelationship(relationshipName, (leftNodeName, rightNodeName), relationshipDirection, relationshipTypes, relationshipLength)
-          destructed.
-            addNodeId(rightNodeName).
-            addRel(newRelationship)
+          val newRelationship = PatternRelationship(
+            relationshipName,
+            (leftNodeName, rightNodeName),
+            relationshipDirection,
+            relationshipTypes,
+            relationshipLength
+          )
+          destructed.addNodeId(rightNodeName).addRel(newRelationship)
       }
     }
   }
 
   implicit class PatternDestructor(val pattern: Pattern) extends AnyVal {
+
     def destructed(anonymousVariableNameGenerator: AnonymousVariableNameGenerator): DestructResult = {
       pattern.patternParts.foldLeft(DestructResult.empty) {
-        case (acc, NamedPatternPart(ident, sps@ShortestPaths(element, single))) =>
+        case (acc, NamedPatternPart(ident, sps @ ShortestPaths(element, single))) =>
           val destructedElement: DestructResult = element.destructed
           val pathName = ident.name
           val newShortest = ShortestPathPattern(Some(pathName), destructedElement.rels.head, single)(sps)
-          acc.
-            addNodeId(destructedElement.nodeIds:_*).
-            addShortestPaths(newShortest)
+          acc.addNodeId(destructedElement.nodeIds: _*).addShortestPaths(newShortest)
 
-        case (acc, sps@ShortestPaths(element, single)) =>
+        case (acc, sps @ ShortestPaths(element, single)) =>
           val destructedElement = element.destructed
-          val newShortest = ShortestPathPattern(Some(anonymousVariableNameGenerator.nextName), destructedElement.rels.head, single)(sps)
-          acc.
-            addNodeId(destructedElement.nodeIds:_*).
-            addShortestPaths(newShortest)
+          val newShortest =
+            ShortestPathPattern(Some(anonymousVariableNameGenerator.nextName), destructedElement.rels.head, single)(sps)
+          acc.addNodeId(destructedElement.nodeIds: _*).addShortestPaths(newShortest)
 
         case (acc, everyPath: EveryPath) =>
           val destructedElement = everyPath.element.destructed
-          acc.
-            addNodeId(destructedElement.nodeIds:_*).
-            addRel(destructedElement.rels:_*)
+          acc.addNodeId(destructedElement.nodeIds: _*).addRel(destructedElement.rels: _*)
 
         case p =>
           throw new InternalException(s"Unknown pattern element encountered $p")

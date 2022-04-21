@@ -25,7 +25,6 @@ package org.neo4j.scheduler;
  * together with the task.
  */
 @FunctionalInterface
-public interface MonitoredJobExecutor
-{
-    void execute( JobMonitoringParams monitoringParams, Runnable command );
+public interface MonitoredJobExecutor {
+    void execute(JobMonitoringParams monitoringParams, Runnable command);
 }

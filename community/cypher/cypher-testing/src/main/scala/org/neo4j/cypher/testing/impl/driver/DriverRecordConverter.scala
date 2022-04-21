@@ -28,6 +28,7 @@ import org.neo4j.driver.types.Point
 import org.neo4j.driver.types.Relationship
 
 import java.util
+
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsScala
 

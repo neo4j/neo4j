@@ -29,52 +29,41 @@ import java.nio.file.Paths;
 /**
  * A source for free ports on this machine
  */
-public class PortAuthority
-{
+public class PortAuthority {
     // this is quite an arbitrary choice and not currently configurable - but it works.
     private static final int PORT_RANGE_MINIMUM = 20000;
 
     private static final PortProvider portProvider;
 
-    static
-    {
-        String portAuthorityDirectory = System.getProperty( "port.authority.directory" );
+    static {
+        String portAuthorityDirectory = System.getProperty("port.authority.directory");
 
-        if ( portAuthorityDirectory == null )
-        {
-            portProvider = new SimplePortProvider( new DefaultPortProbe(), PORT_RANGE_MINIMUM );
-        }
-        else
-        {
-            try
-            {
-                Path directory = Paths.get( portAuthorityDirectory );
-                Files.createDirectories( directory );
-                PortRepository portRepository = new PortRepository( directory, PORT_RANGE_MINIMUM );
+        if (portAuthorityDirectory == null) {
+            portProvider = new SimplePortProvider(new DefaultPortProbe(), PORT_RANGE_MINIMUM);
+        } else {
+            try {
+                Path directory = Paths.get(portAuthorityDirectory);
+                Files.createDirectories(directory);
+                PortRepository portRepository = new PortRepository(directory, PORT_RANGE_MINIMUM);
                 PortProbe portProbe = new DefaultPortProbe();
-                portProvider = new CoordinatingPortProvider( portRepository, portProbe );
-            }
-            catch ( IOException e )
-            {
-                throw new ExceptionInInitializerError( e );
+                portProvider = new CoordinatingPortProvider(portRepository, portProbe);
+            } catch (IOException e) {
+                throw new ExceptionInInitializerError(e);
             }
         }
     }
 
-    public static int allocatePort()
-    {
+    public static int allocatePort() {
         String trace = buildTrace();
 
-        return portProvider.getNextFreePort( trace );
+        return portProvider.getNextFreePort(trace);
     }
 
-    private static String buildTrace()
-    {
+    private static String buildTrace() {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        try ( PrintWriter printWriter = new PrintWriter( outputStream ) )
-        {
-            new Exception().printStackTrace( printWriter );
+        try (PrintWriter printWriter = new PrintWriter(outputStream)) {
+            new Exception().printStackTrace(printWriter);
         }
 
         return outputStream.toString();

@@ -21,29 +21,16 @@ package org.neo4j.tooling.procedure.procedures.invalid.missing_constructor;
 
 import org.neo4j.procedure.Procedure;
 
-public class MissingConstructorProcedure
-{
+public class MissingConstructorProcedure {
     // should be no-arg
-    public MissingConstructorProcedure( String oopsAParameter )
-    {
-    }
+    public MissingConstructorProcedure(String oopsAParameter) {}
 
     // should be public
-    private MissingConstructorProcedure()
-    {
-
-    }
+    private MissingConstructorProcedure() {}
 
     @Procedure
-    public void foobar()
-    {
-
-    }
+    public void foobar() {}
 
     @Procedure
-    public void foobarqix()
-    {
-
-    }
-
+    public void foobarqix() {}
 }

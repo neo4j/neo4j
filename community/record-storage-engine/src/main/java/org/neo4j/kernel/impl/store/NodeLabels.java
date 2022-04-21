@@ -20,25 +20,38 @@
 package org.neo4j.kernel.impl.store;
 
 import java.util.Collection;
-
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-public interface NodeLabels
-{
-    long[] get( NodeStore nodeStore, StoreCursors storeCursors );
+public interface NodeLabels {
+    long[] get(NodeStore nodeStore, StoreCursors storeCursors);
 
     long[] getIfLoaded();
 
-    Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator, CursorContext cursorContext,
-            StoreCursors storeCursors, MemoryTracker memoryTracker );
+    Collection<DynamicRecord> put(
+            long[] labelIds,
+            NodeStore nodeStore,
+            DynamicRecordAllocator allocator,
+            CursorContext cursorContext,
+            StoreCursors storeCursors,
+            MemoryTracker memoryTracker);
 
-    Collection<DynamicRecord> add( long labelId, NodeStore nodeStore, DynamicRecordAllocator allocator, CursorContext cursorContext, StoreCursors storeCursors,
-            MemoryTracker memoryTracker );
+    Collection<DynamicRecord> add(
+            long labelId,
+            NodeStore nodeStore,
+            DynamicRecordAllocator allocator,
+            CursorContext cursorContext,
+            StoreCursors storeCursors,
+            MemoryTracker memoryTracker);
 
-    Collection<DynamicRecord> remove( long labelId, NodeStore nodeStore, CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker );
+    Collection<DynamicRecord> remove(
+            long labelId,
+            NodeStore nodeStore,
+            CursorContext cursorContext,
+            StoreCursors storeCursors,
+            MemoryTracker memoryTracker);
 
     boolean isInlined();
 }

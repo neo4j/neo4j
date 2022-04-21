@@ -25,10 +25,12 @@ case class Cardinality(amount: Double) extends Ordered[Cardinality] {
 
   def compare(that: Cardinality): Int = amount.compare(that.amount)
   def *(that: Multiplier): Cardinality = amount * that.coefficient
-  def *(that: Selectivity): Cardinality = if ( that.factor == 0 ) Cardinality.EMPTY else amount * that.factor
+  def *(that: Selectivity): Cardinality = if (that.factor == 0) Cardinality.EMPTY else amount * that.factor
   def +(that: Cardinality): Cardinality = amount + that.amount
   def -(that: Cardinality): Cardinality = amount - that.amount
-  def *(that: Cardinality): Cardinality = if( amount == 0 || that.amount == 0 ) Cardinality.EMPTY
+
+  def *(that: Cardinality): Cardinality =
+    if (amount == 0 || that.amount == 0) Cardinality.EMPTY
     else Cardinality.noInf(amount * that.amount)
   def /(that: Cardinality): Option[Selectivity] = if (that.amount == 0) None else Selectivity.of(amount / that.amount)
   def *(that: CostPerRow): Cost = amount * that.cost
@@ -47,7 +49,7 @@ object Cardinality {
 
   implicit def lift(amount: Double): Cardinality = Cardinality(amount)
 
-  private def noInf(value: Double) = if( value == Double.PositiveInfinity ) Double.MaxValue else value
+  private def noInf(value: Double) = if (value == Double.PositiveInfinity) Double.MaxValue else value
 
   def min(l: Cardinality, r: Cardinality): Cardinality = Math.min(l.amount, r.amount)
 
@@ -80,10 +82,15 @@ object Cardinality {
  * @param amount The cardinality of a plan when the surrounding plan is taken into account.
  * @param originalCardinality The cardinality of a plan without considering the surrounding plan.
  */
-case class EffectiveCardinality(amount: Double, originalCardinality: Option[Cardinality] = None) extends Ordered[EffectiveCardinality] {
+case class EffectiveCardinality(amount: Double, originalCardinality: Option[Cardinality] = None)
+    extends Ordered[EffectiveCardinality] {
   def compare(that: EffectiveCardinality): Int = amount.compare(that.amount)
-  def +(that: EffectiveCardinality): EffectiveCardinality = EffectiveCardinality(amount + that.amount, originalCardinality)
-  def -(that: EffectiveCardinality): EffectiveCardinality = EffectiveCardinality(Math.max(amount - that.amount, 0), originalCardinality)
+
+  def +(that: EffectiveCardinality): EffectiveCardinality =
+    EffectiveCardinality(amount + that.amount, originalCardinality)
+
+  def -(that: EffectiveCardinality): EffectiveCardinality =
+    EffectiveCardinality(Math.max(amount - that.amount, 0), originalCardinality)
 }
 
 case class Cost(gummyBears: Double) extends Ordered[Cost] {
@@ -135,9 +142,11 @@ object Multiplier {
   def max(l: Multiplier, r: Multiplier): Multiplier =
     Multiplier(Math.max(l.coefficient, r.coefficient))
 
-  def ofDivision(dividend: Cardinality, divisor: Cardinality): Option[Multiplier] = if (divisor.amount == 0) None else Multiplier.of(dividend.amount / divisor.amount)
+  def ofDivision(dividend: Cardinality, divisor: Cardinality): Option[Multiplier] =
+    if (divisor.amount == 0) None else Multiplier.of(dividend.amount / divisor.amount)
 
-  def of(value: Double): Option[Multiplier] = if (value.isInfinite || value.isNaN || value < 0.0) None else Some(Multiplier(value))
+  def of(value: Double): Option[Multiplier] =
+    if (value.isInfinite || value.isNaN || value < 0.0) None else Some(Multiplier(value))
 
   object NumericMultiplier extends Numeric[Multiplier] {
     def toDouble(x: Multiplier): Double = x.coefficient
@@ -165,6 +174,7 @@ object Multiplier {
  * @param minimum Expected minimum number of rows to produce
  */
 final case class WorkReduction(fraction: Selectivity, minimum: Option[Cardinality] = None) {
+
   def calculate(original: Cardinality, useMinimum: Boolean = false): Cardinality =
     (useMinimum, minimum) match {
       case (true, Some(card)) => Cardinality.max(original * fraction, card)

@@ -19,38 +19,34 @@
  */
 package org.neo4j.bolt;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+class BoltProtocolVersionTest {
 
-class BoltProtocolVersionTest
-{
+    @ParameterizedTest(name = "V{0}.{1}")
+    @CsvSource({"3, 0", "4, 0", "4, 1", "4, 2", "100, 100", "255, 255", "0, 0"})
+    void shouldParseVersion(int major, int minor) {
+        BoltProtocolVersion protocolVersion = new BoltProtocolVersion(major, minor);
 
-    @ParameterizedTest( name = "V{0}.{1}" )
-    @CsvSource( {"3, 0", "4, 0", "4, 1", "4, 2", "100, 100", "255, 255", "0, 0"} )
-    void shouldParseVersion( int major, int minor )
-    {
-        BoltProtocolVersion protocolVersion = new BoltProtocolVersion( major, minor );
+        BoltProtocolVersion testVersion = BoltProtocolVersion.fromRawBytes(protocolVersion.toInt());
 
-        BoltProtocolVersion testVersion = BoltProtocolVersion.fromRawBytes( protocolVersion.toInt() );
-
-        assertEquals( major, testVersion.getMajorVersion() );
-        assertEquals( minor, testVersion.getMinorVersion() );
+        assertEquals(major, testVersion.getMajorVersion());
+        assertEquals(minor, testVersion.getMinorVersion());
     }
 
     @Test
-    void shouldOutputCorrectLongFormatForMajorVersionOnly()
-    {
-        BoltProtocolVersion version = new BoltProtocolVersion( 4, 0 );
-        assertEquals( 4L, version.toInt() );
+    void shouldOutputCorrectLongFormatForMajorVersionOnly() {
+        BoltProtocolVersion version = new BoltProtocolVersion(4, 0);
+        assertEquals(4L, version.toInt());
     }
 
     @Test
-    void shouldOutputCorrectLongFormatForMajorAndMinorVersion()
-    {
-        BoltProtocolVersion version = new BoltProtocolVersion( 4, 1 );
-        assertEquals( 260L, version.toInt() );
+    void shouldOutputCorrectLongFormatForMajorAndMinorVersion() {
+        BoltProtocolVersion version = new BoltProtocolVersion(4, 1);
+        assertEquals(260L, version.toInt());
     }
 }

@@ -20,15 +20,12 @@
 package org.neo4j.token.api;
 
 import java.util.List;
-
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-public interface TokensLoader
-{
-    List<NamedToken> getPropertyKeyTokens( StoreCursors storeCursors );
+public interface TokensLoader {
+    List<NamedToken> getPropertyKeyTokens(StoreCursors storeCursors);
 
-    List<NamedToken> getLabelTokens( StoreCursors storeCursors );
+    List<NamedToken> getLabelTokens(StoreCursors storeCursors);
 
-    List<NamedToken> getRelationshipTypeTokens( StoreCursors storeCursors );
+    List<NamedToken> getRelationshipTypeTokens(StoreCursors storeCursors);
 }

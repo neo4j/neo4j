@@ -48,7 +48,7 @@ class GrowingArrayTest extends CypherFunSuite {
     val x = new GrowingArray[String](EmptyMemoryTracker.INSTANCE)
 
     for (i <- 0 until 1000) {
-      x.set(i, ""+i)
+      x.set(i, "" + i)
     }
 
     x.get(265) shouldBe "265"
@@ -59,7 +59,7 @@ class GrowingArrayTest extends CypherFunSuite {
   test("foreach") {
     val x = new GrowingArray[String](EmptyMemoryTracker.INSTANCE)
     for (i <- 0 until 10) {
-      x.set(i, ""+i)
+      x.set(i, "" + i)
     }
 
     val builder = Seq.newBuilder[String]
@@ -109,19 +109,19 @@ class GrowingArrayTest extends CypherFunSuite {
     val memoryTracking = new LocalMemoryTracker()
     new GrowingArray[String](memoryTracking)
 
-    memoryTracking.estimatedHeapMemory() shouldBe > (0L)
+    memoryTracking.estimatedHeapMemory() shouldBe >(0L)
   }
 
   test("should allocate when adding objects") {
-    //given
+    // given
     val memoryTracking = new LocalMemoryTracker()
     val x = new GrowingArray[String](memoryTracking)
     val initMemory = memoryTracking.estimatedHeapMemory()
 
-    //when
+    // when
     (0 to 16).foreach(i => x.set(i, i.toString))
 
-    //then
+    // then
     memoryTracking.estimatedHeapMemory() should be > initMemory
   }
 }

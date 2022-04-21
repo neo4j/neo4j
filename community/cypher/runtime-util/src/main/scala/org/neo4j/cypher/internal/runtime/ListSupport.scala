@@ -51,16 +51,18 @@ trait ListSupport {
   def asListOf[T](test: PartialFunction[AnyValue, T])(input: Iterable[AnyValue]): Option[Iterable[T]] =
     Some(input map { elem: AnyValue => if (test.isDefinedAt(elem)) test(elem) else return None })
 
-  def makeTraversable(z: AnyValue): ListValue = if (isList(z)) {
-    castToList(z)
-  } else {
-    if (z eq Values.NO_VALUE) VirtualValues.EMPTY_LIST else VirtualValues.list(z)
-  }
+  def makeTraversable(z: AnyValue): ListValue =
+    if (isList(z)) {
+      castToList(z)
+    } else {
+      if (z eq Values.NO_VALUE) VirtualValues.EMPTY_LIST else VirtualValues.list(z)
+    }
 
   protected def castToList: PartialFunction[AnyValue, ListValue] = {
     case x: ArrayValue => VirtualValues.fromArray(x)
-    case x: ListValue => x
-    case x: MapValue => VirtualValues.list(x) // TODO: This is slightly peculiar. Excercise this in tests to clarify behavior
+    case x: ListValue  => x
+    case x: MapValue =>
+      VirtualValues.list(x) // TODO: This is slightly peculiar. Excercise this in tests to clarify behavior
   }
 
   implicit class RichSeq[T](inner: collection.Seq[T]) {

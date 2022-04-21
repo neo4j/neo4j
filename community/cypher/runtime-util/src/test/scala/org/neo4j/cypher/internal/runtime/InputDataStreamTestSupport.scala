@@ -19,16 +19,17 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import java.util.concurrent.atomic.AtomicInteger
-
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.RandomValues
 import org.neo4j.values.storable.Value
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import scala.collection.mutable.ArrayBuffer
 
 object InputDataStreamTestSupport {
+
   val RANDOM_VALUE_CONFIG: RandomValues.Configuration =
     new RandomValues.Configuration {
       override def stringMinLength = 0
@@ -61,7 +62,7 @@ trait InputDataStreamTestSupport {
     input
   }
 
-  //noinspection ScalaUnnecessaryParentheses
+  // noinspection ScalaUnnecessaryParentheses
   def inputColumns(nBatches: Int, batchSize: Int, valueFunctions: (Int => Any)*): InputValues = {
     val input = new InputValues()
     for (batch <- 0 until nBatches) {
@@ -142,6 +143,7 @@ class BufferInputCursor(data: IndexedSeq[Array[AnyValue]]) extends InputCursor {
  */
 class IteratorInputStream(data: Iterator[Array[AnyValue]]*) extends InputDataStream {
   private val batchIndex = new AtomicInteger(0)
+
   override def nextInputBatch(): InputCursor = {
     val i = batchIndex.getAndIncrement()
     if (i < data.size) {

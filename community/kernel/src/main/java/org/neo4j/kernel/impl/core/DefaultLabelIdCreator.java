@@ -20,21 +20,17 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.function.Supplier;
-
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 
-public class DefaultLabelIdCreator extends IsolatedTransactionTokenCreator
-{
-    public DefaultLabelIdCreator( Supplier<Kernel> kernelSupplier )
-    {
-        super( kernelSupplier );
+public class DefaultLabelIdCreator extends IsolatedTransactionTokenCreator {
+    public DefaultLabelIdCreator(Supplier<Kernel> kernelSupplier) {
+        super(kernelSupplier);
     }
 
     @Override
-    protected int createKey( KernelTransaction transaction, String name, boolean internal ) throws KernelException
-    {
-        return transaction.tokenWrite().labelCreateForName( name, internal );
+    protected int createKey(KernelTransaction transaction, String name, boolean internal) throws KernelException {
+        return transaction.tokenWrite().labelCreateForName(name, internal);
     }
 }

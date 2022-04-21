@@ -36,7 +36,7 @@ case class ValidatingRewriter(inner: Rewriter, step: Step) extends Rewriter {
 
   private def validate(input: AnyRef): Unit = {
     val failures = step.postConditions.collect {
-      case f:ValidatingCondition => f.name -> f(input)
+      case f: ValidatingCondition => f.name -> f(input)
     }
     if (failures.exists(_._2.nonEmpty)) {
       throw new IllegalStateException(buildErrorMessage(failures))
@@ -57,6 +57,7 @@ case class ValidatingRewriter(inner: Rewriter, step: Step) extends Rewriter {
 }
 
 object RewriterStep {
+
   def validatingRewriter(inner: Rewriter, step: Step): Rewriter = {
     if (AssertionRunner.isAssertionsEnabled) {
       ValidatingRewriter(inner, step)

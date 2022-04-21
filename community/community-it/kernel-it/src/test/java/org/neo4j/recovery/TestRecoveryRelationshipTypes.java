@@ -19,12 +19,15 @@
  */
 package org.neo4j.recovery;
 
-import org.junit.jupiter.api.Test;
+import static java.lang.System.exit;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.test.proc.ProcessUtil.start;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Iterator;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
@@ -38,60 +41,49 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static java.lang.System.exit;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.test.proc.ProcessUtil.start;
-
 @TestDirectoryExtension
-class TestRecoveryRelationshipTypes
-{
+class TestRecoveryRelationshipTypes {
     @Inject
     private TestDirectory testDirectory;
 
     @Test
-    void recoverNeoAndHavingAllRelationshipTypesAfterRecovery() throws Exception
-    {
+    void recoverNeoAndHavingAllRelationshipTypesAfterRecovery() throws Exception {
         // Given (create transactions and kill process, leaving it needing for recovery)
         Path storeDir = testDirectory.homePath();
-        Process process = start( getClass().getName(), storeDir.toAbsolutePath().toString() );
-        assertEquals( 0, process.waitFor() );
+        Process process = start(getClass().getName(), storeDir.toAbsolutePath().toString());
+        assertEquals(0, process.waitFor());
 
         // When
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir ).build();
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(storeDir).build();
+        GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
 
         // Then
-        try ( Transaction transaction = db.beginTx() )
-        {
-            Iterator<RelationshipType> typeResourceIterator = transaction.getAllRelationshipTypes().iterator();
-            assertEquals( MyRelTypes.TEST.name(), typeResourceIterator.next().name() );
-        }
-        finally
-        {
+        try (Transaction transaction = db.beginTx()) {
+            Iterator<RelationshipType> typeResourceIterator =
+                    transaction.getAllRelationshipTypes().iterator();
+            assertEquals(MyRelTypes.TEST.name(), typeResourceIterator.next().name());
+        } finally {
             managementService.shutdown();
         }
     }
 
-    public static void main( String[] args ) throws IOException
-    {
-        if ( args.length != 1 )
-        {
-            exit( 1 );
+    public static void main(String[] args) throws IOException {
+        if (args.length != 1) {
+            exit(1);
         }
 
-        Path storeDir = Path.of( args[0] ).toAbsolutePath();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir ).build();
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.createNode().createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
+        Path storeDir = Path.of(args[0]).toAbsolutePath();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(storeDir).build();
+        GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
+        try (Transaction tx = db.beginTx()) {
+            tx.createNode().createRelationshipTo(tx.createNode(), MyRelTypes.TEST);
             tx.commit();
         }
 
-        CheckPointer checkPointer = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( CheckPointer.class );
-        checkPointer.forceCheckPoint( new SimpleTriggerInfo( "test" ) );
+        CheckPointer checkPointer =
+                ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(CheckPointer.class);
+        checkPointer.forceCheckPoint(new SimpleTriggerInfo("test"));
 
-        exit( 0 );
+        exit(0);
     }
 }

@@ -29,6 +29,7 @@ import org.neo4j.values.virtual.VirtualValues
 import java.util.UUID
 
 class MapCypherRowTest extends CypherFunSuite with AstConstructionTestSupport {
+
   test("create clone") {
     // given
     val key = "key"
@@ -331,7 +332,7 @@ class MapCypherRowTest extends CypherFunSuite with AstConstructionTestSupport {
     val row = CypherRow.empty
     val node = VirtualValues.node(42)
     row.set("x", node)
-    row.setCachedProperty( cachedNodeProp("x", "prop").runtimeKey, Values.stringValue("foo"))
+    row.setCachedProperty(cachedNodeProp("x", "prop").runtimeKey, Values.stringValue("foo"))
     row.invalidateCachedNodeProperties(42)
 
     row.estimatedHeapUsage should be >= node.estimatedHeapUsage()
@@ -343,9 +344,12 @@ class MapCypherRowTest extends CypherFunSuite with AstConstructionTestSupport {
     val key2 = "key2"
     val key3 = "key3"
     val row = CypherRow.empty.copyWith(
-      key1, Values.booleanValue(false),
-      key2, Values.stringValue("x"),
-      key3, Values.doubleValue(1.2),
+      key1,
+      Values.booleanValue(false),
+      key2,
+      Values.stringValue("x"),
+      key3,
+      Values.doubleValue(1.2)
     )
     val cacheKey = cachedNodeProp("n", "prop")
     row.setCachedProperty(cacheKey.runtimeKey, Values.longValue(123L))
@@ -369,10 +373,13 @@ class MapCypherRowTest extends CypherFunSuite with AstConstructionTestSupport {
     val key2 = "key2"
     val key3 = "key3"
     val row = CypherRow.empty.copyWith(
-      key1, Values.booleanValue(false),
-      key2, Values.stringValue("x"),
-      key3, Values.doubleValue(1.2),
-      )
+      key1,
+      Values.booleanValue(false),
+      key2,
+      Values.stringValue("x"),
+      key3,
+      Values.doubleValue(1.2)
+    )
     val cacheKey = cachedNodeProp("n", "prop")
     row.setCachedProperty(cacheKey.runtimeKey, Values.longValue(123L))
 

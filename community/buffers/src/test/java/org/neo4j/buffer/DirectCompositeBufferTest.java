@@ -19,70 +19,63 @@
  */
 package org.neo4j.buffer;
 
-import io.netty.buffer.ByteBuf;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-abstract class DirectCompositeBufferTest extends AbstractDirectBufferTest
-{
+import io.netty.buffer.ByteBuf;
+import org.junit.jupiter.api.Test;
+
+abstract class DirectCompositeBufferTest extends AbstractDirectBufferTest {
     protected abstract ByteBuf allocate();
 
     @Test
-    void testBasicAllocation()
-    {
+    void testBasicAllocation() {
         ByteBuf buf = allocate();
 
-        assertEquals( 0, buf.capacity() );
-        assertEquals( Integer.MAX_VALUE, buf.maxCapacity() );
-        assertFalse( buf.isDirect() );
+        assertEquals(0, buf.capacity());
+        assertEquals(Integer.MAX_VALUE, buf.maxCapacity());
+        assertFalse(buf.isDirect());
 
-        write( buf, 200 );
-        assertEquals( 256, buf.capacity() );
+        write(buf, 200);
+        assertEquals(256, buf.capacity());
 
         buf.release();
 
-        assertAcquiredAndReleased( 256 );
+        assertAcquiredAndReleased(256);
     }
 
     @Test
-    void testBufferGrow()
-    {
+    void testBufferGrow() {
         ByteBuf buf = allocate();
 
-        write( buf, 200 );
-        assertEquals( 256, buf.capacity() );
-        write( buf, 200 );
-        assertEquals( 512, buf.capacity() );
-        write( buf, 200 );
-        assertEquals( 1024, buf.capacity() );
-        write( buf, 10_000 );
-        assertEquals( 16_896, buf.capacity() );
-        write( buf, 10_000 );
-        assertEquals( 32_768, buf.capacity() );
+        write(buf, 200);
+        assertEquals(256, buf.capacity());
+        write(buf, 200);
+        assertEquals(512, buf.capacity());
+        write(buf, 200);
+        assertEquals(1024, buf.capacity());
+        write(buf, 10_000);
+        assertEquals(16_896, buf.capacity());
+        write(buf, 10_000);
+        assertEquals(32_768, buf.capacity());
 
         buf.release();
 
-        assertAcquiredAndReleased( 256, 256, 512, 1024, 2048, 4096, 16_896, 16_896 );
+        assertAcquiredAndReleased(256, 256, 512, 1024, 2048, 4096, 16_896, 16_896);
     }
 
-    static class DefaultBufferTest extends DirectCompositeBufferTest
-    {
+    static class DefaultBufferTest extends DirectCompositeBufferTest {
 
         @Override
-        protected ByteBuf allocate()
-        {
+        protected ByteBuf allocate() {
             return nettyBufferAllocator.compositeBuffer();
         }
     }
 
-    static class DirectBufferTest extends DirectCompositeBufferTest
-    {
+    static class DirectBufferTest extends DirectCompositeBufferTest {
 
         @Override
-        protected ByteBuf allocate()
-        {
+        protected ByteBuf allocate() {
             return nettyBufferAllocator.compositeDirectBuffer();
         }
     }

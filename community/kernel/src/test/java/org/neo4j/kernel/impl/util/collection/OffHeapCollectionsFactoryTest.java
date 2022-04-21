@@ -21,26 +21,23 @@ package org.neo4j.kernel.impl.util.collection;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.io.ByteUnit;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryLimitExceededException;
 
-class OffHeapCollectionsFactoryTest
-{
+class OffHeapCollectionsFactoryTest {
 
     @Test
-    void shouldNotLeakNativeMemoryWhenAllocatingCloseToLimit()
-    {
+    void shouldNotLeakNativeMemoryWhenAllocatingCloseToLimit() {
         var memoryTracker = new LocalMemoryTracker();
-        var factory = new OffHeapCollectionsFactory( new CachingOffHeapBlockAllocator() );
-        memoryTracker.setLimit( ByteUnit.kibiBytes( 512 ) + 1 );
+        var factory = new OffHeapCollectionsFactory(new CachingOffHeapBlockAllocator());
+        memoryTracker.setLimit(ByteUnit.kibiBytes(512) + 1);
         // when
-        Assertions.assertThatThrownBy( () -> factory.newValuesMap( memoryTracker ) ).isInstanceOf( MemoryLimitExceededException.class );
+        Assertions.assertThatThrownBy(() -> factory.newValuesMap(memoryTracker))
+                .isInstanceOf(MemoryLimitExceededException.class);
         factory.release();
 
         // then
-        Assertions.assertThat( memoryTracker.usedNativeMemory() ).isZero();
+        Assertions.assertThat(memoryTracker.usedNativeMemory()).isZero();
     }
-
 }

@@ -23,20 +23,16 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.tools.Diagnostic;
 
-public interface CompilationMessage
-{
+public interface CompilationMessage {
     Element getElement();
 
     String getContents();
 
-    default AnnotationMirror getMirror()
-    {
+    default AnnotationMirror getMirror() {
         return null;
     }
 
-    default Diagnostic.Kind getCategory()
-    {
+    default Diagnostic.Kind getCategory() {
         return Diagnostic.Kind.ERROR;
     }
 }
-

@@ -29,6 +29,11 @@ import org.neo4j.cypher.internal.util.PropertyKeyId
 
 trait PlanMatchHelp extends AstConstructionTestSupport {
 
-  protected def indexedProperty(propName: String, keyId: Int, getValueFromIndex: GetValueFromIndexBehavior, entityType: EntityType): IndexedProperty =
+  protected def indexedProperty(
+    propName: String,
+    keyId: Int,
+    getValueFromIndex: GetValueFromIndexBehavior,
+    entityType: EntityType
+  ): IndexedProperty =
     IndexedProperty(PropertyKeyToken(PropertyKeyName(propName) _, PropertyKeyId(keyId)), getValueFromIndex, entityType)
 }

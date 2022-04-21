@@ -21,55 +21,46 @@ package org.neo4j.server.http.cypher.consumer;
 
 import java.io.IOException;
 import java.util.function.Consumer;
-
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.server.http.cypher.CachingWriter;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.NodeValue;
 
-public class SingleNodeRecordConsumer implements BoltResult.RecordConsumer
-{
+public class SingleNodeRecordConsumer implements BoltResult.RecordConsumer {
     private final CachingWriter cachingWriter;
     private final Consumer<Node> nodeConsumer;
 
-    public SingleNodeRecordConsumer( CachingWriter cachingWriter, Consumer<Node> nodeConsumer )
-    {
+    public SingleNodeRecordConsumer(CachingWriter cachingWriter, Consumer<Node> nodeConsumer) {
         this.cachingWriter = cachingWriter;
         this.nodeConsumer = nodeConsumer;
     }
 
     @Override
-    public void addMetadata( String key, AnyValue value )
-    {
+    public void addMetadata(String key, AnyValue value) {
         // Nothing to do
     }
 
     @Override
-    public void beginRecord( int numberOfFields ) throws IOException
-    {
+    public void beginRecord(int numberOfFields) throws IOException {
         // Nothing to do
     }
 
     @Override
-    public void consumeField( AnyValue value ) throws IOException
-    {
-        if ( value instanceof NodeValue node )
-        {
-            node.writeTo( cachingWriter );
+    public void consumeField(AnyValue value) throws IOException {
+        if (value instanceof NodeValue node) {
+            node.writeTo(cachingWriter);
         }
     }
 
     @Override
-    public void endRecord() throws IOException
-    {
-        nodeConsumer.accept( (Node) cachingWriter.getCachedObject() );
+    public void endRecord() throws IOException {
+        nodeConsumer.accept((Node) cachingWriter.getCachedObject());
     }
 
     @Override
-    public void onError() throws IOException
-    {
+    public void onError() throws IOException {
         // dont think this is possible but throw an error here in case.
-        throw new IOException( "An error occurred whilst processing query results" );
+        throw new IOException("An error occurred whilst processing query results");
     }
 }

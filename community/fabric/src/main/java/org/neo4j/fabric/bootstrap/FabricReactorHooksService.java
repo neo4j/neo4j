@@ -19,18 +19,15 @@
  */
 package org.neo4j.fabric.bootstrap;
 
-import reactor.core.publisher.Hooks;
-
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-
 import org.neo4j.fabric.transaction.ErrorReporter;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import reactor.core.publisher.Hooks;
 
-class FabricReactorHooksService extends LifecycleAdapter
-{
+class FabricReactorHooksService extends LifecycleAdapter {
     // DESIGN NOTES:
     // Only one Neo4j server should run in a single JVM in most deployments
     // and only one error consumer will be registered in such cases.
@@ -47,22 +44,19 @@ class FabricReactorHooksService extends LifecycleAdapter
 
     private static final Set<Consumer<? super Throwable>> ERROR_CONSUMERS = ConcurrentHashMap.newKeySet();
 
-    static
-    {
-        Hooks.onErrorDropped( e -> ERROR_CONSUMERS.forEach( consumer -> consumer.accept( e ) ) );
+    static {
+        Hooks.onErrorDropped(e -> ERROR_CONSUMERS.forEach(consumer -> consumer.accept(e)));
     }
 
     private final Consumer<? super Throwable> errorConsumer;
 
-    FabricReactorHooksService( ErrorReporter errorReporter )
-    {
-        errorConsumer = throwable -> errorReporter.report( "Unhandled error", throwable, Status.General.UnknownError );
-        ERROR_CONSUMERS.add( errorConsumer );
+    FabricReactorHooksService(ErrorReporter errorReporter) {
+        errorConsumer = throwable -> errorReporter.report("Unhandled error", throwable, Status.General.UnknownError);
+        ERROR_CONSUMERS.add(errorConsumer);
     }
 
     @Override
-    public void stop()
-    {
-        ERROR_CONSUMERS.remove( errorConsumer );
+    public void stop() {
+        ERROR_CONSUMERS.remove(errorConsumer);
     }
 }

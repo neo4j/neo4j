@@ -19,18 +19,16 @@
  */
 package org.neo4j.cli;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
-
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.util.VisibleForTesting;
 
-import static java.util.Objects.requireNonNull;
-
-public class ExecutionContext
-{
+public class ExecutionContext {
     private final Path homeDir;
     private final Path confDir;
     private final PrintStream out;
@@ -38,54 +36,46 @@ public class ExecutionContext
     private final InputStream in;
     private final FileSystemAbstraction fs;
 
-    public ExecutionContext( Path homeDir, Path confDir )
-    {
-        this( homeDir, confDir, System.out, System.err, new DefaultFileSystemAbstraction() );
+    public ExecutionContext(Path homeDir, Path confDir) {
+        this(homeDir, confDir, System.out, System.err, new DefaultFileSystemAbstraction());
     }
 
     @VisibleForTesting
-    public ExecutionContext( Path homeDir, Path confDir, PrintStream out, PrintStream err, FileSystemAbstraction fs )
-    {
-        this( homeDir, confDir, out, err, System.in, fs );
+    public ExecutionContext(Path homeDir, Path confDir, PrintStream out, PrintStream err, FileSystemAbstraction fs) {
+        this(homeDir, confDir, out, err, System.in, fs);
     }
 
-    public ExecutionContext( Path homeDir, Path confDir, PrintStream out, PrintStream err, InputStream in, FileSystemAbstraction fs )
-    {
-        this.homeDir = requireNonNull( homeDir );
-        this.confDir = requireNonNull( confDir );
-        this.out = requireNonNull( out );
-        this.err = requireNonNull( err );
-        this.in = requireNonNull( in );
-        this.fs = requireNonNull( fs );
+    public ExecutionContext(
+            Path homeDir, Path confDir, PrintStream out, PrintStream err, InputStream in, FileSystemAbstraction fs) {
+        this.homeDir = requireNonNull(homeDir);
+        this.confDir = requireNonNull(confDir);
+        this.out = requireNonNull(out);
+        this.err = requireNonNull(err);
+        this.in = requireNonNull(in);
+        this.fs = requireNonNull(fs);
     }
 
-    public PrintStream out()
-    {
+    public PrintStream out() {
         return out;
     }
 
-    public PrintStream err()
-    {
+    public PrintStream err() {
         return err;
     }
 
-    public InputStream in()
-    {
+    public InputStream in() {
         return in;
     }
 
-    public FileSystemAbstraction fs()
-    {
+    public FileSystemAbstraction fs() {
         return fs;
     }
 
-    public Path homeDir()
-    {
+    public Path homeDir() {
         return homeDir;
     }
 
-    public Path confDir()
-    {
+    public Path confDir() {
         return confDir;
     }
 }

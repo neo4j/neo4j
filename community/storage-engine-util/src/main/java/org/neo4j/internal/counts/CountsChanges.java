@@ -26,19 +26,16 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
-
 import org.neo4j.util.Preconditions;
 
-abstract class CountsChanges
-{
+abstract class CountsChanges {
     static final long ABSENT = -1;
 
-    protected final ConcurrentMap<CountsKey,AtomicLong> changes;
-    private volatile ConcurrentMap<CountsKey,AtomicLong> previousChanges;
+    protected final ConcurrentMap<CountsKey, AtomicLong> changes;
+    private volatile ConcurrentMap<CountsKey, AtomicLong> previousChanges;
     private volatile boolean frozen;
 
-    protected CountsChanges( ConcurrentMap<CountsKey,AtomicLong> changes )
-    {
+    protected CountsChanges(ConcurrentMap<CountsKey, AtomicLong> changes) {
         this.changes = changes;
     }
 
@@ -47,8 +44,7 @@ abstract class CountsChanges
      * since those counts represent persisted counts which may or may not yet have made it to the backing tree.
      * @return a new instance which will replace this instance for making updates to.
      */
-    CountsChanges freezeAndFork()
-    {
+    CountsChanges freezeAndFork() {
         frozen = true;
         CountsChanges fork = fork();
         fork.previousChanges = changes;
@@ -60,8 +56,7 @@ abstract class CountsChanges
     /**
      * Clears the reference to the old instances that now has been written to the backing tree.
      */
-    void clearPreviousChanges()
-    {
+    void clearPreviousChanges() {
         this.previousChanges = null;
     }
 
@@ -73,32 +68,29 @@ abstract class CountsChanges
      * @param defaultToStoredCount where to read the absolute count if it isn't already loaded into this instance (or the "old" instance).
      * @return {@code true} if the absolute value either was 0 before this change, or became zero after the change. Otherwise {@code false}.
      */
-    boolean add( CountsKey key, long delta, Function<CountsKey,AtomicLong> defaultToStoredCount )
-    {
-        Preconditions.checkState( !frozen, "Can't make changes in a frozen state" );
-        long absoluteValueAfterChange = getCounter( key, defaultToStoredCount ).addAndGet( delta );
+    boolean add(CountsKey key, long delta, Function<CountsKey, AtomicLong> defaultToStoredCount) {
+        Preconditions.checkState(!frozen, "Can't make changes in a frozen state");
+        long absoluteValueAfterChange = getCounter(key, defaultToStoredCount).addAndGet(delta);
         return delta > 0 ? absoluteValueAfterChange - delta == 0 : absoluteValueAfterChange == 0;
     }
 
-    private AtomicLong getCounter( CountsKey key, Function<CountsKey,AtomicLong> defaultToStoredCount )
-    {
-        ConcurrentMap<CountsKey,AtomicLong> prev = previousChanges;
-        Function<CountsKey,AtomicLong> defaultFunction = prev == null ? defaultToStoredCount : k ->
-        {
-            AtomicLong prevCount = prev.get( k );
-            if ( prevCount != null )
-            {
-                return new AtomicLong( prevCount.get() );
-            }
-            return defaultToStoredCount.apply( k );
-        };
-        return changes.computeIfAbsent( key, defaultFunction );
+    private AtomicLong getCounter(CountsKey key, Function<CountsKey, AtomicLong> defaultToStoredCount) {
+        ConcurrentMap<CountsKey, AtomicLong> prev = previousChanges;
+        Function<CountsKey, AtomicLong> defaultFunction = prev == null
+                ? defaultToStoredCount
+                : k -> {
+                    AtomicLong prevCount = prev.get(k);
+                    if (prevCount != null) {
+                        return new AtomicLong(prevCount.get());
+                    }
+                    return defaultToStoredCount.apply(k);
+                };
+        return changes.computeIfAbsent(key, defaultFunction);
     }
 
-    Iterable<Map.Entry<CountsKey,AtomicLong>> sortedChanges( Comparator<CountsKey> comparator )
-    {
-        List<Map.Entry<CountsKey,AtomicLong>> sortedChanges = new ArrayList<>( changes.entrySet() );
-        sortedChanges.sort( ( e1, e2 ) -> comparator.compare( e1.getKey(), e2.getKey() ) );
+    Iterable<Map.Entry<CountsKey, AtomicLong>> sortedChanges(Comparator<CountsKey> comparator) {
+        List<Map.Entry<CountsKey, AtomicLong>> sortedChanges = new ArrayList<>(changes.entrySet());
+        sortedChanges.sort((e1, e2) -> comparator.compare(e1.getKey(), e2.getKey()));
         return sortedChanges;
     }
 
@@ -106,14 +98,12 @@ abstract class CountsChanges
      * @param key {@link CountsKey} to check.
      * @return {@code true} if there have been an update to the given key in this instance or in the "old" instance.
      */
-    boolean containsChange( CountsKey key )
-    {
-        if ( changes.containsKey( key ) )
-        {
+    boolean containsChange(CountsKey key) {
+        if (changes.containsKey(key)) {
             return true;
         }
-        ConcurrentMap<CountsKey,AtomicLong> prev = previousChanges;
-        return prev != null && prev.containsKey( key );
+        ConcurrentMap<CountsKey, AtomicLong> prev = previousChanges;
+        return prev != null && prev.containsKey(key);
     }
 
     /**
@@ -121,27 +111,22 @@ abstract class CountsChanges
      * @return the absolute count for the given key, be it from this instance or the "old" instance. If this key doesn't exist here then
      * {@link #ABSENT} is returned, but that can still mean that the count exist, although in the backing tree.
      */
-    long get( CountsKey key )
-    {
-        AtomicLong count = changes.get( key );
-        if ( count != null )
-        {
+    long get(CountsKey key) {
+        AtomicLong count = changes.get(key);
+        if (count != null) {
             return count.get();
         }
-        ConcurrentMap<CountsKey,AtomicLong> prev = previousChanges;
-        if ( prev != null )
-        {
-            AtomicLong prevCount = prev.get( key );
-            if ( prevCount != null )
-            {
+        ConcurrentMap<CountsKey, AtomicLong> prev = previousChanges;
+        if (prev != null) {
+            AtomicLong prevCount = prev.get(key);
+            if (prevCount != null) {
                 return prevCount.get();
             }
         }
         return ABSENT;
     }
 
-    int size()
-    {
+    int size() {
         return changes.size();
     }
 }

@@ -58,198 +58,203 @@ import org.neo4j.values.storable.TemporalValue.TemporalFields
 
 import scala.jdk.CollectionConverters.SetHasAsScala
 
-class CheckForUnresolvedTokensTest extends CypherFunSuite with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
+class CheckForUnresolvedTokensTest extends CypherFunSuite with AstConstructionTestSupport
+    with LogicalPlanConstructionTestSupport {
 
   test("warn when missing label") {
-    //given
+    // given
     val semanticTable = new SemanticTable
 
-    //when
+    // when
     val ast = parse("MATCH (a:A)-->(b:B) RETURN *")
 
-    //then
+    // then
     val notifications = checkForTokens(ast, semanticTable)
 
     notifications should equal(Set(
       MissingLabelNotification(InputPosition(9, 1, 10), "A"),
-      MissingLabelNotification(InputPosition(17, 1, 18), "B")))
+      MissingLabelNotification(InputPosition(17, 1, 18), "B")
+    ))
   }
 
   test("don't warn when labels are there") {
-    //given
+    // given
     val semanticTable = new SemanticTable
     semanticTable.resolvedLabelNames.put("A", LabelId(42))
     semanticTable.resolvedLabelNames.put("B", LabelId(84))
 
-    //when
+    // when
     val ast = parse("MATCH (a:A)-->(b:B) RETURN *")
 
-    //then
+    // then
     checkForTokens(ast, semanticTable) shouldBe empty
   }
 
   test("warn when missing relationship type") {
-    //given
+    // given
     val semanticTable = new SemanticTable
     semanticTable.resolvedLabelNames.put("A", LabelId(42))
     semanticTable.resolvedLabelNames.put("B", LabelId(84))
 
-    //when
+    // when
     val ast = parse("MATCH (a:A)-[r:R1|R2]->(b:B) RETURN *")
 
-    //then
+    // then
     checkForTokens(ast, semanticTable) should equal(Set(
       MissingRelTypeNotification(InputPosition(15, 1, 16), "R1"),
-      MissingRelTypeNotification(InputPosition(18, 1, 19), "R2")))
+      MissingRelTypeNotification(InputPosition(18, 1, 19), "R2")
+    ))
   }
 
   test("don't warn when relationship types are there") {
-    //given
+    // given
     val semanticTable = new SemanticTable
     semanticTable.resolvedLabelNames.put("A", LabelId(42))
     semanticTable.resolvedLabelNames.put("B", LabelId(84))
     semanticTable.resolvedRelTypeNames.put("R1", RelTypeId(1))
     semanticTable.resolvedRelTypeNames.put("R2", RelTypeId(2))
 
-    //when
+    // when
     val ast = parse("MATCH (a:A)-[r:R1|R2]->(b:B) RETURN *")
 
-    //then
+    // then
     checkForTokens(ast, semanticTable) shouldBe empty
   }
 
   test("warn when missing node property key name") {
-    //given
+    // given
     val semanticTable = new SemanticTable().addNode(Variable("a")(InputPosition(16, 1, 17)))
 
-    //when
+    // when
     val ast = parse("MATCH (a) WHERE a.prop = 42 RETURN a")
 
-    //then
+    // then
     checkForTokens(ast, semanticTable) should equal(Set(
-      MissingPropertyNameNotification(InputPosition(18, 1, 19), "prop")))
+      MissingPropertyNameNotification(InputPosition(18, 1, 19), "prop")
+    ))
   }
 
   test("don't warn when node property key name is there") {
-    //given
+    // given
     val semanticTable = new SemanticTable().addNode(Variable("a")(InputPosition(7, 1, 8)))
     semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(0))
 
-    //when
+    // when
     val ast = parse("MATCH (a {prop: 42}) RETURN a")
 
-    //then
+    // then
     checkForTokens(ast, semanticTable) shouldBe empty
   }
 
   test("warn when missing relationship property key name") {
-    //given
+    // given
     val semanticTable = new SemanticTable().addRelationship(Variable("r")(InputPosition(23, 1, 24)))
 
-    //when
+    // when
     val ast = parse("MATCH ()-[r]->() WHERE r.prop = 42 RETURN r")
 
-    //then
+    // then
     checkForTokens(ast, semanticTable) should equal(Set(
-      MissingPropertyNameNotification(InputPosition(25, 1, 26), "prop")))
+      MissingPropertyNameNotification(InputPosition(25, 1, 26), "prop")
+    ))
   }
 
   test("don't warn when relationship property key name is there") {
-    //given
+    // given
     val semanticTable = new SemanticTable().addRelationship(Variable("r")(InputPosition(10, 1, 11)))
     semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(0))
 
-    //when
+    // when
     val ast = parse("MATCH ()-[r {prop: 42}]->() RETURN r")
 
-    //then
+    // then
     checkForTokens(ast, semanticTable) shouldBe empty
   }
 
   test("don't warn for map keys") {
-    //given
+    // given
     val emptyTypeMap = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
     val semanticTypes = emptyTypeMap.updated(Variable("map")(InputPosition(32, 1, 33)), ExpressionTypeInfo(CTMap))
     val semanticTable = new SemanticTable(types = semanticTypes)
     semanticTable.resolvedPropertyKeyNames.put("key", PropertyKeyId(0))
 
-    //when
+    // when
     val ast = parse("WITH {key: 'val'} as map RETURN map.key")
 
-    //then
+    // then
     checkForTokens(ast, semanticTable) shouldBe empty
   }
 
   test("don't warn for literal maps") {
-    //given
+    // given
     val semanticTable = new SemanticTable
 
-    //when
+    // when
     val ast = parse("RETURN {prop: 'foo'}")
 
-    //then
+    // then
     checkForTokens(ast, semanticTable) shouldBe empty
   }
 
   test("don't warn when using point properties") {
-    //given
+    // given
     val emptyTypeMap = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
     val semanticTypes = emptyTypeMap.updated(functionAt("point", 16), ExpressionTypeInfo(CTPoint))
     val semanticTable = new SemanticTable(types = semanticTypes).addNode(Variable("a")(InputPosition(22, 1, 23)))
     semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
 
     PointFields.values().foreach { property =>
-      //when
+      // when
       val ast = parse(s"MATCH (a) WHERE point(a.prop).${property.propertyKey} = 42 RETURN a")
 
-      //then
+      // then
       checkForTokens(ast, semanticTable) shouldBe empty
     }
   }
 
   test("don't warn when using temporal properties") {
-    //given
+    // given
     val emptyTypeMap = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
     val semanticTypes = emptyTypeMap.updated(functionAt("date", 16), ExpressionTypeInfo(CTDate))
     val semanticTable = new SemanticTable(types = semanticTypes).addNode(Variable("a")(InputPosition(21, 1, 22)))
     semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
 
     TemporalFields.allFields().asScala.foreach { property =>
-      //when
+      // when
       val ast = parse(s"MATCH (a) WHERE date(a.prop).$property = 42 RETURN a")
 
-      //then
+      // then
       checkForTokens(ast, semanticTable) shouldBe empty
     }
   }
 
   test("don't warn when using duration properties") {
-    //given
+    // given
     val emptyTypeMap = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
     val semanticTypes = emptyTypeMap.updated(functionAt("duration", 16), ExpressionTypeInfo(CTDuration))
     val semanticTable = new SemanticTable(types = semanticTypes).addNode(Variable("a")(InputPosition(25, 1, 26)))
     semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
 
     DurationFields.values().foreach { property =>
-      //when
+      // when
       val ast = parse(s"MATCH (a) WHERE duration(a.prop).${property.propertyKey} = 42 RETURN a")
 
-      //then
+      // then
       checkForTokens(ast, semanticTable) shouldBe empty
     }
   }
 
   test("don't warn when using special property keys, independent of case") {
-    //given
+    // given
     val emptyTypeMap = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
     val semanticTypes = emptyTypeMap.updated(propertyAt(16), ExpressionTypeInfo(CTDuration))
     val semanticTable = new SemanticTable(types = semanticTypes).addNode(Variable("a")(InputPosition(16, 1, 17)))
     semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
 
     Seq("X", "yEaRs", "DAY", "epochMillis").foreach { property =>
-      //when
+      // when
       val ast = parse(s"MATCH (a) WHERE a.prop.$property = 42 RETURN a")
-      //then
+      // then
       checkForTokens(ast, semanticTable) shouldBe empty
     }
   }
@@ -258,27 +263,30 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstConstructionTe
     val notificationLogger = new RecordingNotificationLogger
     val plannerQuery = mock[PlannerQuery]
     when(plannerQuery.readOnly).thenReturn(true)
-    val compilationState = LogicalPlanState(queryText = "apa",
+    val compilationState = LogicalPlanState(
+      queryText = "apa",
       startPosition = None,
       plannerName = IDPPlannerName,
       newStubbedPlanningAttributes,
       new AnonymousVariableNameGenerator(),
       maybeStatement = Some(ast),
       maybeSemanticTable = Some(semanticTable),
-      maybeQuery = Some(plannerQuery))
+      maybeQuery = Some(plannerQuery)
+    )
     val context = ContextHelper.create(notificationLogger = notificationLogger)
     CheckForUnresolvedTokens.transform(compilationState, context)
     notificationLogger.notifications
   }
 
-  private def parse(query: String): Query = JavaCCParser.parse(query, Neo4jCypherExceptionFactory(query, None), new AnonymousVariableNameGenerator) match {
-    case q: Query => q
-    case _ => fail("Must be a Query")
-  }
+  private def parse(query: String): Query =
+    JavaCCParser.parse(query, Neo4jCypherExceptionFactory(query, None), new AnonymousVariableNameGenerator) match {
+      case q: Query => q
+      case _        => fail("Must be a Query")
+    }
 
   private def functionAt(name: String, offset: Int): FunctionInvocation = {
-     val functionPos = InputPosition(offset, 1, offset + 1)
-     FunctionInvocation(FunctionName(name)(functionPos), propertyAt(offset))(functionPos)
+    val functionPos = InputPosition(offset, 1, offset + 1)
+    FunctionInvocation(FunctionName(name)(functionPos), propertyAt(offset))(functionPos)
   }
 
   private def propertyAt(offset: Int): Property = {

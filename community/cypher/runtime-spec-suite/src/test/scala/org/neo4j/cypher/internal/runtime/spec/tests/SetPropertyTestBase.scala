@@ -33,10 +33,10 @@ import org.neo4j.internal.helpers.collection.Iterables
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
-                                                               edition: Edition[CONTEXT],
-                                                               runtime: CypherRuntime[CONTEXT],
-                                                               sizeHint: Int
-                                                             ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should set node property") {
     // given a single node
@@ -63,7 +63,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
   test("should remove node property") {
     // given a single node
     given {
-      nodePropertyGraph(1, { case i: Int => Map("prop" -> i)})
+      nodePropertyGraph(1, { case i: Int => Map("prop" -> i) })
     }
 
     // when
@@ -377,7 +377,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
   test("should count node property updates even if values are not changed") {
     // given single node
     val n = given {
-      nodePropertyGraph(1, { case i => Map("prop" -> 100)})
+      nodePropertyGraph(1, { case i => Map("prop" -> 100) })
     }
 
     // when
@@ -519,7 +519,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set properties between two loops with continuation") {
     val nodes = given {
-      nodePropertyGraph(sizeHint, {case _ => Map("prop" -> 0)})
+      nodePropertyGraph(sizeHint, { case _ => Map("prop" -> 0) })
     }
 
     // when

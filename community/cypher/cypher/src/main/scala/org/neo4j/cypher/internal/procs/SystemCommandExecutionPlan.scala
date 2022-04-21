@@ -44,25 +44,28 @@ import org.neo4j.values.virtual.MapValue
 /**
  * Execution plan for performing system commands, i.e. creating databases or showing roles and users.
  */
-case class SystemCommandExecutionPlan(name: String,
-                                      normalExecutionEngine: ExecutionEngine,
-                                      securityAuthorizationHandler: SecurityAuthorizationHandler,
-                                      query: String,
-                                      systemParams: MapValue,
-                                      queryHandler: QueryHandler = QueryHandler.handleError((t, _) => t),
-                                      source: Option[ExecutionPlan] = None,
-                                      checkCredentialsExpired: Boolean = true,
-                                      parameterGenerator: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY,
-                                      parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p,
-                                      modeConverter: SecurityContext => SecurityContext = s => s.withMode(AccessMode.Static.READ))
-  extends AdministrationChainedExecutionPlan(source) {
+case class SystemCommandExecutionPlan(
+  name: String,
+  normalExecutionEngine: ExecutionEngine,
+  securityAuthorizationHandler: SecurityAuthorizationHandler,
+  query: String,
+  systemParams: MapValue,
+  queryHandler: QueryHandler = QueryHandler.handleError((t, _) => t),
+  source: Option[ExecutionPlan] = None,
+  checkCredentialsExpired: Boolean = true,
+  parameterGenerator: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY,
+  parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p,
+  modeConverter: SecurityContext => SecurityContext = s => s.withMode(AccessMode.Static.READ)
+) extends AdministrationChainedExecutionPlan(source) {
 
-  override def runSpecific(ctx: SystemUpdateCountingQueryContext,
-                           executionMode: ExecutionMode,
-                           params: MapValue,
-                           prePopulateResults: Boolean,
-                           ignore: InputDataStream,
-                           subscriber: QuerySubscriber): RuntimeResult = {
+  override def runSpecific(
+    ctx: SystemUpdateCountingQueryContext,
+    executionMode: ExecutionMode,
+    params: MapValue,
+    prePopulateResults: Boolean,
+    ignore: InputDataStream,
+    subscriber: QuerySubscriber
+  ): RuntimeResult = {
 
     val tc: TransactionalContext = ctx.kernelTransactionalContext
 
@@ -73,12 +76,27 @@ case class SystemCommandExecutionPlan(name: String,
       val fullReadAccess = modeConverter(securityContext)
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullReadAccess)
       val tx = tc.transaction()
-      val updatedParams = parameterConverter(tx, safeMergeParameters(systemParams, params, parameterGenerator.apply(tx, securityContext)))
+      val updatedParams =
+        parameterConverter(tx, safeMergeParameters(systemParams, params, parameterGenerator.apply(tx, securityContext)))
       val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, queryHandler, updatedParams)
-      val execution = normalExecutionEngine.executeSubquery(query, updatedParams, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
+      val execution = normalExecutionEngine.executeSubquery(
+        query,
+        updatedParams,
+        tc,
+        isOutermostQuery = false,
+        executionMode == ProfileMode,
+        prePopulateResults,
+        systemSubscriber
+      ).asInstanceOf[InternalExecutionResult]
       systemSubscriber.assertNotFailed()
 
-      SystemCommandRuntimeResult(ctx, new SystemCommandExecutionResult(execution), systemSubscriber, fullReadAccess, tc.kernelTransaction())
+      SystemCommandRuntimeResult(
+        ctx,
+        new SystemCommandExecutionResult(execution),
+        systemSubscriber,
+        fullReadAccess,
+        tc.kernelTransaction()
+      )
     } finally {
       if (revertAccessModeChange != null) revertAccessModeChange.close()
     }
@@ -95,7 +113,12 @@ case class SystemCommandExecutionPlan(name: String,
  * A wrapping QuerySubscriber that overrides the error handling to allow custom error messages for SystemCommands instead of the inner errors.
  * It also makes sure to return QueryStatistics that don't leak information about the system graph like how many nodes we created for a command etc.
  */
-class SystemCommandQuerySubscriber(ctx: SystemUpdateCountingQueryContext, inner: QuerySubscriber, queryHandler: QueryHandler, params: MapValue) extends QuerySubscriber {
+class SystemCommandQuerySubscriber(
+  ctx: SystemUpdateCountingQueryContext,
+  inner: QuerySubscriber,
+  queryHandler: QueryHandler,
+  params: MapValue
+) extends QuerySubscriber {
   @volatile private var empty = true
   @volatile private var ignore = false
   @volatile private var failed: Option[Throwable] = None

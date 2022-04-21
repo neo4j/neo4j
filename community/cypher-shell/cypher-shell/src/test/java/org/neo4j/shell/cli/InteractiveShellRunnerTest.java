@@ -19,9 +19,31 @@
  */
 package org.neo4j.shell.cli;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import static java.lang.String.format;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.joining;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.endsWith;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.neo4j.shell.Main.EXIT_SUCCESS;
+import static org.neo4j.shell.cli.InteractiveShellRunner.DATABASE_UNAVAILABLE_ERROR_PROMPT_TEXT;
+import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilder;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -31,7 +53,9 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DiscoveryException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -60,34 +84,7 @@ import org.neo4j.shell.printer.Printer;
 import org.neo4j.shell.state.BoltStateHandler;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 
-import static java.lang.String.format;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Arrays.stream;
-import static java.util.stream.Collectors.joining;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.endsWith;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-import static org.neo4j.shell.Main.EXIT_SUCCESS;
-import static org.neo4j.shell.cli.InteractiveShellRunner.DATABASE_UNAVAILABLE_ERROR_PROMPT_TEXT;
-import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilder;
-
-class InteractiveShellRunnerTest
-{
+class InteractiveShellRunnerTest {
     @TempDir
     File temp;
 
@@ -103,89 +100,84 @@ class InteractiveShellRunnerTest
     private ParameterService parameters;
 
     @BeforeEach
-    void setup() throws Exception
-    {
-        printer = mock( Printer.class );
-        cmdExecuter = mock( StatementExecuter.class );
-        txHandler = mock( TransactionHandler.class );
-        databaseManager = mock( DatabaseManager.class );
-        historyFile = new File( temp, "test" );
-        badLineError = new ClientException( "Found a bad line" );
-        connector = mock( Connector.class );
-        when( connector.isConnected() ).thenReturn( true );
-        when( connector.username() ).thenReturn( "myusername" );
-        when( connector.getProtocolVersion() ).thenReturn( "" );
-        when( connector.driverUrl() ).thenReturn( "neo4j://localhost:7687" );
-        userMessagesHandler = new UserMessagesHandler( connector );
+    void setup() throws Exception {
+        printer = mock(Printer.class);
+        cmdExecuter = mock(StatementExecuter.class);
+        txHandler = mock(TransactionHandler.class);
+        databaseManager = mock(DatabaseManager.class);
+        historyFile = new File(temp, "test");
+        badLineError = new ClientException("Found a bad line");
+        connector = mock(Connector.class);
+        when(connector.isConnected()).thenReturn(true);
+        when(connector.username()).thenReturn("myusername");
+        when(connector.getProtocolVersion()).thenReturn("");
+        when(connector.driverUrl()).thenReturn("neo4j://localhost:7687");
+        userMessagesHandler = new UserMessagesHandler(connector);
         out = new ByteArrayOutputStream();
-        when( databaseManager.getActualDatabaseAsReportedByServer() ).thenReturn( "mydb" );
-        parameters = mock( ParameterService.class );
+        when(databaseManager.getActualDatabaseAsReportedByServer()).thenReturn("mydb");
+        parameters = mock(ParameterService.class);
 
-        doThrow( badLineError ).when( cmdExecuter ).execute( statementContains( "bad" ) );
+        doThrow(badLineError).when(cmdExecuter).execute(statementContains("bad"));
     }
 
     @Test
-    void testSimple() throws Exception
-    {
-        var runner = runner( lines( "good1;", "good2;" ) );
+    void testSimple() throws Exception {
+        var runner = runner(lines("good1;", "good2;"));
         runner.runUntilEnd();
 
-        verify( cmdExecuter ).execute( cypher( "good1;" ) );
-        verify( cmdExecuter ).execute( cypher( "good2;" ) );
-        verify( cmdExecuter, times( 3 ) ).lastNeo4jErrorCode();
-        verifyNoMoreInteractions( cmdExecuter );
+        verify(cmdExecuter).execute(cypher("good1;"));
+        verify(cmdExecuter).execute(cypher("good2;"));
+        verify(cmdExecuter, times(3)).lastNeo4jErrorCode();
+        verifyNoMoreInteractions(cmdExecuter);
 
-        assertEquals( "myusername@mydb> good1;\r\nmyusername@mydb> good2;\r\nmyusername@mydb> \r\n", out.toString() );
+        assertEquals("myusername@mydb> good1;\r\nmyusername@mydb> good2;\r\nmyusername@mydb> \r\n", out.toString());
     }
 
     @Test
-    void runUntilEndShouldKeepGoingOnErrors() throws CommandException
-    {
-        var runner = runner( lines( "good1;", "bad1;", "good2;", "bad2;", "good3;" ) );
+    void runUntilEndShouldKeepGoingOnErrors() throws CommandException {
+        var runner = runner(lines("good1;", "bad1;", "good2;", "bad2;", "good3;"));
         int code = runner.runUntilEnd();
 
-        assertEquals( 0, code, "Wrong exit code" );
+        assertEquals(0, code, "Wrong exit code");
 
-        verify( cmdExecuter ).execute( cypher( "good1;" ) );
-        verify( cmdExecuter ).execute( cypher( "bad1;" ) );
-        verify( cmdExecuter ).execute( cypher( "good2;" ) );
-        verify( cmdExecuter ).execute( cypher( "bad2;" ) );
-        verify( cmdExecuter ).execute( cypher( "good3;" ) );
-        verify( cmdExecuter, times( 6 ) ).lastNeo4jErrorCode();
-        verifyNoMoreInteractions( cmdExecuter );
+        verify(cmdExecuter).execute(cypher("good1;"));
+        verify(cmdExecuter).execute(cypher("bad1;"));
+        verify(cmdExecuter).execute(cypher("good2;"));
+        verify(cmdExecuter).execute(cypher("bad2;"));
+        verify(cmdExecuter).execute(cypher("good3;"));
+        verify(cmdExecuter, times(6)).lastNeo4jErrorCode();
+        verifyNoMoreInteractions(cmdExecuter);
 
-        verify( printer, times( 2 ) ).printError( badLineError );
+        verify(printer, times(2)).printError(badLineError);
     }
 
     @Test
-    void runUntilEndShouldStopOnExitExceptionAndReturnCode() throws CommandException
-    {
-        var runner = runner( lines( "good1;", "bad1;", "good2;", "exit;", "bad2;", "good3;" ) );
+    void runUntilEndShouldStopOnExitExceptionAndReturnCode() throws CommandException {
+        var runner = runner(lines("good1;", "bad1;", "good2;", "exit;", "bad2;", "good3;"));
 
-        doThrow( new ExitException( 1234 ) ).when( cmdExecuter ).execute( statementContains( "exit;" ) );
+        doThrow(new ExitException(1234)).when(cmdExecuter).execute(statementContains("exit;"));
 
         int code = runner.runUntilEnd();
 
-        assertEquals( 1234, code, "Wrong exit code" );
+        assertEquals(1234, code, "Wrong exit code");
 
-        verify( cmdExecuter ).execute( cypher( "good1;" ) );
-        verify( cmdExecuter ).execute( cypher( "bad1;" ) );
-        verify( cmdExecuter ).execute( cypher( "good2;" ) );
-        verify( cmdExecuter ).execute( cypher( "exit;" ) );
-        verify( cmdExecuter, times( 4 ) ).lastNeo4jErrorCode();
-        verifyNoMoreInteractions( cmdExecuter );
+        verify(cmdExecuter).execute(cypher("good1;"));
+        verify(cmdExecuter).execute(cypher("bad1;"));
+        verify(cmdExecuter).execute(cypher("good2;"));
+        verify(cmdExecuter).execute(cypher("exit;"));
+        verify(cmdExecuter, times(4)).lastNeo4jErrorCode();
+        verifyNoMoreInteractions(cmdExecuter);
 
-        verify( printer ).printError( badLineError );
+        verify(printer).printError(badLineError);
     }
 
     @Test
-    void historyIsRecorded() throws Exception
-    {
+    void historyIsRecorded() throws Exception {
         // given
 
         String cmd1 = ":set var \"3\"";
         String cmd2 = ":help exit";
-        var runner = runner( lines( cmd1, cmd2 ) );
+        var runner = runner(lines(cmd1, cmd2));
 
         // when
         runner.runUntilEnd();
@@ -194,339 +186,323 @@ class InteractiveShellRunnerTest
         Historian historian = runner.getHistorian();
         historian.flushHistory();
 
-        List<String> history = Files.readAllLines( historyFile.toPath() );
+        List<String> history = Files.readAllLines(historyFile.toPath());
 
-        assertEquals( 2, history.size() );
-        assertThat( history.get( 0 ), endsWith( ":" + cmd1 ) );
-        assertThat( history.get( 1 ), endsWith( ":" + cmd2 ) );
+        assertEquals(2, history.size());
+        assertThat(history.get(0), endsWith(":" + cmd1));
+        assertThat(history.get(1), endsWith(":" + cmd2));
 
         history = historian.getHistory();
-        assertEquals( 2, history.size() );
-        assertEquals( cmd1, history.get( 0 ) );
-        assertEquals( cmd2, history.get( 1 ) );
+        assertEquals(2, history.size());
+        assertEquals(cmd1, history.get(0));
+        assertEquals(cmd2, history.get(1));
     }
 
     @Test
-    void unescapedBangWorks() throws Exception
-    {
+    void unescapedBangWorks() throws Exception {
         // given
-        PrintStream mockedErr = mock( PrintStream.class );
+        PrintStream mockedErr = mock(PrintStream.class);
 
         // Bangs need escaping in JLine by default, just like in bash, but we have disabled that
-        var runner = runner( ":set var \"String with !bang\"\n" );
+        var runner = runner(":set var \"String with !bang\"\n");
 
         // when
         var statements = runner.readUntilStatement();
         // then
-        assertThat( statements, contains( new CommandStatement( ":set", List.of( "var", "\"String", "with", "!bang\"" ), false, 0, 27 ) ) );
+        assertThat(
+                statements,
+                contains(new CommandStatement(":set", List.of("var", "\"String", "with", "!bang\""), false, 0, 27)));
     }
 
     @Test
-    void escapedBangWorks() throws Exception
-    {
+    void escapedBangWorks() throws Exception {
         // given
-        PrintStream mockedErr = mock( PrintStream.class );
+        PrintStream mockedErr = mock(PrintStream.class);
 
         // Bangs need escaping in JLine by default, just like in bash, but we have disabled that
-        var runner = runner( ":set var \"String with \\!bang\"\n" );
+        var runner = runner(":set var \"String with \\!bang\"\n");
 
         // when
         var statements = runner.readUntilStatement();
 
         // then
-        assertThat( statements, contains( new CommandStatement( ":set", List.of( "var",  "\"String", "with", "\\!bang\"" ), false, 0, 28 ) ) );
+        assertThat(
+                statements,
+                contains(new CommandStatement(":set", List.of("var", "\"String", "with", "\\!bang\""), false, 0, 28)));
     }
 
     @Test
-    void justNewLineDoesNotThrowNoMoreInput()
-    {
+    void justNewLineDoesNotThrowNoMoreInput() {
         // given
-        var runner = runner( "\n" );
+        var runner = runner("\n");
 
         // when
-        assertDoesNotThrow( runner::readUntilStatement );
+        assertDoesNotThrow(runner::readUntilStatement);
     }
 
     @Test
-    void emptyStringThrowsNoMoreInput()
-    {
+    void emptyStringThrowsNoMoreInput() {
         // given
-        var runner = runner( "" );
+        var runner = runner("");
 
         // when
-        assertThrows( NoMoreInputException.class, runner::readUntilStatement );
+        assertThrows(NoMoreInputException.class, runner::readUntilStatement);
     }
 
     @Test
-    void emptyLineIsIgnored() throws Exception
-    {
+    void emptyLineIsIgnored() throws Exception {
         // given
-        var runner = runner( "     \nCREATE (n:Person) RETURN n;\n" );
+        var runner = runner("     \nCREATE (n:Person) RETURN n;\n");
 
         // when
         var statements1 = runner.readUntilStatement();
         var statements2 = runner.readUntilStatement();
 
         // then
-        assertThat( statements1, is( List.of() ) );
-        assertThat( statements2, is( List.of( cypher( "CREATE (n:Person) RETURN n;" ) ) ) );
+        assertThat(statements1, is(List.of()));
+        assertThat(statements2, is(List.of(cypher("CREATE (n:Person) RETURN n;"))));
     }
 
     @Test
-    void testPrompt()
-    {
+    void testPrompt() {
         // given
-        var runner = runner( lines( "    ", "   ", "bla bla;" ) );
-        when( txHandler.isTransactionOpen() ).thenReturn( false );
+        var runner = runner(lines("    ", "   ", "bla bla;"));
+        when(txHandler.isTransactionOpen()).thenReturn(false);
         runner.runUntilEnd();
 
         // when
-        assertThat( out.toString(), equalTo( "myusername@mydb>     \r\nmyusername@mydb>    \r\nmyusername@mydb> bla bla;\r\nmyusername@mydb> \r\n" ) );
+        assertThat(
+                out.toString(),
+                equalTo(
+                        "myusername@mydb>     \r\nmyusername@mydb>    \r\nmyusername@mydb> bla bla;\r\nmyusername@mydb> \r\n"));
     }
 
     @Test
-    void testDisconnectedPrompt()
-    {
+    void testDisconnectedPrompt() {
         // given
-        var runner = runner( lines( "bla bla;" ) );
-        when( txHandler.isTransactionOpen() ).thenReturn( false );
-        when( connector.isConnected() ).thenReturn( false );
+        var runner = runner(lines("bla bla;"));
+        when(txHandler.isTransactionOpen()).thenReturn(false);
+        when(connector.isConnected()).thenReturn(false);
         runner.runUntilEnd();
 
         // when
-        assertThat( out.toString(), equalTo( "Disconnected> bla bla;\r\nDisconnected> \r\n" ) );
+        assertThat(out.toString(), equalTo("Disconnected> bla bla;\r\nDisconnected> \r\n"));
     }
 
     @Test
-    void testPromptShowDatabaseAsSetByUserWhenServerReportNull()
-    {
+    void testPromptShowDatabaseAsSetByUserWhenServerReportNull() {
         // given
-        var runner = runner( "return 1;" );
+        var runner = runner("return 1;");
 
         // when
-        when( txHandler.isTransactionOpen() ).thenReturn( false );
-        when( databaseManager.getActiveDatabaseAsSetByUser() ).thenReturn( "foo" );
-        when( databaseManager.getActualDatabaseAsReportedByServer() ).thenReturn( null );
+        when(txHandler.isTransactionOpen()).thenReturn(false);
+        when(databaseManager.getActiveDatabaseAsSetByUser()).thenReturn("foo");
+        when(databaseManager.getActualDatabaseAsReportedByServer()).thenReturn(null);
         runner.runUntilEnd();
 
         // then
         String wantedPrompt = "myusername@foo> return 1;\r\n";
-        assertThat( out.toString(), equalTo( wantedPrompt ) );
+        assertThat(out.toString(), equalTo(wantedPrompt));
     }
 
     @Test
-    void testPromptShowDatabaseAsSetByUserWhenServerReportAbsent()
-    {
+    void testPromptShowDatabaseAsSetByUserWhenServerReportAbsent() {
         // given
-        var runner = runner( "return 1;" );
+        var runner = runner("return 1;");
 
         // when
-        when( txHandler.isTransactionOpen() ).thenReturn( false );
-        when( databaseManager.getActiveDatabaseAsSetByUser() ).thenReturn( "foo" );
-        when( databaseManager.getActualDatabaseAsReportedByServer() ).thenReturn( DatabaseManager.ABSENT_DB_NAME );
+        when(txHandler.isTransactionOpen()).thenReturn(false);
+        when(databaseManager.getActiveDatabaseAsSetByUser()).thenReturn("foo");
+        when(databaseManager.getActualDatabaseAsReportedByServer()).thenReturn(DatabaseManager.ABSENT_DB_NAME);
         runner.runUntilEnd();
 
         // then
-        assertThat( out.toString(), equalTo( "myusername@foo> return 1;\r\n" ) );
+        assertThat(out.toString(), equalTo("myusername@foo> return 1;\r\n"));
     }
 
     @Test
-    void testPromptShowUnresolvedDefaultDatabaseWhenServerReportNull()
-    {
+    void testPromptShowUnresolvedDefaultDatabaseWhenServerReportNull() {
         // given
-        var runner = runner( "return 1;" );
+        var runner = runner("return 1;");
 
         // when
-        when( txHandler.isTransactionOpen() ).thenReturn( false );
-        when( databaseManager.getActiveDatabaseAsSetByUser() ).thenReturn( DatabaseManager.ABSENT_DB_NAME );
-        when( databaseManager.getActualDatabaseAsReportedByServer() ).thenReturn( null );
+        when(txHandler.isTransactionOpen()).thenReturn(false);
+        when(databaseManager.getActiveDatabaseAsSetByUser()).thenReturn(DatabaseManager.ABSENT_DB_NAME);
+        when(databaseManager.getActualDatabaseAsReportedByServer()).thenReturn(null);
         runner.runUntilEnd();
 
         // then
-        assertThat( out.toString(), equalTo( "myusername@<default_database>> return 1;\r\n" ) );
+        assertThat(out.toString(), equalTo("myusername@<default_database>> return 1;\r\n"));
     }
 
     @Test
-    void testPromptShowUnresolvedDefaultDatabaseWhenServerReportAbsent()
-    {
+    void testPromptShowUnresolvedDefaultDatabaseWhenServerReportAbsent() {
         // given
-        var runner = runner( "return 1;" );
+        var runner = runner("return 1;");
 
         // when
-        when( txHandler.isTransactionOpen() ).thenReturn( false );
-        when( databaseManager.getActiveDatabaseAsSetByUser() ).thenReturn( DatabaseManager.ABSENT_DB_NAME );
-        when( databaseManager.getActualDatabaseAsReportedByServer() ).thenReturn( DatabaseManager.ABSENT_DB_NAME );
+        when(txHandler.isTransactionOpen()).thenReturn(false);
+        when(databaseManager.getActiveDatabaseAsSetByUser()).thenReturn(DatabaseManager.ABSENT_DB_NAME);
+        when(databaseManager.getActualDatabaseAsReportedByServer()).thenReturn(DatabaseManager.ABSENT_DB_NAME);
         runner.runUntilEnd();
 
         // then
-        assertThat( out.toString(), equalTo( "myusername@<default_database>> return 1;\r\n" ) );
+        assertThat(out.toString(), equalTo("myusername@<default_database>> return 1;\r\n"));
     }
 
     @Test
-    void testLongPrompt()
-    {
+    void testLongPrompt() {
         // given
         String actualDbName = "TheLongestDbNameEverCreatedInAllOfHistoryAndTheUniversePlusSome";
-        when( databaseManager.getActualDatabaseAsReportedByServer() ).thenReturn( actualDbName );
-        var runner = runner( lines( "match", "(n)", "where n.id = 1", "", ";", "return 1;" ) );
+        when(databaseManager.getActualDatabaseAsReportedByServer()).thenReturn(actualDbName);
+        var runner = runner(lines("match", "(n)", "where n.id = 1", "", ";", "return 1;"));
 
         // when
-        when( txHandler.isTransactionOpen() ).thenReturn( false );
+        when(txHandler.isTransactionOpen()).thenReturn(false);
 
         var exitCode = runner.runUntilEnd();
 
-        assertEquals( EXIT_SUCCESS, exitCode );
+        assertEquals(EXIT_SUCCESS, exitCode);
 
-        var expected =
-                "myusername@TheLongestDbNameEverCreatedInAllOfHistoryAndTheUniversePlusSome\n" +
-                "> match\n" +
-                "  (n)\n" +
-                "  where n.id = 1\n" +
-                "  \n" +
-                "  ;\n" +
-                "myusername@TheLongestDbNameEverCreatedInAllOfHistoryAndTheUniversePlusSome\n" +
-                "> return 1;\n" +
-                "myusername@TheLongestDbNameEverCreatedInAllOfHistoryAndTheUniversePlusSome\n" +
-                "> \n";
-        assertThat( out.toString().replace( "\r", "" ), equalTo( expected ) );
+        var expected = "myusername@TheLongestDbNameEverCreatedInAllOfHistoryAndTheUniversePlusSome\n" + "> match\n"
+                + "  (n)\n"
+                + "  where n.id = 1\n"
+                + "  \n"
+                + "  ;\n"
+                + "myusername@TheLongestDbNameEverCreatedInAllOfHistoryAndTheUniversePlusSome\n"
+                + "> return 1;\n"
+                + "myusername@TheLongestDbNameEverCreatedInAllOfHistoryAndTheUniversePlusSome\n"
+                + "> \n";
+        assertThat(out.toString().replace("\r", ""), equalTo(expected));
     }
 
     @Test
-    void testPromptInTx()
-    {
+    void testPromptInTx() {
         // given
-        var runner = runner( lines( "   ", "   ", "bla bla;" ) );
-        when( txHandler.isTransactionOpen() ).thenReturn( true );
+        var runner = runner(lines("   ", "   ", "bla bla;"));
+        when(txHandler.isTransactionOpen()).thenReturn(true);
 
-        assertEquals( EXIT_SUCCESS, runner.runUntilEnd() );
+        assertEquals(EXIT_SUCCESS, runner.runUntilEnd());
 
-        var expected =
-                "myusername@mydb#    \r\n" +
-                "myusername@mydb#    \r\n" +
-                "myusername@mydb# bla bla;\r\n" +
-                "myusername@mydb# \r\n";
-        assertThat( out.toString(), equalTo( expected ) );
+        var expected = "myusername@mydb#    \r\n" + "myusername@mydb#    \r\n"
+                + "myusername@mydb# bla bla;\r\n"
+                + "myusername@mydb# \r\n";
+        assertThat(out.toString(), equalTo(expected));
     }
 
     @Test
-    void testImpersonationPrompt()
-    {
+    void testImpersonationPrompt() {
         // given
-        var runner = runner( lines( "return 40;" ) );
-        when( connector.impersonatedUser() ).thenReturn( Optional.of( "emil" ) );
-        when( txHandler.isTransactionOpen() ).thenReturn( false );
+        var runner = runner(lines("return 40;"));
+        when(connector.impersonatedUser()).thenReturn(Optional.of("emil"));
+        when(txHandler.isTransactionOpen()).thenReturn(false);
         runner.runUntilEnd();
 
         // when
-        assertThat( out.toString(), equalTo( "myusername(emil)@mydb> return 40;\r\nmyusername(emil)@mydb> \r\n" ) );
+        assertThat(out.toString(), equalTo("myusername(emil)@mydb> return 40;\r\nmyusername(emil)@mydb> \r\n"));
     }
 
     @Test
-    void multilineRequiresNewLineOrSemicolonToEnd()
-    {
+    void multilineRequiresNewLineOrSemicolonToEnd() {
         // given
-        var runner = runner( "  \\   \nCREATE (n:Person) RETURN n\n" );
+        var runner = runner("  \\   \nCREATE (n:Person) RETURN n\n");
 
         // when
         runner.runUntilEnd();
 
         // then
-        verify( cmdExecuter ).lastNeo4jErrorCode();
-        verifyNoMoreInteractions( cmdExecuter );
+        verify(cmdExecuter).lastNeo4jErrorCode();
+        verifyNoMoreInteractions(cmdExecuter);
     }
 
     @Test
-    void printsWelcomeAndExitMessage()
-    {
+    void printsWelcomeAndExitMessage() {
         // given
-        var runner = runner( "\nCREATE (n:Person) RETURN n\n;\n" );
+        var runner = runner("\nCREATE (n:Person) RETURN n\n;\n");
 
         // when
         runner.runUntilEnd();
 
         // then
-        verify( printer ).printIfVerbose(
-            """
+        verify(printer)
+                .printIfVerbose(
+                        """
                  Connected to Neo4j at @|BOLD neo4j://localhost:7687|@ as user @|BOLD myusername|@.
                  Type @|BOLD :help|@ for a list of available commands or @|BOLD :exit|@ to exit the shell.
-                 Note that Cypher queries must end with a @|BOLD semicolon.|@"""
-        );
-        verify( printer ).printIfVerbose( "\nBye!" );
+                 Note that Cypher queries must end with a @|BOLD semicolon.|@""");
+        verify(printer).printIfVerbose("\nBye!");
     }
 
     @Test
-    void multilineEndsOnSemicolonOnNewLine() throws Exception
-    {
+    void multilineEndsOnSemicolonOnNewLine() throws Exception {
         // given
-        var runner = runner( "\nCREATE (n:Person) RETURN n\n;\n" );
+        var runner = runner("\nCREATE (n:Person) RETURN n\n;\n");
 
         // when
         runner.runUntilEnd();
 
         // then
-        verify( cmdExecuter ).execute( cypher( "CREATE (n:Person) RETURN n\n;" ) );
+        verify(cmdExecuter).execute(cypher("CREATE (n:Person) RETURN n\n;"));
     }
 
     @Test
-    void multilineEndsOnSemicolonOnSameLine() throws Exception
-    {
+    void multilineEndsOnSemicolonOnSameLine() throws Exception {
         // given
-        var runner = runner( "\nCREATE (n:Person) RETURN n;\n" );
+        var runner = runner("\nCREATE (n:Person) RETURN n;\n");
 
         // when
         runner.runUntilEnd();
 
         // then
-        verify( cmdExecuter ).execute( cypher( "CREATE (n:Person) RETURN n;" ) );
+        verify(cmdExecuter).execute(cypher("CREATE (n:Person) RETURN n;"));
     }
 
     @Test
-    void testSignalHandleOutsideExecution() throws Exception
-    {
+    void testSignalHandleOutsideExecution() throws Exception {
         // given
-        var reader = mock( CypherShellTerminal.Reader.class );
-        when( reader.readStatement( any() ) )
-            .thenThrow( new UserInterruptException( "" ) )
-            .thenReturn( new StatementParser.ParsedStatements( List.of( new CommandStatement( ":exit", List.of(), true, 0, 0 ) ) ) );
-        var historian = mock( Historian.class );
-        var terminal = mock( CypherShellTerminal.class );
-        when( terminal.read() ).thenReturn( reader );
-        when( terminal.getHistory() ).thenReturn( historian );
-        doThrow( new ExitException( EXIT_SUCCESS ) ).when( cmdExecuter ).execute( any( ParsedStatement.class) );
+        var reader = mock(CypherShellTerminal.Reader.class);
+        when(reader.readStatement(any()))
+                .thenThrow(new UserInterruptException(""))
+                .thenReturn(new StatementParser.ParsedStatements(
+                        List.of(new CommandStatement(":exit", List.of(), true, 0, 0))));
+        var historian = mock(Historian.class);
+        var terminal = mock(CypherShellTerminal.class);
+        when(terminal.read()).thenReturn(reader);
+        when(terminal.getHistory()).thenReturn(historian);
+        doThrow(new ExitException(EXIT_SUCCESS)).when(cmdExecuter).execute(any(ParsedStatement.class));
 
-        var runner = runner( terminal );
+        var runner = runner(terminal);
 
         // when
         runner.runUntilEnd();
 
         // then
-        verify( cmdExecuter, times( 2 ) ).lastNeo4jErrorCode();
-        verify( cmdExecuter ).execute( new CommandStatement( ":exit", List.of(), true, 0 ,0 ) );
-        verifyNoMoreInteractions( cmdExecuter );
-        var expectedError = "@|RED Interrupted (Note that Cypher queries must end with a |@@|RED,BOLD semicolon|@@|RED . " +
-                            "Type |@@|RED,BOLD :exit|@@|RED  to exit the shell.)|@";
-        verify( printer ).printError( expectedError );
+        verify(cmdExecuter, times(2)).lastNeo4jErrorCode();
+        verify(cmdExecuter).execute(new CommandStatement(":exit", List.of(), true, 0, 0));
+        verifyNoMoreInteractions(cmdExecuter);
+        var expectedError =
+                "@|RED Interrupted (Note that Cypher queries must end with a |@@|RED,BOLD semicolon|@@|RED . "
+                        + "Type |@@|RED,BOLD :exit|@@|RED  to exit the shell.)|@";
+        verify(printer).printError(expectedError);
     }
 
     @Test
-    void testSignalHandleDuringExecution() throws Exception
-    {
+    void testSignalHandleDuringExecution() throws Exception {
         // given
-        BoltStateHandler boltStateHandler = mock( BoltStateHandler.class );
-        var fakeShell = spy( new FakeInterruptableShell( printer, boltStateHandler ) );
+        BoltStateHandler boltStateHandler = mock(BoltStateHandler.class);
+        var fakeShell = spy(new FakeInterruptableShell(printer, boltStateHandler));
         cmdExecuter = fakeShell;
         databaseManager = fakeShell;
         txHandler = fakeShell;
-        var runner = runner( lines( "RETURN 1;", ":exit" ) );
+        var runner = runner(lines("RETURN 1;", ":exit"));
 
         // during
-        Thread t = new Thread( runner::runUntilEnd );
+        Thread t = new Thread(runner::runUntilEnd);
         t.start();
 
         // wait until execution has begun
-        while ( fakeShell.executionThread.get() == null )
-        {
-            Thread.sleep( 1000L );
+        while (fakeShell.executionThread.get() == null) {
+            Thread.sleep(1000L);
         }
 
         // when
@@ -535,168 +511,194 @@ class InteractiveShellRunnerTest
         t.join();
 
         // then
-        verify( fakeShell ).execute( cypher( "RETURN 1;" ) );
-        verify( fakeShell ).execute( new CommandStatement( ":exit", List.of(), false,0, 4 ) );
-        verify( fakeShell ).reset();
-        verify( boltStateHandler ).reset();
+        verify(fakeShell).execute(cypher("RETURN 1;"));
+        verify(fakeShell).execute(new CommandStatement(":exit", List.of(), false, 0, 4));
+        verify(fakeShell).reset();
+        verify(boltStateHandler).reset();
     }
 
-    private TestInteractiveShellRunner setupInteractiveTestShellRunner( String input )
-    {
+    private TestInteractiveShellRunner setupInteractiveTestShellRunner(String input) {
         // NOTE: Tests using this will test a bit more of the stack using OfflineTestShell
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ByteArrayOutputStream error = new ByteArrayOutputStream();
 
-        BoltStateHandler mockedBoltStateHandler = mock( BoltStateHandler.class );
-        when( mockedBoltStateHandler.getProtocolVersion() ).thenReturn( "" );
-        when( mockedBoltStateHandler.username() ).thenReturn( "myusername" );
-        when( mockedBoltStateHandler.isConnected() ).thenReturn( true );
+        BoltStateHandler mockedBoltStateHandler = mock(BoltStateHandler.class);
+        when(mockedBoltStateHandler.getProtocolVersion()).thenReturn("");
+        when(mockedBoltStateHandler.username()).thenReturn("myusername");
+        when(mockedBoltStateHandler.isConnected()).thenReturn(true);
 
-        final PrettyPrinter mockedPrettyPrinter = mock( PrettyPrinter.class );
+        final PrettyPrinter mockedPrettyPrinter = mock(PrettyPrinter.class);
 
-        Printer printer = new AnsiPrinter( Format.VERBOSE, new PrintStream( output ), new PrintStream( error ) );
+        Printer printer = new AnsiPrinter(Format.VERBOSE, new PrintStream(output), new PrintStream(error));
 
-        var in = new ByteArrayInputStream( input.getBytes( UTF_8 ) );
-        var terminal = terminalBuilder().dumb().streams( in, output ).interactive( true ).logger( printer ).build();
-        OfflineTestShell offlineTestShell = new OfflineTestShell( printer, mockedBoltStateHandler, mockedPrettyPrinter );
-        CommandHelper commandHelper = new CommandHelper( printer, Historian.empty, offlineTestShell, terminal, parameters );
-        offlineTestShell.setCommandHelper( commandHelper );
-        var runner = new InteractiveShellRunner( offlineTestShell, offlineTestShell, offlineTestShell, offlineTestShell, printer,
-                                                 terminal, userMessagesHandler, historyFile );
+        var in = new ByteArrayInputStream(input.getBytes(UTF_8));
+        var terminal = terminalBuilder()
+                .dumb()
+                .streams(in, output)
+                .interactive(true)
+                .logger(printer)
+                .build();
+        OfflineTestShell offlineTestShell = new OfflineTestShell(printer, mockedBoltStateHandler, mockedPrettyPrinter);
+        CommandHelper commandHelper =
+                new CommandHelper(printer, Historian.empty, offlineTestShell, terminal, parameters);
+        offlineTestShell.setCommandHelper(commandHelper);
+        var runner = new InteractiveShellRunner(
+                offlineTestShell,
+                offlineTestShell,
+                offlineTestShell,
+                offlineTestShell,
+                printer,
+                terminal,
+                userMessagesHandler,
+                historyFile);
 
-        return new TestInteractiveShellRunner( runner, output, error, mockedBoltStateHandler );
+        return new TestInteractiveShellRunner(runner, output, error, mockedBoltStateHandler);
     }
 
     @Test
-    void testSwitchToUnavailableDatabase1() throws Exception
-    {
+    void testSwitchToUnavailableDatabase1() throws Exception {
         // given
         String input = ":use foo;\n";
-        TestInteractiveShellRunner sr = setupInteractiveTestShellRunner( input );
+        TestInteractiveShellRunner sr = setupInteractiveTestShellRunner(input);
 
         // when
-        when( sr.mockedBoltStateHandler.getActualDatabaseAsReportedByServer() ).thenReturn( "foo" );
-        doThrow( new TransientException( DatabaseManager.DATABASE_UNAVAILABLE_ERROR_CODE, "Not available" ) )
-                .when( sr.mockedBoltStateHandler ).setActiveDatabase( "foo" );
+        when(sr.mockedBoltStateHandler.getActualDatabaseAsReportedByServer()).thenReturn("foo");
+        doThrow(new TransientException(DatabaseManager.DATABASE_UNAVAILABLE_ERROR_CODE, "Not available"))
+                .when(sr.mockedBoltStateHandler)
+                .setActiveDatabase("foo");
 
         sr.runner.runUntilEnd();
 
         // then
-        assertThat( sr.output.toString(), containsString( format( "myusername@foo%s> ", DATABASE_UNAVAILABLE_ERROR_PROMPT_TEXT ) ) );
-        assertThat( sr.error.toString(), containsString( "Not available" ) );
+        assertThat(
+                sr.output.toString(),
+                containsString(format("myusername@foo%s> ", DATABASE_UNAVAILABLE_ERROR_PROMPT_TEXT)));
+        assertThat(sr.error.toString(), containsString("Not available"));
     }
 
     @Test
-    void testSwitchToUnavailableDatabase2() throws Exception
-    {
+    void testSwitchToUnavailableDatabase2() throws Exception {
         // given
         String input = ":use foo;\n";
-        TestInteractiveShellRunner sr = setupInteractiveTestShellRunner( input );
+        TestInteractiveShellRunner sr = setupInteractiveTestShellRunner(input);
 
         // when
-        when( sr.mockedBoltStateHandler.getActualDatabaseAsReportedByServer() ).thenReturn( "foo" );
-        doThrow( new ServiceUnavailableException( "Not available" ) ).when( sr.mockedBoltStateHandler ).setActiveDatabase( "foo" );
+        when(sr.mockedBoltStateHandler.getActualDatabaseAsReportedByServer()).thenReturn("foo");
+        doThrow(new ServiceUnavailableException("Not available"))
+                .when(sr.mockedBoltStateHandler)
+                .setActiveDatabase("foo");
 
         sr.runner.runUntilEnd();
 
         // then
-        assertThat( sr.output.toString(), containsString( format( "myusername@foo%s> ", DATABASE_UNAVAILABLE_ERROR_PROMPT_TEXT ) ) );
-        assertThat( sr.error.toString(), containsString( "Not available" ) );
+        assertThat(
+                sr.output.toString(),
+                containsString(format("myusername@foo%s> ", DATABASE_UNAVAILABLE_ERROR_PROMPT_TEXT)));
+        assertThat(sr.error.toString(), containsString("Not available"));
     }
 
     @Test
-    void testSwitchToUnavailableDatabase3() throws Exception
-    {
+    void testSwitchToUnavailableDatabase3() throws Exception {
         // given
         String input = ":use foo;\n";
-        TestInteractiveShellRunner sr = setupInteractiveTestShellRunner( input );
+        TestInteractiveShellRunner sr = setupInteractiveTestShellRunner(input);
 
         // when
-        when( sr.mockedBoltStateHandler.getActualDatabaseAsReportedByServer() ).thenReturn( "foo" );
-        doThrow( new DiscoveryException( "Not available", null ) ).when( sr.mockedBoltStateHandler ).setActiveDatabase( "foo" );
+        when(sr.mockedBoltStateHandler.getActualDatabaseAsReportedByServer()).thenReturn("foo");
+        doThrow(new DiscoveryException("Not available", null))
+                .when(sr.mockedBoltStateHandler)
+                .setActiveDatabase("foo");
 
         sr.runner.runUntilEnd();
 
         // then
-        assertThat( sr.output.toString(), containsString( format( "myusername@foo%s> ", DATABASE_UNAVAILABLE_ERROR_PROMPT_TEXT ) ) );
-        assertThat( sr.error.toString(), containsString( "Not available" ) );
+        assertThat(
+                sr.output.toString(),
+                containsString(format("myusername@foo%s> ", DATABASE_UNAVAILABLE_ERROR_PROMPT_TEXT)));
+        assertThat(sr.error.toString(), containsString("Not available"));
     }
 
     @Test
-    void testSwitchToNonExistingDatabase() throws Exception
-    {
+    void testSwitchToNonExistingDatabase() throws Exception {
         // given
         String input = ":use foo;\n";
-        TestInteractiveShellRunner sr = setupInteractiveTestShellRunner( input );
+        TestInteractiveShellRunner sr = setupInteractiveTestShellRunner(input);
 
         // when
-        when( sr.mockedBoltStateHandler.getActualDatabaseAsReportedByServer() ).thenReturn( "mydb" );
-        doThrow( new ClientException( "Non existing" ) ).when( sr.mockedBoltStateHandler ).setActiveDatabase( "foo" );
+        when(sr.mockedBoltStateHandler.getActualDatabaseAsReportedByServer()).thenReturn("mydb");
+        doThrow(new ClientException("Non existing"))
+                .when(sr.mockedBoltStateHandler)
+                .setActiveDatabase("foo");
 
         sr.runner.runUntilEnd();
 
         // then
-        assertThat( sr.output.toString(), containsString( "myusername@mydb> " ) );
-        assertThat( sr.error.toString(), containsString( "Non existing" ) );
+        assertThat(sr.output.toString(), containsString("myusername@mydb> "));
+        assertThat(sr.error.toString(), containsString("Non existing"));
     }
 
-    private InteractiveShellRunner runner( String input )
-    {
-        return new InteractiveShellRunner( cmdExecuter, txHandler, databaseManager, connector, printer,
-                                           testTerminal( input ), userMessagesHandler, historyFile );
+    private InteractiveShellRunner runner(String input) {
+        return new InteractiveShellRunner(
+                cmdExecuter,
+                txHandler,
+                databaseManager,
+                connector,
+                printer,
+                testTerminal(input),
+                userMessagesHandler,
+                historyFile);
     }
 
-    private InteractiveShellRunner runner( CypherShellTerminal terminal )
-    {
-        return new InteractiveShellRunner( cmdExecuter, txHandler, databaseManager, connector, printer,
-                                           terminal, userMessagesHandler, historyFile );
+    private InteractiveShellRunner runner(CypherShellTerminal terminal) {
+        return new InteractiveShellRunner(
+                cmdExecuter,
+                txHandler,
+                databaseManager,
+                connector,
+                printer,
+                terminal,
+                userMessagesHandler,
+                historyFile);
     }
 
-    private static String lines( String... lines )
-    {
-        return stream( lines ).map( l -> l + "\n" ).collect( joining() );
+    private static String lines(String... lines) {
+        return stream(lines).map(l -> l + "\n").collect(joining());
     }
 
-    private CypherShellTerminal testTerminal( String input )
-    {
-        var in = new ByteArrayInputStream( input.getBytes( UTF_8 ) );
-        return terminalBuilder().dumb().streams( in, out ).interactive( true ).logger( printer ).build();
-
+    private CypherShellTerminal testTerminal(String input) {
+        var in = new ByteArrayInputStream(input.getBytes(UTF_8));
+        return terminalBuilder()
+                .dumb()
+                .streams(in, out)
+                .interactive(true)
+                .logger(printer)
+                .build();
     }
 
-    private static class FakeInterruptableShell extends CypherShell
-    {
+    private static class FakeInterruptableShell extends CypherShell {
         protected final AtomicReference<Thread> executionThread = new AtomicReference<>();
 
-        FakeInterruptableShell( Printer printer,
-                                BoltStateHandler boltStateHandler )
-        {
-            super( printer, boltStateHandler, mock( PrettyPrinter.class ), null );
+        FakeInterruptableShell(Printer printer, BoltStateHandler boltStateHandler) {
+            super(printer, boltStateHandler, mock(PrettyPrinter.class), null);
         }
 
         @Override
-        public void execute( ParsedStatement statement ) throws ExitException, CommandException
-        {
-            if ( statement.statement().equals( ":exit" ) )
-            {
-                throw new ExitException( EXIT_SUCCESS );
+        public void execute(ParsedStatement statement) throws ExitException, CommandException {
+            if (statement.statement().equals(":exit")) {
+                throw new ExitException(EXIT_SUCCESS);
             }
 
-            try
-            {
-                executionThread.set( Thread.currentThread() );
-                Thread.sleep( 10_000L );
+            try {
+                executionThread.set(Thread.currentThread());
+                Thread.sleep(10_000L);
                 System.out.println("Long done!");
-            }
-            catch ( InterruptedException ignored )
-            {
-                throw new CommandException( "execution interrupted" );
+            } catch (InterruptedException ignored) {
+                throw new CommandException("execution interrupted");
             }
         }
 
         @Override
-        public void reset()
-        {
+        public void reset() {
             // Do whatever usually happens
             super.reset();
             // But also simulate reset by interrupting the thread
@@ -704,28 +706,27 @@ class InteractiveShellRunnerTest
         }
 
         @Override
-        public String getActiveDatabaseAsSetByUser()
-        {
+        public String getActiveDatabaseAsSetByUser() {
             return ABSENT_DB_NAME;
         }
 
         @Override
-        public String getActualDatabaseAsReportedByServer()
-        {
+        public String getActualDatabaseAsReportedByServer() {
             return DEFAULT_DEFAULT_DB_NAME;
         }
     }
 
-    private static class TestInteractiveShellRunner
-    {
+    private static class TestInteractiveShellRunner {
         InteractiveShellRunner runner;
         ByteArrayOutputStream output;
         ByteArrayOutputStream error;
         BoltStateHandler mockedBoltStateHandler;
 
-        TestInteractiveShellRunner( InteractiveShellRunner runner, ByteArrayOutputStream output,
-                                    ByteArrayOutputStream error, BoltStateHandler mockedBoltStateHandler )
-        {
+        TestInteractiveShellRunner(
+                InteractiveShellRunner runner,
+                ByteArrayOutputStream output,
+                ByteArrayOutputStream error,
+                BoltStateHandler mockedBoltStateHandler) {
             this.runner = runner;
             this.output = output;
             this.error = error;
@@ -733,18 +734,15 @@ class InteractiveShellRunnerTest
         }
     }
 
-    private static ParsedStatement statementContains( String contains )
-    {
-        return argThat( a -> a.statement().contains( contains ) );
+    private static ParsedStatement statementContains(String contains) {
+        return argThat(a -> a.statement().contains(contains));
     }
 
-    private CypherStatement cypher( String cypher )
-    {
-        return new CypherStatement( cypher, true, 0, cypher.length() - 1 );
+    private CypherStatement cypher(String cypher) {
+        return new CypherStatement(cypher, true, 0, cypher.length() - 1);
     }
 
-    private CypherStatement cypher( String cypher, int beginOffset )
-    {
-        return new CypherStatement( cypher, true, beginOffset, beginOffset + cypher.length() - 1 );
+    private CypherStatement cypher(String cypher, int beginOffset) {
+        return new CypherStatement(cypher, true, beginOffset, beginOffset + cypher.length() - 1);
     }
 }

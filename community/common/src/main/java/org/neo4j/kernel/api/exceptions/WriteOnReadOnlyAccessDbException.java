@@ -24,15 +24,14 @@ import org.neo4j.exceptions.KernelException;
 /**
  * This exception is thrown when committing an updating transaction in a database which is configured as read-only, through configuration or ALTER DATABASE.
  */
-public class WriteOnReadOnlyAccessDbException extends KernelException
-{
-    public WriteOnReadOnlyAccessDbException()
-    {
-        super( Status.General.WriteOnReadOnlyAccessDatabase, "This Neo4j instance is read-only for all databases" );
+public class WriteOnReadOnlyAccessDbException extends KernelException {
+    public WriteOnReadOnlyAccessDbException() {
+        super(Status.General.WriteOnReadOnlyAccessDatabase, "This Neo4j instance is read-only for all databases");
     }
 
-    public WriteOnReadOnlyAccessDbException( String databaseName )
-    {
-        super( Status.General.WriteOnReadOnlyAccessDatabase, "The database " + databaseName + " is in read-only mode on this Neo4j instance" );
+    public WriteOnReadOnlyAccessDbException(String databaseName) {
+        super(
+                Status.General.WriteOnReadOnlyAccessDatabase,
+                "The database " + databaseName + " is in read-only mode on this Neo4j instance");
     }
 }

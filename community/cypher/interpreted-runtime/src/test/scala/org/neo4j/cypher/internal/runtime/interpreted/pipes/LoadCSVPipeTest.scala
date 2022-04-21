@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import java.net.URL
-
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
 import org.mockito.invocation.InvocationOnMock
@@ -34,7 +32,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Litera
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 
+import java.net.URL
+
 class LoadCSVPipeTest extends CypherFunSuite {
+
   test("with headers: close should close seeker") {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
@@ -42,16 +43,26 @@ class LoadCSVPipeTest extends CypherFunSuite {
       query = QueryStateHelper.emptyWithResourceManager(resourceManager).query,
       resources = new CSVResources(resourceManager)
     )
-    Mockito.when(state.query.getImportURL(any[URL])).thenAnswer((invocation: InvocationOnMock) => Right(invocation.getArgument[URL](0)))
+    Mockito.when(state.query.getImportURL(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
+      Right(invocation.getArgument[URL](0))
+    )
 
-    val input = new FakePipe(Seq(Map("x"->0),Map("x"->1)))
+    val input = new FakePipe(Seq(Map("x" -> 0), Map("x" -> 1)))
     val csv = classOf[LoadCSVPipeTest].getResource("/load.csv")
-    val pipe = LoadCSVPipe(input, HasHeaders, Literal(Values.stringValue(csv.toExternalForm)), "csv", None, legacyCsvQuoteEscaping = false, 10)()
+    val pipe = LoadCSVPipe(
+      input,
+      HasHeaders,
+      Literal(Values.stringValue(csv.toExternalForm)),
+      "csv",
+      None,
+      legacyCsvQuoteEscaping = false,
+      10
+    )()
     val result = pipe.createResults(state)
     result.hasNext // initialize seeker
     result.close()
     input.wasClosed shouldBe true
-    monitor.closedResources.collect { case t: CSVResource => t } should have size(1)
+    monitor.closedResources.collect { case t: CSVResource => t } should have size (1)
   }
 
   test("with headers: exhaust should close seeker") {
@@ -61,14 +72,24 @@ class LoadCSVPipeTest extends CypherFunSuite {
       query = QueryStateHelper.emptyWithResourceManager(resourceManager).query,
       resources = new CSVResources(resourceManager)
     )
-    Mockito.when(state.query.getImportURL(any[URL])).thenAnswer((invocation: InvocationOnMock) => Right(invocation.getArgument[URL](0)))
+    Mockito.when(state.query.getImportURL(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
+      Right(invocation.getArgument[URL](0))
+    )
 
     val input = new FakePipe(Seq(
-      Map("x"->0),
-      Map("x"->1),
+      Map("x" -> 0),
+      Map("x" -> 1)
     ))
     val csv = classOf[LoadCSVPipeTest].getResource("/load.csv")
-    val pipe = LoadCSVPipe(input, HasHeaders, Literal(Values.stringValue(csv.toExternalForm)), "csv", None, legacyCsvQuoteEscaping = false, 10)()
+    val pipe = LoadCSVPipe(
+      input,
+      HasHeaders,
+      Literal(Values.stringValue(csv.toExternalForm)),
+      "csv",
+      None,
+      legacyCsvQuoteEscaping = false,
+      10
+    )()
     // exhaust
     val iterator = pipe.createResults(state)
     iterator.next()
@@ -89,16 +110,26 @@ class LoadCSVPipeTest extends CypherFunSuite {
       query = QueryStateHelper.emptyWithResourceManager(resourceManager).query,
       resources = new CSVResources(resourceManager)
     )
-    Mockito.when(state.query.getImportURL(any[URL])).thenAnswer((invocation: InvocationOnMock) => Right(invocation.getArgument[URL](0)))
+    Mockito.when(state.query.getImportURL(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
+      Right(invocation.getArgument[URL](0))
+    )
 
-    val input = new FakePipe(Seq(Map("x"->0),Map("x"->1)))
+    val input = new FakePipe(Seq(Map("x" -> 0), Map("x" -> 1)))
     val csv = classOf[LoadCSVPipeTest].getResource("/load-no-headers.csv")
-    val pipe = LoadCSVPipe(input, NoHeaders, Literal(Values.stringValue(csv.toExternalForm)), "csv", None, legacyCsvQuoteEscaping = false, 10)()
+    val pipe = LoadCSVPipe(
+      input,
+      NoHeaders,
+      Literal(Values.stringValue(csv.toExternalForm)),
+      "csv",
+      None,
+      legacyCsvQuoteEscaping = false,
+      10
+    )()
     val result = pipe.createResults(state)
     result.hasNext // initialize seeker
     result.close()
     input.wasClosed shouldBe true
-    monitor.closedResources.collect { case t: CSVResource => t } should have size(1)
+    monitor.closedResources.collect { case t: CSVResource => t } should have size (1)
   }
 
   test("without headers: exhaust should close seeker") {
@@ -108,14 +139,24 @@ class LoadCSVPipeTest extends CypherFunSuite {
       query = QueryStateHelper.emptyWithResourceManager(resourceManager).query,
       resources = new CSVResources(resourceManager)
     )
-    Mockito.when(state.query.getImportURL(any[URL])).thenAnswer((invocation: InvocationOnMock) => Right(invocation.getArgument[URL](0)))
+    Mockito.when(state.query.getImportURL(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
+      Right(invocation.getArgument[URL](0))
+    )
 
     val input = new FakePipe(Seq(
-      Map("x"->0),
-      Map("x"->1),
+      Map("x" -> 0),
+      Map("x" -> 1)
     ))
     val csv = classOf[LoadCSVPipeTest].getResource("/load-no-headers.csv")
-    val pipe = LoadCSVPipe(input, NoHeaders, Literal(Values.stringValue(csv.toExternalForm)), "csv", None, legacyCsvQuoteEscaping = false, 10)()
+    val pipe = LoadCSVPipe(
+      input,
+      NoHeaders,
+      Literal(Values.stringValue(csv.toExternalForm)),
+      "csv",
+      None,
+      legacyCsvQuoteEscaping = false,
+      10
+    )()
     // exhaust
     val iterator = pipe.createResults(state)
     iterator.next()

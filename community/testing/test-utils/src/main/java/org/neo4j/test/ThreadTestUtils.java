@@ -25,47 +25,42 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.function.Predicate;
 
-public class ThreadTestUtils
-{
-    private ThreadTestUtils()
-    {
-    }
+public class ThreadTestUtils {
+    private ThreadTestUtils() {}
 
-    public static Thread fork( Runnable runnable )
-    {
+    public static Thread fork(Runnable runnable) {
         String name = "Forked-from-" + Thread.currentThread().getName();
-        Thread thread = new Thread( runnable, name );
-        thread.setDaemon( true );
+        Thread thread = new Thread(runnable, name);
+        thread.setDaemon(true);
         thread.start();
         return thread;
     }
 
-    public static <T> Future<T> forkFuture( Callable<T> callable )
-    {
-        FutureTask<T> task = new FutureTask<>( callable );
-        fork( task );
+    public static <T> Future<T> forkFuture(Callable<T> callable) {
+        FutureTask<T> task = new FutureTask<>(callable);
+        fork(task);
         return task;
     }
 
-    public static void awaitThreadState( Thread thread, long maxWaitMillis, Thread.State first, Thread.State... rest )
-    {
-        awaitThreadState( thread, maxWaitMillis, s -> true, first, rest );
+    public static void awaitThreadState(Thread thread, long maxWaitMillis, Thread.State first, Thread.State... rest) {
+        awaitThreadState(thread, maxWaitMillis, s -> true, first, rest);
     }
 
-    public static void awaitThreadState( Thread thread, long maxWaitMillis, Predicate<StackTraceElement[]> positionFilter, Thread.State first,
-            Thread.State... rest )
-    {
-        EnumSet<Thread.State> set = EnumSet.of( first, rest );
+    public static void awaitThreadState(
+            Thread thread,
+            long maxWaitMillis,
+            Predicate<StackTraceElement[]> positionFilter,
+            Thread.State first,
+            Thread.State... rest) {
+        EnumSet<Thread.State> set = EnumSet.of(first, rest);
         long deadline = maxWaitMillis + System.currentTimeMillis();
         Thread.State currentState;
-        do
-        {
+        do {
             currentState = thread.getState();
-            if ( System.currentTimeMillis() > deadline )
-            {
-                throw new AssertionError( "Timed out waiting for thread state of <" + set + ">: " + thread + " (state = " + thread.getState() + ")" );
+            if (System.currentTimeMillis() > deadline) {
+                throw new AssertionError("Timed out waiting for thread state of <" + set + ">: " + thread + " (state = "
+                        + thread.getState() + ")");
             }
-        }
-        while ( !set.contains( currentState ) || !positionFilter.test( thread.getStackTrace() ) );
+        } while (!set.contains(currentState) || !positionFilter.test(thread.getStackTrace()));
     }
 }

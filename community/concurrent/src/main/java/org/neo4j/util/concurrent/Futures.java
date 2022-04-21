@@ -27,17 +27,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.neo4j.internal.helpers.Exceptions;
 
 /**
  * Constructors for basic {@link Future} types
  */
-public class Futures
-{
-    private Futures()
-    {
-    }
+public class Futures {
+    private Futures() {}
 
     /**
      * Combine multiple @{link Future} instances into a single Future
@@ -47,9 +43,8 @@ public class Futures
      * @return A new @{link Future} representing the combination
      */
     @SafeVarargs
-    public static <V> Future<List<V>> combine( final Future<? extends V>... futures )
-    {
-        return combine( Arrays.asList( futures ) );
+    public static <V> Future<List<V>> combine(final Future<? extends V>... futures) {
+        return combine(Arrays.asList(futures));
     }
 
     /**
@@ -62,47 +57,34 @@ public class Futures
      * @return A {@link List<V> list} of results.
      * @throws ExecutionException If any of the futures throw.
      */
-    public static <V> List<V> getAllResults( Iterable<? extends Future<V>> futures ) throws ExecutionException
-    {
-        List<V> result = futures instanceof Collection
-                         ? new ArrayList<>( ((Collection<?>) futures).size() )
-                         : new ArrayList<>();
+    public static <V> List<V> getAllResults(Iterable<? extends Future<V>> futures) throws ExecutionException {
+        List<V> result =
+                futures instanceof Collection ? new ArrayList<>(((Collection<?>) futures).size()) : new ArrayList<>();
         Throwable finalError = null;
-        for ( Future<V> future : futures )
-        {
-            try
-            {
-                result.add( future.get() );
-            }
-            catch ( Throwable e )
-            {
-                finalError = Exceptions.chain( finalError, e );
+        for (Future<V> future : futures) {
+            try {
+                result.add(future.get());
+            } catch (Throwable e) {
+                finalError = Exceptions.chain(finalError, e);
             }
         }
-        if ( finalError != null )
-        {
-            throw new ExecutionException( finalError );
+        if (finalError != null) {
+            throw new ExecutionException(finalError);
         }
         return result;
     }
 
-    public static void getAll( Iterable<? extends Future<?>> futures ) throws ExecutionException
-    {
+    public static void getAll(Iterable<? extends Future<?>> futures) throws ExecutionException {
         Throwable finalError = null;
-        for ( Future<?> future : futures )
-        {
-            try
-            {
+        for (Future<?> future : futures) {
+            try {
                 future.get();
-            }
-            catch ( Throwable e )
-            {
-                finalError = Exceptions.chain( finalError, e );
+            } catch (Throwable e) {
+                finalError = Exceptions.chain(finalError, e);
             }
         }
-        if ( finalError != null )
-        {
-            throw new ExecutionException( finalError );
+        if (finalError != null) {
+            throw new ExecutionException(finalError);
         }
     }
 
@@ -113,63 +95,52 @@ public class Futures
      * @param <V>     The result type returned by this Future's get method
      * @return A new @{link Future} representing the combination
      */
-    public static <V> Future<List<V>> combine( final Iterable<? extends Future<? extends V>> futures )
-    {
-        return new Future<>()
-        {
+    public static <V> Future<List<V>> combine(final Iterable<? extends Future<? extends V>> futures) {
+        return new Future<>() {
             @Override
-            public boolean cancel( boolean mayInterruptIfRunning )
-            {
+            public boolean cancel(boolean mayInterruptIfRunning) {
                 boolean result = false;
-                for ( Future<? extends V> future : futures )
-                {
-                    result |= future.cancel( mayInterruptIfRunning );
+                for (Future<? extends V> future : futures) {
+                    result |= future.cancel(mayInterruptIfRunning);
                 }
                 return result;
             }
 
             @Override
-            public boolean isCancelled()
-            {
+            public boolean isCancelled() {
                 boolean result = false;
-                for ( Future<? extends V> future : futures )
-                {
+                for (Future<? extends V> future : futures) {
                     result |= future.isCancelled();
                 }
                 return result;
             }
 
             @Override
-            public boolean isDone()
-            {
+            public boolean isDone() {
                 boolean result = false;
-                for ( Future<? extends V> future : futures )
-                {
+                for (Future<? extends V> future : futures) {
                     result |= future.isDone();
                 }
                 return result;
             }
 
             @Override
-            public List<V> get() throws InterruptedException, ExecutionException
-            {
+            public List<V> get() throws InterruptedException, ExecutionException {
                 List<V> result = new ArrayList<>();
-                for ( Future<? extends V> future : futures )
-                {
-                    result.add( future.get() );
+                for (Future<? extends V> future : futures) {
+                    result.add(future.get());
                 }
                 return result;
             }
 
             @Override
-            public List<V> get( long timeout, TimeUnit unit ) throws InterruptedException, ExecutionException, TimeoutException
-            {
+            public List<V> get(long timeout, TimeUnit unit)
+                    throws InterruptedException, ExecutionException, TimeoutException {
                 List<V> result = new ArrayList<>();
-                for ( Future<? extends V> future : futures )
-                {
+                for (Future<? extends V> future : futures) {
                     long before = System.nanoTime();
-                    result.add( future.get( timeout, unit ) );
-                    timeout -= unit.convert( System.nanoTime() - before, TimeUnit.NANOSECONDS );
+                    result.add(future.get(timeout, unit));
+                    timeout -= unit.convert(System.nanoTime() - before, TimeUnit.NANOSECONDS);
                 }
                 return result;
             }

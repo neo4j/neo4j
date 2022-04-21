@@ -25,18 +25,19 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 
-public class Neo4jHttpExceptionMapper implements ExceptionMapper<Neo4jHttpException>
-{
+public class Neo4jHttpExceptionMapper implements ExceptionMapper<Neo4jHttpException> {
     @Override
-    public Response toResponse( Neo4jHttpException exception )
-    {
+    public Response toResponse(Neo4jHttpException exception) {
         List<ErrorRepresentation.Error> errors = exception.getNeo4jErrors().stream()
-                .map( e -> new ErrorRepresentation.Error( e.status().code().serialize(), e.getMessage() ) )
-                .collect( Collectors.toList() );
+                .map(e -> new ErrorRepresentation.Error(e.status().code().serialize(), e.getMessage()))
+                .collect(Collectors.toList());
 
         ErrorRepresentation errorEntity = new ErrorRepresentation();
-        errorEntity.setErrors( errors );
+        errorEntity.setErrors(errors);
 
-        return Response.status( exception.getHttpStatus() ).type( MediaType.APPLICATION_JSON_TYPE ).entity( errorEntity ).build();
+        return Response.status(exception.getHttpStatus())
+                .type(MediaType.APPLICATION_JSON_TYPE)
+                .entity(errorEntity)
+                .build();
     }
 }

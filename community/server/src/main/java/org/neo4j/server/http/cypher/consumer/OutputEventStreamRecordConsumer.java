@@ -24,32 +24,31 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
-
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.server.http.cypher.OutputEventStream;
 import org.neo4j.server.http.cypher.TransactionIndependentValueMapper;
 import org.neo4j.values.AnyValue;
 
-public class OutputEventStreamRecordConsumer implements BoltResult.RecordConsumer
-{
+public class OutputEventStreamRecordConsumer implements BoltResult.RecordConsumer {
     private final BoltResult boltResult;
     private final OutputEventStream outputEventStream;
-    private final Supplier<Map<String,Object>> resultsSupplier;
+    private final Supplier<Map<String, Object>> resultsSupplier;
     private final TransactionIndependentValueMapper valueMapper;
 
-    private Map<String,Object> results;
-    private Map<String,AnyValue> metadataMap;
+    private Map<String, Object> results;
+    private Map<String, AnyValue> metadataMap;
     private int fieldIndex;
 
-    OutputEventStreamRecordConsumer( BoltResult boltResult, OutputEventStream outputEventStream,
-                                     TransactionIndependentValueMapper valueMapper )
-    {
-        this( boltResult, outputEventStream, valueMapper, HashMap::new );
+    OutputEventStreamRecordConsumer(
+            BoltResult boltResult, OutputEventStream outputEventStream, TransactionIndependentValueMapper valueMapper) {
+        this(boltResult, outputEventStream, valueMapper, HashMap::new);
     }
 
-    protected OutputEventStreamRecordConsumer( BoltResult boltResult, OutputEventStream outputEventStream,
-                                               TransactionIndependentValueMapper valueMapper, Supplier<Map<String,Object>> resultsSupplier )
-    {
+    protected OutputEventStreamRecordConsumer(
+            BoltResult boltResult,
+            OutputEventStream outputEventStream,
+            TransactionIndependentValueMapper valueMapper,
+            Supplier<Map<String, Object>> resultsSupplier) {
         this.boltResult = boltResult;
         this.outputEventStream = outputEventStream;
         this.valueMapper = valueMapper;
@@ -59,42 +58,37 @@ public class OutputEventStreamRecordConsumer implements BoltResult.RecordConsume
     }
 
     @Override
-    public void addMetadata( String key, AnyValue value )
-    {
-        metadataMap.put( key, value );
+    public void addMetadata(String key, AnyValue value) {
+        metadataMap.put(key, value);
     }
 
     @Override
-    public void beginRecord( int numberOfFields ) throws IOException
-    {
+    public void beginRecord(int numberOfFields) throws IOException {
         fieldIndex = 0;
         results = resultsSupplier.get();
         metadataMap = new HashMap<>();
     }
 
     @Override
-    public void consumeField( AnyValue value ) throws IOException
-    {
-        // we need to map the "AnyValue" type back to the standard graph types expected by the HTTP serialization mechanism
-        results.put( boltResult.fieldNames()[fieldIndex], value.map( valueMapper ) );
+    public void consumeField(AnyValue value) throws IOException {
+        // we need to map the "AnyValue" type back to the standard graph types expected by the HTTP serialization
+        // mechanism
+        results.put(boltResult.fieldNames()[fieldIndex], value.map(valueMapper));
         fieldIndex++;
     }
 
     @Override
-    public void endRecord() throws IOException
-    {
-        outputEventStream.writeRecord( Arrays.asList( boltResult.fieldNames().clone() ), results::get );
+    public void endRecord() throws IOException {
+        outputEventStream.writeRecord(Arrays.asList(boltResult.fieldNames().clone()), results::get);
     }
 
     @Override
-    public void onError() throws IOException
-    {
+    public void onError() throws IOException {
         // dont think this is possible but throw an error here in case.
-        throw new IOException( "An error occurred whilst processing query results" );
+        throw new IOException("An error occurred whilst processing query results");
     }
 
-    public Map<String,AnyValue> metadataMap()
-    {
+    public Map<String, AnyValue> metadataMap() {
         return metadataMap;
     }
 }

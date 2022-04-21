@@ -19,119 +19,106 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
-class FulltextIndexSkipAndLimitTest extends FulltextProceduresTestSupport
-{
+class FulltextIndexSkipAndLimitTest extends FulltextProceduresTestSupport {
     private long topEntity;
     private long middleEntity;
     private long bottomEntity;
 
-    private void setUp( EntityUtil entityUtil )
-    {
-        createIndexAndWait( entityUtil );
+    private void setUp(EntityUtil entityUtil) {
+        createIndexAndWait(entityUtil);
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            topEntity = entityUtil.createEntityWithProperty( tx, "zebra zebra zebra zebra donkey" );
-            middleEntity = entityUtil.createEntityWithProperty( tx, "zebra zebra zebra donkey" );
-            bottomEntity = entityUtil.createEntityWithProperty( tx, "zebra donkey" );
+        try (Transaction tx = db.beginTx()) {
+            topEntity = entityUtil.createEntityWithProperty(tx, "zebra zebra zebra zebra donkey");
+            middleEntity = entityUtil.createEntityWithProperty(tx, "zebra zebra zebra donkey");
+            bottomEntity = entityUtil.createEntityWithProperty(tx, "zebra donkey");
 
             tx.commit();
         }
     }
 
-    @MethodSource( "entityTypeProvider" )
+    @MethodSource("entityTypeProvider")
     @ParameterizedTest
-    void queryEntitiesMustApplySkip( EntityUtil entityUtil )
-    {
-        setUp( entityUtil );
+    void queryEntitiesMustApplySkip(EntityUtil entityUtil) {
+        setUp(entityUtil);
 
-        try ( Transaction tx = db.beginTx();
-                ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions( tx, "zebra", "{skip:1}" ) )
-        {
-            assertThat( iterator.next().getId() ).isEqualTo( middleEntity );
-            assertThat( iterator.next().getId() ).isEqualTo( bottomEntity );
-            assertFalse( iterator.hasNext() );
+        try (Transaction tx = db.beginTx();
+                ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{skip:1}")) {
+            assertThat(iterator.next().getId()).isEqualTo(middleEntity);
+            assertThat(iterator.next().getId()).isEqualTo(bottomEntity);
+            assertFalse(iterator.hasNext());
             tx.commit();
         }
     }
 
-    @MethodSource( "entityTypeProvider" )
+    @MethodSource("entityTypeProvider")
     @ParameterizedTest
-    void queryEntitiesMustApplyLimit( EntityUtil entityUtil )
-    {
-        setUp( entityUtil );
+    void queryEntitiesMustApplyLimit(EntityUtil entityUtil) {
+        setUp(entityUtil);
 
-        try ( Transaction tx = db.beginTx();
-                ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions( tx, "zebra", "{limit:1}" ) )
-        {
-            assertThat( iterator.next().getId() ).isEqualTo( topEntity );
-            assertFalse( iterator.hasNext() );
+        try (Transaction tx = db.beginTx();
+                ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{limit:1}")) {
+            assertThat(iterator.next().getId()).isEqualTo(topEntity);
+            assertFalse(iterator.hasNext());
             tx.commit();
         }
     }
 
-    @MethodSource( "entityTypeProvider" )
+    @MethodSource("entityTypeProvider")
     @ParameterizedTest
-    void queryEntitiesMustApplySkipAndLimit( EntityUtil entityUtil )
-    {
-        setUp( entityUtil );
+    void queryEntitiesMustApplySkipAndLimit(EntityUtil entityUtil) {
+        setUp(entityUtil);
 
-        try ( Transaction tx = db.beginTx();
-                ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions( tx, "zebra", "{skip:1, limit:1}" ) )
-        {
-            assertThat( iterator.next().getId() ).isEqualTo( middleEntity );
-            assertFalse( iterator.hasNext() );
+        try (Transaction tx = db.beginTx();
+                ResourceIterator<Entity> iterator =
+                        entityUtil.queryIndexWithOptions(tx, "zebra", "{skip:1, limit:1}")) {
+            assertThat(iterator.next().getId()).isEqualTo(middleEntity);
+            assertFalse(iterator.hasNext());
             tx.commit();
         }
     }
 
-    @MethodSource( "entityTypeProvider" )
+    @MethodSource("entityTypeProvider")
     @ParameterizedTest
-    void queryEntitiesWithSkipAndLimitMustIgnoreEntitiesDeletedInTransaction( EntityUtil entityUtil )
-    {
-        setUp( entityUtil );
+    void queryEntitiesWithSkipAndLimitMustIgnoreEntitiesDeletedInTransaction(EntityUtil entityUtil) {
+        setUp(entityUtil);
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            entityUtil.deleteEntity( tx, topEntity );
-            try ( ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions( tx, "zebra", "{skip:1}" ) )
-            {
-                assertThat( iterator.next().getId() ).isEqualTo( bottomEntity ); // Without topEntity, middleEntity is now the one we skip.
-                assertFalse( iterator.hasNext() );
+        try (Transaction tx = db.beginTx()) {
+            entityUtil.deleteEntity(tx, topEntity);
+            try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{skip:1}")) {
+                assertThat(iterator.next().getId())
+                        .isEqualTo(bottomEntity); // Without topEntity, middleEntity is now the one we skip.
+                assertFalse(iterator.hasNext());
             }
-            try ( ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions( tx, "zebra", "{limit:1}" ) )
-            {
-                assertThat( iterator.next().getId() ).isEqualTo( middleEntity ); // Without topEntity, middleEntity is now the best match.
-                assertFalse( iterator.hasNext() );
+            try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{limit:1}")) {
+                assertThat(iterator.next().getId())
+                        .isEqualTo(middleEntity); // Without topEntity, middleEntity is now the best match.
+                assertFalse(iterator.hasNext());
             }
             tx.commit();
         }
     }
 
-    @MethodSource( "entityTypeProvider" )
+    @MethodSource("entityTypeProvider")
     @ParameterizedTest
-    void queryEntitiesWithSkipAndLimitMustIncludeEntitiesAddedInTransaction( EntityUtil entityUtil )
-    {
-        setUp( entityUtil );
+    void queryEntitiesWithSkipAndLimitMustIncludeEntitiesAddedInTransaction(EntityUtil entityUtil) {
+        setUp(entityUtil);
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            long entityId = entityUtil.createEntityWithProperty( tx, "zebra zebra donkey" );
-            try ( ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions( tx, "zebra", "{skip:1, limit:2}" ) )
-            {
-                assertThat( iterator.next().getId() ).isEqualTo( middleEntity );
-                assertThat( iterator.next().getId() ).isEqualTo( entityId );
-                assertFalse( iterator.hasNext() );
+        try (Transaction tx = db.beginTx()) {
+            long entityId = entityUtil.createEntityWithProperty(tx, "zebra zebra donkey");
+            try (ResourceIterator<Entity> iterator =
+                    entityUtil.queryIndexWithOptions(tx, "zebra", "{skip:1, limit:2}")) {
+                assertThat(iterator.next().getId()).isEqualTo(middleEntity);
+                assertThat(iterator.next().getId()).isEqualTo(entityId);
+                assertFalse(iterator.hasNext());
             }
             tx.commit();
         }

@@ -21,6 +21,4 @@ package org.neo4j.internal.helpers.collection;
 
 import org.neo4j.graphdb.ResourceIterator;
 
-public abstract class PrefetchingResourceIterator<T> extends PrefetchingIterator<T> implements ResourceIterator<T>
-{
-}
+public abstract class PrefetchingResourceIterator<T> extends PrefetchingIterator<T> implements ResourceIterator<T> {}

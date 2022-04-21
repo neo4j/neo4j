@@ -19,9 +19,10 @@
  */
 package org.neo4j.procedure.impl;
 
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
+
 import java.util.Iterator;
 import java.util.stream.Stream;
-
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -32,112 +33,88 @@ import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 
-import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-
 /**
  * Base iterator class used extended by generated code to map from procedure streams
  */
-@SuppressWarnings( "WeakerAccess" )
-public abstract class BaseStreamIterator implements RawIterator<AnyValue[],ProcedureException>, Resource
-{
+@SuppressWarnings("WeakerAccess")
+public abstract class BaseStreamIterator implements RawIterator<AnyValue[], ProcedureException>, Resource {
     private final Iterator<?> out;
     private Stream<?> stream;
     private final ResourceTracker resourceTracker;
     private final ProcedureSignature signature;
 
-    public BaseStreamIterator( Stream<?> stream, ResourceTracker resourceTracker,
-            ProcedureSignature signature )
-    {
+    public BaseStreamIterator(Stream<?> stream, ResourceTracker resourceTracker, ProcedureSignature signature) {
         this.out = stream.iterator();
         this.stream = stream;
         this.resourceTracker = resourceTracker;
         this.signature = signature;
-        resourceTracker.registerCloseableResource( stream );
+        resourceTracker.registerCloseableResource(stream);
     }
 
-    public abstract AnyValue[] map( Object in );
+    public abstract AnyValue[] map(Object in);
 
     @Override
-    public boolean hasNext() throws ProcedureException
-    {
-        try
-        {
+    public boolean hasNext() throws ProcedureException {
+        try {
             boolean hasNext = out.hasNext();
-            if ( !hasNext )
-            {
+            if (!hasNext) {
                 close();
             }
             return hasNext;
-        }
-        catch ( Throwable throwable )
-        {
-            throw closeAndCreateProcedureException( throwable );
+        } catch (Throwable throwable) {
+            throw closeAndCreateProcedureException(throwable);
         }
     }
 
     @Override
-    public AnyValue[] next() throws ProcedureException
-    {
-        try
-        {
+    public AnyValue[] next() throws ProcedureException {
+        try {
             Object record = out.next();
-            return map( record );
-        }
-        catch ( Throwable throwable )
-        {
-            throw closeAndCreateProcedureException( throwable );
+            return map(record);
+        } catch (Throwable throwable) {
+            throw closeAndCreateProcedureException(throwable);
         }
     }
 
     @Override
-    public void close()
-    {
-        if ( stream != null )
-        {
+    public void close() {
+        if (stream != null) {
             // Make sure we reset closeableResource before doing anything which may throw an exception that may
             // result in a recursive call to this close-method
             AutoCloseable resourceToClose = stream;
             stream = null;
-            IOUtils.close( ResourceCloseFailureException::new,
-                    () -> resourceTracker.unregisterCloseableResource( resourceToClose ),
-                    resourceToClose );
+            IOUtils.close(
+                    ResourceCloseFailureException::new,
+                    () -> resourceTracker.unregisterCloseableResource(resourceToClose),
+                    resourceToClose);
         }
     }
 
-    private ProcedureException closeAndCreateProcedureException( Throwable t )
-    {
-        ProcedureException procedureException = newProcedureException( t );
+    private ProcedureException closeAndCreateProcedureException(Throwable t) {
+        ProcedureException procedureException = newProcedureException(t);
 
-        try
-        {
+        try {
             close();
-        }
-        catch ( Exception exceptionDuringClose )
-        {
-            try
-            {
-                procedureException.addSuppressed( exceptionDuringClose );
-            }
-            catch ( Throwable ignore )
-            {
+        } catch (Exception exceptionDuringClose) {
+            try {
+                procedureException.addSuppressed(exceptionDuringClose);
+            } catch (Throwable ignore) {
             }
         }
         return procedureException;
     }
 
-    private ProcedureException newProcedureException( Throwable throwable )
-    {
-        if ( throwable instanceof Status.HasStatus )
-        {
-            return new ProcedureException( ((Status.HasStatus) throwable).status(), throwable,
-                    throwable.getMessage() );
-        }
-        else
-        {
-            Throwable cause = getRootCause( throwable );
-            return new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
-                    "Failed to invoke procedure `%s`: %s", signature.name(),
-                    "Caused by: " + (cause != null ? cause : throwable) );
+    private ProcedureException newProcedureException(Throwable throwable) {
+        if (throwable instanceof Status.HasStatus) {
+            return new ProcedureException(((Status.HasStatus) throwable).status(), throwable, throwable.getMessage());
+        } else {
+            Throwable cause = getRootCause(throwable);
+            return new ProcedureException(
+                    Status.Procedure.ProcedureCallFailed,
+                    throwable,
+                    "Failed to invoke procedure `%s`: %s",
+                    signature.name(),
+                    "Caused by: " + (cause != null ? cause : throwable));
         }
     }
 }

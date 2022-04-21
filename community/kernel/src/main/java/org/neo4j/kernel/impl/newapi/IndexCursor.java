@@ -21,40 +21,32 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.kernel.api.index.IndexProgressor;
 
-abstract class IndexCursor<T extends IndexProgressor,CURSOR> extends TraceableCursor<CURSOR>
-{
+abstract class IndexCursor<T extends IndexProgressor, CURSOR> extends TraceableCursor<CURSOR> {
     private T progressor;
 
-    protected IndexCursor( CursorPool<CURSOR> pool )
-    {
-        super( pool );
+    protected IndexCursor(CursorPool<CURSOR> pool) {
+        super(pool);
     }
 
-    final void initialize( T progressor )
-    {
-        if ( this.progressor != null )
-        {
+    final void initialize(T progressor) {
+        if (this.progressor != null) {
             this.progressor.close();
         }
         this.progressor = progressor;
     }
 
-    final boolean innerNext()
-    {
+    final boolean innerNext() {
         return progressor != null && progressor.next();
     }
 
-    void closeProgressor()
-    {
-        if ( progressor != null )
-        {
+    void closeProgressor() {
+        if (progressor != null) {
             progressor.close();
         }
         progressor = null;
     }
 
-    boolean isProgressorClosed()
-    {
+    boolean isProgressorClosed() {
         return progressor == null;
     }
 }

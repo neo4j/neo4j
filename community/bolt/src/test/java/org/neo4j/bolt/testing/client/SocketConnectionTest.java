@@ -19,14 +19,6 @@
  */
 package org.neo4j.bolt.testing.client;
 
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.Socket;
-
-import org.neo4j.internal.helpers.HostnamePort;
-
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -35,62 +27,62 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class SocketConnectionTest
-{
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.Socket;
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.helpers.HostnamePort;
+
+public class SocketConnectionTest {
     @Test
-    void shouldOnlyReadOnceIfAllBytesAreRead() throws Exception
-    {
+    void shouldOnlyReadOnceIfAllBytesAreRead() throws Exception {
         // GIVEN
-        Socket socket = mock( Socket.class );
-        InputStream stream = mock( InputStream.class );
-        when(socket.getInputStream()).thenReturn( stream );
-        when(stream.read( any(byte[].class), anyInt(), anyInt() )).thenReturn( 4 );
-        SocketConnection connection = new SocketConnection( socket );
-        connection.connect( new HostnamePort( "my.domain", 1234 ) );
+        Socket socket = mock(Socket.class);
+        InputStream stream = mock(InputStream.class);
+        when(socket.getInputStream()).thenReturn(stream);
+        when(stream.read(any(byte[].class), anyInt(), anyInt())).thenReturn(4);
+        SocketConnection connection = new SocketConnection(socket);
+        connection.connect(new HostnamePort("my.domain", 1234));
 
         // WHEN
-        connection.recv( 4 );
+        connection.recv(4);
 
         // THEN
-        verify( stream ).read( any( byte[].class ), anyInt(), anyInt() );
+        verify(stream).read(any(byte[].class), anyInt(), anyInt());
     }
 
     @Test
-    void shouldOnlyReadUntilAllBytesAreRead() throws Exception
-    {
+    void shouldOnlyReadUntilAllBytesAreRead() throws Exception {
         // GIVEN
-        Socket socket = mock( Socket.class );
-        InputStream stream = mock( InputStream.class );
-        when(socket.getInputStream()).thenReturn( stream );
-        when(stream.read( any(byte[].class), anyInt(), anyInt() ))
-                .thenReturn( 4 )
-                .thenReturn( 4 )
-                .thenReturn( 2 )
-                .thenReturn( -1 );
-        SocketConnection connection = new SocketConnection( socket );
-        connection.connect( new HostnamePort( "my.domain", 1234 ) );
+        Socket socket = mock(Socket.class);
+        InputStream stream = mock(InputStream.class);
+        when(socket.getInputStream()).thenReturn(stream);
+        when(stream.read(any(byte[].class), anyInt(), anyInt()))
+                .thenReturn(4)
+                .thenReturn(4)
+                .thenReturn(2)
+                .thenReturn(-1);
+        SocketConnection connection = new SocketConnection(socket);
+        connection.connect(new HostnamePort("my.domain", 1234));
 
         // WHEN
-        connection.recv( 10 );
+        connection.recv(10);
 
         // THEN
-        verify(stream, times(3)).read( any(byte[].class), anyInt(), anyInt() );
+        verify(stream, times(3)).read(any(byte[].class), anyInt(), anyInt());
     }
 
     @Test
-    void shouldThrowIfNotEnoughBytesAreRead() throws Exception
-    {
+    void shouldThrowIfNotEnoughBytesAreRead() throws Exception {
         // GIVEN
-        Socket socket = mock( Socket.class );
-        InputStream stream = mock( InputStream.class );
-        when(socket.getInputStream()).thenReturn( stream );
-        when(stream.read( any(byte[].class), anyInt(), anyInt() ))
-                .thenReturn( 4 )
-                .thenReturn( -1 );
-        SocketConnection connection = new SocketConnection( socket );
-        connection.connect( new HostnamePort( "my.domain", 1234 ) );
+        Socket socket = mock(Socket.class);
+        InputStream stream = mock(InputStream.class);
+        when(socket.getInputStream()).thenReturn(stream);
+        when(stream.read(any(byte[].class), anyInt(), anyInt())).thenReturn(4).thenReturn(-1);
+        SocketConnection connection = new SocketConnection(socket);
+        connection.connect(new HostnamePort("my.domain", 1234));
 
         // WHEN
-        assertThrows(IOException.class, () -> connection.recv( 10 ) );
+        assertThrows(IOException.class, () -> connection.recv(10));
     }
 }

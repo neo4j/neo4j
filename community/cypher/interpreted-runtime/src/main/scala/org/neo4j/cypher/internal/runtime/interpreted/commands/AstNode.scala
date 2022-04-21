@@ -40,19 +40,18 @@ trait AstNode[T] {
       val value = iterator.next()
       value match {
         case e: Expression if f(e) => return true
-        case _ => //continue
+        case _                     => // continue
       }
-      //exhausted current children continue to next
+      // exhausted current children continue to next
       if (!iterator.hasNext) {
         iterator = value.children.iterator
       }
     }
 
-    //finally check this node
+    // finally check this node
     this match {
       case e: Expression => f(e)
-      case _ => false
+      case _             => false
     }
   }
 }
-

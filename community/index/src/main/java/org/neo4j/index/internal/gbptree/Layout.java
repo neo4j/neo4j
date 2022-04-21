@@ -19,11 +19,10 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import java.util.Comparator;
-
-import org.neo4j.io.pagecache.PageCursor;
-
 import static java.lang.String.format;
+
+import java.util.Comparator;
+import org.neo4j.io.pagecache.PageCursor;
 
 /**
  * Main point of interaction for customizing a {@link GBPTree}, how its keys and values are represented
@@ -36,8 +35,7 @@ import static java.lang.String.format;
  * @param <KEY> type of key
  * @param <VALUE> type of value
  */
-public interface Layout<KEY, VALUE> extends Comparator<KEY>
-{
+public interface Layout<KEY, VALUE> extends Comparator<KEY> {
     int FIXED_SIZE_KEY = -1;
     int FIXED_SIZE_VALUE = -1;
 
@@ -53,7 +51,7 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
      * @param into key (changed as part of this call) to copy contents into.
      * @return the provided {@code into} instance for convenience.
      */
-    KEY copyKey( KEY key, KEY into );
+    KEY copyKey(KEY key, KEY into);
 
     /**
      * @return new value instance.
@@ -64,13 +62,13 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
      * @param key for which to give size.
      * @return size, in bytes, of given key.
      */
-    int keySize( KEY key );
+    int keySize(KEY key);
 
     /**
      * @param value for which to give size.
      * @return size, in bytes, of given value.
      */
-    int valueSize( VALUE value );
+    int valueSize(VALUE value);
 
     /**
      * Writes contents of {@code key} into {@code cursor} at its current offset.
@@ -78,7 +76,7 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
      * @param cursor {@link PageCursor} to write into, at current offset.
      * @param key key containing data to write.
      */
-    void writeKey( PageCursor cursor, KEY key );
+    void writeKey(PageCursor cursor, KEY key);
 
     /**
      * Writes contents of {@code value} into {@code cursor} at its current offset.
@@ -86,7 +84,7 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
      * @param cursor {@link PageCursor} to write into, at current offset.
      * @param value value containing data to write.
      */
-    void writeValue( PageCursor cursor, VALUE value );
+    void writeValue(PageCursor cursor, VALUE value);
 
     /**
      * Reads key contents at {@code cursor} at its current offset into {@code key}.
@@ -94,7 +92,7 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
      * @param into key instances to read into.
      * @param keySize size of key to read or {@link #FIXED_SIZE_KEY} if key is fixed size.
      */
-    void readKey( PageCursor cursor, KEY into, int keySize );
+    void readKey(PageCursor cursor, KEY into, int keySize);
 
     /**
      * Reads value contents at {@code cursor} at its current offset into {@code value}.
@@ -102,7 +100,7 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
      * @param into value instances to read into.
      * @param valueSize size of key to read or {@link #FIXED_SIZE_VALUE} if value is fixed size.
      */
-    void readValue( PageCursor cursor, VALUE into, int valueSize );
+    void readValue(PageCursor cursor, VALUE into, int valueSize);
 
     /**
      * Indicate if keys and values are fixed or dynamic size.
@@ -117,9 +115,8 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
      * @param right key that is greater than left.
      * @param into will be initialized with result.
      */
-    default void minimalSplitter( KEY left, KEY right, KEY into )
-    {
-        copyKey( right, into );
+    default void minimalSplitter(KEY left, KEY right, KEY into) {
+        copyKey(right, into);
     }
 
     /**
@@ -148,16 +145,13 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
      * @param identifier to include into the returned named identifier.
      * @return a long which is a combination of {@code name} and {@code identifier}.
      */
-    static long namedIdentifier( String name, int identifier )
-    {
+    static long namedIdentifier(String name, int identifier) {
         char[] chars = name.toCharArray();
-        if ( chars.length > 4 )
-        {
-            throw new IllegalArgumentException( "Maximum 4 character name, was '" + name + "'" );
+        if (chars.length > 4) {
+            throw new IllegalArgumentException("Maximum 4 character name, was '" + name + "'");
         }
         long upperInt = 0;
-        for ( char aChar : chars )
-        {
+        for (char aChar : chars) {
             byte byteValue = (byte) (((byte) aChar) ^ ((byte) (aChar >> 8)));
             upperInt <<= 8;
             upperInt |= byteValue & 0xFF;
@@ -182,19 +176,19 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
      * @param minorVersion the stored minor version we want to check compatibility against.
      * @return true if this layout is compatible with combination of identifier, major and minor version, false otherwise.
      */
-    boolean compatibleWith( long layoutIdentifier, int majorVersion, int minorVersion );
+    boolean compatibleWith(long layoutIdentifier, int majorVersion, int minorVersion);
 
     /**
      * Initializes the given key to a state where it's lower than any possible key in the tree.
      * @param key key to initialize.
      */
-    void initializeAsLowest( KEY key );
+    void initializeAsLowest(KEY key);
 
     /**
      * Initializes the given key to a state where it's higher than any possible key in the tree.
      * @param key key to initialize.
      */
-    void initializeAsHighest( KEY key );
+    void initializeAsHighest(KEY key);
 
     /**
      * Adapter for {@link Layout}, which contains convenient standard implementations of some methods.
@@ -202,15 +196,13 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
      * @param <KEY> type of key
      * @param <VALUE> type of value
      */
-    abstract class Adapter<KEY, VALUE> implements Layout<KEY,VALUE>
-    {
+    abstract class Adapter<KEY, VALUE> implements Layout<KEY, VALUE> {
         private final boolean fixedSize;
         private final long identifier;
         private final int majorVersion;
         private final int minorVersion;
 
-        protected Adapter( boolean fixedSize, long identifier, int majorVersion, int minorVersion )
-        {
+        protected Adapter(boolean fixedSize, long identifier, int majorVersion, int minorVersion) {
             this.fixedSize = fixedSize;
             this.identifier = identifier;
             this.majorVersion = majorVersion;
@@ -218,39 +210,34 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
         }
 
         @Override
-        public boolean fixedSize()
-        {
+        public boolean fixedSize() {
             return fixedSize;
         }
 
         @Override
-        public long identifier()
-        {
+        public long identifier() {
             return identifier;
         }
 
         @Override
-        public int majorVersion()
-        {
+        public int majorVersion() {
             return majorVersion;
         }
 
         @Override
-        public int minorVersion()
-        {
+        public int minorVersion() {
             return minorVersion;
         }
 
         @Override
-        public String toString()
-        {
-            return format( "%s[version:%d.%d, identifier:%d, fixedSize:%b]",
-                    getClass().getSimpleName(), majorVersion(), minorVersion(), identifier(), fixedSize() );
+        public String toString() {
+            return format(
+                    "%s[version:%d.%d, identifier:%d, fixedSize:%b]",
+                    getClass().getSimpleName(), majorVersion(), minorVersion(), identifier(), fixedSize());
         }
 
         @Override
-        public boolean compatibleWith( long layoutIdentifier, int majorVersion, int minorVersion )
-        {
+        public boolean compatibleWith(long layoutIdentifier, int majorVersion, int minorVersion) {
             return layoutIdentifier == identifier() && majorVersion == majorVersion() && minorVersion == minorVersion();
         }
     }

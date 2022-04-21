@@ -59,30 +59,43 @@ import org.neo4j.exceptions.JoinHintException
 class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private def newNodeIndexHint(indexType: UsingIndexHintType = UsingAnyIndexType): Hint =
-    UsingIndexHint(varFor("a"), labelOrRelTypeName("User"), Seq(PropertyKeyName("name")(pos)), indexType = indexType)_
+    UsingIndexHint(varFor("a"), labelOrRelTypeName("User"), Seq(PropertyKeyName("name")(pos)), indexType = indexType) _
 
   private def newRelationshipIndexHint(indexType: UsingIndexHintType = UsingAnyIndexType): Hint =
-    UsingIndexHint(varFor("r"), labelOrRelTypeName("User"), Seq(PropertyKeyName("name")(pos)), indexType = indexType)_
+    UsingIndexHint(varFor("r"), labelOrRelTypeName("User"), Seq(PropertyKeyName("name")(pos)), indexType = indexType) _
 
-  private def newJoinHint(): Hint = { UsingJoinHint(Seq(varFor("a")))_ }
+  private def newJoinHint(): Hint = { UsingJoinHint(Seq(varFor("a"))) _ }
 
-  private def newQueryWithNodeIndexHint(indexType: UsingIndexHintType = UsingAnyIndexType, selections: Selections = Selections()) = RegularSinglePlannerQuery(
+  private def newQueryWithNodeIndexHint(
+    indexType: UsingIndexHintType = UsingAnyIndexType,
+    selections: Selections = Selections()
+  ) = RegularSinglePlannerQuery(
     QueryGraph(
       patternNodes = Set("a", "b")
-    ).addHints(Set(newNodeIndexHint(indexType))).addSelections(selections))
+    ).addHints(Set(newNodeIndexHint(indexType))).addSelections(selections)
+  )
 
-  private def newQueryWithRelationshipIndexHint(indexType: UsingIndexHintType = UsingAnyIndexType, selections: Selections = Selections()) = RegularSinglePlannerQuery(
+  private def newQueryWithRelationshipIndexHint(
+    indexType: UsingIndexHintType = UsingAnyIndexType,
+    selections: Selections = Selections()
+  ) = RegularSinglePlannerQuery(
     QueryGraph(
       patternNodes = Set("a", "b"),
       patternRelationships = Set(PatternRelationship("r", ("a", "b"), BOTH, Seq.empty, SimplePatternLength))
-    ).addHints(Set(newRelationshipIndexHint(indexType))).addSelections(selections))
+    ).addHints(Set(newRelationshipIndexHint(indexType))).addSelections(selections)
+  )
 
   private def newQueryWithJoinHint() = RegularSinglePlannerQuery(
     QueryGraph(
       patternNodes = Set("a", "b")
-    ).addHints(Set(newJoinHint())))
+    ).addHints(Set(newJoinHint()))
+  )
 
-  private def getPlanContext(hasIndex: Boolean, hasTextIndex: Boolean = false, planningTextIndexesEnabled: Boolean = false): PlanContext = {
+  private def getPlanContext(
+    hasIndex: Boolean,
+    hasTextIndex: Boolean = false,
+    planningTextIndexesEnabled: Boolean = false
+  ): PlanContext = {
     val planContext = newMockedPlanContext()
     when(planContext.rangeIndexExistsForLabelAndProperties(anyString(), any())).thenReturn(hasIndex)
     when(planContext.rangeIndexExistsForRelTypeAndProperties(anyString(), any())).thenReturn(hasIndex)
@@ -91,15 +104,22 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     planContext
   }
 
-  private def getSimpleLogicalPlanWithAandB(context: LogicalPlanningContext, selections: Selections = Selections()) : LogicalPlan = {
+  private def getSimpleLogicalPlanWithAandB(
+    context: LogicalPlanningContext,
+    selections: Selections = Selections()
+  ): LogicalPlan = {
     newMockedLogicalPlan(Set("a", "b"), context.planningAttributes, selections = selections)
   }
 
-  private def getSimpleLogicalPlanWithAandBandR(context: LogicalPlanningContext, selections: Selections = Selections()) : LogicalPlan = {
-    newMockedLogicalPlanWithPatterns(context.planningAttributes,
+  private def getSimpleLogicalPlanWithAandBandR(
+    context: LogicalPlanningContext,
+    selections: Selections = Selections()
+  ): LogicalPlan = {
+    newMockedLogicalPlanWithPatterns(
+      context.planningAttributes,
       Set("a", "b"),
       Seq(PatternRelationship("r", ("a", "b"), BOTH, Seq.empty, SimplePatternLength)),
-      selections = selections,
+      selections = selections
     )
   }
 
@@ -114,7 +134,9 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     when(semanticTable.isRelationshipNoFail("r")).thenReturn(true)
     when(semanticTable.isRelationshipNoFail(varFor("r"))).thenReturn(true)
 
-    when(semanticTable.getOptionalActualTypeFor(StringLiteral("test")(InputPosition.NONE))).thenReturn(Some(CTString.invariant))
+    when(semanticTable.getOptionalActualTypeFor(StringLiteral("test")(InputPosition.NONE))).thenReturn(Some(
+      CTString.invariant
+    ))
 
     semanticTable
   }
@@ -128,22 +150,23 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
     val plan = newMockedLogicalPlan(context.planningAttributes, "b")
 
-    a [InternalException] should be thrownBy {
+    a[InternalException] should be thrownBy {
       VerifyBestPlan(plan, query, context)
     }
   }
 
   test("should throw when finding plan that does not solve all pattern relationships") {
-    val patternRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, VarPatternLength.unlimited)
+    val patternRel =
+      PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, VarPatternLength.unlimited)
     val query = RegularSinglePlannerQuery(
       QueryGraph(
         patternNodes = Set("a", "b"),
         patternRelationships = Set(patternRel)
       )
     )
-    val context = newMockedLogicalPlanningContext(planContext= newMockedPlanContext())
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
 
-    a [InternalException] should be thrownBy {
+    a[InternalException] should be thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), query, context)
     }
   }
@@ -160,9 +183,10 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
   }
 
   test("should throw when finding plan that contains unfulfillable node index hint") {
-    val context = newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = false), useErrorsOverWarnings = true)
+    val context =
+      newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = false), useErrorsOverWarnings = true)
 
-    the [IndexHintException] thrownBy {
+    the[IndexHintException] thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithNodeIndexHint(), context)
     } should have message "No such index: INDEX FOR (`a`:`User`) ON (`a`.`name`)"
   }
@@ -171,92 +195,164 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val context = newMockedLogicalPlanningContext(
       planContext = getPlanContext(hasIndex = false),
       semanticTable = getSemanticTable,
-      useErrorsOverWarnings = true)
+      useErrorsOverWarnings = true
+    )
 
-    the [IndexHintException] thrownBy {
+    the[IndexHintException] thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandBandR(context), newQueryWithRelationshipIndexHint(), context)
     } should have message "No such index: INDEX FOR ()-[`r`:`User`]-() ON (`r`.`name`)"
   }
 
   test("should throw when finding plan that contains unfulfillable join hint") {
-    val context = newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = false), useErrorsOverWarnings = true)
+    val context =
+      newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = false), useErrorsOverWarnings = true)
 
-    a [JoinHintException] should be thrownBy {
+    a[JoinHintException] should be thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithJoinHint(), context)
     }
   }
 
   test("should issue warning when finding plan that contains unfulfillable node index hint") {
     val notificationLogger = new RecordingNotificationLogger
-    val context = newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = false),
-                                                  notificationLogger = notificationLogger,
-                                                  semanticTable = getSemanticTable,
-                                                  useErrorsOverWarnings = false)
+    val context = newMockedLogicalPlanningContext(
+      planContext = getPlanContext(hasIndex = false),
+      notificationLogger = notificationLogger,
+      semanticTable = getSemanticTable,
+      useErrorsOverWarnings = false
+    )
 
     VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithNodeIndexHint(), context) // should not throw
-    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("a", "User", Seq("name"), EntityType.NODE, UsingAnyIndexType))
+    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification(
+      "a",
+      "User",
+      Seq("name"),
+      EntityType.NODE,
+      UsingAnyIndexType
+    ))
   }
 
   test("should issue warning when finding plan that contains unfulfillable relationship index hint") {
     val notificationLogger = new RecordingNotificationLogger
-    val context = newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = false),
+    val context = newMockedLogicalPlanningContext(
+      planContext = getPlanContext(hasIndex = false),
       notificationLogger = notificationLogger,
       semanticTable = getSemanticTable,
-      useErrorsOverWarnings = false)
+      useErrorsOverWarnings = false
+    )
 
-    VerifyBestPlan(getSimpleLogicalPlanWithAandBandR(context), newQueryWithRelationshipIndexHint(), context) // should not throw
-    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("r", "User", Seq("name"), EntityType.RELATIONSHIP, UsingAnyIndexType))
+    VerifyBestPlan(
+      getSimpleLogicalPlanWithAandBandR(context),
+      newQueryWithRelationshipIndexHint(),
+      context
+    ) // should not throw
+    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification(
+      "r",
+      "User",
+      Seq("name"),
+      EntityType.RELATIONSHIP,
+      UsingAnyIndexType
+    ))
   }
 
   test("should issue warning when finding plan that contains unfulfillable node text index hint") {
     val notificationLogger = new RecordingNotificationLogger
-    val context = newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = true, hasTextIndex = false),
-                                                  notificationLogger = notificationLogger,
-                                                  semanticTable = getSemanticTable,
-                                                  useErrorsOverWarnings = false).copy(planningTextIndexesEnabled = true)
+    val context = newMockedLogicalPlanningContext(
+      planContext = getPlanContext(hasIndex = true, hasTextIndex = false),
+      notificationLogger = notificationLogger,
+      semanticTable = getSemanticTable,
+      useErrorsOverWarnings = false
+    ).copy(planningTextIndexesEnabled = true)
 
-    VerifyBestPlan(getSimpleLogicalPlanWithAandB(context, selections = textSelections("a")), newQueryWithNodeIndexHint(UsingTextIndexType, textSelections("a")), context) // should not throw
-    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("a", "User", Seq("name"), EntityType.NODE, UsingTextIndexType))
+    VerifyBestPlan(
+      getSimpleLogicalPlanWithAandB(context, selections = textSelections("a")),
+      newQueryWithNodeIndexHint(UsingTextIndexType, textSelections("a")),
+      context
+    ) // should not throw
+    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification(
+      "a",
+      "User",
+      Seq("name"),
+      EntityType.NODE,
+      UsingTextIndexType
+    ))
   }
 
   test("should issue warning when finding plan that contains unfulfillable relationship text index hint") {
     val notificationLogger = new RecordingNotificationLogger
-    val context = newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = true, hasTextIndex = false),
-                                                  notificationLogger = notificationLogger,
-                                                  semanticTable = getSemanticTable,
-                                                  useErrorsOverWarnings = false).copy(planningTextIndexesEnabled = true)
+    val context = newMockedLogicalPlanningContext(
+      planContext = getPlanContext(hasIndex = true, hasTextIndex = false),
+      notificationLogger = notificationLogger,
+      semanticTable = getSemanticTable,
+      useErrorsOverWarnings = false
+    ).copy(planningTextIndexesEnabled = true)
 
-    VerifyBestPlan(getSimpleLogicalPlanWithAandBandR(context, selections = textSelections("r")),
+    VerifyBestPlan(
+      getSimpleLogicalPlanWithAandBandR(context, selections = textSelections("r")),
       newQueryWithRelationshipIndexHint(UsingTextIndexType, textSelections("r")),
-      context) // should not throw
-    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("r", "User", Seq("name"), EntityType.RELATIONSHIP, UsingTextIndexType))
+      context
+    ) // should not throw
+    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification(
+      "r",
+      "User",
+      Seq("name"),
+      EntityType.RELATIONSHIP,
+      UsingTextIndexType
+    ))
   }
 
   test("should issue warning when finding plan that contains unfulfillable node range index hint") {
     val notificationLogger = new RecordingNotificationLogger
-    val context = newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = false, hasTextIndex = true),
-                                                  notificationLogger = notificationLogger,
-                                                  semanticTable = getSemanticTable,
-                                                  useErrorsOverWarnings = false).copy(planningTextIndexesEnabled = true)
+    val context = newMockedLogicalPlanningContext(
+      planContext = getPlanContext(hasIndex = false, hasTextIndex = true),
+      notificationLogger = notificationLogger,
+      semanticTable = getSemanticTable,
+      useErrorsOverWarnings = false
+    ).copy(planningTextIndexesEnabled = true)
 
-    VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithNodeIndexHint(UsingRangeIndexType), context) // should not throw
-    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("a", "User", Seq("name"), EntityType.NODE, UsingRangeIndexType))
+    VerifyBestPlan(
+      getSimpleLogicalPlanWithAandB(context),
+      newQueryWithNodeIndexHint(UsingRangeIndexType),
+      context
+    ) // should not throw
+    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification(
+      "a",
+      "User",
+      Seq("name"),
+      EntityType.NODE,
+      UsingRangeIndexType
+    ))
   }
 
   test("should issue warning when finding plan that contains unfulfillable relationship range index hint") {
     val notificationLogger = new RecordingNotificationLogger
-    val context = newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = false, hasTextIndex = true),
-                                                  notificationLogger = notificationLogger,
-                                                  semanticTable = getSemanticTable,
-                                                  useErrorsOverWarnings = false).copy(planningTextIndexesEnabled = true)
+    val context = newMockedLogicalPlanningContext(
+      planContext = getPlanContext(hasIndex = false, hasTextIndex = true),
+      notificationLogger = notificationLogger,
+      semanticTable = getSemanticTable,
+      useErrorsOverWarnings = false
+    ).copy(planningTextIndexesEnabled = true)
 
-    VerifyBestPlan(getSimpleLogicalPlanWithAandBandR(context), newQueryWithRelationshipIndexHint(UsingRangeIndexType), context) // should not throw
-    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("r", "User", Seq("name"), EntityType.RELATIONSHIP, UsingRangeIndexType))
+    VerifyBestPlan(
+      getSimpleLogicalPlanWithAandBandR(context),
+      newQueryWithRelationshipIndexHint(UsingRangeIndexType),
+      context
+    ) // should not throw
+    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification(
+      "r",
+      "User",
+      Seq("name"),
+      EntityType.RELATIONSHIP,
+      UsingRangeIndexType
+    ))
   }
 
   test("should issue warning when finding plan that contains unfulfillable join hint") {
     val notificationLogger = new RecordingNotificationLogger
-    val context = newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = false), notificationLogger = notificationLogger, useErrorsOverWarnings = false)
+    val context = newMockedLogicalPlanningContext(
+      planContext = getPlanContext(hasIndex = false),
+      notificationLogger = notificationLogger,
+      useErrorsOverWarnings = false
+    )
 
     VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithJoinHint(), context) // should not throw
     val result = notificationLogger.notifications
@@ -265,8 +361,13 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
   test("should succeed when finding plan that contains fulfillable node index hint") {
     val notificationLogger = new RecordingNotificationLogger
-    val context = newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = true), notificationLogger = notificationLogger, useErrorsOverWarnings = false)
-    val plan: LogicalPlan = newMockedLogicalPlan(Set("a", "b"), context.planningAttributes, hints = Set[Hint](newNodeIndexHint()))
+    val context = newMockedLogicalPlanningContext(
+      planContext = getPlanContext(hasIndex = true),
+      notificationLogger = notificationLogger,
+      useErrorsOverWarnings = false
+    )
+    val plan: LogicalPlan =
+      newMockedLogicalPlan(Set("a", "b"), context.planningAttributes, hints = Set[Hint](newNodeIndexHint()))
 
     VerifyBestPlan(plan, newQueryWithNodeIndexHint(), context) // should not throw
     notificationLogger.notifications should be(empty)
@@ -274,12 +375,17 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
   test("should succeed when finding plan that contains fulfillable relationship index hint") {
     val notificationLogger = new RecordingNotificationLogger
-    val context = newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = true), notificationLogger = notificationLogger, useErrorsOverWarnings = false)
+    val context = newMockedLogicalPlanningContext(
+      planContext = getPlanContext(hasIndex = true),
+      notificationLogger = notificationLogger,
+      useErrorsOverWarnings = false
+    )
     val plan: LogicalPlan = newMockedLogicalPlanWithPatterns(
       context.planningAttributes,
       Set("a", "b"),
       Seq(PatternRelationship("r", ("a", "b"), BOTH, Seq.empty, SimplePatternLength)),
-      hints = Set[Hint](newRelationshipIndexHint()))
+      hints = Set[Hint](newRelationshipIndexHint())
+    )
 
     VerifyBestPlan(plan, newQueryWithRelationshipIndexHint(), context) // should not throw
     notificationLogger.notifications should be(empty)
@@ -287,25 +393,38 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
   test("should succeed when finding plan that contains fulfillable join hint") {
     val notificationLogger = new RecordingNotificationLogger
-    val context = newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = true), notificationLogger = notificationLogger, useErrorsOverWarnings = false)
-    val plan: LogicalPlan = newMockedLogicalPlan(Set("a", "b"), context.planningAttributes, hints = Set[Hint](newJoinHint()))
+    val context = newMockedLogicalPlanningContext(
+      planContext = getPlanContext(hasIndex = true),
+      notificationLogger = notificationLogger,
+      useErrorsOverWarnings = false
+    )
+    val plan: LogicalPlan =
+      newMockedLogicalPlan(Set("a", "b"), context.planningAttributes, hints = Set[Hint](newJoinHint()))
 
     VerifyBestPlan(plan, newQueryWithJoinHint(), context) // should not throw
     notificationLogger.notifications should be(empty)
   }
 
   test("should throw when finding plan that does not contain a fulfillable node index hint") {
-    val context = newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = true), semanticTable = getSemanticTable, useErrorsOverWarnings = false)
+    val context = newMockedLogicalPlanningContext(
+      planContext = getPlanContext(hasIndex = true),
+      semanticTable = getSemanticTable,
+      useErrorsOverWarnings = false
+    )
 
-    a [HintException] should be thrownBy {
+    a[HintException] should be thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithNodeIndexHint(), context)
     }
   }
 
   test("should throw when finding plan that does not contain a fulfillable relationship index hint") {
-    val context = newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = true), semanticTable = getSemanticTable, useErrorsOverWarnings = false)
+    val context = newMockedLogicalPlanningContext(
+      planContext = getPlanContext(hasIndex = true),
+      semanticTable = getSemanticTable,
+      useErrorsOverWarnings = false
+    )
 
-    a [HintException] should be thrownBy {
+    a[HintException] should be thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandBandR(context), newQueryWithRelationshipIndexHint(), context)
     }
   }
@@ -314,10 +433,14 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val planContext = newMockedPlanContext()
     when(planContext.textIndexExistsForLabelAndProperties(any(), any())).thenReturn(true)
 
-    val context = newMockedLogicalPlanningContext(planContext = planContext, semanticTable = getSemanticTable, useErrorsOverWarnings = true)
+    val context = newMockedLogicalPlanningContext(
+      planContext = planContext,
+      semanticTable = getSemanticTable,
+      useErrorsOverWarnings = true
+    )
       .copy(planningTextIndexesEnabled = false)
 
-    the [IndexHintException] thrownBy {
+    the[IndexHintException] thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithNodeIndexHint(), context)
     } should have message "No such index: INDEX FOR (`a`:`User`) ON (`a`.`name`)"
   }
@@ -326,9 +449,13 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val planContext = newMockedPlanContext()
     when(planContext.textIndexExistsForLabelAndProperties(any(), any())).thenReturn(true)
 
-    val context = newMockedLogicalPlanningContext(planContext = planContext, semanticTable = getSemanticTable, useErrorsOverWarnings = true)
+    val context = newMockedLogicalPlanningContext(
+      planContext = planContext,
+      semanticTable = getSemanticTable,
+      useErrorsOverWarnings = true
+    )
 
-    a [HintException] should be thrownBy {
+    a[HintException] should be thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithNodeIndexHint(), context)
     }
   }
@@ -337,10 +464,14 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val planContext = newMockedPlanContext()
     when(planContext.textIndexExistsForRelTypeAndProperties(any(), any())).thenReturn(true)
 
-    val context = newMockedLogicalPlanningContext(planContext = planContext, semanticTable = getSemanticTable, useErrorsOverWarnings = true)
+    val context = newMockedLogicalPlanningContext(
+      planContext = planContext,
+      semanticTable = getSemanticTable,
+      useErrorsOverWarnings = true
+    )
       .copy(planningTextIndexesEnabled = false)
 
-    the [IndexHintException] thrownBy {
+    the[IndexHintException] thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandBandR(context), newQueryWithRelationshipIndexHint(), context)
     } should have message "No such index: INDEX FOR ()-[`r`:`User`]-() ON (`r`.`name`)"
   }
@@ -349,9 +480,13 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val planContext = newMockedPlanContext()
     when(planContext.textIndexExistsForRelTypeAndProperties(any(), any())).thenReturn(true)
 
-    val context = newMockedLogicalPlanningContext(planContext = planContext, semanticTable = getSemanticTable, useErrorsOverWarnings = true)
+    val context = newMockedLogicalPlanningContext(
+      planContext = planContext,
+      semanticTable = getSemanticTable,
+      useErrorsOverWarnings = true
+    )
 
-    a [HintException] should be thrownBy {
+    a[HintException] should be thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandBandR(context), newQueryWithRelationshipIndexHint(), context)
     }
   }

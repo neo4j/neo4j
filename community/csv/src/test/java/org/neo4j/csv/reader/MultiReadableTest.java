@@ -19,180 +19,161 @@
  */
 package org.neo4j.csv.reader;
 
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.io.StringReader;
-
-import org.neo4j.collection.RawIterator;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class MultiReadableTest
-{
-    private static final Configuration CONFIG = Configuration.newBuilder().withBufferSize( 200 ).build();
+import java.io.IOException;
+import java.io.StringReader;
+import org.junit.jupiter.api.Test;
+import org.neo4j.collection.RawIterator;
+
+class MultiReadableTest {
+    private static final Configuration CONFIG =
+            Configuration.newBuilder().withBufferSize(200).build();
     private final Mark mark = new Mark();
-    private final Extractors extractors = new Extractors( ';' );
+    private final Extractors extractors = new Extractors(';');
     private final int delimiter = ',';
 
     @Test
-    void shouldReadFromMultipleReaders() throws Exception
-    {
+    void shouldReadFromMultipleReaders() throws Exception {
         // GIVEN
         String[][] data = new String[][] {
-                {"this is", "the first line"},
-                {"where this", "is the second line"},
-                {"and here comes", "the third line"}
+            {"this is", "the first line"},
+            {"where this", "is the second line"},
+            {"and here comes", "the third line"}
         };
-        RawIterator<CharReadable,IOException> readers = readerIteratorFromStrings( data, null );
-        CharSeeker seeker = CharSeekers.charSeeker( new MultiReadable( readers ), CONFIG, true );
+        RawIterator<CharReadable, IOException> readers = readerIteratorFromStrings(data, null);
+        CharSeeker seeker = CharSeekers.charSeeker(new MultiReadable(readers), CONFIG, true);
 
         // WHEN/THEN
-        for ( String[] line : data )
-        {
-            assertNextLine( line, seeker, mark, extractors );
+        for (String[] line : data) {
+            assertNextLine(line, seeker, mark, extractors);
         }
-        assertFalse( seeker.seek( mark, delimiter ) );
+        assertFalse(seeker.seek(mark, delimiter));
         seeker.close();
     }
 
     @Test
-    void shouldHandleSourcesEndingWithNewLine() throws Exception
-    {
+    void shouldHandleSourcesEndingWithNewLine() throws Exception {
         // GIVEN
         String[][] data = new String[][] {
-                {"this is", "the first line"},
-                {"where this", "is the second line"},
+            {"this is", "the first line"},
+            {"where this", "is the second line"},
         };
 
         // WHEN
-        RawIterator<CharReadable,IOException> readers = readerIteratorFromStrings( data, '\n' );
-        CharSeeker seeker = CharSeekers.charSeeker( new MultiReadable( readers ), CONFIG, true );
+        RawIterator<CharReadable, IOException> readers = readerIteratorFromStrings(data, '\n');
+        CharSeeker seeker = CharSeekers.charSeeker(new MultiReadable(readers), CONFIG, true);
 
         // WHEN/THEN
-        for ( String[] line : data )
-        {
-            assertNextLine( line, seeker, mark, extractors );
+        for (String[] line : data) {
+            assertNextLine(line, seeker, mark, extractors);
         }
-        assertFalse( seeker.seek( mark, delimiter ) );
+        assertFalse(seeker.seek(mark, delimiter));
         seeker.close();
     }
 
     @Test
-    void shouldTrackAbsolutePosition() throws Exception
-    {
+    void shouldTrackAbsolutePosition() throws Exception {
         // GIVEN
         String[][] data = new String[][] {
-                {"this is", "the first line"},        // 21+delimiter+newline = 23 characters
-                {"where this", "is the second line"}, // 28+delimiter+newline = 30 characters
+            {"this is", "the first line"}, // 21+delimiter+newline = 23 characters
+            {"where this", "is the second line"}, // 28+delimiter+newline = 30 characters
         };
-        RawIterator<CharReadable,IOException> readers = readerIteratorFromStrings( data, '\n' );
-        CharReadable reader = new MultiReadable( readers );
-        assertEquals( 0L, reader.position() );
-        SectionedCharBuffer buffer = new SectionedCharBuffer( 15 );
+        RawIterator<CharReadable, IOException> readers = readerIteratorFromStrings(data, '\n');
+        CharReadable reader = new MultiReadable(readers);
+        assertEquals(0L, reader.position());
+        SectionedCharBuffer buffer = new SectionedCharBuffer(15);
 
         // WHEN
-        reader.read( buffer, buffer.front() );
-        assertEquals( 15, reader.position() );
-        reader.read( buffer, buffer.front() );
-        assertEquals( 23, reader.position(), "Should not transition to a new reader in the middle of a read" );
-        assertEquals( "Reader1", reader.sourceDescription() );
+        reader.read(buffer, buffer.front());
+        assertEquals(15, reader.position());
+        reader.read(buffer, buffer.front());
+        assertEquals(23, reader.position(), "Should not transition to a new reader in the middle of a read");
+        assertEquals("Reader1", reader.sourceDescription());
 
         // we will transition to the new reader in the call below
-        reader.read( buffer, buffer.front() );
-        assertEquals( 23 + 15, reader.position() );
-        reader.read( buffer, buffer.front() );
-        assertEquals( 23 + 30, reader.position() );
-        reader.read( buffer, buffer.front() );
-        assertFalse( buffer.hasAvailable() );
+        reader.read(buffer, buffer.front());
+        assertEquals(23 + 15, reader.position());
+        reader.read(buffer, buffer.front());
+        assertEquals(23 + 30, reader.position());
+        reader.read(buffer, buffer.front());
+        assertFalse(buffer.hasAvailable());
     }
 
     @Test
-    void shouldNotCrossSourcesInOneRead() throws Exception
-    {
+    void shouldNotCrossSourcesInOneRead() throws Exception {
         // given
         String source1 = "abcdefghijklm";
         String source2 = "nopqrstuvwxyz";
-        String[][] data = new String[][] { {source1}, {source2} };
-        CharReadable readable = new MultiReadable( readerIteratorFromStrings( data, '\n' ) );
+        String[][] data = new String[][] {{source1}, {source2}};
+        CharReadable readable = new MultiReadable(readerIteratorFromStrings(data, '\n'));
 
         // when
         char[] target = new char[source1.length() + source2.length() / 2];
-        int read = readable.read( target, 0, target.length );
+        int read = readable.read(target, 0, target.length);
 
         // then
-        assertEquals( source1.length() + 1/*added newline-char*/, read );
+        assertEquals(source1.length() + 1 /*added newline-char*/, read);
 
         // and when
         target = new char[source2.length()];
-        read = readable.read( target, 0, target.length );
+        read = readable.read(target, 0, target.length);
 
         // then
-        assertEquals( source2.length(), read );
+        assertEquals(source2.length(), read);
 
-        read = readable.read( target, 0, target.length );
-        assertEquals( 1/*added newline-char*/, read );
+        read = readable.read(target, 0, target.length);
+        assertEquals(1 /*added newline-char*/, read);
     }
 
-    private void assertNextLine( String[] line, CharSeeker seeker, Mark mark, Extractors extractors ) throws IOException
-    {
-        for ( String value : line )
-        {
-            assertTrue( seeker.seek( mark, delimiter ) );
-            assertEquals( value, seeker.extract( mark, extractors.string() ).value() );
+    private void assertNextLine(String[] line, CharSeeker seeker, Mark mark, Extractors extractors) throws IOException {
+        for (String value : line) {
+            assertTrue(seeker.seek(mark, delimiter));
+            assertEquals(value, seeker.extract(mark, extractors.string()).value());
         }
-        assertTrue( mark.isEndOfLine() );
+        assertTrue(mark.isEndOfLine());
     }
 
-    private RawIterator<CharReadable,IOException> readerIteratorFromStrings(
-            final String[][] data, final Character lineEnding )
-    {
-        return new RawIterator<CharReadable,IOException>()
-        {
+    private RawIterator<CharReadable, IOException> readerIteratorFromStrings(
+            final String[][] data, final Character lineEnding) {
+        return new RawIterator<CharReadable, IOException>() {
             private int cursor;
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return cursor < data.length;
             }
 
             @Override
-            public CharReadable next()
-            {
-                String string = join( data[cursor++] );
-                return Readables.wrap( new StringReader( string )
-                {
-                    @Override
-                    public String toString()
-                    {
-                        return "Reader" + cursor;
-                    }
-                }, string.length() * 2 );
+            public CharReadable next() {
+                String string = join(data[cursor++]);
+                return Readables.wrap(
+                        new StringReader(string) {
+                            @Override
+                            public String toString() {
+                                return "Reader" + cursor;
+                            }
+                        },
+                        string.length() * 2);
             }
 
-            private String join( String[] strings )
-            {
+            private String join(String[] strings) {
                 StringBuilder builder = new StringBuilder();
-                for ( String string : strings )
-                {
-                    builder.append( builder.length() > 0 ? "," : "" ).append( string );
+                for (String string : strings) {
+                    builder.append(builder.length() > 0 ? "," : "").append(string);
                 }
-                if ( lineEnding != null )
-                {
-                    builder.append( lineEnding );
+                if (lineEnding != null) {
+                    builder.append(lineEnding);
                 }
                 return builder.toString();
             }
 
             @Override
-            public void remove()
-            {
+            public void remove() {
                 throw new UnsupportedOperationException();
             }
         };
     }
-
 }

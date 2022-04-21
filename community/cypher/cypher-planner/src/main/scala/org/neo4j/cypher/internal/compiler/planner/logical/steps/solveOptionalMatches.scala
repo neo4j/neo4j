@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 trait OptionalSolver {
+
   /**
    * Return a Solver for an OPTIONAL MATCH.
    *
@@ -39,14 +40,18 @@ trait OptionalSolver {
    * @return a Solver that given a plan for the `enclosingQg` and any so far connected components or other OPTIONAL MATCHES
    *         returns an Iterator of plan candidates solving the OPTIONAL MATCH.
    */
-  def solver(optionalQg: QueryGraph,
-            enclosingQg: QueryGraph,
-            interestingOrderConfig: InterestingOrderConfig,
-            context: LogicalPlanningContext): OptionalSolver.Solver
+  def solver(
+    optionalQg: QueryGraph,
+    enclosingQg: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): OptionalSolver.Solver
 }
 
 object OptionalSolver {
+
   trait Solver {
+
     /**
      * Solve an OPTIONAL MATCH.
      *
@@ -57,30 +62,36 @@ object OptionalSolver {
   }
 }
 
-
 case object applyOptional extends OptionalSolver {
-  override def solver(optionalQg: QueryGraph,
-                     enclosingQg: QueryGraph,
-                     interestingOrderConfig: InterestingOrderConfig,
-                     context: LogicalPlanningContext): OptionalSolver.Solver = {
+
+  override def solver(
+    optionalQg: QueryGraph,
+    enclosingQg: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): OptionalSolver.Solver = {
     val innerContext: LogicalPlanningContext = context.withFusedLabelInfo(enclosingQg.selections.labelInfo)
     val inner = context.strategy.plan(optionalQg, interestingOrderConfig, innerContext)
-    (lhs: LogicalPlan) => inner.allResults.map { inner =>
-      val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols, innerContext, optionalQg)
-      val applied = context.logicalPlanProducer.planApply(lhs, rhs, context)
+    (lhs: LogicalPlan) =>
+      inner.allResults.map { inner =>
+        val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols, innerContext, optionalQg)
+        val applied = context.logicalPlanProducer.planApply(lhs, rhs, context)
 
-      // Often the Apply can be rewritten into an OptionalExpand. We want to do that before cost estimating against the hash joins, otherwise that
-      // is not a fair comparison (as they cannot be rewritten to something cheaper).
-      unnestOptional(applied).asInstanceOf[LogicalPlan]
-    }
+        // Often the Apply can be rewritten into an OptionalExpand. We want to do that before cost estimating against the hash joins, otherwise that
+        // is not a fair comparison (as they cannot be rewritten to something cheaper).
+        unnestOptional(applied).asInstanceOf[LogicalPlan]
+      }
   }
 }
 
 case object outerHashJoin extends OptionalSolver {
-  override def solver(optionalQg: QueryGraph,
-                     enclosingQg: QueryGraph,
-                     interestingOrderConfig: InterestingOrderConfig,
-                     context: LogicalPlanningContext): OptionalSolver.Solver = {
+
+  override def solver(
+    optionalQg: QueryGraph,
+    enclosingQg: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): OptionalSolver.Solver = {
     val joinNodes = optionalQg.argumentIds
 
     if (joinNodes.nonEmpty && joinNodes.forall(optionalQg.patternNodes)) {
@@ -107,9 +118,21 @@ case object outerHashJoin extends OptionalSolver {
     }
   }
 
-  private def leftOuterJoin(context: LogicalPlanningContext, joinNodes: Set[String], lhs: LogicalPlan, rhs: LogicalPlan, solvedHints: Set[UsingJoinHint]): LogicalPlan =
+  private def leftOuterJoin(
+    context: LogicalPlanningContext,
+    joinNodes: Set[String],
+    lhs: LogicalPlan,
+    rhs: LogicalPlan,
+    solvedHints: Set[UsingJoinHint]
+  ): LogicalPlan =
     context.logicalPlanProducer.planLeftOuterHashJoin(joinNodes, lhs, rhs, solvedHints, context)
 
-  private def rightOuterJoin(context: LogicalPlanningContext, joinNodes: Set[String], rhs: LogicalPlan, lhs: LogicalPlan, solvedHints: Set[UsingJoinHint]): LogicalPlan =
+  private def rightOuterJoin(
+    context: LogicalPlanningContext,
+    joinNodes: Set[String],
+    rhs: LogicalPlan,
+    lhs: LogicalPlan,
+    solvedHints: Set[UsingJoinHint]
+  ): LogicalPlan =
     context.logicalPlanProducer.planRightOuterHashJoin(joinNodes, lhs, rhs, solvedHints, context)
 }

@@ -20,26 +20,21 @@
 package org.neo4j.io.pagecache.checking;
 
 import java.io.IOException;
-
 import org.neo4j.io.pagecache.DelegatingPagedFile;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 
-public class AccessCheckingPagedFile extends DelegatingPagedFile
-{
-    public AccessCheckingPagedFile( PagedFile delegate )
-    {
-        super( delegate );
+public class AccessCheckingPagedFile extends DelegatingPagedFile {
+    public AccessCheckingPagedFile(PagedFile delegate) {
+        super(delegate);
     }
 
     @Override
-    public PageCursor io( long pageId, int pf_flags, CursorContext context ) throws IOException
-    {
-        PageCursor delegate = super.io( pageId, pf_flags, context );
-        if ( (pf_flags & PagedFile.PF_SHARED_READ_LOCK) != 0 )
-        {
-            return new AccessCheckingReadPageCursor( delegate );
+    public PageCursor io(long pageId, int pf_flags, CursorContext context) throws IOException {
+        PageCursor delegate = super.io(pageId, pf_flags, context);
+        if ((pf_flags & PagedFile.PF_SHARED_READ_LOCK) != 0) {
+            return new AccessCheckingReadPageCursor(delegate);
         }
         return delegate;
     }

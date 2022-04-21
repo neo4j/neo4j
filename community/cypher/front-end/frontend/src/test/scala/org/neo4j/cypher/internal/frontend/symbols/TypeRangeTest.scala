@@ -155,7 +155,10 @@ class TypeRangeTest extends CypherFunSuite {
   test("intersection of range within list") {
     val rangeFromListAny = TypeRange(CTList(CTAny), None)
     rangeFromListAny & TypeRange(CTList(CTString), None) should equal(Some(TypeRange(CTList(CTString), None)))
-    rangeFromListAny & TypeRange(CTList(CTString), CTList(CTString)) should equal(Some(TypeRange(CTList(CTString), CTList(CTString))))
+    rangeFromListAny & TypeRange(CTList(CTString), CTList(CTString)) should equal(Some(TypeRange(
+      CTList(CTString),
+      CTList(CTString)
+    )))
   }
 
   test("intersection of range with non overlapping range should return none") {
@@ -191,7 +194,10 @@ class TypeRangeTest extends CypherFunSuite {
     (rangeFromListAny leastUpperBounds rangeOfListAny) should equal(Seq(rangeOfListAny))
 
     val rangeFromListString = TypeRange(CTList(CTString), None)
-    (rangeFromListAny leastUpperBounds rangeFromListString) should equal(Seq(TypeRange(CTList(CTAny), CTList(CTString)), TypeRange(CTList(CTString), None)))
+    (rangeFromListAny leastUpperBounds rangeFromListString) should equal(Seq(
+      TypeRange(CTList(CTAny), CTList(CTString)),
+      TypeRange(CTList(CTString), None)
+    ))
   }
 
   test("should have indefinite size when allowing unbound any at any depth") {

@@ -19,51 +19,47 @@
  */
 package org.neo4j.csv.reader;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.Reader;
 import java.io.StringReader;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class SectionedCharBufferTest
-{
+class SectionedCharBufferTest {
     @Test
-    void shouldCompactIntoItself() throws Exception
-    {
+    void shouldCompactIntoItself() throws Exception {
         // GIVEN
-        Reader data = new StringReader( "01234567" );
-        SectionedCharBuffer buffer = new SectionedCharBuffer( 4 ); // will yield an 8-char array in total
-        buffer.readFrom( data );
+        Reader data = new StringReader("01234567");
+        SectionedCharBuffer buffer = new SectionedCharBuffer(4); // will yield an 8-char array in total
+        buffer.readFrom(data);
 
         // WHEN
-        buffer.compact( buffer, buffer.front() - 2 );
+        buffer.compact(buffer, buffer.front() - 2);
 
         // THEN
-        assertEquals( '2', buffer.array()[2] );
-        assertEquals( '3', buffer.array()[3] );
+        assertEquals('2', buffer.array()[2]);
+        assertEquals('3', buffer.array()[3]);
     }
 
     @Test
-    void shouldCompactIntoAnotherBuffer() throws Exception
-    {
+    void shouldCompactIntoAnotherBuffer() throws Exception {
         // GIVEN
-        Reader data = new StringReader( "01234567" );
-        SectionedCharBuffer buffer1 = new SectionedCharBuffer( 8 );
-        SectionedCharBuffer buffer2 = new SectionedCharBuffer( 8 );
-        buffer1.readFrom( data );
+        Reader data = new StringReader("01234567");
+        SectionedCharBuffer buffer1 = new SectionedCharBuffer(8);
+        SectionedCharBuffer buffer2 = new SectionedCharBuffer(8);
+        buffer1.readFrom(data);
 
         // WHEN
-        buffer2.readFrom( data );
+        buffer2.readFrom(data);
         // simulate reading 2 chars as one value, then reading 2 bytes and requesting more
-        buffer1.compact( buffer2, buffer1.pivot() + 2 /*simulate reading 2 chars*/ );
+        buffer1.compact(buffer2, buffer1.pivot() + 2 /*simulate reading 2 chars*/);
 
         // THEN
-        assertEquals( '2', buffer2.array()[2] );
-        assertEquals( '3', buffer2.array()[3] );
-        assertEquals( '4', buffer2.array()[4] );
-        assertEquals( '5', buffer2.array()[5] );
-        assertEquals( '6', buffer2.array()[6] );
-        assertEquals( '7', buffer2.array()[7] );
+        assertEquals('2', buffer2.array()[2]);
+        assertEquals('3', buffer2.array()[3]);
+        assertEquals('4', buffer2.array()[4]);
+        assertEquals('5', buffer2.array()[5]);
+        assertEquals('6', buffer2.array()[6]);
+        assertEquals('7', buffer2.array()[7]);
     }
 }

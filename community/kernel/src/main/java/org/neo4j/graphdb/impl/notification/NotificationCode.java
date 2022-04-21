@@ -19,9 +19,7 @@
  */
 package org.neo4j.graphdb.impl.notification;
 
-
 import java.util.Objects;
-
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -29,285 +27,237 @@ import org.neo4j.kernel.api.exceptions.Status;
 /**
  * Notification codes are status codes identifying the type of notification.
  */
-public enum NotificationCode
-{
+public enum NotificationCode {
     CARTESIAN_PRODUCT(
-       SeverityLevel.WARNING,
-       Status.Statement.CartesianProductWarning,
-       "If a part of a query contains multiple disconnected patterns, this will build a " +
-       "cartesian product between all those parts. This may produce a large amount of data and slow down" +
-       " query processing. " +
-       "While occasionally intended, it may often be possible to reformulate the query that avoids the " +
-       "use of this cross " +
-       "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH"
-    ),
-    RUNTIME_UNSUPPORTED(
-        SeverityLevel.WARNING,
-        Status.Statement.RuntimeUnsupportedWarning,
-        "Selected runtime is unsupported for this query, please use a different runtime instead or fallback to default."
-    ),
-    INDEX_HINT_UNFULFILLABLE(
-        SeverityLevel.WARNING,
-        Status.Schema.IndexNotFound,
-        "The hinted index does not exist, please check the schema"
-    ),
-    JOIN_HINT_UNFULFILLABLE(
-        SeverityLevel.WARNING,
-        Status.Statement.JoinHintUnfulfillableWarning,
-        "The hinted join was not planned. This could happen because no generated plan contained the join key, " +
-                "please try using a different join key or restructure your query."
-    ),
-    INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY(
-        SeverityLevel.WARNING,
-        Status.Statement.DynamicPropertyWarning,
-        "Using a dynamic property makes it impossible to use an index lookup for this query"
-    ),
-    DEPRECATED_FUNCTION(
             SeverityLevel.WARNING,
-            Status.Statement.FeatureDeprecationWarning,
-            "The query used a deprecated function."
-    ),
+            Status.Statement.CartesianProductWarning,
+            "If a part of a query contains multiple disconnected patterns, this will build a "
+                    + "cartesian product between all those parts. This may produce a large amount of data and slow down"
+                    + " query processing. "
+                    + "While occasionally intended, it may often be possible to reformulate the query that avoids the "
+                    + "use of this cross "
+                    + "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH"),
+    RUNTIME_UNSUPPORTED(
+            SeverityLevel.WARNING,
+            Status.Statement.RuntimeUnsupportedWarning,
+            "Selected runtime is unsupported for this query, please use a different runtime instead or fallback to default."),
+    INDEX_HINT_UNFULFILLABLE(
+            SeverityLevel.WARNING,
+            Status.Schema.IndexNotFound,
+            "The hinted index does not exist, please check the schema"),
+    JOIN_HINT_UNFULFILLABLE(
+            SeverityLevel.WARNING,
+            Status.Statement.JoinHintUnfulfillableWarning,
+            "The hinted join was not planned. This could happen because no generated plan contained the join key, "
+                    + "please try using a different join key or restructure your query."),
+    INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY(
+            SeverityLevel.WARNING,
+            Status.Statement.DynamicPropertyWarning,
+            "Using a dynamic property makes it impossible to use an index lookup for this query"),
+    DEPRECATED_FUNCTION(
+            SeverityLevel.WARNING, Status.Statement.FeatureDeprecationWarning, "The query used a deprecated function."),
     DEPRECATED_PROCEDURE(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
-            "The query used a deprecated procedure."
-    ),
+            "The query used a deprecated procedure."),
     PROCEDURE_WARNING(
             SeverityLevel.WARNING,
             Status.Procedure.ProcedureWarning,
-            "The query used a procedure that generated a warning."
-    ),
+            "The query used a procedure that generated a warning."),
     DEPRECATED_PROCEDURE_RETURN_FIELD(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
-            "The query used a deprecated field from a procedure."
-    ),
+            "The query used a deprecated field from a procedure."),
     DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
-            "Binding relationships to a list in a variable length pattern is deprecated."
-    ),
+            "Binding relationships to a list in a variable length pattern is deprecated."),
     DEPRECATED_BTREE_INDEX_SYNTAX(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
-            "B-tree indexes are deprecated, partially replaced by text indexes and will be fully replaced later on. " +
-                    "For now, b-tree indexes are still the correct alternative to use."
-    ),
+            "B-tree indexes are deprecated, partially replaced by text indexes and will be fully replaced later on. "
+                    + "For now, b-tree indexes are still the correct alternative to use."),
     DEPRECATED_OCTAL_LITERAL_SYNTAX(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
-            "The octal integer literal syntax `0123` is deprecated, please use `0o123` instead"
-    ),
+            "The octal integer literal syntax `0123` is deprecated, please use `0o123` instead"),
     DEPRECATED_HEX_LITERAL_SYNTAX(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
-            "The hex integer literal syntax `0X123` is deprecated, please use `0x123` instead"
-    ),
+            "The hex integer literal syntax `0X123` is deprecated, please use `0x123` instead"),
     DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
-            "Coercion of list to boolean is deprecated. Please consider using `NOT isEmpty(...)` instead."
-    ),
+            "Coercion of list to boolean is deprecated. Please consider using `NOT isEmpty(...)` instead."),
     DEPRECATED_AMBIGUOUS_GROUPING_NOTIFICATION(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
-            "Aggregation column contains implicit grouping expressions. " +
-            "Aggregation expressions with implicit grouping keys are deprecated and will be removed in a future version. " +
-            "For example, in 'RETURN n.a, n.a + n.b + count(*)' the aggregation expression 'n.a + n.b + count(*)' includes the implicit grouping key 'n.b', " +
-            "and this expression is now deprecated. " +
-            "It may be possible to rewrite the query by extracting these grouping/aggregation expressions into a preceding WITH clause."
-    ),
+            "Aggregation column contains implicit grouping expressions. "
+                    + "Aggregation expressions with implicit grouping keys are deprecated and will be removed in a future version. "
+                    + "For example, in 'RETURN n.a, n.a + n.b + count(*)' the aggregation expression 'n.a + n.b + count(*)' includes the implicit grouping key 'n.b', "
+                    + "and this expression is now deprecated. "
+                    + "It may be possible to rewrite the query by extracting these grouping/aggregation expressions into a preceding WITH clause."),
     EAGER_LOAD_CSV(
-        SeverityLevel.WARNING,
-        Status.Statement.EagerOperatorWarning,
-        "Using LOAD CSV with a large data set in a query where the execution plan contains the " +
-        "Eager operator could potentially consume a lot of memory and is likely to not perform well. " +
-        "See the Neo4j Manual entry on the Eager operator for more information and hints on " +
-        "how problems could be avoided."
-    ),
+            SeverityLevel.WARNING,
+            Status.Statement.EagerOperatorWarning,
+            "Using LOAD CSV with a large data set in a query where the execution plan contains the "
+                    + "Eager operator could potentially consume a lot of memory and is likely to not perform well. "
+                    + "See the Neo4j Manual entry on the Eager operator for more information and hints on "
+                    + "how problems could be avoided."),
     LARGE_LABEL_LOAD_CSV(
-        SeverityLevel.WARNING,
-        Status.Statement.NoApplicableIndexWarning,
-        "Using LOAD CSV followed by a MATCH or MERGE that matches a non-indexed label will most likely " +
-        "not perform well on large data sets. Please consider using a schema index."
-        ),
+            SeverityLevel.WARNING,
+            Status.Statement.NoApplicableIndexWarning,
+            "Using LOAD CSV followed by a MATCH or MERGE that matches a non-indexed label will most likely "
+                    + "not perform well on large data sets. Please consider using a schema index."),
     MISSING_LABEL(
             SeverityLevel.WARNING,
             Status.Statement.UnknownLabelWarning,
-            "One of the labels in your query is not available in the database, make sure you didn't " +
-            "misspell it or that the label is available when you run this statement in your application"
-    ),
+            "One of the labels in your query is not available in the database, make sure you didn't "
+                    + "misspell it or that the label is available when you run this statement in your application"),
     MISSING_REL_TYPE(
             SeverityLevel.WARNING,
             Status.Statement.UnknownRelationshipTypeWarning,
-            "One of the relationship types in your query is not available in the database, make sure you didn't " +
-            "misspell it or that the label is available when you run this statement in your application"
-    ),
+            "One of the relationship types in your query is not available in the database, make sure you didn't "
+                    + "misspell it or that the label is available when you run this statement in your application"),
     MISSING_PROPERTY_NAME(
             SeverityLevel.WARNING,
             Status.Statement.UnknownPropertyKeyWarning,
-            "One of the property names in your query is not available in the database, make sure you didn't " +
-            "misspell it or that the label is available when you run this statement in your application"
-    ),
+            "One of the property names in your query is not available in the database, make sure you didn't "
+                    + "misspell it or that the label is available when you run this statement in your application"),
     UNBOUNDED_SHORTEST_PATH(
             SeverityLevel.WARNING,
             Status.Statement.UnboundedVariableLengthPatternWarning,
-            "Using shortest path with an unbounded pattern will likely result in long execution times. " +
-            "It is recommended to use an upper limit to the number of node hops in your pattern."
-    ),
+            "Using shortest path with an unbounded pattern will likely result in long execution times. "
+                    + "It is recommended to use an upper limit to the number of node hops in your pattern."),
     EXHAUSTIVE_SHORTEST_PATH(
             SeverityLevel.WARNING,
             Status.Statement.ExhaustiveShortestPathWarning,
-            "Using shortest path with an exhaustive search fallback might cause query slow down since shortest path " +
-            "graph algorithms might not work for this use case. It is recommended to introduce a WITH to separate the " +
-            "MATCH containing the shortest path from the existential predicates on that path."
-    ),
+            "Using shortest path with an exhaustive search fallback might cause query slow down since shortest path "
+                    + "graph algorithms might not work for this use case. It is recommended to introduce a WITH to separate the "
+                    + "MATCH containing the shortest path from the existential predicates on that path."),
     EXPERIMENTAL_FEATURE(
-            SeverityLevel.WARNING,
-            Status.Statement.ExperimentalFeature,
-            "You are using an experimental feature" ),
+            SeverityLevel.WARNING, Status.Statement.ExperimentalFeature, "You are using an experimental feature"),
     MISSING_PARAMETERS_FOR_EXPLAIN(
             SeverityLevel.WARNING,
             Status.Statement.ParameterMissing,
-            "Did not supply query with enough parameters. The produced query plan will not be cached and is not executable without EXPLAIN." ),
+            "Did not supply query with enough parameters. The produced query plan will not be cached and is not executable without EXPLAIN."),
     SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY(
             SeverityLevel.INFORMATION,
             Status.Statement.SuboptimalIndexForWildcardQuery,
-            "If the performance of this statement using `CONTAINS` doesn't meet your expectations check out the alternative index-providers, see " +
-                    "documentation on index configuration." ),
+            "If the performance of this statement using `CONTAINS` doesn't meet your expectations check out the alternative index-providers, see "
+                    + "documentation on index configuration."),
     SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY(
             SeverityLevel.INFORMATION,
             Status.Statement.SuboptimalIndexForWildcardQuery,
-            "If the performance of this statement using `ENDS WITH` doesn't meet your expectations check out the alternative index-providers, see " +
-                    "documentation on index configuration." ),
+            "If the performance of this statement using `ENDS WITH` doesn't meet your expectations check out the alternative index-providers, see "
+                    + "documentation on index configuration."),
     CODE_GENERATION_FAILED(
             SeverityLevel.WARNING,
             Status.Statement.CodeGenerationFailed,
-            "The database was unable to generate code for the query. A stacktrace can be found in the debug.log." ),
+            "The database was unable to generate code for the query. A stacktrace can be found in the debug.log."),
     REPEATED_REL_IN_PATTERN_EXPRESSION(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
-            "You are using the same relationship variable for multiple patterns in a pattern expression/comprehension. " +
-            "This feature is deprecated and will be removed in a future version, " +
-            "because it does not follow Cyphers pattern matching relationship uniqueness rule. " +
-            "It can lead to the optimizer choosing bad plans for that pattern expression/comprehension. " +
-            "Please rewrite your query, using the start node and/or end node of the relationship in the pattern expression/comprehension instead."
-    ),
+            "You are using the same relationship variable for multiple patterns in a pattern expression/comprehension. "
+                    + "This feature is deprecated and will be removed in a future version, "
+                    + "because it does not follow Cyphers pattern matching relationship uniqueness rule. "
+                    + "It can lead to the optimizer choosing bad plans for that pattern expression/comprehension. "
+                    + "Please rewrite your query, using the start node and/or end node of the relationship in the pattern expression/comprehension instead."),
     SUBQUERY_VARIABLE_SHADOWING(
             SeverityLevel.WARNING,
             Status.Statement.SubqueryVariableShadowingWarning,
-            "Variable in subquery is shadowing a variable with the same name from the outer scope. " +
-            "If you want to use that variable instead, it must be imported into the subquery using importing WITH clause."
-    );
+            "Variable in subquery is shadowing a variable with the same name from the outer scope. "
+                    + "If you want to use that variable instead, it must be imported into the subquery using importing WITH clause.");
 
     private final Status status;
     private final String description;
     private final SeverityLevel severity;
 
-    NotificationCode( SeverityLevel severity, Status status, String description )
-    {
+    NotificationCode(SeverityLevel severity, Status status, String description) {
         this.severity = severity;
         this.status = status;
         this.description = description;
     }
 
     // TODO: Move construction of Notifications to a factory with explicit methods per type of notification
-    public Notification notification( InputPosition position, NotificationDetail... details )
-    {
-        return new Notification( position, details );
+    public Notification notification(InputPosition position, NotificationDetail... details) {
+        return new Notification(position, details);
     }
 
-    public final class Notification implements org.neo4j.graphdb.Notification
-    {
+    public final class Notification implements org.neo4j.graphdb.Notification {
         private final InputPosition position;
         private final String detailedDescription;
 
-        Notification( InputPosition position, NotificationDetail... details )
-        {
+        Notification(InputPosition position, NotificationDetail... details) {
             this.position = position;
 
-            if ( details.length == 0 )
-            {
+            if (details.length == 0) {
                 this.detailedDescription = description;
-            }
-            else
-            {
-                StringBuilder builder = new StringBuilder( description.length() );
-                builder.append( description );
-                builder.append( ' ' );
-                builder.append( '(' );
+            } else {
+                StringBuilder builder = new StringBuilder(description.length());
+                builder.append(description);
+                builder.append(' ');
+                builder.append('(');
                 String comma = "";
-                for ( NotificationDetail detail : details )
-                {
-                    builder.append( comma );
-                    builder.append( detail );
+                for (NotificationDetail detail : details) {
+                    builder.append(comma);
+                    builder.append(detail);
                     comma = ", ";
                 }
-                builder.append( ')' );
+                builder.append(')');
 
                 this.detailedDescription = builder.toString();
             }
         }
 
         @Override
-        public String getCode()
-        {
+        public String getCode() {
             return status.code().serialize();
         }
 
         @Override
-        public String getTitle()
-        {
+        public String getTitle() {
             return status.code().description();
         }
 
         @Override
-        public String getDescription()
-        {
+        public String getDescription() {
             return detailedDescription;
         }
 
         @Override
-        public InputPosition getPosition()
-        {
+        public InputPosition getPosition() {
             return position;
         }
 
         @Override
-        public SeverityLevel getSeverity()
-        {
+        public SeverityLevel getSeverity() {
             return severity;
         }
 
         @Override
-        public String toString()
-        {
-            return "Notification{" +
-                    "position=" + position +
-                    ", detailedDescription='" + detailedDescription + '\'' +
-                    '}';
+        public String toString() {
+            return "Notification{" + "position="
+                    + position + ", detailedDescription='"
+                    + detailedDescription + '\'' + '}';
         }
 
         @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
             }
-            if ( o == null || getClass() != o.getClass() )
-            {
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
             Notification that = (Notification) o;
-            return Objects.equals( position, that.position ) &&
-                    Objects.equals( detailedDescription, that.detailedDescription );
+            return Objects.equals(position, that.position)
+                    && Objects.equals(detailedDescription, that.detailedDescription);
         }
 
         @Override
-        public int hashCode()
-        {
-            return Objects.hash( position, detailedDescription );
+        public int hashCode() {
+            return Objects.hash(position, detailedDescription);
         }
     }
 }

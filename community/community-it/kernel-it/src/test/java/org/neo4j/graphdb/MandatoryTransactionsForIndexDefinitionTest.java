@@ -20,30 +20,25 @@
 package org.neo4j.graphdb;
 
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.graphdb.schema.IndexDefinition;
 
-public class MandatoryTransactionsForIndexDefinitionTest extends AbstractMandatoryTransactionsTest<IndexDefinition>
-{
+public class MandatoryTransactionsForIndexDefinitionTest extends AbstractMandatoryTransactionsTest<IndexDefinition> {
     @Test
-    void shouldRequireTransactionsWhenCallingMethodsOnIndexDefinitions()
-    {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), IndexDefinitionFacadeMethods.values() );
+    void shouldRequireTransactionsWhenCallingMethodsOnIndexDefinitions() {
+        assertFacadeMethodsThrowNotInTransaction(obtainEntity(), IndexDefinitionFacadeMethods.values());
     }
 
     @Test
-    void shouldTerminateWhenCallingMethodsOnIndexDefinitions()
-    {
-        assertFacadeMethodsThrowAfterTerminate( IndexDefinitionFacadeMethods.values() );
+    void shouldTerminateWhenCallingMethodsOnIndexDefinitions() {
+        assertFacadeMethodsThrowAfterTerminate(IndexDefinitionFacadeMethods.values());
     }
 
     @Override
-    protected IndexDefinition obtainEntityInTransaction( Transaction transaction )
-    {
+    protected IndexDefinition obtainEntityInTransaction(Transaction transaction) {
         return transaction
-               .schema()
-               .indexFor( Label.label( "Label" ) )
-               .on( "property" )
-               .create();
+                .schema()
+                .indexFor(Label.label("Label"))
+                .on("property")
+                .create();
     }
 }

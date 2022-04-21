@@ -22,6 +22,4 @@ package org.neo4j.internal.kernel.api;
 /**
  * Cursor for scanning relationships of a relationship type index.
  */
-public interface RelationshipTypeIndexCursor extends RelationshipIndexCursor
-{
-}
+public interface RelationshipTypeIndexCursor extends RelationshipIndexCursor {}

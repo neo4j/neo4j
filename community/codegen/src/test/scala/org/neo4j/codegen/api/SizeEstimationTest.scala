@@ -19,7 +19,6 @@
  */
 package org.neo4j.codegen.api
 
-import java.nio.ByteBuffer
 import org.neo4j.codegen.ByteCodeVisitor
 import org.neo4j.codegen.TypeReference
 import org.neo4j.codegen.api.CodeGeneration.ByteCodeGeneration
@@ -75,13 +74,17 @@ import org.neo4j.values.storable.LongValue
 import org.neo4j.values.storable.Values
 import org.objectweb.asm.Opcodes
 
+import java.nio.ByteBuffer
+
 import scala.util.Random
 
 class SizeEstimationTest extends CypherFunSuite {
   private val generator = CodeGeneration.createGenerator(ByteCodeGeneration(new CodeSaver(false, false)))
   private val sizeComputer = new ByteSizeComputer
   generator.setByteCodeVisitor(sizeComputer)
-  private val callBooleanMethod: IntermediateRepresentation = invokeStatic(method[SizeEstimationTest, Boolean]("testBoolean"))
+
+  private val callBooleanMethod: IntermediateRepresentation =
+    invokeStatic(method[SizeEstimationTest, Boolean]("testBoolean"))
   private val echoMethod = method[SizeEstimationTest, AnyRef, AnyRef]("testMethod")
 
   private var count = 0
@@ -99,8 +102,7 @@ class SizeEstimationTest extends CypherFunSuite {
       withClue(s"Wrong estimation of $v") {
         sizeOf(representation) should equal(computeSize(representation))
       }
-    }
-    )
+    })
   }
 
   test("declare and assign constant long") {
@@ -116,8 +118,7 @@ class SizeEstimationTest extends CypherFunSuite {
       withClue(s"Wrong estimation of $v") {
         sizeOf(representation) should equal(computeSize(representation))
       }
-    }
-    )
+    })
   }
 
   test("declare and assign boolean") {
@@ -133,8 +134,7 @@ class SizeEstimationTest extends CypherFunSuite {
       withClue(s"Wrong estimation of $v") {
         sizeOf(representation) should equal(computeSize(representation))
       }
-    }
-    )
+    })
   }
 
   test("declare and assign double") {
@@ -144,14 +144,23 @@ class SizeEstimationTest extends CypherFunSuite {
         assign("a", constant(v))
       )
 
-    val constants = Seq(0.0, 1.0, Math.E, Math.PI, Double.MinPositiveValue, Double.MinValue, Double.MaxValue, Double.NegativeInfinity, Double.PositiveInfinity)
+    val constants = Seq(
+      0.0,
+      1.0,
+      Math.E,
+      Math.PI,
+      Double.MinPositiveValue,
+      Double.MinValue,
+      Double.MaxValue,
+      Double.NegativeInfinity,
+      Double.PositiveInfinity
+    )
     constants.foreach(v => {
       val representation = declareAndAssign(v)
       withClue(s"Wrong estimation of $v") {
         sizeOf(representation) should equal(computeSize(representation))
       }
-    }
-    )
+    })
   }
 
   test("declare and assign references") {
@@ -167,17 +176,17 @@ class SizeEstimationTest extends CypherFunSuite {
       withClue(s"Wrong estimation of $v") {
         sizeOf(representation) should equal(computeSize(representation))
       }
-    }
-    )
+    })
   }
 
   test("declare and assign many local variables") {
-      val instructions =
-        block((1 to 512).flatMap(i => {
-          Seq(
-            declare[Int](s"a$i"),
-            assign(s"a$i", constant(42)))
-        }):_*)
+    val instructions =
+      block((1 to 512).flatMap(i => {
+        Seq(
+          declare[Int](s"a$i"),
+          assign(s"a$i", constant(42))
+        )
+      }): _*)
 
     val i = computeSize(instructions)
     sizeOf(instructions) should equal(i)
@@ -191,7 +200,7 @@ class SizeEstimationTest extends CypherFunSuite {
           assign(s"a$i", constant(42)),
           assign(s"a$i", load[Int](s"a$i"))
         )
-      }):_*)
+      }): _*)
 
     val i = computeSize(instructions)
     sizeOf(instructions) should equal(i)
@@ -223,7 +232,7 @@ class SizeEstimationTest extends CypherFunSuite {
     val instructions =
       block(
         declare[Object]("a"),
-        assign("a", loadField(field[String]("field"))),
+        assign("a", loadField(field[String]("field")))
       )
 
     sizeOf(instructions) should equal(computeSize(instructions))
@@ -233,7 +242,7 @@ class SizeEstimationTest extends CypherFunSuite {
     val instructions =
       block(
         declare[Object]("a"),
-        assign("a", loadField(arrayField)),
+        assign("a", loadField(arrayField))
       )
 
     sizeOf(instructions) should equal(computeSize(instructions))
@@ -243,7 +252,7 @@ class SizeEstimationTest extends CypherFunSuite {
     val instructions =
       block(
         declare[Double]("a"),
-        assign("a", getStatic[Math, Double]("PI")),
+        assign("a", getStatic[Math, Double]("PI"))
       )
 
     sizeOf(instructions) should equal(computeSize(instructions))
@@ -258,7 +267,7 @@ class SizeEstimationTest extends CypherFunSuite {
     val instructions =
       block(
         declare[Array[Int]]("a"),
-        assign("a", arrayOf[Int](constant(1), constant(2), constant(3))),
+        assign("a", arrayOf[Int](constant(1), constant(2), constant(3)))
       )
 
     sizeOf(instructions) should equal(computeSize(instructions))
@@ -268,7 +277,7 @@ class SizeEstimationTest extends CypherFunSuite {
     val instructions =
       block(
         declare[Array[String]]("a"),
-        assign("a", arrayOf[String](constant("1"), constant("2"), constant("3"))),
+        assign("a", arrayOf[String](constant("1"), constant("2"), constant("3")))
       )
 
     sizeOf(instructions) should equal(computeSize(instructions))
@@ -302,7 +311,7 @@ class SizeEstimationTest extends CypherFunSuite {
         declare[Array[Int]]("a"),
         assign("a", arrayOf[Int](constant(1), constant(2), constant(3))),
         declare[Int]("b"),
-        assign("b", arrayLength(load[Array[Int]]("a"))),
+        assign("b", arrayLength(load[Array[Int]]("a")))
       )
 
     sizeOf(instructions) should equal(computeSize(instructions))
@@ -314,7 +323,7 @@ class SizeEstimationTest extends CypherFunSuite {
         declare[Array[Int]]("a"),
         assign("a", arrayOf[Int](constant(1), constant(2), constant(3))),
         declare[Int]("b"),
-        assign("b", arrayLoad(load[Array[Int]]("a"), 1)),
+        assign("b", arrayLoad(load[Array[Int]]("a"), 1))
       )
 
     sizeOf(instructions) should equal(computeSize(instructions))
@@ -361,14 +370,17 @@ class SizeEstimationTest extends CypherFunSuite {
   }
 
   test("comparisons longs") {
-    def instructions(comparison: (IntermediateRepresentation, IntermediateRepresentation) => IntermediateRepresentation) =
+    def instructions(comparison: (
+      IntermediateRepresentation,
+      IntermediateRepresentation
+    ) => IntermediateRepresentation) =
       block(
         declare[Boolean]("a"),
         assign("a", comparison(constant(1L), constant(2L)))
       )
 
     val comparisons: Seq[(IntermediateRepresentation, IntermediateRepresentation) => IntermediateRepresentation] =
-       Seq(greaterThan, greaterThanOrEqual, lessThan, lessThanOrEqual, IntermediateRepresentation.equal, notEqual)
+      Seq(greaterThan, greaterThanOrEqual, lessThan, lessThanOrEqual, IntermediateRepresentation.equal, notEqual)
     comparisons.foreach(v => {
       val representation = instructions(v)
       sizeOf(representation) should equal(computeSize(representation))
@@ -376,7 +388,10 @@ class SizeEstimationTest extends CypherFunSuite {
   }
 
   test("comparisons ints") {
-    def instructions(comparison: (IntermediateRepresentation, IntermediateRepresentation) => IntermediateRepresentation) =
+    def instructions(comparison: (
+      IntermediateRepresentation,
+      IntermediateRepresentation
+    ) => IntermediateRepresentation) =
       block(
         declare[Boolean]("a"),
         assign("a", comparison(constant(1), constant(2)))
@@ -391,7 +406,10 @@ class SizeEstimationTest extends CypherFunSuite {
   }
 
   test("compare references") {
-    def instructions(comparison: (IntermediateRepresentation, IntermediateRepresentation) => IntermediateRepresentation) =
+    def instructions(comparison: (
+      IntermediateRepresentation,
+      IntermediateRepresentation
+    ) => IntermediateRepresentation) =
       block(
         declare[Boolean]("a"),
         assign("a", comparison(constant("hello"), constant("there")))
@@ -406,14 +424,14 @@ class SizeEstimationTest extends CypherFunSuite {
   }
 
   test("null checks") {
-    def instructions(check: IntermediateRepresentation => IntermediateRepresentation)  =
+    def instructions(check: IntermediateRepresentation => IntermediateRepresentation) =
       block(
         declare[Boolean]("a"),
         assign("a", check(constant(null))),
         assign("a", check(invokeStatic(echoMethod, constant(null))))
       )
 
-    val checks = Seq(IntermediateRepresentation.isNull _, IntermediateRepresentation.isNotNull _ )
+    val checks = Seq(IntermediateRepresentation.isNull _, IntermediateRepresentation.isNotNull _)
     checks.foreach(v => {
       val representation = instructions(v)
       sizeOf(representation) should equal(computeSize(representation))
@@ -421,17 +439,17 @@ class SizeEstimationTest extends CypherFunSuite {
   }
 
   test("instance of") {
-    val instructions  =
+    val instructions =
       block(
         declare[Boolean]("a"),
         assign("a", IntermediateRepresentation.instanceOf[String](constant("hello")))
       )
 
-      sizeOf(instructions) should equal(computeSize(instructions))
+    sizeOf(instructions) should equal(computeSize(instructions))
   }
 
   test("not") {
-    def notInstruction(boolean: IntermediateRepresentation)  =
+    def notInstruction(boolean: IntermediateRepresentation) =
       block(
         declare[Boolean]("a"),
         assign("a", IntermediateRepresentation.not(boolean))
@@ -480,17 +498,17 @@ class SizeEstimationTest extends CypherFunSuite {
   }
 
   test("condition + IS NULL") {
-      val instructions =
-        block(
-          condition(isNull(invokeStatic(echoMethod, constant(null)))) {
-            block(
-              declare[Int]("a"),
-              assign("a", constant(1))
-            )
-          }
-        )
+    val instructions =
+      block(
+        condition(isNull(invokeStatic(echoMethod, constant(null)))) {
+          block(
+            declare[Int]("a"),
+            assign("a", constant(1))
+          )
+        }
+      )
 
-      sizeOf(instructions) should equal(computeSize(instructions))
+    sizeOf(instructions) should equal(computeSize(instructions))
   }
 
   test("condition + equal") {
@@ -534,6 +552,7 @@ class SizeEstimationTest extends CypherFunSuite {
 
     sizeOf(instructions) should equal(computeSize(instructions))
   }
+
   test("condition + ors") {
     val instructions =
       block(
@@ -544,8 +563,9 @@ class SizeEstimationTest extends CypherFunSuite {
               callBooleanMethod,
               callBooleanMethod,
               callBooleanMethod,
-              callBooleanMethod,
-            ))
+              callBooleanMethod
+            )
+          )
         ) {
           block(
             declare[Int]("a"),
@@ -713,14 +733,15 @@ class SizeEstimationTest extends CypherFunSuite {
     val instructions =
       block(
         declare[Boolean]("a"),
-        assign("a",
+        assign(
+          "a",
           and(
             Seq(
               callBooleanMethod,
               callBooleanMethod,
               callBooleanMethod,
               callBooleanMethod,
-              callBooleanMethod,
+              callBooleanMethod
             )
           )
         )
@@ -753,7 +774,7 @@ class SizeEstimationTest extends CypherFunSuite {
               callBooleanMethod,
               callBooleanMethod,
               callBooleanMethod,
-              callBooleanMethod,
+              callBooleanMethod
             )
           )
         ) {
@@ -781,14 +802,15 @@ class SizeEstimationTest extends CypherFunSuite {
     val instructions =
       block(
         declare[Boolean]("a"),
-        assign("a",
+        assign(
+          "a",
           or(
             Seq(
               callBooleanMethod,
               callBooleanMethod,
               callBooleanMethod,
               callBooleanMethod,
-              callBooleanMethod,
+              callBooleanMethod
             )
           )
         )
@@ -828,9 +850,11 @@ class SizeEstimationTest extends CypherFunSuite {
   test("condition + and + multiple ors") {
     val instructions =
       block(
-        condition(and(Seq(or(callBooleanMethod, or(callBooleanMethod, callBooleanMethod)),
+        condition(and(Seq(
+          or(callBooleanMethod, or(callBooleanMethod, callBooleanMethod)),
           or(callBooleanMethod, callBooleanMethod),
-          or(callBooleanMethod, callBooleanMethod)))) {
+          or(callBooleanMethod, callBooleanMethod)
+        ))) {
           block(
             declare[Int]("a"),
             assign("a", constant(3))
@@ -963,7 +987,12 @@ class SizeEstimationTest extends CypherFunSuite {
   test("loop + not + or") {
     val instructions =
       block(
-        loop(IntermediateRepresentation.not(or(Seq(callBooleanMethod, callBooleanMethod, callBooleanMethod, callBooleanMethod)))) {
+        loop(IntermediateRepresentation.not(or(Seq(
+          callBooleanMethod,
+          callBooleanMethod,
+          callBooleanMethod,
+          callBooleanMethod
+        )))) {
           block(
             declare[Int]("a"),
             assign("a", constant(3))
@@ -1013,7 +1042,7 @@ class SizeEstimationTest extends CypherFunSuite {
     val instructions =
       block(
         declare[Object]("a"),
-        assign("a", box(constant(1L))),
+        assign("a", box(constant(1L)))
       )
 
     sizeOf(instructions) should equal(computeSize(instructions))
@@ -1023,7 +1052,7 @@ class SizeEstimationTest extends CypherFunSuite {
     val instructions =
       block(
         declare[Object]("a"),
-        assign("a", unbox(box(constant(1L)))),
+        assign("a", unbox(box(constant(1L))))
       )
 
     sizeOf(instructions) should equal(computeSize(instructions))
@@ -1088,8 +1117,8 @@ class SizeEstimationTest extends CypherFunSuite {
   test("only count one-time once") {
     val once = oneTime(block(
       declare[Int]("a"),
-      assign("a", constant(42)))
-    )
+      assign("a", constant(42))
+    ))
     val instructions =
       block(
         declare[Int]("b"),
@@ -1101,7 +1130,7 @@ class SizeEstimationTest extends CypherFunSuite {
         declare[Int]("e"),
         assign("e", block(once, load[Int]("a"))),
         declare[Int]("f"),
-        assign("f", block(once, load[Int]("a"))),
+        assign("f", block(once, load[Int]("a")))
       )
 
     sizeOf(instructions) should equal(computeSize(instructions))
@@ -1124,13 +1153,19 @@ class SizeEstimationTest extends CypherFunSuite {
       Seq.empty,
       noop(),
       () => Seq(field[String]("field", constant("hello field")), arrayField),
-      Seq(MethodDeclaration("test", TypeReference.VOID, Seq.empty
-        , block(
-        //NOTE: this is a little bit of a hack, here we insert `int tag=123` at the beginning of the method to
-        //      make it easy to locate the method in the byte code later
-        declare[Int]("tag"),
-        assign("tag", constant(123)),
-        body), () => Seq.empty)),
+      Seq(MethodDeclaration(
+        "test",
+        TypeReference.VOID,
+        Seq.empty,
+        block(
+          // NOTE: this is a little bit of a hack, here we insert `int tag=123` at the beginning of the method to
+          //      make it easy to locate the method in the byte code later
+          declare[Int]("tag"),
+          assign("tag", constant(123)),
+          body
+        ),
+        () => Seq.empty
+      ))
     )
     count += 1
     declaration
@@ -1138,15 +1173,16 @@ class SizeEstimationTest extends CypherFunSuite {
 
   class ByteSizeComputer extends ByteCodeVisitor {
     var byteSize = 0
+
     override def visitByteCode(name: String, bytes: ByteBuffer): Unit = {
       val byteCode = bytes.array().toIndexedSeq
-      //Look for our magic marker `int tag = 123`
+      // Look for our magic marker `int tag = 123`
       val index = byteCode.lastIndexOfSlice(Seq(Opcodes.BIPUSH.toByte, 123.toByte))
-      var i = index + 3//jump over BIPUSH 123 (2 bytes) + ISTORE (1 byte)
+      var i = index + 3 // jump over BIPUSH 123 (2 bytes) + ISTORE (1 byte)
 
-      //the size of the method is what is between our `int tag = 123` and `RETURN`
-      def done=  byteCode(i) == Opcodes.RETURN.toByte && byteCode(i+1) == 0
-      while (i < byteCode.length-1 && !done) {
+      // the size of the method is what is between our `int tag = 123` and `RETURN`
+      def done = byteCode(i) == Opcodes.RETURN.toByte && byteCode(i + 1) == 0
+      while (i < byteCode.length - 1 && !done) {
         i += 1
       }
       byteSize = i - index - 3

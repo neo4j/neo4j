@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.util.symbols
 
 object NumberType {
+
   val instance = new NumberType() {
     val parentType = CTAny
     override val isAbstract = true

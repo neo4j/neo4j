@@ -19,10 +19,11 @@
  */
 package org.neo4j.consistency.checker;
 
+import static org.neo4j.internal.helpers.Format.duration;
+
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.consistency.checker.ParallelExecution.ThrowingRunnable;
@@ -43,10 +44,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.Stopwatch;
 import org.neo4j.token.TokenHolders;
 
-import static org.neo4j.internal.helpers.Format.duration;
-
-class CheckerContext
-{
+class CheckerContext {
     final NeoStores neoStores;
     final IndexAccessors indexAccessors;
     final ConsistencyFlags consistencyFlags;
@@ -84,12 +82,28 @@ class CheckerContext
             ProgressMonitorFactory.MultiPartBuilder progress,
             PageCache pageCache,
             MemoryTracker memoryTracker,
-            InternalLog log, boolean verbose,
+            InternalLog log,
+            boolean verbose,
             ConsistencyFlags consistencyFlags,
-            CursorContextFactory contextFactory )
-    {
-        this( neoStores, indexAccessors, execution, reporter, cacheAccess, tokenHolders, recordLoader,
-                observedCounts, limiter, progress, pageCache, memoryTracker, log, verbose, new AtomicBoolean(), consistencyFlags, contextFactory );
+            CursorContextFactory contextFactory) {
+        this(
+                neoStores,
+                indexAccessors,
+                execution,
+                reporter,
+                cacheAccess,
+                tokenHolders,
+                recordLoader,
+                observedCounts,
+                limiter,
+                progress,
+                pageCache,
+                memoryTracker,
+                log,
+                verbose,
+                new AtomicBoolean(),
+                consistencyFlags,
+                contextFactory);
     }
 
     private CheckerContext(
@@ -105,11 +119,11 @@ class CheckerContext
             ProgressMonitorFactory.MultiPartBuilder progress,
             PageCache pageCache,
             MemoryTracker memoryTracker,
-            InternalLog log, boolean verbose,
+            InternalLog log,
+            boolean verbose,
             AtomicBoolean cancelled,
             ConsistencyFlags consistencyFlags,
-            CursorContextFactory contextFactory )
-    {
+            CursorContextFactory contextFactory) {
         this.neoStores = neoStores;
         this.highNodeId = neoStores.getNodeStore().getHighId();
         this.highRelationshipId = neoStores.getRelationshipStore().getHighId();
@@ -120,7 +134,7 @@ class CheckerContext
         this.verbose = verbose;
         this.consistencyFlags = consistencyFlags;
         this.contextFactory = contextFactory;
-        this.indexSizes = new IndexSizes( execution, indexAccessors, highNodeId, highRelationshipId, contextFactory );
+        this.indexSizes = new IndexSizes(execution, indexAccessors, highNodeId, highRelationshipId, contextFactory);
         this.execution = execution;
         this.reporter = reporter;
         this.cacheAccess = cacheAccess;
@@ -135,105 +149,111 @@ class CheckerContext
         this.memoryTracker = memoryTracker;
     }
 
-    CheckerContext withoutReporting()
-    {
-        return new CheckerContext( neoStores, indexAccessors, execution, ConsistencyReport.NO_REPORT, cacheAccess,
-                tokenHolders, recordLoader, observedCounts, limiter, progress, pageCache, memoryTracker, log, verbose,
-                cancelled, consistencyFlags, contextFactory );
+    CheckerContext withoutReporting() {
+        return new CheckerContext(
+                neoStores,
+                indexAccessors,
+                execution,
+                ConsistencyReport.NO_REPORT,
+                cacheAccess,
+                tokenHolders,
+                recordLoader,
+                observedCounts,
+                limiter,
+                progress,
+                pageCache,
+                memoryTracker,
+                log,
+                verbose,
+                cancelled,
+                consistencyFlags,
+                contextFactory);
     }
 
-    void initialize() throws Exception
-    {
-        debug( limiter.toString() );
-        timeOperation( "Initialize index sizes", indexSizes::initialize, false );
-        if ( verbose )
-        {
-            debugPrintIndexes( indexSizes.largeIndexes( EntityType.NODE ), "considered large node indexes" );
-            debugPrintIndexes( indexSizes.smallIndexes( EntityType.NODE ), "considered small node indexes" );
-            debugPrintIndexes( indexSizes.largeIndexes( EntityType.RELATIONSHIP ), "considered large relationship indexes" );
-            debugPrintIndexes( indexSizes.smallIndexes( EntityType.RELATIONSHIP ), "considered small relationship indexes" );
+    void initialize() throws Exception {
+        debug(limiter.toString());
+        timeOperation("Initialize index sizes", indexSizes::initialize, false);
+        if (verbose) {
+            debugPrintIndexes(indexSizes.largeIndexes(EntityType.NODE), "considered large node indexes");
+            debugPrintIndexes(indexSizes.smallIndexes(EntityType.NODE), "considered small node indexes");
+            debugPrintIndexes(
+                    indexSizes.largeIndexes(EntityType.RELATIONSHIP), "considered large relationship indexes");
+            debugPrintIndexes(
+                    indexSizes.smallIndexes(EntityType.RELATIONSHIP), "considered small relationship indexes");
         }
     }
 
-    void initializeRange()
-    {
+    void initializeRange() {
         observedCounts.clearDynamicNodeLabelsCache();
     }
 
-    private void debugPrintIndexes( List<IndexDescriptor> indexes, String description )
-    {
-        if ( !indexes.isEmpty() )
-        {
-            debug( "These are %s (%d):", description, indexes.size() );
-            indexes.forEach( index -> debug( "  %s", index ) );
+    private void debugPrintIndexes(List<IndexDescriptor> indexes, String description) {
+        if (!indexes.isEmpty()) {
+            debug("These are %s (%d):", description, indexes.size());
+            indexes.forEach(index -> debug("  %s", index));
         }
     }
 
-    private void timeOperation( String description, ThrowingRunnable action, boolean linePadding ) throws Exception
-    {
+    private void timeOperation(String description, ThrowingRunnable action, boolean linePadding) throws Exception {
         Stopwatch stopwatch = Stopwatch.start();
-        try
-        {
-            debug( linePadding, "STARTED %s", description );
+        try {
+            debug(linePadding, "STARTED %s", description);
             action.doRun();
-            debug( linePadding, "COMPLETED %s, took %s", description, duration( stopwatch.elapsed( TimeUnit.MILLISECONDS ) ) );
-        }
-        catch ( Exception e )
-        {
-            debug( linePadding, "FAILED %s after %s", description, duration( stopwatch.elapsed( TimeUnit.MILLISECONDS ) ) );
+            debug(
+                    linePadding,
+                    "COMPLETED %s, took %s",
+                    description,
+                    duration(stopwatch.elapsed(TimeUnit.MILLISECONDS)));
+        } catch (Exception e) {
+            debug(linePadding, "FAILED %s after %s", description, duration(stopwatch.elapsed(TimeUnit.MILLISECONDS)));
             throw e;
         }
     }
 
-    boolean isCancelled()
-    {
+    boolean isCancelled() {
         return cancelled.get();
     }
 
-    void cancel()
-    {
-        cancelled.set( true );
+    void cancel() {
+        cancelled.set(true);
     }
 
-    void runIfAllowed( Checker checker, LongRange range ) throws Exception
-    {
-        if ( !isCancelled() && checker.shouldBeChecked( consistencyFlags ) )
-        {
-            timeOperation( checker.toString(), () -> checker.check( range, EntityBasedMemoryLimiter.isFirst( range ),
-                    limiter.isLast( range, checker.isNodeBasedCheck() ) ), true );
+    void runIfAllowed(Checker checker, LongRange range) throws Exception {
+        if (!isCancelled() && checker.shouldBeChecked(consistencyFlags)) {
+            timeOperation(
+                    checker.toString(),
+                    () -> checker.check(
+                            range,
+                            EntityBasedMemoryLimiter.isFirst(range),
+                            limiter.isLast(range, checker.isNodeBasedCheck())),
+                    true);
         }
     }
 
-    void paddedDebug( String format, Object... params )
-    {
-        debug( true, format, params );
+    void paddedDebug(String format, Object... params) {
+        debug(true, format, params);
     }
 
-    void debug( String format, Object... params )
-    {
-        debug( false, format, params );
+    void debug(String format, Object... params) {
+        debug(false, format, params);
     }
 
-    private void debug( boolean linePadded, String format, Object... params )
-    {
-        if ( verbose )
-        {
-            log.info( (linePadded ? "%n" : "") + format, params );
+    private void debug(boolean linePadded, String format, Object... params) {
+        if (verbose) {
+            log.info((linePadded ? "%n" : "") + format, params);
         }
     }
 
-    ProgressListener progressReporter( Checker checker, String name, long totalCount )
-    {
-        int nbrRanges = checker.isNodeBasedCheck() ? limiter.numberOfNodeRanges() : limiter.numberOfRelationshipRanges();
-        return roundInsensitiveProgressReporter( checker, name, totalCount * nbrRanges );
+    ProgressListener progressReporter(Checker checker, String name, long totalCount) {
+        int nbrRanges =
+                checker.isNodeBasedCheck() ? limiter.numberOfNodeRanges() : limiter.numberOfRelationshipRanges();
+        return roundInsensitiveProgressReporter(checker, name, totalCount * nbrRanges);
     }
 
-    ProgressListener roundInsensitiveProgressReporter( Checker checker, String name, long totalCount )
-    {
-        if ( !checker.shouldBeChecked( consistencyFlags ) )
-        {
+    ProgressListener roundInsensitiveProgressReporter(Checker checker, String name, long totalCount) {
+        if (!checker.shouldBeChecked(consistencyFlags)) {
             return ProgressListener.NONE;
         }
-        return progress.progressForPart( name, totalCount );
+        return progress.progressForPart(name, totalCount);
     }
 }

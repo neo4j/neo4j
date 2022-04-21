@@ -19,6 +19,8 @@
  */
 package org.neo4j.test.ports;
 
+import static org.neo4j.test.ports.PortConstants.EPHEMERAL_PORT_MAXIMUM;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.FileAlreadyExistsException;
@@ -26,51 +28,39 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
-import static org.neo4j.test.ports.PortConstants.EPHEMERAL_PORT_MAXIMUM;
-
-class PortRepository
-{
+class PortRepository {
     private final Path directory;
 
     private int currentPort;
 
-    PortRepository( Path directory, int initialPort )
-    {
+    PortRepository(Path directory, int initialPort) {
         this.directory = directory;
 
         this.currentPort = initialPort;
     }
 
     // synchronize between threads in this JVM
-    synchronized int reserveNextPort( String trace )
-    {
-        while ( currentPort <= EPHEMERAL_PORT_MAXIMUM )
-        {
-            Path portFilePath = directory.resolve( "port" + currentPort );
+    synchronized int reserveNextPort(String trace) {
+        while (currentPort <= EPHEMERAL_PORT_MAXIMUM) {
+            Path portFilePath = directory.resolve("port" + currentPort);
 
-            try
-            {
+            try {
                 // synchronize between processes on this machine
-                Files.createFile( portFilePath );
+                Files.createFile(portFilePath);
 
                 // write a trace for debugging purposes
-                try ( OutputStream fileOutputStream = Files.newOutputStream( portFilePath, StandardOpenOption.APPEND ) )
-                {
-                    fileOutputStream.write( trace.getBytes() );
+                try (OutputStream fileOutputStream = Files.newOutputStream(portFilePath, StandardOpenOption.APPEND)) {
+                    fileOutputStream.write(trace.getBytes());
                 }
 
                 return currentPort++;
-            }
-            catch ( FileAlreadyExistsException e )
-            {
+            } catch (FileAlreadyExistsException e) {
                 currentPort++;
-            }
-            catch ( IOException e )
-            {
-                throw new IllegalStateException( "This will never happen - LWN", e );
+            } catch (IOException e) {
+                throw new IllegalStateException("This will never happen - LWN", e);
             }
         }
 
-        throw new IllegalStateException( "There are no more ports available" );
+        throw new IllegalStateException("There are no more ports available");
     }
 }

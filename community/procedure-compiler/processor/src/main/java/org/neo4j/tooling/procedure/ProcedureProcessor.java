@@ -19,32 +19,28 @@
  */
 package org.neo4j.tooling.procedure;
 
-import com.google.auto.service.AutoService;
+import static org.neo4j.tooling.procedure.CompilerOptions.IGNORE_CONTEXT_WARNINGS_OPTION;
 
+import com.google.auto.service.AutoService;
 import javax.annotation.processing.Processor;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
-
 import org.neo4j.procedure.Procedure;
 import org.neo4j.tooling.procedure.compilerutils.CustomNameExtractor;
 import org.neo4j.tooling.procedure.visitors.ProcedureVisitor;
 
-import static org.neo4j.tooling.procedure.CompilerOptions.IGNORE_CONTEXT_WARNINGS_OPTION;
+@AutoService(Processor.class)
+public class ProcedureProcessor extends DuplicationAwareBaseProcessor<Procedure> {
 
-@AutoService( Processor.class )
-public class ProcedureProcessor extends DuplicationAwareBaseProcessor<Procedure>
-{
+    public ProcedureProcessor() {
+        super(Procedure.class, proc -> CustomNameExtractor.getName(proc::name, proc::value), processingEnvironment -> {
+            Types typeUtils = processingEnvironment.getTypeUtils();
+            Elements elementUtils = processingEnvironment.getElementUtils();
 
-    public ProcedureProcessor()
-    {
-        super( Procedure.class, proc -> CustomNameExtractor.getName( proc::name, proc::value ),
-                processingEnvironment ->
-                {
-                    Types typeUtils = processingEnvironment.getTypeUtils();
-                    Elements elementUtils = processingEnvironment.getElementUtils();
-
-                    return new ProcedureVisitor( typeUtils, elementUtils,
-                            processingEnvironment.getOptions().containsKey( IGNORE_CONTEXT_WARNINGS_OPTION ) );
-                } );
+            return new ProcedureVisitor(
+                    typeUtils,
+                    elementUtils,
+                    processingEnvironment.getOptions().containsKey(IGNORE_CONTEXT_WARNINGS_OPTION));
+        });
     }
 }

@@ -36,6 +36,7 @@ trait PlanNameMatcher extends Matcher[InternalPlanDescription] {
  * Match the name exactly
  */
 case class PlanExactNameMatcher(expectedName: String) extends PlanNameMatcher {
+
   override def apply(plan: InternalPlanDescription): MatchResult = {
     MatchResult(
       matches = plan.name == expectedName,

@@ -20,7 +20,6 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.util.Objects;
-
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 
@@ -37,21 +36,27 @@ import org.neo4j.io.pagecache.PageCursor;
  * {@link #read(PageCursor) read} tree state to and from a {@link PageCursor}, although doesn't care where
  * in the store that is.
  */
-class TreeState
-{
+class TreeState {
     /**
      * Size of one set of tree-state fields.
      */
-    private static final int TREE_STATE_FIELDS_SIZE =
-            Integer.BYTES * 2 + // stable/unstable gen
-            Long.BYTES +        // rootId
-            Long.BYTES +        // rootGeneration
-            Long.BYTES +        // lastId
-            Long.BYTES +        // freeListWritePageId
-            Long.BYTES +        // freeListReadPageId
-            Long.BYTES +        // freeListWritePos
-            Long.BYTES +        // freeListReadPos
-            Byte.BYTES;         // clean
+    private static final int TREE_STATE_FIELDS_SIZE = Integer.BYTES * 2
+            + // stable/unstable gen
+            Long.BYTES
+            + // rootId
+            Long.BYTES
+            + // rootGeneration
+            Long.BYTES
+            + // lastId
+            Long.BYTES
+            + // freeListWritePageId
+            Long.BYTES
+            + // freeListReadPageId
+            Long.BYTES
+            + // freeListWritePos
+            Long.BYTES
+            + // freeListReadPos
+            Byte.BYTES; // clean
 
     /**
      * Size of a tree-state altogether, which consists of two sets of tree-state fields.
@@ -124,10 +129,19 @@ class TreeState
      */
     private final boolean clean;
 
-    TreeState( long pageId, long stableGeneration, long unstableGeneration, long rootId, long rootGeneration,
-            long lastId, long freeListWritePageId, long freeListReadPageId, int freeListWritePos, int freeListReadPos,
-            boolean clean, boolean valid )
-    {
+    TreeState(
+            long pageId,
+            long stableGeneration,
+            long unstableGeneration,
+            long rootId,
+            long rootGeneration,
+            long lastId,
+            long freeListWritePageId,
+            long freeListReadPageId,
+            int freeListWritePos,
+            int freeListReadPos,
+            boolean clean,
+            boolean valid) {
         this.pageId = pageId;
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
@@ -142,58 +156,47 @@ class TreeState
         this.valid = valid;
     }
 
-    long pageId()
-    {
+    long pageId() {
         return pageId;
     }
 
-    long stableGeneration()
-    {
+    long stableGeneration() {
         return stableGeneration;
     }
 
-    long unstableGeneration()
-    {
+    long unstableGeneration() {
         return unstableGeneration;
     }
 
-    long rootId()
-    {
+    long rootId() {
         return rootId;
     }
 
-    long rootGeneration()
-    {
+    long rootGeneration() {
         return rootGeneration;
     }
 
-    long lastId()
-    {
+    long lastId() {
         return lastId;
     }
 
-    long freeListWritePageId()
-    {
+    long freeListWritePageId() {
         return freeListWritePageId;
     }
 
-    long freeListReadPageId()
-    {
+    long freeListReadPageId() {
         return freeListReadPageId;
     }
 
-    int freeListWritePos()
-    {
+    int freeListWritePos() {
         return freeListWritePos;
     }
 
-    int freeListReadPos()
-    {
+    int freeListReadPos() {
         return freeListReadPos;
     }
 
-    boolean isValid()
-    {
+    boolean isValid() {
         return valid;
     }
 
@@ -213,17 +216,45 @@ class TreeState
      * @param freeListReadPos offset into free-list read page id to read released ids from.
      * @param clean is tree clean or dirty
      */
-    static void write( PageCursor cursor, long stableGeneration, long unstableGeneration, long rootId,
-            long rootGeneration, long lastId, long freeListWritePageId, long freeListReadPageId, int freeListWritePos,
-            int freeListReadPos, boolean clean )
-    {
-        GenerationSafePointer.assertGenerationOnWrite( stableGeneration );
-        GenerationSafePointer.assertGenerationOnWrite( unstableGeneration );
+    static void write(
+            PageCursor cursor,
+            long stableGeneration,
+            long unstableGeneration,
+            long rootId,
+            long rootGeneration,
+            long lastId,
+            long freeListWritePageId,
+            long freeListReadPageId,
+            int freeListWritePos,
+            int freeListReadPos,
+            boolean clean) {
+        GenerationSafePointer.assertGenerationOnWrite(stableGeneration);
+        GenerationSafePointer.assertGenerationOnWrite(unstableGeneration);
 
-        writeStateOnce( cursor, stableGeneration, unstableGeneration, rootId, rootGeneration, lastId,
-                freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos, clean ); // Write state
-        writeStateOnce( cursor, stableGeneration, unstableGeneration, rootId, rootGeneration, lastId,
-                freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos, clean ); // Write checksum
+        writeStateOnce(
+                cursor,
+                stableGeneration,
+                unstableGeneration,
+                rootId,
+                rootGeneration,
+                lastId,
+                freeListWritePageId,
+                freeListReadPageId,
+                freeListWritePos,
+                freeListReadPos,
+                clean); // Write state
+        writeStateOnce(
+                cursor,
+                stableGeneration,
+                unstableGeneration,
+                rootId,
+                rootGeneration,
+                lastId,
+                freeListWritePageId,
+                freeListReadPageId,
+                freeListWritePos,
+                freeListReadPos,
+                clean); // Write checksum
     }
 
     /**
@@ -233,33 +264,35 @@ class TreeState
      * @param cursor {@link PageCursor} to read tree state from, at its current offset.
      * @return {@link TreeState} instance containing read tree state.
      */
-    static TreeState read( PageCursor cursor )
-    {
-        TreeState state = readStateOnce( cursor );
-        TreeState checksumState = readStateOnce( cursor );
+    static TreeState read(PageCursor cursor) {
+        TreeState state = readStateOnce(cursor);
+        TreeState checksumState = readStateOnce(cursor);
 
-        boolean valid = state.equals( checksumState );
+        boolean valid = state.equals(checksumState);
 
         boolean isEmpty = state.isEmpty();
         valid &= !isEmpty;
 
-        return state.setValid( valid );
+        return state.setValid(valid);
     }
 
-    private TreeState setValid( boolean valid )
-    {
+    private TreeState setValid(boolean valid) {
         this.valid = valid;
         return this;
     }
 
-    boolean isEmpty()
-    {
-        return stableGeneration == 0L && unstableGeneration == 0L && rootId == 0L && lastId == 0L &&
-                freeListWritePageId == 0L && freeListReadPageId == 0L && freeListWritePos == 0 && freeListReadPos == 0;
+    boolean isEmpty() {
+        return stableGeneration == 0L
+                && unstableGeneration == 0L
+                && rootId == 0L
+                && lastId == 0L
+                && freeListWritePageId == 0L
+                && freeListReadPageId == 0L
+                && freeListWritePos == 0
+                && freeListReadPos == 0;
     }
 
-    private static TreeState readStateOnce( PageCursor cursor )
-    {
+    private static TreeState readStateOnce(PageCursor cursor) {
         long pageId = cursor.getCurrentPageId();
         long stableGeneration = cursor.getInt() & GenerationSafePointer.GENERATION_MASK;
         long unstableGeneration = cursor.getInt() & GenerationSafePointer.GENERATION_MASK;
@@ -271,65 +304,106 @@ class TreeState
         int freeListWritePos = cursor.getInt();
         int freeListReadPos = cursor.getInt();
         boolean clean = cursor.getByte() == CLEAN_BYTE;
-        return new TreeState( pageId, stableGeneration, unstableGeneration, rootId, rootGeneration, lastId,
-                freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos, clean, true );
+        return new TreeState(
+                pageId,
+                stableGeneration,
+                unstableGeneration,
+                rootId,
+                rootGeneration,
+                lastId,
+                freeListWritePageId,
+                freeListReadPageId,
+                freeListWritePos,
+                freeListReadPos,
+                clean,
+                true);
     }
 
-    private static void writeStateOnce( PageCursor cursor, long stableGeneration, long unstableGeneration, long rootId,
-            long rootGeneration, long lastId, long freeListWritePageId, long freeListReadPageId, int freeListWritePos,
-            int freeListReadPos, boolean clean )
-    {
-        cursor.putInt( (int) stableGeneration );
-        cursor.putInt( (int) unstableGeneration );
-        cursor.putLong( rootId );
-        cursor.putLong( rootGeneration );
-        cursor.putLong( lastId );
-        cursor.putLong( freeListWritePageId );
-        cursor.putLong( freeListReadPageId );
-        cursor.putInt( freeListWritePos );
-        cursor.putInt( freeListReadPos );
-        cursor.putByte( clean ? CLEAN_BYTE : DIRTY_BYTE );
+    private static void writeStateOnce(
+            PageCursor cursor,
+            long stableGeneration,
+            long unstableGeneration,
+            long rootId,
+            long rootGeneration,
+            long lastId,
+            long freeListWritePageId,
+            long freeListReadPageId,
+            int freeListWritePos,
+            int freeListReadPos,
+            boolean clean) {
+        cursor.putInt((int) stableGeneration);
+        cursor.putInt((int) unstableGeneration);
+        cursor.putLong(rootId);
+        cursor.putLong(rootGeneration);
+        cursor.putLong(lastId);
+        cursor.putLong(freeListWritePageId);
+        cursor.putLong(freeListReadPageId);
+        cursor.putInt(freeListWritePos);
+        cursor.putInt(freeListReadPos);
+        cursor.putByte(clean ? CLEAN_BYTE : DIRTY_BYTE);
     }
 
     @Override
-    public String toString()
-    {
-        return String.format( "pageId=%d, stableGeneration=%d, unstableGeneration=%d, rootId=%d, rootGeneration=%d, " +
-                "lastId=%d, freeListWritePageId=%d, freeListReadPageId=%d, freeListWritePos=%d, freeListReadPos=%d, " +
-                "clean=%b, valid=%b",
-                pageId, stableGeneration, unstableGeneration, rootId, rootGeneration, lastId,
-                freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos, clean, valid );
+    public String toString() {
+        return String.format(
+                "pageId=%d, stableGeneration=%d, unstableGeneration=%d, rootId=%d, rootGeneration=%d, "
+                        + "lastId=%d, freeListWritePageId=%d, freeListReadPageId=%d, freeListWritePos=%d, freeListReadPos=%d, "
+                        + "clean=%b, valid=%b",
+                pageId,
+                stableGeneration,
+                unstableGeneration,
+                rootId,
+                rootGeneration,
+                lastId,
+                freeListWritePageId,
+                freeListReadPageId,
+                freeListWritePos,
+                freeListReadPos,
+                clean,
+                valid);
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         TreeState treeState = (TreeState) o;
-        return pageId == treeState.pageId && stableGeneration == treeState.stableGeneration &&
-                unstableGeneration == treeState.unstableGeneration && rootId == treeState.rootId &&
-                rootGeneration == treeState.rootGeneration && lastId == treeState.lastId &&
-                freeListWritePageId == treeState.freeListWritePageId &&
-                freeListReadPageId == treeState.freeListReadPageId && freeListWritePos == treeState.freeListWritePos &&
-                freeListReadPos == treeState.freeListReadPos && clean == treeState.clean && valid == treeState.valid;
+        return pageId == treeState.pageId
+                && stableGeneration == treeState.stableGeneration
+                && unstableGeneration == treeState.unstableGeneration
+                && rootId == treeState.rootId
+                && rootGeneration == treeState.rootGeneration
+                && lastId == treeState.lastId
+                && freeListWritePageId == treeState.freeListWritePageId
+                && freeListReadPageId == treeState.freeListReadPageId
+                && freeListWritePos == treeState.freeListWritePos
+                && freeListReadPos == treeState.freeListReadPos
+                && clean == treeState.clean
+                && valid == treeState.valid;
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( pageId, stableGeneration, unstableGeneration, rootId, rootGeneration, lastId,
-                freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos, clean, valid );
+    public int hashCode() {
+        return Objects.hash(
+                pageId,
+                stableGeneration,
+                unstableGeneration,
+                rootId,
+                rootGeneration,
+                lastId,
+                freeListWritePageId,
+                freeListReadPageId,
+                freeListWritePos,
+                freeListReadPos,
+                clean,
+                valid);
     }
 
-    public boolean isClean()
-    {
+    public boolean isClean() {
         return this.clean;
     }
 }

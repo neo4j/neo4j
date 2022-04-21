@@ -53,14 +53,21 @@ import org.neo4j.values.storable.Values
 import java.util.UUID
 
 class ProcedureCallPipeTest
-  extends CypherFunSuite
-  with PipeTestSupport
-  with ImplicitDummyPos {
+    extends CypherFunSuite
+    with PipeTestSupport
+    with ImplicitDummyPos {
 
   private val ID = 42
   private val procedureName: QualifiedName = QualifiedName(List.empty, "foo")
-  private val signature: ProcedureSignature = ProcedureSignature(procedureName, IndexedSeq.empty, Some(IndexedSeq(FieldSignature("foo", CTAny))),
-    None, ProcedureReadOnlyAccess, id = ID)
+
+  private val signature: ProcedureSignature = ProcedureSignature(
+    procedureName,
+    IndexedSeq.empty,
+    Some(IndexedSeq(FieldSignature("foo", CTAny))),
+    None,
+    ProcedureReadOnlyAccess,
+    id = ID
+  )
 
   test("should execute read-only procedure calls") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
@@ -79,9 +86,9 @@ class ProcedureCallPipeTest
     val qtx = fakeQueryContext(ID, resultsTransformer, ProcedureReadOnlyAccess)
 
     pipe.createResults(QueryStateHelper.emptyWith(query = qtx)).toList should equal(List(
-      CypherRow.from("a" ->1, "r" -> "take 1/1"),
-      CypherRow.from("a" ->2, "r" -> "take 1/2"),
-      CypherRow.from("a" ->2, "r" -> "take 2/2")
+      CypherRow.from("a" -> 1, "r" -> "take 1/1"),
+      CypherRow.from("a" -> 2, "r" -> "take 1/2"),
+      CypherRow.from("a" -> 2, "r" -> "take 2/2")
     ))
   }
 
@@ -134,11 +141,13 @@ class ProcedureCallPipeTest
       Array[AnyValue](Values.stringValue(s"take $i/$count"))
     }
 
-    }.toIterator
+  }.toIterator
 
-  private def fakeQueryContext(id: Int,
-                               result: Seq[AnyValue] => Iterator[Array[AnyValue]],
-                               expectedAccessMode: ProcedureAccessMode): QueryContext = {
+  private def fakeQueryContext(
+    id: Int,
+    result: Seq[AnyValue] => Iterator[Array[AnyValue]],
+    expectedAccessMode: ProcedureAccessMode
+  ): QueryContext = {
 
     def doIt(id: Int, args: Array[AnyValue]): Iterator[Array[AnyValue]] = {
       id should equal(ID)
@@ -152,7 +161,9 @@ class ProcedureCallPipeTest
     Mockito.when(transactionalContext.databaseId).thenReturn(databaseID)
 
     val queryContext = mock[QueryContext]
-    Mockito.when(queryContext.callReadOnlyProcedure(any[Int](), any[Array[AnyValue]](), any[ProcedureCallContext])).thenAnswer(
+    Mockito.when(
+      queryContext.callReadOnlyProcedure(any[Int](), any[Array[AnyValue]](), any[ProcedureCallContext])
+    ).thenAnswer(
       new Answer[Iterator[Array[AnyValue]]] {
         override def answer(invocationOnMock: InvocationOnMock): Iterator[Array[AnyValue]] = {
           expectedAccessMode should equal(ProcedureReadOnlyAccess)
@@ -161,7 +172,9 @@ class ProcedureCallPipeTest
       }
     )
 
-    Mockito.when(queryContext.callReadWriteProcedure(any[Int](), any[Array[AnyValue]](), any[ProcedureCallContext])).thenAnswer(
+    Mockito.when(
+      queryContext.callReadWriteProcedure(any[Int](), any[Array[AnyValue]](), any[ProcedureCallContext])
+    ).thenAnswer(
       new Answer[Iterator[Array[AnyValue]]] {
         override def answer(invocationOnMock: InvocationOnMock): Iterator[Array[AnyValue]] = {
           expectedAccessMode should equal(ProcedureReadWriteAccess)
@@ -175,9 +188,9 @@ class ProcedureCallPipeTest
       new Answer[AnyRef] {
         override def answer(invocationOnMock: InvocationOnMock): AnyRef =
           invocationOnMock.getArgument[AnyValue](0) match {
-            case i: IntValue => Int.box(i.value())
+            case i: IntValue  => Int.box(i.value())
             case l: LongValue => Long.box(l.value())
-            case _ => throw new IllegalStateException()
+            case _            => throw new IllegalStateException()
           }
       }
     )

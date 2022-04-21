@@ -19,14 +19,25 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+import static org.neo4j.logging.LogAssertions.assertThat;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
+import java.io.IOException;
+import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.util.List;
-
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
@@ -53,34 +64,24 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-import static org.neo4j.logging.LogAssertions.assertThat;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
-abstract class IndexProviderTests
-{
+abstract class IndexProviderTests {
     static final int indexId = 1;
     static final int labelId = 1;
     static final int propId = 1;
 
     @Inject
     private PageCache pageCache;
+
     private CursorContextFactory contextFactory;
+
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private FileSystemAbstraction fs;
+
     @Inject
     private DatabaseLayout databaseLayout;
 
@@ -90,32 +91,33 @@ abstract class IndexProviderTests
     final TokenNameLookup tokenNameLookup = SchemaTestUtil.SIMPLE_NAME_LOOKUP;
     IndexProvider provider;
 
-    IndexProviderTests( ProviderFactory factory )
-    {
+    IndexProviderTests(ProviderFactory factory) {
         this.factory = factory;
         this.logging = new AssertableLogProvider();
         this.monitors = new Monitors();
-        this.monitors.addMonitorListener( new LoggingMonitor( logging.getLog( "test" ) ) );
+        this.monitors.addMonitorListener(new LoggingMonitor(logging.getLog("test")));
     }
 
     @BeforeEach
-    void setup() throws IOException
-    {
-        contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
-        setupIndexFolders( fs );
+    void setup() throws IOException {
+        contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        setupIndexFolders(fs);
     }
 
-    abstract void setupIndexFolders( FileSystemAbstraction fs ) throws IOException;
+    abstract void setupIndexFolders(FileSystemAbstraction fs) throws IOException;
+
     abstract IndexDescriptor descriptor();
+
     abstract IndexDescriptor otherDescriptor();
+
     abstract IndexPrototype validPrototype();
+
     abstract List<IndexPrototype> invalidPrototypes();
 
     /* validatePrototype */
 
     @Test
-    void validatePrototypeMustAcceptValidPrototype()
-    {
+    void validatePrototypeMustAcceptValidPrototype() {
         // given
         provider = newProvider();
 
@@ -123,12 +125,11 @@ abstract class IndexProviderTests
         IndexPrototype validPrototype = validPrototype();
 
         // then
-        assertDoesNotThrow( () -> provider.validatePrototype( validPrototype ) );
+        assertDoesNotThrow(() -> provider.validatePrototype(validPrototype));
     }
 
     @Test
-    void validatePrototypeMustThrowOnInvalidPrototype()
-    {
+    void validatePrototypeMustThrowOnInvalidPrototype() {
         // given
         provider = newProvider();
 
@@ -136,246 +137,300 @@ abstract class IndexProviderTests
         List<IndexPrototype> invalidPrototypes = invalidPrototypes();
 
         // then
-        for ( IndexPrototype invalidPrototype : invalidPrototypes )
-        {
-            assertThrows( IllegalArgumentException.class, () -> provider.validatePrototype( invalidPrototype ) );
+        for (IndexPrototype invalidPrototype : invalidPrototypes) {
+            assertThrows(IllegalArgumentException.class, () -> provider.validatePrototype(invalidPrototype));
         }
     }
 
     /* completeConfiguration */
 
     @Test
-    void mustCompleteIndexDescriptorConfigurationsWithCapabilities()
-    {
+    void mustCompleteIndexDescriptorConfigurationsWithCapabilities() {
         // Given
         provider = newProvider();
-        IndexDescriptor incompleteDescriptor = validPrototype().materialise( 1 );
+        IndexDescriptor incompleteDescriptor = validPrototype().materialise(1);
 
         // When
-        IndexDescriptor completedDescriptor = provider.completeConfiguration( incompleteDescriptor );
+        IndexDescriptor completedDescriptor = provider.completeConfiguration(incompleteDescriptor);
 
         // Then
-        assertThat( completedDescriptor.getCapability() ).isNotEqualTo( IndexCapability.NO_CAPABILITY );
+        assertThat(completedDescriptor.getCapability()).isNotEqualTo(IndexCapability.NO_CAPABILITY);
     }
 
     /* getPopulator */
 
     @Test
-    void getPopulatorMustThrowIfInReadOnlyMode()
-    {
+    void getPopulatorMustThrowIfInReadOnlyMode() {
         // given
         provider = newReadOnlyProvider();
 
-        assertThrows( UnsupportedOperationException.class, () -> provider.getPopulator( descriptor(), samplingConfig(),
-                                                                                        heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup,
-                                                                                        Sets.immutable.empty() ) );
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> provider.getPopulator(
+                        descriptor(),
+                        samplingConfig(),
+                        heapBufferFactory(1024),
+                        INSTANCE,
+                        tokenNameLookup,
+                        Sets.immutable.empty()));
     }
 
     /* getPopulationFailure */
 
     @Test
-    void getPopulationFailureReturnEmptyStringIfNoFailure() throws IOException
-    {
+    void getPopulationFailureReturnEmptyStringIfNoFailure() throws IOException {
         // given
         provider = newProvider();
-        IndexPopulator populator =
-                provider.getPopulator( descriptor(), samplingConfig(), heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, Sets.immutable.empty() );
+        IndexPopulator populator = provider.getPopulator(
+                descriptor(),
+                samplingConfig(),
+                heapBufferFactory(1024),
+                INSTANCE,
+                tokenNameLookup,
+                Sets.immutable.empty());
         populator.create();
-        populator.close( true, NULL_CONTEXT );
+        populator.close(true, NULL_CONTEXT);
 
         // when
         // ... no failure on populator
 
-        assertEquals( StringUtils.EMPTY, provider.getPopulationFailure( descriptor(), NULL_CONTEXT, Sets.immutable.empty() ) );
+        assertEquals(
+                StringUtils.EMPTY, provider.getPopulationFailure(descriptor(), NULL_CONTEXT, Sets.immutable.empty()));
     }
 
     @Test
-    void getPopulationFailureReturnEmptyStringIfFailureOnOtherIndex() throws IOException
-    {
+    void getPopulationFailureReturnEmptyStringIfFailureOnOtherIndex() throws IOException {
         // given
         provider = newProvider();
 
-        IndexPopulator nonFailedPopulator = provider.getPopulator( descriptor(), samplingConfig(),
-                                                                   heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, Sets.immutable.empty() );
+        IndexPopulator nonFailedPopulator = provider.getPopulator(
+                descriptor(),
+                samplingConfig(),
+                heapBufferFactory(1024),
+                INSTANCE,
+                tokenNameLookup,
+                Sets.immutable.empty());
         nonFailedPopulator.create();
-        nonFailedPopulator.close( true, NULL_CONTEXT );
+        nonFailedPopulator.close(true, NULL_CONTEXT);
 
-        IndexPopulator failedPopulator = provider.getPopulator( otherDescriptor(), samplingConfig(),
-                                                                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, Sets.immutable.empty() );
+        IndexPopulator failedPopulator = provider.getPopulator(
+                otherDescriptor(),
+                samplingConfig(),
+                heapBufferFactory(1024),
+                INSTANCE,
+                tokenNameLookup,
+                Sets.immutable.empty());
         failedPopulator.create();
 
         // when
-        failedPopulator.markAsFailed( "failure" );
-        failedPopulator.close( false, NULL_CONTEXT );
+        failedPopulator.markAsFailed("failure");
+        failedPopulator.close(false, NULL_CONTEXT);
 
-        var populationFailure = provider.getPopulationFailure( descriptor(), NULL_CONTEXT, Sets.immutable.empty() );
-        assertEquals( StringUtils.EMPTY, populationFailure );
+        var populationFailure = provider.getPopulationFailure(descriptor(), NULL_CONTEXT, Sets.immutable.empty());
+        assertEquals(StringUtils.EMPTY, populationFailure);
     }
 
     @Test
-    void getPopulationFailureMustReturnReportedFailure() throws IOException
-    {
+    void getPopulationFailureMustReturnReportedFailure() throws IOException {
         // given
         provider = newProvider();
-        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(),
-                                                          heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, Sets.immutable.empty() );
+        IndexPopulator populator = provider.getPopulator(
+                descriptor(),
+                samplingConfig(),
+                heapBufferFactory(1024),
+                INSTANCE,
+                tokenNameLookup,
+                Sets.immutable.empty());
         populator.create();
 
         // when
         String failureMessage = "fail";
-        populator.markAsFailed( failureMessage );
-        populator.close( false, NULL_CONTEXT );
+        populator.markAsFailed(failureMessage);
+        populator.close(false, NULL_CONTEXT);
 
         // then
-        String populationFailure = provider.getPopulationFailure( descriptor(), NULL_CONTEXT, Sets.immutable.empty() );
-        assertThat( populationFailure ).isEqualTo( failureMessage );
+        String populationFailure = provider.getPopulationFailure(descriptor(), NULL_CONTEXT, Sets.immutable.empty());
+        assertThat(populationFailure).isEqualTo(failureMessage);
     }
 
     @Test
-    void getPopulationFailureMustReturnReportedFailuresForDifferentIndexIds() throws IOException
-    {
+    void getPopulationFailureMustReturnReportedFailuresForDifferentIndexIds() throws IOException {
         // given
         provider = newProvider();
-        IndexPopulator firstPopulator = provider.getPopulator( descriptor(), samplingConfig(),
-                                                               heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, Sets.immutable.empty() );
+        IndexPopulator firstPopulator = provider.getPopulator(
+                descriptor(),
+                samplingConfig(),
+                heapBufferFactory(1024),
+                INSTANCE,
+                tokenNameLookup,
+                Sets.immutable.empty());
         firstPopulator.create();
-        IndexPopulator secondPopulator = provider.getPopulator( otherDescriptor(), samplingConfig(),
-                                                                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, Sets.immutable.empty() );
+        IndexPopulator secondPopulator = provider.getPopulator(
+                otherDescriptor(),
+                samplingConfig(),
+                heapBufferFactory(1024),
+                INSTANCE,
+                tokenNameLookup,
+                Sets.immutable.empty());
         secondPopulator.create();
 
         // when
         String firstFailure = "first failure";
-        firstPopulator.markAsFailed( firstFailure );
-        firstPopulator.close( false, NULL_CONTEXT );
+        firstPopulator.markAsFailed(firstFailure);
+        firstPopulator.close(false, NULL_CONTEXT);
         String secondFailure = "second failure";
-        secondPopulator.markAsFailed( secondFailure );
-        secondPopulator.close( false, NULL_CONTEXT );
+        secondPopulator.markAsFailed(secondFailure);
+        secondPopulator.close(false, NULL_CONTEXT);
 
         // then
-        assertThat( provider.getPopulationFailure( descriptor(), NULL_CONTEXT, Sets.immutable.empty() ) ).isEqualTo( firstFailure );
-        assertThat( provider.getPopulationFailure( otherDescriptor(), NULL_CONTEXT, Sets.immutable.empty() ) ).isEqualTo( secondFailure );
+        assertThat(provider.getPopulationFailure(descriptor(), NULL_CONTEXT, Sets.immutable.empty()))
+                .isEqualTo(firstFailure);
+        assertThat(provider.getPopulationFailure(otherDescriptor(), NULL_CONTEXT, Sets.immutable.empty()))
+                .isEqualTo(secondFailure);
     }
 
     @Test
-    void getPopulationFailureMustPersistReportedFailure() throws IOException
-    {
+    void getPopulationFailureMustPersistReportedFailure() throws IOException {
         // given
         provider = newProvider();
-        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(),
-                                                          heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, Sets.immutable.empty() );
+        IndexPopulator populator = provider.getPopulator(
+                descriptor(),
+                samplingConfig(),
+                heapBufferFactory(1024),
+                INSTANCE,
+                tokenNameLookup,
+                Sets.immutable.empty());
         populator.create();
 
         // when
         String failureMessage = "fail";
-        populator.markAsFailed( failureMessage );
-        populator.close( false, NULL_CONTEXT );
+        populator.markAsFailed(failureMessage);
+        populator.close(false, NULL_CONTEXT);
 
         // then
         provider = newProvider();
-        String populationFailure = provider.getPopulationFailure( descriptor(), NULL_CONTEXT, Sets.immutable.empty() );
-        assertThat( populationFailure ).isEqualTo( failureMessage );
+        String populationFailure = provider.getPopulationFailure(descriptor(), NULL_CONTEXT, Sets.immutable.empty());
+        assertThat(populationFailure).isEqualTo(failureMessage);
     }
 
     /* getInitialState */
     // pattern: open populator, markAsFailed, close populator, getInitialState, getPopulationFailure
 
     @Test
-    void shouldReportCorrectInitialStateIfIndexDoesntExist()
-    {
+    void shouldReportCorrectInitialStateIfIndexDoesntExist() {
         // given
         provider = newProvider();
 
         // when
-        InternalIndexState state = provider.getInitialState( descriptor(), NULL_CONTEXT, Sets.immutable.empty() );
+        InternalIndexState state = provider.getInitialState(descriptor(), NULL_CONTEXT, Sets.immutable.empty());
 
         // then
-        assertEquals( InternalIndexState.POPULATING, state );
-        assertThat( logging ).containsMessages( "Failed to open index" );
+        assertEquals(InternalIndexState.POPULATING, state);
+        assertThat(logging).containsMessages("Failed to open index");
     }
 
     @Test
-    void shouldReportInitialStateAsPopulatingIfPopulationStartedButIncomplete() throws IOException
-    {
+    void shouldReportInitialStateAsPopulatingIfPopulationStartedButIncomplete() throws IOException {
         // given
         provider = newProvider();
-        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(),
-                                                          heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, Sets.immutable.empty() );
+        IndexPopulator populator = provider.getPopulator(
+                descriptor(),
+                samplingConfig(),
+                heapBufferFactory(1024),
+                INSTANCE,
+                tokenNameLookup,
+                Sets.immutable.empty());
         populator.create();
 
         // when
-        InternalIndexState state = provider.getInitialState( descriptor(), NULL_CONTEXT, Sets.immutable.empty() );
+        InternalIndexState state = provider.getInitialState(descriptor(), NULL_CONTEXT, Sets.immutable.empty());
 
         // then
-        assertEquals( InternalIndexState.POPULATING, state );
-        populator.close( true, NULL_CONTEXT );
+        assertEquals(InternalIndexState.POPULATING, state);
+        populator.close(true, NULL_CONTEXT);
     }
 
     @Test
-    void shouldReportInitialStateAsFailedIfMarkedAsFailed() throws IOException
-    {
+    void shouldReportInitialStateAsFailedIfMarkedAsFailed() throws IOException {
         // given
         provider = newProvider();
-        IndexPopulator populator =
-                provider.getPopulator( descriptor(), samplingConfig(), heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, Sets.immutable.empty() );
+        IndexPopulator populator = provider.getPopulator(
+                descriptor(),
+                samplingConfig(),
+                heapBufferFactory(1024),
+                INSTANCE,
+                tokenNameLookup,
+                Sets.immutable.empty());
         populator.create();
-        populator.markAsFailed( "Just some failure" );
-        populator.close( false, NULL_CONTEXT );
+        populator.markAsFailed("Just some failure");
+        populator.close(false, NULL_CONTEXT);
 
         // when
-        InternalIndexState state = provider.getInitialState( descriptor(), NULL_CONTEXT, Sets.immutable.empty() );
+        InternalIndexState state = provider.getInitialState(descriptor(), NULL_CONTEXT, Sets.immutable.empty());
 
         // then
-        assertEquals( InternalIndexState.FAILED, state );
+        assertEquals(InternalIndexState.FAILED, state);
     }
 
     @Test
-    void shouldReportInitialStateAsOnlineIfPopulationCompletedSuccessfully() throws IOException
-    {
+    void shouldReportInitialStateAsOnlineIfPopulationCompletedSuccessfully() throws IOException {
         // given
         provider = newProvider();
-        IndexPopulator populator =
-                provider.getPopulator( descriptor(), samplingConfig(), heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, Sets.immutable.empty() );
+        IndexPopulator populator = provider.getPopulator(
+                descriptor(),
+                samplingConfig(),
+                heapBufferFactory(1024),
+                INSTANCE,
+                tokenNameLookup,
+                Sets.immutable.empty());
         populator.create();
-        populator.close( true, NULL_CONTEXT );
+        populator.close(true, NULL_CONTEXT);
 
         // when
-        InternalIndexState state = provider.getInitialState( descriptor(), NULL_CONTEXT, Sets.immutable.empty() );
+        InternalIndexState state = provider.getInitialState(descriptor(), NULL_CONTEXT, Sets.immutable.empty());
 
         // then
-        assertEquals( InternalIndexState.ONLINE, state );
+        assertEquals(InternalIndexState.ONLINE, state);
     }
 
-    private IndexProvider newProvider( DatabaseReadOnlyChecker readOnlyChecker )
-    {
-        return factory.create( pageCache, fs, directoriesByProvider( testDirectory.absolutePath() ), monitors, immediate(), readOnlyChecker, databaseLayout,
-                contextFactory );
+    private IndexProvider newProvider(DatabaseReadOnlyChecker readOnlyChecker) {
+        return factory.create(
+                pageCache,
+                fs,
+                directoriesByProvider(testDirectory.absolutePath()),
+                monitors,
+                immediate(),
+                readOnlyChecker,
+                databaseLayout,
+                contextFactory);
     }
 
-    IndexProvider newProvider()
-    {
-        return newProvider( writable() );
+    IndexProvider newProvider() {
+        return newProvider(writable());
     }
 
-    private IndexProvider newReadOnlyProvider()
-    {
-        return newProvider( readOnly() );
+    private IndexProvider newReadOnlyProvider() {
+        return newProvider(readOnly());
     }
 
-    static IndexSamplingConfig samplingConfig()
-    {
-        return new IndexSamplingConfig( Config.defaults() );
+    static IndexSamplingConfig samplingConfig() {
+        return new IndexSamplingConfig(Config.defaults());
     }
 
-    IndexDescriptor completeConfiguration( IndexDescriptor indexDescriptor )
-    {
-        return provider.completeConfiguration( indexDescriptor );
+    IndexDescriptor completeConfiguration(IndexDescriptor indexDescriptor) {
+        return provider.completeConfiguration(indexDescriptor);
     }
 
     @FunctionalInterface
-    interface ProviderFactory
-    {
-        IndexProvider create( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
-                Monitors monitors, RecoveryCleanupWorkCollector collector, DatabaseReadOnlyChecker readOnlyChecker, DatabaseLayout databaseLayout,
-                CursorContextFactory contextFactory );
+    interface ProviderFactory {
+        IndexProvider create(
+                PageCache pageCache,
+                FileSystemAbstraction fs,
+                IndexDirectoryStructure.Factory dir,
+                Monitors monitors,
+                RecoveryCleanupWorkCollector collector,
+                DatabaseReadOnlyChecker readOnlyChecker,
+                DatabaseLayout databaseLayout,
+                CursorContextFactory contextFactory);
     }
 }

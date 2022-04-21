@@ -63,36 +63,52 @@ case object rewriteShowQuery extends Rewriter with Step with PreparatoryRewritin
   override def apply(v: AnyRef): AnyRef = instance(v)
 
   private val instance = bottomUp(Rewriter.lift {
-    case s@SingleQuery(clauses) => s.copy(clauses = rewriteClauses(clauses.toList, List()))(s.position)
+    case s @ SingleQuery(clauses) => s.copy(clauses = rewriteClauses(clauses.toList, List()))(s.position)
   })
 
   @tailrec
   private def rewriteClauses(clauses: List[Clause], rewrittenClause: List[Clause]): List[Clause] = clauses match {
     // Just a single command clause (with or without WHERE)
-    case (commandClause: CommandClause) :: Nil => rewrittenClause ++ rewriteWithYieldAndReturn(commandClause, commandClause.where)
+    case (commandClause: CommandClause) :: Nil =>
+      rewrittenClause ++ rewriteWithYieldAndReturn(commandClause, commandClause.where)
     // Command clause with only a YIELD
     case (commandClause: CommandClause) :: (yieldClause: Yield) :: Nil =>
-      rewrittenClause :+ commandClause :+ yieldClause :+ returnClause(lastPosition(yieldClause), getDefaultOrderFromYieldOrCommand(yieldClause, commandClause))
+      rewrittenClause :+ commandClause :+ yieldClause :+ returnClause(
+        lastPosition(yieldClause),
+        getDefaultOrderFromYieldOrCommand(yieldClause, commandClause)
+      )
     // Command clause with YIELD and RETURN * (to fix column order)
-    case (commandClause: CommandClause) :: (yieldClause: Yield) :: (returnClause: Return) :: Nil if returnClause.returnItems.includeExisting =>
-      rewrittenClause :+ commandClause :+ yieldClause :+ updateDefaultOrderOnReturn(returnClause, yieldClause, commandClause)
+    case (commandClause: CommandClause) :: (yieldClause: Yield) :: (returnClause: Return) :: Nil
+      if returnClause.returnItems.includeExisting =>
+      rewrittenClause :+ commandClause :+ yieldClause :+ updateDefaultOrderOnReturn(
+        returnClause,
+        yieldClause,
+        commandClause
+      )
     case c :: cs => rewriteClauses(cs, rewrittenClause :+ c)
-    case Nil => rewrittenClause
+    case Nil     => rewrittenClause
   }
 
   private def getDefaultOrderFromYieldOrCommand(yieldClause: Yield, commandClause: CommandClause) =
-    if (yieldClause.returnItems.includeExisting) yieldClause.returnItems.defaultOrderOnColumns.getOrElse(commandClause.unfilteredColumns.columns.map(_.name))
+    if (yieldClause.returnItems.includeExisting)
+      yieldClause.returnItems.defaultOrderOnColumns.getOrElse(commandClause.unfilteredColumns.columns.map(_.name))
     else yieldClause.returnItems.items.map(_.name).toList
 
   private def updateDefaultOrderOnReturn(returnClause: Return, yieldClause: Yield, commandClause: CommandClause) = {
-    val defaultOrderOnColumns = returnClause.returnItems.defaultOrderOnColumns.getOrElse(getDefaultOrderFromYieldOrCommand(yieldClause, commandClause))
+    val defaultOrderOnColumns =
+      returnClause.returnItems.defaultOrderOnColumns.getOrElse(getDefaultOrderFromYieldOrCommand(
+        yieldClause,
+        commandClause
+      ))
     returnClause.withReturnItems(returnClause.returnItems.withDefaultOrderOnColumns(defaultOrderOnColumns))
   }
 
   private def rewriteWithYieldAndReturn(commandClause: CommandClause, where: Option[Where]): List[Clause] = {
     List(
       commandClause.moveWhereToYield,
-      Yield(ReturnItems(includeExisting = true, Seq())(commandClause.position), None, None, None, where)(commandClause.position),
+      Yield(ReturnItems(includeExisting = true, Seq())(commandClause.position), None, None, None, where)(
+        commandClause.position
+      ),
       returnClause(commandClause.position, commandClause.unfilteredColumns.columns.map(_.name))
     )
   }
@@ -106,6 +122,8 @@ case object rewriteShowQuery extends Rewriter with Step with PreparatoryRewritin
     }
   }
 
-  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory,
-                           notificationLogger: InternalNotificationLogger): Rewriter = instance
+  override def getRewriter(
+    cypherExceptionFactory: CypherExceptionFactory,
+    notificationLogger: InternalNotificationLogger
+  ): Rewriter = instance
 }

@@ -21,21 +21,18 @@ package org.neo4j.consistency.checking.cache;
 
 import static java.lang.Math.ceil;
 
-public interface CacheSlots
-{
+public interface CacheSlots {
     int LABELS_SLOT_SIZE = 40;
     int ID_SLOT_SIZE = 40;
     long MAX_ID_SLOT_SIZE = 1L << ID_SLOT_SIZE - 1;
-    long CACHE_LINE_SIZE_BYTES = (long) ceil( (2D * ID_SLOT_SIZE + 3) / Byte.SIZE );
+    long CACHE_LINE_SIZE_BYTES = (long) ceil((2D * ID_SLOT_SIZE + 3) / Byte.SIZE);
 
-    interface NodeLabel
-    {
+    interface NodeLabel {
         int SLOT_LABEL_FIELD = 0;
         int SLOT_IN_USE = 1;
     }
 
-    interface NextRelationship
-    {
+    interface NextRelationship {
         int SLOT_RELATIONSHIP_ID = 0;
         int SLOT_FIRST_IN_SOURCE = 1;
         int SLOT_FIRST_IN_TARGET = 2;
@@ -43,8 +40,7 @@ public interface CacheSlots
         int SLOT_CHECK_MARK = 4;
     }
 
-    interface NodeLink
-    {
+    interface NodeLink {
         int SLOT_RELATIONSHIP_ID = 0;
         int SLOT_LABELS = 1;
         int SLOT_IN_USE = 2;
@@ -56,8 +52,7 @@ public interface CacheSlots
         int SLOT_HAS_LAST_GROUP = 7;
     }
 
-    interface RelationshipLink
-    {
+    interface RelationshipLink {
         int SLOT_RELATIONSHIP_ID = 0;
         int SLOT_REFERENCE = 1;
         int SLOT_SOURCE_OR_TARGET = 2;
@@ -71,8 +66,7 @@ public interface CacheSlots
         long NEXT = -1;
     }
 
-    static long longOf( boolean value )
-    {
+    static long longOf(boolean value) {
         return value ? 1 : 0;
     }
 }

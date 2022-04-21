@@ -26,13 +26,11 @@ import org.neo4j.annotations.api.PublicApi;
  * when there is an error during the execution of a query.
  */
 @PublicApi
-public class QueryExecutionException extends RuntimeException
-{
+public class QueryExecutionException extends RuntimeException {
     private final String statusCode;
 
-    public QueryExecutionException( String message, Throwable cause, String statusCode )
-    {
-        super( message, cause );
+    public QueryExecutionException(String message, Throwable cause, String statusCode) {
+        super(message, cause);
         this.statusCode = statusCode;
     }
 
@@ -41,8 +39,7 @@ public class QueryExecutionException extends RuntimeException
      *
      * @return the Neo4j error status code.
      */
-    public String getStatusCode()
-    {
+    public String getStatusCode() {
         return statusCode;
     }
 }

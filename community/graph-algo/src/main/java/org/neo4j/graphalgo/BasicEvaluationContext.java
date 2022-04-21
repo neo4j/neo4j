@@ -24,26 +24,22 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 
 @PublicApi
-public class BasicEvaluationContext implements EvaluationContext
-{
+public class BasicEvaluationContext implements EvaluationContext {
     private final Transaction transaction;
     private final GraphDatabaseService databaseService;
 
-    public BasicEvaluationContext( Transaction transaction, GraphDatabaseService databaseService )
-    {
+    public BasicEvaluationContext(Transaction transaction, GraphDatabaseService databaseService) {
         this.transaction = transaction;
         this.databaseService = databaseService;
     }
 
     @Override
-    public Transaction transaction()
-    {
+    public Transaction transaction() {
         return transaction;
     }
 
     @Override
-    public GraphDatabaseService databaseService()
-    {
+    public GraphDatabaseService databaseService() {
         return databaseService;
     }
 }

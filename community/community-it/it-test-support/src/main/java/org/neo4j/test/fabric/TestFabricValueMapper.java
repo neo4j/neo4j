@@ -27,30 +27,26 @@ import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
-public class TestFabricValueMapper extends DefaultValueMapper
-{
-    public TestFabricValueMapper()
-    {
-        super( null );
+public class TestFabricValueMapper extends DefaultValueMapper {
+    public TestFabricValueMapper() {
+        super(null);
     }
 
     @Override
-    public Node mapNode( VirtualNodeValue value )
-    {
-        if ( value instanceof NodeEntityWrappingNodeValue )
-        { // this is the back door through which "virtual nodes" slip
+    public Node mapNode(VirtualNodeValue value) {
+        if (value instanceof NodeEntityWrappingNodeValue) { // this is the back door through which "virtual nodes" slip
             return ((NodeEntityWrappingNodeValue) value).getEntity();
         }
-        throw new UnsupportedOperationException( "can't map VirtualNodeValue" );
+        throw new UnsupportedOperationException("can't map VirtualNodeValue");
     }
 
     @Override
-    public Relationship mapRelationship( VirtualRelationshipValue value )
-    {
-        if ( value instanceof RelationshipEntityWrappingValue )
-        { // this is the back door through which "virtual relationships" slip
+    public Relationship mapRelationship(VirtualRelationshipValue value) {
+        if (value
+                instanceof
+                RelationshipEntityWrappingValue) { // this is the back door through which "virtual relationships" slip
             return ((RelationshipEntityWrappingValue) value).getEntity();
         }
-        throw new UnsupportedOperationException( "can't map VirtualRelationshipValue" );
+        throw new UnsupportedOperationException("can't map VirtualRelationshipValue");
     }
 }

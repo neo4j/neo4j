@@ -20,7 +20,6 @@
 package org.neo4j.server.http.cypher.format.input.json;
 
 import com.fasterxml.jackson.core.JsonFactory;
-
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -32,56 +31,55 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.Provider;
-
 import org.neo4j.server.http.cypher.format.DefaultJsonFactory;
 import org.neo4j.server.http.cypher.format.api.InputEventStream;
 import org.neo4j.server.http.cypher.format.api.Statement;
 import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
 
 @Provider
-@Consumes( MediaType.APPLICATION_JSON )
-public class JsonMessageBodyReader implements MessageBodyReader<InputEventStream>
-{
+@Consumes(MediaType.APPLICATION_JSON)
+public class JsonMessageBodyReader implements MessageBodyReader<InputEventStream> {
 
     private static final String STATEMENTS_KEY = "input-statements";
 
     private final JsonFactory jsonFactory;
 
-    public JsonMessageBodyReader()
-    {
+    public JsonMessageBodyReader() {
         // This can be copied here, as this variant of the Neo4j JSON codec doesn't need to be aware of an ongoing
         // transaction.
-        this.jsonFactory = DefaultJsonFactory.INSTANCE.get().copy().setCodec( new Neo4jJsonCodec() );
+        this.jsonFactory = DefaultJsonFactory.INSTANCE.get().copy().setCodec(new Neo4jJsonCodec());
     }
 
     @Override
-    public boolean isReadable( Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType )
-    {
-        return type.isAssignableFrom( InputEventStream.class );
+    public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+        return type.isAssignableFrom(InputEventStream.class);
     }
 
     @Override
-    public InputEventStream readFrom( Class<InputEventStream> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String,String> httpHeaders, InputStream entityStream ) throws WebApplicationException
-    {
+    public InputEventStream readFrom(
+            Class<InputEventStream> type,
+            Type genericType,
+            Annotation[] annotations,
+            MediaType mediaType,
+            MultivaluedMap<String, String> httpHeaders,
+            InputStream entityStream)
+            throws WebApplicationException {
 
-        Map<Statement,InputStatement> inputStatements = new HashMap<>();
-        Map<String,Object> parameters = new HashMap<>();
-        parameters.put( STATEMENTS_KEY, inputStatements );
-        StatementDeserializer statementDeserializer = new StatementDeserializer( this.jsonFactory, entityStream );
-        return new InputEventStream( parameters, () ->
-        {
+        Map<Statement, InputStatement> inputStatements = new HashMap<>();
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put(STATEMENTS_KEY, inputStatements);
+        StatementDeserializer statementDeserializer = new StatementDeserializer(this.jsonFactory, entityStream);
+        return new InputEventStream(parameters, () -> {
             InputStatement inputStatement = statementDeserializer.read();
 
-            if ( inputStatement == null )
-            {
+            if (inputStatement == null) {
                 return null;
             }
 
-            Statement statement = new Statement( inputStatement.statement(), inputStatement.parameters() );
-            inputStatements.put( statement, inputStatement );
+            Statement statement = new Statement(inputStatement.statement(), inputStatement.parameters());
+            inputStatements.put(statement, inputStatement);
             return statement;
-        } );
+        });
     }
 
     /**
@@ -91,14 +89,13 @@ public class JsonMessageBodyReader implements MessageBodyReader<InputEventStream
      * @param statement the to be extracted statement in generic format.
      * @return a statement representation.
      */
-    public static InputStatement getInputStatement( Map<String,Object> parameters, Statement statement )
-    {
-        if ( !parameters.containsKey( STATEMENTS_KEY ) )
-        {
+    public static InputStatement getInputStatement(Map<String, Object> parameters, Statement statement) {
+        if (!parameters.containsKey(STATEMENTS_KEY)) {
             return null;
         }
 
-        Map<Statement,InputStatement> inputStatements = (Map<Statement,InputStatement>) parameters.get( STATEMENTS_KEY );
-        return inputStatements.get( statement );
+        Map<Statement, InputStatement> inputStatements =
+                (Map<Statement, InputStatement>) parameters.get(STATEMENTS_KEY);
+        return inputStatements.get(statement);
     }
 }

@@ -61,37 +61,49 @@ class GoalBitAllocationTest extends CypherFunSuite with AstConstructionTestSuppo
   }
 
   test("goal with no dependant optional matches is solvable") {
-    val gba = GoalBitAllocation(3, 5, Seq(
-      BitSet(),
-      BitSet(1),
-      BitSet(),
-      BitSet(2, 3),
-      BitSet(2),
-    ))
+    val gba = GoalBitAllocation(
+      3,
+      5,
+      Seq(
+        BitSet(),
+        BitSet(1),
+        BitSet(),
+        BitSet(2, 3),
+        BitSet(2)
+      )
+    )
     gba.goalIsSolvable(registry(8), Goal(BitSet(4, 6))) should be(true)
   }
 
   test("goal with no dependant optional matches is solvable, with compaction") {
-    val gba = GoalBitAllocation(3, 5, Seq(
-      BitSet(),
-      BitSet(1),
-      BitSet(),
-      BitSet(2, 3),
-      BitSet(2),
-    ))
+    val gba = GoalBitAllocation(
+      3,
+      5,
+      Seq(
+        BitSet(),
+        BitSet(1),
+        BitSet(),
+        BitSet(2, 3),
+        BitSet(2)
+      )
+    )
     val r = registry(8)
     val c = r.compact(BitSet(4, 6))
     gba.goalIsSolvable(registry(8), Goal(BitSet(c))) should be(true)
   }
 
   test("goal with dependant optional matches and dependencies missing is not solvable") {
-    val gba = GoalBitAllocation(3, 5, Seq(
-      BitSet(),
-      BitSet(1),
-      BitSet(),
-      BitSet(2, 3),
-      BitSet(4),
-    ))
+    val gba = GoalBitAllocation(
+      3,
+      5,
+      Seq(
+        BitSet(),
+        BitSet(1),
+        BitSet(),
+        BitSet(2, 3),
+        BitSet(4)
+      )
+    )
     val r = registry(8)
     gba.goalIsSolvable(r, Goal(BitSet(5))) should be(false)
     gba.goalIsSolvable(r, Goal(BitSet(2, 3, 5, 6))) should be(false)
@@ -101,13 +113,17 @@ class GoalBitAllocationTest extends CypherFunSuite with AstConstructionTestSuppo
   }
 
   test("goal with dependant optional matches and dependencies missing is not solvable, with compaction") {
-    val gba = GoalBitAllocation(3, 5, Seq(
-      BitSet(),
-      BitSet(1),
-      BitSet(),
-      BitSet(2, 3),
-      BitSet(4),
-    ))
+    val gba = GoalBitAllocation(
+      3,
+      5,
+      Seq(
+        BitSet(),
+        BitSet(1),
+        BitSet(),
+        BitSet(2, 3),
+        BitSet(4)
+      )
+    )
     val r = registry(8)
     val c12 = r.compact(BitSet(1, 2))
     val c34 = r.compact(BitSet(3, 4))
@@ -128,13 +144,17 @@ class GoalBitAllocationTest extends CypherFunSuite with AstConstructionTestSuppo
   }
 
   test("goal with dependant optional matches and dependencies available is solvable") {
-    val gba = GoalBitAllocation(3, 5, Seq(
-      BitSet(),
-      BitSet(1),
-      BitSet(),
-      BitSet(2, 3),
-      BitSet(4),
-    ))
+    val gba = GoalBitAllocation(
+      3,
+      5,
+      Seq(
+        BitSet(),
+        BitSet(1),
+        BitSet(),
+        BitSet(2, 3),
+        BitSet(4)
+      )
+    )
     val r = registry(8)
     gba.goalIsSolvable(r, Goal(BitSet(1, 5))) should be(true)
     gba.goalIsSolvable(r, Goal(BitSet(1, 2, 3, 5, 6))) should be(true)
@@ -145,13 +165,17 @@ class GoalBitAllocationTest extends CypherFunSuite with AstConstructionTestSuppo
   }
 
   test("goal with dependant optional matches and dependencies available is solvable, with compaction") {
-    val gba = GoalBitAllocation(3, 5, Seq(
-      BitSet(),
-      BitSet(1),
-      BitSet(),
-      BitSet(2, 3),
-      BitSet(4),
-    ))
+    val gba = GoalBitAllocation(
+      3,
+      5,
+      Seq(
+        BitSet(),
+        BitSet(1),
+        BitSet(),
+        BitSet(2, 3),
+        BitSet(4)
+      )
+    )
     val r = registry(8)
     val c12 = r.compact(BitSet(1, 2))
     val c34 = r.compact(BitSet(3, 4))
@@ -174,9 +198,20 @@ class GoalBitAllocationTest extends CypherFunSuite with AstConstructionTestSuppo
     // GIVEN
     // 0: Sorted
     val components = ListSet(
-      QueryGraph(patternNodes = Set("a", "b"), patternRelationships = Set(PatternRelationship("r", ("a", "b"), OUTGOING, Seq(relTypeName("R")), SimplePatternLength))), // 1
+      QueryGraph(
+        patternNodes = Set("a", "b"),
+        patternRelationships =
+          Set(PatternRelationship("r", ("a", "b"), OUTGOING, Seq(relTypeName("R")), SimplePatternLength))
+      ), // 1
       QueryGraph(patternNodes = Set("c", "d")), // 2
-      QueryGraph(patternNodes = Set("e", "f", "g"), shortestPathPatterns = Set(ShortestPathPattern(Some("p"), PatternRelationship("p_r", ("e", "f"), OUTGOING, Seq(relTypeName("R")), SimplePatternLength), single = true)(null))), // 3
+      QueryGraph(
+        patternNodes = Set("e", "f", "g"),
+        shortestPathPatterns = Set(ShortestPathPattern(
+          Some("p"),
+          PatternRelationship("p_r", ("e", "f"), OUTGOING, Seq(relTypeName("R")), SimplePatternLength),
+          single = true
+        )(null))
+      ) // 3
     )
     val optionalMatches = IndexedSeq(
       QueryGraph(patternNodes = Set("a", "a0"), argumentIds = Set("a")), // 4
@@ -185,8 +220,16 @@ class GoalBitAllocationTest extends CypherFunSuite with AstConstructionTestSuppo
       QueryGraph(patternNodes = Set("a", "g", "a2", "g1"), argumentIds = Set("a", "g")), // 7
       QueryGraph(patternNodes = Set("a0", "a3"), argumentIds = Set("a0")), // 8
       QueryGraph(patternNodes = Set("d", "g1", "boo"), argumentIds = Set("d", "g1")), // 9
-      QueryGraph(patternNodes = Set("c"), selections = Selections.from(notEquals(prop("c", "prop"), prop("r", "prop"))), argumentIds = Set("c", "r")), // 10
-      QueryGraph(patternNodes = Set("c"), selections = Selections.from(notEquals(prop("c", "prop"), Length(varFor("p"))(pos))), argumentIds = Set("c", "p")), // 10
+      QueryGraph(
+        patternNodes = Set("c"),
+        selections = Selections.from(notEquals(prop("c", "prop"), prop("r", "prop"))),
+        argumentIds = Set("c", "r")
+      ), // 10
+      QueryGraph(
+        patternNodes = Set("c"),
+        selections = Selections.from(notEquals(prop("c", "prop"), Length(varFor("p"))(pos))),
+        argumentIds = Set("c", "p")
+      ) // 10
     )
 
     // WHEN
@@ -207,14 +250,14 @@ class GoalBitAllocationTest extends CypherFunSuite with AstConstructionTestSuppo
         BitSet(4),
         BitSet(2, 7),
         BitSet(1, 2),
-        BitSet(2, 3),
+        BitSet(2, 3)
       )
     ))
     initalTodo.take(components.size).toSet should equal(components)
     initalTodo.drop(components.size) should equal(optionalMatches)
   }
 
-  //noinspection SameParameterValue
+  // noinspection SameParameterValue
   private def registry(size: Int): IdRegistry[_] = {
     val r = IdRegistry.apply[Int]
     r.registerAll(0 until size)

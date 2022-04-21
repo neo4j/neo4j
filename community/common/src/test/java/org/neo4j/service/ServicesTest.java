@@ -19,7 +19,10 @@
  */
 package org.neo4j.service;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,7 +31,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.service.test.BarService;
 import org.neo4j.service.test.BazService;
 import org.neo4j.service.test.FooService;
@@ -36,153 +39,130 @@ import org.neo4j.service.test.NotNamedService;
 import org.neo4j.service.test.ServiceWithDuplicateName;
 import org.neo4j.service.test.SomeService;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-class ServicesTest
-{
+class ServicesTest {
 
     @Test
-    void loadAll()
-    {
-        final Collection<SomeService> services = Services.loadAll( SomeService.class );
-        assertThat( services ).hasSize( 2 )
-                              .hasAtLeastOneElementOfType( FooService.class )
-                              .hasAtLeastOneElementOfType( BarService.class );
+    void loadAll() {
+        final Collection<SomeService> services = Services.loadAll(SomeService.class);
+        assertThat(services)
+                .hasSize(2)
+                .hasAtLeastOneElementOfType(FooService.class)
+                .hasAtLeastOneElementOfType(BarService.class);
     }
 
     @Test
-    void loadByName()
-    {
-        final Optional<SomeService> foo = Services.load( SomeService.class, "foo" );
-        assertTrue( foo.isPresent() );
-        assertThat( foo.get() ).isInstanceOf( FooService.class );
+    void loadByName() {
+        final Optional<SomeService> foo = Services.load(SomeService.class, "foo");
+        assertTrue(foo.isPresent());
+        assertThat(foo.get()).isInstanceOf(FooService.class);
 
-        final Optional<SomeService> bar = Services.load( SomeService.class, "bar" );
-        assertTrue( bar.isPresent() );
-        assertThat( bar.get() ).isInstanceOf( BarService.class );
+        final Optional<SomeService> bar = Services.load(SomeService.class, "bar");
+        assertTrue(bar.isPresent());
+        assertThat(bar.get()).isInstanceOf(BarService.class);
     }
 
     @Test
-    void loadByKey()
-    {
-        final Optional<NotNamedService> impl1 = Services.load( NotNamedService.class, 1L, NotNamedService::id );
-        assertTrue( impl1.isPresent() );
-        assertThat( impl1.get() ).isInstanceOf( NotNamedService.ServiceImpl1.class );
+    void loadByKey() {
+        final Optional<NotNamedService> impl1 = Services.load(NotNamedService.class, 1L, NotNamedService::id);
+        assertTrue(impl1.isPresent());
+        assertThat(impl1.get()).isInstanceOf(NotNamedService.ServiceImpl1.class);
 
-        final Optional<NotNamedService> impl2 = Services.load( NotNamedService.class, 2L, NotNamedService::id );
-        assertTrue( impl2.isPresent() );
-        assertThat( impl2.get() ).isInstanceOf( NotNamedService.ServiceImpl2.class );
+        final Optional<NotNamedService> impl2 = Services.load(NotNamedService.class, 2L, NotNamedService::id);
+        assertTrue(impl2.isPresent());
+        assertThat(impl2.get()).isInstanceOf(NotNamedService.ServiceImpl2.class);
     }
 
     @Test
-    void loadOrFail_load()
-    {
-        final SomeService service = Services.loadOrFail( SomeService.class, "foo" );
-        assertThat( service ).isInstanceOf( FooService.class );
+    void loadOrFail_load() {
+        final SomeService service = Services.loadOrFail(SomeService.class, "foo");
+        assertThat(service).isInstanceOf(FooService.class);
     }
 
     @Test
-    void loadOrFail_fail()
-    {
-        assertThrows( NoSuchElementException.class, () -> Services.loadOrFail( SomeService.class, "nonexisting-key" ) );
+    void loadOrFail_fail() {
+        assertThrows(NoSuchElementException.class, () -> Services.loadOrFail(SomeService.class, "nonexisting-key"));
     }
 
     @Test
-    void loadByNameNoMatch()
-    {
-        final Optional<SomeService> provider = Services.load( SomeService.class, "nonexisting-key" );
-        assertFalse( provider.isPresent() );
+    void loadByNameNoMatch() {
+        final Optional<SomeService> provider = Services.load(SomeService.class, "nonexisting-key");
+        assertFalse(provider.isPresent());
     }
 
     @Test
-    void failOnDuplicateKeyWhenLoadingByName()
-    {
-        final RuntimeException error = assertThrows( RuntimeException.class, () -> Services.load( ServiceWithDuplicateName.class, "duplicate-name" ) );
-        assertThat( error.getMessage() ).contains( "Found multiple service providers" );
+    void failOnDuplicateKeyWhenLoadingByName() {
+        final RuntimeException error = assertThrows(
+                RuntimeException.class, () -> Services.load(ServiceWithDuplicateName.class, "duplicate-name"));
+        assertThat(error.getMessage()).contains("Found multiple service providers");
     }
 
     @Test
-    void loadByPriority()
-    {
-        final Optional<SomeService> foo = Services.loadByPriority( SomeService.class );
-        assertTrue( foo.isPresent() );
-        assertThat( foo.get() ).isInstanceOf( FooService.class );
+    void loadByPriority() {
+        final Optional<SomeService> foo = Services.loadByPriority(SomeService.class);
+        assertTrue(foo.isPresent());
+        assertThat(foo.get()).isInstanceOf(FooService.class);
     }
 
     @Test
-    void loadAllFromCurrentAndContextClassLoadersNoDuplicates()
-    {
-        withContextClassLoader( new TestClassLoader(), () ->
-        {
-            final Collection<SomeService> services = Services.loadAll( SomeService.class );
-            assertThat( services ).hasSize( 3 )
-                    .hasAtLeastOneElementOfType( FooService.class )
-                    .hasAtLeastOneElementOfType( BarService.class )
-                    .hasAtLeastOneElementOfType( BazService.class );
-        } );
+    void loadAllFromCurrentAndContextClassLoadersNoDuplicates() {
+        withContextClassLoader(new TestClassLoader(), () -> {
+            final Collection<SomeService> services = Services.loadAll(SomeService.class);
+            assertThat(services)
+                    .hasSize(3)
+                    .hasAtLeastOneElementOfType(FooService.class)
+                    .hasAtLeastOneElementOfType(BarService.class)
+                    .hasAtLeastOneElementOfType(BazService.class);
+        });
     }
 
     @Test
-    void loadByNameFromCurrentAndContextClassLoaders()
-    {
-        withContextClassLoader( new TestClassLoader(), () ->
-        {
-            final Optional<SomeService> foo = Services.load( SomeService.class, "foo" );
-            assertTrue( foo.isPresent() );
-            assertThat( foo.get() ).isInstanceOf( FooService.class );
+    void loadByNameFromCurrentAndContextClassLoaders() {
+        withContextClassLoader(new TestClassLoader(), () -> {
+            final Optional<SomeService> foo = Services.load(SomeService.class, "foo");
+            assertTrue(foo.isPresent());
+            assertThat(foo.get()).isInstanceOf(FooService.class);
 
-            final Optional<SomeService> baz = Services.load( SomeService.class, "baz" );
-            assertTrue( baz.isPresent() );
-            assertThat( baz.get() ).isInstanceOf( BazService.class );
-        } );
+            final Optional<SomeService> baz = Services.load(SomeService.class, "baz");
+            assertTrue(baz.isPresent());
+            assertThat(baz.get()).isInstanceOf(BazService.class);
+        });
     }
 
     @Test
-    void loadByPriorityFromCurrentAndContextClassLoaders()
-    {
-        withContextClassLoader( new TestClassLoader(), () ->
-        {
-            final Optional<SomeService> foo = Services.loadByPriority( SomeService.class );
-            assertTrue( foo.isPresent() );
-            assertThat( foo.get() ).isInstanceOf( FooService.class );
-        } );
+    void loadByPriorityFromCurrentAndContextClassLoaders() {
+        withContextClassLoader(new TestClassLoader(), () -> {
+            final Optional<SomeService> foo = Services.loadByPriority(SomeService.class);
+            assertTrue(foo.isPresent());
+            assertThat(foo.get()).isInstanceOf(FooService.class);
+        });
     }
 
-    private static void withContextClassLoader( ClassLoader contextClassLoader, Runnable action )
-    {
+    private static void withContextClassLoader(ClassLoader contextClassLoader, Runnable action) {
         final ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
-        try
-        {
-            Thread.currentThread().setContextClassLoader( contextClassLoader );
+        try {
+            Thread.currentThread().setContextClassLoader(contextClassLoader);
             action.run();
-        }
-        finally
-        {
-            Thread.currentThread().setContextClassLoader( originalClassLoader );
+        } finally {
+            Thread.currentThread().setContextClassLoader(originalClassLoader);
         }
     }
 
-    private static final class TestClassLoader extends ClassLoader
-    {
+    private static final class TestClassLoader extends ClassLoader {
         @Override
-        public URL getResource( String name )
-        {
-            return name.startsWith( "META-INF/services" ) ? super.getResource( "test/" + name ) : super.getResource( name );
+        public URL getResource(String name) {
+            return name.startsWith("META-INF/services") ? super.getResource("test/" + name) : super.getResource(name);
         }
 
         @Override
-        public Enumeration<URL> getResources( String name ) throws IOException
-        {
-            return name.startsWith( "META-INF/services" ) ? super.getResources( "test/" + name ) : super.getResources( name );
+        public Enumeration<URL> getResources(String name) throws IOException {
+            return name.startsWith("META-INF/services") ? super.getResources("test/" + name) : super.getResources(name);
         }
 
         @Override
-        public InputStream getResourceAsStream( String name )
-        {
-            return name.startsWith( "META-INF/services" ) ? super.getResourceAsStream( "test/" + name ) : super.getResourceAsStream( name );
+        public InputStream getResourceAsStream(String name) {
+            return name.startsWith("META-INF/services")
+                    ? super.getResourceAsStream("test/" + name)
+                    : super.getResourceAsStream(name);
         }
     }
 }

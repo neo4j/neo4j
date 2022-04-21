@@ -19,67 +19,73 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.List;
-
-import org.neo4j.common.EntityType;
-import org.neo4j.configuration.Config;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexType;
-import org.neo4j.io.fs.FileSystemAbstraction;
-
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 
-public class TokenIndexProviderTest extends IndexProviderTests
-{
+import java.util.List;
+import org.neo4j.common.EntityType;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexType;
+import org.neo4j.io.fs.FileSystemAbstraction;
+
+public class TokenIndexProviderTest extends IndexProviderTests {
     private static final ProviderFactory factory =
-            ( pageCache, fs, dir, monitors, collector, readOnlyChecker, databaseLayout, contextFactory ) -> {
-                DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, contextFactory,
-                                databaseLayout.getDatabaseName() ).withMonitors( monitors )
-                        .withReadOnlyChecker( readOnlyChecker ).build();
-                return new TokenIndexProvider( context, dir, collector, databaseLayout );
+            (pageCache, fs, dir, monitors, collector, readOnlyChecker, databaseLayout, contextFactory) -> {
+                DatabaseIndexContext context = DatabaseIndexContext.builder(
+                                pageCache, fs, contextFactory, databaseLayout.getDatabaseName())
+                        .withMonitors(monitors)
+                        .withReadOnlyChecker(readOnlyChecker)
+                        .build();
+                return new TokenIndexProvider(context, dir, collector, databaseLayout);
             };
 
-    TokenIndexProviderTest()
-    {
-        super( factory );
+    TokenIndexProviderTest() {
+        super(factory);
     }
 
     @Override
-    void setupIndexFolders( FileSystemAbstraction fs )
-    {
-        //Token indexes doesn't use a separate folder.
+    void setupIndexFolders(FileSystemAbstraction fs) {
+        // Token indexes doesn't use a separate folder.
     }
 
     @Override
-    IndexDescriptor descriptor()
-    {
-        return completeConfiguration( forSchema( forAnyEntityTokens( EntityType.NODE ) ).withName( "labelIndex" ).materialise( indexId ) );
+    IndexDescriptor descriptor() {
+        return completeConfiguration(forSchema(forAnyEntityTokens(EntityType.NODE))
+                .withName("labelIndex")
+                .materialise(indexId));
     }
 
     @Override
-    IndexDescriptor otherDescriptor()
-    {
-        return completeConfiguration( forSchema( forAnyEntityTokens( EntityType.RELATIONSHIP ) ).withName( "relTypeIndex" ).materialise( indexId + 1 ) );
+    IndexDescriptor otherDescriptor() {
+        return completeConfiguration(forSchema(forAnyEntityTokens(EntityType.RELATIONSHIP))
+                .withName("relTypeIndex")
+                .materialise(indexId + 1));
     }
 
     @Override
-    IndexPrototype validPrototype()
-    {
-        return forSchema( forAnyEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR ).withIndexType( IndexType.LOOKUP ).withName( "index" );
+    IndexPrototype validPrototype() {
+        return forSchema(forAnyEntityTokens(EntityType.NODE), TokenIndexProvider.DESCRIPTOR)
+                .withIndexType(IndexType.LOOKUP)
+                .withName("index");
     }
 
     @Override
-    List<IndexPrototype> invalidPrototypes()
-    {
-        return List.of( forSchema( forAnyEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR ).withIndexType( IndexType.RANGE )
-                        .withName( "unsupported" ),
-                forSchema( forAnyEntityTokens( EntityType.NODE ), RangeIndexProvider.DESCRIPTOR ).withIndexType( IndexType.LOOKUP )
-                        .withName( "unsupported" ),
-                forSchema( forLabel( labelId, propId ), TokenIndexProvider.DESCRIPTOR ).withIndexType( IndexType.LOOKUP ).withName( "unsupported" ),
-                uniqueForSchema( forLabel( labelId, propId ), TokenIndexProvider.DESCRIPTOR ).withIndexType( IndexType.LOOKUP ).withName( "unsupported" ) );
+    List<IndexPrototype> invalidPrototypes() {
+        return List.of(
+                forSchema(forAnyEntityTokens(EntityType.NODE), TokenIndexProvider.DESCRIPTOR)
+                        .withIndexType(IndexType.RANGE)
+                        .withName("unsupported"),
+                forSchema(forAnyEntityTokens(EntityType.NODE), RangeIndexProvider.DESCRIPTOR)
+                        .withIndexType(IndexType.LOOKUP)
+                        .withName("unsupported"),
+                forSchema(forLabel(labelId, propId), TokenIndexProvider.DESCRIPTOR)
+                        .withIndexType(IndexType.LOOKUP)
+                        .withName("unsupported"),
+                uniqueForSchema(forLabel(labelId, propId), TokenIndexProvider.DESCRIPTOR)
+                        .withIndexType(IndexType.LOOKUP)
+                        .withName("unsupported"));
     }
 }

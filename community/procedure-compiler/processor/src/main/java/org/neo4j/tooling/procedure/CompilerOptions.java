@@ -19,11 +19,8 @@
  */
 package org.neo4j.tooling.procedure;
 
-public class CompilerOptions
-{
+public class CompilerOptions {
     public static final String IGNORE_CONTEXT_WARNINGS_OPTION = "IgnoreContextWarnings";
 
-    private CompilerOptions()
-    {
-    }
+    private CompilerOptions() {}
 }

@@ -30,7 +30,7 @@ case object fuseSelections extends Rewriter {
   override def apply(input: AnyRef) = instance.apply(input)
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
-    case topSelection@Selection(Ands(predicates1), Selection(Ands(predicates2), lhs)) =>
+    case topSelection @ Selection(Ands(predicates1), Selection(Ands(predicates2), lhs)) =>
       Selection(Ands(predicates1 ++ predicates2)(predicates1.head.position), lhs)(SameId(topSelection.id))
   })
 }

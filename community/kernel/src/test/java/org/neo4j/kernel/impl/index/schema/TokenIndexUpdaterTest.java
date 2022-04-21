@@ -19,16 +19,26 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static java.lang.Integer.max;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.collection.PrimitiveLongCollections.asArray;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
+import static org.neo4j.kernel.impl.index.schema.TokenScanValueIterator.NO_ID;
+
+import java.io.IOException;
+import java.util.Random;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.io.IOException;
-import java.util.Random;
-
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
@@ -43,255 +53,210 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static java.lang.Integer.max;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.collection.PrimitiveLongCollections.asArray;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
-import static org.neo4j.kernel.impl.index.schema.TokenScanValueIterator.NO_ID;
-
-@ExtendWith( RandomExtension.class )
+@ExtendWith(RandomExtension.class)
 @PageCacheExtension
-class TokenIndexUpdaterTest
-{
+class TokenIndexUpdaterTest {
     private static final int LABEL_COUNT = 5;
     private static final int NODE_COUNT = 10_000;
 
     @Inject
     private RandomSupport random;
+
     @Inject
     private PageCache pageCache;
+
     @Inject
     private TestDirectory directory;
 
-    private GBPTree<TokenScanKey,TokenScanValue> tree;
+    private GBPTree<TokenScanKey, TokenScanValue> tree;
 
     @BeforeEach
-    void openTree()
-    {
-        tree = new GBPTreeBuilder<>( pageCache, directory.file( "file" ), new TokenScanLayout() ).build();
+    void openTree() {
+        tree = new GBPTreeBuilder<>(pageCache, directory.file("file"), new TokenScanLayout()).build();
     }
 
     @AfterEach
-    void closeTree() throws IOException
-    {
+    void closeTree() throws IOException {
         tree.close();
     }
 
     @Test
-    void shouldAddAndRemoveLabels() throws Exception
-    {
+    void shouldAddAndRemoveLabels() throws Exception {
         // GIVEN
         long[] expected = new long[NODE_COUNT];
-        try ( TokenIndexUpdater writer = new TokenIndexUpdater( max( 5, NODE_COUNT / 100 ) ) )
-        {
-            writer.initialize( tree.writer( NULL_CONTEXT ) );
+        try (TokenIndexUpdater writer = new TokenIndexUpdater(max(5, NODE_COUNT / 100))) {
+            writer.initialize(tree.writer(NULL_CONTEXT));
 
             // WHEN
-            for ( int i = 0; i < NODE_COUNT * 3; i++ )
-            {
-                TokenIndexEntryUpdate<?> update = randomUpdate( expected );
-                writer.process( update );
+            for (int i = 0; i < NODE_COUNT * 3; i++) {
+                TokenIndexEntryUpdate<?> update = randomUpdate(expected);
+                writer.process(update);
             }
         }
 
         // THEN
-        for ( int i = 0; i < LABEL_COUNT; i++ )
-        {
-            long[] expectedNodeIds = nodesWithLabel( expected, i );
-            long[] actualNodeIds = asArray( new TokenScanValueIterator(
-                    tree.seek( new TokenScanKey( i, 0 ), new TokenScanKey( i, Long.MAX_VALUE ), NULL_CONTEXT ), NO_ID ) );
-            assertArrayEquals( expectedNodeIds, actualNodeIds, "For label " + i );
+        for (int i = 0; i < LABEL_COUNT; i++) {
+            long[] expectedNodeIds = nodesWithLabel(expected, i);
+            long[] actualNodeIds = asArray(new TokenScanValueIterator(
+                    tree.seek(new TokenScanKey(i, 0), new TokenScanKey(i, Long.MAX_VALUE), NULL_CONTEXT), NO_ID));
+            assertArrayEquals(expectedNodeIds, actualNodeIds, "For label " + i);
         }
     }
 
     @Test
-    void shouldTracePageCacheAccess() throws Exception
-    {
-        //Given
+    void shouldTracePageCacheAccess() throws Exception {
+        // Given
         int nodeCount = 5;
         var cacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory( cacheTracer, EMPTY );
-        var cursorContext = contextFactory.create( "tracePageCacheAccessOnWrite" );
+        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
+        var cursorContext = contextFactory.create("tracePageCacheAccessOnWrite");
 
-        //When
-        try ( TokenIndexUpdater writer = new TokenIndexUpdater( nodeCount ) )
-        {
-            writer.initialize( tree.writer( cursorContext ) );
-            for ( int i = 0; i < nodeCount; i++ )
-            {
-                writer.process( TokenIndexEntryUpdate.change( i, null, EMPTY_LONG_ARRAY, new long[]{1} ) );
+        // When
+        try (TokenIndexUpdater writer = new TokenIndexUpdater(nodeCount)) {
+            writer.initialize(tree.writer(cursorContext));
+            for (int i = 0; i < nodeCount; i++) {
+                writer.process(TokenIndexEntryUpdate.change(i, null, EMPTY_LONG_ARRAY, new long[] {1}));
             }
         }
 
-        //Then
+        // Then
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.pins() ).isEqualTo( 4 );
-        assertThat( cursorTracer.unpins() ).isEqualTo( 4 );
-        assertThat( cursorTracer.hits() ).isEqualTo( 3 );
-        assertThat( cursorTracer.faults() ).isEqualTo( 1 );
+        assertThat(cursorTracer.pins()).isEqualTo(4);
+        assertThat(cursorTracer.unpins()).isEqualTo(4);
+        assertThat(cursorTracer.hits()).isEqualTo(3);
+        assertThat(cursorTracer.faults()).isEqualTo(1);
     }
 
     @Test
-    void shouldNotAcceptUnsortedTokens()
-    {
+    void shouldNotAcceptUnsortedTokens() {
         // GIVEN
-        assertThatThrownBy( () ->
-                            {
-                                try ( TokenIndexUpdater writer = new TokenIndexUpdater( 1 ) )
-                                {
-                                    writer.initialize( tree.writer( NULL_CONTEXT ) );
+        assertThatThrownBy(() -> {
+                    try (TokenIndexUpdater writer = new TokenIndexUpdater(1)) {
+                        writer.initialize(tree.writer(NULL_CONTEXT));
 
-                                    // WHEN
-                                    writer.process( TokenIndexEntryUpdate.change( 0, null, EMPTY_LONG_ARRAY, new long[]{2, 1} ) );
-                                }
-                            }
-        ).isInstanceOf( IllegalArgumentException.class ).hasMessageContaining( "unsorted" );
+                        // WHEN
+                        writer.process(TokenIndexEntryUpdate.change(0, null, EMPTY_LONG_ARRAY, new long[] {2, 1}));
+                    }
+                })
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("unsorted");
     }
 
     @Test
-    void shouldNotAcceptInvalidTokens()
-    {
+    void shouldNotAcceptInvalidTokens() {
         // GIVEN
-        assertThatThrownBy( () ->
-                            {
-                                try ( TokenIndexUpdater writer = new TokenIndexUpdater( 1 ) )
-                                {
-                                    writer.initialize( tree.writer( NULL_CONTEXT ) );
+        assertThatThrownBy(() -> {
+                    try (TokenIndexUpdater writer = new TokenIndexUpdater(1)) {
+                        writer.initialize(tree.writer(NULL_CONTEXT));
 
-                                    // WHEN
-                                    writer.process( TokenIndexEntryUpdate.change( 0, null, EMPTY_LONG_ARRAY, new long[]{2, -1} ) );
-                                }
-                            }
-        ).isInstanceOf( IllegalArgumentException.class ).hasMessageContaining( "Expected non-negative long value" );
+                        // WHEN
+                        writer.process(TokenIndexEntryUpdate.change(0, null, EMPTY_LONG_ARRAY, new long[] {2, -1}));
+                    }
+                })
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Expected non-negative long value");
     }
 
     @Test
-    void shouldRemoveEmptyTreeEntries() throws Exception
-    {
+    void shouldRemoveEmptyTreeEntries() throws Exception {
         // given
         int numberOfTreeEntries = 3;
         int numberOfNodesInEach = 5;
         int labelId = 1;
         long[] labels = {labelId};
-        try ( TokenIndexUpdater writer = new TokenIndexUpdater( max( 5, NODE_COUNT / 100 ) ) )
-        {
-            writer.initialize( tree.writer( NULL_CONTEXT ) );
+        try (TokenIndexUpdater writer = new TokenIndexUpdater(max(5, NODE_COUNT / 100))) {
+            writer.initialize(tree.writer(NULL_CONTEXT));
 
             // a couple of tree entries with a couple of nodes each
             // concept art: [xxxx          ][xxxx          ][xxxx          ] where x is used node.
-            for ( int i = 0; i < numberOfTreeEntries; i++ )
-            {
+            for (int i = 0; i < numberOfTreeEntries; i++) {
                 long baseNodeId = i * RANGE_SIZE;
-                for ( int j = 0; j < numberOfNodesInEach; j++ )
-                {
-                    writer.process( TokenIndexEntryUpdate.change( baseNodeId + j, null, EMPTY_LONG_ARRAY, labels ) );
+                for (int j = 0; j < numberOfNodesInEach; j++) {
+                    writer.process(TokenIndexEntryUpdate.change(baseNodeId + j, null, EMPTY_LONG_ARRAY, labels));
                 }
             }
         }
-        assertTreeHasKeysRepresentingIdRanges( setOfRange( 0, numberOfTreeEntries ) );
+        assertTreeHasKeysRepresentingIdRanges(setOfRange(0, numberOfTreeEntries));
 
         // when removing all the nodes from one of the tree nodes
         int treeEntryToRemoveFrom = 1;
-        try ( TokenIndexUpdater writer = new TokenIndexUpdater( max( 5, NODE_COUNT / 100 ) ) )
-        {
-            writer.initialize( tree.writer( NULL_CONTEXT ) );
+        try (TokenIndexUpdater writer = new TokenIndexUpdater(max(5, NODE_COUNT / 100))) {
+            writer.initialize(tree.writer(NULL_CONTEXT));
             long baseNodeId = treeEntryToRemoveFrom * RANGE_SIZE;
-            for ( int i = 0; i < numberOfNodesInEach; i++ )
-            {
-                writer.process( TokenIndexEntryUpdate.change( baseNodeId + i, null, labels, EMPTY_LONG_ARRAY ) );
+            for (int i = 0; i < numberOfNodesInEach; i++) {
+                writer.process(TokenIndexEntryUpdate.change(baseNodeId + i, null, labels, EMPTY_LONG_ARRAY));
             }
         }
 
         // then
-        MutableLongSet expected = setOfRange( 0, numberOfTreeEntries );
-        expected.remove( treeEntryToRemoveFrom );
-        assertTreeHasKeysRepresentingIdRanges( expected );
+        MutableLongSet expected = setOfRange(0, numberOfTreeEntries);
+        expected.remove(treeEntryToRemoveFrom);
+        assertTreeHasKeysRepresentingIdRanges(expected);
     }
 
-    private TokenIndexEntryUpdate<?> randomUpdate( long[] expected )
-    {
-        int nodeId = random.nextInt( expected.length );
+    private TokenIndexEntryUpdate<?> randomUpdate(long[] expected) {
+        int nodeId = random.nextInt(expected.length);
         long labels = expected[nodeId];
-        long[] before = getLabels( labels );
-        int changeCount = random.nextInt( 4 ) + 1;
-        for ( int i = 0; i < changeCount; i++ )
-        {
-            labels = flipRandom( labels, LABEL_COUNT, random.random() );
+        long[] before = getLabels(labels);
+        int changeCount = random.nextInt(4) + 1;
+        for (int i = 0; i < changeCount; i++) {
+            labels = flipRandom(labels, LABEL_COUNT, random.random());
         }
         expected[nodeId] = labels;
-        return TokenIndexEntryUpdate.change( nodeId, null, before, getLabels( labels ) );
+        return TokenIndexEntryUpdate.change(nodeId, null, before, getLabels(labels));
     }
 
-    private void assertTreeHasKeysRepresentingIdRanges( MutableLongSet expected ) throws IOException
-    {
-        tree.visit( new GBPTreeVisitor.Adaptor<>()
-        {
-            @Override
-            public void key( TokenScanKey tokenScanKey, boolean isLeaf, long offloadId )
-            {
-                if ( isLeaf )
-                {
-                    assertTrue( expected.remove( tokenScanKey.idRange ) );
-                }
-            }
-        }, NULL_CONTEXT );
-        assertTrue( expected.isEmpty() );
+    private void assertTreeHasKeysRepresentingIdRanges(MutableLongSet expected) throws IOException {
+        tree.visit(
+                new GBPTreeVisitor.Adaptor<>() {
+                    @Override
+                    public void key(TokenScanKey tokenScanKey, boolean isLeaf, long offloadId) {
+                        if (isLeaf) {
+                            assertTrue(expected.remove(tokenScanKey.idRange));
+                        }
+                    }
+                },
+                NULL_CONTEXT);
+        assertTrue(expected.isEmpty());
     }
 
-    private static MutableLongSet setOfRange( long from, long to )
-    {
+    private static MutableLongSet setOfRange(long from, long to) {
         MutableLongSet set = LongSets.mutable.empty();
-        for ( long i = from; i < to; i++ )
-        {
-            set.add( i );
+        for (long i = from; i < to; i++) {
+            set.add(i);
         }
         return set;
     }
 
-    static long[] nodesWithLabel( long[] expected, int labelId )
-    {
+    static long[] nodesWithLabel(long[] expected, int labelId) {
         int mask = 1 << labelId;
         int count = 0;
-        for ( long labels : expected )
-        {
-            if ( (labels & mask) != 0 )
-            {
+        for (long labels : expected) {
+            if ((labels & mask) != 0) {
                 count++;
             }
         }
 
         long[] result = new long[count];
         int cursor = 0;
-        for ( int nodeId = 0; nodeId < expected.length; nodeId++ )
-        {
+        for (int nodeId = 0; nodeId < expected.length; nodeId++) {
             long labels = expected[nodeId];
-            if ( (labels & mask) != 0 )
-            {
+            if ((labels & mask) != 0) {
                 result[cursor++] = nodeId;
             }
         }
         return result;
     }
 
-    static long flipRandom( long existingLabels, int highLabelId, Random random )
-    {
-        return existingLabels ^ (1L << random.nextInt( highLabelId ));
+    static long flipRandom(long existingLabels, int highLabelId, Random random) {
+        return existingLabels ^ (1L << random.nextInt(highLabelId));
     }
 
-    public static long[] getLabels( long bits )
-    {
-        long[] result = new long[Long.bitCount( bits )];
-        for ( int labelId = 0, c = 0; labelId < LABEL_COUNT; labelId++ )
-        {
+    public static long[] getLabels(long bits) {
+        long[] result = new long[Long.bitCount(bits)];
+        for (int labelId = 0, c = 0; labelId < LABEL_COUNT; labelId++) {
             int mask = 1 << labelId;
-            if ( (bits & mask) != 0 )
-            {
+            if ((bits & mask) != 0) {
                 result[c++] = labelId;
             }
         }

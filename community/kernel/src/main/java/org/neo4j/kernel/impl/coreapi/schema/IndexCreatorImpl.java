@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
+import static org.neo4j.graphdb.schema.IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
@@ -33,10 +34,7 @@ import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.IndexConfig;
 
-import static org.neo4j.graphdb.schema.IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap;
-
-public class IndexCreatorImpl implements IndexCreator
-{
+public class IndexCreatorImpl implements IndexCreator {
     private final Collection<String> propertyKeys;
     private final Label[] labels;
     private final RelationshipType[] types;
@@ -45,19 +43,22 @@ public class IndexCreatorImpl implements IndexCreator
     private final IndexType indexType;
     private final IndexConfig indexConfig;
 
-    public IndexCreatorImpl( InternalSchemaActions actions, Label... labels )
-    {
-        this( actions, labels, null, null, new ArrayList<>(), IndexType.RANGE, IndexConfig.empty() );
+    public IndexCreatorImpl(InternalSchemaActions actions, Label... labels) {
+        this(actions, labels, null, null, new ArrayList<>(), IndexType.RANGE, IndexConfig.empty());
     }
 
-    public IndexCreatorImpl( InternalSchemaActions actions, RelationshipType... types )
-    {
-        this( actions, null, types, null, new ArrayList<>(), IndexType.RANGE, IndexConfig.empty() );
+    public IndexCreatorImpl(InternalSchemaActions actions, RelationshipType... types) {
+        this(actions, null, types, null, new ArrayList<>(), IndexType.RANGE, IndexConfig.empty());
     }
 
-    private IndexCreatorImpl( InternalSchemaActions actions, Label[] labels, RelationshipType[] types, String indexName, Collection<String> propertyKeys,
-            IndexType indexType, IndexConfig indexConfig )
-    {
+    private IndexCreatorImpl(
+            InternalSchemaActions actions,
+            Label[] labels,
+            RelationshipType[] types,
+            String indexName,
+            Collection<String> propertyKeys,
+            IndexType indexType,
+            IndexConfig indexConfig) {
         this.actions = actions;
         this.labels = labels;
         this.types = types;
@@ -70,67 +71,68 @@ public class IndexCreatorImpl implements IndexCreator
     }
 
     @Override
-    public IndexCreator on( String propertyKey )
-    {
+    public IndexCreator on(String propertyKey) {
         assertInUnterminatedTransaction();
-        return new IndexCreatorImpl( actions, labels, types, indexName, copyAndAdd( propertyKeys, propertyKey ), indexType, indexConfig );
+        return new IndexCreatorImpl(
+                actions, labels, types, indexName, copyAndAdd(propertyKeys, propertyKey), indexType, indexConfig);
     }
 
     @Override
-    public IndexCreator withName( String indexName )
-    {
+    public IndexCreator withName(String indexName) {
         assertInUnterminatedTransaction();
-        return new IndexCreatorImpl( actions, labels, types, indexName, propertyKeys, indexType, indexConfig );
+        return new IndexCreatorImpl(actions, labels, types, indexName, propertyKeys, indexType, indexConfig);
     }
 
     @Override
-    public IndexCreator withIndexType( IndexType indexType )
-    {
+    public IndexCreator withIndexType(IndexType indexType) {
         assertInUnterminatedTransaction();
-        if ( indexType == IndexType.LOOKUP )
-        {
-            throw new ConstraintViolationException( "Index type " + indexType + " is not supported for property indexes." );
+        if (indexType == IndexType.LOOKUP) {
+            throw new ConstraintViolationException(
+                    "Index type " + indexType + " is not supported for property indexes.");
         }
-        return new IndexCreatorImpl( actions, labels, types, indexName, propertyKeys, indexType, indexConfig );
+        return new IndexCreatorImpl(actions, labels, types, indexName, propertyKeys, indexType, indexConfig);
     }
 
     @Override
-    public IndexCreator withIndexConfiguration( Map<IndexSetting,Object> indexConfiguration )
-    {
+    public IndexCreator withIndexConfiguration(Map<IndexSetting, Object> indexConfiguration) {
         assertInUnterminatedTransaction();
-        return new IndexCreatorImpl( actions, labels, types, indexName, propertyKeys, indexType, toIndexConfigFromIndexSettingObjectMap( indexConfiguration ) );
+        return new IndexCreatorImpl(
+                actions,
+                labels,
+                types,
+                indexName,
+                propertyKeys,
+                indexType,
+                toIndexConfigFromIndexSettingObjectMap(indexConfiguration));
     }
 
     @Override
-    public IndexDefinition create() throws ConstraintViolationException
-    {
+    public IndexDefinition create() throws ConstraintViolationException {
         assertInUnterminatedTransaction();
 
-        if ( propertyKeys.isEmpty() )
-        {
-            throw new ConstraintViolationException( "An index needs at least one property key to index" );
+        if (propertyKeys.isEmpty()) {
+            throw new ConstraintViolationException("An index needs at least one property key to index");
         }
 
-        if ( labels != null )
-        {
-            return actions.createIndexDefinition( labels, indexName, indexType, indexConfig, propertyKeys.toArray( new String[0] ) );
+        if (labels != null) {
+            return actions.createIndexDefinition(
+                    labels, indexName, indexType, indexConfig, propertyKeys.toArray(new String[0]));
         }
-        if ( types != null )
-        {
-            return actions.createIndexDefinition( types, indexName, indexType, indexConfig, propertyKeys.toArray( new String[0] ) );
+        if (types != null) {
+            return actions.createIndexDefinition(
+                    types, indexName, indexType, indexConfig, propertyKeys.toArray(new String[0]));
         }
-        throw new IllegalStateException( "Must have either labels or relationship types to create an index, but neither was present." );
+        throw new IllegalStateException(
+                "Must have either labels or relationship types to create an index, but neither was present.");
     }
 
-    private void assertInUnterminatedTransaction()
-    {
+    private void assertInUnterminatedTransaction() {
         actions.assertInOpenTransaction();
     }
 
-    static List<String> copyAndAdd( Collection<String> propertyKeys, String propertyKey )
-    {
-        List<String> ret = new ArrayList<>( propertyKeys );
-        ret.add( propertyKey );
+    static List<String> copyAndAdd(Collection<String> propertyKeys, String propertyKey) {
+        List<String> ret = new ArrayList<>(propertyKeys);
+        ret.add(propertyKey);
         return ret;
     }
 }

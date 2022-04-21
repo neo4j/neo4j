@@ -19,21 +19,21 @@
  */
 package org.neo4j.internal.counts;
 
+import static java.lang.String.format;
+
 import java.util.Objects;
 import java.util.function.Function;
-
 import org.neo4j.index.internal.gbptree.GBPTree;
-
-import static java.lang.String.format;
 
 /**
  * Key in a {@link GBPTree} owned by {@link GBPTreeCountsStore}.
  */
-public class CountsKey
-{
-    static final int SIZE = Byte.BYTES +    // type
-                            Long.BYTES +    // long for main data
-                            Integer.BYTES;  // int for additional data
+public class CountsKey {
+    static final int SIZE = Byte.BYTES
+            + // type
+            Long.BYTES
+            + // long for main data
+            Integer.BYTES; // int for additional data
 
     /**
      * Key data layout for this type:
@@ -45,10 +45,10 @@ public class CountsKey
     private static final byte TYPE_STRAY_TX_ID = 0;
 
     // Commonly used keys
-    static final CountsKey MIN_COUNT = new CountsKey( (byte) (TYPE_STRAY_TX_ID + 1), Long.MIN_VALUE, Integer.MIN_VALUE );
-    static final CountsKey MAX_COUNT = new CountsKey( Byte.MAX_VALUE, Long.MAX_VALUE, Integer.MAX_VALUE );
-    static final CountsKey MIN_STRAY_TX_ID = strayTxId( Long.MIN_VALUE );
-    static final CountsKey MAX_STRAY_TX_ID = strayTxId( Long.MAX_VALUE );
+    static final CountsKey MIN_COUNT = new CountsKey((byte) (TYPE_STRAY_TX_ID + 1), Long.MIN_VALUE, Integer.MIN_VALUE);
+    static final CountsKey MAX_COUNT = new CountsKey(Byte.MAX_VALUE, Long.MAX_VALUE, Integer.MAX_VALUE);
+    static final CountsKey MIN_STRAY_TX_ID = strayTxId(Long.MIN_VALUE);
+    static final CountsKey MAX_STRAY_TX_ID = strayTxId(Long.MAX_VALUE);
 
     /**
      * Type of key, as defined by "TYPE_" constants in this class.
@@ -66,66 +66,53 @@ public class CountsKey
      */
     int second;
 
-    CountsKey()
-    {
+    CountsKey() {}
+
+    CountsKey(byte type, long keyFirst, int keySecond) {
+        initialize(type, keyFirst, keySecond);
     }
 
-    CountsKey( byte type, long keyFirst, int keySecond )
-    {
-        initialize( type, keyFirst, keySecond );
-    }
-
-    void initialize( byte type, long keyFirst, int keySecond )
-    {
+    void initialize(byte type, long keyFirst, int keySecond) {
         this.type = type;
         this.first = keyFirst;
         this.second = keySecond;
     }
 
-    static CountsKey strayTxId( long txId )
-    {
-        return new CountsKey( TYPE_STRAY_TX_ID, txId, 0 );
+    static CountsKey strayTxId(long txId) {
+        return new CountsKey(TYPE_STRAY_TX_ID, txId, 0);
     }
 
-    int extractHighFirstInt()
-    {
+    int extractHighFirstInt() {
         return (int) (first >>> Integer.SIZE);
     }
 
-    int extractLowFirstInt()
-    {
+    int extractLowFirstInt() {
         return (int) first;
     }
 
     // Implements hashCode/equals so that these instances can be keys in a map
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( type, first, second );
+    public int hashCode() {
+        return Objects.hash(type, first, second);
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        if ( !(obj instanceof CountsKey other) )
-        {
+    public boolean equals(Object obj) {
+        if (!(obj instanceof CountsKey other)) {
             return false;
         }
         return type == other.type && first == other.first && second == other.second;
     }
 
     @Override
-    public String toString()
-    {
-        return toString( key -> format( "CountsKey[type:%d, first:%d, second:%d]", key.type, key.first, key.second ) );
+    public String toString() {
+        return toString(key -> format("CountsKey[type:%d, first:%d, second:%d]", key.type, key.first, key.second));
     }
 
-    String toString( Function<CountsKey,String> customTypeToString )
-    {
-        if ( type == TYPE_STRAY_TX_ID )
-        {
-            return format( "Stray tx id:%d", first );
+    String toString(Function<CountsKey, String> customTypeToString) {
+        if (type == TYPE_STRAY_TX_ID) {
+            return format("Stray tx id:%d", first);
         }
-        return customTypeToString.apply( this );
+        return customTypeToString.apply(this);
     }
 }

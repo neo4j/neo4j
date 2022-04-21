@@ -19,11 +19,9 @@
  */
 package org.neo4j.server.rest.domain;
 
-@SuppressWarnings( "serial" )
-public class JsonBuildRuntimeException extends RuntimeException
-{
-    public JsonBuildRuntimeException( Throwable cause )
-    {
-        super( cause );
+@SuppressWarnings("serial")
+public class JsonBuildRuntimeException extends RuntimeException {
+    public JsonBuildRuntimeException(Throwable cause) {
+        super(cause);
     }
 }

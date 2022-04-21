@@ -21,42 +21,33 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
-abstract class NativeIndexProgressor<KEY extends NativeIndexKey<KEY>> implements IndexProgressor
-{
-    final Seeker<KEY,NullValue> seeker;
+abstract class NativeIndexProgressor<KEY extends NativeIndexKey<KEY>> implements IndexProgressor {
+    final Seeker<KEY, NullValue> seeker;
     final EntityValueClient client;
     private boolean closed;
 
-    NativeIndexProgressor( Seeker<KEY,NullValue> seeker, EntityValueClient client )
-    {
+    NativeIndexProgressor(Seeker<KEY, NullValue> seeker, EntityValueClient client) {
         this.seeker = seeker;
         this.client = client;
     }
 
     @Override
-    public void close()
-    {
-        if ( !closed )
-        {
+    public void close() {
+        if (!closed) {
             closed = true;
-            try
-            {
+            try {
                 seeker.close();
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         }
     }
 
-    Value[] extractValues( KEY key )
-    {
+    Value[] extractValues(KEY key) {
         return client.needsValues() ? key.asValues() : null;
     }
 }

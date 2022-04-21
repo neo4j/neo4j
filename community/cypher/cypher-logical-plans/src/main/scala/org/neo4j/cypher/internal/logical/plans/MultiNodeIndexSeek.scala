@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  * This operator is used on label/property combinations under uniqueness constraint, meaning that a single matching
  * node is guaranteed per seek.
  */
-case class MultiNodeIndexSeek(nodeIndexSeeks: Seq[NodeIndexSeekLeafPlan])
-                             (implicit idGen: IdGen) extends MultiNodeIndexLeafPlan(idGen) {
+case class MultiNodeIndexSeek(nodeIndexSeeks: Seq[NodeIndexSeekLeafPlan])(implicit idGen: IdGen)
+    extends MultiNodeIndexLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] =
     nodeIndexSeeks.flatMap(_.availableSymbols).toSet

@@ -22,7 +22,6 @@ package org.neo4j.graphalgo.impl.shortestpath;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.graphalgo.impl.util.FibonacciHeap;
 import org.neo4j.graphdb.Node;
 
@@ -31,30 +30,24 @@ import org.neo4j.graphdb.Node;
  * @param <CostType>
  *            The datatype the path weights are represented by.
  */
-public class DijkstraPriorityQueueFibonacciImpl<CostType> implements
-    DijkstraPriorityQueue<CostType>
-{
+public class DijkstraPriorityQueueFibonacciImpl<CostType> implements DijkstraPriorityQueue<CostType> {
     /**
      * Data structure used for the internal priority heap
      */
-    protected class HeapObject
-    {
+    protected class HeapObject {
         private Node node;
         private CostType cost;
 
-        public HeapObject( Node node, CostType cost )
-        {
+        public HeapObject(Node node, CostType cost) {
             this.node = node;
             this.cost = cost;
         }
 
-        public CostType getCost()
-        {
+        public CostType getCost() {
             return cost;
         }
 
-        public Node getNode()
-        {
+        public Node getNode() {
             return node;
         }
 
@@ -63,90 +56,72 @@ public class DijkstraPriorityQueueFibonacciImpl<CostType> implements
          * entries in the queue
          */
         @Override
-        public boolean equals( Object obj )
-        {
-            if ( this == obj )
-            {
+        public boolean equals(Object obj) {
+            if (this == obj) {
                 return true;
             }
-            if ( obj == null )
-            {
+            if (obj == null) {
                 return false;
             }
-            if ( getClass() != obj.getClass() )
-            {
+            if (getClass() != obj.getClass()) {
                 return false;
             }
             final HeapObject other = (HeapObject) obj;
-            if ( node == null )
-            {
-                if ( other.node != null )
-                {
+            if (node == null) {
+                if (other.node != null) {
                     return false;
                 }
-            }
-            else if ( !node.equals( other.node ) )
-            {
+            } else if (!node.equals(other.node)) {
                 return false;
             }
             return true;
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             return node == null ? 23 : 14 ^ node.hashCode();
         }
     }
 
-    Map<Node,FibonacciHeap<HeapObject>.FibonacciHeapNode> heapNodes = new HashMap<Node,FibonacciHeap<HeapObject>.FibonacciHeapNode>();
+    Map<Node, FibonacciHeap<HeapObject>.FibonacciHeapNode> heapNodes =
+            new HashMap<Node, FibonacciHeap<HeapObject>.FibonacciHeapNode>();
     FibonacciHeap<HeapObject> heap;
 
-    public DijkstraPriorityQueueFibonacciImpl( final Comparator<CostType> costComparator )
-    {
+    public DijkstraPriorityQueueFibonacciImpl(final Comparator<CostType> costComparator) {
         super();
-        heap = new FibonacciHeap<>( ( o1, o2 ) -> costComparator.compare( o1.getCost(), o2.getCost() ) );
+        heap = new FibonacciHeap<>((o1, o2) -> costComparator.compare(o1.getCost(), o2.getCost()));
     }
 
     @Override
-    public void decreaseValue( Node node, CostType newValue )
-    {
-        FibonacciHeap<HeapObject>.FibonacciHeapNode fNode = heapNodes
-            .get( node );
-        heap.decreaseKey( fNode, new HeapObject( node, newValue ) );
+    public void decreaseValue(Node node, CostType newValue) {
+        FibonacciHeap<HeapObject>.FibonacciHeapNode fNode = heapNodes.get(node);
+        heap.decreaseKey(fNode, new HeapObject(node, newValue));
     }
 
     @Override
-    public Node extractMin()
-    {
+    public Node extractMin() {
         HeapObject heapObject = heap.extractMin();
-        if ( heapObject == null )
-        {
+        if (heapObject == null) {
             return null;
         }
         return heapObject.getNode();
     }
 
     @Override
-    public void insertValue( Node node, CostType value )
-    {
-        FibonacciHeap<HeapObject>.FibonacciHeapNode fNode = heap
-            .insert( new HeapObject( node, value ) );
-        heapNodes.put( node, fNode );
+    public void insertValue(Node node, CostType value) {
+        FibonacciHeap<HeapObject>.FibonacciHeapNode fNode = heap.insert(new HeapObject(node, value));
+        heapNodes.put(node, fNode);
     }
 
     @Override
-    public boolean isEmpty()
-    {
+    public boolean isEmpty() {
         return heap.isEmpty();
     }
 
     @Override
-    public Node peek()
-    {
+    public Node peek() {
         FibonacciHeap<HeapObject>.FibonacciHeapNode fNode = heap.getMinimum();
-        if ( fNode == null )
-        {
+        if (fNode == null) {
             return null;
         }
         return fNode.getKey().getNode();

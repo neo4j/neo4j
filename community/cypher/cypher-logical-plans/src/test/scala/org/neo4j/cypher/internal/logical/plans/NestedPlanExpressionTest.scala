@@ -30,10 +30,14 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class NestedPlanExpressionTest extends CypherFunSuite {
 
   private val stringifier = ExpressionStringifier(_.asCanonicalStringVal)
-  private implicit val idGen: IdGen = SameId(Id.INVALID_ID)
+  implicit private val idGen: IdGen = SameId(Id.INVALID_ID)
 
   test("nested plan collect should render nicely") {
-    val e = NestedPlanExpression.collect(Argument(), Variable("foo")(InputPosition.NONE), Variable("foo")(InputPosition.NONE))(InputPosition.NONE)
+    val e = NestedPlanExpression.collect(
+      Argument(),
+      Variable("foo")(InputPosition.NONE),
+      Variable("foo")(InputPosition.NONE)
+    )(InputPosition.NONE)
     stringifier(e) should equal("foo")
   }
 

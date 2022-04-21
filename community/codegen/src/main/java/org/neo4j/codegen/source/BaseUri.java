@@ -23,23 +23,19 @@ import java.net.URI;
 import java.nio.file.Path;
 import javax.tools.JavaFileObject;
 
-final class BaseUri
-{
-    static final BaseUri DEFAULT_SOURCE_BASE = new BaseUri( "compiler:/" );
+final class BaseUri {
+    static final BaseUri DEFAULT_SOURCE_BASE = new BaseUri("compiler:/");
     private final String prefix;
 
-    BaseUri( String prefix )
-    {
+    BaseUri(String prefix) {
         this.prefix = prefix;
     }
 
-    BaseUri( Path path )
-    {
-        this( path.toUri().toString() );
+    BaseUri(Path path) {
+        this(path.toUri().toString());
     }
 
-    public URI uri( String packageName, String simpleClassName, JavaFileObject.Kind kind )
-    {
-        return URI.create( prefix + packageName.replace( '.', '/' ) + "/" + simpleClassName + kind.extension );
+    public URI uri(String packageName, String simpleClassName, JavaFileObject.Kind kind) {
+        return URI.create(prefix + packageName.replace('.', '/') + "/" + simpleClassName + kind.extension);
     }
 }

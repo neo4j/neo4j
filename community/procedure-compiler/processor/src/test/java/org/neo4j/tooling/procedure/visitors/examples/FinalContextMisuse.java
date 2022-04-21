@@ -22,8 +22,7 @@ package org.neo4j.tooling.procedure.visitors.examples;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.procedure.Context;
 
-public class FinalContextMisuse
-{
+public class FinalContextMisuse {
     @Context
     public final GraphDatabaseService graphDatabaseService = null;
 }

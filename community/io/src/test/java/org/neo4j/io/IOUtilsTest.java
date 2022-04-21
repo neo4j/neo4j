@@ -19,54 +19,48 @@
  */
 package org.neo4j.io;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-
-import java.io.IOException;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.io.IOUtils.closeAll;
 
-class IOUtilsTest
-{
-    private final AutoCloseable faultyClosable = Mockito.mock( AutoCloseable.class );
-    private final AutoCloseable goodClosable1 = Mockito.mock( AutoCloseable.class );
-    private final AutoCloseable goodClosable2 = Mockito.mock( AutoCloseable.class );
+import java.io.IOException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+class IOUtilsTest {
+    private final AutoCloseable faultyClosable = Mockito.mock(AutoCloseable.class);
+    private final AutoCloseable goodClosable1 = Mockito.mock(AutoCloseable.class);
+    private final AutoCloseable goodClosable2 = Mockito.mock(AutoCloseable.class);
 
     @BeforeEach
-    void setUp() throws Exception
-    {
-        doThrow( new IOException( "Faulty closable" ) ).when( faultyClosable ).close();
+    void setUp() throws Exception {
+        doThrow(new IOException("Faulty closable")).when(faultyClosable).close();
     }
 
     @Test
-    void closeAllSilently() throws Exception
-    {
-        IOUtils.closeAllSilently( goodClosable1, faultyClosable, goodClosable2 );
+    void closeAllSilently() throws Exception {
+        IOUtils.closeAllSilently(goodClosable1, faultyClosable, goodClosable2);
 
-        verify( goodClosable1 ).close();
-        verify( goodClosable2 ).close();
-        verify( faultyClosable ).close();
+        verify(goodClosable1).close();
+        verify(goodClosable2).close();
+        verify(faultyClosable).close();
     }
 
     @Test
-    void closeAllAndRethrowException()
-    {
-        final var e = assertThrows( IOException.class, () -> closeAll( goodClosable1, faultyClosable, goodClosable2 ) );
-        assertThat( e.getMessage() ).isEqualTo( "Exception closing multiple resources." );
-        assertThat( e.getCause() ).isInstanceOf( IOException.class );
+    void closeAllAndRethrowException() {
+        final var e = assertThrows(IOException.class, () -> closeAll(goodClosable1, faultyClosable, goodClosable2));
+        assertThat(e.getMessage()).isEqualTo("Exception closing multiple resources.");
+        assertThat(e.getCause()).isInstanceOf(IOException.class);
     }
 
     @Test
-    void closeMustIgnoreNullResources() throws Exception
-    {
+    void closeMustIgnoreNullResources() throws Exception {
         AutoCloseable a = () -> {};
         AutoCloseable b = null;
         AutoCloseable c = () -> {};
-        IOUtils.close( IOException::new, a, b, c );
+        IOUtils.close(IOException::new, a, b, c);
     }
 }

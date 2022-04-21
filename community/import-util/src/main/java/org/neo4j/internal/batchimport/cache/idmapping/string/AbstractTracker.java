@@ -27,30 +27,25 @@ import org.neo4j.internal.batchimport.cache.NumberArray;
  *
  * @param <ARRAY> type of {@link NumberArray} in this implementation.
  */
-abstract class AbstractTracker<ARRAY extends NumberArray> implements Tracker
-{
+abstract class AbstractTracker<ARRAY extends NumberArray> implements Tracker {
     protected ARRAY array;
 
-    protected AbstractTracker( ARRAY array )
-    {
+    protected AbstractTracker(ARRAY array) {
         this.array = array;
     }
 
     @Override
-    public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
-    {
-        array.acceptMemoryStatsVisitor( visitor );
+    public void acceptMemoryStatsVisitor(MemoryStatsVisitor visitor) {
+        array.acceptMemoryStatsVisitor(visitor);
     }
 
     @Override
-    public void swap( long fromIndex, long toIndex )
-    {
-        array.swap( fromIndex, toIndex );
+    public void swap(long fromIndex, long toIndex) {
+        array.swap(fromIndex, toIndex);
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         array.close();
     }
 }

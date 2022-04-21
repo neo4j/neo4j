@@ -27,19 +27,21 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CollectNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupport {
 
-    private val collector: Any => Seq[Variable] = collectNodesOfType[Variable]()
+  private val collector: Any => Seq[Variable] = collectNodesOfType[Variable]()
 
-    test("collect all variables") {
-      val idA = varFor("a")
-      val idB = varFor("b")
-      val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(idA), None, Some(idB), None)_)))_, Seq(), None)_
+  test("collect all variables") {
+    val idA = varFor("a")
+    val idB = varFor("b")
+    val ast: ASTNode =
+      Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(idA), None, Some(idB), None) _))) _, Seq(), None) _
 
-      collector(ast) should equal(Seq(idA, idB))
-    }
+    collector(ast) should equal(Seq(idA, idB))
+  }
 
-    test("collect no variable") {
-      val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(None, None, None, None)_)))_, Seq(), None)_
+  test("collect no variable") {
+    val ast: ASTNode =
+      Match(optional = false, Pattern(Seq(EveryPath(NodePattern(None, None, None, None) _))) _, Seq(), None) _
 
-      collector(ast) shouldBe empty
-    }
+    collector(ast) shouldBe empty
+  }
 }

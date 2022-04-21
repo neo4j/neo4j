@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import java.io.IOException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BooleanSupplier;
-
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.Resource;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Mutex between {@link #storeCopy(ThrowingAction) store-copy} and {@link #checkPoint() check-point}.
@@ -64,8 +63,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * Status changes are made in synchronized as opposed to atomic CAS operations, since this results
  * in simpler code and since this mutex is normally called a couple of times per hour it's not an issue.
  */
-public class StoreCopyCheckPointMutex
-{
+public class StoreCopyCheckPointMutex {
     /**
      * Main lock. Read-lock is for {@link #storeCopy(ThrowingAction)} and write-lock is for {@link #checkPoint()}.
      */
@@ -88,139 +86,105 @@ public class StoreCopyCheckPointMutex
      */
     private volatile Throwable storeCopyActionError;
 
-    public StoreCopyCheckPointMutex()
-    {
-        this( new ReentrantReadWriteLock( true ) );
+    public StoreCopyCheckPointMutex() {
+        this(new ReentrantReadWriteLock(true));
     }
 
-    public StoreCopyCheckPointMutex( ReadWriteLock lock )
-    {
+    public StoreCopyCheckPointMutex(ReadWriteLock lock) {
         this.lock = lock;
     }
 
-    public Resource storeCopy( ThrowingAction<IOException> beforeFirstConcurrentStoreCopy ) throws IOException
-    {
+    public Resource storeCopy(ThrowingAction<IOException> beforeFirstConcurrentStoreCopy) throws IOException {
         Lock readLock = lock.readLock();
         boolean firstConcurrentRead = incrementCount() == 0;
         boolean success = false;
-        try
-        {
-            if ( firstConcurrentRead )
-            {
-                try
-                {
+        try {
+            if (firstConcurrentRead) {
+                try {
                     beforeFirstConcurrentStoreCopy.apply();
-                }
-                catch ( IOException e )
-                {
+                } catch (IOException e) {
                     storeCopyActionError = e;
                     throw e;
-                }
-                catch ( Throwable e )
-                {
+                } catch (Throwable e) {
                     storeCopyActionError = e;
-                    throw new IOException( e );
+                    throw new IOException(e);
                 }
                 storeCopyActionCompleted = true;
-            }
-            else
-            {
+            } else {
                 // Wait for the "before" first store copy to complete
                 waitForFirstStoreCopyActionToComplete();
             }
             success = true;
-        }
-        finally
-        {
-            if ( success )
-            {
+        } finally {
+            if (success) {
                 readLock.lock();
-            }
-            else
-            {
+            } else {
                 decrementCount();
             }
         }
 
-        return () ->
-        {
+        return () -> {
             // Decrement concurrent store-copy count
             decrementCount();
             readLock.unlock();
         };
     }
 
-    private void waitForFirstStoreCopyActionToComplete() throws IOException
-    {
-        while ( !storeCopyActionCompleted )
-        {
-            if ( storeCopyActionError != null )
-            {
-                throw new IOException( "Co-operative action before store-copy failed", storeCopyActionError );
+    private void waitForFirstStoreCopyActionToComplete() throws IOException {
+        while (!storeCopyActionCompleted) {
+            if (storeCopyActionError != null) {
+                throw new IOException("Co-operative action before store-copy failed", storeCopyActionError);
             }
             parkAWhile();
         }
     }
 
-    private synchronized void decrementCount()
-    {
+    private synchronized void decrementCount() {
         storeCopyCount--;
-        if ( storeCopyCount == 0 )
-        {
+        if (storeCopyCount == 0) {
             // If I'm the last one then also clear the other status fields so that a clean new session
             // can begin on the next store-copy request
             clear();
         }
     }
 
-    private void clear()
-    {
+    private void clear() {
         storeCopyActionCompleted = false;
         storeCopyActionError = null;
     }
 
-    private synchronized int incrementCount()
-    {
+    private synchronized int incrementCount() {
         return storeCopyCount++;
     }
 
-    private static void parkAWhile()
-    {
-        LockSupport.parkNanos( MILLISECONDS.toNanos( 100 ) );
+    private static void parkAWhile() {
+        LockSupport.parkNanos(MILLISECONDS.toNanos(100));
     }
 
-    public Resource tryCheckPoint()
-    {
+    public Resource tryCheckPoint() {
         Lock writeLock = lock.writeLock();
         return writeLock.tryLock() ? writeLock::unlock : null;
     }
 
-    public Resource tryCheckPoint( BooleanSupplier timeoutPredicate )
-    {
+    public Resource tryCheckPoint(BooleanSupplier timeoutPredicate) {
         Lock writeLock = lock.writeLock();
         long waitTimeMillis = 0; // Don't do any waiting on the first iteration. We want to consult the predicate first.
 
-        try
-        {
-            while ( !writeLock.tryLock( waitTimeMillis, MILLISECONDS ) )
-            {
-                if ( timeoutPredicate.getAsBoolean() )
-                {
+        try {
+            while (!writeLock.tryLock(waitTimeMillis, MILLISECONDS)) {
+                if (timeoutPredicate.getAsBoolean()) {
                     return null;
                 }
                 waitTimeMillis = 100;
             }
-        }
-        catch ( InterruptedException e )
-        {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return null;
         }
         return writeLock::unlock;
     }
 
-    public Resource checkPoint()
-    {
+    public Resource checkPoint() {
         Lock writeLock = lock.writeLock();
         writeLock.lock();
         return writeLock::unlock;

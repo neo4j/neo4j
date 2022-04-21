@@ -29,19 +29,23 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 
-case class GetDegree(node: Expression, typ: Option[KeyToken], direction: SemanticDirection) extends NullInNullOutExpression(node) {
+case class GetDegree(node: Expression, typ: Option[KeyToken], direction: SemanticDirection)
+    extends NullInNullOutExpression(node) {
 
   val getDegree: (QueryState, Long) => Long = typ match {
-    case None    => (state, node) => state.query.nodeGetDegree(node, direction, state.cursors.nodeCursor)
-    case Some(t) => (state, node) => t.getOptId(state.query) match {
-      case None            => 0
-      case Some(relTypeId) => state.query.nodeGetDegree(node, direction, relTypeId, state.cursors.nodeCursor)
-    }
+    case None => (state, node) => state.query.nodeGetDegree(node, direction, state.cursors.nodeCursor)
+    case Some(t) => (state, node) =>
+        t.getOptId(state.query) match {
+          case None            => 0
+          case Some(relTypeId) => state.query.nodeGetDegree(node, direction, relTypeId, state.cursors.nodeCursor)
+        }
   }
 
   override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = value match {
     case n: VirtualNodeValue => Values.longValue(getDegree(state, n.id()))
-    case other   => throw new CypherTypeException(s"Type mismatch: expected a node but was $other of type ${other.getClass.getSimpleName}")
+    case other => throw new CypherTypeException(
+        s"Type mismatch: expected a node but was $other of type ${other.getClass.getSimpleName}"
+      )
   }
 
   override def arguments: Seq[Expression] = Seq(node)

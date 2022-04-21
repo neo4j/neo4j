@@ -21,144 +21,120 @@ package org.neo4j.shell.svm;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
-
 import java.lang.invoke.VarHandle;
 import java.util.Map;
 
-@TargetClass( className = "org.neo4j.memory.HeapEstimator" )
-final class This_is_not_the_heap_you_are_looking_for
-{
+@TargetClass(className = "org.neo4j.memory.HeapEstimator")
+final class This_is_not_the_heap_you_are_looking_for {
     @Substitute
-    public static long alignObjectSize( long size )
-    {
+    public static long alignObjectSize(long size) {
         return 0L;
     }
 
     @Substitute
-    public static long sizeOf( Long value )
-    {
+    public static long sizeOf(Long value) {
         return 0L;
     }
 
     @Substitute
-    public static long shallowSizeOfObjectArray( int size )
-    {
+    public static long shallowSizeOfObjectArray(int size) {
         return 0L;
     }
 
     @Substitute
-    public static long sizeOfLongArray( int size )
-    {
+    public static long sizeOfLongArray(int size) {
         return 0L;
     }
 
     @Substitute
-    public static long sizeOfObjectArray( long elementSize, int size )
-    {
+    public static long sizeOfObjectArray(long elementSize, int size) {
         return 0L;
     }
 
     @Substitute
-    public static long sizeOf( byte[] arr )
-    {
+    public static long sizeOf(byte[] arr) {
         return 0L;
     }
 
     @Substitute
-    public static long sizeOf( boolean[] arr )
-    {
+    public static long sizeOf(boolean[] arr) {
         return 0L;
     }
 
     @Substitute
-    public static long sizeOf( char[] arr )
-    {
+    public static long sizeOf(char[] arr) {
         return 0L;
     }
 
     @Substitute
-    public static long sizeOf( short[] arr )
-    {
+    public static long sizeOf(short[] arr) {
         return 0L;
     }
 
     @Substitute
-    public static long sizeOf( int[] arr )
-    {
+    public static long sizeOf(int[] arr) {
         return 0L;
     }
 
     @Substitute
-    public static long sizeOf( float[] arr )
-    {
+    public static long sizeOf(float[] arr) {
         return 0L;
     }
 
     @Substitute
-    public static long sizeOf( long[] arr )
-    {
+    public static long sizeOf(long[] arr) {
         return 0L;
     }
 
     @Substitute
-    public static long sizeOf( double[] arr )
-    {
+    public static long sizeOf(double[] arr) {
         return 0L;
     }
 
     @Substitute
-    public static long sizeOf( String[] arr )
-    {
+    public static long sizeOf(String[] arr) {
         return 0L;
     }
 
     @Substitute
-    public static long sizeOfHashMap( Map<?,?> map )
-    {
+    public static long sizeOfHashMap(Map<?, ?> map) {
         return 0L;
     }
 
     @Substitute
-    public static long sizeOf( String s )
-    {
+    public static long sizeOf(String s) {
         return 0L;
     }
 
     @Substitute
-    public static long sizeOf( Object o )
-    {
+    public static long sizeOf(Object o) {
         return 0L;
     }
 
     @Substitute
-    public static long shallowSizeOf( Object[] arr )
-    {
+    public static long shallowSizeOf(Object[] arr) {
         return 0L;
     }
 
     @Substitute
-    public static long shallowSizeOf( Object obj )
-    {
+    public static long shallowSizeOf(Object obj) {
         return 0L;
     }
 
     @Substitute
-    public static long shallowSizeOfInstance( Class<?> clazz )
-    {
+    public static long shallowSizeOfInstance(Class<?> clazz) {
         return 0L;
     }
 
     @Substitute
-    public static long shallowSizeOfInstanceWithObjectReferences( int numberOfObjectReferences )
-    {
+    public static long shallowSizeOfInstanceWithObjectReferences(int numberOfObjectReferences) {
         return 0L;
     }
 }
 
-@TargetClass( className = "org.neo4j.memory.RuntimeInternals" )
+@TargetClass(className = "org.neo4j.memory.RuntimeInternals")
 @Substitute
-final class Target_org_neo4j_memory_RuntimeInternals
-{
+final class Target_org_neo4j_memory_RuntimeInternals {
     static final boolean DEBUG_ESTIMATIONS = false;
 
     static final long LONG_CACHE_MIN_VALUE = 0L;
@@ -171,6 +147,4 @@ final class Target_org_neo4j_memory_RuntimeInternals
     static final VarHandle STRING_VALUE_ARRAY = null;
 }
 
-class Neo4jMemorySubstitutions
-{
-}
+class Neo4jMemorySubstitutions {}

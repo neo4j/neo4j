@@ -21,27 +21,26 @@
 package org.neo4j.kernel.impl.coreapi.internal;
 
 import java.util.function.ToLongFunction;
-
 import org.neo4j.graphdb.Entity;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.kernel.api.ResourceTracker;
 
-public class TrackedCursorIterator<CURSOR extends Cursor, E extends Entity> extends CursorIterator<CURSOR,E>
-{
+public class TrackedCursorIterator<CURSOR extends Cursor, E extends Entity> extends CursorIterator<CURSOR, E> {
     private final ResourceTracker resourceTracker;
 
-    public TrackedCursorIterator( CURSOR cursor, ToLongFunction<CURSOR> toReferenceFunction, CursorEntityFactory<CURSOR,E> entityFactory,
-                                  ResourceTracker resourceTracker )
-    {
-        super( cursor, toReferenceFunction, entityFactory );
+    public TrackedCursorIterator(
+            CURSOR cursor,
+            ToLongFunction<CURSOR> toReferenceFunction,
+            CursorEntityFactory<CURSOR, E> entityFactory,
+            ResourceTracker resourceTracker) {
+        super(cursor, toReferenceFunction, entityFactory);
         this.resourceTracker = resourceTracker;
-        resourceTracker.registerCloseableResource( this );
+        resourceTracker.registerCloseableResource(this);
     }
 
     @Override
-    void closeResources()
-    {
-        resourceTracker.unregisterCloseableResource( this );
+    void closeResources() {
+        resourceTracker.unregisterCloseableResource(this);
         super.closeResources();
     }
 }

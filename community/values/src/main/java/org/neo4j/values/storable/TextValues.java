@@ -22,41 +22,32 @@ package org.neo4j.values.storable;
 /**
  * Static methods for comparing and hashing chars, Strings and Text values.
  */
-@SuppressWarnings( "WeakerAccess" )
-public final class TextValues
-{
-    private TextValues()
-    {
-    }
+@SuppressWarnings("WeakerAccess")
+public final class TextValues {
+    private TextValues() {}
 
-    public static int compareCharToString( char c, String s )
-    {
+    public static int compareCharToString(char c, String s) {
         int length = s.length();
         int x = length == 0 ? 1 : 0;
-        if ( x == 0 )
-        {
-            x = Character.compare( c, s.charAt( 0 ) );
-            if ( x == 0 && length > 1 )
-            {
+        if (x == 0) {
+            x = Character.compare(c, s.charAt(0));
+            if (x == 0 && length > 1) {
                 x = -1;
             }
         }
         return x;
     }
 
-    public static int compareTextArrays( TextArray a, TextArray b )
-    {
+    public static int compareTextArrays(TextArray a, TextArray b) {
         int i = 0;
         int x = 0;
-        int length = Math.min( a.length(), b.length() );
+        int length = Math.min(a.length(), b.length());
 
-        while ( x == 0 && i < length )
-        {
-            x = a.stringValue( i ).compareTo( b.stringValue( i ) );
+        while (x == 0 && i < length) {
+            x = a.stringValue(i).compareTo(b.stringValue(i));
             i++;
         }
-        if ( x == 0 )
-        {
+        if (x == 0) {
             x = a.length() - b.length();
         }
         return x;

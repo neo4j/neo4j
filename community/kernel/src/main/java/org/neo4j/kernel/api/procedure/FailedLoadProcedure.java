@@ -26,18 +26,16 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 
-public class FailedLoadProcedure extends CallableProcedure.BasicProcedure
-{
-    public FailedLoadProcedure( ProcedureSignature signature )
-    {
-        super( signature );
+public class FailedLoadProcedure extends CallableProcedure.BasicProcedure {
+    public FailedLoadProcedure(ProcedureSignature signature) {
+        super(signature);
     }
 
     @Override
-    public RawIterator<AnyValue[],ProcedureException> apply(
-            Context ctx, AnyValue[] input, ResourceTracker resourceTracker ) throws ProcedureException
-    {
-        throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                signature().description().orElse( "Failed to load " + signature().name() ) );
+    public RawIterator<AnyValue[], ProcedureException> apply(
+            Context ctx, AnyValue[] input, ResourceTracker resourceTracker) throws ProcedureException {
+        throw new ProcedureException(
+                Status.Procedure.ProcedureRegistrationFailed,
+                signature().description().orElse("Failed to load " + signature().name()));
     }
 }

@@ -36,17 +36,17 @@ import org.neo4j.values.storable.Values.pointValue
 import scala.util.Random
 
 abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
-                                                                              edition: Edition[CONTEXT],
-                                                                              runtime: CypherRuntime[CONTEXT],
-                                                                              sizeHint: Int
-                                                                            ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should seek 2d cartesian points") {
     given {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
-        case (rel, i) => rel.setProperty("location",  pointValue(CARTESIAN, i, 0))
+        case (rel, i) => rel.setProperty("location", pointValue(CARTESIAN, i, 0))
       }
     }
 
@@ -54,12 +54,19 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("r.location.x AS location")
-      .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-                              "{x: 0.0, y: 0.0, crs: 'cartesian'}", "{x: 2.0, y: 2.0, crs: 'cartesian'}",
-                                        indexType = IndexType.POINT)
+      .pointBoundingBoxRelationshipIndexSeekExpr(
+        "r",
+        "n",
+        "m",
+        "R",
+        "location",
+        "{x: 0.0, y: 0.0, crs: 'cartesian'}",
+        "{x: 2.0, y: 2.0, crs: 'cartesian'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2)))
   }
@@ -77,12 +84,19 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("r.location.x AS location")
-      .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-                              "{x: 0.0, y: 0.0, z: 0.0, crs: 'cartesian-3d'}", "{x: 2.0, y: 2.0, z: 2.0, crs: 'cartesian-3d'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxRelationshipIndexSeekExpr(
+        "r",
+        "n",
+        "m",
+        "R",
+        "location",
+        "{x: 0.0, y: 0.0, z: 0.0, crs: 'cartesian-3d'}",
+        "{x: 2.0, y: 2.0, z: 2.0, crs: 'cartesian-3d'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2)))
   }
@@ -100,14 +114,21 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("r.location.longitude AS location")
-      .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-                              "{longitude: 0.0, latitude: 0.0, crs: 'wgs-84'}", "{longitude: 10.0, latitude: 0.0, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxRelationshipIndexSeekExpr(
+        "r",
+        "n",
+        "m",
+        "R",
+        "location",
+        "{longitude: 0.0, latitude: 0.0, crs: 'wgs-84'}",
+        "{longitude: 10.0, latitude: 0.0, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2, 3, 4, 5 , 6, 7, 8, 9, 10)))
+    runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)))
   }
 
   test("should seek 3d geographic points") {
@@ -123,17 +144,22 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("r.location.longitude AS location")
-      .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-                              "{longitude: 0.0, latitude: 0.0, height: 0.0, crs: 'wgs-84-3d'}",
+      .pointBoundingBoxRelationshipIndexSeekExpr(
+        "r",
+        "n",
+        "m",
+        "R",
+        "location",
+        "{longitude: 0.0, latitude: 0.0, height: 0.0, crs: 'wgs-84-3d'}",
         "{longitude: 10.0, latitude: 0.0, height: 0.0, crs: 'wgs-84-3d'}",
-        indexType = IndexType.POINT)
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2, 3, 4, 5 , 6, 7, 8, 9, 10)))
+    runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)))
   }
-
 
   test("should cache properties") {
     given {
@@ -148,19 +174,27 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("cacheR[r.location] AS location")
-      .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m",  "R", "location",
-                              "{x: 0.0, y: 0.0, crs: 'cartesian'}",
-                              "{x: 2.0, y: 2.0, crs: 'cartesian'}",
-                              getValue = GetValue,
-        indexType = IndexType.POINT)
+      .pointBoundingBoxRelationshipIndexSeekExpr(
+        "r",
+        "n",
+        "m",
+        "R",
+        "location",
+        "{x: 0.0, y: 0.0, crs: 'cartesian'}",
+        "{x: 2.0, y: 2.0, crs: 'cartesian'}",
+        getValue = GetValue,
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("location")
-      .withRows(singleColumn(List(pointValue(CARTESIAN, 0, 0),
-                                  pointValue(CARTESIAN, 1, 0),
-                                  pointValue(CARTESIAN, 2, 0))))
+      .withRows(singleColumn(List(
+        pointValue(CARTESIAN, 0, 0),
+        pointValue(CARTESIAN, 1, 0),
+        pointValue(CARTESIAN, 2, 0)
+      )))
   }
 
   test("should handle bbox on the north-western hemisphere") {
@@ -179,12 +213,19 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: 50, latitude: 50, crs: 'wgs-84'}", "{longitude: 60, latitude: 60, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxRelationshipIndexSeekExpr(
+        "r",
+        "n",
+        "m",
+        "R",
+        "location",
+        "{longitude: 50, latitude: 50, crs: 'wgs-84'}",
+        "{longitude: 60, latitude: 60, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = rels.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -196,7 +237,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle bbox on the north-eastern hemisphere") {
-   val rels = given {
+    val rels = given {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -211,12 +252,19 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: -60, latitude: 50, crs: 'wgs-84'}", "{longitude: -50, latitude: 60, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxRelationshipIndexSeekExpr(
+        "r",
+        "n",
+        "m",
+        "R",
+        "location",
+        "{longitude: -60, latitude: 50, crs: 'wgs-84'}",
+        "{longitude: -50, latitude: 60, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = rels.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -228,7 +276,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle bbox on the south-western hemisphere") {
-   val rels = given {
+    val rels = given {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -243,12 +291,19 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: 50, latitude: -60, crs: 'wgs-84'}", "{longitude: 60, latitude: -50, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxRelationshipIndexSeekExpr(
+        "r",
+        "n",
+        "m",
+        "R",
+        "location",
+        "{longitude: 50, latitude: -60, crs: 'wgs-84'}",
+        "{longitude: 60, latitude: -50, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = rels.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -260,7 +315,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle bbox on the south-eastern hemisphere") {
-   val rels = given {
+    val rels = given {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -275,12 +330,19 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: -60, latitude: -60, crs: 'wgs-84'}", "{longitude: -50, latitude: -50, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxRelationshipIndexSeekExpr(
+        "r",
+        "n",
+        "m",
+        "R",
+        "location",
+        "{longitude: -60, latitude: -60, crs: 'wgs-84'}",
+        "{longitude: -50, latitude: -50, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = rels.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -292,7 +354,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle bbox crossing the dateline") {
-   val rels = given {
+    val rels = given {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -307,17 +369,24 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: 170, latitude: 50, crs: 'wgs-84'}", "{longitude: -170, latitude: 60, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxRelationshipIndexSeekExpr(
+        "r",
+        "n",
+        "m",
+        "R",
+        "location",
+        "{longitude: 170, latitude: 50, crs: 'wgs-84'}",
+        "{longitude: -170, latitude: 60, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = rels.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
       val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
-      (longitude >= 170 || longitude <= -170) && (latitude>= 50 && latitude <= 60)
+      (longitude >= 170 || longitude <= -170) && (latitude >= 50 && latitude <= 60)
     })
     runtimeResult should beColumns("r").withRows(singleColumn(expected))
   }
@@ -338,12 +407,19 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: 5, latitude: -10, crs: 'wgs-84'}", "{longitude: 10, latitude: 10, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxRelationshipIndexSeekExpr(
+        "r",
+        "n",
+        "m",
+        "R",
+        "location",
+        "{longitude: 5, latitude: -10, crs: 'wgs-84'}",
+        "{longitude: 10, latitude: 10, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = rels.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -369,17 +445,24 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m",  "R", "location",
-        "{longitude: 170, latitude: -10, crs: 'wgs-84'}", "{longitude: -170, latitude: 10, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxRelationshipIndexSeekExpr(
+        "r",
+        "n",
+        "m",
+        "R",
+        "location",
+        "{longitude: 170, latitude: -10, crs: 'wgs-84'}",
+        "{longitude: -170, latitude: 10, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = rels.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
       val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
-      (longitude >= 170 || longitude <= -170) && (latitude>= -10 && latitude <= 10)
+      (longitude >= 170 || longitude <= -170) && (latitude >= -10 && latitude <= 10)
     })
     runtimeResult should beColumns("r").withRows(singleColumn(expected))
   }
@@ -400,12 +483,19 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: 20, latitude: 50, crs: 'wgs-84'}", "{longitude: 10, latitude: 60, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxRelationshipIndexSeekExpr(
+        "r",
+        "n",
+        "m",
+        "R",
+        "location",
+        "{longitude: 20, latitude: 50, crs: 'wgs-84'}",
+        "{longitude: 10, latitude: 60, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = rels.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -416,7 +506,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle bbox with lowerLeft east of upperRight on the north-eastern hemisphere") {
-   val rels = given {
+    val rels = given {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -431,12 +521,19 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: -10, latitude: 50, crs: 'wgs-84'}", "{longitude: -20, latitude: 60, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxRelationshipIndexSeekExpr(
+        "r",
+        "n",
+        "m",
+        "R",
+        "location",
+        "{longitude: -10, latitude: 50, crs: 'wgs-84'}",
+        "{longitude: -20, latitude: 60, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = rels.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -447,7 +544,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle bbox with lowerLeft east of upperRight on the south-western hemisphere") {
-   val rels = given {
+    val rels = given {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -462,12 +559,19 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: 20, latitude: -60, crs: 'wgs-84'}", "{longitude: 10, latitude: -50, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxRelationshipIndexSeekExpr(
+        "r",
+        "n",
+        "m",
+        "R",
+        "location",
+        "{longitude: 20, latitude: -60, crs: 'wgs-84'}",
+        "{longitude: 10, latitude: -50, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = rels.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -478,7 +582,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle bbox with lowerLeft east of upperRight on the south-eastern hemisphere") {
-   val rels = given {
+    val rels = given {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -493,12 +597,19 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: -10, latitude: -60, crs: 'wgs-84'}", "{longitude: -20, latitude: -50, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxRelationshipIndexSeekExpr(
+        "r",
+        "n",
+        "m",
+        "R",
+        "location",
+        "{longitude: -10, latitude: -60, crs: 'wgs-84'}",
+        "{longitude: -20, latitude: -50, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = rels.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -509,7 +620,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle bbox crossing the dateline with lowerLeft east of upperRight") {
-   val rels = given {
+    val rels = given {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -524,12 +635,19 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: -170, latitude: 50, crs: 'wgs-84'}", "{longitude: 170, latitude: 60, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxRelationshipIndexSeekExpr(
+        "r",
+        "n",
+        "m",
+        "R",
+        "location",
+        "{longitude: -170, latitude: 50, crs: 'wgs-84'}",
+        "{longitude: 170, latitude: 60, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = rels.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -555,12 +673,19 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: 10, latitude: 50, crs: 'wgs-84'}", "{longitude: 20, latitude: 40, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxRelationshipIndexSeekExpr(
+        "r",
+        "n",
+        "m",
+        "R",
+        "location",
+        "{longitude: 10, latitude: 50, crs: 'wgs-84'}",
+        "{longitude: 20, latitude: 40, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("r").withNoRows()
   }
@@ -574,7 +699,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
           val height = Random.nextInt(1000)
-          rel.setProperty("location", pointValue(WGS_84_3D, longitude, latitude, height ))
+          rel.setProperty("location", pointValue(WGS_84_3D, longitude, latitude, height))
       }
       rels
     }
@@ -582,12 +707,19 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: 50, latitude: 50, height: 100, crs: 'wgs-84-3d'}", "{longitude: 60, latitude: 60, height: 200, crs: 'wgs-84-3d'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxRelationshipIndexSeekExpr(
+        "r",
+        "n",
+        "m",
+        "R",
+        "location",
+        "{longitude: 50, latitude: 50, height: 100, crs: 'wgs-84-3d'}",
+        "{longitude: 60, latitude: 60, height: 200, crs: 'wgs-84-3d'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = rels.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -595,8 +727,8 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
       val height = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(2)
 
       (longitude >= 50 && longitude <= 60) &&
-        (latitude >= 50 && latitude <= 60) &&
-        (height >= 100 && height <= 200)
+      (latitude >= 50 && latitude <= 60) &&
+      (height >= 100 && height <= 200)
     })
     runtimeResult should beColumns("r").withRows(singleColumn(expected))
   }
@@ -605,19 +737,19 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     given {
       relationshipIndex(IndexType.POINT, "R", "location")
       circleGraph(100)._2.zipWithIndex.foreach {
-        case(rel, i) => rel.setProperty("location", i)
+        case (rel, i) => rel.setProperty("location", i)
       }
       circleGraph(100)._2.zipWithIndex.foreach {
-        case(rel, i) => rel.setProperty("location", pointValue(WGS_84, i, 0))
+        case (rel, i) => rel.setProperty("location", pointValue(WGS_84, i, 0))
       }
       circleGraph(100)._2.zipWithIndex.foreach {
-        case(rel, i) => rel.setProperty("location",  pointValue(WGS_84_3D, i, 0, 0))
+        case (rel, i) => rel.setProperty("location", pointValue(WGS_84_3D, i, 0, 0))
       }
       circleGraph(100)._2.zipWithIndex.foreach {
-        case(rel, i) => rel.setProperty("location", pointValue(CARTESIAN_3D, i, 0, 0))
+        case (rel, i) => rel.setProperty("location", pointValue(CARTESIAN_3D, i, 0, 0))
       }
       circleGraph(sizeHint)._2.zipWithIndex.foreach {
-        case(rel, i) => rel.setProperty("location", pointValue(CARTESIAN, i, 0))
+        case (rel, i) => rel.setProperty("location", pointValue(CARTESIAN, i, 0))
       }
     }
 
@@ -625,12 +757,19 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("r.location.x AS location")
-      .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{x: 0.0, y: 0.0, crs: 'cartesian'}", "{x: 2.0, y: 2.0, crs: 'cartesian'}",
-      indexType = IndexType.POINT)
+      .pointBoundingBoxRelationshipIndexSeekExpr(
+        "r",
+        "n",
+        "m",
+        "R",
+        "location",
+        "{x: 0.0, y: 0.0, crs: 'cartesian'}",
+        "{x: 2.0, y: 2.0, crs: 'cartesian'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2)))
   }

@@ -39,7 +39,7 @@ object checkForEagerLoadCsv extends NotificationChecker {
     val resultState = plan.folder.treeFold[SearchState](NoEagerFound) {
       case _: LoadCSV => {
         case EagerFound => SkipChildren(EagerWithLoadCsvFound)
-        case e => SkipChildren(e)
+        case e          => SkipChildren(e)
       }
       case _: Eager =>
         _ =>
@@ -48,7 +48,7 @@ object checkForEagerLoadCsv extends NotificationChecker {
 
     resultState match {
       case EagerWithLoadCsvFound => Seq(EagerLoadCsvNotification)
-      case _ => Seq.empty
+      case _                     => Seq.empty
     }
   }
 }

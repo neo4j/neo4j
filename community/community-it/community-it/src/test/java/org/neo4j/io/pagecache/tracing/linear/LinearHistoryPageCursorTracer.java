@@ -32,130 +32,104 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
  * @see HEvents
  * @see LinearHistoryPageCacheTracer
  */
-public class LinearHistoryPageCursorTracer implements PageCursorTracer
-{
+public class LinearHistoryPageCursorTracer implements PageCursorTracer {
     private final LinearHistoryTracer tracer;
     private final String tag;
 
-    LinearHistoryPageCursorTracer( LinearHistoryTracer tracer, String tag )
-    {
+    LinearHistoryPageCursorTracer(LinearHistoryTracer tracer, String tag) {
         this.tracer = tracer;
         this.tag = tag;
     }
 
     @Override
-    public long faults()
-    {
+    public long faults() {
         return 0;
     }
 
     @Override
-    public long failedFaults()
-    {
+    public long failedFaults() {
         return 0;
     }
 
     @Override
-    public long noFaults()
-    {
+    public long noFaults() {
         return 0;
     }
 
     @Override
-    public long pins()
-    {
+    public long pins() {
         return 0;
     }
 
     @Override
-    public long unpins()
-    {
+    public long unpins() {
         return 0;
     }
 
     @Override
-    public long hits()
-    {
+    public long hits() {
         return 0;
     }
 
     @Override
-    public long bytesRead()
-    {
+    public long bytesRead() {
         return 0;
     }
 
     @Override
-    public long evictions()
-    {
+    public long evictions() {
         return 0;
     }
 
     @Override
-    public long evictionExceptions()
-    {
+    public long evictionExceptions() {
         return 0;
     }
 
     @Override
-    public long bytesWritten()
-    {
+    public long bytesWritten() {
         return 0;
     }
 
     @Override
-    public long flushes()
-    {
+    public long flushes() {
         return 0;
     }
 
     @Override
-    public long merges()
-    {
+    public long merges() {
         return 0;
     }
 
     @Override
-    public double hitRatio()
-    {
+    public double hitRatio() {
         return 0d;
     }
 
     @Override
-    public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
-    {
-        return tracer.add( new HEvents.PinHEvent( tracer, writeLock, filePageId, swapper ) );
+    public PinEvent beginPin(boolean writeLock, long filePageId, PageSwapper swapper) {
+        return tracer.add(new HEvents.PinHEvent(tracer, writeLock, filePageId, swapper));
     }
 
     @Override
-    public void unpin( long filePageId, PageSwapper swapper )
-    {
-    }
+    public void unpin(long filePageId, PageSwapper swapper) {}
 
     @Override
-    public void reportEvents()
-    {
+    public void reportEvents() {
         // nothing to do
     }
 
     @Override
-    public String getTag()
-    {
+    public String getTag() {
         return tag;
     }
 
     @Override
-    public void openCursor()
-    {
-    }
+    public void openCursor() {}
 
     @Override
-    public void closeCursor()
-    {
-    }
+    public void closeCursor() {}
 
     @Override
-    public void merge( CursorStatisticSnapshot statisticSnapshot )
-    {
-    }
+    public void merge(CursorStatisticSnapshot statisticSnapshot) {}
 }

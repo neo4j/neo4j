@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api;
 
 import java.time.Clock;
-
 import org.neo4j.internal.id.IdController;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
@@ -28,9 +27,8 @@ import org.neo4j.storageengine.api.TransactionIdStore;
  * Used to inject additional conditions (e.g. delays) to ID reuse, i.e. when a deleted ID can be available for reuse again.
  */
 @FunctionalInterface
-public interface ExternalIdReuseConditionProvider
-{
-    ExternalIdReuseConditionProvider NONE = ( transactionIdStore, clock ) -> snapshot -> true;
+public interface ExternalIdReuseConditionProvider {
+    ExternalIdReuseConditionProvider NONE = (transactionIdStore, clock) -> snapshot -> true;
 
-    IdController.IdFreeCondition get( TransactionIdStore transactionIdStore, Clock clock );
+    IdController.IdFreeCondition get(TransactionIdStore transactionIdStore, Clock clock);
 }

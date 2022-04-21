@@ -50,11 +50,11 @@ class SplitFunctionTest extends CypherFunSuite {
   }
 
   test("splitting a string containing only the split pattern should return two empty strings") {
-    split(",", ",") should be(seq("",""))
+    split(",", ",") should be(seq("", ""))
   }
 
   test("splitting with character that has a meaning in regex") {
-    split("a|b", "|") should be(seq("a","b"))
+    split("a|b", "|") should be(seq("a", "b"))
   }
 
   test("using an empty separator should split on every character") {
@@ -71,12 +71,16 @@ class SplitFunctionTest extends CypherFunSuite {
     split("(a)-->(b)<--(c)-->(d)--(e)", List("-->", "<--", "--")) should be(seq("(a)", "(b)", "(c)", "(d)", "(e)"))
   }
 
-  test("splitting non-empty string with multiple separator strings where one is empty should return all one-char substrings") {
+  test(
+    "splitting non-empty string with multiple separator strings where one is empty should return all one-char substrings"
+  ) {
     val expected = list("this is a sentence".split("").map(stringValue): _*)
     split("this is a sentence", List(",", ";", "")) should be(expected)
   }
 
-  test("splitting non-empty string with multiple separator strings where one is empty and others match valid characters should return all one-char substrings without the other matching characters") {
+  test(
+    "splitting non-empty string with multiple separator strings where one is empty and others match valid characters should return all one-char substrings without the other matching characters"
+  ) {
     val sentence = ";This is a sentence;, with punctuation..."
     val expected = list(sentence.replaceAll("[,.;]", "").split("").map(stringValue): _*)
     split(sentence, List(",", ".", ";", "")) should be(expected)
@@ -94,7 +98,7 @@ class SplitFunctionTest extends CypherFunSuite {
     split('a', List("a", "b")) should be(seq("", ""))
   }
 
-  private def seq(vals: String*) = list(vals.map(stringValue):_*)
+  private def seq(vals: String*) = list(vals.map(stringValue): _*)
 
   private def split(orig: String, splitPattern: String) = {
     val expr = SplitFunction(literal(orig), literal(splitPattern))

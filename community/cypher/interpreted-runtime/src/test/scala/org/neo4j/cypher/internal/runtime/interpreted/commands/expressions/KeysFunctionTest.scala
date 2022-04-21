@@ -45,7 +45,9 @@ class KeysFunctionTest extends CypherFunSuite {
     val queryContext = mock[QueryContext]
     val state = QueryStateHelper.emptyWith(query = queryContext)
 
-    when(queryContext.nodePropertyIds(node.getId, state.cursors.nodeCursor, state.cursors.propertyCursor)).thenReturn(Array(11, 12, 13))
+    when(queryContext.nodePropertyIds(node.getId, state.cursors.nodeCursor, state.cursors.propertyCursor)).thenReturn(
+      Array(11, 12, 13)
+    )
 
     when(queryContext.getPropertyKeyName(11)).thenReturn("theProp1")
     when(queryContext.getPropertyKeyName(12)).thenReturn("OtherProp")
@@ -65,7 +67,9 @@ class KeysFunctionTest extends CypherFunSuite {
     val node = mock[Node]
     val queryContext = mock[QueryContext]
     val state = QueryStateHelper.emptyWith(query = queryContext)
-    when(queryContext.nodePropertyIds(node.getId, state.cursors.nodeCursor, state.cursors.propertyCursor)).thenReturn(Array.empty[Int])
+    when(queryContext.nodePropertyIds(node.getId, state.cursors.nodeCursor, state.cursors.propertyCursor)).thenReturn(
+      Array.empty[Int]
+    )
 
     val ctx = CypherRow(mutable.Map("n" -> node))
 
@@ -84,7 +88,8 @@ class KeysFunctionTest extends CypherFunSuite {
 
     val function = KeysFunction(LiteralMap(Map("foo" -> literal(1), "bar" -> literal(2), "baz" -> literal(3))))
     // WHEN
-    val result = function(ctx, state).asInstanceOf[ListValue].asArray().sortWith((a, b) => AnyValues.COMPARATOR.compare(a, b) >= 0)
+    val result =
+      function(ctx, state).asInstanceOf[ListValue].asArray().sortWith((a, b) => AnyValues.COMPARATOR.compare(a, b) >= 0)
 
     result should equal(Array(stringValue("foo"), stringValue("baz"), stringValue("bar")))
   }

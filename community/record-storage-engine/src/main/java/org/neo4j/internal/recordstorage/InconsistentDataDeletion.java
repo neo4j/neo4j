@@ -19,6 +19,4 @@
  */
 package org.neo4j.internal.recordstorage;
 
-interface InconsistentDataDeletion
-{
-}
+interface InconsistentDataDeletion {}

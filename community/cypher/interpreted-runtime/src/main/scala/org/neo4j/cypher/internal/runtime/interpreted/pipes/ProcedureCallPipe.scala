@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.values.AnyValue
 
 object ProcedureCallRowProcessing {
+
   def apply(signature: ProcedureSignature): ProcedureCallRowProcessing =
     if (signature.isVoid) PassThroughRow else FlatMapAndAppendToRow
 }
@@ -41,38 +42,48 @@ sealed trait ProcedureCallRowProcessing
 case object FlatMapAndAppendToRow extends ProcedureCallRowProcessing
 case object PassThroughRow extends ProcedureCallRowProcessing
 
-case class ProcedureCallPipe(source: Pipe,
-                             signature: ProcedureSignature,
-                             callMode: ProcedureCallMode,
-                             argExprs: Seq[Expression],
-                             rowProcessing: ProcedureCallRowProcessing,
-                             resultSymbols: Seq[(String, CypherType)],
-                             resultIndices: Seq[(Int, (String, String))])
-                            (val id: Id = Id.INVALID_ID)
-
-  extends PipeWithSource(source) {
+case class ProcedureCallPipe(
+  source: Pipe,
+  signature: ProcedureSignature,
+  callMode: ProcedureCallMode,
+  argExprs: Seq[Expression],
+  rowProcessing: ProcedureCallRowProcessing,
+  resultSymbols: Seq[(String, CypherType)],
+  resultIndices: Seq[(Int, (String, String))]
+)(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) {
 
   private val rowProcessor = rowProcessing match {
     case FlatMapAndAppendToRow => internalCreateResultsByAppending _
-    case PassThroughRow => internalCreateResultsByPassingThrough _
+    case PassThroughRow        => internalCreateResultsByPassingThrough _
   }
 
-  private def createProcedureCallContext(qtx: QueryContext): ProcedureCallContext ={
+  private def createProcedureCallContext(qtx: QueryContext): ProcedureCallContext = {
     // getting the original name of the yielded variable
     val originalVariables = resultIndices.map(_._2._2).toArray
     val databaseId = qtx.transactionalContext.databaseId
-    new ProcedureCallContext( signature.id, originalVariables, true, databaseId.name(), databaseId.isSystemDatabase )
+    new ProcedureCallContext(signature.id, originalVariables, true, databaseId.name(), databaseId.isSystemDatabase)
   }
 
-  override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = rowProcessor(input, state)
+  override protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = rowProcessor(input, state)
 
-  private def internalCreateResultsByAppending(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  private def internalCreateResultsByAppending(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     val qtx = state.query
     val builder = Seq.newBuilder[(String, AnyValue)]
     builder.sizeHint(resultIndices.length)
     input.flatMap { input =>
       val argValues = argExprs.map(arg => arg(input, state)).toArray
-      val results: ClosingIterator[Array[AnyValue]] = call(qtx, argValues, createProcedureCallContext(qtx)).asClosingIterator // always returns all items from the procedure
+      val results: ClosingIterator[Array[AnyValue]] = call(
+        qtx,
+        argValues,
+        createProcedureCallContext(qtx)
+      ).asClosingIterator // always returns all items from the procedure
       results map { resultValues =>
         resultIndices foreach { case (k, (v, _)) =>
           builder += v -> resultValues(k) // get the output from correct position and add store variable -> value
@@ -85,10 +96,17 @@ case class ProcedureCallPipe(source: Pipe,
     }
   }
 
-  private def call(qtx: QueryContext, argValues: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+  private def call(
+    qtx: QueryContext,
+    argValues: Array[AnyValue],
+    context: ProcedureCallContext
+  ): Iterator[Array[AnyValue]] =
     callMode.callProcedure(qtx, signature.id, argValues, context)
 
-  private def internalCreateResultsByPassingThrough(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  private def internalCreateResultsByPassingThrough(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     val qtx = state.query
     input map { input =>
       val argValues = argExprs.map(arg => arg(input, state)).toArray

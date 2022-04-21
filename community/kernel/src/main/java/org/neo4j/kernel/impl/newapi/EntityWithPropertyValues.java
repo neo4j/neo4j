@@ -21,61 +21,51 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
 import java.util.Objects;
-
 import org.neo4j.values.storable.Value;
 
 /**
  * An entity together with properties. This class is needed to present changes in the transaction state to index operations
  * that require knowing the affected property values as well.
  */
-public class EntityWithPropertyValues
-{
+public class EntityWithPropertyValues {
 
     private final long entityId;
     private final Value[] values;
 
-    EntityWithPropertyValues( long entityId, Value[] values )
-    {
+    EntityWithPropertyValues(long entityId, Value[] values) {
         this.entityId = entityId;
         this.values = values;
     }
 
-    public long getEntityId()
-    {
+    public long getEntityId() {
         return entityId;
     }
 
-    public Value[] getValues()
-    {
+    public Value[] getValues() {
         return values;
     }
 
     @Override
-    public String toString()
-    {
-        return "EntityWithPropertyValues{" + "entityId=" + entityId + ", values=" + Arrays.toString( values ) + '}';
+    public String toString() {
+        return "EntityWithPropertyValues{" + "entityId=" + entityId + ", values=" + Arrays.toString(values) + '}';
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         EntityWithPropertyValues that = (EntityWithPropertyValues) o;
-        return entityId == that.entityId && Arrays.equals( values, that.values );
+        return entityId == that.entityId && Arrays.equals(values, that.values);
     }
 
     @Override
-    public int hashCode()
-    {
-        int result = Objects.hash( entityId );
-        result = 31 * result + Arrays.hashCode( values );
+    public int hashCode() {
+        int result = Objects.hash(entityId);
+        result = 31 * result + Arrays.hashCode(values);
         return result;
     }
 }

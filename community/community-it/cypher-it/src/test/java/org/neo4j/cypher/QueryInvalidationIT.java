@@ -19,8 +19,13 @@
  */
 package org.neo4j.cypher;
 
-import org.junit.jupiter.api.Test;
-import scala.Option;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.cypher_min_replan_interval;
+import static org.neo4j.configuration.GraphDatabaseSettings.query_statistics_divergence_threshold;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -28,12 +33,11 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.QueryCache.CacheKey;
 import org.neo4j.cypher.internal.QueryCacheTracer;
 import org.neo4j.cypher.internal.cache.CypherQueryCaches;
-import org.neo4j.cypher.internal.cache.CypherQueryCaches$;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
@@ -43,216 +47,196 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
+import scala.Option;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.cypher_min_replan_interval;
-import static org.neo4j.configuration.GraphDatabaseSettings.query_statistics_divergence_threshold;
-
-@ImpermanentDbmsExtension( configurationCallback = "configure" )
-public class QueryInvalidationIT
-{
+@ImpermanentDbmsExtension(configurationCallback = "configure")
+public class QueryInvalidationIT {
     private static final int USERS = 100;
     private static final int CONNECTIONS = 100;
 
     @Inject
     private GraphDatabaseAPI db;
+
     @Inject
     private Monitors monitors;
 
     @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( query_statistics_divergence_threshold, 0.1 )
-               .setConfig( cypher_min_replan_interval, Duration.ofSeconds( 1 ) );
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(query_statistics_divergence_threshold, 0.1)
+                .setConfig(cypher_min_replan_interval, Duration.ofSeconds(1));
     }
 
-    void addMonitorListener( TestMonitor monitor )
-    {
-        monitors.addMonitorListener( monitor, CypherQueryCaches.ExecutableQueryCache$.MODULE$.monitorTag() );
+    void addMonitorListener(TestMonitor monitor) {
+        monitors.addMonitorListener(monitor, CypherQueryCaches.ExecutableQueryCache$.MODULE$.monitorTag());
     }
 
     @Test
-    void shouldRePlanAfterDataChangesFromAnEmptyDatabase() throws Exception
-    {
+    void shouldRePlanAfterDataChangesFromAnEmptyDatabase() throws Exception {
         // GIVEN
         TestMonitor monitor = new TestMonitor();
-        addMonitorListener( monitor );
+        addMonitorListener(monitor);
         // - setup schema -
         createIndex();
         // - execute the query without the existence data -
-        executeDistantFriendsCountQuery( USERS, "default" );
+        executeDistantFriendsCountQuery(USERS, "default");
 
         long replanTime = System.currentTimeMillis() + 1_800;
 
         // - create data -
-        createData( 0, USERS, CONNECTIONS );
+        createData(0, USERS, CONNECTIONS);
 
         // - after the query TTL has expired -
-        while ( System.currentTimeMillis() < replanTime )
-        {
-            Thread.sleep( 100 );
+        while (System.currentTimeMillis() < replanTime) {
+            Thread.sleep(100);
         }
 
         // WHEN
         monitor.reset();
         // - execute the query again -
-        executeDistantFriendsCountQuery( USERS, "default" );
+        executeDistantFriendsCountQuery(USERS, "default");
 
         // THEN
-        assertEquals( 1, monitor.discards.get(), "Query should have been replanned." );
-        assertThat( "Replan should have occurred after TTL", monitor.waitTime.get(), greaterThanOrEqualTo( 1L ) );
+        assertEquals(1, monitor.discards.get(), "Query should have been replanned.");
+        assertThat("Replan should have occurred after TTL", monitor.waitTime.get(), greaterThanOrEqualTo(1L));
     }
 
     @Test
-    void shouldScheduleRePlansWithForceAndSkip() throws Exception
-    {
+    void shouldScheduleRePlansWithForceAndSkip() throws Exception {
         // GIVEN
         TestMonitor monitor = new TestMonitor();
-        addMonitorListener( monitor );
+        addMonitorListener(monitor);
         // - setup schema -
         createIndex();
         // - execute the query without the existence data -
-        executeDistantFriendsCountQuery( USERS, "force" );
+        executeDistantFriendsCountQuery(USERS, "force");
 
         long replanTime = System.currentTimeMillis() + 1_800;
 
         // - create data -
-        createData( 0, USERS, CONNECTIONS );
+        createData(0, USERS, CONNECTIONS);
 
         // - after the query TTL has expired -
-        while ( System.currentTimeMillis() < replanTime )
-        {
-            Thread.sleep( 100 );
+        while (System.currentTimeMillis() < replanTime) {
+            Thread.sleep(100);
         }
 
         // WHEN
         monitor.reset();
         // - execute the query again, with replan=skip -
-        executeDistantFriendsCountQuery( USERS, "skip" );
+        executeDistantFriendsCountQuery(USERS, "skip");
 
         // THEN
-        assertEquals( 0, monitor.compilations.get(), "Query should not have been compiled." );
-        assertEquals( 0, monitor.discards.get(), "Query should not have been discarded." );
+        assertEquals(0, monitor.compilations.get(), "Query should not have been compiled.");
+        assertEquals(0, monitor.discards.get(), "Query should not have been discarded.");
 
         // AND WHEN
         monitor.reset();
         // - execute the query again, with replan=force -
-        executeDistantFriendsCountQuery( USERS, "force" );
+        executeDistantFriendsCountQuery(USERS, "force");
 
         // THEN
-        assertEquals( 1, monitor.compilations.get(), "Query should have been replanned." );
+        assertEquals(1, monitor.compilations.get(), "Query should have been replanned.");
 
         // WHEN
         monitor.reset();
         // - execute the query again, with replan=default -
-        executeDistantFriendsCountQuery( USERS, "default" );
+        executeDistantFriendsCountQuery(USERS, "default");
 
         // THEN should use the entry cached with "replan=force" instead of replanning again
-        assertEquals( 0, monitor.compilations.get(), "Query should not have been compiled." );
-        assertEquals( 0, monitor.discards.get(), "Query should not have been discarded." );
+        assertEquals(0, monitor.compilations.get(), "Query should not have been compiled.");
+        assertEquals(0, monitor.discards.get(), "Query should not have been discarded.");
     }
 
     @Test
-    void shouldRePlanAfterDataChangesFromAPopulatedDatabase() throws Exception
-    {
+    void shouldRePlanAfterDataChangesFromAPopulatedDatabase() throws Exception {
         // GIVEN
-        Config config = db.getDependencyResolver().resolveDependency( Config.class );
-        double divergenceThreshold = config.get( query_statistics_divergence_threshold );
-        long replanInterval = config.get( cypher_min_replan_interval ).toMillis();
+        Config config = db.getDependencyResolver().resolveDependency(Config.class);
+        double divergenceThreshold = config.get(query_statistics_divergence_threshold);
+        long replanInterval = config.get(cypher_min_replan_interval).toMillis();
 
         TestMonitor monitor = new TestMonitor();
-        addMonitorListener( monitor );
+        addMonitorListener(monitor);
         // - setup schema -
         createIndex();
-        //create some data
-        createData( 0, USERS, CONNECTIONS );
-        executeDistantFriendsCountQuery( USERS, "default" );
+        // create some data
+        createData(0, USERS, CONNECTIONS);
+        executeDistantFriendsCountQuery(USERS, "default");
 
         long replanTime = System.currentTimeMillis() + replanInterval;
 
-        assertTrue( divergenceThreshold > 0.0 && divergenceThreshold < 1.0,
-                "Test does not work with edge setting for query_statistics_divergence_threshold: " + divergenceThreshold );
+        assertTrue(
+                divergenceThreshold > 0.0 && divergenceThreshold < 1.0,
+                "Test does not work with edge setting for query_statistics_divergence_threshold: "
+                        + divergenceThreshold);
 
-        int usersToCreate = ((int) (Math.ceil( ((double) USERS) / (1.0 - divergenceThreshold) ))) - USERS + 1;
+        int usersToCreate = ((int) (Math.ceil(((double) USERS) / (1.0 - divergenceThreshold)))) - USERS + 1;
 
-        //create more data
-        createData( USERS, usersToCreate, CONNECTIONS );
+        // create more data
+        createData(USERS, usersToCreate, CONNECTIONS);
 
         // - after the query TTL has expired -
-        while ( System.currentTimeMillis() <= replanTime )
-        {
-            Thread.sleep( 100 );
+        while (System.currentTimeMillis() <= replanTime) {
+            Thread.sleep(100);
         }
 
         // WHEN
         monitor.reset();
         // - execute the query again -
-        executeDistantFriendsCountQuery( USERS, "default" );
+        executeDistantFriendsCountQuery(USERS, "default");
 
         // THEN
-        assertEquals( 1, monitor.discards.get(), "Query should have been replanned." );
-        assertThat( "Replan should have occurred after TTL", monitor.waitTime.get(), greaterThanOrEqualTo( replanInterval / 1000 ) );
+        assertEquals(1, monitor.discards.get(), "Query should have been replanned.");
+        assertThat(
+                "Replan should have occurred after TTL",
+                monitor.waitTime.get(),
+                greaterThanOrEqualTo(replanInterval / 1000));
     }
 
-    private void createIndex()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( Label.label( "User" ) ).on( "userId" ).create();
+    private void createIndex() {
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().indexFor(Label.label("User")).on("userId").create();
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 1, MINUTES );
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(1, MINUTES);
             tx.commit();
         }
     }
 
-    private void createData( long startingUserId, int numUsers, int numConnections )
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
-            for ( long userId = startingUserId; userId < numUsers + startingUserId; userId++ )
-            {
-                transaction.execute( "CREATE (newUser:User {userId: $userId})", Map.of( "userId", userId ) );
+    private void createData(long startingUserId, int numUsers, int numConnections) {
+        try (Transaction transaction = db.beginTx()) {
+            for (long userId = startingUserId; userId < numUsers + startingUserId; userId++) {
+                transaction.execute("CREATE (newUser:User {userId: $userId})", Map.of("userId", userId));
             }
-            Map<String,Object> params = new HashMap<>();
-            for ( int i = 0; i < numConnections; i++ )
-            {
-                long user1 = startingUserId + randomInt( numUsers );
+            Map<String, Object> params = new HashMap<>();
+            for (int i = 0; i < numConnections; i++) {
+                long user1 = startingUserId + randomInt(numUsers);
                 long user2;
-                do
-                {
-                    user2 = startingUserId + randomInt( numUsers );
-                }
-                while ( user1 == user2 );
-                params.put( "user1", user1 );
-                params.put( "user2", user2 );
-                transaction.execute( "MATCH (user1:User { userId: $user1 }), (user2:User { userId: $user2 }) " + "MERGE (user1) -[:FRIEND]- (user2)", params );
+                do {
+                    user2 = startingUserId + randomInt(numUsers);
+                } while (user1 == user2);
+                params.put("user1", user1);
+                params.put("user2", user2);
+                transaction.execute(
+                        "MATCH (user1:User { userId: $user1 }), (user2:User { userId: $user2 }) "
+                                + "MERGE (user1) -[:FRIEND]- (user2)",
+                        params);
             }
             transaction.commit();
         }
     }
 
-    private void executeDistantFriendsCountQuery( int userId, String replanStrategy )
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
-            Map<String,Object> params = Map.of( "userId", (long) randomInt( userId ) );
+    private void executeDistantFriendsCountQuery(int userId, String replanStrategy) {
+        try (Transaction transaction = db.beginTx()) {
+            Map<String, Object> params = Map.of("userId", (long) randomInt(userId));
 
-            try ( Result result = transaction.execute(
+            try (Result result = transaction.execute(
                     String.format(
-                            "CYPHER replan=%s MATCH (user:User { userId: $userId } ) -[:FRIEND]- () -[:FRIEND]- (distantFriend) " +
-                            "RETURN COUNT(distinct distantFriend)",
-                            replanStrategy
-                    ), params ) )
-            {
-                while ( result.hasNext() )
-                {
+                            "CYPHER replan=%s MATCH (user:User { userId: $userId } ) -[:FRIEND]- () -[:FRIEND]- (distantFriend) "
+                                    + "RETURN COUNT(distinct distantFriend)",
+                            replanStrategy),
+                    params)) {
+                while (result.hasNext()) {
                     result.next();
                 }
             }
@@ -260,13 +244,11 @@ public class QueryInvalidationIT
         }
     }
 
-    private static int randomInt( int max )
-    {
-        return ThreadLocalRandom.current().nextInt( max );
+    private static int randomInt(int max) {
+        return ThreadLocalRandom.current().nextInt(max);
     }
 
-    private static class TestMonitor implements QueryCacheTracer<String>
-    {
+    private static class TestMonitor implements QueryCacheTracer<String> {
         private final AtomicInteger hits = new AtomicInteger();
         private final AtomicInteger misses = new AtomicInteger();
         private final AtomicInteger discards = new AtomicInteger();
@@ -274,50 +256,45 @@ public class QueryInvalidationIT
         private final AtomicLong waitTime = new AtomicLong();
 
         @Override
-        public void queryCacheHit( CacheKey<String> key, String metaData )
-        {
+        public void queryCacheHit(CacheKey<String> key, String metaData) {
             hits.incrementAndGet();
         }
 
         @Override
-        public void queryCacheMiss( CacheKey<String> key, String metaData )
-        {
+        public void queryCacheMiss(CacheKey<String> key, String metaData) {
             misses.incrementAndGet();
         }
 
         @Override
-        public void queryCompile( CacheKey<String> stringCacheKey, String metaData )
-        {
+        public void queryCompile(CacheKey<String> stringCacheKey, String metaData) {
             compilations.incrementAndGet();
         }
 
         @Override
-        public void queryCompileWithExpressionCodeGen( CacheKey<String> stringCacheKey, String metaData )
-        {
+        public void queryCompileWithExpressionCodeGen(CacheKey<String> stringCacheKey, String metaData) {
             compilations.incrementAndGet();
         }
 
         @Override
-        public void queryCacheStale( CacheKey<String> stringCacheKey, int secondsSincePlan, String metaData, Option<String> maybeReason )
-        {
+        public void queryCacheStale(
+                CacheKey<String> stringCacheKey, int secondsSincePlan, String metaData, Option<String> maybeReason) {
             discards.incrementAndGet();
-            waitTime.addAndGet( secondsSincePlan );
+            waitTime.addAndGet(secondsSincePlan);
         }
 
         @Override
-        public String toString()
-        {
-            return String.format( "TestMonitor{hits=%s, misses=%s, discards=%s, compilations=%s, waitTime=%s}",
-                                  hits, misses, discards, compilations, waitTime );
+        public String toString() {
+            return String.format(
+                    "TestMonitor{hits=%s, misses=%s, discards=%s, compilations=%s, waitTime=%s}",
+                    hits, misses, discards, compilations, waitTime);
         }
 
-        public void reset()
-        {
-            hits.set( 0 );
-            misses.set( 0 );
-            discards.set( 0 );
-            compilations.set( 0 );
-            waitTime.set( 0 );
+        public void reset() {
+            hits.set(0);
+            misses.set(0);
+            discards.set(0);
+            compilations.set(0);
+            waitTime.set(0);
         }
     }
 }

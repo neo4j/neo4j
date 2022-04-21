@@ -31,96 +31,78 @@ import java.util.concurrent.atomic.AtomicLong;
  * A {@link java.time.Clock} that is manually controlled.
  * The implementation is thread safe.
  */
-public class FakeClock extends SystemNanoClock
-{
+public class FakeClock extends SystemNanoClock {
     private final AtomicLong nanoTime = new AtomicLong();
 
-    public FakeClock()
-    {
-    }
+    public FakeClock() {}
 
-    public FakeClock( long initialTime, TimeUnit unit )
-    {
-        forward( initialTime, unit );
+    public FakeClock(long initialTime, TimeUnit unit) {
+        forward(initialTime, unit);
     }
 
     @Override
-    public ZoneId getZone()
-    {
+    public ZoneId getZone() {
         return ZoneOffset.UTC;
     }
 
     @Override
-    public Clock withZone( ZoneId zone )
-    {
-        return new WithZone( zone );
+    public Clock withZone(ZoneId zone) {
+        return new WithZone(zone);
     }
 
     @Override
-    public Instant instant()
-    {
-        return Instant.ofEpochMilli( millis() );
+    public Instant instant() {
+        return Instant.ofEpochMilli(millis());
     }
 
     @Override
-    public long millis()
-    {
-        return TimeUnit.NANOSECONDS.toMillis( nanos() );
+    public long millis() {
+        return TimeUnit.NANOSECONDS.toMillis(nanos());
     }
 
     @Override
-    public long nanos()
-    {
+    public long nanos() {
         return nanoTime.get();
     }
 
     @Override
-    public Stopwatch startStopWatch()
-    {
-        return new Stopwatch( this::nanos );
+    public Stopwatch startStopWatch() {
+        return new Stopwatch(this::nanos);
     }
 
-    public FakeClock forward( Duration delta )
-    {
-        return forward( delta.toNanos(), TimeUnit.NANOSECONDS );
+    public FakeClock forward(Duration delta) {
+        return forward(delta.toNanos(), TimeUnit.NANOSECONDS);
     }
 
-    public FakeClock forward( long delta, TimeUnit unit )
-    {
-        nanoTime.addAndGet( unit.toNanos( delta ) );
+    public FakeClock forward(long delta, TimeUnit unit) {
+        nanoTime.addAndGet(unit.toNanos(delta));
         return this;
     }
 
-    private class WithZone extends Clock
-    {
+    private class WithZone extends Clock {
         private final ZoneId zone;
 
-        WithZone( ZoneId zone )
-        {
+        WithZone(ZoneId zone) {
             this.zone = zone;
         }
 
         @Override
-        public ZoneId getZone()
-        {
+        public ZoneId getZone() {
             return zone;
         }
 
         @Override
-        public Clock withZone( ZoneId zone )
-        {
-            return new WithZone( zone );
+        public Clock withZone(ZoneId zone) {
+            return new WithZone(zone);
         }
 
         @Override
-        public long millis()
-        {
+        public long millis() {
             return FakeClock.this.millis();
         }
 
         @Override
-        public Instant instant()
-        {
+        public Instant instant() {
             return FakeClock.this.instant();
         }
     }

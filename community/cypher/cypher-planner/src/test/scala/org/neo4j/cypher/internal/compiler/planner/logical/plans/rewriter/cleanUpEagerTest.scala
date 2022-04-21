@@ -80,9 +80,15 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
         UnwindCollection(
           UnwindCollection(
             UnwindCollection(Eager(leaf), "i", null),
-            "i", null),
-          "i", null),
-        Map.empty))
+            "i",
+            null
+          ),
+          "i",
+          null
+        ),
+        Map.empty
+      )
+    )
   }
 
   test("should move eager on top of load csv to below it") {
@@ -106,17 +112,33 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     rewrite(
       Projection(
         Limit(
-          Eager(leaf), literalInt(12)), Map.empty)) should equal(
+          Eager(leaf),
+          literalInt(12)
+        ),
+        Map.empty
+      )
+    ) should equal(
       Projection(
         Eager(
-          Limit(leaf, literalInt(12))), Map.empty))
+          Limit(leaf, literalInt(12))
+        ),
+        Map.empty
+      )
+    )
   }
 
   test("should not rewrite plan with eager below load csv") {
     val leaf = newMockedLogicalPlan()
     val eager = Eager(leaf)
-    val loadCSV = LoadCSV(eager, literalString("file:///tmp/foo.csv"), "a", NoHeaders, None,
-      legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE_4MB)
+    val loadCSV = LoadCSV(
+      eager,
+      literalString("file:///tmp/foo.csv"),
+      "a",
+      NoHeaders,
+      None,
+      legacyCsvQuoteEscaping = false,
+      DEFAULT_BUFFER_SIZE_4MB
+    )
     val topPlan = Projection(loadCSV, Map.empty)
 
     rewrite(topPlan) should equal(topPlan)
@@ -127,10 +149,19 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     rewrite(
       Projection(
         Limit(
-          Eager(leaf), literalInt(12)), Map.empty)) should equal(
+          Eager(leaf),
+          literalInt(12)
+        ),
+        Map.empty
+      )
+    ) should equal(
       Projection(
         Eager(
-          ExhaustiveLimit(leaf, literalInt(12))), Map.empty))
+          ExhaustiveLimit(leaf, literalInt(12))
+        ),
+        Map.empty
+      )
+    )
   }
 
   test("should remove eager on top of eager aggregation") {

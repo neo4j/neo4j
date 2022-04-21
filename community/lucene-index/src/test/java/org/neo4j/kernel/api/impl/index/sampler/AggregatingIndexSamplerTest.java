@@ -19,49 +19,41 @@
  */
 package org.neo4j.kernel.api.impl.index.sampler;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.util.Arrays;
 import java.util.List;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-
-class AggregatingIndexSamplerTest
-{
+class AggregatingIndexSamplerTest {
     @Test
-    void samplePartitionedIndex()
-    {
-        List<IndexSampler> samplers = Arrays.asList( createSampler( 1 ), createSampler( 2 ) );
-        AggregatingIndexSampler partitionedSampler = new AggregatingIndexSampler( samplers );
+    void samplePartitionedIndex() {
+        List<IndexSampler> samplers = Arrays.asList(createSampler(1), createSampler(2));
+        AggregatingIndexSampler partitionedSampler = new AggregatingIndexSampler(samplers);
 
-        IndexSample sample = partitionedSampler.sampleIndex( NULL_CONTEXT );
+        IndexSample sample = partitionedSampler.sampleIndex(NULL_CONTEXT);
 
-        assertEquals( new IndexSample( 3, 3, 6 ), sample );
+        assertEquals(new IndexSample(3, 3, 6), sample);
     }
 
-    private static IndexSampler createSampler( long value )
-    {
-        return new TestIndexSampler( value );
+    private static IndexSampler createSampler(long value) {
+        return new TestIndexSampler(value);
     }
 
-    private static class TestIndexSampler implements IndexSampler
-    {
+    private static class TestIndexSampler implements IndexSampler {
         private final long value;
 
-        TestIndexSampler( long value )
-        {
+        TestIndexSampler(long value) {
             this.value = value;
         }
 
         @Override
-        public IndexSample sampleIndex( CursorContext cursorContext )
-        {
-            return new IndexSample( value, value, value * 2 );
+        public IndexSample sampleIndex(CursorContext cursorContext) {
+            return new IndexSample(value, value, value * 2);
         }
     }
 }

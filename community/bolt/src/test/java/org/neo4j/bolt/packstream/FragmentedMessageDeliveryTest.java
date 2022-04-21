@@ -19,14 +19,20 @@
  */
 package org.neo4j.bolt.packstream;
 
+import static io.netty.buffer.Unpooled.wrappedBuffer;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.neo4j.bolt.testing.BoltTestUtil.newTestBoltChannel;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.util.Arrays;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.messaging.BoltRequestMessageWriter;
@@ -46,14 +52,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.MemoryTracker;
 
-import static io.netty.buffer.Unpooled.wrappedBuffer;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.neo4j.bolt.testing.BoltTestUtil.newTestBoltChannel;
-import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
-
 /**
  * This tests network fragmentation of messages. Given a set of messages, it will serialize and chunk the message up
  * to a specified chunk size. Then it will split that data into a specified number of fragments, trying every possible
@@ -69,120 +67,110 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
  * For each permutation, it delivers the fragments to the protocol implementation, and asserts the protocol handled
  * them properly.
  */
-public class FragmentedMessageDeliveryTest
-{
+public class FragmentedMessageDeliveryTest {
     private EmbeddedChannel channel;
     // Only test one chunk size for now, this can be parameterized to test lots of different ones
     private int chunkSize = 16;
 
     // Only test one message for now. This can be parameterized later to test lots of different ones
-    private RequestMessage[] messages = new RequestMessage[]{new RunMessage( "Mjölnir" )};
+    private RequestMessage[] messages = new RequestMessage[] {new RunMessage("Mjölnir")};
 
     @AfterEach
-    public void cleanup()
-    {
-        if ( channel != null )
-        {
+    public void cleanup() {
+        if (channel != null) {
             channel.finishAndReleaseAll();
         }
     }
 
     @Test
-    public void testFragmentedMessageDelivery() throws Throwable
-    {
+    public void testFragmentedMessageDelivery() throws Throwable {
         // Given
-        byte[] unfragmented = serialize( chunkSize, messages );
+        byte[] unfragmented = serialize(chunkSize, messages);
 
         // When & Then
         int n = unfragmented.length;
-        for ( int i = 1; i < n - 1; i++ )
-        {
-            for ( int j = 1; j < n - i; j++ )
-            {
-                testPermutation( unfragmented, i, j, n - i - j );
+        for (int i = 1; i < n - 1; i++) {
+            for (int j = 1; j < n - i; j++) {
+                testPermutation(unfragmented, i, j, n - i - j);
             }
         }
     }
 
-    private void testPermutation( byte[] unfragmented, int... sizes ) throws Exception
-    {
+    private void testPermutation(byte[] unfragmented, int... sizes) throws Exception {
         int pos = 0;
         ByteBuf[] fragments = new ByteBuf[sizes.length];
-        for ( int i = 0; i < sizes.length; i++ )
-        {
-            fragments[i] = wrappedBuffer( unfragmented, pos, sizes[i] );
+        for (int i = 0; i < sizes.length; i++) {
+            fragments[i] = wrappedBuffer(unfragmented, pos, sizes[i]);
             pos += sizes[i];
         }
-        testPermutation( unfragmented, fragments );
+        testPermutation(unfragmented, fragments);
     }
 
-    private void testPermutation( byte[] unfragmented, ByteBuf[] fragments ) throws Exception
-    {
+    private void testPermutation(byte[] unfragmented, ByteBuf[] fragments) throws Exception {
         // Given
         channel = new EmbeddedChannel();
-        BoltChannel boltChannel = newTestBoltChannel( channel );
+        BoltChannel boltChannel = newTestBoltChannel(channel);
 
-        BoltStateMachine machine = mock( BoltStateMachine.class );
-        SynchronousBoltConnection boltConnection = new SynchronousBoltConnection( machine );
+        BoltStateMachine machine = mock(BoltStateMachine.class);
+        SynchronousBoltConnection boltConnection = new SynchronousBoltConnection(machine);
         NullLogService logging = NullLogService.getInstance();
-        var bookmarksParser = mock( BookmarksParser.class );
-        var memoryTracker = mock( MemoryTracker.class );
+        var bookmarksParser = mock(BookmarksParser.class);
+        var memoryTracker = mock(MemoryTracker.class);
 
         BoltProtocol boltProtocol = new BoltProtocolV4(
-                boltChannel, ( ch, s, messageWriter ) -> boltConnection,
-                ( v, ch, hints, mem ) -> machine, Config.defaults(), bookmarksParser, logging, mock( TransportThrottleGroup.class ),
-                mock( ChannelProtector.class ), memoryTracker );
+                boltChannel,
+                (ch, s, messageWriter) -> boltConnection,
+                (v, ch, hints, mem) -> machine,
+                Config.defaults(),
+                bookmarksParser,
+                logging,
+                mock(TransportThrottleGroup.class),
+                mock(ChannelProtector.class),
+                memoryTracker);
         boltProtocol.install();
 
         // When data arrives split up according to the current permutation
-        for ( ByteBuf fragment : fragments )
-        {
-            channel.writeInbound( fragment.readerIndex( 0 ).retain() );
+        for (ByteBuf fragment : fragments) {
+            channel.writeInbound(fragment.readerIndex(0).retain());
         }
 
         // Then the session should've received the specified messages, and the protocol should be in a nice clean state
-        try
-        {
-            RequestMessage run = new RunMessage( "Mjölnir", EMPTY_MAP );
-            verify( machine ).process( eq( run ), any( BoltResponseHandler.class ) );
-        }
-        catch ( AssertionError e )
-        {
-            throw new AssertionError( "Failed to handle fragmented delivery.\n" +
-                                      "Messages: " + Arrays.toString( messages ) + "\n" +
-                                      "Chunk size: " + chunkSize + "\n" +
-                                      "Serialized data delivered in fragments: " + describeFragments( fragments ) +
-                                      "\n" +
-                                      "Unfragmented data: " + HexPrinter.hex( unfragmented ) + "\n", e );
+        try {
+            RequestMessage run = new RunMessage("Mjölnir", EMPTY_MAP);
+            verify(machine).process(eq(run), any(BoltResponseHandler.class));
+        } catch (AssertionError e) {
+            throw new AssertionError(
+                    "Failed to handle fragmented delivery.\n" + "Messages: "
+                            + Arrays.toString(messages) + "\n" + "Chunk size: "
+                            + chunkSize + "\n" + "Serialized data delivered in fragments: "
+                            + describeFragments(fragments) + "\n"
+                            + "Unfragmented data: "
+                            + HexPrinter.hex(unfragmented) + "\n",
+                    e);
         }
     }
 
-    private static String describeFragments( ByteBuf[] fragments )
-    {
+    private static String describeFragments(ByteBuf[] fragments) {
         StringBuilder sb = new StringBuilder();
-        for ( int i = 0; i < fragments.length; i++ )
-        {
-            if ( i > 0 )
-            {
-                sb.append( ',' );
+        for (int i = 0; i < fragments.length; i++) {
+            if (i > 0) {
+                sb.append(',');
             }
-            sb.append( fragments[i].capacity() );
+            sb.append(fragments[i].capacity());
         }
         return sb.toString();
     }
 
-    private static byte[] serialize( int chunkSize, RequestMessage... msgs ) throws IOException
-    {
+    private static byte[] serialize(int chunkSize, RequestMessage... msgs) throws IOException {
         byte[][] serialized = new byte[msgs.length][];
-        for ( int i = 0; i < msgs.length; i++ )
-        {
+        for (int i = 0; i < msgs.length; i++) {
             RecordingByteChannel channel = new RecordingByteChannel();
 
-            BoltRequestMessageWriter writer = new BoltRequestMessageWriterV4(
-                    new Neo4jPackV2().newPacker( new BufferedChannelOutput( channel ) ) );
-            writer.write( msgs[i] ).flush();
+            BoltRequestMessageWriter writer =
+                    new BoltRequestMessageWriterV4(new Neo4jPackV2().newPacker(new BufferedChannelOutput(channel)));
+            writer.write(msgs[i]).flush();
             serialized[i] = channel.getBytes();
         }
-        return Chunker.chunk( chunkSize, serialized );
+        return Chunker.chunk(chunkSize, serialized);
     }
 }

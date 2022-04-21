@@ -19,11 +19,20 @@
  */
 package org.neo4j.graphdb.schema;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.helpers.collection.Iterators.loop;
+import static org.neo4j.internal.helpers.collection.Iterators.single;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.SCHEMA_CURSOR;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 import org.assertj.core.util.Streams;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
@@ -46,105 +55,87 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.helpers.collection.Iterators.loop;
-import static org.neo4j.internal.helpers.collection.Iterators.single;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.SCHEMA_CURSOR;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-@DbmsExtension( configurationCallback = "configure" )
-class DropBrokenUniquenessConstraintIT
-{
-    private final Label label = Label.label( "Label" );
+@DbmsExtension(configurationCallback = "configure")
+class DropBrokenUniquenessConstraintIT {
+    private final Label label = Label.label("Label");
     private final String key = "key";
 
     @Inject
     private GraphDatabaseAPI db;
+
     @Inject
     private RecordStorageEngine storageEngine;
+
     private long initialConstraintCount;
     private long initialIndexCount;
     private SchemaStore schemaStore;
 
     @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME );
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME);
     }
 
     @BeforeEach
-    void getInitialCounts()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            initialConstraintCount = Streams.stream( tx.schema().getConstraints() ).count();
-            initialIndexCount = Streams.stream( tx.schema().getIndexes() ).count();
+    void getInitialCounts() {
+        try (Transaction tx = db.beginTx()) {
+            initialConstraintCount =
+                    Streams.stream(tx.schema().getConstraints()).count();
+            initialIndexCount = Streams.stream(tx.schema().getIndexes()).count();
         }
         schemaStore = storageEngine.testAccessNeoStores().getSchemaStore();
     }
 
     @AfterEach
-    void assertNoAdditionalConstraintsOrIndexes()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertEquals( initialConstraintCount, Streams.stream( tx.schema().getConstraints() ).count() );
-            assertEquals( initialIndexCount, Streams.stream( tx.schema().getIndexes() ).count() );
+    void assertNoAdditionalConstraintsOrIndexes() {
+        try (Transaction tx = db.beginTx()) {
+            assertEquals(
+                    initialConstraintCount,
+                    Streams.stream(tx.schema().getConstraints()).count());
+            assertEquals(
+                    initialIndexCount, Streams.stream(tx.schema().getIndexes()).count());
         }
     }
 
     @Test
-    void shouldDropUniquenessConstraintWithBackingIndexNotInUse()
-    {
+    void shouldDropUniquenessConstraintWithBackingIndexNotInUse() {
         // given
         String backingIndexName;
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().constraintFor( label ).assertPropertyIsUnique( key ).create();
-            backingIndexName = single( tx.schema().getIndexes( label ).iterator() ).getName();
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().constraintFor(label).assertPropertyIsUnique(key).create();
+            backingIndexName = single(tx.schema().getIndexes(label).iterator()).getName();
             tx.commit();
         }
 
         // when intentionally breaking the schema by setting the backing index rule to unused
         SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
-        try ( var storeCursors = storageEngine.createStorageCursors( NULL_CONTEXT ) )
-        {
-            deleteSchemaRule( schemaRules.indexGetForName( backingIndexName, storeCursors ), NULL_CONTEXT, storeCursors );
+        try (var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
+            deleteSchemaRule(schemaRules.indexGetForName(backingIndexName, storeCursors), NULL_CONTEXT, storeCursors);
         }
         // At this point the SchemaCache doesn't know about this change so we have to reload it
         storageEngine.loadSchemaCache();
-        try ( Transaction tx = db.beginTx() )
-        {
-            single( tx.schema().getConstraints( label ).iterator() ).drop();
+        try (Transaction tx = db.beginTx()) {
+            single(tx.schema().getConstraints(label).iterator()).drop();
             tx.commit();
         }
     }
 
     @Test
-    void shouldDropUniquenessConstraintWithBackingIndexHavingNoOwner() throws KernelException
-    {
+    void shouldDropUniquenessConstraintWithBackingIndexHavingNoOwner() throws KernelException {
         // given
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().constraintFor( label ).assertPropertyIsUnique( key ).create();
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().constraintFor(label).assertPropertyIsUnique(key).create();
             tx.commit();
         }
 
         // when intentionally breaking the schema by setting the backing index rule to unused
         SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
-        try ( var storeCursors = storageEngine.createStorageCursors( NULL_CONTEXT ) )
-        {
-            writeSchemaRulesWithoutConstraint( schemaRules, storeCursors );
+        try (var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
+            writeSchemaRulesWithoutConstraint(schemaRules, storeCursors);
         }
         // At this point the SchemaCache doesn't know about this change so we have to reload it
         storageEngine.loadSchemaCache();
-        try ( Transaction tx = db.beginTx() )
-        {
-            single( tx.schema().getConstraints( label ).iterator() ).drop();
+        try (Transaction tx = db.beginTx()) {
+            single(tx.schema().getConstraints(label).iterator()).drop();
             tx.commit();
         }
 
@@ -153,95 +144,87 @@ class DropBrokenUniquenessConstraintIT
     }
 
     @Test
-    void shouldDropUniquenessConstraintWhereConstraintRecordIsMissing()
-    {
+    void shouldDropUniquenessConstraintWhereConstraintRecordIsMissing() {
         // given
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().constraintFor( label ).assertPropertyIsUnique( key ).create();
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().constraintFor(label).assertPropertyIsUnique(key).create();
+            tx.commit();
+        }
+
+        // when intentionally breaking the schema by setting the backing index rule to unused
+        SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
+        try (var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
+            schemaRules
+                    .constraintsGetAllIgnoreMalformed(storeCursors)
+                    .forEachRemaining(rule -> deleteSchemaRule(rule, NULL_CONTEXT, storeCursors));
+        }
+
+        // At this point the SchemaCache doesn't know about this change so we have to reload it
+        storageEngine.loadSchemaCache();
+        try (Transaction tx = db.beginTx()) {
+            // We don't use single() here, because it is okay for the schema cache reload to clean up after us.
+            tx.schema().getConstraints(label).forEach(ConstraintDefinition::drop);
+            tx.schema().getIndexes(label).forEach(IndexDefinition::drop);
+            tx.commit();
+        }
+    }
+
+    @Test
+    void shouldDropUniquenessConstraintWhereConstraintRecordIsMissingAndIndexHasNoOwner() throws KernelException {
+        // given
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().constraintFor(label).assertPropertyIsUnique(key).create();
             tx.commit();
         }
 
         // when intentionally breaking the schema by setting the backing index rule to unused
         SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
-        try ( var storeCursors = storageEngine.createStorageCursors( NULL_CONTEXT ) )
-        {
-            schemaRules.constraintsGetAllIgnoreMalformed( storeCursors ).forEachRemaining( rule -> deleteSchemaRule( rule, NULL_CONTEXT, storeCursors ) );
+        try (var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
+            schemaRules
+                    .constraintsGetAllIgnoreMalformed(storeCursors)
+                    .forEachRemaining(rule -> deleteSchemaRule(rule, NULL_CONTEXT, storeCursors));
+            writeSchemaRulesWithoutConstraint(schemaRules, storeCursors);
         }
 
         // At this point the SchemaCache doesn't know about this change so we have to reload it
         storageEngine.loadSchemaCache();
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             // We don't use single() here, because it is okay for the schema cache reload to clean up after us.
-            tx.schema().getConstraints( label ).forEach( ConstraintDefinition::drop );
-            tx.schema().getIndexes( label ).forEach( IndexDefinition::drop );
-            tx.commit();
-        }
-
-    }
-
-    @Test
-    void shouldDropUniquenessConstraintWhereConstraintRecordIsMissingAndIndexHasNoOwner() throws KernelException
-    {
-        // given
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().constraintFor( label ).assertPropertyIsUnique( key ).create();
-            tx.commit();
-        }
-
-        // when intentionally breaking the schema by setting the backing index rule to unused
-        SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
-        try ( var storeCursors = storageEngine.createStorageCursors( NULL_CONTEXT ) )
-        {
-            schemaRules.constraintsGetAllIgnoreMalformed( storeCursors ).forEachRemaining( rule -> deleteSchemaRule( rule, NULL_CONTEXT, storeCursors ) );
-            writeSchemaRulesWithoutConstraint( schemaRules, storeCursors );
-        }
-
-        // At this point the SchemaCache doesn't know about this change so we have to reload it
-        storageEngine.loadSchemaCache();
-        try ( Transaction tx = db.beginTx() )
-        {
-            // We don't use single() here, because it is okay for the schema cache reload to clean up after us.
-            tx.schema().getConstraints( label ).forEach( ConstraintDefinition::drop );
-            tx.schema().getIndexes( label ).forEach( IndexDefinition::drop );
+            tx.schema().getConstraints(label).forEach(ConstraintDefinition::drop);
+            tx.schema().getIndexes(label).forEach(IndexDefinition::drop);
             tx.commit();
         }
     }
 
-    private void deleteSchemaRule( SchemaRule rule, CursorContext cursorContext, StoreCursors storeCursors )
-    {
-        var record = schemaStore.getRecordByCursor( rule.getId(), schemaStore.newRecord(), NORMAL, storeCursors.readCursor( SCHEMA_CURSOR ) );
-        if ( record.inUse() )
-        {
+    private void deleteSchemaRule(SchemaRule rule, CursorContext cursorContext, StoreCursors storeCursors) {
+        var record = schemaStore.getRecordByCursor(
+                rule.getId(), schemaStore.newRecord(), NORMAL, storeCursors.readCursor(SCHEMA_CURSOR));
+        if (record.inUse()) {
             long nextProp = record.getNextProp();
-            record.setInUse( false );
-            try ( PageCursor writeCursor = storeCursors.writeCursor( SCHEMA_CURSOR ) )
-            {
-                schemaStore.updateRecord( record, writeCursor, cursorContext, storeCursors );
+            record.setInUse(false);
+            try (PageCursor writeCursor = storeCursors.writeCursor(SCHEMA_CURSOR)) {
+                schemaStore.updateRecord(record, writeCursor, cursorContext, storeCursors);
             }
             PropertyStore propertyStore = schemaStore.propertyStore();
             PropertyRecord props = propertyStore.newRecord();
-            var propertyReadCursor = storeCursors.readCursor( PROPERTY_CURSOR );
-            while ( nextProp != NO_NEXT_PROPERTY.longValue() &&
-                    propertyStore.getRecordByCursor( nextProp, props, NORMAL, propertyReadCursor ).inUse() )
-            {
+            var propertyReadCursor = storeCursors.readCursor(PROPERTY_CURSOR);
+            while (nextProp != NO_NEXT_PROPERTY.longValue()
+                    && propertyStore
+                            .getRecordByCursor(nextProp, props, NORMAL, propertyReadCursor)
+                            .inUse()) {
                 nextProp = props.getNextProp();
-                props.setInUse( false );
-                try ( PageCursor writeCursor = storeCursors.writeCursor( PROPERTY_CURSOR ) )
-                {
-                    propertyStore.updateRecord( props, writeCursor, cursorContext, storeCursors );
+                props.setInUse(false);
+                try (PageCursor writeCursor = storeCursors.writeCursor(PROPERTY_CURSOR)) {
+                    propertyStore.updateRecord(props, writeCursor, cursorContext, storeCursors);
                 }
             }
         }
     }
 
-    private static void writeSchemaRulesWithoutConstraint( SchemaRuleAccess schemaRules, StoreCursors storeCursors ) throws KernelException
-    {
-        for ( IndexDescriptor rule : loop( schemaRules.indexesGetAll( storeCursors ) ) )
-        {
-            schemaRules.writeSchemaRule( rule, IdUpdateListener.DIRECT, NULL_CONTEXT, INSTANCE, storeCursors );
+    private static void writeSchemaRulesWithoutConstraint(SchemaRuleAccess schemaRules, StoreCursors storeCursors)
+            throws KernelException {
+        for (IndexDescriptor rule : loop(schemaRules.indexesGetAll(storeCursors))) {
+            schemaRules.writeSchemaRule(rule, IdUpdateListener.DIRECT, NULL_CONTEXT, INSTANCE, storeCursors);
         }
     }
 }

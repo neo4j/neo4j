@@ -56,7 +56,6 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
       ("PRIVILEGE MANAGEMENT", ast.AllPrivilegeActions)
     ).foreach {
       case (privilege: String, action: ast.DbmsAction) =>
-
         test(s"$command $privilege ON DBMS $preposition role") {
           yields(privilegeFunc(action, Seq(literalRole)))
         }
@@ -71,20 +70,28 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
         test(s"$command $privilege ON DATABASE $preposition role") {
           val offset = command.length + 5 + privilege.length
-          assertFailsWithMessage(testName, s"""Invalid input 'DATABASE': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))""")
+          assertFailsWithMessage(
+            testName,
+            s"""Invalid input 'DATABASE': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))"""
+          )
         }
 
         test(s"$command $privilege ON HOME DATABASE $preposition role") {
           val offset = command.length + 5 + privilege.length
-          assertFailsWithMessage(testName, s"""Invalid input 'HOME': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))""")
+          assertFailsWithMessage(
+            testName,
+            s"""Invalid input 'HOME': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))"""
+          )
         }
 
         test(s"$command $privilege DBMS $preposition role") {
           val offset = command.length + 2 + privilege.length
           val expected = (command, privilege) match {
             // this case looks like granting/revoking a role named MANAGEMENT to/from a user
-            case ("GRANT", "ROLE MANAGEMENT") => s"""Invalid input 'DBMS': expected "," or "TO" (line 1, column ${offset + 1} (offset: $offset))"""
-            case ("REVOKE", "ROLE MANAGEMENT") => s"""Invalid input 'DBMS': expected "," or "FROM" (line 1, column ${offset + 1} (offset: $offset))"""
+            case ("GRANT", "ROLE MANAGEMENT") =>
+              s"""Invalid input 'DBMS': expected "," or "TO" (line 1, column ${offset + 1} (offset: $offset))"""
+            case ("REVOKE", "ROLE MANAGEMENT") =>
+              s"""Invalid input 'DBMS': expected "," or "FROM" (line 1, column ${offset + 1} (offset: $offset))"""
             case _ => s"""Invalid input 'DBMS': expected "ON" (line 1, column ${offset + 1} (offset: $offset))"""
           }
           assertFailsWithMessage(testName, expected)
@@ -92,22 +99,34 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
         test(s"$command $privilege ON $preposition role") {
           val offset = command.length + 5 + privilege.length
-          assertFailsWithMessage(testName, s"""Invalid input '$preposition': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))""")
+          assertFailsWithMessage(
+            testName,
+            s"""Invalid input '$preposition': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))"""
+          )
         }
 
         test(s"$command $privilege ON DBMS $preposition r:ole") {
           val offset = command.length + 12 + privilege.length + preposition.length
-          assertFailsWithMessage(testName, s"""Invalid input ':': expected "," or <EOF> (line 1, column ${offset + 1} (offset: $offset))""")
+          assertFailsWithMessage(
+            testName,
+            s"""Invalid input ':': expected "," or <EOF> (line 1, column ${offset + 1} (offset: $offset))"""
+          )
         }
 
         test(s"$command $privilege ON DBMS $preposition") {
           val offset = command.length + 10 + privilege.length + preposition.length
-          assertFailsWithMessage(testName, s"""Invalid input '': expected a parameter or an identifier (line 1, column ${offset + 1} (offset: $offset))""")
+          assertFailsWithMessage(
+            testName,
+            s"""Invalid input '': expected a parameter or an identifier (line 1, column ${offset + 1} (offset: $offset))"""
+          )
         }
 
         test(s"$command $privilege ON DBMS") {
           val offset = command.length + 9 + privilege.length
-          assertFailsWithMessage(testName, s"""Invalid input '': expected "$preposition" (line 1, column ${offset + 1} (offset: $offset))""")
+          assertFailsWithMessage(
+            testName,
+            s"""Invalid input '': expected "$preposition" (line 1, column ${offset + 1} (offset: $offset))"""
+          )
         }
     }
 
@@ -138,27 +157,36 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
     }
 
     test(s"$command ALL DBMS PRIVILEGES ON DATABASE $preposition role") {
-      assertFailsWithMessage(testName,
-        s"""Invalid input 'DATABASE': expected "DBMS" (line 1, column ${offset+24} (offset: ${offset+23}))""")
+      assertFailsWithMessage(
+        testName,
+        s"""Invalid input 'DATABASE': expected "DBMS" (line 1, column ${offset + 24} (offset: ${offset + 23}))"""
+      )
     }
 
     test(s"$command ALL DBMS PRIVILEGES ON HOME DATABASE $preposition role") {
-      assertFailsWithMessage(testName,
-        s"""Invalid input 'HOME': expected "DBMS" (line 1, column ${offset+24} (offset: ${offset+23}))""")
+      assertFailsWithMessage(
+        testName,
+        s"""Invalid input 'HOME': expected "DBMS" (line 1, column ${offset + 24} (offset: ${offset + 23}))"""
+      )
     }
 
     test(s"$command ALL DBMS PRIVILEGES DBMS $preposition role") {
-      assertFailsWithMessage(testName,
-        s"""Invalid input 'DBMS': expected "ON" (line 1, column ${offset+21} (offset: ${offset+20}))""")
+      assertFailsWithMessage(
+        testName,
+        s"""Invalid input 'DBMS': expected "ON" (line 1, column ${offset + 21} (offset: ${offset + 20}))"""
+      )
     }
 
     test(s"$command ALL DBMS PRIVILEGES $preposition") {
-      assertFailsWithMessage(testName,
-        s"""Invalid input '$preposition': expected "ON" (line 1, column ${offset+21} (offset: ${offset+20}))""")
+      assertFailsWithMessage(
+        testName,
+        s"""Invalid input '$preposition': expected "ON" (line 1, column ${offset + 21} (offset: ${offset + 20}))"""
+      )
     }
 
     test(s"$command ALL DBMS PRIVILEGES ON $preposition") {
-      assertFailsWithMessage(testName,
+      assertFailsWithMessage(
+        testName,
         s"""Invalid input '$preposition': expected
            |  "DATABASE"
            |  "DATABASES"
@@ -166,24 +194,31 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
            |  "DEFAULT"
            |  "GRAPH"
            |  "GRAPHS"
-           |  "HOME" (line 1, column ${offset+24} (offset: ${offset+23}))""".stripMargin)
+           |  "HOME" (line 1, column ${offset + 24} (offset: ${offset + 23}))""".stripMargin
+      )
     }
 
     test(s"$command ALL DBMS PRIVILEGES ON DBMS $preposition r:ole") {
-      val finalOffset = offset+30+preposition.length
-      assertFailsWithMessage(testName,
-        s"""Invalid input ':': expected "," or <EOF> (line 1, column ${finalOffset+1} (offset: $finalOffset))""")
+      val finalOffset = offset + 30 + preposition.length
+      assertFailsWithMessage(
+        testName,
+        s"""Invalid input ':': expected "," or <EOF> (line 1, column ${finalOffset + 1} (offset: $finalOffset))"""
+      )
     }
 
     test(s"$command ALL DBMS PRIVILEGES ON DBMS $preposition") {
-      val finalOffset = offset+28+preposition.length
-      assertFailsWithMessage(testName,
-        s"""Invalid input '': expected a parameter or an identifier (line 1, column ${finalOffset+1} (offset: $finalOffset))""")
+      val finalOffset = offset + 28 + preposition.length
+      assertFailsWithMessage(
+        testName,
+        s"""Invalid input '': expected a parameter or an identifier (line 1, column ${finalOffset + 1} (offset: $finalOffset))"""
+      )
     }
 
     test(s"$command ALL DBMS PRIVILEGES ON DBMS") {
-      assertFailsWithMessage(testName,
-        s"""Invalid input '': expected "$preposition" (line 1, column ${offset+28} (offset: ${offset+27}))""")
+      assertFailsWithMessage(
+        testName,
+        s"""Invalid input '': expected "$preposition" (line 1, column ${offset + 28} (offset: ${offset + 27}))"""
+      )
     }
   }
 }

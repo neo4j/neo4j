@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.monitoring.tracing;
 
+import static java.lang.String.format;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.neo4j.kernel.monitoring.tracing.NullTracersFactory.NULL_TRACERS_NAME;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
@@ -30,10 +34,6 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
-
-import static java.lang.String.format;
-import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.neo4j.kernel.monitoring.tracing.NullTracersFactory.NULL_TRACERS_NAME;
 
 /**
  * <h1>Tracers</h1>
@@ -102,9 +102,9 @@ import static org.neo4j.kernel.monitoring.tracing.NullTracersFactory.NULL_TRACER
  *     the neo4j-jfr code base up to date.
  * </p>
  */
-public class Tracers
-{
-    public static Tracers EMPTY_TRACERS = new Tracers( NULL_TRACERS_NAME, NullLog.getInstance(), new Monitors(), null, Clocks.nanoClock(), null );
+public class Tracers {
+    public static Tracers EMPTY_TRACERS =
+            new Tracers(NULL_TRACERS_NAME, NullLog.getInstance(), new Monitors(), null, Clocks.nanoClock(), null);
 
     private final PageCacheTracer pageCacheTracer;
     private final TracerFactory tracersFactory;
@@ -120,65 +120,58 @@ public class Tracers
      * @param monitors the monitoring manager
      * @param jobScheduler a scheduler for async jobs
      */
-    public Tracers( String desiredImplementationName, InternalLog msgLog, Monitors monitors, JobScheduler jobScheduler,
-            SystemNanoClock clock, Config config )
-    {
+    public Tracers(
+            String desiredImplementationName,
+            InternalLog msgLog,
+            Monitors monitors,
+            JobScheduler jobScheduler,
+            SystemNanoClock clock,
+            Config config) {
         this.clock = clock;
-        this.tracersFactory = createTracersFactory( desiredImplementationName, msgLog );
-        this.pageCacheTracer = tracersFactory.createPageCacheTracer( monitors, jobScheduler, clock, msgLog, config );
+        this.tracersFactory = createTracersFactory(desiredImplementationName, msgLog);
+        this.pageCacheTracer = tracersFactory.createPageCacheTracer(monitors, jobScheduler, clock, msgLog, config);
     }
 
-    public PageCacheTracer getPageCacheTracer()
-    {
+    public PageCacheTracer getPageCacheTracer() {
         return pageCacheTracer;
     }
 
-    public LockTracer getLockTracer()
-    {
-        return tracersFactory.createLockTracer( clock );
+    public LockTracer getLockTracer() {
+        return tracersFactory.createLockTracer(clock);
     }
 
-    public DatabaseTracer getDatabaseTracer()
-    {
-        return tracersFactory.createDatabaseTracer( clock );
+    public DatabaseTracer getDatabaseTracer() {
+        return tracersFactory.createDatabaseTracer(clock);
     }
 
-    private static TracerFactory createTracersFactory( String desiredImplementationName, InternalLog msgLog )
-    {
-        if ( NULL_TRACERS_NAME.equalsIgnoreCase( desiredImplementationName ) )
-        {
+    private static TracerFactory createTracersFactory(String desiredImplementationName, InternalLog msgLog) {
+        if (NULL_TRACERS_NAME.equalsIgnoreCase(desiredImplementationName)) {
             return new NullTracersFactory();
-        }
-        else
-        {
-            return selectTracerFactory( desiredImplementationName, msgLog );
+        } else {
+            return selectTracerFactory(desiredImplementationName, msgLog);
         }
     }
 
-    private static TracerFactory selectTracerFactory( String desiredImplementationName, InternalLog msgLog )
-    {
-        if ( isBlank( desiredImplementationName ) )
-        {
+    private static TracerFactory selectTracerFactory(String desiredImplementationName, InternalLog msgLog) {
+        if (isBlank(desiredImplementationName)) {
             return createDefaultTracerFactory();
         }
-        try
-        {
-            return Services.load( TracerFactory.class, desiredImplementationName )
-                    .orElseGet( () ->
-                    {
-                        msgLog.warn( "Using default tracer implementations instead of '%s'", desiredImplementationName );
-                        return Tracers.createDefaultTracerFactory();
-                    } );
-        }
-        catch ( Exception e )
-        {
-            msgLog.warn( format( "Failed to instantiate desired tracer implementations '%s', using default", desiredImplementationName ), e );
+        try {
+            return Services.load(TracerFactory.class, desiredImplementationName).orElseGet(() -> {
+                msgLog.warn("Using default tracer implementations instead of '%s'", desiredImplementationName);
+                return Tracers.createDefaultTracerFactory();
+            });
+        } catch (Exception e) {
+            msgLog.warn(
+                    format(
+                            "Failed to instantiate desired tracer implementations '%s', using default",
+                            desiredImplementationName),
+                    e);
             return createDefaultTracerFactory();
         }
     }
 
-    private static TracerFactory createDefaultTracerFactory()
-    {
+    private static TracerFactory createDefaultTracerFactory() {
         return new DefaultTracerFactory();
     }
 }

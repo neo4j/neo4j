@@ -35,5 +35,6 @@ trait NodeIndexPlanProvider {
     hints: Set[Hint],
     argumentIds: Set[String],
     restrictions: LeafPlanRestrictions,
-    context: LogicalPlanningContext): Set[LogicalPlan]
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan]
 }

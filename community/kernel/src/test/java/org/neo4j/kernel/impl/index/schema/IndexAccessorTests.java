@@ -19,13 +19,19 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCache;
@@ -35,37 +41,26 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.utils.PageCacheConfig;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
-
-abstract class IndexAccessorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> extends IndexTestUtil<KEY, VALUE, LAYOUT>
-{
+abstract class IndexAccessorTests<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE>>
+        extends IndexTestUtil<KEY, VALUE, LAYOUT> {
     IndexAccessor accessor;
 
     @BeforeEach
-    void setupAccessor() throws IOException
-    {
-        accessor = createAccessor( pageCache );
+    void setupAccessor() throws IOException {
+        accessor = createAccessor(pageCache);
     }
 
     @AfterEach
-    void closeAccessor()
-    {
+    void closeAccessor() {
         accessor.close();
     }
 
-    abstract IndexAccessor createAccessor( PageCache pageCache ) throws IOException;
+    abstract IndexAccessor createAccessor(PageCache pageCache) throws IOException;
 
     @Test
-    void shouldHandleCloseWithoutCallsToProcess() throws Exception
-    {
+    void shouldHandleCloseWithoutCallsToProcess() throws Exception {
         // given
-        IndexUpdater updater = accessor.newUpdater( ONLINE, NULL_CONTEXT, false );
+        IndexUpdater updater = accessor.newUpdater(ONLINE, NULL_CONTEXT, false);
 
         // when
         updater.close();
@@ -75,18 +70,15 @@ abstract class IndexAccessorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> ex
     }
 
     @Test
-    void requestForSecondUpdaterMustThrow() throws Exception
-    {
+    void requestForSecondUpdaterMustThrow() throws Exception {
         // given
-        try ( IndexUpdater ignored = accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) )
-        {
-            assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) );
+        try (IndexUpdater ignored = accessor.newUpdater(ONLINE, NULL_CONTEXT, false)) {
+            assertThrows(IllegalStateException.class, () -> accessor.newUpdater(ONLINE, NULL_CONTEXT, false));
         }
     }
 
     @Test
-    void dropShouldDeleteAndCloseIndex()
-    {
+    void dropShouldDeleteAndCloseIndex() {
         // given
         assertFilePresent();
 
@@ -98,56 +90,51 @@ abstract class IndexAccessorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> ex
     }
 
     @Test
-    void dropShouldNotFlushContent() throws IOException
-    {
+    void dropShouldNotFlushContent() throws IOException {
         // given
         accessor.close();
         DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
-        try ( PageCache pageCache = PageCacheSupportExtension.getPageCache( fs, PageCacheConfig.config().withTracer( tracer ) ) )
-        {
-            accessor = createAccessor( pageCache );
+        try (PageCache pageCache = PageCacheSupportExtension.getPageCache(
+                fs, PageCacheConfig.config().withTracer(tracer))) {
+            accessor = createAccessor(pageCache);
             long baseline = tracer.flushes();
-            accessor.force( NULL_CONTEXT );
+            accessor.force(NULL_CONTEXT);
             long preDrop = tracer.flushes();
-            assertThat( preDrop ).isGreaterThan( baseline );
+            assertThat(preDrop).isGreaterThan(baseline);
 
             // when
             accessor.drop();
 
             // then
             long postDrop = tracer.flushes();
-            assertEquals( preDrop, postDrop );
+            assertEquals(preDrop, postDrop);
         }
     }
 
     @Test
-    void snapshotFilesShouldReturnIndexFile()
-    {
+    void snapshotFilesShouldReturnIndexFile() {
         // when
         ResourceIterator<Path> files = accessor.snapshotFiles();
 
         // then
-        assertTrue( files.hasNext() );
-        assertEquals( indexFiles.getStoreFile(), files.next() );
-        assertFalse( files.hasNext() );
+        assertTrue(files.hasNext());
+        assertEquals(indexFiles.getStoreFile(), files.next());
+        assertFalse(files.hasNext());
     }
 
     @Test
-    void writingAfterDropShouldThrow()
-    {
+    void writingAfterDropShouldThrow() {
         // given
         accessor.drop();
 
-        assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) );
+        assertThrows(IllegalStateException.class, () -> accessor.newUpdater(ONLINE, NULL_CONTEXT, false));
     }
 
     @Test
-    void writingAfterCloseShouldThrow()
-    {
+    void writingAfterCloseShouldThrow() {
         // given
         accessor.close();
 
-        assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) );
+        assertThrows(IllegalStateException.class, () -> accessor.newUpdater(ONLINE, NULL_CONTEXT, false));
     }
-
 }

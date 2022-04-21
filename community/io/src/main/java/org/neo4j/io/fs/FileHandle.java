@@ -30,22 +30,17 @@ import java.util.function.Consumer;
  * A handle to a file as seen by the page cache. The file may or may not be mapped.
  * @see FileSystemAbstraction#streamFilesRecursive(Path)
  */
-public interface FileHandle
-{
+public interface FileHandle {
     /**
      * Useful consumer when doing deletion in stream pipeline.
      * <p>
      * Possible IOException caused by fileHandle.delete() is wrapped in UncheckedIOException
      */
-    Consumer<FileHandle> HANDLE_DELETE = fh ->
-    {
-        try
-        {
+    Consumer<FileHandle> HANDLE_DELETE = fh -> {
+        try {
             fh.delete();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     };
 
@@ -59,32 +54,22 @@ public interface FileHandle
      * @param to Directory to move file to.
      * @return A new Consumer that moves the file wrapped by the file handle.
      */
-    static Consumer<FileHandle> handleRenameBetweenDirectories( Path from, Path to )
-    {
-        return fileHandle ->
-        {
-            try
-            {
-                fileHandle.rename( FileUtils.pathToFileAfterMove( from, to, fileHandle.getPath() ) );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
+    static Consumer<FileHandle> handleRenameBetweenDirectories(Path from, Path to) {
+        return fileHandle -> {
+            try {
+                fileHandle.rename(FileUtils.pathToFileAfterMove(from, to, fileHandle.getPath()));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         };
     }
 
-    static Consumer<FileHandle> handleRename( Path to )
-    {
-        return fileHandle ->
-        {
-            try
-            {
-                fileHandle.rename( to );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
+    static Consumer<FileHandle> handleRename(Path to) {
+        return fileHandle -> {
+            try {
+                fileHandle.rename(to);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         };
     }
@@ -131,7 +116,7 @@ public interface FileHandle
      * {@link java.nio.file.StandardCopyOption#REPLACE_EXISTING} open option was not specified.
      * @throws IOException if an I/O error occurs, for instance when canonicalising the {@code to} path.
      */
-    void rename( Path to, CopyOption... options ) throws IOException;
+    void rename(Path to, CopyOption... options) throws IOException;
 
     /**
      * Delete the file that this file handle represents.

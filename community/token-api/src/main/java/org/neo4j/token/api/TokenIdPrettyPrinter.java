@@ -21,79 +21,62 @@ package org.neo4j.token.api;
 
 import java.util.StringJoiner;
 import java.util.function.IntFunction;
-
 import org.neo4j.common.TokenNameLookup;
 
-public final class TokenIdPrettyPrinter
-{
-    private TokenIdPrettyPrinter()
-    {
-    }
+public final class TokenIdPrettyPrinter {
+    private TokenIdPrettyPrinter() {}
 
-    public static String label( int id )
-    {
+    public static String label(int id) {
         return id == TokenConstants.ANY_LABEL ? "" : (":label=" + id);
     }
 
-    public static String propertyKey( int id )
-    {
+    public static String propertyKey(int id) {
         return id == TokenConstants.ANY_PROPERTY_KEY ? "" : (":propertyKey=" + id);
     }
 
-    public static String relationshipType( int id )
-    {
+    public static String relationshipType(int id) {
         return id == TokenConstants.ANY_RELATIONSHIP_TYPE ? "" : ("[:type=" + id + "]");
     }
 
-    public static String niceProperties( TokenNameLookup tokenNameLookup, int[] propertyIds )
-    {
-        return niceProperties( tokenNameLookup, propertyIds, '(', ')' );
+    public static String niceProperties(TokenNameLookup tokenNameLookup, int[] propertyIds) {
+        return niceProperties(tokenNameLookup, propertyIds, '(', ')');
     }
 
-    public static String niceProperties( TokenNameLookup tokenNameLookup, int[] propertyIds, char prefix, char suffix )
-    {
+    public static String niceProperties(TokenNameLookup tokenNameLookup, int[] propertyIds, char prefix, char suffix) {
         StringBuilder out = new StringBuilder();
-        out.append( prefix );
-        format( out, "", ", ", tokenNameLookup::propertyKeyGetName, propertyIds );
-        out.append( suffix );
+        out.append(prefix);
+        format(out, "", ", ", tokenNameLookup::propertyKeyGetName, propertyIds);
+        out.append(suffix);
         return out.toString();
     }
 
-    public static String niceEntityLabels( IntFunction<String> lookup, int[] labelIds )
-    {
-        StringJoiner entityJoiner = new StringJoiner( ":", ":", "" );
-        entityJoiner.setEmptyValue( "" );
-        for ( int id : labelIds )
-        {
-            String name = lookup.apply( id );
-            if ( name.contains( ":" ) )
-            {
+    public static String niceEntityLabels(IntFunction<String> lookup, int[] labelIds) {
+        StringJoiner entityJoiner = new StringJoiner(":", ":", "");
+        entityJoiner.setEmptyValue("");
+        for (int id : labelIds) {
+            String name = lookup.apply(id);
+            if (name.contains(":")) {
                 name = '`' + name + "`";
             }
-            entityJoiner.add( name );
+            entityJoiner.add(name);
         }
         return entityJoiner.toString();
     }
 
-    public static void format( StringBuilder out, String prefix, String separator, IntFunction<String> lookup, int[] ids )
-    {
-        for ( int id : ids )
-        {
-            String name = lookup.apply( id );
-            out.append( prefix );
-            if ( name.contains( ":" ) )
-            {
-                out.append( '`' ).append( name ).append( '`' );
+    public static void format(
+            StringBuilder out, String prefix, String separator, IntFunction<String> lookup, int[] ids) {
+        for (int id : ids) {
+            String name = lookup.apply(id);
+            out.append(prefix);
+            if (name.contains(":")) {
+                out.append('`').append(name).append('`');
+            } else {
+                out.append(name);
             }
-            else
-            {
-                out.append( name );
-            }
-            out.append( separator );
+            out.append(separator);
         }
-        if ( ids.length > 0 )
-        {
-            out.setLength( out.length() - separator.length() );
+        if (ids.length > 0) {
+            out.setLength(out.length() - separator.length());
         }
     }
 }

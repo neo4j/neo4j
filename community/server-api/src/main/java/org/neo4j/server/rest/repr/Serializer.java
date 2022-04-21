@@ -21,60 +21,47 @@ package org.neo4j.server.rest.repr;
 
 import java.net.URI;
 
-public abstract class Serializer
-{
+public abstract class Serializer {
     private final URI baseUri;
 
-    Serializer( URI baseUri )
-    {
+    Serializer(URI baseUri) {
         this.baseUri = baseUri;
     }
 
-    final void serialize( MappingWriter mapping, MappingRepresentation value )
-    {
-        value.serialize( new MappingSerializer( mapping, baseUri ) );
+    final void serialize(MappingWriter mapping, MappingRepresentation value) {
+        value.serialize(new MappingSerializer(mapping, baseUri));
         mapping.done();
     }
 
-    final void serialize( ListWriter list, ListRepresentation value )
-    {
-        value.serialize( new ListSerializer( list, baseUri ) );
+    final void serialize(ListWriter list, ListRepresentation value) {
+        value.serialize(new ListSerializer(list, baseUri));
         list.done();
     }
 
-    final String relativeUri( String path )
-    {
+    final String relativeUri(String path) {
         return joinBaseWithRelativePath(baseUri, path);
     }
 
-    final String relativeTemplate( String path )
-    {
-        return joinBaseWithRelativePath( baseUri, path );
+    final String relativeTemplate(String path) {
+        return joinBaseWithRelativePath(baseUri, path);
     }
 
-    public static String joinBaseWithRelativePath( URI baseUri, String path )
-    {
+    public static String joinBaseWithRelativePath(URI baseUri, String path) {
         String base = baseUri.toString();
-        final StringBuilder result = new StringBuilder( base.length() + path.length() + 1 ).append( base );
-        if ( base.endsWith( "/" ) )
-        {
-            if ( path.startsWith( "/" ) )
-            {
+        final StringBuilder result = new StringBuilder(base.length() + path.length() + 1).append(base);
+        if (base.endsWith("/")) {
+            if (path.startsWith("/")) {
                 return result.append(path.substring(1)).toString();
             }
-        }
-        else if ( !path.startsWith( "/" ) )
-        {
+        } else if (!path.startsWith("/")) {
             return result.append('/').append(path).toString();
         }
         return result.append(path).toString();
     }
 
-    static void checkThatItIsBuiltInType( Object value )
-    {
-        if ( !"java.lang".equals( value.getClass().getPackage().getName() ) )
-        {
-            throw new IllegalArgumentException( "Unsupported number type: " + value.getClass() );
+    static void checkThatItIsBuiltInType(Object value) {
+        if (!"java.lang".equals(value.getClass().getPackage().getName())) {
+            throw new IllegalArgumentException("Unsupported number type: " + value.getClass());
         }
     }
 }

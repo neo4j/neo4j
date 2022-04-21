@@ -22,19 +22,16 @@ package org.neo4j.kernel.impl.api.index;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
-public final class SwallowingIndexUpdater implements IndexUpdater
-{
+public final class SwallowingIndexUpdater implements IndexUpdater {
     public static final IndexUpdater INSTANCE = new SwallowingIndexUpdater();
 
     @Override
-    public void process( IndexEntryUpdate<?> update )
-    {
+    public void process(IndexEntryUpdate<?> update) {
         // intentionally swallow this update
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         // nothing to close
     }
 }

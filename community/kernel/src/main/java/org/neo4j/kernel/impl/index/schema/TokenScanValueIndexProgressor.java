@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-
 import org.neo4j.graphdb.Resource;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.schema.IndexOrder;
@@ -33,15 +32,17 @@ import org.neo4j.kernel.api.index.IndexProgressor;
  * iterate over each set bit, returning actual entity ids, i.e. {@code entityIdRange+bitOffset}.
  *
  */
-public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor implements IndexProgressor, Resource
-{
+public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor implements IndexProgressor, Resource {
     private final EntityTokenClient client;
     private final IndexOrder indexOrder;
     private final EntityRange range;
 
-    TokenScanValueIndexProgressor( Seeker<TokenScanKey,TokenScanValue> cursor, EntityTokenClient client, IndexOrder indexOrder, EntityRange range )
-    {
-        super( cursor );
+    TokenScanValueIndexProgressor(
+            Seeker<TokenScanKey, TokenScanValue> cursor,
+            EntityTokenClient client,
+            IndexOrder indexOrder,
+            EntityRange range) {
+        super(cursor);
         this.client = client;
         this.indexOrder = indexOrder;
         this.range = range;
@@ -55,28 +56,22 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
      * @return <code>true</code> if it found an accepted entry, <code>false</code> otherwise
      */
     @Override
-    public boolean next()
-    {
-        for ( ; ; )
-        {
-            while ( bits != 0 )
-            {
+    public boolean next() {
+        for (; ; ) {
+            while (bits != 0) {
                 long idForClient;
-                if ( indexOrder != IndexOrder.DESCENDING )
-                {
+                if (indexOrder != IndexOrder.DESCENDING) {
                     // The next idForClient can be found at the next 1-bit from the right.
-                    int delta = Long.numberOfTrailingZeros( bits );
+                    int delta = Long.numberOfTrailingZeros(bits);
 
                     // We switch that bit to zero, so that we don't find it again the next time.
                     // First, create a mask where that bit is zero (easiest by subtracting 1) and then &
                     // it with bits.
                     bits &= bits - 1;
                     idForClient = baseEntityId + delta;
-                }
-                else
-                {
+                } else {
                     // The next idForClient can be found at the next 1-bit from the left.
-                    int delta = Long.numberOfLeadingZeros( bits );
+                    int delta = Long.numberOfLeadingZeros(bits);
 
                     // We switch that bit to zero, so that we don't find it again the next time.
                     // First, create a mask where only set bit is set (easiest by bitshifting the number one),
@@ -86,22 +81,17 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
                     idForClient = (baseEntityId + Long.SIZE) - 1 - delta;
                 }
 
-                if ( isInRange( idForClient ) && client.acceptEntity( idForClient, null ) )
-                {
+                if (isInRange(idForClient) && client.acceptEntity(idForClient, null)) {
                     return true;
                 }
             }
-            try
-            {
-                if ( !cursor.next() )
-                {
+            try {
+                if (!cursor.next()) {
                     close();
                     return false;
                 }
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
 
             TokenScanKey key = cursor.key();
@@ -109,7 +99,7 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
             bits = cursor.value().bits;
 
             //noinspection AssertWithSideEffects
-            assert keysInOrder( key, indexOrder );
+            assert keysInOrder(key, indexOrder);
         }
     }
 
@@ -120,8 +110,7 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
      * start of the range rounded down to the nearest multiple of 64 and the end of the range rounded up to the nearest multiple of 64.
      * The purpose of this method is to filter out the extra entity IDs that are present in the seek result because of the rounding.
      */
-    private boolean isInRange( long entityId )
-    {
+    private boolean isInRange(long entityId) {
         return entityId >= range.fromInclusive() && entityId < range.toExclusive();
     }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.graphdb.traversal;
 
 import java.util.Comparator;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -50,8 +49,7 @@ import org.neo4j.graphdb.RelationshipType;
  * {@link Traverser} that is returned is then used to step through the graph,
  * and return the positions that matches the rules.
  */
-public interface TraversalDescription
-{
+public interface TraversalDescription {
     /**
      * Sets the {@link UniquenessFactory} for creating the
      * {@link UniquenessFilter} to use.
@@ -60,7 +58,7 @@ public interface TraversalDescription
      * of the desired {@link UniquenessFilter} to use.
      * @return a new traversal description with the new modifications.
      */
-    TraversalDescription uniqueness( UniquenessFactory uniqueness );
+    TraversalDescription uniqueness(UniquenessFactory uniqueness);
 
     /**
      * Sets the {@link UniquenessFactory} for creating the
@@ -73,7 +71,7 @@ public interface TraversalDescription
      * which is mandatory for certain uniquenesses.
      * @return a new traversal description with the new modifications.
      */
-    TraversalDescription uniqueness( UniquenessFactory uniqueness, Object parameter );
+    TraversalDescription uniqueness(UniquenessFactory uniqueness, Object parameter);
 
     /**
      * Adds {@code evaluator} to the list of evaluators which will control the
@@ -94,7 +92,7 @@ public interface TraversalDescription
      * @param evaluator the {@link Evaluator} to add to the traversal
      * @return a new traversal description with the new modifications.
      */
-    TraversalDescription evaluator( Evaluator evaluator );
+    TraversalDescription evaluator(Evaluator evaluator);
 
     /**
      * Adds {@code evaluator} to the list of evaluators which will control the
@@ -115,7 +113,7 @@ public interface TraversalDescription
      * @param evaluator the {@link PathEvaluator} to add to the traversal
      * @return a new traversal description with the new modifications.
      */
-    TraversalDescription evaluator( PathEvaluator evaluator );
+    TraversalDescription evaluator(PathEvaluator evaluator);
 
     /**
      * Sets the {@link BranchOrderingPolicy} to use. A {@link BranchSelector}
@@ -128,7 +126,7 @@ public interface TraversalDescription
      * to use with the traversal.
      * @return a new traversal description with the new modifications.
      */
-    TraversalDescription order( BranchOrderingPolicy selector );
+    TraversalDescription order(BranchOrderingPolicy selector);
 
     /**
      * A convenience method for {@link #order(BranchOrderingPolicy)}
@@ -156,7 +154,7 @@ public interface TraversalDescription
      * to traverse.
      * @return a new traversal description with the new modifications.
      */
-    TraversalDescription relationships( RelationshipType type );
+    TraversalDescription relationships(RelationshipType type);
 
     /**
      * Adds {@code type} to the list of relationship types to traverse in
@@ -169,8 +167,7 @@ public interface TraversalDescription
      * relationship in.
      * @return a new traversal description with the new modifications.
      */
-    TraversalDescription relationships( RelationshipType type,
-            Direction direction );
+    TraversalDescription relationships(RelationshipType type, Direction direction);
 
     /**
      * Sets the {@link PathExpander} as the expander of relationships,
@@ -181,7 +178,7 @@ public interface TraversalDescription
      * @param expander the {@link PathExpander} to use.
      * @return a new traversal description with the new modifications.
      */
-    TraversalDescription expand( PathExpander<?> expander );
+    TraversalDescription expand(PathExpander<?> expander);
 
     /**
      * Sets the {@link PathExpander} as the expander of relationships,
@@ -198,13 +195,13 @@ public interface TraversalDescription
      * @param <STATE> the type of the state object
      * @return a new traversal description with the new modifications.
      */
-    <STATE> TraversalDescription expand( PathExpander<STATE> expander, InitialBranchState<STATE> initialState );
+    <STATE> TraversalDescription expand(PathExpander<STATE> expander, InitialBranchState<STATE> initialState);
 
     /**
      * @param comparator the {@link Comparator} to use for sorting the paths.
      * @return the paths from this traversal sorted according to {@code comparator}.
      */
-    TraversalDescription sort( Comparator<? super Path> comparator );
+    TraversalDescription sort(Comparator<? super Path> comparator);
 
     /**
      * Creates an identical {@link TraversalDescription}, although reversed in
@@ -224,7 +221,7 @@ public interface TraversalDescription
      * @return a {@link Traverser} used to step through the graph and to get
      * results from.
      */
-    Traverser traverse( Node startNode );
+    Traverser traverse(Node startNode);
 
     /**
      * Traverse from a set of start nodes based on all the rules and behavior
@@ -236,7 +233,7 @@ public interface TraversalDescription
      * @return a {@link Traverser} used to step through the graph and to get
      * results from.
      */
-    Traverser traverse( Node... startNodes );
+    Traverser traverse(Node... startNodes);
 
     /**
      * Traverse from a iterable of start nodes based on all the rules and behavior
@@ -248,5 +245,5 @@ public interface TraversalDescription
      * @return a {@link Traverser} used to step through the graph and to get
      * results from.
      */
-    Traverser traverse( Iterable<Node> iterableStartNodes );
+    Traverser traverse(Iterable<Node> iterableStartNodes);
 }

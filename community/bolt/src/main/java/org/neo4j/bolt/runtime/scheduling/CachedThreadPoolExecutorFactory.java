@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.runtime.scheduling;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import java.time.Duration;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -29,65 +31,68 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
-public class CachedThreadPoolExecutorFactory implements ExecutorFactory
-{
+public class CachedThreadPoolExecutorFactory implements ExecutorFactory {
     static final int UNBOUNDED_QUEUE = -1;
     static final int SYNCHRONOUS_QUEUE = 0;
 
     private final RejectedExecutionHandler rejectionHandler;
 
-    public CachedThreadPoolExecutorFactory()
-    {
-        this( new ThreadPoolExecutor.AbortPolicy() );
+    public CachedThreadPoolExecutorFactory() {
+        this(new ThreadPoolExecutor.AbortPolicy());
     }
 
-    private CachedThreadPoolExecutorFactory( RejectedExecutionHandler rejectionHandler )
-    {
+    private CachedThreadPoolExecutorFactory(RejectedExecutionHandler rejectionHandler) {
         this.rejectionHandler = rejectionHandler;
     }
 
     @Override
-    public ExecutorService create( int corePoolSize, int maxPoolSize, Duration keepAlive, int queueSize, boolean startCoreThreads, ThreadFactory threadFactory )
-    {
-        ThreadPool result = new ThreadPool( corePoolSize, maxPoolSize, keepAlive, createTaskQueue( queueSize ), threadFactory, rejectionHandler );
+    public ExecutorService create(
+            int corePoolSize,
+            int maxPoolSize,
+            Duration keepAlive,
+            int queueSize,
+            boolean startCoreThreads,
+            ThreadFactory threadFactory) {
+        ThreadPool result = new ThreadPool(
+                corePoolSize, maxPoolSize, keepAlive, createTaskQueue(queueSize), threadFactory, rejectionHandler);
 
-        if ( startCoreThreads )
-        {
+        if (startCoreThreads) {
             result.prestartAllCoreThreads();
         }
 
         return result;
     }
 
-    private static BlockingQueue<Runnable> createTaskQueue( int queueSize )
-    {
-        if ( queueSize == UNBOUNDED_QUEUE )
-        {
+    private static BlockingQueue<Runnable> createTaskQueue(int queueSize) {
+        if (queueSize == UNBOUNDED_QUEUE) {
             return new LinkedBlockingQueue<>();
-        }
-        else if ( queueSize == SYNCHRONOUS_QUEUE )
-        {
+        } else if (queueSize == SYNCHRONOUS_QUEUE) {
             return new SynchronousQueue<>();
-        }
-        else if ( queueSize > 0 )
-        {
-            return new ArrayBlockingQueue<>( queueSize );
+        } else if (queueSize > 0) {
+            return new ArrayBlockingQueue<>(queueSize);
         }
 
-        throw new IllegalArgumentException( String.format( "Unsupported queue size %d for thread pool creation.", queueSize ) );
+        throw new IllegalArgumentException(
+                String.format("Unsupported queue size %d for thread pool creation.", queueSize));
     }
 
-    private static class ThreadPool extends ThreadPoolExecutor
-    {
+    private static class ThreadPool extends ThreadPoolExecutor {
 
-        private ThreadPool( int corePoolSize, int maxPoolSize, Duration keepAlive, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory,
-                RejectedExecutionHandler rejectionHandler )
-        {
-            super( corePoolSize, maxPoolSize, keepAlive.toMillis(), MILLISECONDS, workQueue, threadFactory, rejectionHandler );
+        private ThreadPool(
+                int corePoolSize,
+                int maxPoolSize,
+                Duration keepAlive,
+                BlockingQueue<Runnable> workQueue,
+                ThreadFactory threadFactory,
+                RejectedExecutionHandler rejectionHandler) {
+            super(
+                    corePoolSize,
+                    maxPoolSize,
+                    keepAlive.toMillis(),
+                    MILLISECONDS,
+                    workQueue,
+                    threadFactory,
+                    rejectionHandler);
         }
-
     }
-
 }

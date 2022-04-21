@@ -19,14 +19,19 @@
  */
 package org.neo4j.kernel.api.impl.schema.populator;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider.UPDATE_IGNORE_STRATEGY;
+import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
@@ -51,111 +56,105 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider.UPDATE_IGNORE_STRATEGY;
-import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
-
 @TestDirectoryExtension
-class NonUniqueDatabaseIndexPopulatorTest
-{
+class NonUniqueDatabaseIndexPopulatorTest {
     private final DirectoryFactory dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+
     @Inject
     private TestDirectory testDir;
+
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
 
     private SchemaIndex index;
     private NonUniqueLuceneIndexPopulator populator;
-    private final SchemaDescriptorSupplier labelSchemaDescriptor = () -> SchemaDescriptors.forLabel( 0, 0 );
+    private final SchemaDescriptorSupplier labelSchemaDescriptor = () -> SchemaDescriptors.forLabel(0, 0);
 
     @BeforeEach
-    void setUp()
-    {
-        Path folder = testDir.directory( "folder" );
-        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fileSystem, folder );
+    void setUp() {
+        Path folder = testDir.directory("folder");
+        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage(dirFactory, fileSystem, folder);
 
-        IndexDescriptor descriptor = IndexPrototype.forSchema( labelSchemaDescriptor.schema() ).withName( "index" ).materialise( 13 );
-        index = LuceneSchemaIndexBuilder.create( descriptor, writable(), Config.defaults() ).withIndexStorage( indexStorage ).build();
+        IndexDescriptor descriptor = IndexPrototype.forSchema(labelSchemaDescriptor.schema())
+                .withName("index")
+                .materialise(13);
+        index = LuceneSchemaIndexBuilder.create(descriptor, writable(), Config.defaults())
+                .withIndexStorage(indexStorage)
+                .build();
     }
 
     @AfterEach
-    void tearDown() throws Exception
-    {
-        if ( populator != null )
-        {
-            populator.close( false, CursorContext.NULL_CONTEXT );
+    void tearDown() throws Exception {
+        if (populator != null) {
+            populator.close(false, CursorContext.NULL_CONTEXT);
         }
-        IOUtils.closeAll( index, dirFactory );
+        IOUtils.closeAll(index, dirFactory);
     }
 
     @Test
-    void sampleEmptyIndex()
-    {
+    void sampleEmptyIndex() {
         populator = newPopulator();
 
-        IndexSample sample = populator.sample( CursorContext.NULL_CONTEXT );
+        IndexSample sample = populator.sample(CursorContext.NULL_CONTEXT);
 
-        assertEquals( new IndexSample(), sample );
+        assertEquals(new IndexSample(), sample);
     }
 
     @Test
-    void sampleIncludedUpdates()
-    {
+    void sampleIncludedUpdates() {
         populator = newPopulator();
         List<IndexEntryUpdate<?>> updates = Arrays.asList(
-                add( 1, labelSchemaDescriptor, "aaa" ),
-                add( 2, labelSchemaDescriptor, "bbb" ),
-                add( 3, labelSchemaDescriptor, "ccc" ) );
-        populator.add( updates, CursorContext.NULL_CONTEXT );
+                add(1, labelSchemaDescriptor, "aaa"),
+                add(2, labelSchemaDescriptor, "bbb"),
+                add(3, labelSchemaDescriptor, "ccc"));
+        populator.add(updates, CursorContext.NULL_CONTEXT);
 
-        IndexSample sample = populator.sample( CursorContext.NULL_CONTEXT );
+        IndexSample sample = populator.sample(CursorContext.NULL_CONTEXT);
 
-        assertEquals( new IndexSample( 3, 3, 3 ), sample );
+        assertEquals(new IndexSample(3, 3, 3), sample);
     }
 
     @Test
-    void sampleIncludedUpdatesWithDuplicates()
-    {
+    void sampleIncludedUpdatesWithDuplicates() {
         populator = newPopulator();
         List<IndexEntryUpdate<?>> updates = Arrays.asList(
-                add( 1, labelSchemaDescriptor, "foo" ),
-                add( 2, labelSchemaDescriptor, "bar" ),
-                add( 3, labelSchemaDescriptor, "foo" ) );
-        populator.add( updates, CursorContext.NULL_CONTEXT );
+                add(1, labelSchemaDescriptor, "foo"),
+                add(2, labelSchemaDescriptor, "bar"),
+                add(3, labelSchemaDescriptor, "foo"));
+        populator.add(updates, CursorContext.NULL_CONTEXT);
 
-        IndexSample sample = populator.sample( CursorContext.NULL_CONTEXT );
+        IndexSample sample = populator.sample(CursorContext.NULL_CONTEXT);
 
-        assertEquals( new IndexSample( 3, 2, 3 ), sample );
+        assertEquals(new IndexSample(3, 2, 3), sample);
     }
 
     @Test
-    void addUpdates() throws Exception
-    {
+    void addUpdates() throws Exception {
         populator = newPopulator();
 
         List<IndexEntryUpdate<?>> updates = Arrays.asList(
-                add( 1, labelSchemaDescriptor, "foo" ),
-                add( 2, labelSchemaDescriptor, "bar" ),
-                add( 42, labelSchemaDescriptor, "bar" ) );
+                add(1, labelSchemaDescriptor, "foo"),
+                add(2, labelSchemaDescriptor, "bar"),
+                add(42, labelSchemaDescriptor, "bar"));
 
-        populator.add( updates, CursorContext.NULL_CONTEXT );
+        populator.add(updates, CursorContext.NULL_CONTEXT);
 
         index.maybeRefreshBlocking();
-        try ( ValueIndexReader reader = index.getIndexReader();
-              NodeValueIterator allEntities = new NodeValueIterator() )
-        {
+        try (ValueIndexReader reader = index.getIndexReader();
+                NodeValueIterator allEntities = new NodeValueIterator()) {
             int propertyKeyId = labelSchemaDescriptor.schema().getPropertyId();
-            reader.query( allEntities, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), PropertyIndexQuery.exists( propertyKeyId ) );
-            assertArrayEquals( new long[]{1, 2, 42}, PrimitiveLongCollections.asArray( allEntities ) );
+            reader.query(
+                    allEntities,
+                    QueryContext.NULL_CONTEXT,
+                    AccessMode.Static.READ,
+                    unconstrained(),
+                    PropertyIndexQuery.exists(propertyKeyId));
+            assertArrayEquals(new long[] {1, 2, 42}, PrimitiveLongCollections.asArray(allEntities));
         }
     }
 
-    private NonUniqueLuceneIndexPopulator newPopulator()
-    {
-        NonUniqueLuceneIndexPopulator populator = new NonUniqueLuceneIndexPopulator( index, UPDATE_IGNORE_STRATEGY );
+    private NonUniqueLuceneIndexPopulator newPopulator() {
+        NonUniqueLuceneIndexPopulator populator = new NonUniqueLuceneIndexPopulator(index, UPDATE_IGNORE_STRATEGY);
         populator.create();
         return populator;
     }

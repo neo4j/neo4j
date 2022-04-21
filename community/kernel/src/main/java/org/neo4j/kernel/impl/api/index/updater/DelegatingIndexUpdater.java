@@ -23,24 +23,20 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
-public class DelegatingIndexUpdater implements IndexUpdater
-{
+public class DelegatingIndexUpdater implements IndexUpdater {
     protected final IndexUpdater delegate;
 
-    public DelegatingIndexUpdater( IndexUpdater delegate )
-    {
+    public DelegatingIndexUpdater(IndexUpdater delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
-    {
-        delegate.process( update );
+    public void process(IndexEntryUpdate<?> update) throws IndexEntryConflictException {
+        delegate.process(update);
     }
 
     @Override
-    public void close() throws IndexEntryConflictException
-    {
+    public void close() throws IndexEntryConflictException {
         delegate.close();
     }
 }

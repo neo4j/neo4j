@@ -19,14 +19,12 @@
  */
 package org.neo4j.dbms.database;
 
-import org.neo4j.kernel.database.NamedDatabaseId;
-
 import static java.lang.String.format;
 
-public class DatabaseStartAbortedException extends Exception
-{
-    public DatabaseStartAbortedException( NamedDatabaseId namedDatabaseId )
-    {
-        super( format( "%s was stopped before it finished starting!", namedDatabaseId ) );
+import org.neo4j.kernel.database.NamedDatabaseId;
+
+public class DatabaseStartAbortedException extends Exception {
+    public DatabaseStartAbortedException(NamedDatabaseId namedDatabaseId) {
+        super(format("%s was stopped before it finished starting!", namedDatabaseId));
     }
 }

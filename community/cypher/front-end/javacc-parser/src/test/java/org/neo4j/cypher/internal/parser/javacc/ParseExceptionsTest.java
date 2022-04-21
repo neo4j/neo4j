@@ -19,56 +19,65 @@
  */
 package org.neo4j.cypher.internal.parser.javacc;
 
+import java.util.Arrays;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
-
-public class ParseExceptionsTest
-{
+public class ParseExceptionsTest {
     @Test
-    void removeSingleIdentifierToken()
-    {
+    void removeSingleIdentifierToken() {
         int[][] expectedTokenSequence = {{CypherConstants.IDENTIFIER, CypherConstants.ACCESS}};
-        Assertions.assertEquals( ParseExceptions.expected( expectedTokenSequence, CypherConstants.tokenImage ), Arrays.asList( "an identifier" ) );
+        Assertions.assertEquals(
+                ParseExceptions.expected(expectedTokenSequence, CypherConstants.tokenImage),
+                Arrays.asList("an identifier"));
     }
 
     @Test
-    void removeSingleIdentifierTokenWithParameter()
-    {
+    void removeSingleIdentifierTokenWithParameter() {
         int[][] expectedTokenSequence = {{CypherConstants.IDENTIFIER, CypherConstants.ACCESS, CypherConstants.DOLLAR}};
-        Assertions
-                .assertEquals( ParseExceptions.expected( expectedTokenSequence, CypherConstants.tokenImage ), Arrays.asList( "a parameter", "an identifier" ) );
+        Assertions.assertEquals(
+                ParseExceptions.expected(expectedTokenSequence, CypherConstants.tokenImage),
+                Arrays.asList("a parameter", "an identifier"));
     }
 
     @Test
-    void keepDoubleIdentifierToken()
-    {
-        int[][] expectedTokenSequence = {{CypherConstants.IDENTIFIER, CypherConstants.ACCESS}, {CypherConstants.ACCESS}};
-        Assertions
-                .assertEquals( ParseExceptions.expected( expectedTokenSequence, CypherConstants.tokenImage ), Arrays.asList( "\"ACCESS\"", "an identifier" ) );
+    void keepDoubleIdentifierToken() {
+        int[][] expectedTokenSequence = {{CypherConstants.IDENTIFIER, CypherConstants.ACCESS}, {CypherConstants.ACCESS}
+        };
+        Assertions.assertEquals(
+                ParseExceptions.expected(expectedTokenSequence, CypherConstants.tokenImage),
+                Arrays.asList("\"ACCESS\"", "an identifier"));
     }
 
     @Test
-    void removeSingleIdentifierTokenInExpression()
-    {
-        int[][] expectedTokenSequence =
-                {{CypherConstants.IDENTIFIER, CypherConstants.PLUS}, {CypherConstants.ACCESS, CypherConstants.UNSIGNED_DECIMAL_INTEGER}};
-        Assertions.assertEquals( ParseExceptions.expected( expectedTokenSequence, CypherConstants.tokenImage ), Arrays.asList( "an expression" ) );
+    void removeSingleIdentifierTokenInExpression() {
+        int[][] expectedTokenSequence = {
+            {CypherConstants.IDENTIFIER, CypherConstants.PLUS},
+            {CypherConstants.ACCESS, CypherConstants.UNSIGNED_DECIMAL_INTEGER}
+        };
+        Assertions.assertEquals(
+                ParseExceptions.expected(expectedTokenSequence, CypherConstants.tokenImage),
+                Arrays.asList("an expression"));
     }
 
     @Test
-    void removeReduceToDoubleIdentifierTokenInExpression()
-    {
-        int[][] expectedTokenSequence = {{CypherConstants.IDENTIFIER, CypherConstants.PLUS, CypherConstants.DOLLAR},
-                                         {CypherConstants.PLUS, CypherConstants.UNSIGNED_DECIMAL_INTEGER}};
-        Assertions.assertEquals( ParseExceptions.expected( expectedTokenSequence, CypherConstants.tokenImage ), Arrays.asList( "\"+\"", "an expression" ) );
+    void removeReduceToDoubleIdentifierTokenInExpression() {
+        int[][] expectedTokenSequence = {
+            {CypherConstants.IDENTIFIER, CypherConstants.PLUS, CypherConstants.DOLLAR},
+            {CypherConstants.PLUS, CypherConstants.UNSIGNED_DECIMAL_INTEGER}
+        };
+        Assertions.assertEquals(
+                ParseExceptions.expected(expectedTokenSequence, CypherConstants.tokenImage),
+                Arrays.asList("\"+\"", "an expression"));
     }
 
     @Test
-    void twoExpressions()
-    {
-        int[][] expectedTokenSequence = {{CypherConstants.IDENTIFIER, CypherConstants.PLUS}, {CypherConstants.IDENTIFIER, CypherConstants.PLUS}};
-        Assertions.assertEquals( ParseExceptions.expected( expectedTokenSequence, CypherConstants.tokenImage ), Arrays.asList( "an expression" ) );
+    void twoExpressions() {
+        int[][] expectedTokenSequence = {
+            {CypherConstants.IDENTIFIER, CypherConstants.PLUS}, {CypherConstants.IDENTIFIER, CypherConstants.PLUS}
+        };
+        Assertions.assertEquals(
+                ParseExceptions.expected(expectedTokenSequence, CypherConstants.tokenImage),
+                Arrays.asList("an expression"));
     }
 }

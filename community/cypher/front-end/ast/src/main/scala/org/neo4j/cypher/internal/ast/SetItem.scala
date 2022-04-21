@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 sealed trait SetItem extends ASTNode with SemanticCheckable
 
 case class SetLabelItem(variable: Variable, labels: Seq[LabelName])(val position: InputPosition) extends SetItem {
+
   def semanticCheck =
     SemanticExpressionCheck.simple(variable) chain
       SemanticPatternCheck.checkValidLabels(labels, position) chain
@@ -47,9 +48,10 @@ case class SetLabelItem(variable: Variable, labels: Seq[LabelName])(val position
 
 sealed trait SetProperty extends SetItem with SemanticAnalysisTooling
 
-case class SetPropertyItem(property: LogicalProperty, expression: Expression)(val position: InputPosition) extends SetProperty {
-  def semanticCheck =
+case class SetPropertyItem(property: LogicalProperty, expression: Expression)(val position: InputPosition)
+    extends SetProperty {
 
+  def semanticCheck =
     checkForExists chain
       SemanticExpressionCheck.simple(property) chain
       SemanticPatternCheck.checkValidPropertyKeyNames(Seq(property.propertyKey), property.position) chain
@@ -62,14 +64,16 @@ case class SetPropertyItem(property: LogicalProperty, expression: Expression)(va
   }
 }
 
-case class SetPropertyItems(map: Expression, items: Seq[(PropertyKeyName, Expression)])(val position: InputPosition) extends SetProperty {
+case class SetPropertyItems(map: Expression, items: Seq[(PropertyKeyName, Expression)])(val position: InputPosition)
+    extends SetProperty {
+
   def semanticCheck = {
 
     val properties = items.map(_._1)
     val expressions = items.map(_._2)
     checkForExists chain
       SemanticExpressionCheck.simple(map) chain
-      semanticCheckFold(properties) {property =>
+      semanticCheckFold(properties) { property =>
         SemanticPatternCheck.checkValidPropertyKeyNames(Seq(property), property.position)
       } chain
       SemanticExpressionCheck.simple(expressions) chain
@@ -78,13 +82,15 @@ case class SetPropertyItems(map: Expression, items: Seq[(PropertyKeyName, Expres
 
   private def checkForExists: SemanticCheck = (state: SemanticState) => {
     val invalid = items.map(_._2).flatMap(e => e.folder.treeFind[Expression] { case _: ExistsSubClause => true })
-    val errors: Seq[SemanticError] = invalid.map(exp => SemanticError("The EXISTS subclause is not valid inside a SET clause.", exp.position))
+    val errors: Seq[SemanticError] =
+      invalid.map(exp => SemanticError("The EXISTS subclause is not valid inside a SET clause.", exp.position))
     SemanticCheckResult(state, errors)
   }
 }
 
-case class SetExactPropertiesFromMapItem(variable: Variable, expression: Expression)
-                                        (val position: InputPosition) extends SetProperty {
+case class SetExactPropertiesFromMapItem(variable: Variable, expression: Expression)(val position: InputPosition)
+    extends SetProperty {
+
   def semanticCheck =
     SemanticExpressionCheck.simple(variable) chain
       expectType(CTNode.covariant | CTRelationship.covariant, variable) chain
@@ -92,8 +98,9 @@ case class SetExactPropertiesFromMapItem(variable: Variable, expression: Express
       expectType(CTMap.covariant, expression)
 }
 
-case class SetIncludingPropertiesFromMapItem(variable: Variable, expression: Expression)
-                                        (val position: InputPosition) extends SetProperty {
+case class SetIncludingPropertiesFromMapItem(variable: Variable, expression: Expression)(val position: InputPosition)
+    extends SetProperty {
+
   def semanticCheck =
     SemanticExpressionCheck.simple(variable) chain
       expectType(CTNode.covariant | CTRelationship.covariant, variable) chain

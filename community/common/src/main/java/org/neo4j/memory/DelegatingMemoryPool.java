@@ -19,72 +19,60 @@
  */
 package org.neo4j.memory;
 
-public class DelegatingMemoryPool implements MemoryPool
-{
+public class DelegatingMemoryPool implements MemoryPool {
     private final MemoryPool delegate;
 
-    DelegatingMemoryPool( MemoryPool delegate )
-    {
+    DelegatingMemoryPool(MemoryPool delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public void reserveHeap( long bytes )
-    {
-        delegate.reserveHeap( bytes );
+    public void reserveHeap(long bytes) {
+        delegate.reserveHeap(bytes);
     }
 
     @Override
-    public void reserveNative( long bytes )
-    {
-        delegate.reserveNative( bytes );
+    public void reserveNative(long bytes) {
+        delegate.reserveNative(bytes);
     }
 
     @Override
-    public void releaseHeap( long bytes )
-    {
-        delegate.releaseHeap( bytes );
+    public void releaseHeap(long bytes) {
+        delegate.releaseHeap(bytes);
     }
 
     @Override
-    public void releaseNative( long bytes )
-    {
-        delegate.releaseNative( bytes );
+    public void releaseNative(long bytes) {
+        delegate.releaseNative(bytes);
     }
 
     @Override
-    public long totalSize()
-    {
+    public long totalSize() {
         return delegate.totalSize();
     }
 
     @Override
-    public long usedHeap()
-    {
+    public long usedHeap() {
         return delegate.usedHeap();
     }
 
     @Override
-    public long usedNative()
-    {
+    public long usedNative() {
         return delegate.usedNative();
     }
 
     @Override
-    public long totalUsed()
-    {
+    public long totalUsed() {
         return delegate.totalUsed();
     }
 
     @Override
-    public long free()
-    {
+    public long free() {
         return delegate.free();
     }
 
     @Override
-    public void setSize( long size )
-    {
-        delegate.setSize( size );
+    public void setSize(long size) {
+        delegate.setSize(size);
     }
 }

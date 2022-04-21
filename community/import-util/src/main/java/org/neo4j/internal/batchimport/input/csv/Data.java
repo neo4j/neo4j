@@ -19,41 +19,34 @@
  */
 package org.neo4j.internal.batchimport.input.csv;
 
+import static org.neo4j.internal.batchimport.input.InputEntityDecorators.NO_DECORATOR;
+
 import java.io.IOException;
 import java.util.function.Supplier;
-
 import org.neo4j.collection.RawIterator;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
-
-import static org.neo4j.internal.batchimport.input.InputEntityDecorators.NO_DECORATOR;
 
 /**
  * Produces a {@link CharSeeker} that can seek and extract values from a csv/tsv style data stream.
  * A decorator also comes with it which can specify global overrides/defaults of extracted input entities.
  */
-public interface Data
-{
-    RawIterator<CharReadable,IOException> stream();
+public interface Data {
+    RawIterator<CharReadable, IOException> stream();
 
     Decorator decorator();
 
-    abstract class Undecorated implements Data
-    {
+    abstract class Undecorated implements Data {
         @Override
-        public Decorator decorator()
-        {
+        public Decorator decorator() {
             return NO_DECORATOR;
         }
     }
 
-    static Data undecorated( Supplier<RawIterator<CharReadable,IOException>> streamSupplier )
-    {
-        return new Undecorated()
-        {
+    static Data undecorated(Supplier<RawIterator<CharReadable, IOException>> streamSupplier) {
+        return new Undecorated() {
             @Override
-            public RawIterator<CharReadable,IOException> stream()
-            {
+            public RawIterator<CharReadable, IOException> stream() {
                 return streamSupplier.get();
             }
         };

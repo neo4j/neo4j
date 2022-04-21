@@ -32,16 +32,16 @@ import org.neo4j.values.virtual.ListValue
 /**
  * An expression which delegates evaluation to a pipe.
  */
-abstract class NestedPipeExpression(pipe: Pipe,
-                                    availableExpressionVariables: Array[ExpressionVariable],
-                                    owningPlanId: Id) extends Expression {
+abstract class NestedPipeExpression(
+  pipe: Pipe,
+  availableExpressionVariables: Array[ExpressionVariable],
+  owningPlanId: Id
+) extends Expression {
 
-  protected def createNestedResults(row: ReadableRow,
-                                    state: QueryState): ClosingIterator[CypherRow] = {
+  protected def createNestedResults(row: ReadableRow, state: QueryState): ClosingIterator[CypherRow] = {
     val initialContext: CypherRow = createInitialContext(row, state)
     val innerState =
-      state.withInitialContextAndDecorator(initialContext,
-                                           state.decorator.innerDecorator(owningPlanId))
+      state.withInitialContextAndDecorator(initialContext, state.decorator.innerDecorator(owningPlanId))
 
     pipe.createResults(innerState)
   }
@@ -54,10 +54,12 @@ abstract class NestedPipeExpression(pipe: Pipe,
     initialContext
   }
 
-  protected def collectResults(state: QueryState,
-                               results: ClosingIterator[CypherRow],
-                               projection: Expression,
-                               memoryTracker: MemoryTracker): ListValue = {
+  protected def collectResults(
+    state: QueryState,
+    results: ClosingIterator[CypherRow],
+    projection: Expression,
+    memoryTracker: MemoryTracker
+  ): ListValue = {
     val all = HeapTrackingListValueBuilder.newHeapTrackingListBuilder(memoryTracker)
     while (results.hasNext) {
       all.add(projection(results.next(), state))

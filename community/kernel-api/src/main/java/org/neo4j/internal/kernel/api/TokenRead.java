@@ -20,7 +20,6 @@
 package org.neo4j.internal.kernel.api;
 
 import java.util.Iterator;
-
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -28,8 +27,7 @@ import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelExcep
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenConstants;
 
-public interface TokenRead extends TokenNameLookup
-{
+public interface TokenRead extends TokenNameLookup {
     /**
      * Value indicating the a token does not exist in the graph.
      */
@@ -51,7 +49,7 @@ public interface TokenRead extends TokenNameLookup
      * @param name The label name.
      * @return the label id, or NO_TOKEN
      */
-    int nodeLabel( String name );
+    int nodeLabel(String name);
 
     /**
      * Returns the name of a label given its label id
@@ -60,7 +58,7 @@ public interface TokenRead extends TokenNameLookup
      * @return The name of the label
      * @throws LabelNotFoundKernelException if no label is associates with this id
      */
-    String nodeLabelName( int labelId ) throws LabelNotFoundKernelException;
+    String nodeLabelName(int labelId) throws LabelNotFoundKernelException;
 
     /**
      * Return the id of the provided relationship type, or NO_TOKEN if the type isn't known to the graph.
@@ -68,7 +66,7 @@ public interface TokenRead extends TokenNameLookup
      * @param name The relationship type name.
      * @return the relationship type id, or NO_TOKEN
      */
-    int relationshipType( String name );
+    int relationshipType(String name);
 
     /**
      * Returns the name of a relationship type given its id
@@ -76,7 +74,7 @@ public interface TokenRead extends TokenNameLookup
      * @param relationshipTypeId The id of the relationship type
      * @return The name of the relationship type
      */
-    String relationshipTypeName( int relationshipTypeId ) throws KernelException;
+    String relationshipTypeName(int relationshipTypeId) throws KernelException;
 
     /**
      * Return the id of the provided property key, or NO_TOKEN if the property isn't known to the graph.
@@ -84,7 +82,7 @@ public interface TokenRead extends TokenNameLookup
      * @param name The property key name.
      * @return the property key id, or NO_TOKEN
      */
-    int propertyKey( String name );
+    int propertyKey(String name);
 
     /**
      * Returns the name of a property given its property key id
@@ -93,7 +91,7 @@ public interface TokenRead extends TokenNameLookup
      * @return The name of the key
      * @throws PropertyKeyIdNotFoundKernelException if no key is associated with the id
      */
-    String propertyKeyName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException;
+    String propertyKeyName(int propertyKeyId) throws PropertyKeyIdNotFoundKernelException;
 
     /**
      * Returns all label tokens

@@ -19,186 +19,155 @@
  */
 package org.neo4j.collection;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.junit.jupiter.api.Test;
-
-import java.util.NoSuchElementException;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class PrimitiveLongArrayQueueTest
-{
+import java.util.NoSuchElementException;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.junit.jupiter.api.Test;
+
+class PrimitiveLongArrayQueueTest {
 
     @Test
-    void newQueueIsEmpty()
-    {
-        assertTrue( createQueue().isEmpty() );
+    void newQueueIsEmpty() {
+        assertTrue(createQueue().isEmpty());
     }
 
     @Test
-    void growQueueOnElementOffer()
-    {
+    void growQueueOnElementOffer() {
         PrimitiveLongArrayQueue longArrayQueue = createQueue();
-        for ( int i = 1; i < 1000; i++ )
-        {
-            longArrayQueue.enqueue( i );
-            assertEquals( i, longArrayQueue.size() );
+        for (int i = 1; i < 1000; i++) {
+            longArrayQueue.enqueue(i);
+            assertEquals(i, longArrayQueue.size());
         }
     }
 
     @Test
-    void addRemoveElementKeepQueueEmpty()
-    {
+    void addRemoveElementKeepQueueEmpty() {
         PrimitiveLongArrayQueue longArrayQueue = createQueue();
-        for ( int i = 0; i < 1000; i++ )
-        {
-            longArrayQueue.enqueue( i );
-            assertEquals( i, longArrayQueue.dequeue() );
-            assertTrue( longArrayQueue.isEmpty() );
+        for (int i = 0; i < 1000; i++) {
+            longArrayQueue.enqueue(i);
+            assertEquals(i, longArrayQueue.dequeue());
+            assertTrue(longArrayQueue.isEmpty());
         }
     }
 
     @Test
-    void offerLessThenQueueCapacityElements()
-    {
+    void offerLessThenQueueCapacityElements() {
         PrimitiveLongArrayQueue arrayQueue = createQueue();
-        for ( int i = 1; i < 16; i++ )
-        {
-            arrayQueue.enqueue( i );
-            assertEquals( i, arrayQueue.size() );
+        for (int i = 1; i < 16; i++) {
+            arrayQueue.enqueue(i);
+            assertEquals(i, arrayQueue.size());
         }
     }
 
     @Test
-    void failToRemoveElementFromNewEmptyQueue()
-    {
-        assertThrows( IllegalStateException.class, () -> createQueue().dequeue() );
+    void failToRemoveElementFromNewEmptyQueue() {
+        assertThrows(IllegalStateException.class, () -> createQueue().dequeue());
     }
 
     @Test
-    void offerMoreThenQueueCapacityElements()
-    {
+    void offerMoreThenQueueCapacityElements() {
         PrimitiveLongArrayQueue arrayQueue = createQueue();
-        for ( int i = 1; i < 1234; i++ )
-        {
-            arrayQueue.enqueue( i );
+        for (int i = 1; i < 1234; i++) {
+            arrayQueue.enqueue(i);
         }
         int currentValue = 1;
-        while ( !arrayQueue.isEmpty() )
-        {
-            assertEquals( currentValue++, arrayQueue.dequeue() );
+        while (!arrayQueue.isEmpty()) {
+            assertEquals(currentValue++, arrayQueue.dequeue());
         }
     }
 
     @Test
-    void tailBeforeHeadCorrectSize()
-    {
+    void tailBeforeHeadCorrectSize() {
         PrimitiveLongArrayQueue queue = createQueue();
-        for ( int i = 0; i < 14; i++ )
-        {
-            queue.enqueue( i );
+        for (int i = 0; i < 14; i++) {
+            queue.enqueue(i);
         }
-        for ( int i = 0; i < 10; i++ )
-        {
-            assertEquals( i, queue.dequeue() );
+        for (int i = 0; i < 10; i++) {
+            assertEquals(i, queue.dequeue());
         }
-        for ( int i = 14; i < 24 ; i++ )
-        {
-            queue.enqueue( i );
+        for (int i = 14; i < 24; i++) {
+            queue.enqueue(i);
         }
 
-        assertEquals( 14, queue.size() );
+        assertEquals(14, queue.size());
     }
 
     @Test
-    void tailBeforeHeadCorrectResize()
-    {
+    void tailBeforeHeadCorrectResize() {
         PrimitiveLongArrayQueue queue = createQueue();
-        for ( int i = 0; i < 14; i++ )
-        {
-            queue.enqueue( i );
+        for (int i = 0; i < 14; i++) {
+            queue.enqueue(i);
         }
-        for ( int i = 0; i < 10; i++ )
-        {
-            assertEquals( i, queue.dequeue() );
+        for (int i = 0; i < 10; i++) {
+            assertEquals(i, queue.dequeue());
         }
-        for ( int i = 14; i < 34 ; i++ )
-        {
-            queue.enqueue( i );
+        for (int i = 14; i < 34; i++) {
+            queue.enqueue(i);
         }
 
-        assertEquals( 24, queue.size() );
-        for ( int j = 10; j < 34; j++ )
-        {
-            assertEquals( j, queue.dequeue() );
+        assertEquals(24, queue.size());
+        for (int j = 10; j < 34; j++) {
+            assertEquals(j, queue.dequeue());
         }
     }
 
     @Test
-    void tailBeforeHeadCorrectIteration()
-    {
+    void tailBeforeHeadCorrectIteration() {
         PrimitiveLongArrayQueue queue = createQueue();
-        for ( int i = 0; i < 14; i++ )
-        {
-            queue.enqueue( i );
+        for (int i = 0; i < 14; i++) {
+            queue.enqueue(i);
         }
-        for ( int i = 0; i < 10; i++ )
-        {
-            assertEquals( i, queue.dequeue() );
+        for (int i = 0; i < 10; i++) {
+            assertEquals(i, queue.dequeue());
         }
-        for ( int i = 14; i < 24 ; i++ )
-        {
-            queue.enqueue( i );
+        for (int i = 14; i < 24; i++) {
+            queue.enqueue(i);
         }
 
-        assertEquals( 14, queue.size() );
+        assertEquals(14, queue.size());
         LongIterator iterator = queue.longIterator();
-        for ( int j = 10; j < 24; j++ )
-        {
-            assertTrue( iterator.hasNext() );
-            assertEquals( j, iterator.next() );
+        for (int j = 10; j < 24; j++) {
+            assertTrue(iterator.hasNext());
+            assertEquals(j, iterator.next());
         }
-        assertFalse( iterator.hasNext() );
+        assertFalse(iterator.hasNext());
     }
 
     @Test
-    void failToGetNextOnEmptyQueueIterator()
-    {
-        assertThrows( NoSuchElementException.class, () -> createQueue().longIterator().next() );
+    void failToGetNextOnEmptyQueueIterator() {
+        assertThrows(
+                NoSuchElementException.class, () -> createQueue().longIterator().next());
     }
 
     @Test
-    void addAllElementsFromOtherQueue()
-    {
+    void addAllElementsFromOtherQueue() {
         PrimitiveLongArrayQueue queue = createQueue();
-        queue.enqueue( 1 );
-        queue.enqueue( 2 );
+        queue.enqueue(1);
+        queue.enqueue(2);
         PrimitiveLongArrayQueue otherQueue = createQueue();
-        otherQueue.enqueue( 3 );
-        otherQueue.enqueue( 4 );
-        queue.addAll( otherQueue );
+        otherQueue.enqueue(3);
+        otherQueue.enqueue(4);
+        queue.addAll(otherQueue);
 
-        assertTrue( otherQueue.isEmpty() );
-        assertEquals( 0, otherQueue.size() );
-        assertEquals( 4, queue.size() );
-        for ( int value = 1; value <= 4; value++ )
-        {
-            assertEquals( value, queue.dequeue() );
+        assertTrue(otherQueue.isEmpty());
+        assertEquals(0, otherQueue.size());
+        assertEquals(4, queue.size());
+        for (int value = 1; value <= 4; value++) {
+            assertEquals(value, queue.dequeue());
         }
-        assertTrue( queue.isEmpty() );
+        assertTrue(queue.isEmpty());
     }
 
     @Test
-    void doNotAllowCreationOfQueueWithRandomCapacity()
-    {
-        assertThrows( IllegalArgumentException.class, () -> new PrimitiveLongArrayQueue( 7 ) );
+    void doNotAllowCreationOfQueueWithRandomCapacity() {
+        assertThrows(IllegalArgumentException.class, () -> new PrimitiveLongArrayQueue(7));
     }
 
-    private static PrimitiveLongArrayQueue createQueue()
-    {
+    private static PrimitiveLongArrayQueue createQueue() {
         return new PrimitiveLongArrayQueue();
     }
 }

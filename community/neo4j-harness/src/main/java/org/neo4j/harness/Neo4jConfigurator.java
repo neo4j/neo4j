@@ -21,7 +21,6 @@ package org.neo4j.harness;
 
 import java.nio.file.Path;
 import java.util.function.Function;
-
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
@@ -30,8 +29,7 @@ import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserFunction;
 
 @PublicApi
-public interface Neo4jConfigurator<T extends Neo4jConfigurator>
-{
+public interface Neo4jConfigurator<T extends Neo4jConfigurator> {
     /**
      * Configure the Neo4j instance. Configuration here can be both configuration aimed at the server as well as the
      * database tuning options. Please refer to the Neo4j Manual for details on available configuration options.
@@ -40,7 +38,7 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * @param value the config value
      * @return this configurator instance
      */
-    <U> T withConfig( Setting<U> key, U value );
+    <U> T withConfig(Setting<U> key, U value);
 
     /**
      * Shortcut for configuring the server to use an unmanaged extension. Please refer to the Neo4j Manual on how to
@@ -50,7 +48,7 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * @param extension the unmanaged extension class.
      * @return this configurator instance
      */
-    T withUnmanagedExtension( String mountPath, Class<?> extension );
+    T withUnmanagedExtension(String mountPath, Class<?> extension);
 
     /**
      * Shortcut for configuring the server to find and mount all unmanaged extensions in the given package.
@@ -59,7 +57,7 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * @param packageName a java package with extension classes.
      * @return this configurator instance
      */
-    T withUnmanagedExtension( String mountPath, String packageName );
+    T withUnmanagedExtension(String mountPath, String packageName);
 
     /**
      * Disable web server on configured Neo4j instance.
@@ -74,14 +72,14 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * @param cypherFileOrDirectory file with cypher statement, or directory containing ".cyp"-suffixed files.
      * @return this configurator instance
      */
-    T withFixture( Path cypherFileOrDirectory );
+    T withFixture(Path cypherFileOrDirectory);
 
     /**
      * Data fixture to inject upon server build. This should be a valid Cypher statement.
      * @param fixtureStatement a cypher statement
      * @return this configurator instance
      */
-    T withFixture( String fixtureStatement );
+    T withFixture(String fixtureStatement);
 
     /**
      * Data fixture to inject upon server build. This should be a user implemented fixture function
@@ -89,7 +87,7 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * @param fixtureFunction a fixture function
      * @return this configurator instance
      */
-    T withFixture( Function<GraphDatabaseService, Void> fixtureFunction );
+    T withFixture(Function<GraphDatabaseService, Void> fixtureFunction);
 
     /**
      * Pre-populate the server with databases copied from the specified source directory.
@@ -97,7 +95,7 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * @param sourceDirectory the directory to copy from
      * @return this configurator instance
      */
-    T copyFrom( Path sourceDirectory );
+    T copyFrom(Path sourceDirectory);
 
     /**
      * Configure the server to load the specified procedure definition class. The class should contain one or more
@@ -107,7 +105,7 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * @param procedureClass a class containing one or more procedure definitions
      * @return this configurator instance
      */
-    T withProcedure( Class<?> procedureClass );
+    T withProcedure(Class<?> procedureClass);
 
     /**
      * Configure the server to load the specified function definition class. The class should contain one or more
@@ -117,7 +115,7 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * @param functionClass a class containing one or more function definitions
      * @return this configurator instance
      */
-    T withFunction( Class<?> functionClass );
+    T withFunction(Class<?> functionClass);
 
     /**
      * Configure the server to load the specified aggregation function definition class. The class should contain one or more
@@ -127,7 +125,7 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * @param functionClass a class containing one or more function definitions
      * @return this configurator instance
      */
-    T withAggregationFunction( Class<?> functionClass );
+    T withAggregationFunction(Class<?> functionClass);
 
     /**
      * Configure the Neo4j to use provided directory
@@ -135,5 +133,5 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * @param workingDirectory new working directory
      * @return this configurator instance
      */
-    T withWorkingDir( Path workingDirectory );
+    T withWorkingDir(Path workingDirectory);
 }

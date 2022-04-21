@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.graphdb.config.Setting;
-
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.array_block_size;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.label_block_size;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.string_block_size;
@@ -29,42 +26,39 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_BLOCK_SIZE;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_LABEL_BLOCK_SIZE;
 import static org.neo4j.configuration.GraphDatabaseSettings.MINIMAL_BLOCK_SIZE;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.graphdb.config.Setting;
+
 /**
  * There are couple of configuration options that should be adapted for each particular implementation of record format.
  * In case if user already set value of those properties we will keep them, otherwise format specific value will be
  * evaluated and configuration will be adapted.
  */
-public final class RecordFormatPropertyConfigurator
-{
-    private RecordFormatPropertyConfigurator()
-    {
+public final class RecordFormatPropertyConfigurator {
+    private RecordFormatPropertyConfigurator() {
         // util class
     }
 
-    private static void configureIntegerSetting( Config config, Setting<Integer> setting, int fullBlockSize, int headerSize )
-    {
+    private static void configureIntegerSetting(
+            Config config, Setting<Integer> setting, int fullBlockSize, int headerSize) {
         int defaultValue = setting.defaultValue();
-        int propertyValue = config.get( setting );
-        if ( propertyValue == defaultValue )
-        {
+        int propertyValue = config.get(setting);
+        if (propertyValue == defaultValue) {
             int updatedBlockSize = fullBlockSize - headerSize;
-            if ( updatedBlockSize != propertyValue )
-            {
-                if ( updatedBlockSize < MINIMAL_BLOCK_SIZE )
-                {
-                    throw new IllegalArgumentException( "Block size should be bigger then " + MINIMAL_BLOCK_SIZE );
+            if (updatedBlockSize != propertyValue) {
+                if (updatedBlockSize < MINIMAL_BLOCK_SIZE) {
+                    throw new IllegalArgumentException("Block size should be bigger then " + MINIMAL_BLOCK_SIZE);
                 }
-                config.set( setting, updatedBlockSize );
+                config.set(setting, updatedBlockSize);
             }
         }
     }
 
-    public static void configureRecordFormat( RecordFormats recordFormats, Config config )
-    {
+    public static void configureRecordFormat(RecordFormats recordFormats, Config config) {
         int headerSize = recordFormats.dynamic().getRecordHeaderSize();
 
-        configureIntegerSetting( config, string_block_size, DEFAULT_BLOCK_SIZE, headerSize );
-        configureIntegerSetting( config, array_block_size, DEFAULT_BLOCK_SIZE, headerSize );
-        configureIntegerSetting( config, label_block_size, DEFAULT_LABEL_BLOCK_SIZE, headerSize );
+        configureIntegerSetting(config, string_block_size, DEFAULT_BLOCK_SIZE, headerSize);
+        configureIntegerSetting(config, array_block_size, DEFAULT_BLOCK_SIZE, headerSize);
+        configureIntegerSetting(config, label_block_size, DEFAULT_LABEL_BLOCK_SIZE, headerSize);
     }
 }

@@ -19,22 +19,20 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
-import org.neo4j.graphdb.Direction;
-import org.neo4j.internal.kernel.api.NodeCursor;
-
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 
+import org.neo4j.graphdb.Direction;
+import org.neo4j.internal.kernel.api.NodeCursor;
+
 /**
  * Helper methods for working with nodes
  */
-public final class Nodes
-{
-    private Nodes()
-    {
-        throw new UnsupportedOperationException( "Do not instantiate" );
+public final class Nodes {
+    private Nodes() {
+        throw new UnsupportedOperationException("Do not instantiate");
     }
 
     /**
@@ -45,9 +43,8 @@ public final class Nodes
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
      * @return the number of outgoing - including loops - relationships from the node
      */
-    public static int countOutgoing( NodeCursor nodeCursor )
-    {
-        return count( nodeCursor, OUTGOING );
+    public static int countOutgoing(NodeCursor nodeCursor) {
+        return count(nodeCursor, OUTGOING);
     }
 
     /**
@@ -59,9 +56,8 @@ public final class Nodes
      * @param type the type of the relationship we're counting
      * @return the number of outgoing - including loops - relationships from the node with the given type
      */
-    public static int countOutgoing( NodeCursor nodeCursor, int type )
-    {
-        return count( nodeCursor, type, OUTGOING );
+    public static int countOutgoing(NodeCursor nodeCursor, int type) {
+        return count(nodeCursor, type, OUTGOING);
     }
 
     /**
@@ -72,9 +68,8 @@ public final class Nodes
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
      * @return the number of incoming - including loops - relationships from the node
      */
-    public static int countIncoming( NodeCursor nodeCursor )
-    {
-        return count( nodeCursor, INCOMING );
+    public static int countIncoming(NodeCursor nodeCursor) {
+        return count(nodeCursor, INCOMING);
     }
 
     /**
@@ -86,9 +81,8 @@ public final class Nodes
      * @param type the type of the relationship we're counting
      * @return the number of incoming - including loops - relationships from the node with the given type
      */
-    public static int countIncoming( NodeCursor nodeCursor, int type )
-    {
-        return count( nodeCursor, type, INCOMING );
+    public static int countIncoming(NodeCursor nodeCursor, int type) {
+        return count(nodeCursor, type, INCOMING);
     }
 
     /**
@@ -97,9 +91,8 @@ public final class Nodes
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
      * @return the number of relationships from the node
      */
-    public static int countAll( NodeCursor nodeCursor )
-    {
-        return count( nodeCursor, BOTH );
+    public static int countAll(NodeCursor nodeCursor) {
+        return count(nodeCursor, BOTH);
     }
 
     /**
@@ -109,28 +102,23 @@ public final class Nodes
      * @param type the type of the relationship we're counting
      * @return the number relationships from the node with the given type
      */
-    public static int countAll( NodeCursor nodeCursor, int type )
-    {
-        return count( nodeCursor, type, BOTH );
+    public static int countAll(NodeCursor nodeCursor, int type) {
+        return count(nodeCursor, type, BOTH);
     }
 
-    public static int count( NodeCursor nodeCursor, int type, Direction direction )
-    {
-        return nodeCursor.degree( selection( type, direction ) );
+    public static int count(NodeCursor nodeCursor, int type, Direction direction) {
+        return nodeCursor.degree(selection(type, direction));
     }
 
-    public static int count( NodeCursor nodeCursor, Direction direction )
-    {
-        return nodeCursor.degree( selection( direction ) );
+    public static int count(NodeCursor nodeCursor, Direction direction) {
+        return nodeCursor.degree(selection(direction));
     }
 
-    public static int countWithMax( int maxDegree, NodeCursor nodeCursor, Direction direction )
-    {
-        return nodeCursor.degreeWithMax( maxDegree, selection( direction ));
+    public static int countWithMax(int maxDegree, NodeCursor nodeCursor, Direction direction) {
+        return nodeCursor.degreeWithMax(maxDegree, selection(direction));
     }
 
-    public static int countWithMax( int maxDegree, NodeCursor nodeCursor, int type, Direction direction )
-    {
-        return nodeCursor.degreeWithMax( maxDegree, selection( type, direction ));
+    public static int countWithMax(int maxDegree, NodeCursor nodeCursor, int type, Direction direction) {
+        return nodeCursor.degreeWithMax(maxDegree, selection(type, direction));
     }
 }

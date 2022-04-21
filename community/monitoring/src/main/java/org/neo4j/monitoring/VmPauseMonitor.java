@@ -19,16 +19,6 @@
  */
 package org.neo4j.monitoring;
 
-import java.lang.management.GarbageCollectorMXBean;
-import java.lang.management.ManagementFactory;
-import java.time.Duration;
-
-import org.neo4j.scheduler.Group;
-import org.neo4j.scheduler.JobHandle;
-import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.util.Preconditions;
-import org.neo4j.util.VisibleForTesting;
-
 import static java.lang.Math.max;
 import static java.lang.String.format;
 import static java.lang.System.nanoTime;
@@ -36,8 +26,16 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.neo4j.scheduler.JobMonitoringParams.NOT_MONITORED;
 
-public class VmPauseMonitor
-{
+import java.lang.management.GarbageCollectorMXBean;
+import java.lang.management.ManagementFactory;
+import java.time.Duration;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.util.Preconditions;
+import org.neo4j.util.VisibleForTesting;
+
+public class VmPauseMonitor {
     private final long measurementDurationNs;
     private final long stallAlertThresholdNs;
     private final Monitor monitor;
@@ -45,159 +43,131 @@ public class VmPauseMonitor
     private volatile boolean stopped;
     private JobHandle<?> job;
 
-    public VmPauseMonitor( Duration measureInterval, Duration stallAlertThreshold, Monitor monitor, JobScheduler jobScheduler )
-    {
-        this.measurementDurationNs = Preconditions.requirePositive( measureInterval.toNanos() );
-        this.stallAlertThresholdNs = Preconditions.requireNonNegative( stallAlertThreshold.toNanos() );
-        this.monitor = requireNonNull( monitor );
-        this.jobScheduler = requireNonNull( jobScheduler );
+    public VmPauseMonitor(
+            Duration measureInterval, Duration stallAlertThreshold, Monitor monitor, JobScheduler jobScheduler) {
+        this.measurementDurationNs = Preconditions.requirePositive(measureInterval.toNanos());
+        this.stallAlertThresholdNs = Preconditions.requireNonNegative(stallAlertThreshold.toNanos());
+        this.monitor = requireNonNull(monitor);
+        this.jobScheduler = requireNonNull(jobScheduler);
     }
 
-    public void start()
-    {
+    public void start() {
         monitor.started();
-        Preconditions.checkState( job == null, "VM pause monitor is already started" );
+        Preconditions.checkState(job == null, "VM pause monitor is already started");
         stopped = false;
-        job = requireNonNull( jobScheduler.schedule( Group.VM_PAUSE_MONITOR, NOT_MONITORED, this::run ) );
+        job = requireNonNull(jobScheduler.schedule(Group.VM_PAUSE_MONITOR, NOT_MONITORED, this::run));
     }
 
-    public void stop()
-    {
+    public void stop() {
         monitor.stopped();
-        Preconditions.checkState( job != null, "VM pause monitor is not started" );
+        Preconditions.checkState(job != null, "VM pause monitor is not started");
         stopped = true;
         job.cancel();
         job = null;
     }
 
-    private void run()
-    {
-        try
-        {
+    private void run() {
+        try {
             monitor();
-        }
-        catch ( InterruptedException ignore )
-        {
+        } catch (InterruptedException ignore) {
             monitor.interrupted();
-        }
-        catch ( RuntimeException e )
-        {
-            monitor.failed( e );
+        } catch (RuntimeException e) {
+            monitor.failed(e);
         }
     }
 
     @VisibleForTesting
-    void monitor() throws InterruptedException
-    {
+    void monitor() throws InterruptedException {
         GcStats lastGcStats = getGcStats();
         long nextCheckPoint = nanoTime() + measurementDurationNs;
 
-        while ( !isStopped() )
-        {
-            NANOSECONDS.sleep( measurementDurationNs );
+        while (!isStopped()) {
+            NANOSECONDS.sleep(measurementDurationNs);
             final long now = nanoTime();
-            final long pauseNs = max( 0L, now - nextCheckPoint );
+            final long pauseNs = max(0L, now - nextCheckPoint);
             nextCheckPoint = now + measurementDurationNs;
 
             final GcStats gcStats = getGcStats();
-            if ( pauseNs >= stallAlertThresholdNs )
-            {
+            if (pauseNs >= stallAlertThresholdNs) {
                 final VmPauseInfo pauseInfo = new VmPauseInfo(
-                        NANOSECONDS.toMillis( pauseNs ),
+                        NANOSECONDS.toMillis(pauseNs),
                         gcStats.time - lastGcStats.time,
-                        gcStats.count - lastGcStats.count
-                );
-                monitor.pauseDetected( pauseInfo );
+                        gcStats.count - lastGcStats.count);
+                monitor.pauseDetected(pauseInfo);
             }
             lastGcStats = gcStats;
         }
     }
 
-    @SuppressWarnings( "MethodMayBeStatic" )
+    @SuppressWarnings("MethodMayBeStatic")
     @VisibleForTesting
-    boolean isStopped()
-    {
+    boolean isStopped() {
         return stopped;
     }
 
-    public static class VmPauseInfo
-    {
+    public static class VmPauseInfo {
         private final long pauseTime;
         private final long gcTime;
         private final long gcCount;
 
-        public VmPauseInfo( long pauseTime, long gcTime, long gcCount )
-        {
+        public VmPauseInfo(long pauseTime, long gcTime, long gcCount) {
             this.pauseTime = pauseTime;
             this.gcTime = gcTime;
             this.gcCount = gcCount;
         }
 
-        public long getPauseTime()
-        {
+        public long getPauseTime() {
             return pauseTime;
         }
 
         @Override
-        public String toString()
-        {
-            return format( "{pauseTime=%d, gcTime=%d, gcCount=%d}", pauseTime, gcTime, gcCount );
+        public String toString() {
+            return format("{pauseTime=%d, gcTime=%d, gcCount=%d}", pauseTime, gcTime, gcCount);
         }
     }
 
-    private static GcStats getGcStats()
-    {
+    private static GcStats getGcStats() {
         long time = 0;
         long count = 0;
-        for ( GarbageCollectorMXBean gcBean : ManagementFactory.getGarbageCollectorMXBeans() )
-        {
+        for (GarbageCollectorMXBean gcBean : ManagementFactory.getGarbageCollectorMXBeans()) {
             time += gcBean.getCollectionTime();
             count += gcBean.getCollectionCount();
         }
-        return new GcStats( time, count );
+        return new GcStats(time, count);
     }
 
-    private record GcStats( long time, long count )
-    {
-    }
+    private record GcStats(long time, long count) {}
 
-    public interface Monitor
-    {
+    public interface Monitor {
         void started();
 
         void stopped();
 
         void interrupted();
 
-        void failed( Exception e );
+        void failed(Exception e);
 
-        void pauseDetected( VmPauseInfo info );
+        void pauseDetected(VmPauseInfo info);
 
-        class Adapter implements Monitor
-        {
+        class Adapter implements Monitor {
             @Override
-            public void started()
-            {   // no-op
+            public void started() { // no-op
             }
 
             @Override
-            public void stopped()
-            {   // no-op
+            public void stopped() { // no-op
             }
 
             @Override
-            public void interrupted()
-            {   // no-op
+            public void interrupted() { // no-op
             }
 
             @Override
-            public void failed( Exception e )
-            {   // no-op
+            public void failed(Exception e) { // no-op
             }
 
             @Override
-            public void pauseDetected( VmPauseInfo info )
-            {   // no-op
+            public void pauseDetected(VmPauseInfo info) { // no-op
             }
         }
 

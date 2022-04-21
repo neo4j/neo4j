@@ -27,8 +27,7 @@ import org.neo4j.gis.spatial.index.Envelope;
  * The ideal performance depends on the behaviour of the underlying 1D index, whether it costs more to have more 1D searches,
  * or have more false positives for post filtering.
  */
-public interface SpaceFillingCurveConfiguration
-{
+public interface SpaceFillingCurveConfiguration {
     /**
      * Decides whether to stop at this depth or recurse deeper.
      *
@@ -38,7 +37,7 @@ public interface SpaceFillingCurveConfiguration
      * @return if the algorithm should recurse deeper, returns {@code false}; if the algorithm
      * should stop at this depth, returns {@code true}
      */
-    boolean stopAtThisDepth( double overlap, int depth, int maxDepth );
+    boolean stopAtThisDepth(double overlap, int depth, int maxDepth);
 
     /**
      * Decide how deep to recurse at max.
@@ -49,7 +48,7 @@ public interface SpaceFillingCurveConfiguration
      * @param maxLevel the depth of the spaceFillingCurve
      * @return the maximum depth to which the algorithm should recurse in the space filling curve.
      */
-    int maxDepth( Envelope referenceEnvelope, Envelope range, int nbrDim, int maxLevel );
+    int maxDepth(Envelope referenceEnvelope, Envelope range, int nbrDim, int maxLevel);
 
     /**
      * @return the size to use when initializing the ArrayList to store ranges.

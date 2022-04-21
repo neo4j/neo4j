@@ -19,82 +19,67 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.neo4j.storageengine.api.RelationshipDirection;
-
 import static java.lang.String.format;
 
-public class TestRelationshipChain
-{
+import java.util.ArrayList;
+import java.util.List;
+import org.neo4j.storageengine.api.RelationshipDirection;
+
+public class TestRelationshipChain {
     private List<Data> data;
     private long originNodeId;
 
-    public TestRelationshipChain( long originNodeId )
-    {
-        this( originNodeId, new ArrayList<>() );
+    public TestRelationshipChain(long originNodeId) {
+        this(originNodeId, new ArrayList<>());
     }
 
-    private TestRelationshipChain( long originNodeId, List<Data> data )
-    {
+    private TestRelationshipChain(long originNodeId, List<Data> data) {
         this.originNodeId = originNodeId;
         this.data = data;
     }
 
-    public TestRelationshipChain outgoing( long id, long targetNode, int type )
-    {
-        data.add( new Data( id, originNodeId, targetNode, type ) );
+    public TestRelationshipChain outgoing(long id, long targetNode, int type) {
+        data.add(new Data(id, originNodeId, targetNode, type));
         return this;
     }
 
-    public TestRelationshipChain incoming( long id, long sourceNode, int type )
-    {
-        data.add( new Data( id, sourceNode, originNodeId, type ) );
+    public TestRelationshipChain incoming(long id, long sourceNode, int type) {
+        data.add(new Data(id, sourceNode, originNodeId, type));
         return this;
     }
 
-    public TestRelationshipChain loop( long id, int type )
-    {
-        data.add( new Data( id, originNodeId, originNodeId, type ) );
+    public TestRelationshipChain loop(long id, int type) {
+        data.add(new Data(id, originNodeId, originNodeId, type));
         return this;
     }
 
-    public Data get( int offset )
-    {
-        return data.get( offset );
+    public Data get(int offset) {
+        return data.get(offset);
     }
 
-    boolean isValidOffset( int offset )
-    {
+    boolean isValidOffset(int offset) {
         return offset >= 0 && offset < data.size();
     }
 
-    long originNodeId()
-    {
+    long originNodeId() {
         return originNodeId;
     }
 
-    public TestRelationshipChain tail()
-    {
-        return new TestRelationshipChain( originNodeId, data.subList( 1, data.size() ) );
+    public TestRelationshipChain tail() {
+        return new TestRelationshipChain(originNodeId, data.subList(1, data.size()));
     }
 
-    record Data( long id, long source, long target, int type )
-    {
-        RelationshipDirection relationshipDirection( long nodeReference )
-        {
-            if ( source == target )
-            {
+    record Data(long id, long source, long target, int type) {
+        RelationshipDirection relationshipDirection(long nodeReference) {
+            if (source == target) {
                 return RelationshipDirection.LOOP;
             }
             return nodeReference == source ? RelationshipDirection.OUTGOING : RelationshipDirection.INCOMING;
         }
 
         @Override
-        public String toString()
-        {
-            return format( "(%d)-[%d,type:%d]->(%d)", source, id, type, target );
+        public String toString() {
+            return format("(%d)-[%d,type:%d]->(%d)", source, id, type, target);
         }
     }
 }

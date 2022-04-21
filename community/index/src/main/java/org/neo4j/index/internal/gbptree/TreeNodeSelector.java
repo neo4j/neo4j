@@ -25,28 +25,24 @@ import static java.lang.String.format;
  * Able to select implementation of {@link TreeNode} to use in different scenarios, should be used in favor of directly
  * instantiating {@link TreeNode} instances.
  */
-class TreeNodeSelector
-{
+class TreeNodeSelector {
     /**
      * Creates {@link TreeNodeFixedSize} instances.
      */
-    private static final Factory FIXED = new Factory()
-    {
+    private static final Factory FIXED = new Factory() {
         @Override
-        public <KEY,VALUE> TreeNode<KEY,VALUE> create( int pageSize, Layout<KEY,VALUE> layout, OffloadStore<KEY,VALUE> offloadStore )
-        {
-            return new TreeNodeFixedSize<>( pageSize, layout );
+        public <KEY, VALUE> TreeNode<KEY, VALUE> create(
+                int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore) {
+            return new TreeNodeFixedSize<>(pageSize, layout);
         }
 
         @Override
-        public byte formatIdentifier()
-        {
+        public byte formatIdentifier() {
             return TreeNodeFixedSize.FORMAT_IDENTIFIER;
         }
 
         @Override
-        public byte formatVersion()
-        {
+        public byte formatVersion() {
             return TreeNodeFixedSize.FORMAT_VERSION;
         }
     };
@@ -54,23 +50,20 @@ class TreeNodeSelector
     /**
      * Creates {@link TreeNodeDynamicSize} instances.
      */
-    private static final Factory DYNAMIC = new Factory()
-    {
+    private static final Factory DYNAMIC = new Factory() {
         @Override
-        public <KEY,VALUE> TreeNode<KEY,VALUE> create( int pageSize, Layout<KEY,VALUE> layout, OffloadStore<KEY,VALUE> offloadStore )
-        {
-            return new TreeNodeDynamicSize<>( pageSize, layout, offloadStore );
+        public <KEY, VALUE> TreeNode<KEY, VALUE> create(
+                int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore) {
+            return new TreeNodeDynamicSize<>(pageSize, layout, offloadStore);
         }
 
         @Override
-        public byte formatIdentifier()
-        {
+        public byte formatIdentifier() {
             return TreeNodeDynamicSize.FORMAT_IDENTIFIER;
         }
 
         @Override
-        public byte formatVersion()
-        {
+        public byte formatVersion() {
             return TreeNodeDynamicSize.FORMAT_VERSION;
         }
     };
@@ -81,8 +74,7 @@ class TreeNodeSelector
      * @param layout {@link Layout} dictating which {@link TreeNode} to instantiate.
      * @return a {@link Factory} capable of instantiating the selected format.
      */
-    static Factory selectByLayout( Layout<?,?> layout )
-    {
+    static Factory selectByLayout(Layout<?, ?> layout) {
         // For now the selection is done in a simple fashion, by looking at layout.fixedSize().
         return layout.fixedSize() ? FIXED : DYNAMIC;
     }
@@ -94,27 +86,24 @@ class TreeNodeSelector
      * @param formatVersion format version, see {@link Meta#getFormatVersion()}.
      * @return a {@link Factory} capable of instantiating the selected format.
      */
-    static Factory selectByFormat( byte formatIdentifier, byte formatVersion )
-    {
+    static Factory selectByFormat(byte formatIdentifier, byte formatVersion) {
         // For now do a simple selection of the two formats we know. Moving forward this can contain
         // many more identifiers and different versions of each.
-        if ( formatIdentifier == TreeNodeFixedSize.FORMAT_IDENTIFIER && formatVersion == TreeNodeFixedSize.FORMAT_VERSION )
-        {
+        if (formatIdentifier == TreeNodeFixedSize.FORMAT_IDENTIFIER
+                && formatVersion == TreeNodeFixedSize.FORMAT_VERSION) {
             return FIXED;
-        }
-        else if ( formatIdentifier == TreeNodeDynamicSize.FORMAT_IDENTIFIER && formatVersion == TreeNodeDynamicSize.FORMAT_VERSION )
-        {
+        } else if (formatIdentifier == TreeNodeDynamicSize.FORMAT_IDENTIFIER
+                && formatVersion == TreeNodeDynamicSize.FORMAT_VERSION) {
             return DYNAMIC;
         }
         throw new IllegalArgumentException(
-                format( "Unknown format identifier:%d and version:%d combination", formatIdentifier, formatVersion ) );
+                format("Unknown format identifier:%d and version:%d combination", formatIdentifier, formatVersion));
     }
 
     /**
      * Able to instantiate {@link TreeNode} of a specific format and version.
      */
-    interface Factory
-    {
+    interface Factory {
         /**
          * Instantiates a {@link TreeNode} of a specific format and version that this factory represents.
          *
@@ -122,7 +111,8 @@ class TreeNodeSelector
          * @param layout {@link Layout} that will be used in this format.
          * @return the instantiated {@link TreeNode}.
          */
-        <KEY,VALUE> TreeNode<KEY,VALUE> create( int pageSize, Layout<KEY,VALUE> layout, OffloadStore<KEY,VALUE> offloadStore );
+        <KEY, VALUE> TreeNode<KEY, VALUE> create(
+                int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore);
 
         /**
          * Specifies the format identifier of the physical layout of tree nodes.

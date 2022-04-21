@@ -32,12 +32,11 @@ import java.util.function.Predicate;
  *
  * @param <T> type of elements
  */
-public interface DiffSets<T>
-{
+public interface DiffSets<T> {
 
-    boolean isAdded( T elem );
+    boolean isAdded(T elem);
 
-    boolean isRemoved( T elem );
+    boolean isRemoved(T elem);
 
     Set<T> getAdded();
 
@@ -45,71 +44,60 @@ public interface DiffSets<T>
 
     boolean isEmpty();
 
-    Iterator<T> apply( Iterator<? extends T> source );
+    Iterator<T> apply(Iterator<? extends T> source);
 
-    DiffSets<T> filterAdded( Predicate<T> addedFilter );
+    DiffSets<T> filterAdded(Predicate<T> addedFilter);
 
-    final class Empty<T> implements DiffSets<T>
-    {
-        @SuppressWarnings( "unchecked" )
-        public static <T> DiffSets<T> instance()
-        {
+    final class Empty<T> implements DiffSets<T> {
+        @SuppressWarnings("unchecked")
+        public static <T> DiffSets<T> instance() {
             return (DiffSets<T>) INSTANCE;
         }
 
-        @SuppressWarnings( "unchecked" )
-        public static <T> DiffSets<T> ifNull( DiffSets<T> diffSets )
-        {
+        @SuppressWarnings("unchecked")
+        public static <T> DiffSets<T> ifNull(DiffSets<T> diffSets) {
             return diffSets == null ? (DiffSets<T>) INSTANCE : diffSets;
         }
 
         private static final DiffSets<?> INSTANCE = new Empty<>();
 
-        private Empty()
-        {
+        private Empty() {
             // singleton
         }
 
         @Override
-        public boolean isAdded( T elem )
-        {
+        public boolean isAdded(T elem) {
             return false;
         }
 
         @Override
-        public boolean isRemoved( T elem )
-        {
+        public boolean isRemoved(T elem) {
             return false;
         }
 
         @Override
-        public Set<T> getAdded()
-        {
+        public Set<T> getAdded() {
             return Collections.emptySet();
         }
 
         @Override
-        public Set<T> getRemoved()
-        {
+        public Set<T> getRemoved() {
             return Collections.emptySet();
         }
 
         @Override
-        public boolean isEmpty()
-        {
+        public boolean isEmpty() {
             return true;
         }
 
-        @SuppressWarnings( "unchecked" )
+        @SuppressWarnings("unchecked")
         @Override
-        public Iterator<T> apply( Iterator<? extends T> source )
-        {
-            return (Iterator<T>)source;
+        public Iterator<T> apply(Iterator<? extends T> source) {
+            return (Iterator<T>) source;
         }
 
         @Override
-        public DiffSets<T> filterAdded( Predicate<T> addedFilter )
-        {
+        public DiffSets<T> filterAdded(Predicate<T> addedFilter) {
             return this;
         }
     }

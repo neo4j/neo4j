@@ -53,8 +53,11 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .setRelationshipCardinality("()-[:REL]->()", relCount)
       .setRelationshipCardinality("(:Person)-[:REL]->()", relCount)
       .build()
-    queryShouldHaveCardinality(config, "MATCH (a:Person) WITH a LIMIT 10 MATCH (a)-[:REL]->()",
-      Math.min(i, 10.0) * relCount / i)
+    queryShouldHaveCardinality(
+      config,
+      "MATCH (a:Person) WITH a LIMIT 10 MATCH (a)-[:REL]->()",
+      Math.min(i, 10.0) * relCount / i
+    )
   }
 
   test("query containing a WITH and LIMIT on high cardinality") {
@@ -66,8 +69,11 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .setRelationshipCardinality("()-[:REL]->()", relCount)
       .setRelationshipCardinality("(:Person)-[:REL]->()", relCount)
       .build()
-    queryShouldHaveCardinality(config, "MATCH (a:Person) WITH a LIMIT 10 MATCH (a)-[:REL]->()",
-      Math.min(i, 10.0) * relCount / i)
+    queryShouldHaveCardinality(
+      config,
+      "MATCH (a:Person) WITH a LIMIT 10 MATCH (a)-[:REL]->()",
+      Math.min(i, 10.0) * relCount / i
+    )
   }
 
   test("query containing a WITH and LIMIT on parameterized cardinality") {
@@ -79,8 +85,11 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .setRelationshipCardinality("()-[:REL]->()", relCount)
       .setRelationshipCardinality("(:Person)-[:REL]->()", relCount)
       .build()
-    queryShouldHaveCardinality(config, "MATCH (a:Person) WITH a LIMIT $limit MATCH (a)-[:REL]->()",
-      Math.min(i, DEFAULT_LIMIT_CARDINALITY) * relCount / i)
+    queryShouldHaveCardinality(
+      config,
+      "MATCH (a:Person) WITH a LIMIT $limit MATCH (a)-[:REL]->()",
+      Math.min(i, DEFAULT_LIMIT_CARDINALITY) * relCount / i
+    )
   }
 
   test("query containing a WITH and aggregation vol. 2") {
@@ -100,8 +109,11 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .setRelationshipCardinality("()-[:REL2]->()", rel2Count)
       .setRelationshipCardinality("(:Person)-[:REL2]->()", rel2Count)
       .build()
-    queryShouldHaveCardinality(config, "MATCH (a:Person)-[:REL2]->(b) WITH a, count(*) as c MATCH (a)-[:REL]->()",
-      aggregation * relCount / personCount)
+    queryShouldHaveCardinality(
+      config,
+      "MATCH (a:Person)-[:REL2]->(b) WITH a, count(*) as c MATCH (a)-[:REL]->()",
+      aggregation * relCount / personCount
+    )
   }
 
   test("query containing both SKIP and LIMIT") {
@@ -110,8 +122,7 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", i)
       .build()
-    queryShouldHaveCardinality(config, "MATCH (n:Person) WITH n SKIP 5 LIMIT 10",
-      Math.min(i, 10.0))
+    queryShouldHaveCardinality(config, "MATCH (n:Person) WITH n SKIP 5 LIMIT 10", Math.min(i, 10.0))
   }
 
   test("query containing LIMIT by expression") {
@@ -120,8 +131,7 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", i)
       .build()
-    queryShouldHaveCardinality(config, "MATCH (n:Person) WITH n LIMIT toInteger(1+1)",
-      Math.min(i, 2.0))
+    queryShouldHaveCardinality(config, "MATCH (n:Person) WITH n LIMIT toInteger(1+1)", Math.min(i, 2.0))
   }
 
   test("query containing both SKIP and LIMIT with large skip, so skip + limit exceeds total row count boundary") {
@@ -130,8 +140,11 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", i)
       .build()
-    queryShouldHaveCardinality(config, s"MATCH (n:Person) WITH n SKIP ${(personCount - 5).toInt} LIMIT 10",
-      Math.min(i, 5.0))
+    queryShouldHaveCardinality(
+      config,
+      s"MATCH (n:Person) WITH n SKIP ${(personCount - 5).toInt} LIMIT 10",
+      Math.min(i, 5.0)
+    )
   }
 
   test("query containing SKIP by expression") {
@@ -140,8 +153,7 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", i)
       .build()
-    queryShouldHaveCardinality(config, s"MATCH (n:Person) WITH n SKIP toInteger($personCount - 2)",
-      Math.min(i, 2.0))
+    queryShouldHaveCardinality(config, s"MATCH (n:Person) WITH n SKIP toInteger($personCount - 2)", Math.min(i, 2.0))
   }
 
   test("should reduce cardinality for a WHERE after a WITH") {
@@ -150,8 +162,11 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", i)
       .build()
-    queryShouldHaveCardinality(config, "MATCH (a:Person) WITH a LIMIT 10 WHERE a.age = 20",
-      Math.min(i, 10.0) * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
+    queryShouldHaveCardinality(
+      config,
+      "MATCH (a:Person) WITH a LIMIT 10 WHERE a.age = 20",
+      Math.min(i, 10.0) * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY
+    )
   }
 
   test("should reduce cardinality using index stats for a WHERE after a WITH") {
@@ -161,8 +176,7 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .setLabelCardinality("Person", i)
       .addNodeIndex("Person", Seq("age"), 0.3, 0.2, indexType = getIndexType)
       .build()
-    queryShouldHaveCardinality(config, "MATCH (a:Person) WITH a, 1 AS x WHERE a.age = 20",
-      i * 0.3 * 0.2)
+    queryShouldHaveCardinality(config, "MATCH (a:Person) WITH a, 1 AS x WHERE a.age = 20", i * 0.3 * 0.2)
   }
 
   test("should reduce cardinality for a WHERE after a WITH, unknown LIMIT") {
@@ -171,8 +185,11 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", i)
       .build()
-    queryShouldHaveCardinality(config, "MATCH (a:Person) WITH a LIMIT $limit WHERE a.age = 20",
-      Math.min(i, DEFAULT_LIMIT_CARDINALITY) * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
+    queryShouldHaveCardinality(
+      config,
+      "MATCH (a:Person) WITH a LIMIT $limit WHERE a.age = 20",
+      Math.min(i, DEFAULT_LIMIT_CARDINALITY) * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY
+    )
   }
 
   test("should reduce cardinality for a WHERE after a WITH, with ORDER BY") {
@@ -181,8 +198,11 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", i)
       .build()
-    queryShouldHaveCardinality(config, "MATCH (a:Person) WITH a ORDER BY a.name WHERE a.age = 20",
-      i * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
+    queryShouldHaveCardinality(
+      config,
+      "MATCH (a:Person) WITH a ORDER BY a.name WHERE a.age = 20",
+      i * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY
+    )
   }
 
   test("should reduce cardinality for a WHERE after a WITH, with DISTINCT") {
@@ -191,8 +211,11 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", i)
       .build()
-    queryShouldHaveCardinality(config, "MATCH (a:Person) WITH DISTINCT a WHERE a.age = 20",
-      i * DEFAULT_DISTINCT_SELECTIVITY * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
+    queryShouldHaveCardinality(
+      config,
+      "MATCH (a:Person) WITH DISTINCT a WHERE a.age = 20",
+      i * DEFAULT_DISTINCT_SELECTIVITY * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY
+    )
   }
 
   test("should reduce cardinality for a WHERE after a WITH, with AGGREGATION without grouping") {
@@ -201,8 +224,11 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", i)
       .build()
-    queryShouldHaveCardinality(config, "MATCH (a:Person) WITH count(a) AS count WHERE count > 20",
-      DEFAULT_RANGE_SELECTIVITY)
+    queryShouldHaveCardinality(
+      config,
+      "MATCH (a:Person) WITH count(a) AS count WHERE count > 20",
+      DEFAULT_RANGE_SELECTIVITY
+    )
   }
 
   test("should reduce cardinality for a WHERE after a WITH, with AGGREGATION with grouping") {
@@ -211,8 +237,11 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", i)
       .build()
-    queryShouldHaveCardinality(config, "MATCH (a:Person) WITH count(a) AS count, a.name AS name WHERE count > 20",
-      Math.sqrt(i) * DEFAULT_RANGE_SELECTIVITY)
+    queryShouldHaveCardinality(
+      config,
+      "MATCH (a:Person) WITH count(a) AS count, a.name AS name WHERE count > 20",
+      Math.sqrt(i) * DEFAULT_RANGE_SELECTIVITY
+    )
   }
 
   private val signature = ProcedureSignature(
@@ -221,15 +250,15 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
     Some(IndexedSeq(FieldSignature("x", CTNode))),
     None,
     ProcedureReadOnlyAccess,
-    id = 0)
+    id = 0
+  )
 
   test("standalone procedure call should have default cardinality") {
     val config = plannerBuilder()
       .setAllNodesCardinality(allNodes)
       .addProcedure(signature)
       .build()
-    queryShouldHaveCardinality(config, "CALL my.proc.foo(42) YIELD x",
-      DEFAULT_MULTIPLIER)
+    queryShouldHaveCardinality(config, "CALL my.proc.foo(42) YIELD x", DEFAULT_MULTIPLIER)
   }
 
   test("procedure call with no input should not have 0 cardinality") {
@@ -238,8 +267,7 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .setLabelCardinality("Foo", 0)
       .addProcedure(signature)
       .build()
-    queryShouldHaveCardinality(config, "MATCH (:Foo) CALL my.proc.foo(42) YIELD x",
-      1)
+    queryShouldHaveCardinality(config, "MATCH (:Foo) CALL my.proc.foo(42) YIELD x", 1)
   }
 
   test("procedure call with large input should multiply cardinality") {
@@ -249,16 +277,14 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .setLabelCardinality("Foo", inputSize)
       .addProcedure(signature)
       .build()
-    queryShouldHaveCardinality(config, "MATCH (:Foo) CALL my.proc.foo(42) YIELD x",
-      DEFAULT_MULTIPLIER * inputSize)
+    queryShouldHaveCardinality(config, "MATCH (:Foo) CALL my.proc.foo(42) YIELD x", DEFAULT_MULTIPLIER * inputSize)
   }
 
   test("standalone LOAD CSV should have default cardinality") {
     val config = plannerBuilder()
       .setAllNodesCardinality(allNodes)
       .build()
-    queryShouldHaveCardinality(config, "LOAD CSV FROM 'foo' AS csv",
-      DEFAULT_MULTIPLIER)
+    queryShouldHaveCardinality(config, "LOAD CSV FROM 'foo' AS csv", DEFAULT_MULTIPLIER)
   }
 
   test("LOAD CSV with no input should not have 0 cardinality") {
@@ -266,8 +292,7 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Foo", 0)
       .build()
-    queryShouldHaveCardinality(config, "MATCH (:Foo) LOAD CSV FROM 'foo' AS csv",
-      1)
+    queryShouldHaveCardinality(config, "MATCH (:Foo) LOAD CSV FROM 'foo' AS csv", 1)
   }
 
   test("LOAD CSV with large input should multiply cardinality") {
@@ -276,112 +301,98 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .setAllNodesCardinality(inputSize)
       .setLabelCardinality("Foo", inputSize)
       .build()
-    queryShouldHaveCardinality(config, "MATCH (:Foo) LOAD CSV FROM 'foo' AS csv",
-      DEFAULT_MULTIPLIER * inputSize)
+    queryShouldHaveCardinality(config, "MATCH (:Foo) LOAD CSV FROM 'foo' AS csv", DEFAULT_MULTIPLIER * inputSize)
   }
 
   test("UNWIND with no information should have default cardinality") {
     val config = plannerBuilder()
       .setAllNodesCardinality(allNodes)
       .build()
-    queryShouldHaveCardinality(config, "UNWIND $foo AS i",
-      DEFAULT_MULTIPLIER)
+    queryShouldHaveCardinality(config, "UNWIND $foo AS i", DEFAULT_MULTIPLIER)
   }
 
   test("UNWIND with empty list literal should have 0 cardinality") {
     val config = plannerBuilder()
       .setAllNodesCardinality(allNodes)
       .build()
-    queryShouldHaveCardinality(config, "UNWIND [] AS i",
-      0.0)
+    queryShouldHaveCardinality(config, "UNWIND [] AS i", 0.0)
   }
 
   test("UNWIND with non-empty list literal should have list size cardinality") {
     val config = plannerBuilder()
       .setAllNodesCardinality(allNodes)
       .build()
-    queryShouldHaveCardinality(config, "UNWIND [1, 2, 3, 4, 5] AS i",
-      5)
+    queryShouldHaveCardinality(config, "UNWIND [1, 2, 3, 4, 5] AS i", 5)
   }
 
   test("UNWIND with single element range") {
     val config = plannerBuilder()
       .setAllNodesCardinality(allNodes)
       .build()
-    queryShouldHaveCardinality(config, "UNWIND range(0, 0) AS i",
-      1)
+    queryShouldHaveCardinality(config, "UNWIND range(0, 0) AS i", 1)
   }
 
   test("UNWIND with empty range 1") {
     val config = plannerBuilder()
       .setAllNodesCardinality(allNodes)
       .build()
-    queryShouldHaveCardinality(config, "UNWIND range(0, -1) AS i",
-      0.0)
+    queryShouldHaveCardinality(config, "UNWIND range(0, -1) AS i", 0.0)
   }
 
   test("UNWIND with empty range 2") {
     val config = plannerBuilder()
       .setAllNodesCardinality(allNodes)
       .build()
-    queryShouldHaveCardinality(config, "UNWIND range(10, 0, 1) AS i",
-      0.0)
+    queryShouldHaveCardinality(config, "UNWIND range(10, 0, 1) AS i", 0.0)
   }
 
   test("UNWIND with empty range 3") {
     val config = plannerBuilder()
       .setAllNodesCardinality(allNodes)
       .build()
-    queryShouldHaveCardinality(config, "UNWIND range(0, 10, -1) AS i",
-      0.0)
+    queryShouldHaveCardinality(config, "UNWIND range(0, 10, -1) AS i", 0.0)
   }
 
   test("UNWIND with non-empty range") {
     val config = plannerBuilder()
       .setAllNodesCardinality(allNodes)
       .build()
-    queryShouldHaveCardinality(config, "UNWIND range(1, 10) AS i",
-      10)
+    queryShouldHaveCardinality(config, "UNWIND range(1, 10) AS i", 10)
   }
 
   test("UNWIND with non-empty DESC range") {
     val config = plannerBuilder()
       .setAllNodesCardinality(allNodes)
       .build()
-    queryShouldHaveCardinality(config, "UNWIND range(10, 1, -1) AS i",
-      10)
+    queryShouldHaveCardinality(config, "UNWIND range(10, 1, -1) AS i", 10)
   }
 
   test("UNWIND with non-empty range with aligned step") {
     val config = plannerBuilder()
       .setAllNodesCardinality(allNodes)
       .build()
-    queryShouldHaveCardinality(config, "UNWIND range(1, 9, 2) AS i",
-      5)
+    queryShouldHaveCardinality(config, "UNWIND range(1, 9, 2) AS i", 5)
   }
 
   test("UNWIND with non-empty DESC range with aligned step") {
     val config = plannerBuilder()
       .setAllNodesCardinality(allNodes)
       .build()
-    queryShouldHaveCardinality(config, "UNWIND range(9, 1, -2) AS i",
-      5)
+    queryShouldHaveCardinality(config, "UNWIND range(9, 1, -2) AS i", 5)
   }
 
   test("UNWIND with non-empty range with unaligned step") {
     val config = plannerBuilder()
       .setAllNodesCardinality(allNodes)
       .build()
-    queryShouldHaveCardinality(config, "UNWIND range(1, 9, 3) AS i",
-      3)
+    queryShouldHaveCardinality(config, "UNWIND range(1, 9, 3) AS i", 3)
   }
 
   test("UNWIND with non-empty DESC range with unaligned step") {
     val config = plannerBuilder()
       .setAllNodesCardinality(allNodes)
       .build()
-    queryShouldHaveCardinality(config, "UNWIND range(9, 1, -3) AS i",
-      3)
+    queryShouldHaveCardinality(config, "UNWIND range(9, 1, -3) AS i", 3)
   }
 
   test("empty graph") {
@@ -408,8 +419,11 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .setRelationshipCardinality("(:FOO)-[:TYPE]->(:BAR)", relCount)
       .build()
 
-    queryShouldHaveCardinality(config, s"MATCH (a:FOO) WITH a LIMIT 1 UNWIND range(1, $inboundCardinality) AS i MATCH (a:FOO)-[:TYPE]->(b:BAR)",
-      relCount / nodeCount * inboundCardinality)
+    queryShouldHaveCardinality(
+      config,
+      s"MATCH (a:FOO) WITH a LIMIT 1 UNWIND range(1, $inboundCardinality) AS i MATCH (a:FOO)-[:TYPE]->(b:BAR)",
+      relCount / nodeCount * inboundCardinality
+    )
   }
 
   test("input cardinality <1.0 => input cardinality * scan cardinality") {
@@ -422,8 +436,11 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .addNodeIndex("Foo", Seq("bar"), 1.0, whereSelectivity, indexType = getIndexType)
       .build()
 
-    queryShouldHaveCardinality(config, s"MATCH (f:Foo) WHERE f.bar = 1 WITH f, 1 AS horizon MATCH (a)",
-      inboundCardinality * whereSelectivity * nodes)
+    queryShouldHaveCardinality(
+      config,
+      s"MATCH (f:Foo) WHERE f.bar = 1 WITH f, 1 AS horizon MATCH (a)",
+      inboundCardinality * whereSelectivity * nodes
+    )
   }
 
   test("input cardinality >1.0 => input cardinality * scan cardinality") {
@@ -436,8 +453,11 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .addNodeIndex("Foo", Seq("bar"), 1.0, whereSelectivity, indexType = getIndexType)
       .build()
 
-    queryShouldHaveCardinality(config, s"MATCH (f:Foo) WHERE f.bar = 1 WITH f, 1 AS horizon MATCH (a)",
-      inboundCardinality * whereSelectivity * nodes)
+    queryShouldHaveCardinality(
+      config,
+      s"MATCH (f:Foo) WHERE f.bar = 1 WITH f, 1 AS horizon MATCH (a)",
+      inboundCardinality * whereSelectivity * nodes
+    )
   }
 
   test("should use relationship index for cardinality estimation with inlined type predicate") {
@@ -452,8 +472,11 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .addRelationshipIndex("R", Seq("prop"), whereSelectivity, whereSelectivity, indexType = getIndexType)
       .build()
 
-    queryShouldHaveCardinality(config, s"MATCH (a:A)-[r:R]->() WHERE r.prop IS NOT NULL",
-      inboundCardinality * whereSelectivity)
+    queryShouldHaveCardinality(
+      config,
+      s"MATCH (a:A)-[r:R]->() WHERE r.prop IS NOT NULL",
+      inboundCardinality * whereSelectivity
+    )
   }
 
   test("should use relationship index for cardinality estimation with non-inlined type predicate") {
@@ -468,8 +491,11 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       .addRelationshipIndex("R", Seq("prop"), whereSelectivity, whereSelectivity, indexType = getIndexType)
       .build()
 
-    queryShouldHaveCardinality(config, s"MATCH (a:A)-[r]->() WHERE r:R AND r.prop IS NOT NULL",
-      inboundCardinality * whereSelectivity)
+    queryShouldHaveCardinality(
+      config,
+      s"MATCH (a:A)-[r]->() WHERE r:R AND r.prop IS NOT NULL",
+      inboundCardinality * whereSelectivity
+    )
   }
 
   test("should only use predicates marked as solved for cardinality estimation of node index seek") {
@@ -492,8 +518,7 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
     // The range selectivity defaults to equality selectivity if there are few unique values.
     nodeIndexSeekCardinality.amount shouldEqual (labelCardinality * existsSelectivity * sqrt(uniqueSelectivity))
 
-    queryShouldHaveCardinality(config, query,
-      labelCardinality * existsSelectivity * uniqueSelectivity)
+    queryShouldHaveCardinality(config, query, labelCardinality * existsSelectivity * uniqueSelectivity)
   }
 
   test("node by id seek should have cardinality 1") {
@@ -552,9 +577,14 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
 
     // The leaf plan does not yet check that r's start node is a,
     // so we want cardinality estimation to take that into account.
-    planShouldHaveCardinality(config, query, {
-      case DirectedRelationshipTypeScan("r", _, _, _, _, _) => true
-    }, aCardinality * rCardinality)
+    planShouldHaveCardinality(
+      config,
+      query,
+      {
+        case DirectedRelationshipTypeScan("r", _, _, _, _, _) => true
+      },
+      aCardinality * rCardinality
+    )
     // The whole query checks that r's start node is a
     queryShouldHaveCardinality(config, query, arCardinality)
   }
@@ -577,9 +607,14 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
 
     // The leaf plan does not yet check that r's start node is a,
     // so we want cardinality estimation to take that into account.
-    planShouldHaveCardinality(config, query, {
-      case DirectedRelationshipTypeScan("r", _, _, _, _, _) => true
-    }, rCardinality)
+    planShouldHaveCardinality(
+      config,
+      query,
+      {
+        case DirectedRelationshipTypeScan("r", _, _, _, _, _) => true
+      },
+      rCardinality
+    )
   }
 
   test("relationship by id seek on bound start node should correctly calculate cardinality") {
@@ -604,9 +639,14 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
 
     // The leaf plan does not yet check that r's start node is a,
     // so we want cardinality estimation to take that into account.
-    planShouldHaveCardinality(config, query, {
-      case DirectedRelationshipByIdSeek("r", _, _, _, _) => true
-    }, aCardinality)
+    planShouldHaveCardinality(
+      config,
+      query,
+      {
+        case DirectedRelationshipByIdSeek("r", _, _, _, _) => true
+      },
+      aCardinality
+    )
     // The whole query checks that r's start node is a
     queryShouldHaveCardinality(config, query, arCardinality * 1.0 / rCardinality)
   }
@@ -628,9 +668,14 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
 
     // The leaf plan does not yet check that r's start node is a,
     // so we want cardinality estimation to take that into account.
-    planShouldHaveCardinality(config, query, {
-      case DirectedRelationshipByIdSeek("r", _, _, _, _) => true
-    }, 1)
+    planShouldHaveCardinality(
+      config,
+      query,
+      {
+        case DirectedRelationshipByIdSeek("r", _, _, _, _) => true
+      },
+      1
+    )
   }
 
   test("text index predicate with an empty string argument") {
@@ -640,7 +685,13 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setLabelCardinality("A", aNodeCount)
-      .addNodeIndex("A", Seq("prop"), existsSelectivity = textIndexSelectivity, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
+      .addNodeIndex(
+        "A",
+        Seq("prop"),
+        existsSelectivity = textIndexSelectivity,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.TEXT
+      )
       .build()
 
     for (op <- Seq("STARTS WITH", "ENDS WITH", "CONTAINS")) withClue(op) {
@@ -667,8 +718,7 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
 
     nodeIndexSeekCardinality.amount shouldEqual (labelCardinality * propSelectivity * DEFAULT_RANGE_SEEK_FACTOR)
 
-    queryShouldHaveCardinality(config, query,
-      labelCardinality * propSelectivity * DEFAULT_RANGE_SEEK_FACTOR)
+    queryShouldHaveCardinality(config, query, labelCardinality * propSelectivity * DEFAULT_RANGE_SEEK_FACTOR)
   }
 }
 

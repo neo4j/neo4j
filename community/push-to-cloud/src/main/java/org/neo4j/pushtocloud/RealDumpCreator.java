@@ -16,34 +16,26 @@
  */
 package org.neo4j.pushtocloud;
 
-import picocli.CommandLine;
+import static org.neo4j.internal.helpers.collection.Iterators.array;
 
-import java.io.File;
 import java.nio.file.Path;
-
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.commandline.dbms.DumpCommandProvider;
+import picocli.CommandLine;
 
-import static org.neo4j.internal.helpers.collection.Iterators.array;
-
-class RealDumpCreator implements PushToCloudCommand.DumpCreator
-{
+class RealDumpCreator implements PushToCloudCommand.DumpCreator {
     private ExecutionContext ctx;
 
-    RealDumpCreator( ExecutionContext ctx )
-    {
+    RealDumpCreator(ExecutionContext ctx) {
         this.ctx = ctx;
     }
 
     @Override
-    public Path dumpDatabase( String database, Path targetDumpFile ) throws CommandFailedException
-    {
-        String[] args = array(
-                "--database", database,
-                "--to", targetDumpFile.toString() );
-        new CommandLine( new DumpCommandProvider().createCommand( ctx ) ).execute( args );
-        ctx.out().printf( "Dumped contents of database '%s' into '%s'%n", database, targetDumpFile );
+    public Path dumpDatabase(String database, Path targetDumpFile) throws CommandFailedException {
+        String[] args = array("--database", database, "--to", targetDumpFile.toString());
+        new CommandLine(new DumpCommandProvider().createCommand(ctx)).execute(args);
+        ctx.out().printf("Dumped contents of database '%s' into '%s'%n", database, targetDumpFile);
         return targetDumpFile;
     }
 }

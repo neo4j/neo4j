@@ -19,8 +19,24 @@
  */
 package org.neo4j.graphdb.factory.module;
 
-import java.util.function.Supplier;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.data_collector_max_recent_query_count;
+import static org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
+import static org.neo4j.configuration.GraphDatabaseSettings.filewatcher_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_global_max_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_format;
+import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_level;
+import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_max_archives;
+import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_rotation_threshold;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_memory_allocation;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
+import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
 
+import java.util.function.Supplier;
 import org.neo4j.bolt.transaction.StatementProcessorTxManager;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.buffer.CentralBufferMangerHolder;
@@ -98,28 +114,10 @@ import org.neo4j.service.Services;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.data_collector_max_recent_query_count;
-import static org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation;
-import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
-import static org.neo4j.configuration.GraphDatabaseSettings.filewatcher_enabled;
-import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
-import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_global_max_size;
-import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_format;
-import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_level;
-import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_max_archives;
-import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
-import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_rotation_threshold;
-import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
-import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_memory_allocation;
-import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
-import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
-import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
-
 /**
  * Global module for {@link DatabaseManagementServiceFactory}. This creates all global services and components from DBMS.
  */
-public class GlobalModule
-{
+public class GlobalModule {
 
     private final PageCache pageCache;
     private final Monitors globalMonitors;
@@ -158,438 +156,418 @@ public class GlobalModule
      * @param dbmsInfo the type of dbms this module manages.
      * @param externalDependencies optional external dependencies provided by caller.
      */
-    public GlobalModule( Config globalConfig, DbmsInfo dbmsInfo, ExternalDependencies externalDependencies )
-    {
-        externalDependencyResolver = externalDependencies.dependencies() != null ? externalDependencies.dependencies() : new Dependencies();
+    public GlobalModule(Config globalConfig, DbmsInfo dbmsInfo, ExternalDependencies externalDependencies) {
+        externalDependencyResolver =
+                externalDependencies.dependencies() != null ? externalDependencies.dependencies() : new Dependencies();
 
         this.dbmsInfo = dbmsInfo;
 
         globalDependencies = new Dependencies();
-        globalDependencies.satisfyDependency( dbmsInfo );
+        globalDependencies.satisfyDependency(dbmsInfo);
 
-        globalClock = globalDependencies.satisfyDependency( createClock() );
+        globalClock = globalDependencies.satisfyDependency(createClock());
         globalLife = createLife();
 
-        this.neo4jLayout = Neo4jLayout.of( globalConfig );
+        this.neo4jLayout = Neo4jLayout.of(globalConfig);
 
-        this.globalConfig = globalDependencies.satisfyDependency( globalConfig );
+        this.globalConfig = globalDependencies.satisfyDependency(globalConfig);
 
-        fileSystem = tryResolveOrCreate( FileSystemAbstraction.class, this::createFileSystemAbstraction );
-        globalDependencies.satisfyDependency( fileSystem );
-        globalLife.add( new FileSystemLifecycleAdapter( fileSystem ) );
+        fileSystem = tryResolveOrCreate(FileSystemAbstraction.class, this::createFileSystemAbstraction);
+        globalDependencies.satisfyDependency(fileSystem);
+        globalLife.add(new FileSystemLifecycleAdapter(fileSystem));
 
         // If no logging was passed in from the outside then create logging and register
         // with this life
-        logService = globalDependencies.satisfyDependency( createLogService( externalDependencies.userLogProvider() ) );
-        globalConfig.setLogger( logService.getInternalLog( Config.class ) );
+        logService = globalDependencies.satisfyDependency(createLogService(externalDependencies.userLogProvider()));
+        globalConfig.setLogger(logService.getInternalLog(Config.class));
 
         // Component monitoring
         globalMonitors = externalDependencies.monitors() == null ? new Monitors() : externalDependencies.monitors();
-        globalDependencies.satisfyDependency( globalMonitors );
+        globalDependencies.satisfyDependency(globalMonitors);
 
-        JobScheduler createdOrResolvedScheduler = tryResolveOrCreate( JobScheduler.class, this::createJobScheduler );
-        jobScheduler = globalLife.add( globalDependencies.satisfyDependency( createdOrResolvedScheduler ) );
+        JobScheduler createdOrResolvedScheduler = tryResolveOrCreate(JobScheduler.class, this::createJobScheduler);
+        jobScheduler = globalLife.add(globalDependencies.satisfyDependency(createdOrResolvedScheduler));
 
         fileLockerService = createFileLockerService();
-        Locker storeLocker = fileLockerService.createStoreLocker( fileSystem, neo4jLayout );
-        globalLife.add( globalDependencies.satisfyDependency( new LockerLifecycleAdapter( storeLocker ) ) );
+        Locker storeLocker = fileLockerService.createStoreLocker(fileSystem, neo4jLayout);
+        globalLife.add(globalDependencies.satisfyDependency(new LockerLifecycleAdapter(storeLocker)));
 
-        new JvmChecker( logService.getInternalLog( JvmChecker.class ),
-                new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
+        new JvmChecker(logService.getInternalLog(JvmChecker.class), new JvmMetadataRepository())
+                .checkJvmCompatibilityAndIssueWarning();
 
-        memoryPools = new MemoryPools( globalConfig.get( memory_tracking ) );
-        otherMemoryPool = memoryPools.pool( MemoryGroup.OTHER, 0, null );
-        transactionsMemoryPool =
-                memoryPools.pool( MemoryGroup.TRANSACTION, globalConfig.get( memory_transaction_global_max_size ), memory_transaction_global_max_size.name() );
-        globalConfig.addListener( memory_transaction_global_max_size, ( before, after ) -> transactionsMemoryPool.setSize( after ) );
-        globalDependencies.satisfyDependency( memoryPools );
+        memoryPools = new MemoryPools(globalConfig.get(memory_tracking));
+        otherMemoryPool = memoryPools.pool(MemoryGroup.OTHER, 0, null);
+        transactionsMemoryPool = memoryPools.pool(
+                MemoryGroup.TRANSACTION,
+                globalConfig.get(memory_transaction_global_max_size),
+                memory_transaction_global_max_size.name());
+        globalConfig.addListener(
+                memory_transaction_global_max_size, (before, after) -> transactionsMemoryPool.setSize(after));
+        globalDependencies.satisfyDependency(memoryPools);
 
-        centralBufferMangerHolder = createCentralBufferManger( logService );
+        centralBufferMangerHolder = createCentralBufferManger(logService);
 
-        var recentQueryBuffer = new RecentQueryBuffer( globalConfig.get( data_collector_max_recent_query_count ),
-                                                   memoryPools.pool( MemoryGroup.RECENT_QUERY_BUFFER, 0, null ).getPoolMemoryTracker() );
-        globalDependencies.satisfyDependency( recentQueryBuffer );
+        var recentQueryBuffer = new RecentQueryBuffer(
+                globalConfig.get(data_collector_max_recent_query_count),
+                memoryPools.pool(MemoryGroup.RECENT_QUERY_BUFFER, 0, null).getPoolMemoryTracker());
+        globalDependencies.satisfyDependency(recentQueryBuffer);
 
-        systemGraphComponents = tryResolveOrCreate( SystemGraphComponents.class, SystemGraphComponents::new );
-        globalDependencies.satisfyDependency( systemGraphComponents );
+        systemGraphComponents = tryResolveOrCreate(SystemGraphComponents.class, SystemGraphComponents::new);
+        globalDependencies.satisfyDependency(systemGraphComponents);
 
-        globalLife.add( new VmPauseMonitorComponent( globalConfig, logService.getInternalLog( VmPauseMonitorComponent.class ), jobScheduler, globalMonitors ) );
+        globalLife.add(new VmPauseMonitorComponent(
+                globalConfig, logService.getInternalLog(VmPauseMonitorComponent.class), jobScheduler, globalMonitors));
 
-        globalAvailabilityGuard = new CompositeDatabaseAvailabilityGuard( globalClock, globalConfig );
-        globalDependencies.satisfyDependency( globalAvailabilityGuard );
-        globalLife.setLast( globalAvailabilityGuard );
+        globalAvailabilityGuard = new CompositeDatabaseAvailabilityGuard(globalClock, globalConfig);
+        globalDependencies.satisfyDependency(globalAvailabilityGuard);
+        globalLife.setLast(globalAvailabilityGuard);
 
-        String desiredImplementationName = globalConfig.get( GraphDatabaseInternalSettings.tracer );
-        tracers = globalDependencies.satisfyDependency( new Tracers( desiredImplementationName,
-                logService.getInternalLog( Tracers.class ), globalMonitors, jobScheduler, globalClock, globalConfig ) );
-        globalDependencies.satisfyDependency( tracers.getPageCacheTracer() );
+        String desiredImplementationName = globalConfig.get(GraphDatabaseInternalSettings.tracer);
+        tracers = globalDependencies.satisfyDependency(new Tracers(
+                desiredImplementationName,
+                logService.getInternalLog(Tracers.class),
+                globalMonitors,
+                jobScheduler,
+                globalClock,
+                globalConfig));
+        globalDependencies.satisfyDependency(tracers.getPageCacheTracer());
 
-        collectionsFactorySupplier = createCollectionsFactorySupplier( globalConfig, globalLife, logService );
+        collectionsFactorySupplier = createCollectionsFactorySupplier(globalConfig, globalLife, logService);
 
         ioControllerService = loadIOControllerService();
-        pageCache = tryResolveOrCreate( PageCache.class,
-                () -> createPageCache( fileSystem, globalConfig, logService, tracers, jobScheduler, globalClock, memoryPools ) );
+        pageCache = tryResolveOrCreate(
+                PageCache.class,
+                () -> createPageCache(
+                        fileSystem, globalConfig, logService, tracers, jobScheduler, globalClock, memoryPools));
 
-        globalLife.add( new PageCacheLifecycle( pageCache ) );
+        globalLife.add(new PageCacheLifecycle(pageCache));
 
-        dbmsDiagnosticsManager = new DbmsDiagnosticsManager( globalDependencies, logService );
-        globalDependencies.satisfyDependency( dbmsDiagnosticsManager );
+        dbmsDiagnosticsManager = new DbmsDiagnosticsManager(globalDependencies, logService);
+        globalDependencies.satisfyDependency(dbmsDiagnosticsManager);
 
         dbmsDiagnosticsManager.dumpSystemDiagnostics();
 
-        fileSystemWatcher = createFileSystemWatcherService( fileSystem, logService, jobScheduler, globalConfig );
-        globalLife.add( fileSystemWatcher );
-        globalDependencies.satisfyDependency( fileSystemWatcher );
+        fileSystemWatcher = createFileSystemWatcherService(fileSystem, logService, jobScheduler, globalConfig);
+        globalLife.add(fileSystemWatcher);
+        globalDependencies.satisfyDependency(fileSystemWatcher);
 
         extensionFactories = externalDependencies.extensions();
-        globalExtensions = globalDependencies.satisfyDependency(
-                new GlobalExtensions( new GlobalExtensionContext( neo4jLayout, dbmsInfo, globalDependencies ), extensionFactories, globalDependencies,
-                        ExtensionFailureStrategies.fail() ) );
+        globalExtensions = globalDependencies.satisfyDependency(new GlobalExtensions(
+                new GlobalExtensionContext(neo4jLayout, dbmsInfo, globalDependencies),
+                extensionFactories,
+                globalDependencies,
+                ExtensionFailureStrategies.fail()));
 
-        globalDependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
+        globalDependencies.satisfyDependency(URLAccessRules.combined(externalDependencies.urlAccessRules()));
 
-        databaseEventListeners = new DatabaseEventListeners( logService.getInternalLog( DatabaseEventListeners.class ) );
+        databaseEventListeners = new DatabaseEventListeners(logService.getInternalLog(DatabaseEventListeners.class));
         Iterable<? extends DatabaseEventListener> externalListeners = externalDependencies.databaseEventListeners();
-        for ( DatabaseEventListener databaseListener : externalListeners )
-        {
-            databaseEventListeners.registerDatabaseEventListener( databaseListener );
+        for (DatabaseEventListener databaseListener : externalListeners) {
+            databaseEventListeners.registerDatabaseEventListener(databaseListener);
         }
-        globalDependencies.satisfyDependencies( databaseEventListeners );
+        globalDependencies.satisfyDependencies(databaseEventListeners);
 
         transactionEventListeners = new GlobalTransactionEventListeners();
-        globalDependencies.satisfyDependency( transactionEventListeners );
+        globalDependencies.satisfyDependency(transactionEventListeners);
 
         connectorPortRegister = new ConnectorPortRegister();
-        globalDependencies.satisfyDependency( connectorPortRegister );
+        globalDependencies.satisfyDependency(connectorPortRegister);
 
-        //transaction manager used for Bolt and HTTP interfaces
+        // transaction manager used for Bolt and HTTP interfaces
         transactionManager = new StatementProcessorTxManager();
 
         capabilitiesService = loadCapabilities();
-        globalDependencies.satisfyDependency( capabilitiesService );
-        globalDependencies.satisfyDependency( tryResolveOrCreate( NativeAccess.class, NativeAccessProvider::getNativeAccess ) );
+        globalDependencies.satisfyDependency(capabilitiesService);
+        globalDependencies.satisfyDependency(
+                tryResolveOrCreate(NativeAccess.class, NativeAccessProvider::getNativeAccess));
     }
 
-    private <T> T tryResolveOrCreate( Class<T> clazz, Supplier<T> newInstanceMethod )
-    {
-        return externalDependencyResolver.containsDependency( clazz ) ? externalDependencyResolver.resolveDependency( clazz ) : newInstanceMethod.get();
+    private <T> T tryResolveOrCreate(Class<T> clazz, Supplier<T> newInstanceMethod) {
+        return externalDependencyResolver.containsDependency(clazz)
+                ? externalDependencyResolver.resolveDependency(clazz)
+                : newInstanceMethod.get();
     }
 
-    protected FileLockerService createFileLockerService()
-    {
+    protected FileLockerService createFileLockerService() {
         return new GlobalLockerService();
     }
 
-    protected SystemNanoClock createClock()
-    {
+    protected SystemNanoClock createClock() {
         return Clocks.nanoClock();
     }
 
-    public LifeSupport createLife()
-    {
+    public LifeSupport createLife() {
         return new LifeSupport();
     }
 
-    protected FileSystemAbstraction createFileSystemAbstraction()
-    {
+    protected FileSystemAbstraction createFileSystemAbstraction() {
         return new DefaultFileSystemAbstraction();
     }
 
-    private FileSystemWatcherService createFileSystemWatcherService( FileSystemAbstraction fileSystem, LogService logging, JobScheduler jobScheduler,
-            Config config )
-    {
-        if ( !config.get( filewatcher_enabled ) )
-        {
-            InternalLog log = logging.getInternalLog( getClass() );
-            log.info( "File watcher disabled by configuration." );
+    private FileSystemWatcherService createFileSystemWatcherService(
+            FileSystemAbstraction fileSystem, LogService logging, JobScheduler jobScheduler, Config config) {
+        if (!config.get(filewatcher_enabled)) {
+            InternalLog log = logging.getInternalLog(getClass());
+            log.info("File watcher disabled by configuration.");
             return FileSystemWatcherService.EMPTY_WATCHER;
         }
 
-        try
-        {
-            return new DefaultFileSystemWatcherService( jobScheduler, fileSystem.fileWatcher() );
-        }
-        catch ( Exception e )
-        {
-            InternalLog log = logging.getInternalLog( getClass() );
-            log.warn( "Can not create file watcher for current file system. File monitoring capabilities for store files will be disabled.", e );
+        try {
+            return new DefaultFileSystemWatcherService(jobScheduler, fileSystem.fileWatcher());
+        } catch (Exception e) {
+            InternalLog log = logging.getInternalLog(getClass());
+            log.warn(
+                    "Can not create file watcher for current file system. File monitoring capabilities for store files will be disabled.",
+                    e);
             return FileSystemWatcherService.EMPTY_WATCHER;
         }
     }
 
-    protected LogService createLogService( InternalLogProvider userLogProvider )
-    {
-        // Will get diagnostics as header in each newly created log file (diagnostics in the first file is printed during start up).
-        Neo4jLoggerContext loggerContext =
-                LogConfig.createBuilder( fileSystem, globalConfig.get( store_internal_log_path ), globalConfig.get( store_internal_log_level ) )
-                         .withFormat( globalConfig.get( store_internal_log_format ) )
-                .withTimezone( globalConfig.get( db_timezone ) )
-                .withHeaderLogger( log -> dbmsDiagnosticsManager.dumpAll(log), DiagnosticsManager.class.getCanonicalName() )
-                .withRotation( globalConfig.get( store_internal_log_rotation_threshold ), globalConfig.get( store_internal_log_max_archives ) )
+    protected LogService createLogService(InternalLogProvider userLogProvider) {
+        // Will get diagnostics as header in each newly created log file (diagnostics in the first file is printed
+        // during start up).
+        Neo4jLoggerContext loggerContext = LogConfig.createBuilder(
+                        fileSystem,
+                        globalConfig.get(store_internal_log_path),
+                        globalConfig.get(store_internal_log_level))
+                .withFormat(globalConfig.get(store_internal_log_format))
+                .withTimezone(globalConfig.get(db_timezone))
+                .withHeaderLogger(
+                        log -> dbmsDiagnosticsManager.dumpAll(log), DiagnosticsManager.class.getCanonicalName())
+                .withRotation(
+                        globalConfig.get(store_internal_log_rotation_threshold),
+                        globalConfig.get(store_internal_log_max_archives))
                 .build();
-        Log4jLogProvider internalLogProvider = new Log4jLogProvider( loggerContext );
+        Log4jLogProvider internalLogProvider = new Log4jLogProvider(loggerContext);
         userLogProvider = userLogProvider == null ? NullLogProvider.getInstance() : userLogProvider;
-        SimpleLogService logService = new SimpleLogService( userLogProvider, internalLogProvider );
+        SimpleLogService logService = new SimpleLogService(userLogProvider, internalLogProvider);
 
         // Listen to changes to the dynamic log level settings.
-        globalConfig.addListener( store_internal_log_level,
-                ( before, after ) -> internalLogProvider.updateLogLevel( after ) );
+        globalConfig.addListener(
+                store_internal_log_level, (before, after) -> internalLogProvider.updateLogLevel(after));
 
-        // If the user log provider comes from us we make sure that it starts with the default log level and listens to updates.
-        if ( userLogProvider instanceof Log4jLogProvider provider )
-        {
-            provider.updateLogLevel( globalConfig.get( store_internal_log_level) );
-            globalConfig.addListener( store_internal_log_level,
-                    ( before, after ) -> provider.updateLogLevel( after ) );
+        // If the user log provider comes from us we make sure that it starts with the default log level and listens to
+        // updates.
+        if (userLogProvider instanceof Log4jLogProvider provider) {
+            provider.updateLogLevel(globalConfig.get(store_internal_log_level));
+            globalConfig.addListener(store_internal_log_level, (before, after) -> provider.updateLogLevel(after));
         }
-        return globalLife.add( logService );
+        return globalLife.add(logService);
     }
 
-    private JobScheduler createJobScheduler()
-    {
-        JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler( globalClock, logService.getInternalLogProvider() );
-        jobScheduler.setParallelism( Group.INDEX_SAMPLING, globalConfig.get( GraphDatabaseInternalSettings.index_sampling_parallelism ) );
-        jobScheduler.setParallelism( Group.INDEX_POPULATION, globalConfig.get( GraphDatabaseInternalSettings.index_population_parallelism ) );
-        jobScheduler.setParallelism( Group.PAGE_CACHE_PRE_FETCHER, globalConfig.get( GraphDatabaseSettings.pagecache_scan_prefetch ) );
+    private JobScheduler createJobScheduler() {
+        JobScheduler jobScheduler =
+                JobSchedulerFactory.createInitialisedScheduler(globalClock, logService.getInternalLogProvider());
+        jobScheduler.setParallelism(
+                Group.INDEX_SAMPLING, globalConfig.get(GraphDatabaseInternalSettings.index_sampling_parallelism));
+        jobScheduler.setParallelism(
+                Group.INDEX_POPULATION, globalConfig.get(GraphDatabaseInternalSettings.index_population_parallelism));
+        jobScheduler.setParallelism(
+                Group.PAGE_CACHE_PRE_FETCHER, globalConfig.get(GraphDatabaseSettings.pagecache_scan_prefetch));
         return jobScheduler;
     }
 
-    protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers, JobScheduler jobScheduler,
-            SystemNanoClock clock, MemoryPools memoryPools )
-    {
-        InternalLog pageCacheLog = logging.getInternalLog( PageCache.class );
-        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fileSystem, config, tracers.getPageCacheTracer(), pageCacheLog,
-                                                                                        jobScheduler, clock, memoryPools );
+    protected PageCache createPageCache(
+            FileSystemAbstraction fileSystem,
+            Config config,
+            LogService logging,
+            Tracers tracers,
+            JobScheduler jobScheduler,
+            SystemNanoClock clock,
+            MemoryPools memoryPools) {
+        InternalLog pageCacheLog = logging.getInternalLog(PageCache.class);
+        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
+                fileSystem, config, tracers.getPageCacheTracer(), pageCacheLog, jobScheduler, clock, memoryPools);
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
-        if ( config.get( GraphDatabaseInternalSettings.dump_configuration ) )
-        {
+        if (config.get(GraphDatabaseInternalSettings.dump_configuration)) {
             pageCacheFactory.dumpConfiguration();
         }
         return pageCache;
     }
 
-    private static CollectionsFactorySupplier createCollectionsFactorySupplier( Config config, LifeSupport life, LogService logService )
-    {
-        final TransactionStateMemoryAllocation allocation = config.get( tx_state_memory_allocation );
-        if ( allocation == TransactionStateMemoryAllocation.OFF_HEAP )
-        {
-            if ( !UnsafeUtil.unsafeByteBufferAccessAvailable() )
-            {
-                var log = logService.getInternalLog( GlobalModule.class );
-                log.warn( tx_state_memory_allocation.name() + " is set to " + TransactionStateMemoryAllocation.OFF_HEAP +
-                          " but unsafe access to java.nio.DirectByteBuffer is not available. Defaulting to " + TransactionStateMemoryAllocation.ON_HEAP + "." );
+    private static CollectionsFactorySupplier createCollectionsFactorySupplier(
+            Config config, LifeSupport life, LogService logService) {
+        final TransactionStateMemoryAllocation allocation = config.get(tx_state_memory_allocation);
+        if (allocation == TransactionStateMemoryAllocation.OFF_HEAP) {
+            if (!UnsafeUtil.unsafeByteBufferAccessAvailable()) {
+                var log = logService.getInternalLog(GlobalModule.class);
+                log.warn(tx_state_memory_allocation.name() + " is set to " + TransactionStateMemoryAllocation.OFF_HEAP
+                        + " but unsafe access to java.nio.DirectByteBuffer is not available. Defaulting to "
+                        + TransactionStateMemoryAllocation.ON_HEAP + ".");
                 return CollectionsFactorySupplier.ON_HEAP;
             }
 
-            return createOffHeapCollectionsFactory( config, life );
+            return createOffHeapCollectionsFactory(config, life);
         }
         return CollectionsFactorySupplier.ON_HEAP;
     }
 
-    private static CollectionsFactorySupplier createOffHeapCollectionsFactory( Config config, LifeSupport life )
-    {
+    private static CollectionsFactorySupplier createOffHeapCollectionsFactory(Config config, LifeSupport life) {
         final CachingOffHeapBlockAllocator allocator = new CachingOffHeapBlockAllocator(
-                config.get( tx_state_off_heap_max_cacheable_block_size ),
-                config.get( tx_state_off_heap_block_cache_size ) );
+                config.get(tx_state_off_heap_max_cacheable_block_size), config.get(tx_state_off_heap_block_cache_size));
         final OffHeapBlockAllocator sharedBlockAllocator;
-        final long maxMemory = config.get( tx_state_max_off_heap_memory );
-        if ( maxMemory > 0 )
-        {
-            sharedBlockAllocator = new CapacityLimitingBlockAllocatorDecorator( allocator, maxMemory );
-        }
-        else
-        {
+        final long maxMemory = config.get(tx_state_max_off_heap_memory);
+        if (maxMemory > 0) {
+            sharedBlockAllocator = new CapacityLimitingBlockAllocatorDecorator(allocator, maxMemory);
+        } else {
             sharedBlockAllocator = allocator;
         }
-        life.add( onShutdown( sharedBlockAllocator::release ) );
-        return () -> new OffHeapCollectionsFactory( sharedBlockAllocator );
+        life.add(onShutdown(sharedBlockAllocator::release));
+        return () -> new OffHeapCollectionsFactory(sharedBlockAllocator);
     }
 
-    private CentralBufferMangerHolder createCentralBufferManger( LogService logService )
-    {
+    private CentralBufferMangerHolder createCentralBufferManger(LogService logService) {
         // since network buffers are currently the only use of the central byte buffer manager ...
-        if ( !globalConfig.get( GraphDatabaseInternalSettings.managed_network_buffers ) )
-        {
+        if (!globalConfig.get(GraphDatabaseInternalSettings.managed_network_buffers)) {
             return CentralBufferMangerHolder.EMPTY;
         }
-        if ( !UnsafeUtil.unsafeByteBufferAccessAvailable() )
-        {
-            var log = logService.getInternalLog( GlobalModule.class );
-            log.warn( GraphDatabaseInternalSettings.managed_network_buffers.name() + " is set to true" +
-                      " but unsafe access to java.nio.DirectByteBuffer is not available. Managed network buffers are not enabled." );
+        if (!UnsafeUtil.unsafeByteBufferAccessAvailable()) {
+            var log = logService.getInternalLog(GlobalModule.class);
+            log.warn(
+                    GraphDatabaseInternalSettings.managed_network_buffers.name() + " is set to true"
+                            + " but unsafe access to java.nio.DirectByteBuffer is not available. Managed network buffers are not enabled.");
             return CentralBufferMangerHolder.EMPTY;
         }
 
-        var bufferPool = new NeoByteBufferPool( memoryPools, jobScheduler );
-        globalLife.add( bufferPool );
-        var nettyAllocator = new NettyMemoryManagerWrapper( bufferPool );
-        return new CentralBufferMangerHolder( nettyAllocator, bufferPool );
+        var bufferPool = new NeoByteBufferPool(memoryPools, jobScheduler);
+        globalLife.add(bufferPool);
+        var nettyAllocator = new NettyMemoryManagerWrapper(bufferPool);
+        return new CentralBufferMangerHolder(nettyAllocator, bufferPool);
     }
 
-    private static IOControllerService loadIOControllerService()
-    {
-        return Services.loadByPriority( IOControllerService.class ).orElseThrow(
-                () -> new IllegalStateException( IOControllerService.class.getSimpleName() + " not found." ) );
+    private static IOControllerService loadIOControllerService() {
+        return Services.loadByPriority(IOControllerService.class)
+                .orElseThrow(
+                        () -> new IllegalStateException(IOControllerService.class.getSimpleName() + " not found."));
     }
 
-    private CapabilitiesService loadCapabilities()
-    {
-        var service = CapabilitiesService.newCapabilities( globalConfig, globalDependencies );
-        service.set( DBMSCapabilities.dbms_instance_version, Version.getNeo4jVersion() );
-        service.set( DBMSCapabilities.dbms_instance_kernel_version, Version.getKernelVersion() );
-        service.set( DBMSCapabilities.dbms_instance_edition, dbmsInfo.edition.toString() );
-        service.set( DBMSCapabilities.dbms_instance_operational_mode, dbmsInfo.operationalMode.toString() );
+    private CapabilitiesService loadCapabilities() {
+        var service = CapabilitiesService.newCapabilities(globalConfig, globalDependencies);
+        service.set(DBMSCapabilities.dbms_instance_version, Version.getNeo4jVersion());
+        service.set(DBMSCapabilities.dbms_instance_kernel_version, Version.getKernelVersion());
+        service.set(DBMSCapabilities.dbms_instance_edition, dbmsInfo.edition.toString());
+        service.set(DBMSCapabilities.dbms_instance_operational_mode, dbmsInfo.operationalMode.toString());
         return service;
     }
 
-    public FileWatcher getFileWatcher()
-    {
+    public FileWatcher getFileWatcher() {
         return fileSystemWatcher.getFileWatcher();
     }
 
-    public ConnectorPortRegister getConnectorPortRegister()
-    {
+    public ConnectorPortRegister getConnectorPortRegister() {
         return connectorPortRegister;
     }
 
-    CollectionsFactorySupplier getCollectionsFactorySupplier()
-    {
+    CollectionsFactorySupplier getCollectionsFactorySupplier() {
         return collectionsFactorySupplier;
     }
 
-    public SystemNanoClock getGlobalClock()
-    {
+    public SystemNanoClock getGlobalClock() {
         return globalClock;
     }
 
-    public JobScheduler getJobScheduler()
-    {
+    public JobScheduler getJobScheduler() {
         return jobScheduler;
     }
 
-    public GlobalExtensions getGlobalExtensions()
-    {
+    public GlobalExtensions getGlobalExtensions() {
         return globalExtensions;
     }
 
-    Iterable<ExtensionFactory<?>> getExtensionFactories()
-    {
+    Iterable<ExtensionFactory<?>> getExtensionFactories() {
         return extensionFactories;
     }
 
-    public Config getGlobalConfig()
-    {
+    public Config getGlobalConfig() {
         return globalConfig;
     }
 
-    public FileSystemAbstraction getFileSystem()
-    {
+    public FileSystemAbstraction getFileSystem() {
         return fileSystem;
     }
 
-    public Tracers getTracers()
-    {
+    public Tracers getTracers() {
         return tracers;
     }
 
-    public Neo4jLayout getNeo4jLayout()
-    {
+    public Neo4jLayout getNeo4jLayout() {
         return neo4jLayout;
     }
 
-    public DbmsInfo getDbmsInfo()
-    {
+    public DbmsInfo getDbmsInfo() {
         return dbmsInfo;
     }
 
-    public LifeSupport getGlobalLife()
-    {
+    public LifeSupport getGlobalLife() {
         return globalLife;
     }
 
-    public PageCache getPageCache()
-    {
+    public PageCache getPageCache() {
         return pageCache;
     }
 
-    public Monitors getGlobalMonitors()
-    {
+    public Monitors getGlobalMonitors() {
         return globalMonitors;
     }
 
-    public Dependencies getGlobalDependencies()
-    {
+    public Dependencies getGlobalDependencies() {
         return globalDependencies;
     }
 
-    public LogService getLogService()
-    {
+    public LogService getLogService() {
         return logService;
     }
 
-    public CompositeDatabaseAvailabilityGuard getGlobalAvailabilityGuard()
-    {
+    public CompositeDatabaseAvailabilityGuard getGlobalAvailabilityGuard() {
         return globalAvailabilityGuard;
     }
 
-    public DatabaseEventListeners getDatabaseEventListeners()
-    {
+    public DatabaseEventListeners getDatabaseEventListeners() {
         return databaseEventListeners;
     }
 
-    public GlobalTransactionEventListeners getTransactionEventListeners()
-    {
+    public GlobalTransactionEventListeners getTransactionEventListeners() {
         return transactionEventListeners;
     }
 
-    public DependencyResolver getExternalDependencyResolver()
-    {
+    public DependencyResolver getExternalDependencyResolver() {
         return externalDependencyResolver;
     }
 
-    FileLockerService getFileLockerService()
-    {
+    FileLockerService getFileLockerService() {
         return fileLockerService;
     }
 
-    public MemoryPools getMemoryPools()
-    {
+    public MemoryPools getMemoryPools() {
         return memoryPools;
     }
 
-    public GlobalMemoryGroupTracker getTransactionsMemoryPool()
-    {
+    public GlobalMemoryGroupTracker getTransactionsMemoryPool() {
         return transactionsMemoryPool;
     }
 
-    public GlobalMemoryGroupTracker getOtherMemoryPool()
-    {
+    public GlobalMemoryGroupTracker getOtherMemoryPool() {
         return otherMemoryPool;
     }
 
-    public SystemGraphComponents getSystemGraphComponents()
-    {
+    public SystemGraphComponents getSystemGraphComponents() {
         return systemGraphComponents;
     }
 
-    public CentralBufferMangerHolder getCentralBufferMangerHolder()
-    {
+    public CentralBufferMangerHolder getCentralBufferMangerHolder() {
         return centralBufferMangerHolder;
     }
 
-    public TransactionManager getTransactionManager()
-    {
+    public TransactionManager getTransactionManager() {
         return transactionManager;
     }
 
-    public IOControllerService getIoControllerService()
-    {
+    public IOControllerService getIoControllerService() {
         return ioControllerService;
     }
 
-    public CapabilitiesService getCapabilitiesService()
-    {
+    public CapabilitiesService getCapabilitiesService() {
         return capabilitiesService;
     }
 }

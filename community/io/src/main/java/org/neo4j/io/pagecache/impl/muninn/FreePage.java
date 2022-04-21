@@ -26,30 +26,22 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * The next pointers are always other FreePage instances.
  */
-final class FreePage
-{
+final class FreePage {
     final long pageRef;
     int count;
     Object next;
 
-    FreePage( long pageRef )
-    {
+    FreePage(long pageRef) {
         this.pageRef = pageRef;
     }
 
-    void setNext( int pageCount, Object next )
-    {
+    void setNext(int pageCount, Object next) {
         this.next = next;
-        if ( next == null )
-        {
+        if (next == null) {
             count = 1;
-        }
-        else if ( next.getClass() == AtomicInteger.class )
-        {
+        } else if (next.getClass() == AtomicInteger.class) {
             count = 1 + pageCount - ((AtomicInteger) next).get();
-        }
-        else
-        {
+        } else {
             this.count = 1 + ((FreePage) next).count;
         }
     }

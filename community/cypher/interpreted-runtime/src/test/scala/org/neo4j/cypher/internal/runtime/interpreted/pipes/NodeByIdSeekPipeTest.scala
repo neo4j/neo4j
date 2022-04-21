@@ -60,16 +60,22 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
 
     when(nodeOps.entityExists(ArgumentMatchers.anyLong())).thenReturn(true)
 
-
     val queryContext = mock[QueryContext]
     when(queryContext.nodeReadOps).thenReturn(nodeOps)
     val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     // whens
-    val result = NodeByIdSeekPipe("a", ManySeekArgs(ListLiteral(literal(42), literal(21), literal(11))))().createResults(queryState)
+    val result = NodeByIdSeekPipe(
+      "a",
+      ManySeekArgs(ListLiteral(literal(42), literal(21), literal(11)))
+    )().createResults(queryState)
 
     // then
-    result.map(_.getByName("a")).toList should equal(List(fromNodeEntity(node1), fromNodeEntity(node2), fromNodeEntity(node3)))
+    result.map(_.getByName("a")).toList should equal(List(
+      fromNodeEntity(node1),
+      fromNodeEntity(node2),
+      fromNodeEntity(node3)
+    ))
   }
 
   private def nodeMock(id: Long) = {

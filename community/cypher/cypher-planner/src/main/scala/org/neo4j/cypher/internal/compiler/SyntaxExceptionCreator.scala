@@ -28,9 +28,11 @@ import org.neo4j.exceptions.ArithmeticException
 import org.neo4j.exceptions.Neo4jException
 import org.neo4j.exceptions.SyntaxException
 
-case class Neo4jCypherExceptionFactory(queryText: String, preParserOffset: Option[InputPosition]) extends CypherExceptionFactory {
+case class Neo4jCypherExceptionFactory(queryText: String, preParserOffset: Option[InputPosition])
+    extends CypherExceptionFactory {
 
-  override def arithmeticException(message: String, cause: Exception): Neo4jException = new ArithmeticException(message, cause)
+  override def arithmeticException(message: String, cause: Exception): Neo4jException =
+    new ArithmeticException(message, cause)
 
   override def syntaxException(message: String, pos: InputPosition): Neo4jException = {
     val adjustedPosition = pos.withOffset(preParserOffset)
@@ -39,6 +41,7 @@ case class Neo4jCypherExceptionFactory(queryText: String, preParserOffset: Optio
 }
 
 object SyntaxExceptionCreator {
+
   def throwOnError(exceptionFactory: CypherExceptionFactory): Seq[SemanticErrorDef] => Unit =
     (errors: Seq[SemanticErrorDef]) => errors.foreach(e => throw createException(exceptionFactory, e))
 

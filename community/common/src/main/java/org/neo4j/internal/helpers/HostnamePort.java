@@ -19,70 +19,54 @@
  */
 package org.neo4j.internal.helpers;
 
-import org.apache.commons.lang3.StringUtils;
+import static java.lang.String.format;
 
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Objects;
-
-import static java.lang.String.format;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Represents a hostname and port, optionally with a port range.
  * Examples: myhost, myhost:1234, myhost:1234-1240, :1234, :1234-1240
  */
-public class HostnamePort
-{
+public class HostnamePort {
     private final String host;
     private final int[] ports;
 
-    public HostnamePort( String hostnamePort )
-    {
-        Objects.requireNonNull( hostnamePort );
+    public HostnamePort(String hostnamePort) {
+        Objects.requireNonNull(hostnamePort);
 
-        String[] parts = splitHostAndPort( hostnamePort );
-        if ( parts.length == 1 )
-        {
-            host = StringUtils.defaultIfBlank( parts[0], null );
-            ports = new int[]{0, 0};
-        }
-        else if ( parts.length == 2 )
-        {
-            host = StringUtils.defaultIfBlank( parts[0], null );
+        String[] parts = splitHostAndPort(hostnamePort);
+        if (parts.length == 1) {
+            host = StringUtils.defaultIfBlank(parts[0], null);
+            ports = new int[] {0, 0};
+        } else if (parts.length == 2) {
+            host = StringUtils.defaultIfBlank(parts[0], null);
 
-            String[] portStrings = parts[1].split( "-" );
+            String[] portStrings = parts[1].split("-");
             ports = new int[2];
 
-            if ( portStrings.length == 1 )
-            {
-                ports[0] = ports[1] = Integer.parseInt( portStrings[0] );
+            if (portStrings.length == 1) {
+                ports[0] = ports[1] = Integer.parseInt(portStrings[0]);
+            } else if (portStrings.length == 2) {
+                ports[0] = Integer.parseInt(portStrings[0]);
+                ports[1] = Integer.parseInt(portStrings[1]);
+            } else {
+                throw new IllegalArgumentException(format("Cannot have more than two port ranges: %s", hostnamePort));
             }
-            else if ( portStrings.length == 2 )
-            {
-                ports[0] = Integer.parseInt( portStrings[0] );
-                ports[1] = Integer.parseInt( portStrings[1] );
-            }
-            else
-            {
-                throw new IllegalArgumentException( format( "Cannot have more than two port ranges: %s",
-                        hostnamePort ) );
-            }
-        }
-        else
-        {
-            throw new IllegalArgumentException( hostnamePort );
+        } else {
+            throw new IllegalArgumentException(hostnamePort);
         }
     }
 
-    public HostnamePort( String host, int port )
-    {
-        this( host, port, port );
+    public HostnamePort(String host, int port) {
+        this(host, port, port);
     }
 
-    public HostnamePort( String host, int portFrom, int portTo )
-    {
+    public HostnamePort(String host, int portFrom, int portTo) {
         this.host = host;
-        ports = new int[]{portFrom, portTo};
+        ports = new int[] {portFrom, portTo};
     }
 
     /**
@@ -90,26 +74,20 @@ public class HostnamePort
      *
      * @return the host part, or {@code null} if not given
      */
-    public String getHost()
-    {
+    public String getHost() {
         return host;
     }
 
-    public static String getHostAddress( String host, String defaultHost )
-    {
-        if ( host == null )
-        {
+    public static String getHostAddress(String host, String defaultHost) {
+        if (host == null) {
             return defaultHost;
-        }
-        else
-        {
+        } else {
             return host;
         }
     }
 
-    public String getHost( String defaultHost )
-    {
-        return getHostAddress( host, defaultHost );
+    public String getHost(String defaultHost) {
+        return getHostAddress(host, defaultHost);
     }
 
     /**
@@ -118,8 +96,7 @@ public class HostnamePort
      *
      * @return the port range as two ints, which may have the same value; if no port range has been given both ints are {@code 0}
      */
-    public int[] getPorts()
-    {
+    public int[] getPorts() {
         return ports;
     }
 
@@ -128,62 +105,49 @@ public class HostnamePort
      *
      * @return the first port or {@code 0} if no port was given
      */
-    public int getPort()
-    {
+    public int getPort() {
         return ports[0];
     }
 
-    public boolean isRange()
-    {
+    public boolean isRange() {
         return ports[0] != ports[1];
     }
 
     @Override
-    public String toString()
-    {
-        return toString( null /*no default host*/ );
+    public String toString() {
+        return toString(null /*no default host*/);
     }
 
-    public String toString( String defaultHost )
-    {
+    public String toString(String defaultHost) {
         StringBuilder builder = new StringBuilder();
-        String host = getHost( defaultHost );
-        if ( host != null )
-        {
-            builder.append( host );
+        String host = getHost(defaultHost);
+        if (host != null) {
+            builder.append(host);
         }
 
-        if ( getPort() != 0 )
-        {
-            builder.append( ':' );
-            builder.append( getPort() );
-            if ( isRange() )
-            {
-                builder.append( '-' ).append( getPorts()[1] );
+        if (getPort() != 0) {
+            builder.append(':');
+            builder.append(getPort());
+            if (isRange()) {
+                builder.append('-').append(getPorts()[1]);
             }
         }
 
         return builder.toString();
     }
 
-    public boolean matches( URI toMatch )
-    {
+    public boolean matches(URI toMatch) {
         boolean result = false;
-        for ( int port = ports[0]; port <= ports[1]; port++ )
-        {
-            if ( port == toMatch.getPort() )
-            {
+        for (int port = ports[0]; port <= ports[1]; port++) {
+            if (port == toMatch.getPort()) {
                 result = true;
                 break;
             }
         }
 
-        if ( host == null && toMatch.getHost() == null )
-        {
+        if (host == null && toMatch.getHost() == null) {
             return result;
-        }
-        else if ( host == null )
-        {
+        } else if (host == null) {
             return false;
         }
 
@@ -191,56 +155,48 @@ public class HostnamePort
         String toMatchHost = toMatch.getHost();
 
         // this tries to match hostnames as they are at first, then tries to extract and match ip addresses of both
-        return result && (host.equalsIgnoreCase( toMatchHost ) ||
-                getHost( null ).equalsIgnoreCase( getHostAddress( toMatchHost, toMatchHost ) ));
+        return result
+                && (host.equalsIgnoreCase(toMatchHost)
+                        || getHost(null).equalsIgnoreCase(getHostAddress(toMatchHost, toMatchHost)));
     }
 
-    private static String[] splitHostAndPort( String hostnamePort )
-    {
+    private static String[] splitHostAndPort(String hostnamePort) {
         hostnamePort = hostnamePort.trim();
 
-        int indexOfSchemaSeparator = hostnamePort.indexOf( "://" );
-        if ( indexOfSchemaSeparator != -1 )
-        {
-            hostnamePort = hostnamePort.substring( indexOfSchemaSeparator + 3 );
+        int indexOfSchemaSeparator = hostnamePort.indexOf("://");
+        if (indexOfSchemaSeparator != -1) {
+            hostnamePort = hostnamePort.substring(indexOfSchemaSeparator + 3);
         }
 
-        boolean isIPv6HostPort = hostnamePort.startsWith( "[" ) && hostnamePort.contains( "]" );
-        if ( isIPv6HostPort )
-        {
-            int splitIndex = hostnamePort.indexOf( ']' ) + 1;
+        boolean isIPv6HostPort = hostnamePort.startsWith("[") && hostnamePort.contains("]");
+        if (isIPv6HostPort) {
+            int splitIndex = hostnamePort.indexOf(']') + 1;
 
-            String host = hostnamePort.substring( 0, splitIndex );
-            String port = hostnamePort.substring( splitIndex );
-            if ( StringUtils.isNotBlank( port ) )
-            {
-                port = port.substring( 1 ); // remove ':'
-                return new String[]{host, port};
+            String host = hostnamePort.substring(0, splitIndex);
+            String port = hostnamePort.substring(splitIndex);
+            if (StringUtils.isNotBlank(port)) {
+                port = port.substring(1); // remove ':'
+                return new String[] {host, port};
             }
-            return new String[]{host};
+            return new String[] {host};
         }
-        return hostnamePort.split( ":" );
+        return hostnamePort.split(":");
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         HostnamePort that = (HostnamePort) o;
-        return Objects.equals( host, that.host ) &&
-                Arrays.equals( ports, that.ports );
+        return Objects.equals(host, that.host) && Arrays.equals(ports, that.ports);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( host, Arrays.hashCode( ports ) );
+    public int hashCode() {
+        return Objects.hash(host, Arrays.hashCode(ports));
     }
 }

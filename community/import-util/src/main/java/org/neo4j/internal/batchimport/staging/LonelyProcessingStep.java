@@ -19,60 +19,52 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
+import static java.lang.System.nanoTime;
+
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
-
-import static java.lang.System.nanoTime;
 
 /**
  * {@link Step} that doesn't receive batches, doesn't send batches downstream; just processes data.
  */
-public abstract class LonelyProcessingStep extends AbstractStep<Void>
-{
+public abstract class LonelyProcessingStep extends AbstractStep<Void> {
     private final int batchSize;
     private int batch;
     private long lastProcessingTimestamp;
 
-    public LonelyProcessingStep( StageControl control, String name, Configuration config,
-            StatsProvider... additionalStatsProviders )
-    {
-        super( control, name, config, additionalStatsProviders );
+    public LonelyProcessingStep(
+            StageControl control, String name, Configuration config, StatsProvider... additionalStatsProviders) {
+        super(control, name, config, additionalStatsProviders);
         this.batchSize = config.batchSize();
     }
 
     @Override
-    public long receive( long ticket, Void nothing )
-    {
-        control.scheduler().schedule( () -> {
-            assertHealthy();
-            try
-            {
-                try
-                {
-                    lastProcessingTimestamp = nanoTime();
-                    process();
-                    endOfUpstream();
-                }
-                catch ( Throwable e )
-                {
-                    // we need to update panic state before ending upstream and notifying executor that we completed
-                    issuePanic( e );
-                }
-            }
-            catch ( Throwable e )
-            {
-                // to avoid cases when we hide original panic problem
-                // check first if we already in panic state and if so - rethrow original panic cause
-                if ( !isPanic() )
-                {
-                    issuePanic( e );
-                }
-                else
-                {
-                    throw e;
-                }
-            }
-        }, name() );
+    public long receive(long ticket, Void nothing) {
+        control.scheduler()
+                .schedule(
+                        () -> {
+                            assertHealthy();
+                            try {
+                                try {
+                                    lastProcessingTimestamp = nanoTime();
+                                    process();
+                                    endOfUpstream();
+                                } catch (Throwable e) {
+                                    // we need to update panic state before ending upstream and notifying executor that
+                                    // we completed
+                                    issuePanic(e);
+                                }
+                            } catch (Throwable e) {
+                                // to avoid cases when we hide original panic problem
+                                // check first if we already in panic state and if so - rethrow original panic cause
+                                if (!isPanic()) {
+                                    issuePanic(e);
+                                } else {
+                                    throw e;
+                                }
+                            }
+                        },
+                        name());
         return 0;
     }
 
@@ -87,16 +79,14 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
      *
      * @param amount number of items processed since last call to this method.
      */
-    protected void progress( long amount )
-    {
+    protected void progress(long amount) {
         batch += amount;
-        if ( batch >= batchSize )
-        {
+        if (batch >= batchSize) {
             int batches = batch / batchSize;
             batch %= batchSize;
-            doneBatches.addAndGet( batches );
+            doneBatches.addAndGet(batches);
             long time = nanoTime();
-            totalProcessingTime.add( time - lastProcessingTimestamp );
+            totalProcessingTime.add(time - lastProcessingTimestamp);
             lastProcessingTimestamp = time;
         }
     }

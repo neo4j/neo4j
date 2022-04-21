@@ -19,53 +19,45 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.Iterator;
-
-import org.neo4j.index.internal.gbptree.Seeker;
-
 import static org.neo4j.values.storable.Values.stringValue;
 
-class ResultCursor implements Seeker<RangeKey,NullValue>
-{
+import java.util.Iterator;
+import org.neo4j.index.internal.gbptree.Seeker;
+
+class ResultCursor implements Seeker<RangeKey, NullValue> {
     private final Iterator<String> iterator;
     private int pos = -1;
     private RangeKey key;
 
-    ResultCursor( Iterator<String> keys )
-    {
+    ResultCursor(Iterator<String> keys) {
         iterator = keys;
     }
 
     @Override
-    public boolean next()
-    {
-        if ( iterator.hasNext() )
-        {
+    public boolean next() {
+        if (iterator.hasNext()) {
             String current = iterator.next();
             pos++;
             key = new RangeKey();
-            key.initialize( pos );
-            key.initFromValue( 0, stringValue( current ), NativeIndexKey.Inclusion.NEUTRAL );
+            key.initialize(pos);
+            key.initFromValue(0, stringValue(current), NativeIndexKey.Inclusion.NEUTRAL);
             return true;
         }
         return false;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         // do nothing
     }
 
     @Override
-    public RangeKey key()
-    {
+    public RangeKey key() {
         return key;
     }
 
     @Override
-    public NullValue value()
-    {
+    public NullValue value() {
         return NullValue.INSTANCE;
     }
 }

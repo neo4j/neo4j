@@ -21,27 +21,22 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.ar.ArabicAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Arabic extends AnalyzerProvider
-{
-    public Arabic()
-    {
-        super( "arabic" );
+public class Arabic extends AnalyzerProvider {
+    public Arabic() {
+        super("arabic");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
+    public Analyzer createAnalyzer() {
         return new ArabicAnalyzer();
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return "Arabic analyzer with light stemming, as specified by \"Light Stemming for Arabic Information Retrieval\".";
     }
 }

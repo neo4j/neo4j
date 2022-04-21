@@ -20,19 +20,16 @@
 package org.neo4j.internal.counts;
 
 import java.util.concurrent.locks.Lock;
-
 import org.neo4j.counts.InvalidCountException;
 
 /**
  * Manages a {@link CountWriter}, which is injectable, and a lock which it will release in {@link #close()}.
  */
-class CountUpdater implements AutoCloseable
-{
+class CountUpdater implements AutoCloseable {
     private final CountWriter writer;
     private final Lock lock;
 
-    CountUpdater( CountWriter writer, Lock lock )
-    {
+    CountUpdater(CountWriter writer, Lock lock) {
         this.writer = writer;
         this.lock = lock;
     }
@@ -43,14 +40,10 @@ class CountUpdater implements AutoCloseable
      * @param delta the delta for the count, can be positive or negative.
      * @return {@code true} if the absolute value either was 0 before this change, or became zero after the change. Otherwise {@code false}.
      */
-    boolean increment( CountsKey key, long delta )
-    {
-        try
-        {
-            return writer.write( key, delta );
-        }
-        catch ( InvalidCountException e )
-        {
+    boolean increment(CountsKey key, long delta) {
+        try {
+            return writer.write(key, delta);
+        } catch (InvalidCountException e) {
             // This means that the value stored in the store associated with this key is invalid.
             // The fact was logged when the value that means 'invalid' was written to the store.
             // There is nothing better we can do here than just ignore updates to this key.
@@ -61,21 +54,16 @@ class CountUpdater implements AutoCloseable
     }
 
     @Override
-    public void close()
-    {
-        try
-        {
+    public void close() {
+        try {
             writer.close();
-        }
-        finally
-        {
+        } finally {
             lock.unlock();
         }
     }
 
-    interface CountWriter extends AutoCloseable
-    {
-        boolean write( CountsKey key, long delta );
+    interface CountWriter extends AutoCloseable {
+        boolean write(CountsKey key, long delta);
 
         @Override
         void close();

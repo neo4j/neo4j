@@ -20,78 +20,62 @@
 package org.neo4j.bolt;
 
 import java.util.Objects;
-
 import org.neo4j.memory.HeapEstimator;
 
-public class BoltProtocolVersion
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltProtocolVersion.class );
+public class BoltProtocolVersion {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(BoltProtocolVersion.class);
 
     private int majorVersion;
     private int minorVersion;
 
-    public BoltProtocolVersion( int majorVersion, int minorVersion )
-    {
+    public BoltProtocolVersion(int majorVersion, int minorVersion) {
         this.majorVersion = majorVersion;
         this.minorVersion = minorVersion;
     }
 
-    public static BoltProtocolVersion fromRawBytes( int rawVersion )
-    {
-        return new BoltProtocolVersion( getMajorFromRawBytes(rawVersion), getMinorFromRawBytes(rawVersion) );
+    public static BoltProtocolVersion fromRawBytes(int rawVersion) {
+        return new BoltProtocolVersion(getMajorFromRawBytes(rawVersion), getMinorFromRawBytes(rawVersion));
     }
 
-    public static int getMinorFromRawBytes( int rawVersion )
-    {
-        return ( rawVersion >> 8 ) & 0x000000FF;
+    public static int getMinorFromRawBytes(int rawVersion) {
+        return (rawVersion >> 8) & 0x000000FF;
     }
 
-    public static int getMajorFromRawBytes( int rawVersion )
-    {
+    public static int getMajorFromRawBytes(int rawVersion) {
         return rawVersion & 0x000000FF;
     }
 
-    public static int getRangeFromRawBytes( int rawVersion )
-    {
-        return ( rawVersion >> 16 ) & 0x000000FF;
+    public static int getRangeFromRawBytes(int rawVersion) {
+        return (rawVersion >> 16) & 0x000000FF;
     }
 
-    public long getMinorVersion()
-    {
+    public long getMinorVersion() {
         return minorVersion;
     }
 
-    public long getMajorVersion()
-    {
+    public long getMajorVersion() {
         return majorVersion;
     }
 
-    public int toInt()
-    {
+    public int toInt() {
         int shiftedMinor = minorVersion << 8;
         return shiftedMinor | majorVersion;
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( minorVersion, majorVersion );
+    public int hashCode() {
+        return Objects.hash(minorVersion, majorVersion);
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( o == this )
-        {
+    public boolean equals(Object o) {
+        if (o == this) {
             return true;
-        }
-        else if ( !(o instanceof BoltProtocolVersion other) )
-        {
+        } else if (!(o instanceof BoltProtocolVersion other)) {
             return false;
-        }
-        else
-        {
-            return this.getMajorVersion() == other.getMajorVersion() && this.getMinorVersion() == other.getMinorVersion();
+        } else {
+            return this.getMajorVersion() == other.getMajorVersion()
+                    && this.getMinorVersion() == other.getMinorVersion();
         }
     }
 }

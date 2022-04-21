@@ -21,21 +21,17 @@ package org.neo4j.kernel.impl.store.format.standard;
 
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 
-public class LabelTokenRecordFormat extends TokenRecordFormat<LabelTokenRecord>
-{
-    public LabelTokenRecordFormat()
-    {
-        this( false );
+public class LabelTokenRecordFormat extends TokenRecordFormat<LabelTokenRecord> {
+    public LabelTokenRecordFormat() {
+        this(false);
     }
 
-    public LabelTokenRecordFormat( boolean pageAligned )
-    {
-        super( BASE_RECORD_SIZE, StandardFormatSettings.LABEL_TOKEN_MAXIMUM_ID_BITS, pageAligned );
+    public LabelTokenRecordFormat(boolean pageAligned) {
+        super(BASE_RECORD_SIZE, StandardFormatSettings.LABEL_TOKEN_MAXIMUM_ID_BITS, pageAligned);
     }
 
     @Override
-    public LabelTokenRecord newRecord()
-    {
-        return new LabelTokenRecord( -1 );
+    public LabelTokenRecord newRecord() {
+        return new LabelTokenRecord(-1);
     }
 }

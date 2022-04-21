@@ -40,13 +40,14 @@ trait PredicateTestSupport extends CypherTestSupport {
 
   def rewriter: Rewriter
 
-  val P:Expression = anExp("P")
-  val Q:Expression = anExp("Q")
-  val R:Expression = anExp("R")
-  val S:Expression = anExp("S")
-  val V:Expression = anExp("V")
+  val P: Expression = anExp("P")
+  val Q: Expression = anExp("Q")
+  val R: Expression = anExp("R")
+  val S: Expression = anExp("S")
+  val V: Expression = anExp("V")
 
   implicit class IFF(x: Expression) {
+
     def <=>(other: Expression): Assertion = {
       val output = rewriter(x)
 

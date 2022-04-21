@@ -31,15 +31,16 @@ import org.neo4j.graphdb.schema.IndexType
  * It's much slower than an index seek, since all index entries must be examined, but also much faster than an
  * all-nodes scan or label scan followed by a property value filter.
  */
-case class NodeIndexEndsWithScan(idName: String,
-                                 override val label: LabelToken,
-                                 property: IndexedProperty,
-                                 valueExpr: Expression,
-                                 argumentIds: Set[String],
-                                 indexOrder: IndexOrder,
-                                 override val indexType: IndexType)
-                                (implicit idGen: IdGen)
-  extends NodeIndexLeafPlan(idGen) {
+case class NodeIndexEndsWithScan(
+  idName: String,
+  override val label: LabelToken,
+  property: IndexedProperty,
+  valueExpr: Expression,
+  argumentIds: Set[String],
+  indexOrder: IndexOrder,
+  override val indexType: IndexType
+)(implicit idGen: IdGen)
+    extends NodeIndexLeafPlan(idGen) {
 
   override def properties: Seq[IndexedProperty] = Seq(property)
 
@@ -47,7 +48,8 @@ case class NodeIndexEndsWithScan(idName: String,
 
   override def usedVariables: Set[String] = valueExpr.dependencies.map(_.name)
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): NodeIndexEndsWithScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+  override def withoutArgumentIds(argsToExclude: Set[String]): NodeIndexEndsWithScan =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: NodeIndexEndsWithScan =
     copy(property = property.copy(getValueFromIndex = DoNotGetValue))(SameId(this.id))

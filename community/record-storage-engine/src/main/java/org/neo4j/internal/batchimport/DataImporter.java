@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.batchimport;
 
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,7 +34,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
-
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Input;
@@ -52,9 +54,6 @@ import org.neo4j.internal.helpers.NamedThreadFactory;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.memory.MemoryTracker;
 
-import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
-
 /**
  * Imports data from {@link Input} into a store. Only linkage between property records is done, not between nodes/relationships
  * or any other types of records.
@@ -68,232 +67,238 @@ import static java.lang.System.currentTimeMillis;
  * <li>Repeat until no more chunks from input.</li>
  * </ol>
  */
-public class DataImporter
-{
+public class DataImporter {
     public static final String NODE_IMPORT_NAME = "Nodes";
     public static final String RELATIONSHIP_IMPORT_NAME = "Relationships";
 
-    public static class Monitor
-    {
+    public static class Monitor {
         private final LongAdder nodes = new LongAdder();
         private final LongAdder relationships = new LongAdder();
         private final LongAdder properties = new LongAdder();
 
-        public void nodesImported( long nodes )
-        {
-            this.nodes.add( nodes );
+        public void nodesImported(long nodes) {
+            this.nodes.add(nodes);
         }
 
-        public void nodesRemoved( long nodes )
-        {
-            this.nodes.add( -nodes );
+        public void nodesRemoved(long nodes) {
+            this.nodes.add(-nodes);
         }
 
-        public void relationshipsImported( long relationships )
-        {
-            this.relationships.add( relationships );
+        public void relationshipsImported(long relationships) {
+            this.relationships.add(relationships);
         }
 
-        public void propertiesImported( long properties )
-        {
-            this.properties.add( properties );
+        public void propertiesImported(long properties) {
+            this.properties.add(properties);
         }
 
-        public void propertiesRemoved( long properties )
-        {
-            this.properties.add( -properties );
+        public void propertiesRemoved(long properties) {
+            this.properties.add(-properties);
         }
 
-        public long nodesImported()
-        {
+        public long nodesImported() {
             return this.nodes.sum();
         }
 
-        public long propertiesImported()
-        {
+        public long propertiesImported() {
             return this.properties.sum();
         }
 
         @Override
-        public String toString()
-        {
-            return format( "Imported:%n  %d nodes%n  %d relationships%n  %d properties",
-                    nodes.sum(), relationships.sum(), properties.sum() );
+        public String toString() {
+            return format(
+                    "Imported:%n  %d nodes%n  %d relationships%n  %d properties",
+                    nodes.sum(), relationships.sum(), properties.sum());
         }
     }
 
-    private static long importData( String title, Configuration configuration, InputIterable data, BatchingNeoStores stores,
-            Supplier<EntityImporter> visitors, ExecutionMonitor executionMonitor, StatsProvider memoryStatsProvider )
-            throws IOException
-    {
+    private static long importData(
+            String title,
+            Configuration configuration,
+            InputIterable data,
+            BatchingNeoStores stores,
+            Supplier<EntityImporter> visitors,
+            ExecutionMonitor executionMonitor,
+            StatsProvider memoryStatsProvider)
+            throws IOException {
         LongAdder roughEntityCountProgress = new LongAdder();
         int numRunners = configuration.maxNumberOfProcessors();
-        ExecutorService pool = Executors.newFixedThreadPool( numRunners,
-                new NamedThreadFactory( title + "Importer" ) );
-        IoMonitor writeMonitor = new IoMonitor( stores.getIoTracer() );
-        ControllableStep step = new ControllableStep( title, roughEntityCountProgress, configuration,
-                writeMonitor, memoryStatsProvider );
-        StageExecution execution = new StageExecution( title, null, configuration, Collections.singletonList( step ), 0 );
+        ExecutorService pool = Executors.newFixedThreadPool(numRunners, new NamedThreadFactory(title + "Importer"));
+        IoMonitor writeMonitor = new IoMonitor(stores.getIoTracer());
+        ControllableStep step =
+                new ControllableStep(title, roughEntityCountProgress, configuration, writeMonitor, memoryStatsProvider);
+        StageExecution execution = new StageExecution(title, null, configuration, Collections.singletonList(step), 0);
         long startTime = currentTimeMillis();
         List<EntityImporter> importers = new ArrayList<>();
-        try ( InputIterator dataIterator = data.iterator() )
-        {
-            executionMonitor.start( execution );
-            for ( int i = 0; i < numRunners; i++ )
-            {
+        try (InputIterator dataIterator = data.iterator()) {
+            executionMonitor.start(execution);
+            for (int i = 0; i < numRunners; i++) {
                 EntityImporter importer = visitors.get();
-                importers.add( importer );
-                pool.submit( new ExhaustingEntityImporterRunnable( execution, dataIterator, importer, roughEntityCountProgress ) );
+                importers.add(importer);
+                pool.submit(new ExhaustingEntityImporterRunnable(
+                        execution, dataIterator, importer, roughEntityCountProgress));
             }
             pool.shutdown();
 
             long nextWait = 0;
-            try
-            {
-                while ( !pool.awaitTermination( nextWait, TimeUnit.MILLISECONDS ) )
-                {
-                    executionMonitor.check( execution );
+            try {
+                while (!pool.awaitTermination(nextWait, TimeUnit.MILLISECONDS)) {
+                    executionMonitor.check(execution);
                     nextWait = executionMonitor.nextCheckTime() - currentTimeMillis();
                 }
-            }
-            catch ( InterruptedException e )
-            {
+            } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                throw new IOException( e );
+                throw new IOException(e);
             }
         }
 
         execution.assertHealthy();
         stores.markHighIds();
-        importers.forEach( EntityImporter::freeUnusedIds );
+        importers.forEach(EntityImporter::freeUnusedIds);
         step.markAsCompleted();
         writeMonitor.stop();
-        executionMonitor.end( execution, currentTimeMillis() - startTime );
+        executionMonitor.end(execution, currentTimeMillis() - startTime);
         execution.assertHealthy();
 
         return roughEntityCountProgress.sum();
     }
 
-    static void importNodes( Configuration configuration, Input input, BatchingNeoStores stores, IdMapper idMapper, Collector badCollector,
-            ExecutionMonitor executionMonitor, Monitor monitor, CursorContextFactory contextFactory, MemoryTracker memoryTracker ) throws IOException
-    {
-        Supplier<EntityImporter> importers = () -> new NodeImporter( stores, idMapper, monitor, contextFactory, memoryTracker );
-        importData( NODE_IMPORT_NAME, configuration, input.nodes( badCollector ), stores, importers, executionMonitor,
-                new MemoryUsageStatsProvider( stores, idMapper ) );
+    static void importNodes(
+            Configuration configuration,
+            Input input,
+            BatchingNeoStores stores,
+            IdMapper idMapper,
+            Collector badCollector,
+            ExecutionMonitor executionMonitor,
+            Monitor monitor,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker)
+            throws IOException {
+        Supplier<EntityImporter> importers =
+                () -> new NodeImporter(stores, idMapper, monitor, contextFactory, memoryTracker);
+        importData(
+                NODE_IMPORT_NAME,
+                configuration,
+                input.nodes(badCollector),
+                stores,
+                importers,
+                executionMonitor,
+                new MemoryUsageStatsProvider(stores, idMapper));
     }
 
-    static DataStatistics importRelationships( Configuration configuration, Input input,
-            BatchingNeoStores stores, IdMapper idMapper, Collector badCollector, ExecutionMonitor executionMonitor,
-            Monitor monitor, boolean validateRelationshipData, CursorContextFactory contextFactory, MemoryTracker memoryTracker ) throws IOException
-    {
-        DataStatistics typeDistribution = new DataStatistics( monitor, new DataStatistics.RelationshipTypeCount[0] );
-        Supplier<EntityImporter> importers = () -> new RelationshipImporter( stores, idMapper, typeDistribution, monitor,
-                badCollector, validateRelationshipData, stores.usesDoubleRelationshipRecordUnits(), contextFactory, memoryTracker );
-        importData( RELATIONSHIP_IMPORT_NAME, configuration, input.relationships( badCollector ), stores, importers, executionMonitor,
-                new MemoryUsageStatsProvider( stores, idMapper ) );
+    static DataStatistics importRelationships(
+            Configuration configuration,
+            Input input,
+            BatchingNeoStores stores,
+            IdMapper idMapper,
+            Collector badCollector,
+            ExecutionMonitor executionMonitor,
+            Monitor monitor,
+            boolean validateRelationshipData,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker)
+            throws IOException {
+        DataStatistics typeDistribution = new DataStatistics(monitor, new DataStatistics.RelationshipTypeCount[0]);
+        Supplier<EntityImporter> importers = () -> new RelationshipImporter(
+                stores,
+                idMapper,
+                typeDistribution,
+                monitor,
+                badCollector,
+                validateRelationshipData,
+                stores.usesDoubleRelationshipRecordUnits(),
+                contextFactory,
+                memoryTracker);
+        importData(
+                RELATIONSHIP_IMPORT_NAME,
+                configuration,
+                input.relationships(badCollector),
+                stores,
+                importers,
+                executionMonitor,
+                new MemoryUsageStatsProvider(stores, idMapper));
         return typeDistribution;
     }
 
     /**
      * Here simply to be able to fit into the ExecutionMonitor thing
      */
-    private static class ControllableStep implements Step<Void>, StatsProvider
-    {
+    private static class ControllableStep implements Step<Void>, StatsProvider {
         private final String name;
         private final LongAdder progress;
         private final int batchSize;
         private final Key[] keys = new Key[] {Keys.done_batches, Keys.avg_processing_time};
         private final Collection<StatsProvider> statsProviders = new ArrayList<>();
 
-        private final CountDownLatch completed = new CountDownLatch( 1 );
+        private final CountDownLatch completed = new CountDownLatch(1);
 
-        ControllableStep( String name, LongAdder progress, Configuration config, StatsProvider... additionalStatsProviders )
-        {
+        ControllableStep(
+                String name, LongAdder progress, Configuration config, StatsProvider... additionalStatsProviders) {
             this.name = name;
             this.progress = progress;
             this.batchSize = config.batchSize(); // just to be able to report correctly
 
-            statsProviders.add( this );
-            statsProviders.addAll( Arrays.asList( additionalStatsProviders ) );
+            statsProviders.add(this);
+            statsProviders.addAll(Arrays.asList(additionalStatsProviders));
         }
 
-        void markAsCompleted()
-        {
+        void markAsCompleted() {
             this.completed.countDown();
         }
 
         @Override
-        public void receivePanic( Throwable cause )
-        {
-        }
+        public void receivePanic(Throwable cause) {}
 
         @Override
-        public void start( int orderingGuarantees )
-        {
-        }
+        public void start(int orderingGuarantees) {}
 
         @Override
-        public String name()
-        {
+        public String name() {
             return name;
         }
 
         @Override
-        public long receive( long ticket, Void batch )
-        {
+        public long receive(long ticket, Void batch) {
             return 0;
         }
 
         @Override
-        public StepStats stats()
-        {
-            return new StepStats( name, !isCompleted(), statsProviders );
+        public StepStats stats() {
+            return new StepStats(name, !isCompleted(), statsProviders);
         }
 
         @Override
-        public void endOfUpstream()
-        {
-        }
+        public void endOfUpstream() {}
 
         @Override
-        public boolean isCompleted()
-        {
+        public boolean isCompleted() {
             return completed.getCount() == 0;
         }
 
         @Override
-        public void awaitCompleted() throws InterruptedException
-        {
+        public void awaitCompleted() throws InterruptedException {
             completed.await();
         }
 
         @Override
-        public void setDownstream( Step<?> downstreamStep )
-        {
-        }
+        public void setDownstream(Step<?> downstreamStep) {}
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
 
         @Override
-        public Stat stat( Key key )
-        {
-            if ( key == Keys.done_batches )
-            {
-                return Stats.longStat( progress.sum() / batchSize );
+        public Stat stat(Key key) {
+            if (key == Keys.done_batches) {
+                return Stats.longStat(progress.sum() / batchSize);
             }
-            if ( key == Keys.avg_processing_time )
-            {
-                return Stats.longStat( 10 );
+            if (key == Keys.avg_processing_time) {
+                return Stats.longStat(10);
             }
             return null;
         }
 
         @Override
-        public Key[] keys()
-        {
+        public Key[] keys() {
             return keys;
         }
     }

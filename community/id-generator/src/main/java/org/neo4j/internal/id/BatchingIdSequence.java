@@ -24,44 +24,36 @@ import org.neo4j.io.pagecache.context.CursorContext;
 /**
  * {@link IdSequence} w/o any synchronization, purely a long incrementing.
  */
-public class BatchingIdSequence implements IdSequence
-{
+public class BatchingIdSequence implements IdSequence {
     private final long startId;
     private long nextId;
 
-    public BatchingIdSequence()
-    {
-        this( 0 );
+    public BatchingIdSequence() {
+        this(0);
     }
 
-    public BatchingIdSequence( long startId )
-    {
+    public BatchingIdSequence(long startId) {
         this.startId = startId;
         this.nextId = startId;
     }
 
     @Override
-    public long nextId( CursorContext ignored )
-    {
+    public long nextId(CursorContext ignored) {
         long result = peek();
         nextId++;
         return result;
     }
 
-    public void reset()
-    {
+    public void reset() {
         nextId = startId;
     }
 
-    public void set( long nextId )
-    {
+    public void set(long nextId) {
         this.nextId = nextId;
     }
 
-    public long peek()
-    {
-        if ( IdValidator.isReservedId( nextId ) )
-        {
+    public long peek() {
+        if (IdValidator.isReservedId(nextId)) {
             nextId++;
         }
         return nextId;

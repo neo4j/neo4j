@@ -24,105 +24,84 @@ import org.neo4j.graphdb.spatial.Point;
 /**
  * Static methods for writing primitive arrays to a ValueWriter.
  */
-public final class PrimitiveArrayWriting
-{
-    public static <E extends Exception> void writeTo( ValueWriter<E> writer, byte[] values ) throws E
-    {
-        writer.beginArray( values.length, ValueWriter.ArrayType.BYTE );
-        for ( byte x : values )
-        {
-            writer.writeInteger( x );
+public final class PrimitiveArrayWriting {
+    public static <E extends Exception> void writeTo(ValueWriter<E> writer, byte[] values) throws E {
+        writer.beginArray(values.length, ValueWriter.ArrayType.BYTE);
+        for (byte x : values) {
+            writer.writeInteger(x);
         }
         writer.endArray();
     }
 
-    public static <E extends Exception> void writeTo( ValueWriter<E> writer, short[] values ) throws E
-    {
-        writer.beginArray( values.length, ValueWriter.ArrayType.SHORT );
-        for ( short x : values )
-        {
-            writer.writeInteger( x );
+    public static <E extends Exception> void writeTo(ValueWriter<E> writer, short[] values) throws E {
+        writer.beginArray(values.length, ValueWriter.ArrayType.SHORT);
+        for (short x : values) {
+            writer.writeInteger(x);
         }
         writer.endArray();
     }
 
-    public static <E extends Exception> void writeTo( ValueWriter<E> writer, int[] values ) throws E
-    {
-        writer.beginArray( values.length, ValueWriter.ArrayType.INT );
-        for ( int x : values )
-        {
-            writer.writeInteger( x );
+    public static <E extends Exception> void writeTo(ValueWriter<E> writer, int[] values) throws E {
+        writer.beginArray(values.length, ValueWriter.ArrayType.INT);
+        for (int x : values) {
+            writer.writeInteger(x);
         }
         writer.endArray();
     }
 
-    public static <E extends Exception> void writeTo( ValueWriter<E> writer, long[] values ) throws E
-    {
-        writer.beginArray( values.length, ValueWriter.ArrayType.LONG );
-        for ( long x : values )
-        {
-            writer.writeInteger( x );
+    public static <E extends Exception> void writeTo(ValueWriter<E> writer, long[] values) throws E {
+        writer.beginArray(values.length, ValueWriter.ArrayType.LONG);
+        for (long x : values) {
+            writer.writeInteger(x);
         }
         writer.endArray();
     }
 
-    public static <E extends Exception> void writeTo( ValueWriter<E> writer, float[] values ) throws E
-    {
-        writer.beginArray( values.length, ValueWriter.ArrayType.FLOAT );
-        for ( float x : values )
-        {
-            writer.writeFloatingPoint( x );
+    public static <E extends Exception> void writeTo(ValueWriter<E> writer, float[] values) throws E {
+        writer.beginArray(values.length, ValueWriter.ArrayType.FLOAT);
+        for (float x : values) {
+            writer.writeFloatingPoint(x);
         }
         writer.endArray();
     }
 
-    public static <E extends Exception> void writeTo( ValueWriter<E> writer, double[] values ) throws E
-    {
-        writer.beginArray( values.length, ValueWriter.ArrayType.DOUBLE );
-        for ( double x : values )
-        {
-            writer.writeFloatingPoint( x );
+    public static <E extends Exception> void writeTo(ValueWriter<E> writer, double[] values) throws E {
+        writer.beginArray(values.length, ValueWriter.ArrayType.DOUBLE);
+        for (double x : values) {
+            writer.writeFloatingPoint(x);
         }
         writer.endArray();
     }
 
-    public static <E extends Exception> void writeTo( ValueWriter<E> writer, boolean[] values ) throws E
-    {
-        writer.beginArray( values.length, ValueWriter.ArrayType.BOOLEAN );
-        for ( boolean x : values )
-        {
-            writer.writeBoolean( x );
+    public static <E extends Exception> void writeTo(ValueWriter<E> writer, boolean[] values) throws E {
+        writer.beginArray(values.length, ValueWriter.ArrayType.BOOLEAN);
+        for (boolean x : values) {
+            writer.writeBoolean(x);
         }
         writer.endArray();
     }
 
-    public static <E extends Exception> void writeTo( ValueWriter<E> writer, char[] values ) throws E
-    {
-        writer.beginArray( values.length, ValueWriter.ArrayType.CHAR );
-        for ( char x : values )
-        {
-            writer.writeString( x );
+    public static <E extends Exception> void writeTo(ValueWriter<E> writer, char[] values) throws E {
+        writer.beginArray(values.length, ValueWriter.ArrayType.CHAR);
+        for (char x : values) {
+            writer.writeString(x);
         }
         writer.endArray();
     }
 
-    public static <E extends Exception> void writeTo( ValueWriter<E> writer, String[] values ) throws E
-    {
-        writer.beginArray( values.length, ValueWriter.ArrayType.STRING );
-        for ( String x : values )
-        {
-            writer.writeString( x );
+    public static <E extends Exception> void writeTo(ValueWriter<E> writer, String[] values) throws E {
+        writer.beginArray(values.length, ValueWriter.ArrayType.STRING);
+        for (String x : values) {
+            writer.writeString(x);
         }
         writer.endArray();
     }
 
-    public static <E extends Exception> void writeTo( ValueWriter<E> writer, Point[] values ) throws E
-    {
-        writer.beginArray( values.length, ValueWriter.ArrayType.POINT );
-        for ( Point x : values )
-        {
-            PointValue value = Values.point( x );
-            writer.writePoint( value.getCoordinateReferenceSystem(), value.coordinate() );
+    public static <E extends Exception> void writeTo(ValueWriter<E> writer, Point[] values) throws E {
+        writer.beginArray(values.length, ValueWriter.ArrayType.POINT);
+        for (Point x : values) {
+            PointValue value = Values.point(x);
+            writer.writePoint(value.getCoordinateReferenceSystem(), value.coordinate());
         }
         writer.endArray();
     }

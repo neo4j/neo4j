@@ -19,25 +19,20 @@
  */
 package org.neo4j.shell.prettyprint;
 
-
-public class ToStringLinePrinter implements LinePrinter
-{
+public class ToStringLinePrinter implements LinePrinter {
     private final StringBuilder sb;
 
-    public ToStringLinePrinter()
-    {
+    public ToStringLinePrinter() {
         this.sb = new StringBuilder();
     }
 
     @Override
-    public void printOut( String line )
-    {
-        sb.append( line );
-        sb.append( OutputFormatter.NEWLINE );
+    public void printOut(String line) {
+        sb.append(line);
+        sb.append(OutputFormatter.NEWLINE);
     }
 
-    public String result()
-    {
+    public String result() {
         return sb.toString();
     }
 }

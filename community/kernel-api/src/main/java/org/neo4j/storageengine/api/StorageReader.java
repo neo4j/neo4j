@@ -22,7 +22,6 @@ package org.neo4j.storageengine.api;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Function;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -38,8 +37,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
  * Abstraction for accessing data from a {@link StorageEngine}.
  * A reader is expected to be scoped to one transaction or query or similar.
  */
-public interface StorageReader extends AutoCloseable, StorageSchemaReader
-{
+public interface StorageReader extends AutoCloseable, StorageSchemaReader {
     /**
      * Closes this reader and all associated resources.
      */
@@ -51,38 +49,43 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
      * @param index The index to check.
      * @return {@code true} if the index exists, {@code false} otherwise.
      */
-    boolean indexExists( IndexDescriptor index );
+    boolean indexExists(IndexDescriptor index);
 
     /**
      * Returns all value indexes (including unique) related to a property, any of the tokens (labels or relationship types) and the entity type.
      */
-    Collection<IndexDescriptor> valueIndexesGetRelated( long[] tokens, int propertyKeyId, EntityType entityType );
+    Collection<IndexDescriptor> valueIndexesGetRelated(long[] tokens, int propertyKeyId, EntityType entityType);
 
-    Collection<IndexDescriptor> valueIndexesGetRelated( long[] tokens, int[] propertyKeyIds, EntityType entityType );
+    Collection<IndexDescriptor> valueIndexesGetRelated(long[] tokens, int[] propertyKeyIds, EntityType entityType);
 
-    Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated( long[] labels, int propertyKeyId, EntityType entityType );
+    Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
+            long[] labels, int propertyKeyId, EntityType entityType);
 
-    Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated( long[] changedLabels, long[] unchangedLabels, int[] propertyKeyIds,
-            boolean propertyKeyListIsComplete, EntityType entityType );
+    Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
+            long[] changedLabels,
+            long[] unchangedLabels,
+            int[] propertyKeyIds,
+            boolean propertyKeyListIsComplete,
+            EntityType entityType);
 
-    boolean hasRelatedSchema( long[] tokens, int propertyKey, EntityType entityType );
+    boolean hasRelatedSchema(long[] tokens, int propertyKey, EntityType entityType);
 
-    boolean hasRelatedSchema( int token, EntityType entityType );
+    boolean hasRelatedSchema(int token, EntityType entityType);
 
     /**
      * @param index {@link IndexDescriptor} to get related uniqueness constraint for.
      * @return schema rule id of uniqueness constraint that owns the given {@code index}, or {@code null}
      * if the given index isn't related to a uniqueness constraint.
      */
-    Long indexGetOwningUniquenessConstraintId( IndexDescriptor index );
+    Long indexGetOwningUniquenessConstraintId(IndexDescriptor index);
 
     /**
      * @param descriptor describing the label and property key (or keys) defining the requested constraint.
      * @return node property constraints associated with the label and one or more property keys token ids.
      */
-    Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor );
+    Iterator<ConstraintDescriptor> constraintsGetForSchema(SchemaDescriptor descriptor);
 
-    boolean constraintExists( ConstraintDescriptor descriptor );
+    boolean constraintExists(ConstraintDescriptor descriptor);
 
     /**
      * Returns number of stored nodes labeled with the label represented by {@code labelId}.
@@ -91,7 +94,7 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
      * @param cursorContext underlying page cursor context
      * @return number of stored nodes with this label.
      */
-    long countsForNode( int labelId, CursorContext cursorContext );
+    long countsForNode(int labelId, CursorContext cursorContext);
 
     /**
      * Returns number of stored relationships of a certain {@code typeId} whose start/end nodes are labeled
@@ -103,11 +106,11 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
      * @param cursorContext underlying page cursor context
      * @return number of stored relationships matching these criteria.
      */
-    long countsForRelationship( int startLabelId, int typeId, int endLabelId, CursorContext cursorContext );
+    long countsForRelationship(int startLabelId, int typeId, int endLabelId, CursorContext cursorContext);
 
-    long nodesGetCount( CursorContext cursorContext );
+    long nodesGetCount(CursorContext cursorContext);
 
-    long relationshipsGetCount( CursorContext cursorTracer );
+    long relationshipsGetCount(CursorContext cursorTracer);
 
     int labelCount();
 
@@ -115,11 +118,11 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
 
     int relationshipTypeCount();
 
-    boolean nodeExists( long id, StoreCursors storeCursors );
+    boolean nodeExists(long id, StoreCursors storeCursors);
 
-    boolean relationshipExists( long id, StoreCursors storeCursors );
+    boolean relationshipExists(long id, StoreCursors storeCursors);
 
-    <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StorageReader, T> factory );
+    <T> T getOrCreateSchemaDependantState(Class<T> type, Function<StorageReader, T> factory);
 
     /**
      * Batched all node scan
@@ -136,22 +139,25 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
     /**
      * @return a new {@link StorageNodeCursor} capable of reading node data from the underlying storage.
      */
-    StorageNodeCursor allocateNodeCursor( CursorContext cursorContext, StoreCursors storeCursors );
+    StorageNodeCursor allocateNodeCursor(CursorContext cursorContext, StoreCursors storeCursors);
 
     /**
      * @return a new {@link StoragePropertyCursor} capable of reading property data from the underlying storage.
      */
-    StoragePropertyCursor allocatePropertyCursor( CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker );
+    StoragePropertyCursor allocatePropertyCursor(
+            CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker);
 
     /**
      * @return a new {@link StorageRelationshipTraversalCursor} capable of traversing relationships from the underlying storage.
      */
-    StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( CursorContext cursorContext, StoreCursors storeCursors );
+    StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor(
+            CursorContext cursorContext, StoreCursors storeCursors);
 
     /**
      * @return a new {@link StorageRelationshipScanCursor} capable of reading relationship data from the underlying storage.
      */
-    StorageRelationshipScanCursor allocateRelationshipScanCursor( CursorContext cursorContext, StoreCursors storeCursors );
+    StorageRelationshipScanCursor allocateRelationshipScanCursor(
+            CursorContext cursorContext, StoreCursors storeCursors);
 
     /**
      * Get a lock-free snapshot of the current schema, for inspecting the current schema when no mutations are intended.

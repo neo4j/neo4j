@@ -19,43 +19,36 @@
  */
 package org.neo4j.internal.nativeimpl;
 
-public class NativeCallResult
-{
+public class NativeCallResult {
     public static final NativeCallResult SUCCESS = new NativeCallResult();
 
     private static final String SUCCESS_MESSAGE = "Successful call.";
     private final int errorCode;
     private final String errorMessage;
 
-    private NativeCallResult()
-    {
-        this( NativeAccess.SUCCESS, SUCCESS_MESSAGE );
+    private NativeCallResult() {
+        this(NativeAccess.SUCCESS, SUCCESS_MESSAGE);
     }
 
-    public NativeCallResult( int errorCode, String errorMessage )
-    {
+    public NativeCallResult(int errorCode, String errorMessage) {
         this.errorCode = errorCode;
         this.errorMessage = errorMessage;
     }
 
-    public boolean isError()
-    {
+    public boolean isError() {
         return errorCode != NativeAccess.SUCCESS;
     }
 
-    public int getErrorCode()
-    {
+    public int getErrorCode() {
         return errorCode;
     }
 
-    public String getErrorMessage()
-    {
+    public String getErrorMessage() {
         return errorMessage;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "ErrorCode=" + errorCode + ", errorMessage='" + errorMessage + '\'';
     }
 }

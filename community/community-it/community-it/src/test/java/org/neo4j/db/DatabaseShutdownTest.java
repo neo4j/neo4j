@@ -19,13 +19,15 @@
  */
 package org.neo4j.db;
 
-import org.eclipse.collections.api.set.ImmutableSet;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-
+import org.eclipse.collections.api.set.ImmutableSet;
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -55,87 +57,88 @@ import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-
 @EphemeralNeo4jLayoutExtension
-class DatabaseShutdownTest
-{
+class DatabaseShutdownTest {
     @Inject
     private FileSystemAbstraction fs;
+
     @Inject
     private DatabaseLayout databaseLayout;
 
     @Test
-    void shouldShutdownCorrectlyWhenCheckPointingOnShutdownFails()
-    {
+    void shouldShutdownCorrectlyWhenCheckPointingOnShutdownFails() {
         TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush factory =
-                new TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush( databaseLayout.databaseDirectory(), fs );
+                new TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush(
+                        databaseLayout.databaseDirectory(), fs);
         DatabaseManagementService managementService = factory.build();
-        GraphDatabaseAPI databaseService = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        DatabaseStateService dbStateService = databaseService.getDependencyResolver().resolveDependency( DatabaseStateService.class );
-        factory.setFailFlush( true );
+        GraphDatabaseAPI databaseService = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+        DatabaseStateService dbStateService =
+                databaseService.getDependencyResolver().resolveDependency(DatabaseStateService.class);
+        factory.setFailFlush(true);
         managementService.shutdown();
-        assertTrue( dbStateService.causeOfFailure( databaseService.databaseId() ).isPresent() );
-        assertEquals( LifecycleStatus.SHUTDOWN, factory.getDatabaseStatus() );
+        assertTrue(dbStateService.causeOfFailure(databaseService.databaseId()).isPresent());
+        assertEquals(LifecycleStatus.SHUTDOWN, factory.getDatabaseStatus());
     }
 
     @Test
-    void invokeDatabaseShutdownListenersOnShutdown()
-    {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).setFileSystem( fs ).build();
+    void invokeDatabaseShutdownListenersOnShutdown() {
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(databaseLayout)
+                .setFileSystem(fs)
+                .build();
         ShutdownListenerDatabaseEventListener shutdownHandler = new ShutdownListenerDatabaseEventListener();
-        managementService.registerDatabaseEventListener( shutdownHandler );
+        managementService.registerDatabaseEventListener(shutdownHandler);
         managementService.shutdown();
 
-        assertEquals( 2, shutdownHandler.shutdownCounter() );
+        assertEquals(2, shutdownHandler.shutdownCounter());
     }
 
-    private static class TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush extends TestDatabaseManagementServiceBuilder
-    {
+    private static class TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush
+            extends TestDatabaseManagementServiceBuilder {
         private final FileSystemAbstraction fs;
         private LifeSupport globalLife;
         private volatile boolean failFlush;
 
-        TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush( Path homeDirectory, FileSystemAbstraction fs )
-        {
-            super( homeDirectory );
+        TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush(Path homeDirectory, FileSystemAbstraction fs) {
+            super(homeDirectory);
             this.fs = fs;
         }
 
         @Override
-        protected DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
-        {
-            return new DatabaseManagementServiceFactory( DbmsInfo.COMMUNITY, CommunityEditionModule::new )
-            {
+        protected DatabaseManagementService newDatabaseManagementService(
+                Config config, ExternalDependencies dependencies) {
+            return new DatabaseManagementServiceFactory(DbmsInfo.COMMUNITY, CommunityEditionModule::new) {
 
                 @Override
-                protected GlobalModule createGlobalModule( Config config, ExternalDependencies dependencies )
-                {
-                    GlobalModule globalModule = new GlobalModule( config, dbmsInfo, dependencies )
-                    {
+                protected GlobalModule createGlobalModule(Config config, ExternalDependencies dependencies) {
+                    GlobalModule globalModule = new GlobalModule(config, dbmsInfo, dependencies) {
                         @Override
-                        protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers,
-                                JobScheduler jobScheduler, SystemNanoClock clock, MemoryPools memoryPools )
-                        {
-                            PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers, jobScheduler, clock, memoryPools );
-                            return new DelegatingPageCache( pageCache )
-                            {
+                        protected PageCache createPageCache(
+                                FileSystemAbstraction fileSystem,
+                                Config config,
+                                LogService logging,
+                                Tracers tracers,
+                                JobScheduler jobScheduler,
+                                SystemNanoClock clock,
+                                MemoryPools memoryPools) {
+                            PageCache pageCache = super.createPageCache(
+                                    fileSystem, config, logging, tracers, jobScheduler, clock, memoryPools);
+                            return new DelegatingPageCache(pageCache) {
                                 @Override
-                                public PagedFile map( Path path, int pageSize, String databaseName,
-                                        ImmutableSet<OpenOption> openOptions, IOController ioController ) throws IOException
-                                {
-                                    PagedFile pagedFile = super.map( path, pageSize, databaseName, openOptions, ioController );
-                                    return new DelegatingPagedFile( pagedFile )
-                                    {
+                                public PagedFile map(
+                                        Path path,
+                                        int pageSize,
+                                        String databaseName,
+                                        ImmutableSet<OpenOption> openOptions,
+                                        IOController ioController)
+                                        throws IOException {
+                                    PagedFile pagedFile =
+                                            super.map(path, pageSize, databaseName, openOptions, ioController);
+                                    return new DelegatingPagedFile(pagedFile) {
                                         @Override
-                                        public void flushAndForce() throws IOException
-                                        {
-                                            if ( failFlush )
-                                            {
+                                        public void flushAndForce() throws IOException {
+                                            if (failFlush) {
                                                 // this is simulating a failing check pointing on shutdown
-                                                throw new IOException( "Boom!" );
+                                                throw new IOException("Boom!");
                                             }
                                             super.flushAndForce();
                                         }
@@ -145,40 +148,34 @@ class DatabaseShutdownTest
                         }
 
                         @Override
-                        protected FileSystemAbstraction createFileSystemAbstraction()
-                        {
+                        protected FileSystemAbstraction createFileSystemAbstraction() {
                             return fs;
                         }
                     };
                     globalLife = globalModule.getGlobalLife();
                     return globalModule;
                 }
-            }.build( config, dependencies );
+            }.build(config, dependencies);
         }
 
-        LifecycleStatus getDatabaseStatus()
-        {
+        LifecycleStatus getDatabaseStatus() {
             return globalLife.getStatus();
         }
 
-        void setFailFlush( boolean failFlush )
-        {
+        void setFailFlush(boolean failFlush) {
             this.failFlush = failFlush;
         }
     }
 
-    private static class ShutdownListenerDatabaseEventListener extends DatabaseEventListenerAdapter
-    {
+    private static class ShutdownListenerDatabaseEventListener extends DatabaseEventListenerAdapter {
         private int shutdownCounter;
 
         @Override
-        public void databaseShutdown( DatabaseEventContext eventContext )
-        {
+        public void databaseShutdown(DatabaseEventContext eventContext) {
             shutdownCounter++;
         }
 
-        int shutdownCounter()
-        {
+        int shutdownCounter() {
             return shutdownCounter;
         }
     }

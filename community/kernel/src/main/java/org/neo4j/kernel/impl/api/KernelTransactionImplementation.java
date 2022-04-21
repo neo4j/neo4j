@@ -19,6 +19,21 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static java.lang.Thread.currentThread;
+import static java.util.Collections.emptyMap;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static org.apache.commons.lang3.StringUtils.defaultString;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
+import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.getTraceProvider;
+import static org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace.NONE;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
@@ -27,7 +42,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
-
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
@@ -128,23 +142,7 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 
-import static java.lang.Thread.currentThread;
-import static java.util.Collections.emptyMap;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
-import static org.apache.commons.lang3.StringUtils.EMPTY;
-import static org.apache.commons.lang3.StringUtils.defaultString;
-import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
-import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
-import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
-import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
-import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.getTraceProvider;
-import static org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace.NONE;
-import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
-
-public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder, ExecutionStatistics
-{
+public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder, ExecutionStatistics {
     /*
      * IMPORTANT:
      * This class is pooled and re-used. If you add *any* state to it, you *must* make sure that:
@@ -208,7 +206,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private long transactionId;
     private long commitTime;
     private volatile ClientConnectionInfo clientInfo;
-    private volatile Map<String,Object> userMetaData;
+    private volatile Map<String, Object> userMetaData;
     private volatile String statusDetails;
     private final AllStoreHolder allStoreHolder;
     private final Operations operations;
@@ -227,6 +225,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * instances are pooled.
      */
     private final Lock terminationReleaseLock = new ReentrantLock();
+
     private KernelTransactionMonitor kernelTransactionMonitor;
     private final StoreCursors transactionalCursors;
 
@@ -236,72 +235,107 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private volatile InnerTransactionHandlerImpl innerTransactionHandler;
 
-    public KernelTransactionImplementation( Config config,
-            DatabaseTransactionEventListeners eventListeners, ConstraintIndexCreator constraintIndexCreator, GlobalProcedures globalProcedures,
-            TransactionCommitProcess commitProcess, TransactionMonitor transactionMonitor,
-            Pool<KernelTransactionImplementation> pool, SystemNanoClock clock,
-            AtomicReference<CpuClock> cpuClockRef, DatabaseTracers tracers,
-            StorageEngine storageEngine, AccessCapabilityFactory accessCapabilityFactory,
-            CursorContextFactory contextFactory, CollectionsFactorySupplier collectionsFactorySupplier,
-            ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, IndexingService indexingService,
-            IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
-            NamedDatabaseId namedDatabaseId, LeaseService leaseService, ScopedMemoryPool transactionMemoryPool,
-            DatabaseReadOnlyChecker readOnlyDatabaseChecker, TransactionExecutionMonitor transactionExecutionMonitor,
-            AbstractSecurityLog securityLog, KernelVersionRepository kernelVersionRepository, DbmsRuntimeRepository dbmsRuntimeRepository,
-            Locks.Client lockClient, KernelTransactions kernelTransactions, LogProvider internalLogProvider )
-    {
+    public KernelTransactionImplementation(
+            Config config,
+            DatabaseTransactionEventListeners eventListeners,
+            ConstraintIndexCreator constraintIndexCreator,
+            GlobalProcedures globalProcedures,
+            TransactionCommitProcess commitProcess,
+            TransactionMonitor transactionMonitor,
+            Pool<KernelTransactionImplementation> pool,
+            SystemNanoClock clock,
+            AtomicReference<CpuClock> cpuClockRef,
+            DatabaseTracers tracers,
+            StorageEngine storageEngine,
+            AccessCapabilityFactory accessCapabilityFactory,
+            CursorContextFactory contextFactory,
+            CollectionsFactorySupplier collectionsFactorySupplier,
+            ConstraintSemantics constraintSemantics,
+            SchemaState schemaState,
+            TokenHolders tokenHolders,
+            IndexingService indexingService,
+            IndexStatisticsStore indexStatisticsStore,
+            Dependencies dependencies,
+            NamedDatabaseId namedDatabaseId,
+            LeaseService leaseService,
+            ScopedMemoryPool transactionMemoryPool,
+            DatabaseReadOnlyChecker readOnlyDatabaseChecker,
+            TransactionExecutionMonitor transactionExecutionMonitor,
+            AbstractSecurityLog securityLog,
+            KernelVersionRepository kernelVersionRepository,
+            DbmsRuntimeRepository dbmsRuntimeRepository,
+            Locks.Client lockClient,
+            KernelTransactions kernelTransactions,
+            LogProvider internalLogProvider) {
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.contextFactory = contextFactory;
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
-        long heapGrabSize = config.get( GraphDatabaseInternalSettings.initial_transaction_heap_grab_size );
-        this.memoryTracker = config.get( memory_tracking )
-                             ? new LocalMemoryTracker( transactionMemoryPool, 0, heapGrabSize,
-                                     memory_transaction_max_size.name(), () -> !closed, memoryLeakLogger( internalLogProvider.getLog( getClass() ) ) )
-                             : EmptyMemoryTracker.INSTANCE;
+        long heapGrabSize = config.get(GraphDatabaseInternalSettings.initial_transaction_heap_grab_size);
+        this.memoryTracker = config.get(memory_tracking)
+                ? new LocalMemoryTracker(
+                        transactionMemoryPool,
+                        0,
+                        heapGrabSize,
+                        memory_transaction_max_size.name(),
+                        () -> !closed,
+                        memoryLeakLogger(internalLogProvider.getLog(getClass())))
+                : EmptyMemoryTracker.INSTANCE;
         this.eventListeners = eventListeners;
         this.constraintIndexCreator = constraintIndexCreator;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
         this.transactionExecutionMonitor = transactionExecutionMonitor;
         this.storageReader = storageEngine.newReader();
-        this.commandCreationContext = storageEngine.newCommandCreationContext( memoryTracker );
+        this.commandCreationContext = storageEngine.newCommandCreationContext(memoryTracker);
         this.namedDatabaseId = namedDatabaseId;
         this.storageEngine = storageEngine;
         this.pool = pool;
-        this.clocks = new ClockContext( clock );
+        this.clocks = new ClockContext(clock);
         this.transactionTracer = tracers.getDatabaseTracer();
         this.leaseService = leaseService;
-        this.currentStatement = new KernelStatement( this, tracers.getLockTracer(), this.clocks, cpuClockRef, namedDatabaseId, config );
-        this.statistics = new Statistics( this, cpuClockRef, config.get( GraphDatabaseInternalSettings.enable_transaction_heap_allocation_tracking ) );
+        this.currentStatement =
+                new KernelStatement(this, tracers.getLockTracer(), this.clocks, cpuClockRef, namedDatabaseId, config);
+        this.statistics = new Statistics(
+                this,
+                cpuClockRef,
+                config.get(GraphDatabaseInternalSettings.enable_transaction_heap_allocation_tracking));
         this.userMetaData = emptyMap();
         this.statusDetails = EMPTY;
         this.constraintSemantics = constraintSemantics;
-        this.transactionalCursors = storageEngine.createStorageCursors( CursorContext.NULL_CONTEXT );
-        StorageLocks storageLocks = storageEngine.createStorageLocks( lockClient );
-        DefaultPooledCursors cursors = new DefaultPooledCursors( storageReader, transactionalCursors, config );
-        this.securityAuthorizationHandler = new SecurityAuthorizationHandler( securityLog );
-        this.allStoreHolder = new AllStoreHolder( storageReader, this, storageLocks, cursors, globalProcedures, schemaState,
-                indexingService, indexStatisticsStore, dependencies, memoryTracker );
-        this.operations =
-                new Operations(
-                        allStoreHolder,
-                        storageReader,
-                        new IndexTxStateUpdater( storageReader, allStoreHolder, indexingService ),
-                        commandCreationContext,
-                        storageLocks,
-                        this,
-                        new KernelToken( storageReader, commandCreationContext, this, tokenHolders ),
-                        cursors,
-                        constraintIndexCreator,
-                        constraintSemantics,
-                        indexingService,
-                        config, memoryTracker,
-                        kernelVersionRepository,
-                        dbmsRuntimeRepository
-                );
-        traceProvider = getTraceProvider( config );
-        transactionHeapBytesLimit = config.get( memory_transaction_max_size );
-        registerConfigChangeListeners( config );
+        this.transactionalCursors = storageEngine.createStorageCursors(CursorContext.NULL_CONTEXT);
+        StorageLocks storageLocks = storageEngine.createStorageLocks(lockClient);
+        DefaultPooledCursors cursors = new DefaultPooledCursors(storageReader, transactionalCursors, config);
+        this.securityAuthorizationHandler = new SecurityAuthorizationHandler(securityLog);
+        this.allStoreHolder = new AllStoreHolder(
+                storageReader,
+                this,
+                storageLocks,
+                cursors,
+                globalProcedures,
+                schemaState,
+                indexingService,
+                indexStatisticsStore,
+                dependencies,
+                memoryTracker);
+        this.operations = new Operations(
+                allStoreHolder,
+                storageReader,
+                new IndexTxStateUpdater(storageReader, allStoreHolder, indexingService),
+                commandCreationContext,
+                storageLocks,
+                this,
+                new KernelToken(storageReader, commandCreationContext, this, tokenHolders),
+                cursors,
+                constraintIndexCreator,
+                constraintSemantics,
+                indexingService,
+                config,
+                memoryTracker,
+                kernelVersionRepository,
+                dbmsRuntimeRepository);
+        traceProvider = getTraceProvider(config);
+        transactionHeapBytesLimit = config.get(memory_transaction_max_size);
+        registerConfigChangeListeners(config);
         this.config = config;
         this.collectionsFactory = collectionsFactorySupplier.create();
         this.lockClient = lockClient;
@@ -311,19 +345,24 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     /**
      * Reset this transaction to a vanilla state, turning it into a logically new transaction.
      */
-    public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp, Type type,
-            SecurityContext frozenSecurityContext, long transactionTimeout, long userTransactionId, ClientConnectionInfo clientInfo )
-    {
+    public KernelTransactionImplementation initialize(
+            long lastCommittedTx,
+            long lastTimeStamp,
+            Type type,
+            SecurityContext frozenSecurityContext,
+            long transactionTimeout,
+            long userTransactionId,
+            ClientConnectionInfo clientInfo) {
         assert memoryTracker.estimatedHeapMemory() == 0;
         assert memoryTracker.usedNativeMemory() == 0;
-        this.cursorContext = contextFactory.create( TRANSACTION_TAG );
-        this.transactionalCursors.reset( cursorContext );
-        this.accessCapability = accessCapabilityFactory.newAccessCapability( readOnlyDatabaseChecker );
+        this.cursorContext = contextFactory.create(TRANSACTION_TAG);
+        this.transactionalCursors.reset(cursorContext);
+        this.accessCapability = accessCapabilityFactory.newAccessCapability(readOnlyDatabaseChecker);
         this.kernelTransactionMonitor = KernelTransaction.NO_MONITOR;
         this.type = type;
         this.userTransactionId = userTransactionId;
         this.leaseClient = leaseService.newClient();
-        this.lockClient.initialize( leaseClient, userTransactionId, memoryTracker, config );
+        this.lockClient.initialize(leaseClient, userTransactionId, memoryTracker, config);
         this.terminationReason = null;
         this.closing = false;
         this.closed = false;
@@ -335,93 +374,78 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.timeoutMillis = transactionTimeout;
         this.lastTransactionIdWhenStarted = lastCommittedTx;
         this.lastTransactionTimestampWhenStarted = lastTimeStamp;
-        this.transactionEvent = transactionTracer.beginTransaction( cursorContext );
+        this.transactionEvent = transactionTracer.beginTransaction(cursorContext);
         this.securityContext = frozenSecurityContext;
         this.transactionId = NOT_COMMITTED_TRANSACTION_ID;
         this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;
         this.clientInfo = clientInfo;
-        this.statistics.init( currentThread().getId(), cursorContext );
-        this.commandCreationContext.initialize( cursorContext, transactionalCursors );
-        this.currentStatement.initialize( lockClient, cursorContext, startTimeMillis );
-        this.operations.initialize( cursorContext );
+        this.statistics.init(currentThread().getId(), cursorContext);
+        this.commandCreationContext.initialize(cursorContext, transactionalCursors);
+        this.currentStatement.initialize(lockClient, cursorContext, startTimeMillis);
+        this.operations.initialize(cursorContext);
         this.initializationTrace = traceProvider.getTraceInfo();
-        this.memoryTracker.setLimit( transactionHeapBytesLimit );
-        this.innerTransactionHandler = new InnerTransactionHandlerImpl( kernelTransactions );
+        this.memoryTracker.setLimit(transactionHeapBytesLimit);
+        this.innerTransactionHandler = new InnerTransactionHandlerImpl(kernelTransactions);
         return this;
     }
 
     @Override
-    public void bindToUserTransaction( InternalTransaction internalTransaction )
-    {
+    public void bindToUserTransaction(InternalTransaction internalTransaction) {
         this.internalTransaction = internalTransaction;
     }
 
     @Override
-    public InternalTransaction internalTransaction()
-    {
+    public InternalTransaction internalTransaction() {
         return internalTransaction;
     }
 
     @Override
-    public long startTime()
-    {
+    public long startTime() {
         return startTimeMillis;
     }
 
     @Override
-    public long startTimeNanos()
-    {
+    public long startTimeNanos() {
         return startTimeNanos;
     }
 
     @Override
-    public long timeout()
-    {
+    public long timeout() {
         return timeoutMillis;
     }
 
     @Override
-    public long lastTransactionIdWhenStarted()
-    {
+    public long lastTransactionIdWhenStarted() {
         return lastTransactionIdWhenStarted;
     }
 
-    public void success()
-    {
+    public void success() {
         this.success = true;
     }
 
-    boolean isSuccess()
-    {
+    boolean isSuccess() {
         return success;
     }
 
     @Override
-    public boolean canCommit()
-    {
+    public boolean canCommit() {
         return success && !failure && terminationReason == null;
     }
 
-    public void failure()
-    {
+    public void failure() {
         failure = true;
     }
 
     @Override
-    public Optional<Status> getReasonIfTerminated()
-    {
-        return Optional.ofNullable( terminationReason );
+    public Optional<Status> getReasonIfTerminated() {
+        return Optional.ofNullable(terminationReason);
     }
 
-    boolean markForTermination( long expectedUserTransactionId, Status reason )
-    {
+    boolean markForTermination(long expectedUserTransactionId, Status reason) {
         terminationReleaseLock.lock();
-        try
-        {
-            return expectedUserTransactionId == userTransactionId && markForTerminationIfPossible( reason );
-        }
-        finally
-        {
+        try {
+            return expectedUserTransactionId == userTransactionId && markForTerminationIfPossible(reason);
+        } finally {
             terminationReleaseLock.unlock();
         }
     }
@@ -433,77 +457,62 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * {@link #close()} and {@link #reset()} calls.
      */
     @Override
-    public void markForTermination( Status reason )
-    {
+    public void markForTermination(Status reason) {
         terminationReleaseLock.lock();
-        try
-        {
-            markForTerminationIfPossible( reason );
-        }
-        finally
-        {
+        try {
+            markForTerminationIfPossible(reason);
+        } finally {
             terminationReleaseLock.unlock();
         }
     }
 
     @Override
-    public boolean isSchemaTransaction()
-    {
+    public boolean isSchemaTransaction() {
         return writeState == TransactionWriteState.SCHEMA;
     }
 
     @Override
-    public CursorContext cursorContext()
-    {
+    public CursorContext cursorContext() {
         return cursorContext;
     }
 
     @Override
-    public ExecutionContext createExecutionContext()
-    {
-        return new ThreadExecutionContext( this, contextFactory, storageEngine, config );
+    public ExecutionContext createExecutionContext() {
+        return new ThreadExecutionContext(this, contextFactory, storageEngine, config);
     }
 
     @Override
-    public QueryContext queryContext()
-    {
+    public QueryContext queryContext() {
         return operations.queryContext();
     }
 
     @Override
-    public StoreCursors storeCursors()
-    {
+    public StoreCursors storeCursors() {
         return transactionalCursors;
     }
 
     @Override
-    public MemoryTracker memoryTracker()
-    {
+    public MemoryTracker memoryTracker() {
         return memoryTracker;
     }
 
-    private boolean markForTerminationIfPossible( Status reason )
-    {
-        if ( canBeTerminated() )
-        {
+    private boolean markForTerminationIfPossible(Status reason) {
+        if (canBeTerminated()) {
             var innerTransactionHandler = this.innerTransactionHandler;
-            if ( innerTransactionHandler != null )
-            {
-                innerTransactionHandler.terminateInnerTransactions( reason );
+            if (innerTransactionHandler != null) {
+                innerTransactionHandler.terminateInnerTransactions(reason);
             }
             failure = true;
             terminationReason = reason;
-            if ( lockClient != null )
-            {
+            if (lockClient != null) {
                 lockClient.stop();
             }
-            transactionMonitor.transactionTerminated( hasTxStateWithChanges() );
+            transactionMonitor.transactionTerminated(hasTxStateWithChanges());
 
             var internalTransaction = this.internalTransaction;
 
-            if ( internalTransaction != null )
-            {
-                internalTransaction.terminate( reason );
+            if (internalTransaction != null) {
+                internalTransaction.terminate(reason);
             }
 
             return true;
@@ -512,194 +521,162 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public boolean isOpen()
-    {
+    public boolean isOpen() {
         return !closed && !closing;
     }
 
     @Override
-    public SecurityAuthorizationHandler securityAuthorizationHandler()
-    {
+    public SecurityAuthorizationHandler securityAuthorizationHandler() {
         return securityAuthorizationHandler;
     }
 
     @Override
-    public SecurityContext securityContext()
-    {
-        if ( securityContext == null )
-        {
+    public SecurityContext securityContext() {
+        if (securityContext == null) {
             throw new NotInTransactionException();
         }
         return securityContext;
     }
 
     @Override
-    public AuthSubject subjectOrAnonymous()
-    {
+    public AuthSubject subjectOrAnonymous() {
         SecurityContext context = this.securityContext;
         return context == null ? AuthSubject.ANONYMOUS : context.subject();
     }
 
     @Override
-    public void setMetaData( Map<String, Object> data )
-    {
+    public void setMetaData(Map<String, Object> data) {
         assertOpen();
         this.userMetaData = data;
     }
 
     @Override
-    public Map<String, Object> getMetaData()
-    {
+    public Map<String, Object> getMetaData() {
         return userMetaData;
     }
 
     @Override
-    public void setStatusDetails( String statusDetails )
-    {
+    public void setStatusDetails(String statusDetails) {
         assertOpen();
         this.statusDetails = statusDetails;
     }
 
     @Override
-    public String statusDetails()
-    {
+    public String statusDetails() {
         var details = statusDetails;
-        return defaultString( details, EMPTY );
+        return defaultString(details, EMPTY);
     }
 
     @Override
-    public KernelStatement acquireStatement()
-    {
+    public KernelStatement acquireStatement() {
         assertOpen();
         currentStatement.acquire();
         return currentStatement;
     }
 
     @Override
-    public IndexDescriptor indexUniqueCreate( IndexPrototype prototype )
-    {
-        return operations.indexUniqueCreate( prototype );
+    public IndexDescriptor indexUniqueCreate(IndexPrototype prototype) {
+        return operations.indexUniqueCreate(prototype);
     }
 
     @Override
-    public long pageHits()
-    {
+    public long pageHits() {
         return cursorContext.getCursorTracer().hits();
     }
 
     @Override
-    public long pageFaults()
-    {
+    public long pageFaults() {
         return cursorContext.getCursorTracer().faults();
     }
 
-    Optional<ExecutingQuery> executingQuery()
-    {
+    Optional<ExecutingQuery> executingQuery() {
         return currentStatement.executingQuery();
     }
 
-    private void upgradeToDataWrites() throws InvalidTransactionTypeKernelException
-    {
+    private void upgradeToDataWrites() throws InvalidTransactionTypeKernelException {
         writeState = writeState.upgradeToDataWrites();
     }
 
-    private void upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
-    {
+    private void upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException {
         writeState = writeState.upgradeToSchemaWrites();
     }
 
-    private void dropCreatedConstraintIndexes() throws TransactionFailureException
-    {
-        if ( hasTxStateWithChanges() )
-        {
+    private void dropCreatedConstraintIndexes() throws TransactionFailureException {
+        if (hasTxStateWithChanges()) {
             Iterator<IndexDescriptor> createdIndexIds = txState().constraintIndexesCreatedInTx();
-            while ( createdIndexIds.hasNext() )
-            {
+            while (createdIndexIds.hasNext()) {
                 IndexDescriptor createdIndex = createdIndexIds.next();
-                constraintIndexCreator.dropUniquenessConstraintIndex( createdIndex );
+                constraintIndexCreator.dropUniquenessConstraintIndex(createdIndex);
             }
         }
     }
 
     @Override
-    public TransactionState txState()
-    {
-        if ( txState == null )
-        {
+    public TransactionState txState() {
+        if (txState == null) {
             leaseClient.ensureValid();
             readOnlyDatabaseChecker.check();
             transactionMonitor.upgradeToWriteTransaction();
-            txState = new TxState( collectionsFactory, memoryTracker, storageEngine.transactionStateBehaviour() );
+            txState = new TxState(collectionsFactory, memoryTracker, storageEngine.transactionStateBehaviour());
         }
         return txState;
     }
 
     @Override
-    public boolean hasTxStateWithChanges()
-    {
+    public boolean hasTxStateWithChanges() {
         return txState != null && txState.hasChanges();
     }
 
-    private void markAsClosed()
-    {
+    private void markAsClosed() {
         assertTransactionOpen();
         closed = true;
         closeCurrentStatementIfAny();
     }
 
-    private void closeCurrentStatementIfAny()
-    {
+    private void closeCurrentStatementIfAny() {
         currentStatement.forceClose();
     }
 
-    private void assertTransactionNotClosing()
-    {
-        if ( closing )
-        {
-            throw new IllegalStateException( "This transaction is already being closed." );
+    private void assertTransactionNotClosing() {
+        if (closing) {
+            throw new IllegalStateException("This transaction is already being closed.");
         }
     }
 
-    private void assertTransactionOpen()
-    {
-        if ( closed )
-        {
-            throw new NotInTransactionException( "This transaction has already been closed." );
+    private void assertTransactionOpen() {
+        if (closed) {
+            throw new NotInTransactionException("This transaction has already been closed.");
         }
     }
 
     @Override
-    public void assertOpen()
-    {
+    public void assertOpen() {
         Status reason = this.terminationReason;
-        if ( reason != null )
-        {
-            throw new TransactionTerminatedException( reason );
+        if (reason != null) {
+            throw new TransactionTerminatedException(reason);
         }
         assertTransactionOpen();
     }
 
-    private boolean hasChanges()
-    {
+    private boolean hasChanges() {
         return hasTxStateWithChanges();
     }
 
     @Override
-    public long commit( KernelTransactionMonitor kernelTransactionMonitor ) throws TransactionFailureException
-    {
+    public long commit(KernelTransactionMonitor kernelTransactionMonitor) throws TransactionFailureException {
         success();
         this.kernelTransactionMonitor = kernelTransactionMonitor;
         return closeTransaction();
     }
 
     @Override
-    public void rollback() throws TransactionFailureException
-    {
-        // we need to allow multiple rollback calls since its possible that as result of query execution engine will rollback the transaction
-        // and will throw exception. For cases when users will do rollback as result of that as well we need to support chain of rollback calls but
+    public void rollback() throws TransactionFailureException {
+        // we need to allow multiple rollback calls since its possible that as result of query execution engine will
+        // rollback the transaction
+        // and will throw exception. For cases when users will do rollback as result of that as well we need to support
+        // chain of rollback calls but
         // still fail on rollback, commit
-        if ( !isOpen() && failure )
-        {
+        if (!isOpen() && failure) {
             return;
         }
         failure();
@@ -707,66 +684,49 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public long closeTransaction() throws TransactionFailureException
-    {
+    public long closeTransaction() throws TransactionFailureException {
         assertTransactionOpen();
         assertTransactionNotClosing();
         // we assume that inner transaction have been closed before closing the outer transaction
         assertNoInnerTransactions();
         closing = true;
-        try
-        {
-            if ( canCommit() )
-            {
+        try {
+            if (canCommit()) {
                 return commitTransaction();
-            }
-            else
-            {
-                rollback( null );
+            } else {
+                rollback(null);
                 failOnNonExplicitRollbackIfNeeded();
                 return ROLLBACK_ID;
             }
-        }
-        catch ( TransactionFailureException e )
-        {
+        } catch (TransactionFailureException e) {
             throw e;
-        }
-        catch ( KernelException e )
-        {
-            throw new TransactionFailureException( e.status(), e, "Unexpected kernel exception" );
-        }
-        finally
-        {
-            try
-            {
+        } catch (KernelException e) {
+            throw new TransactionFailureException(e.status(), e, "Unexpected kernel exception");
+        } finally {
+            try {
                 closed = true;
                 closing = false;
-                transactionEvent.setSuccess( success );
-                transactionEvent.setFailure( failure );
-                transactionEvent.setTransactionWriteState( writeState.name() );
-                transactionEvent.setReadOnly( txState == null || !txState.hasChanges() );
+                transactionEvent.setSuccess(success);
+                transactionEvent.setFailure(failure);
+                transactionEvent.setTransactionWriteState(writeState.name());
+                transactionEvent.setReadOnly(txState == null || !txState.hasChanges());
                 transactionEvent.close();
-            }
-            finally
-            {
+            } finally {
                 reset();
             }
         }
     }
 
     @Override
-    public void close() throws TransactionFailureException
-    {
-        if ( isOpen() )
-        {
+    public void close() throws TransactionFailureException {
+        if (isOpen()) {
             closeTransaction();
         }
-        pool.release( this );
+        pool.release(this);
     }
 
     @Override
-    public boolean isClosing()
-    {
+    public boolean isClosing() {
         return closing;
     }
 
@@ -784,53 +744,48 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * @throws TransactionFailureException when execution failed
      * @throws TransactionTerminatedException when transaction was terminated
      */
-    private void failOnNonExplicitRollbackIfNeeded() throws TransactionFailureException
-    {
-        if ( success && isTerminated() )
-        {
-            throw new TransactionTerminatedException( terminationReason );
+    private void failOnNonExplicitRollbackIfNeeded() throws TransactionFailureException {
+        if (success && isTerminated()) {
+            throw new TransactionTerminatedException(terminationReason);
         }
-        if ( success )
-        {
+        if (success) {
             // Success was called, but also failure which means that the client code using this
             // transaction passed through a happy path, but the transaction was still marked as
             // failed for one or more reasons. Tell the user that although it looked happy it
             // wasn't committed, but was instead rolled back.
-            throw new TransactionFailureException( Status.Transaction.TransactionMarkedAsFailed,
-                    "Transaction rolled back even if marked as successful" );
+            throw new TransactionFailureException(
+                    Status.Transaction.TransactionMarkedAsFailed,
+                    "Transaction rolled back even if marked as successful");
         }
     }
 
-    private long commitTransaction() throws KernelException
-    {
+    private long commitTransaction() throws KernelException {
         boolean success = false;
         long txId = READ_ONLY_ID;
         TransactionListenersState listenersState = null;
-        try ( CommitEvent commitEvent = transactionEvent.beginCommitEvent() )
-        {
-            listenersState = eventListeners.beforeCommit( txState, this, storageReader );
-            if ( listenersState != null && listenersState.isFailed() )
-            {
+        try (CommitEvent commitEvent = transactionEvent.beginCommitEvent()) {
+            listenersState = eventListeners.beforeCommit(txState, this, storageReader);
+            if (listenersState != null && listenersState.isFailed()) {
                 Throwable cause = listenersState.failure();
-                if ( cause instanceof TransientFailureException )
-                {
+                if (cause instanceof TransientFailureException) {
                     throw (TransientFailureException) cause;
                 }
-                if ( cause instanceof Status.HasStatus )
-                {
-                    throw new TransactionFailureException( ((Status.HasStatus) cause).status(), cause, cause.getMessage() );
+                if (cause instanceof Status.HasStatus) {
+                    throw new TransactionFailureException(
+                            ((Status.HasStatus) cause).status(), cause, cause.getMessage());
                 }
-                throw new TransactionFailureException( Status.Transaction.TransactionHookFailed, cause, cause.getMessage() );
+                throw new TransactionFailureException(
+                        Status.Transaction.TransactionHookFailed, cause, cause.getMessage());
             }
 
             // Convert changes into commands and commit
-            if ( hasChanges() )
-            {
+            if (hasChanges()) {
                 forceThawLocks();
                 lockClient.prepareForCommit();
 
                 // Gather up commands from the various sources
-                HeapTrackingArrayList<StorageCommand> extractedCommands = HeapTrackingCollections.newArrayList( memoryTracker );
+                HeapTrackingArrayList<StorageCommand> extractedCommands =
+                        HeapTrackingCollections.newArrayList(memoryTracker);
                 storageEngine.createCommands(
                         extractedCommands,
                         txState,
@@ -842,7 +797,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         this::enforceConstraints,
                         cursorContext,
                         transactionalCursors,
-                        memoryTracker );
+                        memoryTracker);
 
                 /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
                  * if there are any changes imposed by this transaction. Some changes made inside a transaction undo
@@ -853,220 +808,176 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                  * and get right.... So to really make sure the transaction has changes we re-check by looking if we
                  * have produced any commands to add to the logical log.
                  */
-                if ( !extractedCommands.isEmpty() )
-                {
+                if (!extractedCommands.isEmpty()) {
                     // Finish up the whole transaction representation
                     PhysicalTransactionRepresentation transactionRepresentation =
-                            new PhysicalTransactionRepresentation( extractedCommands );
+                            new PhysicalTransactionRepresentation(extractedCommands);
                     long timeCommitted = clocks.systemClock().millis();
                     transactionRepresentation.setHeader(
-                            EMPTY_BYTE_ARRAY, startTimeMillis, lastTransactionIdWhenStarted, timeCommitted, leaseClient.leaseId(), securityContext.subject() );
+                            EMPTY_BYTE_ARRAY,
+                            startTimeMillis,
+                            lastTransactionIdWhenStarted,
+                            timeCommitted,
+                            leaseClient.leaseId(),
+                            securityContext.subject());
 
                     // Commit the transaction
                     success = true;
-                    TransactionToApply batch = new TransactionToApply( transactionRepresentation, cursorContext, transactionalCursors );
+                    TransactionToApply batch =
+                            new TransactionToApply(transactionRepresentation, cursorContext, transactionalCursors);
                     kernelTransactionMonitor.beforeApply();
-                    txId = commitProcess.commit( batch, commitEvent, INTERNAL );
+                    txId = commitProcess.commit(batch, commitEvent, INTERNAL);
                     commitTime = timeCommitted;
                 }
             }
             success = true;
             return txId;
-        }
-        catch ( ConstraintValidationException | CreateConstraintFailureException e )
-        {
-            throw new ConstraintViolationTransactionFailureException( e.getUserMessage( tokenRead() ), e );
-        }
-        finally
-        {
-            if ( !success )
-            {
-                rollback( listenersState );
-            }
-            else
-            {
+        } catch (ConstraintValidationException | CreateConstraintFailureException e) {
+            throw new ConstraintViolationTransactionFailureException(e.getUserMessage(tokenRead()), e);
+        } finally {
+            if (!success) {
+                rollback(listenersState);
+            } else {
                 transactionId = txId;
-                afterCommit( listenersState );
+                afterCommit(listenersState);
             }
-            transactionMonitor.addHeapTransactionSize( memoryTracker.heapHighWaterMark() );
-            transactionMonitor.addNativeTransactionSize( memoryTracker.usedNativeMemory() );
+            transactionMonitor.addHeapTransactionSize(memoryTracker.heapHighWaterMark());
+            transactionMonitor.addNativeTransactionSize(memoryTracker.usedNativeMemory());
         }
     }
 
-    private void rollback( TransactionListenersState listenersState ) throws KernelException
-    {
-        try
-        {
-            try
-            {
+    private void rollback(TransactionListenersState listenersState) throws KernelException {
+        try {
+            try {
                 dropCreatedConstraintIndexes();
+            } catch (IllegalStateException | SecurityException e) {
+                throw new TransactionFailureException(
+                        Status.Transaction.TransactionRollbackFailed, e, "Could not drop created constraint indexes");
             }
-            catch ( IllegalStateException | SecurityException e )
-            {
-                throw new TransactionFailureException( Status.Transaction.TransactionRollbackFailed, e,
-                        "Could not drop created constraint indexes" );
-            }
-        }
-        finally
-        {
-            afterRollback( listenersState );
+        } finally {
+            afterRollback(listenersState);
         }
     }
 
     @Override
-    public Read dataRead()
-    {
+    public Read dataRead() {
         return operations.dataRead();
     }
 
     @Override
-    public Write dataWrite() throws InvalidTransactionTypeKernelException
-    {
+    public Write dataWrite() throws InvalidTransactionTypeKernelException {
         accessCapability.assertCanWrite();
         upgradeToDataWrites();
         return operations;
     }
 
     @Override
-    public TokenWrite tokenWrite()
-    {
+    public TokenWrite tokenWrite() {
         accessCapability.assertCanWrite();
         return operations.token();
     }
 
     @Override
-    public Token token()
-    {
+    public Token token() {
         accessCapability.assertCanWrite();
         return operations.token();
     }
 
     @Override
-    public TokenRead tokenRead()
-    {
+    public TokenRead tokenRead() {
         return operations.token();
     }
 
     @Override
-    public SchemaRead schemaRead()
-    {
+    public SchemaRead schemaRead() {
         return operations.schemaRead();
     }
 
     @Override
-    public SchemaWrite schemaWrite() throws InvalidTransactionTypeKernelException
-    {
+    public SchemaWrite schemaWrite() throws InvalidTransactionTypeKernelException {
         accessCapability.assertCanWrite();
         upgradeToSchemaWrites();
-        return new RestrictedSchemaWrite( operations, securityContext(), securityAuthorizationHandler );
+        return new RestrictedSchemaWrite(operations, securityContext(), securityAuthorizationHandler);
     }
 
     @Override
-    public org.neo4j.internal.kernel.api.Locks locks()
-    {
-       return operations.locks();
+    public org.neo4j.internal.kernel.api.Locks locks() {
+        return operations.locks();
     }
 
     @Override
-    public void freezeLocks()
-    {
+    public void freezeLocks() {
         Locks.Client locks = lockClient;
-        if ( !(locks instanceof FrozenLockClient) )
-        {
-            this.lockClient = new FrozenLockClient( locks );
-        }
-        else
-        {
-            ((FrozenLockClient)locks).freeze();
+        if (!(locks instanceof FrozenLockClient)) {
+            this.lockClient = new FrozenLockClient(locks);
+        } else {
+            ((FrozenLockClient) locks).freeze();
         }
     }
 
     @Override
-    public void thawLocks() throws LocksNotFrozenException
-    {
+    public void thawLocks() throws LocksNotFrozenException {
         Locks.Client locks = lockClient;
-        if ( locks instanceof FrozenLockClient frozenLocks )
-        {
-            if ( frozenLocks.thaw() )
-            {
+        if (locks instanceof FrozenLockClient frozenLocks) {
+            if (frozenLocks.thaw()) {
                 lockClient = frozenLocks.getRealLockClient();
             }
-        }
-        else
-        {
+        } else {
             throw new LocksNotFrozenException();
         }
     }
 
-    private void forceThawLocks()
-    {
+    private void forceThawLocks() {
         Locks.Client locks = lockClient;
-        if ( locks instanceof FrozenLockClient )
-        {
+        if (locks instanceof FrozenLockClient) {
             lockClient = ((FrozenLockClient) locks).getRealLockClient();
         }
     }
 
-    public Locks.Client lockClient()
-    {
+    public Locks.Client lockClient() {
         assertOpen();
         return lockClient;
     }
 
     @Override
-    public CursorFactory cursors()
-    {
+    public CursorFactory cursors() {
         return operations.cursors();
     }
 
     @Override
-    public org.neo4j.internal.kernel.api.Procedures procedures()
-    {
+    public org.neo4j.internal.kernel.api.Procedures procedures() {
         return operations.procedures();
     }
 
     @Override
-    public ExecutionStatistics executionStatistics()
-    {
+    public ExecutionStatistics executionStatistics() {
         return this;
     }
 
-    public LockTracer lockTracer()
-    {
+    public LockTracer lockTracer() {
         return currentStatement.lockTracer();
     }
 
-    private void afterCommit( TransactionListenersState listenersState )
-    {
-        try
-        {
+    private void afterCommit(TransactionListenersState listenersState) {
+        try {
             markAsClosed();
-            eventListeners.afterCommit( listenersState );
-        }
-        finally
-        {
-            transactionMonitor.transactionFinished( true, hasTxStateWithChanges() );
-            transactionExecutionMonitor.commit( this );
+            eventListeners.afterCommit(listenersState);
+        } finally {
+            transactionMonitor.transactionFinished(true, hasTxStateWithChanges());
+            transactionExecutionMonitor.commit(this);
         }
     }
 
-    private void afterRollback( TransactionListenersState listenersState )
-    {
-        try
-        {
+    private void afterRollback(TransactionListenersState listenersState) {
+        try {
             markAsClosed();
-            eventListeners.afterRollback( listenersState );
-        }
-        finally
-        {
-            transactionMonitor.transactionFinished( false, hasTxStateWithChanges() );
-            if ( listenersState == null || listenersState.failure() == null )
-            {
-                transactionExecutionMonitor.rollback( this );
-            }
-            else
-            {
-                transactionExecutionMonitor.rollback( this, listenersState.failure() );
+            eventListeners.afterRollback(listenersState);
+        } finally {
+            transactionMonitor.transactionFinished(false, hasTxStateWithChanges());
+            if (listenersState == null || listenersState.failure() == null) {
+                transactionExecutionMonitor.rollback(this);
+            } else {
+                transactionExecutionMonitor.rollback(this, listenersState.failure());
             }
         }
     }
@@ -1074,8 +985,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     /**
      * Release resources for the current statement because it's being closed.
      */
-    void releaseStatementResources()
-    {
+    void releaseStatementResources() {
         allStoreHolder.release();
     }
 
@@ -1084,11 +994,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * This method is guarded by {@link #terminationReleaseLock} to coordinate concurrent
      * {@link #markForTermination(Status)} calls.
      */
-    private void reset()
-    {
+    private void reset() {
         terminationReleaseLock.lock();
-        try
-        {
+        try {
             forceThawLocks();
             lockClient.close();
             terminationReason = null;
@@ -1112,9 +1020,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             memoryTracker.reset();
             innerTransactionHandler.close();
             innerTransactionHandler = null;
-        }
-        finally
-        {
+        } finally {
             terminationReleaseLock.unlock();
         }
     }
@@ -1123,67 +1029,56 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * Transaction can be terminated only when it is not closed and not already terminated.
      * Otherwise termination does not make sense.
      */
-    private boolean canBeTerminated()
-    {
+    private boolean canBeTerminated() {
         return !closed && !isTerminated();
     }
 
     @Override
-    public boolean isTerminated()
-    {
+    public boolean isTerminated() {
         return terminationReason != null;
     }
 
     @Override
-    public long lastTransactionTimestampWhenStarted()
-    {
+    public long lastTransactionTimestampWhenStarted() {
         return lastTransactionTimestampWhenStarted;
     }
 
     @Override
-    public Type transactionType()
-    {
+    public Type transactionType() {
         return type;
     }
 
     @Override
-    public long getTransactionId()
-    {
-        if ( transactionId == NOT_COMMITTED_TRANSACTION_ID )
-        {
-            throw new IllegalStateException( "Transaction id is not assigned yet. " +
-                                             "It will be assigned during transaction commit." );
+    public long getTransactionId() {
+        if (transactionId == NOT_COMMITTED_TRANSACTION_ID) {
+            throw new IllegalStateException(
+                    "Transaction id is not assigned yet. " + "It will be assigned during transaction commit.");
         }
         return transactionId;
     }
 
     @Override
-    public long getCommitTime()
-    {
-        if ( commitTime == NOT_COMMITTED_TRANSACTION_COMMIT_TIME )
-        {
-            throw new IllegalStateException( "Transaction commit time is not assigned yet. " +
-                                             "It will be assigned during transaction commit." );
+    public long getCommitTime() {
+        if (commitTime == NOT_COMMITTED_TRANSACTION_COMMIT_TIME) {
+            throw new IllegalStateException(
+                    "Transaction commit time is not assigned yet. " + "It will be assigned during transaction commit.");
         }
         return commitTime;
     }
 
     @Override
-    public Revertable overrideWith( SecurityContext context )
-    {
+    public Revertable overrideWith(SecurityContext context) {
         SecurityContext oldContext = this.securityContext;
         this.securityContext = context;
         return () -> this.securityContext = oldContext;
     }
 
     @Override
-    public String toString()
-    {
-        return String.format( "KernelTransaction[lease:%d]", leaseClient.leaseId() );
+    public String toString() {
+        return String.format("KernelTransaction[lease:%d]", leaseClient.leaseId());
     }
 
-    public void dispose()
-    {
+    public void dispose() {
         storageReader.close();
     }
 
@@ -1195,62 +1090,58 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      *
      * @return the locks held by this transaction.
      */
-    public Stream<ActiveLock> activeLocks()
-    {
+    public Stream<ActiveLock> activeLocks() {
         Locks.Client locks = this.lockClient;
         return locks == null ? Stream.empty() : locks.activeLocks();
     }
 
     @Override
-    public long getUserTransactionId()
-    {
+    public long getUserTransactionId() {
         return userTransactionId;
     }
 
-    TransactionInitializationTrace getInitializationTrace()
-    {
+    TransactionInitializationTrace getInitializationTrace() {
         return initializationTrace;
     }
 
-    public Statistics getStatistics()
-    {
+    public Statistics getStatistics() {
         return statistics;
     }
 
-    private TxStateVisitor enforceConstraints( TxStateVisitor txStateVisitor )
-    {
-        return constraintSemantics.decorateTxStateVisitor( storageReader, operations.dataRead(), operations.cursors(), txState, txStateVisitor,
-                cursorContext, memoryTracker );
+    private TxStateVisitor enforceConstraints(TxStateVisitor txStateVisitor) {
+        return constraintSemantics.decorateTxStateVisitor(
+                storageReader,
+                operations.dataRead(),
+                operations.cursors(),
+                txState,
+                txStateVisitor,
+                cursorContext,
+                memoryTracker);
     }
 
     /**
      * @return transaction originator information.
      */
     @Override
-    public ClientConnectionInfo clientInfo()
-    {
+    public ClientConnectionInfo clientInfo() {
         return clientInfo;
     }
 
-    public StorageReader newStorageReader()
-    {
+    public StorageReader newStorageReader() {
         return storageEngine.newReader();
     }
 
-    public void addIndexDoDropToTxState( IndexDescriptor index )
-    {
-        txState().indexDoDrop( index );
+    public void addIndexDoDropToTxState(IndexDescriptor index) {
+        txState().indexDoDrop(index);
     }
 
     @Override
-    public String getDatabaseName()
-    {
+    public String getDatabaseName() {
         return namedDatabaseId.name();
     }
 
     @Override
-    public UUID getDatabaseId()
-    {
+    public UUID getDatabaseId() {
         return namedDatabaseId.databaseId().uuid();
     }
 
@@ -1258,38 +1149,32 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * WARNING! This method should only be called from DatabaseUpgradeTransactionHandler
      */
     @Override
-    public InjectedNLIUpgradeCallback injectedNLIUpgradeCallback()
-    {
-        return id ->
-        {
-            if ( txState.indexChanges().getRemoved().contains( IndexDescriptor.INJECTED_NLI ) )
-            {
-                txState.indexDoUnRemove( IndexDescriptor.INJECTED_NLI );
-                txState.indexDoDrop( IndexDescriptor.NLI_PROTOTYPE.materialise( id ) );
+    public InjectedNLIUpgradeCallback injectedNLIUpgradeCallback() {
+        return id -> {
+            if (txState.indexChanges().getRemoved().contains(IndexDescriptor.INJECTED_NLI)) {
+                txState.indexDoUnRemove(IndexDescriptor.INJECTED_NLI);
+                txState.indexDoDrop(IndexDescriptor.NLI_PROTOTYPE.materialise(id));
             }
         };
     }
 
     @Override
-    public InnerTransactionHandlerImpl getInnerTransactionHandler()
-    {
-        if ( innerTransactionHandler != null )
-        {
+    public InnerTransactionHandlerImpl getInnerTransactionHandler() {
+        if (innerTransactionHandler != null) {
             return this.innerTransactionHandler;
         }
-        throw new IllegalStateException( "Called getInnerTransactionHandler on inactive transaction" );
+        throw new IllegalStateException("Called getInnerTransactionHandler on inactive transaction");
     }
 
-    private void assertNoInnerTransactions() throws TransactionFailureException
-    {
-        if ( getInnerTransactionHandler().hasInnerTransaction() )
-        {
-            throw new TransactionFailureException( TransactionCommitFailed, "The transaction cannot be committed when it has open inner transactions." );
+    private void assertNoInnerTransactions() throws TransactionFailureException {
+        if (getInnerTransactionHandler().hasInnerTransaction()) {
+            throw new TransactionFailureException(
+                    TransactionCommitFailed,
+                    "The transaction cannot be committed when it has open inner transactions.");
         }
     }
 
-    public static class Statistics
-    {
+    public static class Statistics {
         private volatile long cpuTimeNanosWhenQueryStarted;
         private volatile long heapAllocatedBytesWhenQueryStarted;
         private volatile long waitingTimeNanos;
@@ -1300,45 +1185,44 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         private CpuClock cpuClock;
         private final HeapAllocation heapAllocation;
 
-        public Statistics( KernelTransactionImplementation transaction, AtomicReference<CpuClock> cpuClockRef, boolean heapAllocationTracking )
-        {
+        public Statistics(
+                KernelTransactionImplementation transaction,
+                AtomicReference<CpuClock> cpuClockRef,
+                boolean heapAllocationTracking) {
             this.transaction = transaction;
             this.cpuClockRef = cpuClockRef;
-            this.heapAllocation = heapAllocationTracking ? HeapAllocation.HEAP_ALLOCATION : HeapAllocation.NOT_AVAILABLE;
+            this.heapAllocation =
+                    heapAllocationTracking ? HeapAllocation.HEAP_ALLOCATION : HeapAllocation.NOT_AVAILABLE;
         }
 
-        protected void init( long threadId, CursorContext cursorContext )
-        {
+        protected void init(long threadId, CursorContext cursorContext) {
             this.cpuClock = cpuClockRef.get();
             this.transactionThreadId = threadId;
             this.cursorContext = cursorContext;
-            this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos( transactionThreadId );
-            this.heapAllocatedBytesWhenQueryStarted = heapAllocation.allocatedBytes( transactionThreadId );
+            this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos(transactionThreadId);
+            this.heapAllocatedBytesWhenQueryStarted = heapAllocation.allocatedBytes(transactionThreadId);
         }
 
         /**
          * Returns number of allocated bytes by current transaction.
          * @return number of allocated bytes by the thread.
          */
-        long heapAllocatedBytes()
-        {
-            long allocatedBytes = heapAllocation.allocatedBytes( transactionThreadId );
+        long heapAllocatedBytes() {
+            long allocatedBytes = heapAllocation.allocatedBytes(transactionThreadId);
             return (allocatedBytes < 0) ? -1 : allocatedBytes - heapAllocatedBytesWhenQueryStarted;
         }
 
         /**
          * @return estimated amount of used heap memory
          */
-        long estimatedHeapMemory()
-        {
+        long estimatedHeapMemory() {
             return transaction.memoryTracker().estimatedHeapMemory();
         }
 
         /**
          * @return amount of native memory
          */
-        long usedNativeMemory()
-        {
+        long usedNativeMemory() {
             return transaction.memoryTracker().usedNativeMemory();
         }
 
@@ -1346,18 +1230,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
          * Return CPU time used by current transaction in milliseconds
          * @return the current CPU time used by the transaction, in milliseconds.
          */
-        public long cpuTimeMillis()
-        {
-            long cpuTimeNanos = cpuClock.cpuTimeNanos( transactionThreadId );
-            return (cpuTimeNanos < 0) ? -1 : NANOSECONDS.toMillis( cpuTimeNanos - cpuTimeNanosWhenQueryStarted );
+        public long cpuTimeMillis() {
+            long cpuTimeNanos = cpuClock.cpuTimeNanos(transactionThreadId);
+            return (cpuTimeNanos < 0) ? -1 : NANOSECONDS.toMillis(cpuTimeNanos - cpuTimeNanosWhenQueryStarted);
         }
 
         /**
          * Return total number of page cache hits that current transaction performed
          * @return total page cache hits
          */
-        long totalTransactionPageCacheHits()
-        {
+        long totalTransactionPageCacheHits() {
             return cursorContext.getCursorTracer().hits();
         }
 
@@ -1365,8 +1247,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
          * Return total number of page cache faults that current transaction performed
          * @return total page cache faults
          */
-        long totalTransactionPageCacheFaults()
-        {
+        long totalTransactionPageCacheFaults() {
             return cursorContext.getCursorTracer().faults();
         }
 
@@ -1374,9 +1255,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
          * Report how long any particular query was waiting during it's execution
          * @param waitTimeNanos query waiting time in nanoseconds
          */
-        @SuppressWarnings( "NonAtomicOperationOnVolatileField" )
-        void addWaitingTime( long waitTimeNanos )
-        {
+        @SuppressWarnings("NonAtomicOperationOnVolatileField")
+        void addWaitingTime(long waitTimeNanos) {
             waitingTimeNanos += waitTimeNanos;
         }
 
@@ -1386,20 +1266,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
          * @return accumulated transaction waiting time
          * @param nowNanos current moment in nanoseconds
          */
-        long getWaitingTimeNanos( long nowNanos )
-        {
+        long getWaitingTimeNanos(long nowNanos) {
             Optional<ExecutingQuery> query = transaction.executingQuery();
             long waitingTime = waitingTimeNanos;
-            if ( query.isPresent() )
-            {
-                long latestQueryWaitingNanos = query.get().totalWaitingTimeNanos( nowNanos );
+            if (query.isPresent()) {
+                long latestQueryWaitingNanos = query.get().totalWaitingTimeNanos(nowNanos);
                 waitingTime = waitingTime + latestQueryWaitingNanos;
             }
             return waitingTime;
         }
 
-        void reset()
-        {
+        void reset() {
             cursorContext = CursorContext.NULL_CONTEXT;
             cpuTimeNanosWhenQueryStarted = 0;
             heapAllocatedBytesWhenQueryStarted = 0;
@@ -1409,40 +1286,36 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public ClockContext clocks()
-    {
+    public ClockContext clocks() {
         return clocks;
     }
 
     @Override
-    public NodeCursor ambientNodeCursor()
-    {
+    public NodeCursor ambientNodeCursor() {
         return operations.nodeCursor();
     }
 
     @Override
-    public RelationshipScanCursor ambientRelationshipCursor()
-    {
+    public RelationshipScanCursor ambientRelationshipCursor() {
         return operations.relationshipCursor();
     }
 
     @Override
-    public PropertyCursor ambientPropertyCursor()
-    {
+    public PropertyCursor ambientPropertyCursor() {
         return operations.propertyCursor();
     }
 
-    private void registerConfigChangeListeners( Config config )
-    {
-        config.addListener( transaction_tracing_level, ( before, after ) -> traceProvider = getTraceProvider( config ) );
-        config.addListener( transaction_sampling_percentage, ( before, after ) -> traceProvider = getTraceProvider( config ) );
-        config.addListener( memory_transaction_max_size, ( before, after ) -> transactionHeapBytesLimit = after );
+    private void registerConfigChangeListeners(Config config) {
+        config.addListener(transaction_tracing_level, (before, after) -> traceProvider = getTraceProvider(config));
+        config.addListener(
+                transaction_sampling_percentage, (before, after) -> traceProvider = getTraceProvider(config));
+        config.addListener(memory_transaction_max_size, (before, after) -> transactionHeapBytesLimit = after);
     }
 
-    private static LocalMemoryTracker.Monitor memoryLeakLogger( Log log )
-    {
+    private static LocalMemoryTracker.Monitor memoryLeakLogger(Log log) {
         return leakedNativeMemoryBytes -> log.warn(
-                "Potential direct memory leak. Expecting all allocated direct memory to be released, but still has " + leakedNativeMemoryBytes );
+                "Potential direct memory leak. Expecting all allocated direct memory to be released, but still has "
+                        + leakedNativeMemoryBytes);
     }
 
     /**
@@ -1453,35 +1326,28 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * is orthogonal to the SecurityContext which manages what the transaction or statement is allowed to do
      * based on authorization.
      */
-    private enum TransactionWriteState
-    {
+    private enum TransactionWriteState {
         NONE,
-        DATA
-                {
-                    @Override
-                    TransactionWriteState upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
-                    {
-                        throw new InvalidTransactionTypeKernelException(
-                                "Cannot perform schema updates in a transaction that has performed data updates." );
-                    }
-                },
-        SCHEMA
-                {
-                    @Override
-                    TransactionWriteState upgradeToDataWrites() throws InvalidTransactionTypeKernelException
-                    {
-                        throw new InvalidTransactionTypeKernelException(
-                                "Cannot perform data updates in a transaction that has performed schema updates." );
-                    }
-                };
+        DATA {
+            @Override
+            TransactionWriteState upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException {
+                throw new InvalidTransactionTypeKernelException(
+                        "Cannot perform schema updates in a transaction that has performed data updates.");
+            }
+        },
+        SCHEMA {
+            @Override
+            TransactionWriteState upgradeToDataWrites() throws InvalidTransactionTypeKernelException {
+                throw new InvalidTransactionTypeKernelException(
+                        "Cannot perform data updates in a transaction that has performed schema updates.");
+            }
+        };
 
-        TransactionWriteState upgradeToDataWrites() throws InvalidTransactionTypeKernelException
-        {
+        TransactionWriteState upgradeToDataWrites() throws InvalidTransactionTypeKernelException {
             return DATA;
         }
 
-        TransactionWriteState upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
-        {
+        TransactionWriteState upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException {
             return SCHEMA;
         }
     }

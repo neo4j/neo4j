@@ -19,6 +19,16 @@
  */
 package org.neo4j.storageengine.api;
 
+import static java.lang.Math.toIntExact;
+import static java.util.Collections.emptyIterator;
+import static org.apache.commons.lang3.ArrayUtils.contains;
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
+import static org.neo4j.internal.schema.IndexType.LOOKUP;
+import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
+import static org.neo4j.storageengine.api.LongReference.longReference;
+import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -26,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
@@ -48,234 +57,192 @@ import org.neo4j.token.api.TokenHolder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-import static java.lang.Math.toIntExact;
-import static java.util.Collections.emptyIterator;
-import static org.apache.commons.lang3.ArrayUtils.contains;
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
-import static org.neo4j.internal.schema.IndexType.LOOKUP;
-import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
-import static org.neo4j.storageengine.api.LongReference.longReference;
-import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
-
 /**
  * Implementation of {@link StorageReader} with focus on making testing the storage read cursors easy without resorting to mocking.
  */
-public class StubStorageCursors implements StorageReader
-{
+public class StubStorageCursors implements StorageReader {
     private static final long NO_ID = -1;
 
     private final AtomicLong nextPropertyId = new AtomicLong();
     private final AtomicLong nextTokenId = new AtomicLong();
-    private final TokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder(
-            ( name, internal ) -> toIntExact( nextTokenId.getAndIncrement() ), TYPE_PROPERTY_KEY );
+    private final TokenHolder propertyKeyTokenHolder =
+            new DelegatingTokenHolder((name, internal) -> toIntExact(nextTokenId.getAndIncrement()), TYPE_PROPERTY_KEY);
 
-    private final Map<Long,NodeData> nodeData = new HashMap<>();
-    private final Map<Long,PropertyData> propertyData = new HashMap<>();
-    private final Map<Long,RelationshipData> relationshipData = new HashMap<>();
+    private final Map<Long, NodeData> nodeData = new HashMap<>();
+    private final Map<Long, PropertyData> propertyData = new HashMap<>();
+    private final Map<Long, RelationshipData> relationshipData = new HashMap<>();
     private final Map<SchemaDescriptor, IndexDescriptor> indexDescriptorMap = new HashMap<>();
 
-    private static IndexDescriptor indexDescriptor( EntityType entityType, long id )
-    {
-        IndexPrototype indexPrototype = IndexPrototype
-                .forSchema( forAnyEntityTokens( entityType ) )
-                .withIndexType( LOOKUP )
-                .withIndexProvider( new IndexProviderDescriptor( "token-lookup", "1.0" ) );
-        indexPrototype = indexPrototype.withName( SchemaNameUtil.generateName( indexPrototype, new String[]{}, new String[]{} ) );
-        return indexPrototype.materialise( id );
+    private static IndexDescriptor indexDescriptor(EntityType entityType, long id) {
+        IndexPrototype indexPrototype = IndexPrototype.forSchema(forAnyEntityTokens(entityType))
+                .withIndexType(LOOKUP)
+                .withIndexProvider(new IndexProviderDescriptor("token-lookup", "1.0"));
+        indexPrototype =
+                indexPrototype.withName(SchemaNameUtil.generateName(indexPrototype, new String[] {}, new String[] {}));
+        return indexPrototype.materialise(id);
     }
 
-    public StubStorageCursors withTokenIndexes()
-    {
-        indexDescriptorMap.put( forAnyEntityTokens( EntityType.NODE ), indexDescriptor( EntityType.NODE, 1 ) );
-        indexDescriptorMap.put( forAnyEntityTokens( EntityType.RELATIONSHIP ), indexDescriptor( EntityType.RELATIONSHIP, 2 ) );
+    public StubStorageCursors withTokenIndexes() {
+        indexDescriptorMap.put(forAnyEntityTokens(EntityType.NODE), indexDescriptor(EntityType.NODE, 1));
+        indexDescriptorMap.put(
+                forAnyEntityTokens(EntityType.RELATIONSHIP), indexDescriptor(EntityType.RELATIONSHIP, 2));
         return this;
     }
 
-    public StubStorageCursors withoutTokenIndexes()
-    {
+    public StubStorageCursors withoutTokenIndexes() {
         indexDescriptorMap.clear();
         return this;
     }
 
-    public NodeData withNode( long id )
-    {
-        NodeData node = new NodeData( id );
-        nodeData.put( id, node );
+    public NodeData withNode(long id) {
+        NodeData node = new NodeData(id);
+        nodeData.put(id, node);
         return node;
     }
 
-    public RelationshipData withRelationship( long id, long startNode, int type, long endNode )
-    {
-        RelationshipData data = new RelationshipData( id, startNode, type, endNode );
-        relationshipData.put( id, data );
+    public RelationshipData withRelationship(long id, long startNode, int type, long endNode) {
+        RelationshipData data = new RelationshipData(id, startNode, type, endNode);
+        relationshipData.put(id, data);
         return data;
     }
 
-    private long propertyIdOf( Map<String,Value> properties )
-    {
-        if ( properties.isEmpty() )
-        {
+    private long propertyIdOf(Map<String, Value> properties) {
+        if (properties.isEmpty()) {
             return NO_ID;
         }
         long propertyId = nextPropertyId.incrementAndGet();
-        propertyData.put( propertyId, new PropertyData( properties ) );
-        for ( String key : properties.keySet() )
-        {
-            silentGetOrCreatePropertyKey( key );
+        propertyData.put(propertyId, new PropertyData(properties));
+        for (String key : properties.keySet()) {
+            silentGetOrCreatePropertyKey(key);
         }
         return propertyId;
     }
 
-    private int silentGetOrCreatePropertyKey( String key )
-    {
-        try
-        {
-            return propertyKeyTokenHolder.getOrCreateId( key );
-        }
-        catch ( KernelException e )
-        {
-            throw new RuntimeException( e );
+    private int silentGetOrCreatePropertyKey(String key) {
+        try {
+            return propertyKeyTokenHolder.getOrCreateId(key);
+        } catch (KernelException e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
-    public void close()
-    {
-    }
+    public void close() {}
 
-    public TokenHolder propertyKeyTokenHolder()
-    {
+    public TokenHolder propertyKeyTokenHolder() {
         return propertyKeyTokenHolder;
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public Iterator<IndexDescriptor> indexesGetForLabel(int labelId) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public IndexDescriptor indexGetForName( String name )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public IndexDescriptor indexGetForName(String name) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public boolean indexExists( IndexDescriptor index )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public boolean indexExists(IndexDescriptor index) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public ConstraintDescriptor constraintGetForName( String name )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public ConstraintDescriptor constraintGetForName(String name) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetAll()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public Iterator<IndexDescriptor> indexesGetAll() {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public Collection<IndexDescriptor> valueIndexesGetRelated( long[] labels, int propertyKeyId, EntityType entityType )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public Collection<IndexDescriptor> valueIndexesGetRelated(long[] labels, int propertyKeyId, EntityType entityType) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public Collection<IndexDescriptor> valueIndexesGetRelated( long[] labels, int[] propertyKeyIds, EntityType entityType )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public Collection<IndexDescriptor> valueIndexesGetRelated(
+            long[] labels, int[] propertyKeyIds, EntityType entityType) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated( long[] labels, int propertyKeyId, EntityType entityType )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
+            long[] labels, int propertyKeyId, EntityType entityType) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated( long[] changedLabels, long[] unchangedLabels, int[] propertyKeyIds,
-            boolean propertyKeyListIsComplete, EntityType entityType )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
+            long[] changedLabels,
+            long[] unchangedLabels,
+            int[] propertyKeyIds,
+            boolean propertyKeyListIsComplete,
+            EntityType entityType) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public boolean hasRelatedSchema( long[] labels, int propertyKey, EntityType entityType )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public boolean hasRelatedSchema(long[] labels, int propertyKey, EntityType entityType) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public boolean hasRelatedSchema( int label, EntityType entityType )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public boolean hasRelatedSchema(int label, EntityType entityType) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetForRelationshipType( int relationshipType )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public Iterator<IndexDescriptor> indexesGetForRelationshipType(int relationshipType) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public Long indexGetOwningUniquenessConstraintId(IndexDescriptor index) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public Iterator<ConstraintDescriptor> constraintsGetForSchema(SchemaDescriptor descriptor) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public boolean constraintExists( ConstraintDescriptor descriptor )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public boolean constraintExists(ConstraintDescriptor descriptor) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public Iterator<ConstraintDescriptor> constraintsGetForLabel(int labelId) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType(int typeId) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public Iterator<ConstraintDescriptor> constraintsGetAll()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public Iterator<ConstraintDescriptor> constraintsGetAll() {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexGetForSchema( SchemaDescriptor descriptor )
-    {
-        if ( indexDescriptorMap.containsKey( descriptor ) )
-        {
-            return List.of( indexDescriptorMap.get( descriptor ) ).iterator();
+    public Iterator<IndexDescriptor> indexGetForSchema(SchemaDescriptor descriptor) {
+        if (indexDescriptorMap.containsKey(descriptor)) {
+            return List.of(indexDescriptorMap.get(descriptor)).iterator();
         }
         return emptyIterator();
     }
 
     @Override
-    public IndexDescriptor indexGetForSchemaAndType( SchemaDescriptor descriptor, IndexType type )
-    {
-        if ( indexDescriptorMap.containsKey( descriptor ) )
-        {
-            var index = indexDescriptorMap.get( descriptor );
-            if ( index.getIndexType() == type )
-            {
+    public IndexDescriptor indexGetForSchemaAndType(SchemaDescriptor descriptor, IndexType type) {
+        if (indexDescriptorMap.containsKey(descriptor)) {
+            var index = indexDescriptorMap.get(descriptor);
+            if (index.getIndexType() == type) {
                 return index;
             }
         }
@@ -283,178 +250,151 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public long countsForNode( int labelId, CursorContext cursorContext )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public long countsForNode(int labelId, CursorContext cursorContext) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public long countsForRelationship( int startLabelId, int typeId, int endLabelId, CursorContext cursorContext )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public long countsForRelationship(int startLabelId, int typeId, int endLabelId, CursorContext cursorContext) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public long nodesGetCount( CursorContext cursorContext )
-    {
+    public long nodesGetCount(CursorContext cursorContext) {
         return nodeData.size();
     }
 
     @Override
-    public long relationshipsGetCount( CursorContext cursorContext )
-    {
+    public long relationshipsGetCount(CursorContext cursorContext) {
         return relationshipData.size();
     }
 
     @Override
-    public int labelCount()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public int labelCount() {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public int propertyKeyCount()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public int propertyKeyCount() {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public int relationshipTypeCount()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public int relationshipTypeCount() {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public boolean nodeExists( long id, StoreCursors storeCursors )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public boolean nodeExists(long id, StoreCursors storeCursors) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public boolean relationshipExists( long id, StoreCursors storeCursors )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public boolean relationshipExists(long id, StoreCursors storeCursors) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StorageReader,T> factory )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public <T> T getOrCreateSchemaDependantState(Class<T> type, Function<StorageReader, T> factory) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public AllNodeScan allNodeScan()
-    {
-        throw new UnsupportedOperationException( "not implemented yet" );
+    public AllNodeScan allNodeScan() {
+        throw new UnsupportedOperationException("not implemented yet");
     }
 
     @Override
-    public AllRelationshipsScan allRelationshipScan()
-    {
-        throw new UnsupportedOperationException( "not implemented yet" );
+    public AllRelationshipsScan allRelationshipScan() {
+        throw new UnsupportedOperationException("not implemented yet");
     }
 
     @Override
-    public StorageNodeCursor allocateNodeCursor( CursorContext cursorContext, StoreCursors storeCursors )
-    {
+    public StorageNodeCursor allocateNodeCursor(CursorContext cursorContext, StoreCursors storeCursors) {
         return new StubStorageNodeCursor();
     }
 
     @Override
-    public StoragePropertyCursor allocatePropertyCursor( CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker )
-    {
+    public StoragePropertyCursor allocatePropertyCursor(
+            CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         return new StubStoragePropertyCursor();
     }
 
     @Override
-    public StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( CursorContext cursorContext, StoreCursors storeCursors )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor(
+            CursorContext cursorContext, StoreCursors storeCursors) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public StorageRelationshipScanCursor allocateRelationshipScanCursor( CursorContext cursorContext, StoreCursors storeCursors )
-    {
+    public StorageRelationshipScanCursor allocateRelationshipScanCursor(
+            CursorContext cursorContext, StoreCursors storeCursors) {
         return new StubStorageRelationshipScanCursor();
     }
 
     @Override
-    public StorageSchemaReader schemaSnapshot()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public StorageSchemaReader schemaSnapshot() {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public TokenNameLookup tokenNameLookup()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public TokenNameLookup tokenNameLookup() {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    public class Data<SELF>
-    {
+    public class Data<SELF> {
         boolean inUse = true;
 
-        public SELF inUse( boolean inUse )
-        {
+        public SELF inUse(boolean inUse) {
             this.inUse = inUse;
             return (SELF) this;
         }
     }
 
-    class EntityData<SELF> extends Data<SELF>
-    {
+    class EntityData<SELF> extends Data<SELF> {
         long propertyId = Read.NO_ID;
 
-        public SELF propertyId( long propertyId )
-        {
+        public SELF propertyId(long propertyId) {
             this.propertyId = propertyId;
             return (SELF) this;
         }
 
-        public SELF properties( Map<String,Value> properties )
-        {
-            return propertyId( propertyIdOf( properties ) );
+        public SELF properties(Map<String, Value> properties) {
+            return propertyId(propertyIdOf(properties));
         }
 
-        public SELF properties( Object... properties )
-        {
-            return properties( genericMap( properties ) );
+        public SELF properties(Object... properties) {
+            return properties(genericMap(properties));
         }
     }
 
-    public class NodeData extends EntityData<NodeData>
-    {
+    public class NodeData extends EntityData<NodeData> {
         private final long id;
         private long[] labels = EMPTY_LONG_ARRAY;
         private long firstRelationship = NO_ID;
 
-        NodeData( long id )
-        {
+        NodeData(long id) {
             this.id = id;
         }
 
-        public NodeData labels( long... labels )
-        {
+        public NodeData labels(long... labels) {
             this.labels = labels;
             return this;
         }
 
-        public NodeData relationship( long firstRelationship )
-        {
+        public NodeData relationship(long firstRelationship) {
             this.firstRelationship = firstRelationship;
             return this;
         }
     }
 
-    public class RelationshipData extends EntityData<RelationshipData>
-    {
+    public class RelationshipData extends EntityData<RelationshipData> {
         private final long id;
         private final long startNode;
         private final int type;
         private final long endNode;
 
-        RelationshipData( long id, long startNode, int type, long endNode )
-        {
+        RelationshipData(long id, long startNode, int type, long endNode) {
             this.id = id;
             this.startNode = startNode;
             this.type = type;
@@ -462,136 +402,114 @@ public class StubStorageCursors implements StorageReader
         }
     }
 
-    private static class PropertyData
-    {
-        private final Map<String,Value> properties;
+    private static class PropertyData {
+        private final Map<String, Value> properties;
 
-        PropertyData( Map<String,Value> properties )
-        {
+        PropertyData(Map<String, Value> properties) {
             this.properties = properties;
         }
     }
 
-    private class StubStorageNodeCursor implements StorageNodeCursor
-    {
+    private class StubStorageNodeCursor implements StorageNodeCursor {
         private long next;
         private NodeData current;
         private Iterator<Long> iterator;
 
         @Override
-        public void scan()
-        {
+        public void scan() {
             this.iterator = nodeData.keySet().iterator();
             this.current = null;
         }
 
         @Override
-        public void single( long reference )
-        {
+        public void single(long reference) {
             this.iterator = null;
             this.next = reference;
         }
 
         @Override
-        public boolean scanBatch( AllNodeScan scan, int sizeHint )
-        {
+        public boolean scanBatch(AllNodeScan scan, int sizeHint) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public long entityReference()
-        {
+        public long entityReference() {
             return current.id;
         }
 
         @Override
-        public long[] labels()
-        {
+        public long[] labels() {
             return current.labels;
         }
 
         @Override
-        public boolean hasLabel( int label )
-        {
-            return contains( current.labels, label );
+        public boolean hasLabel(int label) {
+            return contains(current.labels, label);
         }
 
         @Override
-        public boolean hasProperties()
-        {
+        public boolean hasProperties() {
             return current.propertyId != NO_ID;
         }
 
         @Override
-        public boolean supportsFastRelationshipsTo()
-        {
+        public boolean supportsFastRelationshipsTo() {
             return false;
         }
 
         @Override
-        public void relationshipsTo( StorageRelationshipTraversalCursor traversalCursor, RelationshipSelection selection, long neighbourNodeReference )
-        {
+        public void relationshipsTo(
+                StorageRelationshipTraversalCursor traversalCursor,
+                RelationshipSelection selection,
+                long neighbourNodeReference) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void relationships( StorageRelationshipTraversalCursor traversalCursor, RelationshipSelection selection )
-        {
-            throw new UnsupportedOperationException( "Not implemented yet" );
+        public void relationships(StorageRelationshipTraversalCursor traversalCursor, RelationshipSelection selection) {
+            throw new UnsupportedOperationException("Not implemented yet");
         }
 
         @Override
-        public int[] relationshipTypes()
-        {
-            throw new UnsupportedOperationException( "Not implemented yet" );
+        public int[] relationshipTypes() {
+            throw new UnsupportedOperationException("Not implemented yet");
         }
 
         @Override
-        public void degrees( RelationshipSelection selection, Degrees.Mutator mutator )
-        {
-            throw new UnsupportedOperationException( "Not implemented yet" );
+        public void degrees(RelationshipSelection selection, Degrees.Mutator mutator) {
+            throw new UnsupportedOperationException("Not implemented yet");
         }
 
         @Override
-        public long relationshipsReference()
-        {
+        public long relationshipsReference() {
             return current.firstRelationship;
         }
 
         @Override
-        public Reference propertiesReference()
-        {
-            return longReference( current.propertyId );
+        public Reference propertiesReference() {
+            return longReference(current.propertyId);
         }
 
         @Override
-        public void properties( StoragePropertyCursor propertyCursor, PropertySelection selection )
-        {
-            propertyCursor.initNodeProperties( propertiesReference(), selection );
+        public void properties(StoragePropertyCursor propertyCursor, PropertySelection selection) {
+            propertyCursor.initNodeProperties(propertiesReference(), selection);
         }
 
         @Override
-        public boolean next()
-        {
-            if ( iterator != null )
-            {
+        public boolean next() {
+            if (iterator != null) {
                 // scan
-                while ( iterator.hasNext() )
-                {
-                    current = nodeData.get( iterator.next() );
-                    if ( current.inUse )
-                    {
+                while (iterator.hasNext()) {
+                    current = nodeData.get(iterator.next());
+                    if (current.inUse) {
                         return true;
                     }
                 }
                 current = null;
                 return false;
-            }
-            else
-            {
-                if ( next != NO_ID )
-                {
-                    current = nodeData.get( next );
+            } else {
+                if (next != NO_ID) {
+                    current = nodeData.get(next);
                     next = NO_ID;
                     return current != null && current.inUse;
                 }
@@ -600,119 +518,98 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
-        public void reset()
-        {
+        public void reset() {
             iterator = null;
             current = null;
         }
 
         @Override
-        public boolean supportsFastDegreeLookup()
-        {
+        public boolean supportsFastDegreeLookup() {
             return false;
         }
 
         @Override
-        public void setForceLoad()
-        {
-        }
+        public void setForceLoad() {}
 
         @Override
-        public void close()
-        {
+        public void close() {
             reset();
         }
     }
 
-    private class StubStorageRelationshipScanCursor implements StorageRelationshipScanCursor
-    {
+    private class StubStorageRelationshipScanCursor implements StorageRelationshipScanCursor {
         private Iterator<Long> iterator;
         private RelationshipData current;
         private long next;
 
         @Override
-        public void scan()
-        {
+        public void scan() {
             iterator = relationshipData.keySet().iterator();
             next = NO_ID;
         }
 
         @Override
-        public void single( long reference )
-        {
+        public void single(long reference) {
             iterator = null;
             next = reference;
         }
 
         @Override
-        public void single( long reference, long sourceNodeReference, int type, long targetNodeReference )
-        {
-            single( reference );
+        public void single(long reference, long sourceNodeReference, int type, long targetNodeReference) {
+            single(reference);
         }
 
         @Override
-        public boolean scanBatch( AllRelationshipsScan scan, int sizeHint )
-        {
+        public boolean scanBatch(AllRelationshipsScan scan, int sizeHint) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public long entityReference()
-        {
+        public long entityReference() {
             return current.id;
         }
 
         @Override
-        public int type()
-        {
+        public int type() {
             return current.type;
         }
 
         @Override
-        public boolean hasProperties()
-        {
+        public boolean hasProperties() {
             return current.propertyId != NO_ID;
         }
 
         @Override
-        public long sourceNodeReference()
-        {
+        public long sourceNodeReference() {
             return current.startNode;
         }
 
         @Override
-        public long targetNodeReference()
-        {
+        public long targetNodeReference() {
             return current.endNode;
         }
 
         @Override
-        public Reference propertiesReference()
-        {
-            return longReference( current.propertyId );
+        public Reference propertiesReference() {
+            return longReference(current.propertyId);
         }
 
         @Override
-        public void properties( StoragePropertyCursor propertyCursor, PropertySelection selection )
-        {
-            propertyCursor.initRelationshipProperties( propertiesReference(), selection );
+        public void properties(StoragePropertyCursor propertyCursor, PropertySelection selection) {
+            propertyCursor.initRelationshipProperties(propertiesReference(), selection);
         }
 
         @Override
-        public boolean next()
-        {
-            if ( iterator != null )
-            {
-                if ( !iterator.hasNext() )
-                {
+        public boolean next() {
+            if (iterator != null) {
+                if (!iterator.hasNext()) {
                     return false;
                 }
                 next = iterator.next();
             }
 
-            if ( next != NO_ID )
-            {
-                current = relationshipData.get( next );
+            if (next != NO_ID) {
+                current = relationshipData.get(next);
                 next = NO_ID;
                 return true;
             }
@@ -720,87 +617,68 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
-        public void reset()
-        {
+        public void reset() {
             current = null;
             next = NO_ID;
         }
 
         @Override
-        public void setForceLoad()
-        {
-        }
+        public void setForceLoad() {}
 
         @Override
-        public void close()
-        {
+        public void close() {
             reset();
         }
     }
 
-    private class StubStoragePropertyCursor implements StoragePropertyCursor
-    {
-        private Map.Entry<String,Value> current;
-        private Iterator<Map.Entry<String,Value>> iterator;
+    private class StubStoragePropertyCursor implements StoragePropertyCursor {
+        private Map.Entry<String, Value> current;
+        private Iterator<Map.Entry<String, Value>> iterator;
 
         @Override
-        public void initNodeProperties( Reference reference, PropertySelection selection, long ownerReference )
-        {
-            init( reference, selection );
+        public void initNodeProperties(Reference reference, PropertySelection selection, long ownerReference) {
+            init(reference, selection);
         }
 
         @Override
-        public void initRelationshipProperties( Reference reference, PropertySelection selection, long ownerReference )
-        {
-            init( reference, selection );
+        public void initRelationshipProperties(Reference reference, PropertySelection selection, long ownerReference) {
+            init(reference, selection);
         }
 
-        private void init( Reference reference, PropertySelection selection )
-        {
+        private void init(Reference reference, PropertySelection selection) {
             long id = ((LongReference) reference).id;
-            PropertyData properties = StubStorageCursors.this.propertyData.get( id );
+            PropertyData properties = StubStorageCursors.this.propertyData.get(id);
             iterator = properties != null ? properties.properties.entrySet().iterator() : emptyIterator();
-            iterator = Iterators.filter( p -> selection.test( propertyKeyTokenHolder.getIdByName( p.getKey() ) ), iterator );
+            iterator = Iterators.filter(p -> selection.test(propertyKeyTokenHolder.getIdByName(p.getKey())), iterator);
         }
 
         @Override
-        public void close()
-        {
+        public void close() {}
+
+        @Override
+        public int propertyKey() {
+            return silentGetOrCreatePropertyKey(current.getKey());
         }
 
         @Override
-        public int propertyKey()
-        {
-            return silentGetOrCreatePropertyKey( current.getKey() );
-        }
-
-        @Override
-        public ValueGroup propertyType()
-        {
+        public ValueGroup propertyType() {
             return current.getValue().valueGroup();
         }
 
         @Override
-        public Value propertyValue()
-        {
+        public Value propertyValue() {
             return current.getValue();
         }
 
         @Override
-        public void reset()
-        {
-        }
+        public void reset() {}
 
         @Override
-        public void setForceLoad()
-        {
-        }
+        public void setForceLoad() {}
 
         @Override
-        public boolean next()
-        {
-            if ( iterator.hasNext() )
-            {
+        public boolean next() {
+            if (iterator.hasNext()) {
                 current = iterator.next();
                 return true;
             }

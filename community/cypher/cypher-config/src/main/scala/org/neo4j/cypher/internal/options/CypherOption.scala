@@ -33,6 +33,7 @@ object CypherOption {
  * @param inputName Used to parse values and in error messages etc.
  */
 abstract class CypherOption(inputName: String) {
+
   /** The canonical name for this value */
   val name: String = OptionReader.canonical(inputName)
 
@@ -68,7 +69,7 @@ abstract class CypherOptionCompanion[Opt <: CypherOption](
   val name: String,
   setting: Option[Setting[_]] = None,
   cypherConfigField: Option[CypherConfiguration => Opt] = None,
-  cypherConfigBooleans: Map[Opt, CypherConfiguration => Boolean] = Map.empty[Opt, CypherConfiguration => Boolean],
+  cypherConfigBooleans: Map[Opt, CypherConfiguration => Boolean] = Map.empty[Opt, CypherConfiguration => Boolean]
 ) {
   self: Product =>
 
@@ -92,9 +93,9 @@ abstract class CypherOptionCompanion[Opt <: CypherOption](
    */
   def fromConfig(configuration: Config): Opt = {
     setting.map(s => configuration.get(s))
-           .map(_.toString)
-           .map(fromValue)
-           .getOrElse(default)
+      .map(_.toString)
+      .map(fromValue)
+      .getOrElse(default)
   }
 
   /**
@@ -104,8 +105,8 @@ abstract class CypherOptionCompanion[Opt <: CypherOption](
   def singleOptionReader(): OptionReader[Opt] =
     (input: OptionReader.Input) =>
       input.extract(key)
-           .map(values => fromValues(values).headOption)
-           .map(value => value.getOrElse(fromCypherConfiguration(input.config)))
+        .map(values => fromValues(values).headOption)
+        .map(value => value.getOrElse(fromCypherConfiguration(input.config)))
 
   /**
    * An OptionReader for reading all values of this option
@@ -113,17 +114,18 @@ abstract class CypherOptionCompanion[Opt <: CypherOption](
   def multiOptionReader(): OptionReader[Set[Opt]] =
     (input: OptionReader.Input) =>
       input.extract(key)
-           .map(values => values.map(fromValue))
-           .map(opts => opts ++ fromCypherConfigurationBooleans(input.config))
+        .map(values => values.map(fromValue))
+        .map(opts => opts ++ fromCypherConfigurationBooleans(input.config))
 
   private def fromCypherConfiguration(configuration: CypherConfiguration): Opt =
     cypherConfigField.map(f => f(configuration))
-                     .getOrElse(default)
+      .getOrElse(default)
 
   private def fromCypherConfigurationBooleans(configuration: CypherConfiguration): Set[Opt] =
     cypherConfigBooleans.toSet.collect(fromCypherConfigurationBoolean(configuration))
 
-  private def fromCypherConfigurationBoolean(configuration: CypherConfiguration): PartialFunction[(Opt, CypherConfiguration => Boolean), Opt] = {
+  private def fromCypherConfigurationBoolean(configuration: CypherConfiguration)
+    : PartialFunction[(Opt, CypherConfiguration => Boolean), Opt] = {
     case (opt, cond) if cond(configuration) => opt
   }
 
@@ -140,7 +142,9 @@ abstract class CypherOptionCompanion[Opt <: CypherOption](
   }
 
   private def invalidValueError(input: String): Nothing =
-    throw new InvalidCypherOption(s"$input is not a valid option for $name. Valid options are: ${values.map(_.name).mkString(", ")}")
+    throw new InvalidCypherOption(
+      s"$input is not a valid option for $name. Valid options are: ${values.map(_.name).mkString(", ")}"
+    )
 
   private def conflictingValuesError(): Nothing =
     throw new InvalidCypherOption(s"Can't specify multiple conflicting values for $name")

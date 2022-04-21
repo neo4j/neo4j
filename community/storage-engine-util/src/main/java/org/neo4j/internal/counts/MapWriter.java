@@ -19,43 +19,38 @@
  */
 package org.neo4j.internal.counts;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.ToLongFunction;
-
 import org.neo4j.util.concurrent.OutOfOrderSequence;
-
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 
 /**
  * Used during recovery and normal operations mode where changes gets applied to a {@link ConcurrentHashMap} and counts that haven't been seen before
  * are looked up from stored counts and placed into the map too.
  */
-public class MapWriter implements CountUpdater.CountWriter
-{
+public class MapWriter implements CountUpdater.CountWriter {
     private final CountsChanges changes;
     private final OutOfOrderSequence idSequence;
     private final long txId;
-    private final Function<CountsKey,AtomicLong> defaultToStoredCount;
+    private final Function<CountsKey, AtomicLong> defaultToStoredCount;
 
-    MapWriter( ToLongFunction<CountsKey> storeLookup, CountsChanges changes, OutOfOrderSequence idSequence, long txId )
-    {
+    MapWriter(ToLongFunction<CountsKey> storeLookup, CountsChanges changes, OutOfOrderSequence idSequence, long txId) {
         this.changes = changes;
         this.idSequence = idSequence;
         this.txId = txId;
-        defaultToStoredCount = k -> new AtomicLong( storeLookup.applyAsLong( k ) );
+        defaultToStoredCount = k -> new AtomicLong(storeLookup.applyAsLong(k));
     }
 
     @Override
-    public boolean write( CountsKey key, long delta )
-    {
-        return changes.add( key, delta, defaultToStoredCount );
+    public boolean write(CountsKey key, long delta) {
+        return changes.add(key, delta, defaultToStoredCount);
     }
 
     @Override
-    public void close()
-    {
-        idSequence.offer( txId, EMPTY_LONG_ARRAY );
+    public void close() {
+        idSequence.offer(txId, EMPTY_LONG_ARRAY);
     }
 }

@@ -43,14 +43,13 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
             x =>
               executeWithRetry(q, "id" -> x)
           }
-        }
-        catch {
+        } catch {
           case e: Throwable => exceptionsThrown = exceptionsThrown :+ e
         }
       }
     }
 
-      val threads: Seq[Thread] = 0 until threadCount map (x => new Thread(runner))
+    val threads: Seq[Thread] = 0 until threadCount map (x => new Thread(runner))
 
     threads.foreach(_.start())
     threads.foreach(_.join())
@@ -60,7 +59,9 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     execute("match (a:Label) with a.id as id, count(*) as c where c > 1 return *") shouldBe empty
     execute("match (a)-[r1]->(b)<-[r2]-(a) where r1 <> r2 return *") shouldBe empty
 
-    val details = "\n" + graph.withTx( tx => tx.execute("match (a)-[r]->(b) return a.id, b.id, id(a), id(r), id(b)").resultAsString())
+    val details = "\n" + graph.withTx(tx =>
+      tx.execute("match (a)-[r]->(b) return a.id, b.id, id(a), id(r), id(b)").resultAsString()
+    )
 
     assert(execute(s"match p=(:Label {id:1})-[*..1000]->({id:$nodeCount}) return 1").size === 1, details)
   }
@@ -150,7 +151,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     }
 
     val threads: Seq[Thread] = 0 until threadCount map { x =>
-      val (from, to) = if(x % 2 == 0) (n1.getId, n2.getId) else (n2.getId, n1.getId)
+      val (from, to) = if (x % 2 == 0) (n1.getId, n2.getId) else (n2.getId, n1.getId)
       new Thread(createRunner(from, to))
     }
 
@@ -158,10 +159,10 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     threads.foreach(_.join())
     exceptionsThrown.foreach(throw _)
 
-    graph.withTx( tx => {
+    graph.withTx(tx => {
       tx.getNodeById(n1.getId).getRelationships.asScala.size should equal(1)
       tx.getNodeById(n2.getId).getRelationships.asScala.size should equal(1)
-    } )
+    })
   }
 
   test("merge relationship - both end nodes matched") {
@@ -185,7 +186,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     }
 
     val threads: Seq[Thread] = 0 until threadCount map { x =>
-      val (from, to) = if(x % 2 == 0) (n1.getId, n2.getId) else (n2.getId, n1.getId)
+      val (from, to) = if (x % 2 == 0) (n1.getId, n2.getId) else (n2.getId, n1.getId)
       new Thread(createRunner(from, to))
     }
 
@@ -193,9 +194,9 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     threads.foreach(_.join())
     exceptionsThrown.foreach(throw _)
 
-    graph.withTx( tx =>  {
+    graph.withTx(tx => {
       tx.getNodeById(n1.getId).getRelationships.asScala.size should equal(1)
       tx.getNodeById(n2.getId).getRelationships.asScala.size should equal(1)
-    } )
+    })
   }
 }

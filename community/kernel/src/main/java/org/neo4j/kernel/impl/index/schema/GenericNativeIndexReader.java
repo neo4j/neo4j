@@ -19,8 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.List;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.HIGH;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.LOW;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
+import java.util.List;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -41,72 +44,77 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.HIGH;
-import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.LOW;
-import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
-
-class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
-{
+class GenericNativeIndexReader extends NativeIndexReader<BtreeKey> {
     private final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings;
     private final SpaceFillingCurveConfiguration configuration;
 
-    GenericNativeIndexReader( GBPTree<BtreeKey,NullValue> tree, IndexLayout<BtreeKey> layout,
-                              IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings,
-                              SpaceFillingCurveConfiguration configuration )
-    {
-        super( tree, layout, descriptor );
+    GenericNativeIndexReader(
+            GBPTree<BtreeKey, NullValue> tree,
+            IndexLayout<BtreeKey> layout,
+            IndexDescriptor descriptor,
+            IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings,
+            SpaceFillingCurveConfiguration configuration) {
+        super(tree, layout, descriptor);
         this.spaceFillingCurveSettings = spaceFillingCurveSettings;
         this.configuration = configuration;
     }
 
     @Override
-    void validateQuery( IndexQueryConstraints constraints, PropertyIndexQuery... predicates )
-    {
-        QueryValidator.validateOrder( GenericNativeIndexProvider.CAPABILITY, constraints.order(), predicates );
-        QueryValidator.validateCompositeQuery( predicates );
+    void validateQuery(IndexQueryConstraints constraints, PropertyIndexQuery... predicates) {
+        QueryValidator.validateOrder(GenericNativeIndexProvider.CAPABILITY, constraints.order(), predicates);
+        QueryValidator.validateCompositeQuery(predicates);
     }
 
     @Override
-    public void query( IndexProgressor.EntityValueClient client, QueryContext context, AccessMode accessMode,
-                       IndexQueryConstraints constraints, PropertyIndexQuery... query )
-    {
-        PropertyIndexQuery.BoundingBoxPredicate boundingBoxPredicate = getBoundingBoxPredicateIfAny( query );
-        if ( boundingBoxPredicate != null )
-        {
-            context.monitor().queried( descriptor );
-            validateQuery( constraints, query );
-            try
-            {
-                // If there's a GeometryRangeQuery among the predicates then this query changes from a straight-forward: build from/to and seek...
-                // into a query that is split into multiple sub-queries. Predicates both before and after will have to be accompanied each sub-query.
-                BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
-                client.initialize( descriptor, multiProgressor, accessMode, false, constraints, query );
+    public void query(
+            IndexProgressor.EntityValueClient client,
+            QueryContext context,
+            AccessMode accessMode,
+            IndexQueryConstraints constraints,
+            PropertyIndexQuery... query) {
+        PropertyIndexQuery.BoundingBoxPredicate boundingBoxPredicate = getBoundingBoxPredicateIfAny(query);
+        if (boundingBoxPredicate != null) {
+            context.monitor().queried(descriptor);
+            validateQuery(constraints, query);
+            try {
+                // If there's a GeometryRangeQuery among the predicates then this query changes from a straight-forward:
+                // build from/to and seek...
+                // into a query that is split into multiple sub-queries. Predicates both before and after will have to
+                // be accompanied each sub-query.
+                BridgingIndexProgressor multiProgressor =
+                        new BridgingIndexProgressor(client, descriptor.schema().getPropertyIds());
+                client.initialize(descriptor, multiProgressor, accessMode, false, constraints, query);
                 double[] from = boundingBoxPredicate.from().coordinate();
                 double[] to = boundingBoxPredicate.to().coordinate();
                 CoordinateReferenceSystem crs = boundingBoxPredicate.crs();
-                SpaceFillingCurve curve = spaceFillingCurveSettings.forCrs( crs );
-                List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( from, to, configuration );
-                for ( SpaceFillingCurve.LongRange range : ranges )
-                {
-                    // Here's a sub-query that we'll have to do for this geometry range. Build this query from all predicates
-                    // and when getting to the geometry range predicate that sparked these sub-query shenanigans, swap in this sub-query in its place.
+                SpaceFillingCurve curve = spaceFillingCurveSettings.forCrs(crs);
+                List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope(from, to, configuration);
+                for (SpaceFillingCurve.LongRange range : ranges) {
+                    // Here's a sub-query that we'll have to do for this geometry range. Build this query from all
+                    // predicates
+                    // and when getting to the geometry range predicate that sparked these sub-query shenanigans, swap
+                    // in this sub-query in its place.
                     BtreeKey treeKeyFrom = layout.newKey();
                     BtreeKey treeKeyTo = layout.newKey();
-                    initializeFromToKeys( treeKeyFrom, treeKeyTo );
-                    boolean needFiltering = initializeRangeForGeometrySubQuery( treeKeyFrom, treeKeyTo, query, crs, range );
-                    startSeekForInitializedRange( multiProgressor, treeKeyFrom, treeKeyTo, context.cursorContext(), accessMode,
-                                                  needFiltering, constraints, query );
+                    initializeFromToKeys(treeKeyFrom, treeKeyTo);
+                    boolean needFiltering =
+                            initializeRangeForGeometrySubQuery(treeKeyFrom, treeKeyTo, query, crs, range);
+                    startSeekForInitializedRange(
+                            multiProgressor,
+                            treeKeyFrom,
+                            treeKeyTo,
+                            context.cursorContext(),
+                            accessMode,
+                            needFiltering,
+                            constraints,
+                            query);
                 }
-            }
-            catch ( IllegalArgumentException e )
-            {
+            } catch (IllegalArgumentException e) {
                 // Invalid query ranges will cause this state (eg. min>max)
-                client.initialize( descriptor, IndexProgressor.EMPTY, accessMode, false, constraints, query );
+                client.initialize(descriptor, IndexProgressor.EMPTY, accessMode, false, constraints, query);
             }
-        }
-        else
-        {
-            super.query( client, context, accessMode, constraints, query );
+        } else {
+            super.query(client, context, accessMode, constraints, query);
         }
     }
 
@@ -127,147 +135,126 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
      * in the query.
      * @return {@code true} if filtering is needed for the results from the reader, otherwise {@code false}.
      */
-    private static boolean initializeRangeForGeometrySubQuery( BtreeKey treeKeyFrom, BtreeKey treeKeyTo, PropertyIndexQuery[] query,
-                                                               CoordinateReferenceSystem crs, SpaceFillingCurve.LongRange range )
-    {
-        if ( isAllQuery( query ) )
-        {
-            initializeAllSlotsForFullRange( treeKeyFrom, treeKeyTo );
+    private static boolean initializeRangeForGeometrySubQuery(
+            BtreeKey treeKeyFrom,
+            BtreeKey treeKeyTo,
+            PropertyIndexQuery[] query,
+            CoordinateReferenceSystem crs,
+            SpaceFillingCurve.LongRange range) {
+        if (isAllQuery(query)) {
+            initializeAllSlotsForFullRange(treeKeyFrom, treeKeyTo);
             return false;
         }
 
         var needsFiltering = false;
-        for ( int i = 0; i < query.length; i++ )
-        {
+        for (int i = 0; i < query.length; i++) {
             final var predicate = query[i];
-            switch ( predicate.type() )
-            {
-                case EXISTS ->
-                {
-                    treeKeyFrom.initValueAsLowest( i, ValueGroup.UNKNOWN );
-                    treeKeyTo.initValueAsHighest( i, ValueGroup.UNKNOWN );
+            switch (predicate.type()) {
+                case EXISTS -> {
+                    treeKeyFrom.initValueAsLowest(i, ValueGroup.UNKNOWN);
+                    treeKeyTo.initValueAsHighest(i, ValueGroup.UNKNOWN);
                 }
 
-                case EXACT ->
-                {
+                case EXACT -> {
                     final var exactPredicate = (ExactPredicate) predicate;
-                    treeKeyFrom.initFromValue( i, exactPredicate.value(), NEUTRAL );
-                    treeKeyTo.initFromValue( i, exactPredicate.value(), NEUTRAL );
+                    treeKeyFrom.initFromValue(i, exactPredicate.value(), NEUTRAL);
+                    treeKeyTo.initFromValue(i, exactPredicate.value(), NEUTRAL);
                 }
 
-                case RANGE ->
-                {
-                    if ( predicate.valueGroup() == ValueGroup.GEOMETRY_ARRAY )
-                    {
-                        treeKeyFrom.initValueAsLowest( i, ValueGroup.GEOMETRY_ARRAY );
-                        treeKeyTo.initValueAsHighest( i, ValueGroup.GEOMETRY_ARRAY );
+                case RANGE -> {
+                    if (predicate.valueGroup() == ValueGroup.GEOMETRY_ARRAY) {
+                        treeKeyFrom.initValueAsLowest(i, ValueGroup.GEOMETRY_ARRAY);
+                        treeKeyTo.initValueAsHighest(i, ValueGroup.GEOMETRY_ARRAY);
                         needsFiltering = true;
-                    }
-                    else
-                    {
+                    } else {
                         final var rangePredicate = (RangePredicate<?>) predicate;
-                        initFromForRange( i, rangePredicate, treeKeyFrom );
-                        initToForRange( i, rangePredicate, treeKeyTo );
+                        initFromForRange(i, rangePredicate, treeKeyFrom);
+                        initToForRange(i, rangePredicate, treeKeyTo);
                     }
                 }
 
-                case BOUNDING_BOX ->
-                {
-                    // Use the supplied SpaceFillingCurve range instead of the GeometryRangePredicate because at the time of calling this method
-                    // the original geometry range have been split up into multiple sub-ranges and this invocation is for one of those sub-ranges.
-                    // We can not take query inclusion / exclusion into consideration here because then we risk missing border values. Always use
+                case BOUNDING_BOX -> {
+                    // Use the supplied SpaceFillingCurve range instead of the GeometryRangePredicate because at the
+                    // time of calling this method
+                    // the original geometry range have been split up into multiple sub-ranges and this invocation is
+                    // for one of those sub-ranges.
+                    // We can not take query inclusion / exclusion into consideration here because then we risk missing
+                    // border values. Always use
                     // Inclusion.LOW / HIGH respectively and filter out points later on.
-                    treeKeyFrom.stateSlot( i ).writePointDerived( crs, range.min, LOW );
-                    treeKeyTo.stateSlot( i ).writePointDerived( crs, range.max + 1, HIGH );
+                    treeKeyFrom.stateSlot(i).writePointDerived(crs, range.min, LOW);
+                    treeKeyTo.stateSlot(i).writePointDerived(crs, range.max + 1, HIGH);
                     needsFiltering = true;
                 }
 
-                case STRING_PREFIX ->
-                {
+                case STRING_PREFIX -> {
                     final var prefixPredicate = (StringPrefixPredicate) predicate;
-                    treeKeyFrom.stateSlot( i ).initAsPrefixLow( prefixPredicate.prefix() );
-                    treeKeyTo.stateSlot( i ).initAsPrefixHigh( prefixPredicate.prefix() );
+                    treeKeyFrom.stateSlot(i).initAsPrefixLow(prefixPredicate.prefix());
+                    treeKeyTo.stateSlot(i).initAsPrefixHigh(prefixPredicate.prefix());
                 }
 
-                case STRING_CONTAINS, STRING_SUFFIX ->
-                {
-                    treeKeyFrom.initValueAsLowest( i, ValueGroup.TEXT );
-                    treeKeyTo.initValueAsHighest( i, ValueGroup.TEXT );
+                case STRING_CONTAINS, STRING_SUFFIX -> {
+                    treeKeyFrom.initValueAsLowest(i, ValueGroup.TEXT);
+                    treeKeyTo.initValueAsHighest(i, ValueGroup.TEXT);
                     needsFiltering = true;
                 }
 
-                default -> throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
+                default -> throw new IllegalArgumentException(
+                        "IndexQuery of type " + predicate.type() + " is not supported.");
             }
         }
         return needsFiltering;
     }
 
     // all slots are required to be initialized such that the keys can be copied when scanning in parallel
-    private static boolean isAllQuery( PropertyIndexQuery... predicates )
-    {
+    private static boolean isAllQuery(PropertyIndexQuery... predicates) {
         return predicates.length == 1 && predicates[0].type() == IndexQueryType.ALL_ENTRIES;
     }
 
-    private static void initializeAllSlotsForFullRange( BtreeKey treeKeyFrom, BtreeKey treeKeyTo )
-    {
+    private static void initializeAllSlotsForFullRange(BtreeKey treeKeyFrom, BtreeKey treeKeyTo) {
         assert treeKeyFrom.numberOfStateSlots() == treeKeyTo.numberOfStateSlots();
-        for ( int i = 0; i < treeKeyFrom.numberOfStateSlots(); i++ )
-        {
-            treeKeyFrom.initValueAsLowest( i, ValueGroup.UNKNOWN );
-            treeKeyTo.initValueAsHighest( i, ValueGroup.UNKNOWN );
+        for (int i = 0; i < treeKeyFrom.numberOfStateSlots(); i++) {
+            treeKeyFrom.initValueAsLowest(i, ValueGroup.UNKNOWN);
+            treeKeyTo.initValueAsHighest(i, ValueGroup.UNKNOWN);
         }
     }
 
     @Override
-    boolean initializeRangeForQuery( BtreeKey treeKeyFrom, BtreeKey treeKeyTo, PropertyIndexQuery... query )
-    {
-        return initializeRangeForGeometrySubQuery( treeKeyFrom, treeKeyTo, query, null, null );
+    boolean initializeRangeForQuery(BtreeKey treeKeyFrom, BtreeKey treeKeyTo, PropertyIndexQuery... query) {
+        return initializeRangeForGeometrySubQuery(treeKeyFrom, treeKeyTo, query, null, null);
     }
 
-    private static void initFromForRange( int stateSlot, RangePredicate<?> rangePredicate, BtreeKey treeKeyFrom )
-    {
+    private static void initFromForRange(int stateSlot, RangePredicate<?> rangePredicate, BtreeKey treeKeyFrom) {
         Value fromValue = rangePredicate.fromValue();
-        if ( fromValue == Values.NO_VALUE )
-        {
-            treeKeyFrom.initValueAsLowest( stateSlot, rangePredicate.valueGroup() );
-        }
-        else
-        {
-            treeKeyFrom.initFromValue( stateSlot, fromValue, fromInclusion( rangePredicate ) );
-            treeKeyFrom.setCompareId( true );
+        if (fromValue == Values.NO_VALUE) {
+            treeKeyFrom.initValueAsLowest(stateSlot, rangePredicate.valueGroup());
+        } else {
+            treeKeyFrom.initFromValue(stateSlot, fromValue, fromInclusion(rangePredicate));
+            treeKeyFrom.setCompareId(true);
         }
     }
 
-    private static void initToForRange( int stateSlot, RangePredicate<?> rangePredicate, BtreeKey treeKeyTo )
-    {
+    private static void initToForRange(int stateSlot, RangePredicate<?> rangePredicate, BtreeKey treeKeyTo) {
         Value toValue = rangePredicate.toValue();
-        if ( toValue == Values.NO_VALUE )
-        {
-            treeKeyTo.initValueAsHighest( stateSlot, rangePredicate.valueGroup() );
-        }
-        else
-        {
-            treeKeyTo.initFromValue( stateSlot, toValue, toInclusion( rangePredicate ) );
-            treeKeyTo.setCompareId( true );
+        if (toValue == Values.NO_VALUE) {
+            treeKeyTo.initValueAsHighest(stateSlot, rangePredicate.valueGroup());
+        } else {
+            treeKeyTo.initFromValue(stateSlot, toValue, toInclusion(rangePredicate));
+            treeKeyTo.setCompareId(true);
         }
     }
 
-    private static NativeIndexKey.Inclusion fromInclusion( RangePredicate<?> rangePredicate )
-    {
+    private static NativeIndexKey.Inclusion fromInclusion(RangePredicate<?> rangePredicate) {
         return rangePredicate.fromInclusive() ? LOW : HIGH;
     }
 
-    private static NativeIndexKey.Inclusion toInclusion( RangePredicate<?> rangePredicate )
-    {
+    private static NativeIndexKey.Inclusion toInclusion(RangePredicate<?> rangePredicate) {
         return rangePredicate.toInclusive() ? HIGH : LOW;
     }
 
-    private static PropertyIndexQuery.BoundingBoxPredicate getBoundingBoxPredicateIfAny( PropertyIndexQuery... predicates )
-    {
-        for ( final PropertyIndexQuery predicate : predicates )
-        {
-            if ( predicate.type() == IndexQueryType.BOUNDING_BOX )
-            {
+    private static PropertyIndexQuery.BoundingBoxPredicate getBoundingBoxPredicateIfAny(
+            PropertyIndexQuery... predicates) {
+        for (final PropertyIndexQuery predicate : predicates) {
+            if (predicate.type() == IndexQueryType.BOUNDING_BOX) {
                 return (PropertyIndexQuery.BoundingBoxPredicate) predicate;
             }
         }

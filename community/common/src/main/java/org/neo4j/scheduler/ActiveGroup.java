@@ -19,6 +19,4 @@
  */
 package org.neo4j.scheduler;
 
-public record ActiveGroup( Group group, int threads )
-{
-}
+public record ActiveGroup(Group group, int threads) {}

@@ -19,34 +19,30 @@
  */
 package org.neo4j.collection;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.neo4j.graphdb.Resource;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class PrimitiveLongResourceCollectionsTest
-{
+import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.Test;
+import org.neo4j.graphdb.Resource;
+
+class PrimitiveLongResourceCollectionsTest {
 
     // ITERATOR
 
     @Test
-    void simpleIterator()
-    {
+    void simpleIterator() {
         // Given
         CountingResource resource = new CountingResource();
-        PrimitiveLongResourceIterator iterator = PrimitiveLongResourceCollections.iterator( resource, 1, 2, 3, 4 );
+        PrimitiveLongResourceIterator iterator = PrimitiveLongResourceCollections.iterator(resource, 1, 2, 3, 4);
 
         // Then
-        assertContent( iterator, 1, 2, 3, 4 );
+        assertContent(iterator, 1, 2, 3, 4);
 
         // When
         iterator.close();
 
         // Then
-        assertEquals( 1, resource.closeCount(), "exactly one call to close" );
+        assertEquals(1, resource.closeCount(), "exactly one call to close");
     }
 
     // FILTER
@@ -54,48 +50,42 @@ class PrimitiveLongResourceCollectionsTest
     // CONCAT
 
     @Test
-    void concatIterators()
-    {
+    void concatIterators() {
         // Given
         CountingResource resource = new CountingResource();
-        PrimitiveLongResourceIterator first = PrimitiveLongResourceCollections.iterator( resource, 1, 2 );
-        PrimitiveLongResourceIterator second = PrimitiveLongResourceCollections.iterator( resource, 3, 4 );
+        PrimitiveLongResourceIterator first = PrimitiveLongResourceCollections.iterator(resource, 1, 2);
+        PrimitiveLongResourceIterator second = PrimitiveLongResourceCollections.iterator(resource, 3, 4);
 
         // When
-        PrimitiveLongResourceIterator concat = PrimitiveLongResourceCollections.concat( first, second );
+        PrimitiveLongResourceIterator concat = PrimitiveLongResourceCollections.concat(first, second);
 
         // Then
-        assertContent( concat, 1, 2, 3, 4 );
+        assertContent(concat, 1, 2, 3, 4);
 
         // When
         concat.close();
 
         // Then
-        assertEquals( 2, resource.closeCount(), "all concatenated iterators are closed" );
+        assertEquals(2, resource.closeCount(), "all concatenated iterators are closed");
     }
 
-    private static void assertContent( PrimitiveLongResourceIterator iterator, long... expected )
-    {
+    private static void assertContent(PrimitiveLongResourceIterator iterator, long... expected) {
         int i = 0;
-        while ( iterator.hasNext() )
-        {
-            assertEquals( expected[i++], iterator.next(), "has expected value" );
+        while (iterator.hasNext()) {
+            assertEquals(expected[i++], iterator.next(), "has expected value");
         }
-        assertEquals( expected.length, i, "has all expected values" );
+        assertEquals(expected.length, i, "has all expected values");
     }
 
-    private static class CountingResource implements Resource
-    {
+    private static class CountingResource implements Resource {
         private final AtomicInteger closed = new AtomicInteger();
 
         @Override
-        public void close()
-        {
+        public void close() {
             closed.incrementAndGet();
         }
 
-        int closeCount()
-        {
+        int closeCount() {
             return closed.get();
         }
     }

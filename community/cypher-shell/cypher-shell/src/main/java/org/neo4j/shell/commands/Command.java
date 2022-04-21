@@ -19,8 +19,9 @@
  */
 package org.neo4j.shell.commands;
 
-import java.util.List;
+import static org.neo4j.shell.printer.AnsiFormattedText.from;
 
+import java.util.List;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.exception.CommandException;
@@ -30,58 +31,50 @@ import org.neo4j.shell.printer.AnsiFormattedText;
 import org.neo4j.shell.printer.Printer;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 
-import static org.neo4j.shell.printer.AnsiFormattedText.from;
-
 /**
  * A shell command
  */
-public interface Command
-{
-    void execute( List<String> args ) throws ExitException, CommandException;
+public interface Command {
+    void execute(List<String> args) throws ExitException, CommandException;
 
-    default Metadata metadata()
-    {
+    default Metadata metadata() {
         // By default, load from factory, because we're lazy
-        return new CommandHelper.CommandFactoryHelper().factoryFor( this.getClass() ).metadata();
+        return new CommandHelper.CommandFactoryHelper()
+                .factoryFor(this.getClass())
+                .metadata();
     }
 
-    default void requireArgumentCount( List<String> args, int count ) throws CommandException
-    {
-        if ( args.size() != count )
-        {
-            throw new CommandException( incorrectNumberOfArguments() );
+    default void requireArgumentCount(List<String> args, int count) throws CommandException {
+        if (args.size() != count) {
+            throw new CommandException(incorrectNumberOfArguments());
         }
     }
 
-    default void requireArgumentCount( List<String> args, int min, int max ) throws CommandException
-    {
-        if ( args.size() < min || args.size() > max )
-        {
-            throw new CommandException( incorrectNumberOfArguments() );
+    default void requireArgumentCount(List<String> args, int min, int max) throws CommandException {
+        if (args.size() < min || args.size() > max) {
+            throw new CommandException(incorrectNumberOfArguments());
         }
     }
 
-    default AnsiFormattedText incorrectNumberOfArguments()
-    {
-        return from( "Incorrect number of arguments.\nUsage: " ).bold( metadata().name() ).append( " " ).append( metadata().usage() );
+    default AnsiFormattedText incorrectNumberOfArguments() {
+        return from("Incorrect number of arguments.\nUsage: ")
+                .bold(metadata().name())
+                .append(" ")
+                .append(metadata().usage());
     }
 
-    record Metadata(String name, String description, String usage, String help, List<String> aliases)
-    {
-    }
+    record Metadata(String name, String description, String usage, String help, List<String> aliases) {}
 
-    interface Factory
-    {
+    interface Factory {
         record Arguments(
                 Printer printer,
                 Historian historian,
                 CypherShell cypherShell,
                 CypherShellTerminal terminal,
-                ParameterService parameters
-        )
-        { }
+                ParameterService parameters) {}
 
         Metadata metadata();
-        Command executor( Arguments args );
+
+        Command executor(Arguments args);
     }
 }

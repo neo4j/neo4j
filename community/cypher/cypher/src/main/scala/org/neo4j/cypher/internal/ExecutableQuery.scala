@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal
 
-import java.util.function.Supplier
-
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.graphdb.ExecutionPlanDescription
@@ -33,6 +31,8 @@ import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
+
+import java.util.function.Supplier
 
 import scala.jdk.CollectionConverters.ListHasAsScala
 
@@ -54,14 +54,16 @@ trait ExecutableQuery extends CacheabilityInfo {
    * @param subscriber                     The subscriber where results should be streamed to.
    * @return the QueryExecution that controls the demand to the subscriber
    */
-  def execute(transactionalContext: TransactionalContext,
-              isOutermostQuery: Boolean,
-              queryOptions: QueryOptions,
-              params: MapValue,
-              prePopulateResults: Boolean,
-              input: InputDataStream,
-              queryMonitor: QueryExecutionMonitor,
-              subscriber: QuerySubscriber): QueryExecution
+  def execute(
+    transactionalContext: TransactionalContext,
+    isOutermostQuery: Boolean,
+    queryOptions: QueryOptions,
+    params: MapValue,
+    prePopulateResults: Boolean,
+    input: InputDataStream,
+    queryMonitor: QueryExecutionMonitor,
+    subscriber: QuerySubscriber
+  ): QueryExecution
 
   /**
    * The reusability state of this executable query.
@@ -91,7 +93,7 @@ trait ExecutableQuery extends CacheabilityInfo {
    * Precomputed to reduce execution latency for very fast queries.
    */
   val relationshipsOfUsedIndexes: Map[Long, Array[Int]] = compilerInfo.relationshipTypeIndexes().asScala
-    .collect { case item: RelationshipTypeIndexUsage => (item.getRelationshipTypeId.toLong -> item.getPropertyKeyIds )}
+    .collect { case item: RelationshipTypeIndexUsage => (item.getRelationshipTypeId.toLong -> item.getPropertyKeyIds) }
     .toMap
 
   /**

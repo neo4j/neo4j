@@ -19,13 +19,16 @@
  */
 package org.neo4j.dbms.database;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
+import static org.neo4j.dbms.database.DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION;
+import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
 
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -36,256 +39,222 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
-import static org.neo4j.dbms.database.DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION;
-import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
-
 @TestDirectoryExtension
 @DbmsExtension()
-class DbmsRuntimeSystemGraphComponentTest
-{
+class DbmsRuntimeSystemGraphComponentTest {
 
     // The trick here is that we pass a normal user database
     // to the tested system graph component, which will treat it as a system database
     @Inject
     private GraphDatabaseService userDatabase;
+
     private GraphDatabaseService fakeSystemDb;
 
     private final SystemGraphComponents systemGraphComponents = new SystemGraphComponents();
     private DbmsRuntimeSystemGraphComponent dbmsRuntimeSystemGraphComponent;
 
     @BeforeEach
-    void beforeEach()
-    {
-        fakeSystemDb = new FakeSystemDb( userDatabase );
-        initDbmsComponent( false );
+    void beforeEach() {
+        fakeSystemDb = new FakeSystemDb(userDatabase);
+        initDbmsComponent(false);
     }
 
     @Test
-    void testInitialisationOnFreshDatabase()
-    {
-        systemGraphComponents.initializeSystemGraph( fakeSystemDb );
-        assertVersion( LATEST_DBMS_RUNTIME_COMPONENT_VERSION, fakeSystemDb );
+    void testInitialisationOnFreshDatabase() {
+        systemGraphComponents.initializeSystemGraph(fakeSystemDb);
+        assertVersion(LATEST_DBMS_RUNTIME_COMPONENT_VERSION, fakeSystemDb);
 
-        assertStatus( SystemGraphComponent.Status.CURRENT );
+        assertStatus(SystemGraphComponent.Status.CURRENT);
     }
 
     @Test
-    void testInitialisationOnExistingDatabase()
-    {
-        createVersionNode( userDatabase );
+    void testInitialisationOnExistingDatabase() {
+        createVersionNode(userDatabase);
 
-        systemGraphComponents.initializeSystemGraph( fakeSystemDb );
+        systemGraphComponents.initializeSystemGraph(fakeSystemDb);
 
-        assertVersion( DbmsRuntimeVersion.V5_0, fakeSystemDb );
+        assertVersion(DbmsRuntimeVersion.V5_0, fakeSystemDb);
 
-        assertStatus( SystemGraphComponent.Status.UNINITIALIZED );
+        assertStatus(SystemGraphComponent.Status.UNINITIALIZED);
     }
 
     @Test
-    void testInitialisationOnExistingDatabaseWithAutomaticUpgrade()
-    {
-        systemGraphComponents.deregister( DBMS_RUNTIME_COMPONENT );
-        initDbmsComponent( true );
+    void testInitialisationOnExistingDatabaseWithAutomaticUpgrade() {
+        systemGraphComponents.deregister(DBMS_RUNTIME_COMPONENT);
+        initDbmsComponent(true);
 
-        createVersionNode( userDatabase );
+        createVersionNode(userDatabase);
 
-        systemGraphComponents.initializeSystemGraph( fakeSystemDb );
-        assertVersion( LATEST_DBMS_RUNTIME_COMPONENT_VERSION, fakeSystemDb );
+        systemGraphComponents.initializeSystemGraph(fakeSystemDb);
+        assertVersion(LATEST_DBMS_RUNTIME_COMPONENT_VERSION, fakeSystemDb);
 
-        assertStatus( SystemGraphComponent.Status.CURRENT );
+        assertStatus(SystemGraphComponent.Status.CURRENT);
     }
 
     @Test
-    void testCurrentVersionPresent()
-    {
-        createVersionNode( userDatabase, LATEST_DBMS_RUNTIME_COMPONENT_VERSION );
+    void testCurrentVersionPresent() {
+        createVersionNode(userDatabase, LATEST_DBMS_RUNTIME_COMPONENT_VERSION);
 
-        systemGraphComponents.initializeSystemGraph( fakeSystemDb );
-        assertVersion( LATEST_DBMS_RUNTIME_COMPONENT_VERSION, fakeSystemDb );
+        systemGraphComponents.initializeSystemGraph(fakeSystemDb);
+        assertVersion(LATEST_DBMS_RUNTIME_COMPONENT_VERSION, fakeSystemDb);
 
-        assertStatus( SystemGraphComponent.Status.CURRENT );
+        assertStatus(SystemGraphComponent.Status.CURRENT);
     }
 
     @Test
-    void testOldVersionPresent()
-    {
-        createVersionNode( userDatabase, DbmsRuntimeVersion.V4_2 );
+    void testOldVersionPresent() {
+        createVersionNode(userDatabase, DbmsRuntimeVersion.V4_2);
 
-        systemGraphComponents.initializeSystemGraph( fakeSystemDb );
-        assertVersion( DbmsRuntimeVersion.V4_2, fakeSystemDb );
+        systemGraphComponents.initializeSystemGraph(fakeSystemDb);
+        assertVersion(DbmsRuntimeVersion.V4_2, fakeSystemDb);
 
-        assertStatus( SystemGraphComponent.Status.REQUIRES_UPGRADE );
+        assertStatus(SystemGraphComponent.Status.REQUIRES_UPGRADE);
     }
 
     @Test
-    void testUpgrade() throws Exception
-    {
-        createVersionNode( userDatabase, DbmsRuntimeVersion.V4_2 );
+    void testUpgrade() throws Exception {
+        createVersionNode(userDatabase, DbmsRuntimeVersion.V4_2);
 
-        assertStatus( SystemGraphComponent.Status.REQUIRES_UPGRADE );
+        assertStatus(SystemGraphComponent.Status.REQUIRES_UPGRADE);
 
-        systemGraphComponents.upgradeToCurrent( fakeSystemDb );
+        systemGraphComponents.upgradeToCurrent(fakeSystemDb);
 
-        assertVersion( LATEST_DBMS_RUNTIME_COMPONENT_VERSION, fakeSystemDb );
-        assertStatus( SystemGraphComponent.Status.CURRENT );
+        assertVersion(LATEST_DBMS_RUNTIME_COMPONENT_VERSION, fakeSystemDb);
+        assertStatus(SystemGraphComponent.Status.CURRENT);
     }
 
     @Test
-    void upgradeFromUninitialized() throws Exception
-    {
-        assertStatus( SystemGraphComponent.Status.UNINITIALIZED );
+    void upgradeFromUninitialized() throws Exception {
+        assertStatus(SystemGraphComponent.Status.UNINITIALIZED);
 
-        systemGraphComponents.upgradeToCurrent( fakeSystemDb );
+        systemGraphComponents.upgradeToCurrent(fakeSystemDb);
 
-        assertVersion( LATEST_DBMS_RUNTIME_COMPONENT_VERSION, fakeSystemDb );
-        assertStatus( SystemGraphComponent.Status.CURRENT );
+        assertVersion(LATEST_DBMS_RUNTIME_COMPONENT_VERSION, fakeSystemDb);
+        assertStatus(SystemGraphComponent.Status.CURRENT);
     }
 
     @Test
-    void initializeRuntimeVersionNodeToLatestVersion()
-    {
-        createRuntimeComponentNode( userDatabase, LATEST_DBMS_RUNTIME_COMPONENT_VERSION );
-        assertStatus( SystemGraphComponent.Status.CURRENT );
+    void initializeRuntimeVersionNodeToLatestVersion() {
+        createRuntimeComponentNode(userDatabase, LATEST_DBMS_RUNTIME_COMPONENT_VERSION);
+        assertStatus(SystemGraphComponent.Status.CURRENT);
 
-        systemGraphComponents.initializeSystemGraph( fakeSystemDb );
+        systemGraphComponents.initializeSystemGraph(fakeSystemDb);
 
-        assertVersion( LATEST_DBMS_RUNTIME_COMPONENT_VERSION, fakeSystemDb );
-        assertStatus( SystemGraphComponent.Status.CURRENT );
+        assertVersion(LATEST_DBMS_RUNTIME_COMPONENT_VERSION, fakeSystemDb);
+        assertStatus(SystemGraphComponent.Status.CURRENT);
     }
 
     @Test
-    void updateRuntimeVersionNodeToLatestVersion() throws Exception
-    {
-        createRuntimeComponentNode( userDatabase, DbmsRuntimeVersion.V4_2 );
+    void updateRuntimeVersionNodeToLatestVersion() throws Exception {
+        createRuntimeComponentNode(userDatabase, DbmsRuntimeVersion.V4_2);
 
-        systemGraphComponents.upgradeToCurrent( fakeSystemDb );
+        systemGraphComponents.upgradeToCurrent(fakeSystemDb);
 
-        assertVersion( LATEST_DBMS_RUNTIME_COMPONENT_VERSION, fakeSystemDb );
-        assertStatus( SystemGraphComponent.Status.CURRENT );
+        assertVersion(LATEST_DBMS_RUNTIME_COMPONENT_VERSION, fakeSystemDb);
+        assertStatus(SystemGraphComponent.Status.CURRENT);
     }
 
-    private void initDbmsComponent( boolean automaticUpgrade )
-    {
+    private void initDbmsComponent(boolean automaticUpgrade) {
         var config = Config.newBuilder()
-                           .set( GraphDatabaseSettings.allow_single_automatic_upgrade, automaticUpgrade )
-                           .build();
-        dbmsRuntimeSystemGraphComponent = new DbmsRuntimeSystemGraphComponent( config );
-        systemGraphComponents.register( dbmsRuntimeSystemGraphComponent );
+                .set(GraphDatabaseSettings.allow_single_automatic_upgrade, automaticUpgrade)
+                .build();
+        dbmsRuntimeSystemGraphComponent = new DbmsRuntimeSystemGraphComponent(config);
+        systemGraphComponents.register(dbmsRuntimeSystemGraphComponent);
     }
 
-    private void assertVersion( ComponentVersion expectedVersion, GraphDatabaseService system )
-    {
-        systemGraphComponents.forEach( component ->
-        {
-            if ( component instanceof DbmsRuntimeSystemGraphComponent )
-            {
-                DbmsRuntimeVersion foundVersion = ((DbmsRuntimeSystemGraphComponent) component).fetchStateFromSystemDatabase( system );
-                assertEquals( expectedVersion, foundVersion );
+    private void assertVersion(ComponentVersion expectedVersion, GraphDatabaseService system) {
+        systemGraphComponents.forEach(component -> {
+            if (component instanceof DbmsRuntimeSystemGraphComponent) {
+                DbmsRuntimeVersion foundVersion =
+                        ((DbmsRuntimeSystemGraphComponent) component).fetchStateFromSystemDatabase(system);
+                assertEquals(expectedVersion, foundVersion);
             }
-        } );
+        });
     }
 
-    private void assertStatus( SystemGraphComponent.Status expectedStatus )
-    {
-        try ( var tx = userDatabase.beginTx() )
-        {
-            assertEquals( expectedStatus, dbmsRuntimeSystemGraphComponent.detect( tx ) );
+    private void assertStatus(SystemGraphComponent.Status expectedStatus) {
+        try (var tx = userDatabase.beginTx()) {
+            assertEquals(expectedStatus, dbmsRuntimeSystemGraphComponent.detect(tx));
         }
     }
 
-    private static void createVersionNode( GraphDatabaseService database )
-    {
-        try ( var tx = database.beginTx() )
-        {
-            tx.createNode( VERSION_LABEL );
+    private static void createVersionNode(GraphDatabaseService database) {
+        try (var tx = database.beginTx()) {
+            tx.createNode(VERSION_LABEL);
             tx.commit();
         }
     }
 
-    private static void createVersionNode( GraphDatabaseService database, DbmsRuntimeVersion version )
-    {
-        try ( var tx = database.beginTx() )
-        {
-            tx.createNode( VERSION_LABEL ).setProperty( DBMS_RUNTIME_COMPONENT, version.getVersion() );
+    private static void createVersionNode(GraphDatabaseService database, DbmsRuntimeVersion version) {
+        try (var tx = database.beginTx()) {
+            tx.createNode(VERSION_LABEL).setProperty(DBMS_RUNTIME_COMPONENT, version.getVersion());
             tx.commit();
         }
     }
 
-    private static void createRuntimeComponentNode( GraphDatabaseService database, DbmsRuntimeVersion version )
-    {
-        try ( var tx = database.beginTx() )
-        {
-            tx.createNode( DbmsRuntimeSystemGraphComponent.OLD_COMPONENT_LABEL )
-              .setProperty( DbmsRuntimeSystemGraphComponent.OLD_PROPERTY_NAME, version.getVersion() );
+    private static void createRuntimeComponentNode(GraphDatabaseService database, DbmsRuntimeVersion version) {
+        try (var tx = database.beginTx()) {
+            tx.createNode(DbmsRuntimeSystemGraphComponent.OLD_COMPONENT_LABEL)
+                    .setProperty(DbmsRuntimeSystemGraphComponent.OLD_PROPERTY_NAME, version.getVersion());
             tx.commit();
         }
     }
 
-    private static class FakeSystemDb implements GraphDatabaseService
-    {
+    private static class FakeSystemDb implements GraphDatabaseService {
 
         private final GraphDatabaseService wrappedDb;
 
-        FakeSystemDb( GraphDatabaseService wrappedDb )
-        {
+        FakeSystemDb(GraphDatabaseService wrappedDb) {
             this.wrappedDb = wrappedDb;
         }
 
         @Override
-        public boolean isAvailable()
-        {
+        public boolean isAvailable() {
             return wrappedDb.isAvailable();
         }
 
         @Override
-        public boolean isAvailable( long timeoutMillis )
-        {
-            return wrappedDb.isAvailable( timeoutMillis );
+        public boolean isAvailable(long timeoutMillis) {
+            return wrappedDb.isAvailable(timeoutMillis);
         }
 
         @Override
-        public Transaction beginTx()
-        {
+        public Transaction beginTx() {
             return wrappedDb.beginTx();
         }
 
         @Override
-        public Transaction beginTx( long timeout, TimeUnit unit )
-        {
-            return wrappedDb.beginTx( timeout, unit );
+        public Transaction beginTx(long timeout, TimeUnit unit) {
+            return wrappedDb.beginTx(timeout, unit);
         }
 
         @Override
-        public void executeTransactionally( String query ) throws QueryExecutionException
-        {
-            throw new IllegalStateException( "Not implemented" );
+        public void executeTransactionally(String query) throws QueryExecutionException {
+            throw new IllegalStateException("Not implemented");
         }
 
         @Override
-        public void executeTransactionally( String query, Map<String,Object> parameters ) throws QueryExecutionException
-        {
-            throw new IllegalStateException( "Not implemented" );
+        public void executeTransactionally(String query, Map<String, Object> parameters)
+                throws QueryExecutionException {
+            throw new IllegalStateException("Not implemented");
         }
 
         @Override
-        public <T> T executeTransactionally( String query, Map<String,Object> parameters, ResultTransformer<T> resultTransformer )
-                throws QueryExecutionException
-        {
-            throw new IllegalStateException( "Not implemented" );
+        public <T> T executeTransactionally(
+                String query, Map<String, Object> parameters, ResultTransformer<T> resultTransformer)
+                throws QueryExecutionException {
+            throw new IllegalStateException("Not implemented");
         }
 
         @Override
-        public <T> T executeTransactionally( String query, Map<String,Object> parameters, ResultTransformer<T> resultTransformer, Duration timeout )
-                throws QueryExecutionException
-        {
-            throw new IllegalStateException( "Not implemented" );
+        public <T> T executeTransactionally(
+                String query, Map<String, Object> parameters, ResultTransformer<T> resultTransformer, Duration timeout)
+                throws QueryExecutionException {
+            throw new IllegalStateException("Not implemented");
         }
 
         @Override
-        public String databaseName()
-        {
+        public String databaseName() {
             return "system";
         }
     }

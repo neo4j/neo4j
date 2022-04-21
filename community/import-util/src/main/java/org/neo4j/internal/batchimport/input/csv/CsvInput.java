@@ -19,6 +19,14 @@
  */
 package org.neo4j.internal.batchimport.input.csv;
 
+import static org.apache.commons.lang3.SystemUtils.IS_OS_LINUX;
+import static org.neo4j.csv.reader.CharSeekers.charSeeker;
+import static org.neo4j.internal.batchimport.input.Collector.EMPTY;
+import static org.neo4j.internal.batchimport.input.InputEntityDecorators.NO_DECORATOR;
+import static org.neo4j.internal.batchimport.input.csv.CsvInputIterator.extractHeader;
+import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
@@ -28,7 +36,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.ToIntFunction;
-
 import org.neo4j.collection.RawIterator;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
@@ -49,22 +56,13 @@ import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.memory.MemoryTracker;
 
-import static org.apache.commons.lang3.SystemUtils.IS_OS_LINUX;
-import static org.neo4j.csv.reader.CharSeekers.charSeeker;
-import static org.neo4j.internal.batchimport.input.Collector.EMPTY;
-import static org.neo4j.internal.batchimport.input.InputEntityDecorators.NO_DECORATOR;
-import static org.neo4j.internal.batchimport.input.csv.CsvInputIterator.extractHeader;
-import static org.neo4j.io.ByteUnit.mebiBytes;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-
 /**
  * Provides {@link Input} from data contained in tabular/csv form. Expects factories for instantiating
  * the {@link CharSeeker} objects seeking values in the csv data and header factories for how to
  * extract meta data about the values.
  */
-public class CsvInput implements Input
-{
-    private static final long ESTIMATE_SAMPLE_SIZE = mebiBytes( 1 );
+public class CsvInput implements Input {
+    private static final long ESTIMATE_SAMPLE_SIZE = mebiBytes(1);
 
     private final Iterable<DataFactory> nodeDataFactory;
     private final Header.Factory nodeHeaderFactory;
@@ -91,22 +89,42 @@ public class CsvInput implements Input
      * @param monitor {@link Monitor} for internal events.
      */
     public CsvInput(
-            Iterable<DataFactory> nodeDataFactory, Header.Factory nodeHeaderFactory,
-            Iterable<DataFactory> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
-            IdType idType, Configuration config, boolean autoSkipHeaders, Monitor monitor, MemoryTracker memoryTracker )
-    {
-        this( nodeDataFactory, nodeHeaderFactory, relationshipDataFactory, relationshipHeaderFactory, idType, config, autoSkipHeaders, monitor,
-                new Groups(), memoryTracker );
+            Iterable<DataFactory> nodeDataFactory,
+            Header.Factory nodeHeaderFactory,
+            Iterable<DataFactory> relationshipDataFactory,
+            Header.Factory relationshipHeaderFactory,
+            IdType idType,
+            Configuration config,
+            boolean autoSkipHeaders,
+            Monitor monitor,
+            MemoryTracker memoryTracker) {
+        this(
+                nodeDataFactory,
+                nodeHeaderFactory,
+                relationshipDataFactory,
+                relationshipHeaderFactory,
+                idType,
+                config,
+                autoSkipHeaders,
+                monitor,
+                new Groups(),
+                memoryTracker);
     }
 
     CsvInput(
-            Iterable<DataFactory> nodeDataFactory, Header.Factory nodeHeaderFactory,
-            Iterable<DataFactory> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
-            IdType idType, Configuration config, boolean autoSkipHeaders, Monitor monitor, Groups groups, MemoryTracker memoryTracker )
-    {
+            Iterable<DataFactory> nodeDataFactory,
+            Header.Factory nodeHeaderFactory,
+            Iterable<DataFactory> relationshipDataFactory,
+            Header.Factory relationshipHeaderFactory,
+            IdType idType,
+            Configuration config,
+            boolean autoSkipHeaders,
+            Monitor monitor,
+            Groups groups,
+            MemoryTracker memoryTracker) {
         this.autoSkipHeaders = autoSkipHeaders;
         this.memoryTracker = memoryTracker;
-        assertSaneConfiguration( config );
+        assertSaneConfiguration(config);
 
         this.nodeDataFactory = nodeDataFactory;
         this.nodeHeaderFactory = nodeHeaderFactory;
@@ -128,189 +146,175 @@ public class CsvInput implements Input
      * <li>relationship headers uses ID spaces previously defined in node headers</li>
      * </ul>
      */
-    private void verifyHeaders()
-    {
-        try
-        {
+    private void verifyHeaders() {
+        try {
             // parse all node headers and remember all ID spaces
-            for ( DataFactory dataFactory : nodeDataFactory )
-            {
-                Data data = dataFactory.create( config );
-                try ( CharSeeker dataStream = charSeeker( new MultiReadable( data.stream() ), config, true ) )
-                {
+            for (DataFactory dataFactory : nodeDataFactory) {
+                Data data = dataFactory.create(config);
+                try (CharSeeker dataStream = charSeeker(new MultiReadable(data.stream()), config, true)) {
                     // Parsing and constructing this header will create this group,
                     // so no need to do something with the result of it right now
-                    Header header = nodeHeaderFactory.create( dataStream, config, idType, groups, NO_MONITOR );
-                    if ( Arrays.stream( header.entries() ).noneMatch( entry -> entry.type() == Type.LABEL ) && data.decorator() == NO_DECORATOR )
-                    {
-                        monitor.noNodeLabelsSpecified( dataStream.sourceDescription() );
+                    Header header = nodeHeaderFactory.create(dataStream, config, idType, groups, NO_MONITOR);
+                    if (Arrays.stream(header.entries()).noneMatch(entry -> entry.type() == Type.LABEL)
+                            && data.decorator() == NO_DECORATOR) {
+                        monitor.noNodeLabelsSpecified(dataStream.sourceDescription());
                     }
                 }
             }
 
             // parse all relationship headers and verify all ID spaces
-            for ( DataFactory dataFactory : relationshipDataFactory )
-            {
-                Data data = dataFactory.create( config );
-                try ( CharSeeker dataStream = charSeeker( new MultiReadable( data.stream() ), config, true ) )
-                {
+            for (DataFactory dataFactory : relationshipDataFactory) {
+                Data data = dataFactory.create(config);
+                try (CharSeeker dataStream = charSeeker(new MultiReadable(data.stream()), config, true)) {
                     // Merely parsing and constructing the header here will as a side-effect verify that the
                     // id groups already exists (relationship header isn't allowed to create groups)
-                    Header header = relationshipHeaderFactory.create( dataStream, config, idType, groups, NO_MONITOR );
-                    if ( Arrays.stream( header.entries() ).noneMatch( entry -> entry.type() == Type.TYPE ) && data.decorator() == NO_DECORATOR )
-                    {
-                        monitor.noRelationshipTypeSpecified( dataStream.sourceDescription() );
+                    Header header = relationshipHeaderFactory.create(dataStream, config, idType, groups, NO_MONITOR);
+                    if (Arrays.stream(header.entries()).noneMatch(entry -> entry.type() == Type.TYPE)
+                            && data.decorator() == NO_DECORATOR) {
+                        monitor.noRelationshipTypeSpecified(dataStream.sourceDescription());
                     }
                 }
             }
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    private void warnAboutDuplicateSourceFiles()
-    {
-        try
-        {
+    private void warnAboutDuplicateSourceFiles() {
+        try {
             Set<String> seenSourceFiles = new HashSet<>();
-            warnAboutDuplicateSourceFiles( seenSourceFiles, nodeDataFactory );
-            warnAboutDuplicateSourceFiles( seenSourceFiles, relationshipDataFactory );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+            warnAboutDuplicateSourceFiles(seenSourceFiles, nodeDataFactory);
+            warnAboutDuplicateSourceFiles(seenSourceFiles, relationshipDataFactory);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    private void warnAboutDuplicateSourceFiles( Set<String> seenSourceFiles, Iterable<DataFactory> dataFactories ) throws IOException
-    {
-        for ( DataFactory dataFactory : dataFactories )
-        {
-            RawIterator<CharReadable,IOException> stream = dataFactory.create( config ).stream();
-            while ( stream.hasNext() )
-            {
-                try ( CharReadable source = stream.next() )
-                {
-                    warnAboutDuplicateSourceFiles( seenSourceFiles, source );
+    private void warnAboutDuplicateSourceFiles(Set<String> seenSourceFiles, Iterable<DataFactory> dataFactories)
+            throws IOException {
+        for (DataFactory dataFactory : dataFactories) {
+            RawIterator<CharReadable, IOException> stream = dataFactory.create(config).stream();
+            while (stream.hasNext()) {
+                try (CharReadable source = stream.next()) {
+                    warnAboutDuplicateSourceFiles(seenSourceFiles, source);
                 }
             }
         }
     }
 
-    private void warnAboutDuplicateSourceFiles( Set<String> seenSourceFiles, CharReadable source )
-    {
+    private void warnAboutDuplicateSourceFiles(Set<String> seenSourceFiles, CharReadable source) {
         String sourceDescription = source.sourceDescription();
-        if ( !seenSourceFiles.add( sourceDescription ) )
-        {
-            monitor.duplicateSourceFile( sourceDescription );
+        if (!seenSourceFiles.add(sourceDescription)) {
+            monitor.duplicateSourceFile(sourceDescription);
         }
     }
 
-    private static void assertSaneConfiguration( Configuration config )
-    {
-        Map<Character,String> delimiters = new HashMap<>();
-        delimiters.put( config.delimiter(), "delimiter" );
-        checkUniqueCharacter( delimiters, config.arrayDelimiter(), "array delimiter" );
-        checkUniqueCharacter( delimiters, config.quotationCharacter(), "quotation character" );
+    private static void assertSaneConfiguration(Configuration config) {
+        Map<Character, String> delimiters = new HashMap<>();
+        delimiters.put(config.delimiter(), "delimiter");
+        checkUniqueCharacter(delimiters, config.arrayDelimiter(), "array delimiter");
+        checkUniqueCharacter(delimiters, config.quotationCharacter(), "quotation character");
     }
 
-    private static void checkUniqueCharacter( Map<Character,String> characters, char character, String characterDescription )
-    {
-        String conflict = characters.put( character, characterDescription );
-        if ( conflict != null )
-        {
-            throw new IllegalArgumentException( "Character '" + character + "' specified by " + characterDescription +
-                    " is the same as specified by " + conflict );
+    private static void checkUniqueCharacter(
+            Map<Character, String> characters, char character, String characterDescription) {
+        String conflict = characters.put(character, characterDescription);
+        if (conflict != null) {
+            throw new IllegalArgumentException("Character '" + character + "' specified by " + characterDescription
+                    + " is the same as specified by " + conflict);
         }
     }
 
     @Override
-    public InputIterable nodes( Collector badCollector )
-    {
-        return () -> stream( nodeDataFactory, nodeHeaderFactory, badCollector );
+    public InputIterable nodes(Collector badCollector) {
+        return () -> stream(nodeDataFactory, nodeHeaderFactory, badCollector);
     }
 
     @Override
-    public InputIterable relationships( Collector badCollector )
-    {
-        return () -> stream( relationshipDataFactory, relationshipHeaderFactory, badCollector );
+    public InputIterable relationships(Collector badCollector) {
+        return () -> stream(relationshipDataFactory, relationshipHeaderFactory, badCollector);
     }
 
-    private InputIterator stream( Iterable<DataFactory> data, Header.Factory headerFactory, Collector badCollector )
-    {
-        return new CsvGroupInputIterator( data.iterator(), headerFactory, idType, config, badCollector, groups, autoSkipHeaders, NO_MONITOR );
+    private InputIterator stream(Iterable<DataFactory> data, Header.Factory headerFactory, Collector badCollector) {
+        return new CsvGroupInputIterator(
+                data.iterator(), headerFactory, idType, config, badCollector, groups, autoSkipHeaders, NO_MONITOR);
     }
 
     @Override
-    public IdType idType()
-    {
+    public IdType idType() {
         return idType;
     }
 
     @Override
-    public ReadableGroups groups()
-    {
+    public ReadableGroups groups() {
         return groups;
     }
 
     @Override
-    public Estimates calculateEstimates( PropertySizeCalculator valueSizeCalculator ) throws IOException
-    {
-        long[] nodeSample = sample( nodeDataFactory, nodeHeaderFactory, valueSizeCalculator, node -> node.labels().length );
-        long[] relationshipSample = sample( relationshipDataFactory, relationshipHeaderFactory, valueSizeCalculator, entity -> 0 );
-        long propPreAllocAdditional = propertyPreAllocateRounding( nodeSample[2] + relationshipSample[2] ) / 2;
+    public Estimates calculateEstimates(PropertySizeCalculator valueSizeCalculator) throws IOException {
+        long[] nodeSample =
+                sample(nodeDataFactory, nodeHeaderFactory, valueSizeCalculator, node -> node.labels().length);
+        long[] relationshipSample =
+                sample(relationshipDataFactory, relationshipHeaderFactory, valueSizeCalculator, entity -> 0);
+        long propPreAllocAdditional = propertyPreAllocateRounding(nodeSample[2] + relationshipSample[2]) / 2;
         return Input.knownEstimates(
-                nodeSample[0], relationshipSample[0],
-                nodeSample[1], relationshipSample[1],
-                nodeSample[2] + propPreAllocAdditional, relationshipSample[2] + propPreAllocAdditional,
-                nodeSample[3] );
+                nodeSample[0],
+                relationshipSample[0],
+                nodeSample[1],
+                relationshipSample[1],
+                nodeSample[2] + propPreAllocAdditional,
+                relationshipSample[2] + propPreAllocAdditional,
+                nodeSample[3]);
     }
 
-    private long[] sample( Iterable<DataFactory> dataFactories, Header.Factory headerFactory,
-            PropertySizeCalculator valueSizeCalculator, ToIntFunction<InputEntity> additionalCalculator ) throws IOException
-    {
+    private long[] sample(
+            Iterable<DataFactory> dataFactories,
+            Header.Factory headerFactory,
+            PropertySizeCalculator valueSizeCalculator,
+            ToIntFunction<InputEntity> additionalCalculator)
+            throws IOException {
         long[] estimates = new long[4]; // [entity count, property count, property size, labels (for nodes only)]
-        try ( CsvInputChunkProxy chunk = new CsvInputChunkProxy() )
-        {
+        try (CsvInputChunkProxy chunk = new CsvInputChunkProxy()) {
             // One group of input files
             int groupId = 0;
-            for ( DataFactory dataFactory : dataFactories ) // one input group
+            for (DataFactory dataFactory : dataFactories) // one input group
             {
                 groupId++;
                 Header header = null;
-                Data data = dataFactory.create( config );
-                RawIterator<CharReadable,IOException> sources = data.stream();
-                while ( sources.hasNext() )
-                {
-                    try ( CharReadable source = sources.next() )
-                    {
-                        if ( header == null )
-                        {
+                Data data = dataFactory.create(config);
+                RawIterator<CharReadable, IOException> sources = data.stream();
+                while (sources.hasNext()) {
+                    try (CharReadable source = sources.next()) {
+                        if (header == null) {
                             // Extract the header from the first file in this group
-                            // This is the only place we monitor type normalization because it's before import and it touches all headers
-                            header = extractHeader( source, headerFactory, idType, config, groups, monitor );
+                            // This is the only place we monitor type normalization because it's before import and it
+                            // touches all headers
+                            header = extractHeader(source, headerFactory, idType, config, groups, monitor);
                         }
-                        try ( CsvInputIterator iterator = new CsvInputIterator( source, data.decorator(), header, config,
-                                idType, EMPTY, CsvGroupInputIterator.extractors( config ), groupId, autoSkipHeaders );
-                                InputEntity entity = new InputEntity() )
-                        {
+                        try (CsvInputIterator iterator = new CsvInputIterator(
+                                        source,
+                                        data.decorator(),
+                                        header,
+                                        config,
+                                        idType,
+                                        EMPTY,
+                                        CsvGroupInputIterator.extractors(config),
+                                        groupId,
+                                        autoSkipHeaders);
+                                InputEntity entity = new InputEntity()) {
                             int entities = 0;
                             int properties = 0;
                             int propertySize = 0;
                             int additional = 0;
-                            while ( iterator.position() < ESTIMATE_SAMPLE_SIZE && iterator.next( chunk ) )
-                            {
-                                for ( ; chunk.next( entity ); entities++ )
-                                {
+                            while (iterator.position() < ESTIMATE_SAMPLE_SIZE && iterator.next(chunk)) {
+                                for (; chunk.next(entity); entities++) {
                                     properties += entity.propertyCount();
-                                    propertySize += Inputs.calculatePropertySize( entity, valueSizeCalculator, NULL_CONTEXT, memoryTracker );
-                                    additional += additionalCalculator.applyAsInt( entity );
+                                    propertySize += Inputs.calculatePropertySize(
+                                            entity, valueSizeCalculator, NULL_CONTEXT, memoryTracker);
+                                    additional += additionalCalculator.applyAsInt(entity);
                                 }
                             }
-                            if ( entities > 0 )
-                            {
+                            if (entities > 0) {
                                 long position = iterator.position();
                                 double compressionRatio = iterator.compressionRatio();
                                 double actualFileSize = source.length() / compressionRatio;
@@ -328,17 +332,15 @@ public class CsvInput implements Input
         return estimates;
     }
 
-    private static long propertyPreAllocateRounding( long initialEstimatedPropertyStoreSize )
-    {
-        if ( !IS_OS_LINUX )
-        {
-            // Only linux systems does pre-allocation of store files, so the pre-allocation rounding is zero for all other systems.
+    private static long propertyPreAllocateRounding(long initialEstimatedPropertyStoreSize) {
+        if (!IS_OS_LINUX) {
+            // Only linux systems does pre-allocation of store files, so the pre-allocation rounding is zero for all
+            // other systems.
             return 0;
         }
         // By default, the page cache will grow large store files in 32 MiB sized chunks.
-        long preAllocSize = ByteUnit.mebiBytes( 32 );
-        if ( initialEstimatedPropertyStoreSize < preAllocSize )
-        {
+        long preAllocSize = ByteUnit.mebiBytes(32);
+        if (initialEstimatedPropertyStoreSize < preAllocSize) {
             return 0;
         }
         long chunks = 1 + initialEstimatedPropertyStoreSize / preAllocSize;
@@ -347,92 +349,85 @@ public class CsvInput implements Input
         return estimatedFinalPropertyStoreSize - initialEstimatedPropertyStoreSize;
     }
 
-    public static Extractor<?> idExtractor( IdType idType, Extractors extractors )
-    {
-        switch ( idType )
-        {
-        case STRING:
-            return extractors.string();
-        case INTEGER:
-        case ACTUAL:
-            return extractors.long_();
-        default:
-            throw new IllegalArgumentException( "Unsupported id type " + idType );
+    public static Extractor<?> idExtractor(IdType idType, Extractors extractors) {
+        switch (idType) {
+            case STRING:
+                return extractors.string();
+            case INTEGER:
+            case ACTUAL:
+                return extractors.long_();
+            default:
+                throw new IllegalArgumentException("Unsupported id type " + idType);
         }
     }
 
-    public interface Monitor extends Header.Monitor
-    {
+    public interface Monitor extends Header.Monitor {
         /**
          * Reports that a given source file has been specified more than one time.
          * @param sourceFile source file that is a duplicate.
          */
-        void duplicateSourceFile( String sourceFile );
+        void duplicateSourceFile(String sourceFile);
 
         /**
          * Reports that a given source file, in this case the first in its group, doesn't specify any node label header and
          * the group wasn't assigned any label from the command line specification.
          * @param sourceFile source file of the first file in the file group that is missing node labels.
          */
-        void noNodeLabelsSpecified( String sourceFile );
+        void noNodeLabelsSpecified(String sourceFile);
 
         /**
          * Reports that a given source file, in this case the first in its group, doesn't specify any relationship type header and
          * the group wasn't assigned a relationship type from the command line specification.
          * @param sourceFile source file of the first file in the file group that is missing the relationship type..
          */
-        void noRelationshipTypeSpecified( String sourceFile );
+        void noRelationshipTypeSpecified(String sourceFile);
     }
 
-    public static final Monitor NO_MONITOR = new Monitor()
-    {
+    public static final Monitor NO_MONITOR = new Monitor() {
         @Override
-        public void duplicateSourceFile( String sourceFile )
-        {   // no-op
+        public void duplicateSourceFile(String sourceFile) { // no-op
         }
 
         @Override
-        public void noNodeLabelsSpecified( String sourceFile )
-        {   // no-op
+        public void noNodeLabelsSpecified(String sourceFile) { // no-op
         }
 
         @Override
-        public void noRelationshipTypeSpecified( String sourceFile )
-        {   // no-op
+        public void noRelationshipTypeSpecified(String sourceFile) { // no-op
         }
 
         @Override
-        public void typeNormalized( String sourceDescription, String header, String fromType, String toType )
-        {   // no-op
+        public void typeNormalized(String sourceDescription, String header, String fromType, String toType) { // no-op
         }
     };
 
-    public static class PrintingMonitor extends Header.PrintingMonitor implements Monitor
-    {
+    public static class PrintingMonitor extends Header.PrintingMonitor implements Monitor {
         private final PrintStream out;
 
-        public PrintingMonitor( PrintStream out )
-        {
-            super( out );
+        public PrintingMonitor(PrintStream out) {
+            super(out);
             this.out = out;
         }
 
         @Override
-        public void duplicateSourceFile( String sourceFile )
-        {
-            out.printf( "WARN: source file %s has been specified multiple times, this may result in unwanted duplicates%n", sourceFile );
+        public void duplicateSourceFile(String sourceFile) {
+            out.printf(
+                    "WARN: source file %s has been specified multiple times, this may result in unwanted duplicates%n",
+                    sourceFile);
         }
 
         @Override
-        public void noNodeLabelsSpecified( String sourceFile )
-        {
-            out.printf( "WARN: file group with header file %s specifies no node labels, which could be a mistake%n", sourceFile );
+        public void noNodeLabelsSpecified(String sourceFile) {
+            out.printf(
+                    "WARN: file group with header file %s specifies no node labels, which could be a mistake%n",
+                    sourceFile);
         }
 
         @Override
-        public void noRelationshipTypeSpecified( String sourceFile )
-        {
-            out.printf( "WARN: file group with header file %s specifies no relationship type, which could be a mistake%n", sourceFile );
+        public void noRelationshipTypeSpecified(String sourceFile) {
+            out.printf(
+                    "WARN: file group with header file %s specifies no relationship type, which could be a mistake%n",
+                    sourceFile);
         }
     }
 }

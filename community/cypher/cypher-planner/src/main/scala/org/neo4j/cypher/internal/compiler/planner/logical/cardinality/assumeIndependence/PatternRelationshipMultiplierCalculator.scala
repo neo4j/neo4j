@@ -65,15 +65,16 @@ object PatternRelationshipMultiplierCalculator {
  */
 case class PatternRelationshipMultiplierCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) {
 
-  private implicit val numericCardinality: NumericCardinality.type = NumericCardinality
+  implicit private val numericCardinality: NumericCardinality.type = NumericCardinality
 
-  private implicit val numericMultiplier: NumericMultiplier.type = NumericMultiplier
+  implicit private val numericMultiplier: NumericMultiplier.type = NumericMultiplier
 
-  def relationshipMultiplier(pattern: PatternRelationship, labels: LabelInfo)
-                            (implicit semanticTable: SemanticTable): Multiplier = {
+  def relationshipMultiplier(pattern: PatternRelationship, labels: LabelInfo)(implicit
+  semanticTable: SemanticTable): Multiplier = {
     val nbrOfNodesInGraph = stats.nodesAllCardinality()
     val (lhs, rhs) = pattern.nodes
-    val Seq(labelsOnLhs, labelsOnRhs) = Seq(lhs, rhs).map(side => mapToLabelTokenSpecs(labels.getOrElse(side, Set.empty)))
+    val Seq(labelsOnLhs, labelsOnRhs) =
+      Seq(lhs, rhs).map(side => mapToLabelTokenSpecs(labels.getOrElse(side, Set.empty)))
 
     val lhsCardinality = nbrOfNodesInGraph * calculateLabelSelectivity(labelsOnLhs, nbrOfNodesInGraph)
     val rhsCardinality = nbrOfNodesInGraph * calculateLabelSelectivity(labelsOnRhs, nbrOfNodesInGraph)
@@ -86,7 +87,15 @@ case class PatternRelationshipMultiplierCalculator(stats: GraphStatistics, combi
 
       pattern.length match {
         case SimplePatternLength =>
-          calculateMultiplierForSingleRelHop(types, labelsOnLhs, labelsOnRhs, pattern.dir, lhsCardinality, rhsCardinality, nbrOfNodesInGraph)
+          calculateMultiplierForSingleRelHop(
+            types,
+            labelsOnLhs,
+            labelsOnRhs,
+            pattern.dir,
+            lhsCardinality,
+            rhsCardinality,
+            nbrOfNodesInGraph
+          )
 
         case VarPatternLength(suppliedMin, optMax) =>
           val max = Math.min(optMax.getOrElse(MAX_VAR_LENGTH), MAX_VAR_LENGTH)
@@ -119,7 +128,15 @@ case class PatternRelationshipMultiplierCalculator(stats: GraphStatistics, combi
                     val labelsOnR: Seq[TokenSpec[LabelId]] = if (i == length) labelsOnRhs else Seq(Unspecified)
                     val lhsCardinality = nbrOfNodesInGraph * calculateLabelSelectivity(labelsOnL, nbrOfNodesInGraph)
                     val rhsCardinality = nbrOfNodesInGraph * calculateLabelSelectivity(labelsOnR, nbrOfNodesInGraph)
-                    val relMultiplier = calculateMultiplierForSingleRelHop(types, labelsOnL, labelsOnR, pattern.dir, lhsCardinality, rhsCardinality, nbrOfNodesInGraph)
+                    val relMultiplier = calculateMultiplierForSingleRelHop(
+                      types,
+                      labelsOnL,
+                      labelsOnR,
+                      pattern.dir,
+                      lhsCardinality,
+                      rhsCardinality,
+                      nbrOfNodesInGraph
+                    )
                     // Since the base cardinality that the Multiplier is applied to is the cross product of the start and end of the path, we need to multiply with the cardinality of the intermediate nodes as well
                     if (i == length) relMultiplier else relMultiplier * Multiplier(rhsCardinality.amount)
                   }
@@ -135,13 +152,15 @@ case class PatternRelationshipMultiplierCalculator(stats: GraphStatistics, combi
     }
   }
 
-  private def calculateMultiplierForSingleRelHop(types: Seq[TokenSpec[RelTypeId]],
-                                                 labelsOnLhs: Seq[TokenSpec[LabelId]],
-                                                 labelsOnRhs: Seq[TokenSpec[LabelId]],
-                                                 dir: SemanticDirection,
-                                                 lhsCardinality: Cardinality,
-                                                 rhsCardinality: Cardinality,
-                                                 totalNbrOfNodes: Cardinality): Multiplier = {
+  private def calculateMultiplierForSingleRelHop(
+    types: Seq[TokenSpec[RelTypeId]],
+    labelsOnLhs: Seq[TokenSpec[LabelId]],
+    labelsOnRhs: Seq[TokenSpec[LabelId]],
+    dir: SemanticDirection,
+    lhsCardinality: Cardinality,
+    rhsCardinality: Cardinality,
+    totalNbrOfNodes: Cardinality
+  ): Multiplier = {
 
     val cardinalitiesPerTypeAndLabel: Seq[Seq[Cardinality]] = types map { typ =>
       for {
@@ -172,7 +191,10 @@ case class PatternRelationshipMultiplierCalculator(stats: GraphStatistics, combi
         // we need to apply all labels not part of the current combination as selectivities.
         // For example, when looking at the pattern (:A:B)-[:R]->(:C:D), and currently looking at (:A, :R, :C)
         // we need to multiply that cardinality with the selectivities for :B and :D.
-        val otherLabelsSelectivity = calculateLabelSelectivity(labelsOnLhs.filterNot(_ == lhsLabel) ++ labelsOnRhs.filterNot(_ == rhsLabel), totalNbrOfNodes)
+        val otherLabelsSelectivity = calculateLabelSelectivity(
+          labelsOnLhs.filterNot(_ == lhsLabel) ++ labelsOnRhs.filterNot(_ == rhsLabel),
+          totalNbrOfNodes
+        )
         cardinalityForOneLabelCombination * otherLabelsSelectivity
       }
     }
@@ -192,8 +214,8 @@ case class PatternRelationshipMultiplierCalculator(stats: GraphStatistics, combi
   private def calculateLabelSelectivity(specs: Seq[TokenSpec[LabelId]], totalNbrOfNodes: Cardinality): Selectivity = {
     val selectivities = specs map {
       case SpecifiedButUnknown() => Selectivity.ZERO
-      case Unspecified => Selectivity.ONE
-      case SpecifiedAndKnown(spec: LabelId) =>  // Specified labels have ids
+      case Unspecified           => Selectivity.ONE
+      case SpecifiedAndKnown(spec: LabelId) => // Specified labels have ids
         stats.nodesWithLabelCardinality(Some(spec)) / totalNbrOfNodes getOrElse Selectivity.ZERO
     }
 
@@ -201,20 +223,23 @@ case class PatternRelationshipMultiplierCalculator(stats: GraphStatistics, combi
   }
 
   // These two methods should be one, but I failed to conjure up the proper Scala type magic to make it work
-  private def mapToLabelTokenSpecs(input: Set[LabelName])(implicit semanticTable: SemanticTable): Seq[TokenSpec[LabelId]] =
+  private def mapToLabelTokenSpecs(input: Set[LabelName])(implicit
+  semanticTable: SemanticTable): Seq[TokenSpec[LabelId]] =
     if (input.isEmpty)
       Seq(Unspecified)
     else
       input.toIndexedSeq.map(label =>
-        semanticTable.id(label).map(SpecifiedAndKnown.apply).getOrElse(SpecifiedButUnknown()))
+        semanticTable.id(label).map(SpecifiedAndKnown.apply).getOrElse(SpecifiedButUnknown())
+      )
 
-
-  private def mapToRelTokenSpecs(input: Set[RelTypeName])(implicit semanticTable: SemanticTable): Seq[TokenSpec[RelTypeId]] =
+  private def mapToRelTokenSpecs(input: Set[RelTypeName])(implicit
+  semanticTable: SemanticTable): Seq[TokenSpec[RelTypeId]] =
     if (input.isEmpty)
       Seq(Unspecified)
     else
       input.toIndexedSeq.map(rel =>
-        semanticTable.id(rel).map(SpecifiedAndKnown.apply).getOrElse(SpecifiedButUnknown()))
+        semanticTable.id(rel).map(SpecifiedAndKnown.apply).getOrElse(SpecifiedButUnknown())
+      )
 }
 
 /**

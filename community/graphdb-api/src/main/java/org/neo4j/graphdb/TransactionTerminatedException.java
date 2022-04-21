@@ -27,25 +27,21 @@ import org.neo4j.kernel.api.exceptions.Status;
  * has been terminated with {@link Transaction#terminate()}.
  */
 @PublicApi
-public class TransactionTerminatedException extends TransactionFailureException implements Status.HasStatus
-{
+public class TransactionTerminatedException extends TransactionFailureException implements Status.HasStatus {
     private final Status status;
 
-    public TransactionTerminatedException( Status status )
-    {
-        this( status, "" );
+    public TransactionTerminatedException(Status status) {
+        this(status, "");
     }
 
-    protected TransactionTerminatedException( Status status, String additionalInfo )
-    {
-        super( "The transaction has been terminated. Retry your operation in a new transaction, " +
-               "and you should see a successful result. " + status.code().description() + " " + additionalInfo );
+    protected TransactionTerminatedException(Status status, String additionalInfo) {
+        super("The transaction has been terminated. Retry your operation in a new transaction, "
+                + "and you should see a successful result. " + status.code().description() + " " + additionalInfo);
         this.status = status;
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return status;
     }
 }

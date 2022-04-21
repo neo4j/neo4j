@@ -19,12 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.assertj.core.api.Condition;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_keep_threshold;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
+import org.assertj.core.api.Condition;
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -32,86 +35,73 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_keep_threshold;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold;
-import static org.neo4j.io.ByteUnit.kibiBytes;
-
-@DbmsExtension( configurationCallback = "configure" )
-public class CheckpointLogPruningIT
-{
+@DbmsExtension(configurationCallback = "configure")
+public class CheckpointLogPruningIT {
     @Inject
     private GraphDatabaseService database;
+
     @Inject
     private LogFiles logFiles;
+
     @Inject
     private CheckPointer checkPointer;
 
     @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( checkpoint_logical_log_rotation_threshold, kibiBytes( 1 ) ).setConfig( checkpoint_logical_log_keep_threshold, 2 );
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(checkpoint_logical_log_rotation_threshold, kibiBytes(1))
+                .setConfig(checkpoint_logical_log_keep_threshold, 2);
     }
 
     @Test
-    void pruneObsoleteCheckpointLogFiles() throws IOException
-    {
+    void pruneObsoleteCheckpointLogFiles() throws IOException {
         var checkpointFile = logFiles.getCheckpointFile();
 
         var reason = "checkpoint for rotation test";
-        for ( int i = 0; i < 105; i++ )
-        {
-            checkPointer.forceCheckPoint( new SimpleTriggerInfo( reason ) );
+        for (int i = 0; i < 105; i++) {
+            checkPointer.forceCheckPoint(new SimpleTriggerInfo(reason));
         }
         var matchedFiles = checkpointFile.getDetachedCheckpointFiles();
-        assertThat( matchedFiles ).hasSize( 2 );
-        assertThat( matchedFiles )
-                .areAtLeastOne( fileNameCondition( "checkpoint.20" ) )
-                .areAtLeastOne( fileNameCondition( "checkpoint.21" ) );
+        assertThat(matchedFiles).hasSize(2);
+        assertThat(matchedFiles)
+                .areAtLeastOne(fileNameCondition("checkpoint.20"))
+                .areAtLeastOne(fileNameCondition("checkpoint.21"));
     }
 
     @Test
-    void doNotPruneFilesUntilConfigured() throws IOException
-    {
+    void doNotPruneFilesUntilConfigured() throws IOException {
         var checkpointFile = logFiles.getCheckpointFile();
 
         var reason = "checkpoint for rotation test";
-        for ( int i = 0; i < 8; i++ )
-        {
-            checkPointer.forceCheckPoint( new SimpleTriggerInfo( reason ) );
+        for (int i = 0; i < 8; i++) {
+            checkPointer.forceCheckPoint(new SimpleTriggerInfo(reason));
         }
         var matchedFiles = checkpointFile.getDetachedCheckpointFiles();
-        assertThat( matchedFiles ).hasSize( 2 );
-        assertThat( matchedFiles )
-                .areAtLeastOne( fileNameCondition( "checkpoint.0" ) )
-                .areAtLeastOne( fileNameCondition( "checkpoint.1" ) );
+        assertThat(matchedFiles).hasSize(2);
+        assertThat(matchedFiles)
+                .areAtLeastOne(fileNameCondition("checkpoint.0"))
+                .areAtLeastOne(fileNameCondition("checkpoint.1"));
     }
 
     @Test
-    void pruneAsSoonAsHaveAnyEligibleFiles() throws IOException
-    {
+    void pruneAsSoonAsHaveAnyEligibleFiles() throws IOException {
         var checkpointFile = logFiles.getCheckpointFile();
 
         var reason = "checkpoint for rotation test";
-        for ( int i = 0; i < 10; i++ )
-        {
-            checkPointer.forceCheckPoint( new SimpleTriggerInfo( reason ) );
+        for (int i = 0; i < 10; i++) {
+            checkPointer.forceCheckPoint(new SimpleTriggerInfo(reason));
         }
         var matchedFiles = checkpointFile.getDetachedCheckpointFiles();
-        assertThat( matchedFiles ).hasSize( 2 );
-        assertThat( matchedFiles )
-                .areAtLeastOne( fileNameCondition( "checkpoint.1" ) )
-                .areAtLeastOne( fileNameCondition( "checkpoint.2" ) );
+        assertThat(matchedFiles).hasSize(2);
+        assertThat(matchedFiles)
+                .areAtLeastOne(fileNameCondition("checkpoint.1"))
+                .areAtLeastOne(fileNameCondition("checkpoint.2"));
     }
 
-    private static Condition<Path> fileNameCondition( String name )
-    {
-        return new Condition<>()
-        {
+    private static Condition<Path> fileNameCondition(String name) {
+        return new Condition<>() {
             @Override
-            public boolean matches( Path file )
-            {
-                return name.equals( file.getFileName().toString() );
+            public boolean matches(Path file) {
+                return name.equals(file.getFileName().toString());
             }
         };
     }

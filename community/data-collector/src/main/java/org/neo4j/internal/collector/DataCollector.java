@@ -20,7 +20,6 @@
 package org.neo4j.internal.collector;
 
 import java.util.Collections;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.api.Kernel;
@@ -30,42 +29,40 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 
-public class DataCollector extends LifecycleAdapter
-{
+public class DataCollector extends LifecycleAdapter {
     private final Database database;
     private final QueryCollector queryCollector;
 
-    public DataCollector( Database database, JobScheduler jobScheduler, Monitors monitors, Config config, RecentQueryBuffer recentQueryBuffer )
-    {
+    public DataCollector(
+            Database database,
+            JobScheduler jobScheduler,
+            Monitors monitors,
+            Config config,
+            RecentQueryBuffer recentQueryBuffer) {
         this.database = database;
-        this.queryCollector = new QueryCollector( database.getNamedDatabaseId(),
-                                                  jobScheduler,
-                                                  recentQueryBuffer,
-                                                  config.get( GraphDatabaseInternalSettings.data_collector_max_query_text_size ) );
-        try
-        {
-            this.queryCollector.collect( Collections.emptyMap() );
+        this.queryCollector = new QueryCollector(
+                database.getNamedDatabaseId(),
+                jobScheduler,
+                recentQueryBuffer,
+                config.get(GraphDatabaseInternalSettings.data_collector_max_query_text_size));
+        try {
+            this.queryCollector.collect(Collections.emptyMap());
+        } catch (InvalidArgumentsException e) {
+            throw new IllegalStateException("An empty config cannot be invalid", e);
         }
-        catch ( InvalidArgumentsException e )
-        {
-            throw new IllegalStateException( "An empty config cannot be invalid", e );
-        }
-        monitors.addMonitorListener( queryCollector );
+        monitors.addMonitorListener(queryCollector);
     }
 
     @Override
-    public void stop()
-    {
+    public void stop() {
         queryCollector.doStop();
     }
 
-    public Kernel getKernel()
-    {
+    public Kernel getKernel() {
         return database.getKernel();
     }
 
-    QueryCollector getQueryCollector()
-    {
+    QueryCollector getQueryCollector() {
         return queryCollector;
     }
 }

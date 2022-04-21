@@ -50,11 +50,14 @@ import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.LabelId
 
-case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restrictions: LeafPlanRestrictions) extends LeafPlanner {
+case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restrictions: LeafPlanRestrictions)
+    extends LeafPlanner {
 
-  override def apply(qg: QueryGraph,
-                     interestingOrderConfig: InterestingOrderConfig,
-                     context: LogicalPlanningContext): Set[LogicalPlan] = {
+  override def apply(
+    qg: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan] = {
     val indexMatches = findIndexMatchesForQueryGraph(
       qg,
       context.semanticTable,
@@ -64,18 +67,19 @@ case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restr
       context.providedOrderFactory,
       context.planningTextIndexesEnabled,
       context.planningRangeIndexesEnabled,
-      context.planningPointIndexesEnabled,
+      context.planningPointIndexesEnabled
     )
 
     // Find plans solving given property predicates together with any label predicates from QG
-    val result: Set[LogicalPlan] = if (indexMatches.isEmpty) {
-      Set.empty[LogicalPlan]
-    } else {
-      for {
-        provider <- planProviders
-        plan <- provider.createPlans(indexMatches, qg.hints, qg.argumentIds, restrictions, context)
-      } yield plan
-    }.toSet
+    val result: Set[LogicalPlan] =
+      if (indexMatches.isEmpty) {
+        Set.empty[LogicalPlan]
+      } else {
+        for {
+          provider <- planProviders
+          plan <- provider.createPlans(indexMatches, qg.hints, qg.argumentIds, restrictions, context)
+        } yield plan
+      }.toSet
 
     DynamicPropertyNotifier.issueNotifications(result, NodeIndexLookupUnfulfillableNotification, qg, NODE_TYPE, context)
 
@@ -86,35 +90,38 @@ case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restr
 object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
 
   case class NodeIndexMatch(
-                             variableName: String,
-                             labelPredicate: HasLabels,
-                             labelName: LabelName,
-                             labelId: LabelId,
-                             propertyPredicates: Seq[IndexCompatiblePredicate],
-                             providedOrder: ProvidedOrder,
-                             indexOrder: IndexOrder,
-                             indexDescriptor: IndexDescriptor,
-                           ) extends IndexMatch {
+    variableName: String,
+    labelPredicate: HasLabels,
+    labelName: LabelName,
+    labelId: LabelId,
+    propertyPredicates: Seq[IndexCompatiblePredicate],
+    providedOrder: ProvidedOrder,
+    indexOrder: IndexOrder,
+    indexDescriptor: IndexDescriptor
+  ) extends IndexMatch {
 
     def labelToken: LabelToken = LabelToken(labelName, labelId)
 
-    override def predicateSet(newPredicates: Seq[IndexCompatiblePredicate], exactPredicatesCanGetValue: Boolean): PredicateSet =
+    override def predicateSet(
+      newPredicates: Seq[IndexCompatiblePredicate],
+      exactPredicatesCanGetValue: Boolean
+    ): PredicateSet =
       NodePredicateSet(
         variableName,
         labelPredicate,
         labelName,
         newPredicates,
-        getValueBehaviors(indexDescriptor, newPredicates, exactPredicatesCanGetValue),
+        getValueBehaviors(indexDescriptor, newPredicates, exactPredicatesCanGetValue)
       )
   }
 
   case class NodePredicateSet(
-                               variableName: String,
-                               labelPredicate: HasLabels,
-                               symbolicName: LabelName,
-                               propertyPredicates: Seq[IndexCompatiblePredicate],
-                               getValueBehaviors: Seq[GetValueFromIndexBehavior],
-                             ) extends PredicateSet {
+    variableName: String,
+    labelPredicate: HasLabels,
+    symbolicName: LabelName,
+    propertyPredicates: Seq[IndexCompatiblePredicate],
+    getValueBehaviors: Seq[GetValueFromIndexBehavior]
+  ) extends PredicateSet {
 
     override def allSolvedPredicates: Seq[Expression] =
       super.allSolvedPredicates :+ labelPredicate
@@ -123,16 +130,16 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
   }
 
   def findIndexMatchesForQueryGraph(
-                                     qg: QueryGraph,
-                                     semanticTable: SemanticTable,
-                                     planContext: PlanContext,
-                                     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
-                                     interestingOrderConfig: InterestingOrderConfig = InterestingOrderConfig.empty,
-                                     providedOrderFactory: ProvidedOrderFactory = NoProvidedOrderFactory,
-                                     planningTextIndexesEnabled: Boolean,
-                                     planningRangeIndexesEnabled: Boolean,
-                                     planningPointIndexesEnabled: Boolean,
-                                   ): Set[NodeIndexMatch] = {
+    qg: QueryGraph,
+    semanticTable: SemanticTable,
+    planContext: PlanContext,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+    interestingOrderConfig: InterestingOrderConfig = InterestingOrderConfig.empty,
+    providedOrderFactory: ProvidedOrderFactory = NoProvidedOrderFactory,
+    planningTextIndexesEnabled: Boolean,
+    planningRangeIndexesEnabled: Boolean,
+    planningPointIndexesEnabled: Boolean
+  ): Set[NodeIndexMatch] = {
     val predicates = qg.selections.flatPredicates.toSet
     val allLabelPredicatesMap: Map[String, Set[HasLabels]] = qg.selections.labelPredicates
 
@@ -154,35 +161,49 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
         indexMatch <- findIndexMatches(
           variableName,
           propertyPredicates._2,
-          labelPredicates, interestingOrderConfig,
+          labelPredicates,
+          interestingOrderConfig,
           semanticTable,
           planContext,
           providedOrderFactory,
           planningTextIndexesEnabled,
           planningRangeIndexesEnabled,
-          planningPointIndexesEnabled,
+          planningPointIndexesEnabled
         )
       } yield indexMatch
       matches.toSet
     }
   }
 
-  private def findIndexMatches(variableName: String,
-                               indexCompatiblePredicates: Set[IndexCompatiblePredicate],
-                               labelPredicates: Set[HasLabels],
-                               interestingOrderConfig: InterestingOrderConfig,
-                               semanticTable: SemanticTable,
-                               planContext: PlanContext,
-                               providedOrderFactory: ProvidedOrderFactory,
-                               planningTextIndexesEnabled: Boolean,
-                               planningRangeIndexesEnabled: Boolean,
-                               planningPointIndexesEnabled: Boolean,
-                              ): Set[NodeIndexMatch] = for {
+  private def findIndexMatches(
+    variableName: String,
+    indexCompatiblePredicates: Set[IndexCompatiblePredicate],
+    labelPredicates: Set[HasLabels],
+    interestingOrderConfig: InterestingOrderConfig,
+    semanticTable: SemanticTable,
+    planContext: PlanContext,
+    providedOrderFactory: ProvidedOrderFactory,
+    planningTextIndexesEnabled: Boolean,
+    planningRangeIndexesEnabled: Boolean,
+    planningPointIndexesEnabled: Boolean
+  ): Set[NodeIndexMatch] = for {
     labelPredicate <- labelPredicates
     labelName <- labelPredicate.labels
     labelId: LabelId <- semanticTable.id(labelName).toSet
-    indexDescriptor <- indexDescriptorsForLabel(labelId, planContext, planningTextIndexesEnabled, planningRangeIndexesEnabled, planningPointIndexesEnabled)
-    predicatesForIndex <- predicatesForIndex(indexDescriptor, indexCompatiblePredicates, interestingOrderConfig, semanticTable, providedOrderFactory)
+    indexDescriptor <- indexDescriptorsForLabel(
+      labelId,
+      planContext,
+      planningTextIndexesEnabled,
+      planningRangeIndexesEnabled,
+      planningPointIndexesEnabled
+    )
+    predicatesForIndex <- predicatesForIndex(
+      indexDescriptor,
+      indexCompatiblePredicates,
+      interestingOrderConfig,
+      semanticTable,
+      providedOrderFactory
+    )
     indexMatch = NodeIndexMatch(
       variableName,
       labelPredicate,
@@ -191,15 +212,17 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
       predicatesForIndex.predicatesInOrder,
       predicatesForIndex.providedOrder,
       predicatesForIndex.indexOrder,
-      indexDescriptor,
+      indexDescriptor
     )
   } yield indexMatch
 
-  private def indexDescriptorsForLabel(labelId: LabelId,
-                                       planContext: PlanContext,
-                                       planningTextIndexesEnabled: Boolean,
-                                       planningRangeIndexesEnabled: Boolean,
-                                       planningPointIndexesEnabled: Boolean): Iterator[IndexDescriptor] = {
+  private def indexDescriptorsForLabel(
+    labelId: LabelId,
+    planContext: PlanContext,
+    planningTextIndexesEnabled: Boolean,
+    planningRangeIndexesEnabled: Boolean,
+    planningPointIndexesEnabled: Boolean
+  ): Iterator[IndexDescriptor] = {
     {
       if (planningRangeIndexesEnabled) planContext.rangeIndexesGetForLabel(labelId)
       else Iterator.empty
@@ -212,23 +235,32 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
     }
   }
 
-  override protected def implicitIndexCompatiblePredicates(planContext: PlanContext,
-                                                           indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
-                                                           predicates: Set[Expression],
-                                                           explicitCompatiblePredicates: Set[IndexCompatiblePredicate],
-                                                           valid: (LogicalVariable, Set[LogicalVariable]) => Boolean): Set[IndexCompatiblePredicate] = {
+  override protected def implicitIndexCompatiblePredicates(
+    planContext: PlanContext,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+    predicates: Set[Expression],
+    explicitCompatiblePredicates: Set[IndexCompatiblePredicate],
+    valid: (LogicalVariable, Set[LogicalVariable]) => Boolean
+  ): Set[IndexCompatiblePredicate] = {
     predicates.flatMap {
       // n:User ... aggregation(n.prop)
       // or
       // n:User with CREATE CONSTRAINT FOR (n:User) REQUIRE n.prop IS NOT NULL
       case HasLabels(variable: Variable, labels) if valid(variable, Set.empty) =>
         val constrainedPropNames =
-          if (indexPredicateProviderContext.outerPlanHasUpdates || planContext.txStateHasChanges()) // non-committed changes may not conform to the existence constraint, so we cannot rely on it
+          if (
+            indexPredicateProviderContext.outerPlanHasUpdates || planContext.txStateHasChanges()
+          ) // non-committed changes may not conform to the existence constraint, so we cannot rely on it
             Set.empty[String]
           else
             planContext.getNodePropertiesWithExistenceConstraint(labels.head.name) // HasLabels has been normalized in normalizeComparisons to only have one label each, which is why we can look only at the head here.
 
-        implicitIsNotNullPredicates(variable, indexPredicateProviderContext.aggregatingProperties, constrainedPropNames, explicitCompatiblePredicates)
+        implicitIsNotNullPredicates(
+          variable,
+          indexPredicateProviderContext.aggregatingProperties,
+          constrainedPropNames,
+          explicitCompatiblePredicates
+        )
 
       case _ =>
         Set.empty[IndexCompatiblePredicate]

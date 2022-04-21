@@ -29,6 +29,7 @@ import org.neo4j.values.AnyValue
  * row that matches the key.
  */
 abstract class AggregationFunction {
+
   /**
    * Adds this data to the aggregated total.
    */
@@ -39,4 +40,3 @@ abstract class AggregationFunction {
    */
   def result(state: QueryState): AnyValue
 }
-

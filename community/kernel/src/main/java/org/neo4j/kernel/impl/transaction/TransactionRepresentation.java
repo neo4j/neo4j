@@ -28,8 +28,7 @@ import org.neo4j.storageengine.api.CommandStream;
 /**
  * Representation of a transaction that can be written to a {@link TransactionAppender} and read back later.
  */
-public interface TransactionRepresentation extends CommandStream
-{
+public interface TransactionRepresentation extends CommandStream {
     /**
      * @return an additional header of this transaction. Just arbitrary bytes that means nothing
      * to this transaction representation.

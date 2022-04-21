@@ -32,20 +32,37 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case class labelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
 
-  override def apply(qg: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Set[LogicalPlan] = {
+  override def apply(
+    qg: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan] = {
     qg.selections.flatPredicatesSet.flatMap {
-      case labelPredicate@HasLabels(variable@Variable(varName), labels) if !skipIDs.contains(varName) && context.planContext.canLookupNodesByLabel =>
-      if (qg.patternNodes(varName) && !qg.argumentIds(varName)) {
-        val labelName = labels.head
-        val hint = qg.hints.collectFirst {
-          case hint@UsingScanHint(`variable`, LabelOrRelTypeName(labelName.name)) => hint
+      case labelPredicate @ HasLabels(variable @ Variable(varName), labels)
+        if !skipIDs.contains(varName) && context.planContext.canLookupNodesByLabel =>
+        if (qg.patternNodes(varName) && !qg.argumentIds(varName)) {
+          val labelName = labels.head
+          val hint = qg.hints.collectFirst {
+            case hint @ UsingScanHint(`variable`, LabelOrRelTypeName(labelName.name)) => hint
+          }
+          val providedOrder = ResultOrdering.providedOrderForLabelScan(
+            interestingOrderConfig.orderToSolve,
+            variable,
+            context.providedOrderFactory
+          )
+          val plan = context.logicalPlanProducer.planNodeByLabelScan(
+            variable,
+            labelName,
+            Seq(labelPredicate),
+            hint,
+            qg.argumentIds,
+            providedOrder,
+            context
+          )
+          Some(plan)
+        } else {
+          None
         }
-        val providedOrder = ResultOrdering.providedOrderForLabelScan(interestingOrderConfig.orderToSolve, variable, context.providedOrderFactory)
-        val plan = context.logicalPlanProducer.planNodeByLabelScan(variable, labelName, Seq(labelPredicate), hint, qg.argumentIds, providedOrder, context)
-        Some(plan)
-      } else {
-        None
-      }
       case _ =>
         None
     }

@@ -19,30 +19,27 @@
  */
 package org.neo4j.bolt.runtime.statemachine.impl;
 
+import static java.lang.String.format;
+import static org.neo4j.kernel.api.exceptions.Status.Classification.DatabaseError;
+
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.logging.DuplicatingLogProvider;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 
-import static java.lang.String.format;
-import static org.neo4j.kernel.api.exceptions.Status.Classification.DatabaseError;
-
 /**
  * Report received exceptions into the appropriate log (console or debug) and delivery stacktraces to debug.log.
  */
-class ErrorReporter
-{
+class ErrorReporter {
     private final InternalLog userLog;
     private final InternalLog debugLog;
 
-    ErrorReporter( LogService logging )
-    {
-        this.userLog = logging.getUserLog( ErrorReporter.class );
-        this.debugLog = logging.getInternalLog( ErrorReporter.class );
+    ErrorReporter(LogService logging) {
+        this.userLog = logging.getUserLog(ErrorReporter.class);
+        this.debugLog = logging.getInternalLog(ErrorReporter.class);
     }
 
-    ErrorReporter( InternalLog userLog, InternalLog debugLog )
-    {
+    ErrorReporter(InternalLog userLog, InternalLog debugLog) {
         this.userLog = userLog;
         this.debugLog = debugLog;
     }
@@ -55,29 +52,25 @@ class ErrorReporter
      * @param error the error to log.
      * @see DuplicatingLogProvider
      */
-    public void report( Neo4jError error )
-    {
-        if ( error.status().code().classification() == DatabaseError )
-        {
+    public void report(Neo4jError error) {
+        if (error.status().code().classification() == DatabaseError) {
             String message;
-            if ( error.queryId() != null )
-            {
-                message = format( "Client triggered an unexpected error [%s]: %s, reference %s, queryId: %s.",
-                                  error.status().code().serialize(), error.message(), error.reference(), error.queryId() );
-            }
-            else
-            {
-                message = format( "Client triggered an unexpected error [%s]: %s, reference %s.",
-                                  error.status().code().serialize(), error.message(), error.reference());
+            if (error.queryId() != null) {
+                message = format(
+                        "Client triggered an unexpected error [%s]: %s, reference %s, queryId: %s.",
+                        error.status().code().serialize(), error.message(), error.reference(), error.queryId());
+            } else {
+                message = format(
+                        "Client triggered an unexpected error [%s]: %s, reference %s.",
+                        error.status().code().serialize(), error.message(), error.reference());
             }
 
             // Writing to user log gets duplicated to the internal log
-            userLog.error( message );
+            userLog.error(message);
 
             // If cause/stacktrace is available write it to the internal log
-            if ( error.cause() != null )
-            {
-                debugLog.error( message, error.cause() );
+            if (error.cause() != null) {
+                debugLog.error(message, error.cause());
             }
         }
     }

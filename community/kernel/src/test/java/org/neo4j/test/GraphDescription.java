@@ -19,6 +19,12 @@
  */
 package org.neo4j.test;
 
+import static java.util.Arrays.asList;
+import static java.util.Arrays.copyOfRange;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.test.GraphDescription.PropType.ERROR;
+import static org.neo4j.test.GraphDescription.PropType.STRING;
+
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -32,26 +38,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 
-import static java.util.Arrays.asList;
-import static java.util.Arrays.copyOfRange;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.test.GraphDescription.PropType.ERROR;
-import static org.neo4j.test.GraphDescription.PropType.STRING;
-
-public class GraphDescription implements GraphDefinition
-{
+public class GraphDescription implements GraphDefinition {
     @Inherited
-    @Target( { ElementType.METHOD, ElementType.TYPE } )
-    @Retention( RetentionPolicy.RUNTIME )
-    public @interface Graph
-    {
+    @Target({ElementType.METHOD, ElementType.TYPE})
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface Graph {
         String[] value() default {};
 
         NODE[] nodes() default {};
@@ -59,9 +56,8 @@ public class GraphDescription implements GraphDefinition
         REL[] relationships() default {};
     }
 
-    @Target( {} )
-    public @interface NODE
-    {
+    @Target({})
+    public @interface NODE {
         String name();
 
         PROP[] properties() default {};
@@ -71,9 +67,8 @@ public class GraphDescription implements GraphDefinition
         boolean setNameProperty() default false;
     }
 
-    @Target( {} )
-    public @interface REL
-    {
+    @Target({})
+    public @interface REL {
         String name() default "";
 
         String type();
@@ -87,9 +82,8 @@ public class GraphDescription implements GraphDefinition
         boolean setNameProperty() default false;
     }
 
-    @Target( {} )
-    public @interface PROP
-    {
+    @Target({})
+    public @interface PROP {
         String key();
 
         String value();
@@ -99,162 +93,129 @@ public class GraphDescription implements GraphDefinition
         PropType componentType() default ERROR;
     }
 
-    @Target( {} )
-    public @interface LABEL
-    {
+    @Target({})
+    public @interface LABEL {
         String value();
     }
 
-    @SuppressWarnings( "boxing" )
-    public enum PropType
-    {
-
-        ARRAY
-        {
+    @SuppressWarnings("boxing")
+    public enum PropType {
+        ARRAY {
             @Override
-            Object convert( PropType componentType, String value )
-            {
-                String[] items = value.split( " *, *" );
-                Object[] result = (Object[]) Array.newInstance( componentType.componentClass(), items.length );
-                for ( int i = 0; i < items.length; i++ )
-                {
-                    result[i] = componentType.convert( items[i] );
+            Object convert(PropType componentType, String value) {
+                String[] items = value.split(" *, *");
+                Object[] result = (Object[]) Array.newInstance(componentType.componentClass(), items.length);
+                for (int i = 0; i < items.length; i++) {
+                    result[i] = componentType.convert(items[i]);
                 }
                 return result;
             }
         },
-        STRING
-        {
+        STRING {
             @Override
-            String convert( String value )
-            {
+            String convert(String value) {
                 return value;
             }
 
             @Override
-            Class<?> componentClass()
-            {
+            Class<?> componentClass() {
                 return String.class;
             }
         },
-        INTEGER
-        {
+        INTEGER {
             @Override
-            Long convert( String value )
-            {
-                return Long.parseLong( value );
+            Long convert(String value) {
+                return Long.parseLong(value);
             }
 
             @Override
-            Class<?> componentClass()
-            {
+            Class<?> componentClass() {
                 return Long.class;
             }
         },
-        DOUBLE
-        {
+        DOUBLE {
             @Override
-            Double convert( String value )
-            {
-                return Double.parseDouble( value );
+            Double convert(String value) {
+                return Double.parseDouble(value);
             }
 
             @Override
-            Class<?> componentClass()
-            {
+            Class<?> componentClass() {
                 return Double.class;
             }
         },
-        BOOLEAN
-        {
+        BOOLEAN {
             @Override
-            Boolean convert( String value )
-            {
-                return Boolean.parseBoolean( value );
+            Boolean convert(String value) {
+                return Boolean.parseBoolean(value);
             }
 
             @Override
-            Class<?> componentClass()
-            {
+            Class<?> componentClass() {
                 return Boolean.class;
             }
         },
 
-        ERROR
-                {
-                };
+        ERROR {};
 
-        Class<?> componentClass()
-        {
-            throw new UnsupportedOperationException( "Not implemented for property type" + name() );
+        Class<?> componentClass() {
+            throw new UnsupportedOperationException("Not implemented for property type" + name());
         }
 
-        Object convert( String value )
-        {
-            throw new UnsupportedOperationException( "Not implemented for property type"  + name() );
+        Object convert(String value) {
+            throw new UnsupportedOperationException("Not implemented for property type" + name());
         }
 
-        Object convert( PropType componentType, String value )
-        {
-            throw new UnsupportedOperationException( "Not implemented for property type"  + name() );
+        Object convert(PropType componentType, String value) {
+            throw new UnsupportedOperationException("Not implemented for property type" + name());
         }
     }
 
-    public static TestData.Producer<Map<String, Node>> createGraphFor( final GraphHolder holder )
-    {
-        return new TestData.Producer<>()
-        {
+    public static TestData.Producer<Map<String, Node>> createGraphFor(final GraphHolder holder) {
+        return new TestData.Producer<>() {
             @Override
-            public Map<String,Node> create( GraphDefinition graph, String title, String documentation )
-            {
-                return graph.create( holder.graphdb() );
+            public Map<String, Node> create(GraphDefinition graph, String title, String documentation) {
+                return graph.create(holder.graphdb());
             }
         };
     }
 
     @Override
-    public Map<String, Node> create( GraphDatabaseService graphdb )
-    {
+    public Map<String, Node> create(GraphDatabaseService graphdb) {
         Map<String, Node> result = new HashMap<>();
-        try ( Transaction tx = graphdb.beginTx() )
-        {
-            for ( NODE def : nodes )
-            {
-                Node node = init( tx.createNode(), def.setNameProperty() ? def.name() : null, def.properties() );
-                for ( LABEL label : def.labels() )
-                {
-                    node.addLabel( label( label.value() ) );
+        try (Transaction tx = graphdb.beginTx()) {
+            for (NODE def : nodes) {
+                Node node = init(tx.createNode(), def.setNameProperty() ? def.name() : null, def.properties());
+                for (LABEL label : def.labels()) {
+                    node.addLabel(label(label.value()));
                 }
-                result.put( def.name(), node );
+                result.put(def.name(), node);
             }
-            for ( REL def : rels )
-            {
-                init( result.get( def.start() ).createRelationshipTo( result.get( def.end() ),
-                                RelationshipType.withName( def.type() ) ), def.setNameProperty() ? def.name() : null,
-                        def.properties() );
+            for (REL def : rels) {
+                init(
+                        result.get(def.start())
+                                .createRelationshipTo(result.get(def.end()), RelationshipType.withName(def.type())),
+                        def.setNameProperty() ? def.name() : null,
+                        def.properties());
             }
             tx.commit();
         }
         return result;
     }
 
-    private static <T extends Entity> T init( T entity, String name, PROP[] properties )
-    {
-        for ( PROP prop : properties )
-        {
+    private static <T extends Entity> T init(T entity, String name, PROP[] properties) {
+        for (PROP prop : properties) {
             PropType tpe = prop.type();
-            switch ( tpe )
-            {
-            case ARRAY:
-                entity.setProperty( prop.key(), tpe.convert( prop.componentType(), prop.value() ) );
-                break;
-            default:
-                entity.setProperty( prop.key(), prop.type().convert( prop.value() ) );
+            switch (tpe) {
+                case ARRAY:
+                    entity.setProperty(prop.key(), tpe.convert(prop.componentType(), prop.value()));
+                    break;
+                default:
+                    entity.setProperty(prop.key(), prop.type().convert(prop.value()));
             }
         }
-        if ( name != null )
-        {
-            entity.setProperty( "name", name );
+        if (name != null) {
+            entity.setProperty("name", name);
         }
 
         return entity;
@@ -263,11 +224,9 @@ public class GraphDescription implements GraphDefinition
     private static final PROP[] NO_PROPS = {};
     private static final NODE[] NO_NODES = {};
     private static final REL[] NO_RELS = {};
-    private static final GraphDescription EMPTY = new GraphDescription( NO_NODES, NO_RELS )
-    {
+    private static final GraphDescription EMPTY = new GraphDescription(NO_NODES, NO_RELS) {
         @Override
-        public Map<String, Node> create( GraphDatabaseService graphdb )
-        {
+        public Map<String, Node> create(GraphDatabaseService graphdb) {
             // don't bother with creating a transaction
             return new HashMap<>();
         }
@@ -275,163 +234,130 @@ public class GraphDescription implements GraphDefinition
     private final NODE[] nodes;
     private final REL[] rels;
 
-    public static GraphDescription create( String... definition )
-    {
+    public static GraphDescription create(String... definition) {
         Map<String, NODE> nodes = new HashMap<>();
         List<REL> relationships = new ArrayList<>();
-        parse( definition, nodes, relationships );
-        return new GraphDescription( nodes.values().toArray( NO_NODES ), relationships.toArray( NO_RELS ) );
+        parse(definition, nodes, relationships);
+        return new GraphDescription(nodes.values().toArray(NO_NODES), relationships.toArray(NO_RELS));
     }
 
-    public static GraphDescription create( Graph graph )
-    {
-        if ( graph == null )
-        {
+    public static GraphDescription create(Graph graph) {
+        if (graph == null) {
             return EMPTY;
         }
         Map<String, NODE> nodes = new HashMap<>();
-        for ( NODE node : graph.nodes() )
-        {
-            if ( nodes.put( defined( node.name() ), node ) != null )
-            {
-                throw new IllegalArgumentException( "Node \"" + node.name() + "\" defined more than once" );
+        for (NODE node : graph.nodes()) {
+            if (nodes.put(defined(node.name()), node) != null) {
+                throw new IllegalArgumentException("Node \"" + node.name() + "\" defined more than once");
             }
         }
         Map<String, REL> rels = new HashMap<>();
         List<REL> relationships = new ArrayList<>();
-        for ( REL rel : graph.relationships() )
-        {
-            createIfAbsent( nodes, rel.start() );
-            createIfAbsent( nodes, rel.end() );
+        for (REL rel : graph.relationships()) {
+            createIfAbsent(nodes, rel.start());
+            createIfAbsent(nodes, rel.end());
             String name = rel.name();
-            if ( !name.equals( "" ) )
-            {
-                if ( rels.put( name, rel ) != null )
-                {
-                    throw new IllegalArgumentException( "Relationship \"" + name + "\" defined more than once" );
+            if (!name.equals("")) {
+                if (rels.put(name, rel) != null) {
+                    throw new IllegalArgumentException("Relationship \"" + name + "\" defined more than once");
                 }
             }
-            relationships.add( rel );
+            relationships.add(rel);
         }
-        parse( graph.value(), nodes, relationships );
-        return new GraphDescription( nodes.values().toArray( NO_NODES ), relationships.toArray( NO_RELS ) );
+        parse(graph.value(), nodes, relationships);
+        return new GraphDescription(nodes.values().toArray(NO_NODES), relationships.toArray(NO_RELS));
     }
 
-    private static void createIfAbsent( Map<String, NODE> nodes, String name, String ... labels )
-    {
-        if ( !nodes.containsKey( name ) )
-        {
-            nodes.put( name, new DefaultNode( name, labels ) );
-        }
-        else
-        {
-            NODE preexistingNode = nodes.get( name );
+    private static void createIfAbsent(Map<String, NODE> nodes, String name, String... labels) {
+        if (!nodes.containsKey(name)) {
+            nodes.put(name, new DefaultNode(name, labels));
+        } else {
+            NODE preexistingNode = nodes.get(name);
             // Join with any new labels
-            Set<String> joinedLabels = new HashSet<>( asList( labels ) );
-            for ( LABEL label : preexistingNode.labels() )
-            {
-                joinedLabels.add( label.value() );
+            Set<String> joinedLabels = new HashSet<>(asList(labels));
+            for (LABEL label : preexistingNode.labels()) {
+                joinedLabels.add(label.value());
             }
 
-            String[] labelNameArray = joinedLabels.toArray( new String[0] );
-            nodes.put( name, new NodeWithAddedLabels( preexistingNode, labelNameArray ) );
+            String[] labelNameArray = joinedLabels.toArray(new String[0]);
+            nodes.put(name, new NodeWithAddedLabels(preexistingNode, labelNameArray));
         }
     }
 
-    private static String parseAndCreateNodeIfAbsent( Map<String, NODE> nodes, String descriptionToParse )
-    {
-        String[] parts = descriptionToParse.split( ":" );
-        if ( parts.length == 0 )
-        {
-            throw new IllegalArgumentException( "Empty node names are not allowed." );
+    private static String parseAndCreateNodeIfAbsent(Map<String, NODE> nodes, String descriptionToParse) {
+        String[] parts = descriptionToParse.split(":");
+        if (parts.length == 0) {
+            throw new IllegalArgumentException("Empty node names are not allowed.");
         }
 
-        createIfAbsent( nodes, parts[0], copyOfRange( parts, 1, parts.length ) );
+        createIfAbsent(nodes, parts[0], copyOfRange(parts, 1, parts.length));
         return parts[0];
-
     }
 
-    private static void parse( String[] description, Map<String, NODE> nodes, List<REL> relationships )
-    {
-        for ( String part : description )
-        {
-            for ( String line : part.split( "\n" ) )
-            {
-                String[] components = line.split( " " );
-                if ( components.length != 3 )
-                {
-                    throw new IllegalArgumentException( "syntax error: \"" + line + "\"" );
+    private static void parse(String[] description, Map<String, NODE> nodes, List<REL> relationships) {
+        for (String part : description) {
+            for (String line : part.split("\n")) {
+                String[] components = line.split(" ");
+                if (components.length != 3) {
+                    throw new IllegalArgumentException("syntax error: \"" + line + "\"");
                 }
 
-                String startName = parseAndCreateNodeIfAbsent( nodes, defined( components[0] ) );
-                String endName = parseAndCreateNodeIfAbsent( nodes, defined( components[2] ) );
-                relationships.add( new DefaultRel( startName, components[1], endName ) );
+                String startName = parseAndCreateNodeIfAbsent(nodes, defined(components[0]));
+                String endName = parseAndCreateNodeIfAbsent(nodes, defined(components[2]));
+                relationships.add(new DefaultRel(startName, components[1], endName));
             }
         }
     }
 
-    private GraphDescription( NODE[] nodes, REL[] rels )
-    {
+    private GraphDescription(NODE[] nodes, REL[] rels) {
         this.nodes = nodes;
         this.rels = rels;
     }
 
-    static String defined( String name )
-    {
-        if ( name == null || name.equals( "" ) )
-        {
-            throw new IllegalArgumentException( "Node name not provided" );
+    static String defined(String name) {
+        if (name == null || name.equals("")) {
+            throw new IllegalArgumentException("Node name not provided");
         }
         return name;
     }
 
-    private static class Default
-    {
+    private static class Default {
         private final String name;
 
-        Default( String name )
-        {
-            this.name = "".equals( name ) ? null : name;
+        Default(String name) {
+            this.name = "".equals(name) ? null : name;
         }
 
-        public String name()
-        {
+        public String name() {
             return name;
         }
 
-        public Class<? extends Annotation> annotationType()
-        {
-            throw new UnsupportedOperationException( "this is not a real annotation" );
+        public Class<? extends Annotation> annotationType() {
+            throw new UnsupportedOperationException("this is not a real annotation");
         }
 
-        public PROP[] properties()
-        {
+        public PROP[] properties() {
             return NO_PROPS;
         }
 
-        public boolean setNameProperty()
-        {
+        public boolean setNameProperty() {
             return true;
         }
     }
 
-    private static class DefaultNode extends Default implements NODE
-    {
+    private static class DefaultNode extends Default implements NODE {
         private final LABEL[] labels;
 
-        DefaultNode( String name, String[] labelNames )
-        {
-            super( name );
+        DefaultNode(String name, String[] labelNames) {
+            super(name);
             labels = new LABEL[labelNames.length];
-            for ( int i = 0; i < labelNames.length; i++ )
-            {
-                labels[i] = new DefaultLabel( labelNames[i] );
+            for (int i = 0; i < labelNames.length; i++) {
+                labels[i] = new DefaultLabel(labelNames[i]);
             }
         }
 
         @Override
-        public LABEL[] labels()
-        {
+        public LABEL[] labels() {
             return labels;
         }
     }
@@ -440,107 +366,89 @@ public class GraphDescription implements GraphDefinition
      * Used if the user has defined the same node twice, with different labels, this combines
      * all labels the user has added.
      */
-    private static class NodeWithAddedLabels implements NODE
-    {
+    private static class NodeWithAddedLabels implements NODE {
         private final LABEL[] labels;
         private final NODE inner;
 
-        NodeWithAddedLabels( NODE inner, String[] labelNames )
-        {
+        NodeWithAddedLabels(NODE inner, String[] labelNames) {
             this.inner = inner;
             labels = new LABEL[labelNames.length];
-            for ( int i = 0; i < labelNames.length; i++ )
-            {
-                labels[i] = new DefaultLabel( labelNames[i] );
+            for (int i = 0; i < labelNames.length; i++) {
+                labels[i] = new DefaultLabel(labelNames[i]);
             }
         }
 
         @Override
-        public String name()
-        {
+        public String name() {
             return inner.name();
         }
 
         @Override
-        public PROP[] properties()
-        {
+        public PROP[] properties() {
             return inner.properties();
         }
 
         @Override
-        public LABEL[] labels()
-        {
+        public LABEL[] labels() {
             return labels;
         }
 
         @Override
-        public boolean setNameProperty()
-        {
+        public boolean setNameProperty() {
             return inner.setNameProperty();
         }
 
         @Override
-        public Class<? extends Annotation> annotationType()
-        {
+        public Class<? extends Annotation> annotationType() {
             return inner.annotationType();
         }
     }
 
-    private static class DefaultRel extends Default implements REL
-    {
+    private static class DefaultRel extends Default implements REL {
         private final String start;
         private final String type;
         private final String end;
 
-        DefaultRel( String start, String type, String end )
-        {
-            super( null );
+        DefaultRel(String start, String type, String end) {
+            super(null);
             this.type = type;
-            this.start = defined( start );
-            this.end = defined( end );
+            this.start = defined(start);
+            this.end = defined(end);
         }
 
         @Override
-        public String start()
-        {
+        public String start() {
             return start;
         }
 
         @Override
-        public String end()
-        {
+        public String end() {
             return end;
         }
 
         @Override
-        public String type()
-        {
+        public String type() {
             return type;
         }
     }
 
-    private static class DefaultLabel implements LABEL
-    {
+    private static class DefaultLabel implements LABEL {
 
         private final String name;
 
-        DefaultLabel( String name )
-        {
+        DefaultLabel(String name) {
 
             this.name = name;
         }
 
         @Override
-        public Class<? extends Annotation> annotationType()
-        {
-            throw new UnsupportedOperationException( "this is not a real annotation" );
+        public Class<? extends Annotation> annotationType() {
+            throw new UnsupportedOperationException("this is not a real annotation");
         }
 
         @Override
-        public String value()
-        {
+        public String value() {
             return name;
         }
     }
-
 }

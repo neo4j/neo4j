@@ -25,11 +25,10 @@ import org.neo4j.values.virtual.VirtualRelationshipValue;
 /**
  * Entity lookup operations.
  */
-public interface EntityById
-{
-    VirtualNodeValue nodeById( long id );
+public interface EntityById {
+    VirtualNodeValue nodeById(long id);
 
-    VirtualRelationshipValue relationshipById( long id );
+    VirtualRelationshipValue relationshipById(long id);
 
-    VirtualRelationshipValue relationshipById( long id, long startNode, long endNode, int type );
+    VirtualRelationshipValue relationshipById(long id, long startNode, long endNode, int type);
 }

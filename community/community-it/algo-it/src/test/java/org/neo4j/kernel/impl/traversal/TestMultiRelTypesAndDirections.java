@@ -19,53 +19,47 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.graphdb.RelationshipType.withName;
 
 import java.util.function.Function;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.graphdb.RelationshipType.withName;
-
-class TestMultiRelTypesAndDirections extends TraversalTestBase
-{
-    private static final RelationshipType ONE = withName( "ONE" );
+class TestMultiRelTypesAndDirections extends TraversalTestBase {
+    private static final RelationshipType ONE = withName("ONE");
 
     @BeforeEach
-    void setupGraph()
-    {
-        createGraph( "A ONE B", "B ONE C", "A TWO C" );
+    void setupGraph() {
+        createGraph("A ONE B", "B ONE C", "A TWO C");
     }
 
     @Test
-    void testCIsReturnedOnDepthTwoDepthFirst()
-    {
-        testCIsReturnedOnDepthTwo( transaction -> transaction.traversalDescription().depthFirst() );
+    void testCIsReturnedOnDepthTwoDepthFirst() {
+        testCIsReturnedOnDepthTwo(
+                transaction -> transaction.traversalDescription().depthFirst());
     }
 
     @Test
-    void testCIsReturnedOnDepthTwoBreadthFirst()
-    {
-        testCIsReturnedOnDepthTwo( transaction -> transaction.traversalDescription().breadthFirst() );
+    void testCIsReturnedOnDepthTwoBreadthFirst() {
+        testCIsReturnedOnDepthTwo(
+                transaction -> transaction.traversalDescription().breadthFirst());
     }
 
-    private void testCIsReturnedOnDepthTwo( Function<Transaction,TraversalDescription> traversalFactory )
-    {
-        try ( Transaction transaction = beginTx() )
-        {
-            final TraversalDescription description = traversalFactory.apply( transaction )
-                    .expand( PathExpanders.forTypeAndDirection( ONE, OUTGOING ) );
+    private void testCIsReturnedOnDepthTwo(Function<Transaction, TraversalDescription> traversalFactory) {
+        try (Transaction transaction = beginTx()) {
+            final TraversalDescription description =
+                    traversalFactory.apply(transaction).expand(PathExpanders.forTypeAndDirection(ONE, OUTGOING));
             int i = 0;
-            for ( Path position : description.traverse( transaction.getNodeById( node( "A" ).getId() ) ) )
-            {
-                assertEquals( i++, position.length() );
+            for (Path position :
+                    description.traverse(transaction.getNodeById(node("A").getId()))) {
+                assertEquals(i++, position.length());
             }
         }
     }

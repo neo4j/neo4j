@@ -20,13 +20,10 @@
 package org.neo4j.server.http.cypher.format.output.json;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-
 import java.io.IOException;
-
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
 
 @FunctionalInterface
-public interface ResultDataContentWriter
-{
-    void write( JsonGenerator out, RecordEvent recordEvent ) throws IOException;
+public interface ResultDataContentWriter {
+    void write(JsonGenerator out, RecordEvent recordEvent) throws IOException;
 }

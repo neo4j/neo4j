@@ -58,8 +58,8 @@ class CypherQueryObfuscator(state: ObfuscationMetadata) extends QueryObfuscator 
       params
     }
 
-  //We don't know the length of strings ahead of time since the amount of characters they use in the raw query text
-  //depends on if we use single quotes or double quotes.
+  // We don't know the length of strings ahead of time since the amount of characters they use in the raw query text
+  // depends on if we use single quotes or double quotes.
   private def literalStringLength(adjacentCharacters: Seq[String], rawQueryText: String, fromIndex: Int): Int = {
     val openingQuote = rawQueryText(fromIndex)
     if (openingQuote != '"' && openingQuote != '\'')

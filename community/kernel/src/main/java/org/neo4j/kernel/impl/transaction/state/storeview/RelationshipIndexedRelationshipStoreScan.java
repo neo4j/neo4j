@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import java.util.function.Function;
 import java.util.function.IntPredicate;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -34,29 +33,41 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-public class RelationshipIndexedRelationshipStoreScan extends RelationshipStoreScan
-{
+public class RelationshipIndexedRelationshipStoreScan extends RelationshipStoreScan {
     private final TokenIndexReader tokenIndexReader;
 
-    public RelationshipIndexedRelationshipStoreScan( Config config, StorageReader storageReader,
-                                                     Function<CursorContext,StoreCursors> storeCursorsFactory,
-                                                     LockService locks,
-                                                     TokenIndexReader tokenIndexReader,
-                                                     TokenScanConsumer relationshipTypeScanConsumer,
-                                                     PropertyScanConsumer propertyScanConsumer,
-                                                     int[] relationshipTypeIds,
-                                                     IntPredicate propertyKeyIdFilter, boolean parallelWrite,
-                                                     JobScheduler scheduler,
-                                                     CursorContextFactory contextFactory, MemoryTracker memoryTracker )
-    {
-        super( config, storageReader, storeCursorsFactory, locks, relationshipTypeScanConsumer, propertyScanConsumer, relationshipTypeIds, propertyKeyIdFilter,
-                parallelWrite, scheduler, contextFactory, memoryTracker );
+    public RelationshipIndexedRelationshipStoreScan(
+            Config config,
+            StorageReader storageReader,
+            Function<CursorContext, StoreCursors> storeCursorsFactory,
+            LockService locks,
+            TokenIndexReader tokenIndexReader,
+            TokenScanConsumer relationshipTypeScanConsumer,
+            PropertyScanConsumer propertyScanConsumer,
+            int[] relationshipTypeIds,
+            IntPredicate propertyKeyIdFilter,
+            boolean parallelWrite,
+            JobScheduler scheduler,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
+        super(
+                config,
+                storageReader,
+                storeCursorsFactory,
+                locks,
+                relationshipTypeScanConsumer,
+                propertyScanConsumer,
+                relationshipTypeIds,
+                propertyKeyIdFilter,
+                parallelWrite,
+                scheduler,
+                contextFactory,
+                memoryTracker);
         this.tokenIndexReader = tokenIndexReader;
     }
 
     @Override
-    public EntityIdIterator getEntityIdIterator( CursorContext cursorContext, StoreCursors storeCursors )
-    {
-        return new TokenIndexScanIdIterator( tokenIndexReader, entityTokenIdFilter, cursorContext );
+    public EntityIdIterator getEntityIdIterator(CursorContext cursorContext, StoreCursors storeCursors) {
+        return new TokenIndexScanIdIterator(tokenIndexReader, entityTokenIdFilter, cursorContext);
     }
 }

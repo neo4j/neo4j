@@ -58,11 +58,12 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
     plan should equal(planner.planBuilder()
       .produceResults("`count(n.prop)`")
       .nodeCountFromCountStore("count(n.prop)", Seq(Some("A")))
-      .build()
-    )
+      .build())
   }
 
-  test("should not plan to obtain the count from count store when counting node properties with a constraint but with two nodes in the pattern") {
+  test(
+    "should not plan to obtain the count from count store when counting node properties with a constraint but with two nodes in the pattern"
+  ) {
     val query = "MATCH (n:A), (m:B) RETURN count(m.prop)"
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -80,7 +81,9 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
     })
   }
 
-  test("should plan to obtain the count from count store when counting node properties with a constraint but with two nodes in the pattern") {
+  test(
+    "should plan to obtain the count from count store when counting node properties with a constraint but with two nodes in the pattern"
+  ) {
     val query = "MATCH (n:A), (m:B) RETURN count(n.prop)"
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -96,11 +99,12 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
     plan should equal(planner.planBuilder()
       .produceResults("`count(n.prop)`")
       .nodeCountFromCountStore("count(n.prop)", Seq(Some("A"), Some("B")))
-      .build()
-    )
+      .build())
   }
 
-  test("should not plan to obtain the count from count store when counting node properties with a constraint but with a more complex pattern") {
+  test(
+    "should not plan to obtain the count from count store when counting node properties with a constraint but with a more complex pattern"
+  ) {
     val query = "MATCH (n:A)-[]-(m:A) RETURN count(n.prop)"
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -120,7 +124,9 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
     })
   }
 
-  test("should plan to obtain the count from count store when counting node properties with a constraint when there is a conflicting predicate in the query") {
+  test(
+    "should plan to obtain the count from count store when counting node properties with a constraint when there is a conflicting predicate in the query"
+  ) {
     val query = "MATCH (n:A) WHERE n.prop < 0 RETURN count(n.prop)"
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -137,7 +143,9 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
     })
   }
 
-  test("should not plan to obtain the count from count store when counting node properties with a constraint when there are several labels in the query") {
+  test(
+    "should not plan to obtain the count from count store when counting node properties with a constraint when there are several labels in the query"
+  ) {
     val query = "MATCH (n:A:B) RETURN count(n.prop)"
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -156,7 +164,9 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
     })
   }
 
-  test("should not plan to obtain the count from count store when counting node properties without constraints for them") {
+  test(
+    "should not plan to obtain the count from count store when counting node properties without constraints for them"
+  ) {
     val query = "MATCH (n:A) RETURN count(n.prop)"
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -174,7 +184,9 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
 
   // RELATIONSHIP
 
-  test("should not plan to obtain the count from count store when counting relationship properties without a relationship type") {
+  test(
+    "should not plan to obtain the count from count store when counting relationship properties without a relationship type"
+  ) {
     val query = "MATCH ()-[r]-() RETURN count(r.prop)"
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -189,7 +201,9 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
     })
   }
 
-  test("should not plan to obtain the count from count store when counting relationship properties with a constraint but without direction") {
+  test(
+    "should not plan to obtain the count from count store when counting relationship properties with a constraint but without direction"
+  ) {
     val query = "MATCH ()-[r:R]-() RETURN count(r.prop)"
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -206,7 +220,9 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
     })
   }
 
-  test("should plan to obtain the count from count store when counting properties on a relationship constraint property with outgoing edge") {
+  test(
+    "should plan to obtain the count from count store when counting properties on a relationship constraint property with outgoing edge"
+  ) {
     val query = "MATCH ()-[r:R]->() RETURN count(r.prop)"
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -221,11 +237,12 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
     plan should equal(planner.planBuilder()
       .produceResults("`count(r.prop)`")
       .relationshipCountFromCountStore("count(r.prop)", None, Seq("R"), None)
-      .build()
-    )
+      .build())
   }
 
-  test("should plan to obtain the count from count store when counting properties on a relationship constraint property with incoming edge") {
+  test(
+    "should plan to obtain the count from count store when counting properties on a relationship constraint property with incoming edge"
+  ) {
     val query = "MATCH ()<-[r:R]-() RETURN count(r.prop)"
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -240,11 +257,12 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
     plan should equal(planner.planBuilder()
       .produceResults("`count(r.prop)`")
       .relationshipCountFromCountStore("count(r.prop)", None, Seq("R"), None)
-      .build()
-    )
+      .build())
   }
 
-  test("should not plan to obtain the count from count store when counting relationship properties with a constraint but with a more complex pattern") {
+  test(
+    "should not plan to obtain the count from count store when counting relationship properties with a constraint but with a more complex pattern"
+  ) {
     val query = "MATCH ()-[r:R]->()<-[p:R]-() RETURN count(r.prop)"
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -297,7 +315,9 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
     })
   }
 
-  test("should plan to obtain the count from count store when counting properties with a constraint on several relationship types") {
+  test(
+    "should plan to obtain the count from count store when counting properties with a constraint on several relationship types"
+  ) {
     val query = "MATCH ()-[r:R|Q]->() RETURN count(r.prop)"
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -314,8 +334,7 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
     plan should equal(planner.planBuilder()
       .produceResults("`count(r.prop)`")
       .relationshipCountFromCountStore("count(r.prop)", None, Seq("R", "Q"), None)
-      .build()
-    )
+      .build())
   }
 
   test("should not plan to obtain the count from count store when counting properties with a constraint on some of the several relationship types but not all" +
@@ -337,7 +356,9 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
     })
   }
 
-  test("should not plan to obtain the count from count store when counting properties with several relationship types but no constraints for them") {
+  test(
+    "should not plan to obtain the count from count store when counting properties with several relationship types but no constraints for them"
+  ) {
     val query = "MATCH ()-[r:R|Q]->() RETURN count(r.prop)"
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -374,7 +395,9 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
     })
   }
 
-  test("should plan to obtain the count from count store when counting properties with a constraint with several relationship types and a label on one node") {
+  test(
+    "should plan to obtain the count from count store when counting properties with a constraint with several relationship types and a label on one node"
+  ) {
     val query = "MATCH (a:A)-[r:R|Q]->() RETURN count(r.prop)"
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -394,11 +417,12 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
     plan should equal(planner.planBuilder()
       .produceResults("`count(r.prop)`")
       .relationshipCountFromCountStore("count(r.prop)", Some("A"), Seq("R", "Q"), None)
-      .build()
-    )
+      .build())
   }
 
-  test("should not plan to obtain the count from count store when counting properties with a constraint and labels on both node") {
+  test(
+    "should not plan to obtain the count from count store when counting properties with a constraint and labels on both node"
+  ) {
     val query = "MATCH (a:A)-[r:R]->(b:B) RETURN count(r.prop)"
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)

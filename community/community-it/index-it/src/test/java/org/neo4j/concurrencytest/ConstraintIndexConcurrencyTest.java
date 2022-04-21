@@ -19,9 +19,13 @@
  */
 package org.neo4j.concurrencytest;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -42,72 +46,76 @@ import org.neo4j.test.extension.Threading;
 import org.neo4j.test.extension.ThreadingExtension;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-
 @ImpermanentDbmsExtension
-@ExtendWith( ThreadingExtension.class )
-class ConstraintIndexConcurrencyTest
-{
+@ExtendWith(ThreadingExtension.class)
+class ConstraintIndexConcurrencyTest {
     @Inject
     private GraphDatabaseAPI db;
+
     @Inject
     private Threading threads;
 
     @Test
-    void shouldNotAllowConcurrentViolationOfConstraint() throws Exception
-    {
+    void shouldNotAllowConcurrentViolationOfConstraint() throws Exception {
         // Given
-        Label label = label( "Foo" );
+        Label label = label("Foo");
         String propertyKey = "bar";
         String conflictingValue = "baz";
         String constraintName = "MyConstraint";
 
         // a constraint
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( constraintName ).create();
+        try (Transaction tx = db.beginTx()) {
+            tx.schema()
+                    .constraintFor(label)
+                    .assertPropertyIsUnique(propertyKey)
+                    .withName(constraintName)
+                    .create();
             tx.commit();
         }
 
         // When
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-            int labelId = ktx.tokenRead().nodeLabel( label.name() );
-            int propertyKeyId = ktx.tokenRead().propertyKey( propertyKey );
+            int labelId = ktx.tokenRead().nodeLabel(label.name());
+            int propertyKeyId = ktx.tokenRead().propertyKey(propertyKey);
             Read read = ktx.dataRead();
-            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
-            {
-                IndexDescriptor index = ktx.schemaRead().indexGetForName( constraintName );
-                IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
-                read.nodeIndexSeek( ktx.queryContext(), indexSession, cursor, unconstrained(),
-                        PropertyIndexQuery.exact( propertyKeyId,
-                                "The value is irrelevant, we just want to perform some sort of lookup against this " + "index" ) );
+            try (NodeValueIndexCursor cursor =
+                    ktx.cursors().allocateNodeValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker())) {
+                IndexDescriptor index = ktx.schemaRead().indexGetForName(constraintName);
+                IndexReadSession indexSession = ktx.dataRead().indexReadSession(index);
+                read.nodeIndexSeek(
+                        ktx.queryContext(),
+                        indexSession,
+                        cursor,
+                        unconstrained(),
+                        PropertyIndexQuery.exact(
+                                propertyKeyId,
+                                "The value is irrelevant, we just want to perform some sort of lookup against this "
+                                        + "index"));
             }
             // then let another thread come in and create a node
-            threads.execute( db ->
-            {
-                try ( Transaction transaction = db.beginTx() )
-                {
-                    transaction.createNode( label ).setProperty( propertyKey, conflictingValue );
-                    transaction.commit();
-                }
-                return null;
-            }, db ).get();
+            threads.execute(
+                            db -> {
+                                try (Transaction transaction = db.beginTx()) {
+                                    transaction.createNode(label).setProperty(propertyKey, conflictingValue);
+                                    transaction.commit();
+                                }
+                                return null;
+                            },
+                            db)
+                    .get();
 
             // before we create a node with the same property ourselves - using the same statement that we have
             // already used for lookup against that very same index
             long node = ktx.dataWrite().nodeCreate();
-            ktx.dataWrite().nodeAddLabel( node, labelId );
+            ktx.dataWrite().nodeAddLabel(node, labelId);
 
-            var e = assertThrows( UniquePropertyValueValidationException.class,
-                    () -> ktx.dataWrite().nodeSetProperty( node, propertyKeyId, Values.of( conflictingValue ) ) );
-            assertEquals( ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ), e.constraint() );
-            IndexEntryConflictException conflict = Iterators.single( e.conflicts().iterator() );
-            assertEquals( Values.stringValue( conflictingValue ), conflict.getSinglePropertyValue() );
+            var e = assertThrows(UniquePropertyValueValidationException.class, () -> ktx.dataWrite()
+                    .nodeSetProperty(node, propertyKeyId, Values.of(conflictingValue)));
+            assertEquals(ConstraintDescriptorFactory.uniqueForLabel(labelId, propertyKeyId), e.constraint());
+            IndexEntryConflictException conflict =
+                    Iterators.single(e.conflicts().iterator());
+            assertEquals(Values.stringValue(conflictingValue), conflict.getSinglePropertyValue());
 
             tx.commit();
         }

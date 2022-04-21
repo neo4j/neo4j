@@ -21,14 +21,12 @@ package org.neo4j.internal.id;
 
 import java.io.Closeable;
 import java.io.IOException;
-
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.util.VisibleForTesting;
 
-public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
-{
+public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable {
     /**
      * Allocates an ID which is available to use. The returned ID can be either of:
      * <ul>
@@ -40,7 +38,7 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
      * @return an ID available to use, guaranteed not used anywhere else.
      */
     @Override
-    long nextId( CursorContext cursorContext );
+    long nextId(CursorContext cursorContext);
 
     /**
      * Allocates a range of IDs that are guaranteed to be consecutive where the returned id represents the first i.e. lowest of them.
@@ -51,25 +49,32 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
      * @param cursorContext for tracing page accesses.
      * @return the first id in the consecutive range.
      */
-    long nextConsecutiveIdRange( int numberOfIds, boolean favorSamePage, CursorContext cursorContext );
+    long nextConsecutiveIdRange(int numberOfIds, boolean favorSamePage, CursorContext cursorContext);
 
     /**
      * @param id the highest in use + 1
      */
-    void setHighId( long id );
+    void setHighId(long id);
+
     void markHighestWrittenAtHighId();
+
     @VisibleForTesting
     long getHighestWritten();
+
     long getHighId();
+
     long getHighestPossibleIdInUse();
-    Marker marker( CursorContext cursorContext );
+
+    Marker marker(CursorContext cursorContext);
 
     @Override
     void close();
+
     long getNumberOfIdsInUse();
+
     long getDefragCount();
 
-    void checkpoint( CursorContext cursorContext );
+    void checkpoint(CursorContext cursorContext);
 
     /**
      * Does some maintenance. This operation isn't critical for the functionality of an IdGenerator, but may make it perform better.
@@ -78,7 +83,7 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
      *
      * @param cursorContext underlying page cursor context
      */
-    void maintenance( CursorContext cursorContext );
+    void maintenance(CursorContext cursorContext);
 
     /**
      * Starts the id generator, signaling that the database has entered normal operations mode.
@@ -87,12 +92,12 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
      * @param freeIdsForRebuild access to stream of ids from the store to use if this id generator needs to be rebuilt when started
      * @param cursorContext underlying page cursor context
      */
-    void start( FreeIds freeIdsForRebuild, CursorContext cursorContext ) throws IOException;
+    void start(FreeIds freeIdsForRebuild, CursorContext cursorContext) throws IOException;
 
     /**
      * Clears internal ID caches. This should only be used in specific scenarios where ID states have changed w/o the cache knowing about it.
      */
-    void clearCache( CursorContext cursorContext );
+    void clearCache(CursorContext cursorContext);
 
     /**
      *
@@ -100,165 +105,137 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
      */
     IdType idType();
 
-    interface Marker extends AutoCloseable
-    {
-        default void markUsed( long id )
-        {
-            markUsed( id, 1 );
+    interface Marker extends AutoCloseable {
+        default void markUsed(long id) {
+            markUsed(id, 1);
         }
 
-        void markUsed( long id, int numberOfIds );
+        void markUsed(long id, int numberOfIds);
 
-        default void markDeleted( long id )
-        {
-            markDeleted( id, 1 );
+        default void markDeleted(long id) {
+            markDeleted(id, 1);
         }
 
-        void markDeleted( long id, int numberOfIds );
+        void markDeleted(long id, int numberOfIds);
 
-        default void markFree( long id )
-        {
-            markFree( id, 1 );
+        default void markFree(long id) {
+            markFree(id, 1);
         }
 
-        void markFree( long id, int numberOfIds );
+        void markFree(long id, int numberOfIds);
 
         @Override
         void close();
     }
 
-    class Delegate implements IdGenerator
-    {
+    class Delegate implements IdGenerator {
         protected final IdGenerator delegate;
 
-        public Delegate( IdGenerator delegate )
-        {
+        public Delegate(IdGenerator delegate) {
             this.delegate = delegate;
         }
 
         @Override
-        public long nextId( CursorContext cursorContext )
-        {
-            return delegate.nextId( cursorContext );
+        public long nextId(CursorContext cursorContext) {
+            return delegate.nextId(cursorContext);
         }
 
         @Override
-        public long nextConsecutiveIdRange( int numberOfIds, boolean favorSamePage, CursorContext cursorContext )
-        {
-            return delegate.nextConsecutiveIdRange( numberOfIds, favorSamePage, cursorContext );
+        public long nextConsecutiveIdRange(int numberOfIds, boolean favorSamePage, CursorContext cursorContext) {
+            return delegate.nextConsecutiveIdRange(numberOfIds, favorSamePage, cursorContext);
         }
 
         @Override
-        public void setHighId( long id )
-        {
-            delegate.setHighId( id );
+        public void setHighId(long id) {
+            delegate.setHighId(id);
         }
 
         @Override
-        public void markHighestWrittenAtHighId()
-        {
+        public void markHighestWrittenAtHighId() {
             delegate.markHighestWrittenAtHighId();
         }
 
         @Override
-        public long getHighestWritten()
-        {
+        public long getHighestWritten() {
             return delegate.getHighestWritten();
         }
 
         @Override
-        public long getHighId()
-        {
+        public long getHighId() {
             return delegate.getHighId();
         }
 
         @Override
-        public long getHighestPossibleIdInUse()
-        {
+        public long getHighestPossibleIdInUse() {
             return delegate.getHighestPossibleIdInUse();
         }
 
         @Override
-        public Marker marker( CursorContext cursorContext )
-        {
-            return delegate.marker( cursorContext );
+        public Marker marker(CursorContext cursorContext) {
+            return delegate.marker(cursorContext);
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             delegate.close();
         }
 
         @Override
-        public long getNumberOfIdsInUse()
-        {
+        public long getNumberOfIdsInUse() {
             return delegate.getNumberOfIdsInUse();
         }
 
         @Override
-        public long getDefragCount()
-        {
+        public long getDefragCount() {
             return delegate.getDefragCount();
         }
 
         @Override
-        public void checkpoint( CursorContext cursorContext )
-        {
-            delegate.checkpoint( cursorContext );
+        public void checkpoint(CursorContext cursorContext) {
+            delegate.checkpoint(cursorContext);
         }
 
         @Override
-        public void maintenance( CursorContext cursorContext )
-        {
-            delegate.maintenance( cursorContext );
+        public void maintenance(CursorContext cursorContext) {
+            delegate.maintenance(cursorContext);
         }
 
         @Override
-        public void start( FreeIds freeIdsForRebuild, CursorContext cursorContext ) throws IOException
-        {
-            delegate.start( freeIdsForRebuild, cursorContext );
+        public void start(FreeIds freeIdsForRebuild, CursorContext cursorContext) throws IOException {
+            delegate.start(freeIdsForRebuild, cursorContext);
         }
 
         @Override
-        public void clearCache( CursorContext cursorContext )
-        {
-            delegate.clearCache( cursorContext );
+        public void clearCache(CursorContext cursorContext) {
+            delegate.clearCache(cursorContext);
         }
 
         @Override
-        public IdType idType()
-        {
+        public IdType idType() {
             return delegate.idType();
         }
 
         @Override
-        public boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext )
-        {
-            return delegate.consistencyCheck( reporterFactory, cursorContext );
+        public boolean consistencyCheck(ReporterFactory reporterFactory, CursorContext cursorContext) {
+            return delegate.consistencyCheck(reporterFactory, cursorContext);
         }
     }
 
-    Marker NOOP_MARKER = new Marker()
-    {
+    Marker NOOP_MARKER = new Marker() {
         @Override
-        public void markFree( long id, int numberOfIds )
-        {   // no-op
+        public void markFree(long id, int numberOfIds) { // no-op
         }
 
         @Override
-        public void markUsed( long id, int numberOfIds )
-        {   // no-op
+        public void markUsed(long id, int numberOfIds) { // no-op
         }
 
         @Override
-        public void markDeleted( long id, int numberOfIds )
-        {   // no-op
+        public void markDeleted(long id, int numberOfIds) { // no-op
         }
 
         @Override
-        public void close()
-        {   // no-op
+        public void close() { // no-op
         }
     };
 }

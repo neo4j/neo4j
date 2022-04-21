@@ -19,9 +19,8 @@
  */
 package org.neo4j.storageengine.api.format;
 
-public interface Capability
-{
-    boolean isType( CapabilityType type );
+public interface Capability {
+    boolean isType(CapabilityType type);
 
     boolean isAdditive();
 }

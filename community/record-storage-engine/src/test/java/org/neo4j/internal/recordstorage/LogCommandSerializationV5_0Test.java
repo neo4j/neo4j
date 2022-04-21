@@ -19,14 +19,19 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static java.util.Collections.emptyList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
-
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
@@ -56,16 +61,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.values.storable.Values;
 
-import static java.util.Collections.emptyList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-@ExtendWith( RandomExtension.class )
-public class LogCommandSerializationV5_0Test
-{
+@ExtendWith(RandomExtension.class)
+public class LogCommandSerializationV5_0Test {
 
     @Inject
     private RandomSupport random;
@@ -73,820 +70,779 @@ public class LogCommandSerializationV5_0Test
     static final long NULL_REF = NULL_REFERENCE.longValue();
 
     @Test
-    void shouldReadPropertyKeyCommand() throws Exception
-    {
+    void shouldReadPropertyKeyCommand() throws Exception {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        PropertyKeyTokenRecord before = new PropertyKeyTokenRecord( 42 );
+        PropertyKeyTokenRecord before = new PropertyKeyTokenRecord(42);
         PropertyKeyTokenRecord after = before.copy();
-        after.initialize( true, 13 );
+        after.initialize(true, 13);
         after.setCreated();
-        new Command.PropertyKeyTokenCommand( writer(), before, after ).serialize( channel );
+        new Command.PropertyKeyTokenCommand(writer(), before, after).serialize(channel);
 
         // When
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.PropertyKeyTokenCommand );
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.PropertyKeyTokenCommand);
 
         Command.PropertyKeyTokenCommand propertyKeyTokenCommand = (Command.PropertyKeyTokenCommand) command;
 
         // Then
-        assertBeforeAndAfterEquals( propertyKeyTokenCommand, before, after );
+        assertBeforeAndAfterEquals(propertyKeyTokenCommand, before, after);
     }
 
     @Test
-    void shouldReadInternalPropertyKeyCommand() throws Exception
-    {
+    void shouldReadInternalPropertyKeyCommand() throws Exception {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        PropertyKeyTokenRecord before = new PropertyKeyTokenRecord( 42 );
+        PropertyKeyTokenRecord before = new PropertyKeyTokenRecord(42);
         PropertyKeyTokenRecord after = before.copy();
-        after.initialize( true, 13 );
+        after.initialize(true, 13);
         after.setCreated();
-        after.setInternal( true );
-        new Command.PropertyKeyTokenCommand( writer(), before, after ).serialize( channel );
+        after.setInternal(true);
+        new Command.PropertyKeyTokenCommand(writer(), before, after).serialize(channel);
 
         // When
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.PropertyKeyTokenCommand );
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.PropertyKeyTokenCommand);
 
         Command.PropertyKeyTokenCommand propertyKeyTokenCommand = (Command.PropertyKeyTokenCommand) command;
 
         // Then
-        assertBeforeAndAfterEquals( propertyKeyTokenCommand, before, after );
+        assertBeforeAndAfterEquals(propertyKeyTokenCommand, before, after);
     }
 
     @Test
-    void shouldReadLabelCommand() throws Exception
-    {
+    void shouldReadLabelCommand() throws Exception {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        LabelTokenRecord before = new LabelTokenRecord( 42 );
+        LabelTokenRecord before = new LabelTokenRecord(42);
         LabelTokenRecord after = before.copy();
-        after.initialize( true, 13 );
+        after.initialize(true, 13);
         after.setCreated();
-        new Command.LabelTokenCommand( writer(), before, after ).serialize( channel );
+        new Command.LabelTokenCommand(writer(), before, after).serialize(channel);
 
         // When
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.LabelTokenCommand );
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.LabelTokenCommand);
 
         Command.LabelTokenCommand labelTokenCommand = (Command.LabelTokenCommand) command;
 
         // Then
-        assertBeforeAndAfterEquals( labelTokenCommand, before, after );
+        assertBeforeAndAfterEquals(labelTokenCommand, before, after);
     }
 
     @Test
-    void shouldReadInternalLabelCommand() throws Exception
-    {
+    void shouldReadInternalLabelCommand() throws Exception {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        LabelTokenRecord before = new LabelTokenRecord( 42 );
+        LabelTokenRecord before = new LabelTokenRecord(42);
         LabelTokenRecord after = before.copy();
-        after.initialize( true, 13 );
+        after.initialize(true, 13);
         after.setCreated();
-        after.setInternal( true );
-        new Command.LabelTokenCommand( writer(), before, after ).serialize( channel );
+        after.setInternal(true);
+        new Command.LabelTokenCommand(writer(), before, after).serialize(channel);
 
         // When
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.LabelTokenCommand );
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.LabelTokenCommand);
 
         Command.LabelTokenCommand labelTokenCommand = (Command.LabelTokenCommand) command;
 
         // Then
-        assertBeforeAndAfterEquals( labelTokenCommand, before, after );
+        assertBeforeAndAfterEquals(labelTokenCommand, before, after);
     }
 
     @Test
-    void shouldReadRelationshipTypeCommand() throws Exception
-    {
+    void shouldReadRelationshipTypeCommand() throws Exception {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( 42 );
+        RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord(42);
         RelationshipTypeTokenRecord after = before.copy();
-        after.initialize( true, 13 );
+        after.initialize(true, 13);
         after.setCreated();
-        new Command.RelationshipTypeTokenCommand( writer(), before, after ).serialize( channel );
+        new Command.RelationshipTypeTokenCommand(writer(), before, after).serialize(channel);
 
         // When
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.RelationshipTypeTokenCommand );
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.RelationshipTypeTokenCommand);
 
-        Command.RelationshipTypeTokenCommand relationshipTypeTokenCommand = (Command.RelationshipTypeTokenCommand) command;
+        Command.RelationshipTypeTokenCommand relationshipTypeTokenCommand =
+                (Command.RelationshipTypeTokenCommand) command;
 
         // Then
-        assertBeforeAndAfterEquals( relationshipTypeTokenCommand, before, after );
+        assertBeforeAndAfterEquals(relationshipTypeTokenCommand, before, after);
     }
 
     @Test
-    void shouldReadInternalRelationshipTypeLabelCommand() throws Exception
-    {
+    void shouldReadInternalRelationshipTypeLabelCommand() throws Exception {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( 42 );
+        RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord(42);
         RelationshipTypeTokenRecord after = before.copy();
-        after.initialize( true, 13 );
+        after.initialize(true, 13);
         after.setCreated();
-        after.setInternal( true );
-        new Command.RelationshipTypeTokenCommand( writer(), before, after ).serialize( channel );
+        after.setInternal(true);
+        new Command.RelationshipTypeTokenCommand(writer(), before, after).serialize(channel);
 
         // When
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.RelationshipTypeTokenCommand );
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.RelationshipTypeTokenCommand);
 
-        Command.RelationshipTypeTokenCommand relationshipTypeTokenCommand = (Command.RelationshipTypeTokenCommand) command;
+        Command.RelationshipTypeTokenCommand relationshipTypeTokenCommand =
+                (Command.RelationshipTypeTokenCommand) command;
 
         // Then
-        assertBeforeAndAfterEquals( relationshipTypeTokenCommand, before, after );
+        assertBeforeAndAfterEquals(relationshipTypeTokenCommand, before, after);
     }
 
     @Test
-    void shouldReadRelationshipCommand() throws Throwable
-    {
+    void shouldReadRelationshipCommand() throws Throwable {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipRecord before = new RelationshipRecord( 42 );
-        before.setLinks( -1, -1, -1 );
-        RelationshipRecord after = new RelationshipRecord( 42 );
-        after.initialize( true, 0, 1, 2, 3, 4, 5, 6, 7, true, true );
+        RelationshipRecord before = new RelationshipRecord(42);
+        before.setLinks(-1, -1, -1);
+        RelationshipRecord after = new RelationshipRecord(42);
+        after.initialize(true, 0, 1, 2, 3, 4, 5, 6, 7, true, true);
         after.setCreated();
-        new Command.RelationshipCommand( writer(), before, after ).serialize( channel );
+        new Command.RelationshipCommand(writer(), before, after).serialize(channel);
 
         // When
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.RelationshipCommand );
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.RelationshipCommand);
 
         Command.RelationshipCommand relationshipCommand = (Command.RelationshipCommand) command;
 
         // Then
-        assertBeforeAndAfterEquals( relationshipCommand, before, after );
+        assertBeforeAndAfterEquals(relationshipCommand, before, after);
     }
 
     @Test
-    void readRelationshipCommandWithSecondaryUnit() throws IOException
-    {
+    void readRelationshipCommandWithSecondaryUnit() throws IOException {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipRecord before = new RelationshipRecord( 42 );
-        before.initialize( true, 0, 1, 2, 3, 4, 5, 6, 7, true, true );
-        before.setSecondaryUnitIdOnLoad( 47 );
-        RelationshipRecord after = new RelationshipRecord( 42 );
-        after.initialize( true, 0, 1, 8, 3, 4, 5, 6, 7, true, true );
-        new Command.RelationshipCommand( writer(), before, after ).serialize( channel );
+        RelationshipRecord before = new RelationshipRecord(42);
+        before.initialize(true, 0, 1, 2, 3, 4, 5, 6, 7, true, true);
+        before.setSecondaryUnitIdOnLoad(47);
+        RelationshipRecord after = new RelationshipRecord(42);
+        after.initialize(true, 0, 1, 8, 3, 4, 5, 6, 7, true, true);
+        new Command.RelationshipCommand(writer(), before, after).serialize(channel);
 
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.RelationshipCommand );
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.RelationshipCommand);
 
         Command.RelationshipCommand relationshipCommand = (Command.RelationshipCommand) command;
-        assertBeforeAndAfterEquals( relationshipCommand, before, after );
+        assertBeforeAndAfterEquals(relationshipCommand, before, after);
     }
 
     @Test
-    void readRelationshipCommandWithNonRequiredSecondaryUnit() throws IOException
-    {
+    void readRelationshipCommandWithNonRequiredSecondaryUnit() throws IOException {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipRecord before = new RelationshipRecord( 42 );
-        before.initialize( true, 0, 1, 2, 3, 4, 5, 6, 7, true, true );
-        before.setSecondaryUnitIdOnLoad( 52 );
-        RelationshipRecord after = new RelationshipRecord( 42 );
-        after.initialize( true, 0, 1, 8, 3, 4, 5, 6, 7, true, true );
-        new Command.RelationshipCommand( writer(), before, after ).serialize( channel );
+        RelationshipRecord before = new RelationshipRecord(42);
+        before.initialize(true, 0, 1, 2, 3, 4, 5, 6, 7, true, true);
+        before.setSecondaryUnitIdOnLoad(52);
+        RelationshipRecord after = new RelationshipRecord(42);
+        after.initialize(true, 0, 1, 8, 3, 4, 5, 6, 7, true, true);
+        new Command.RelationshipCommand(writer(), before, after).serialize(channel);
 
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.RelationshipCommand );
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.RelationshipCommand);
 
         Command.RelationshipCommand relationshipCommand = (Command.RelationshipCommand) command;
-        assertBeforeAndAfterEquals( relationshipCommand, before, after );
+        assertBeforeAndAfterEquals(relationshipCommand, before, after);
     }
 
     @Test
-    void readRelationshipCommandWithFixedReferenceFormat() throws IOException
-    {
+    void readRelationshipCommandWithFixedReferenceFormat() throws IOException {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipRecord before = new RelationshipRecord( 42 );
-        before.initialize( true, 0, 1, 2, 3, 4, 5, 6, 7, true, true );
-        before.setUseFixedReferences( true );
-        RelationshipRecord after = new RelationshipRecord( 42 );
-        after.initialize( true, 0, 1, 8, 3, 4, 5, 6, 7, true, true );
-        after.setUseFixedReferences( true );
-        new Command.RelationshipCommand( writer(), before, after ).serialize( channel );
+        RelationshipRecord before = new RelationshipRecord(42);
+        before.initialize(true, 0, 1, 2, 3, 4, 5, 6, 7, true, true);
+        before.setUseFixedReferences(true);
+        RelationshipRecord after = new RelationshipRecord(42);
+        after.initialize(true, 0, 1, 8, 3, 4, 5, 6, 7, true, true);
+        after.setUseFixedReferences(true);
+        new Command.RelationshipCommand(writer(), before, after).serialize(channel);
 
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.RelationshipCommand );
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.RelationshipCommand);
 
         Command.RelationshipCommand relationshipCommand = (Command.RelationshipCommand) command;
-        assertBeforeAndAfterEquals( relationshipCommand, before, after );
-        assertTrue( relationshipCommand.getBefore().isUseFixedReferences() );
-        assertTrue( relationshipCommand.getAfter().isUseFixedReferences() );
+        assertBeforeAndAfterEquals(relationshipCommand, before, after);
+        assertTrue(relationshipCommand.getBefore().isUseFixedReferences());
+        assertTrue(relationshipCommand.getAfter().isUseFixedReferences());
     }
 
     @Test
-    void shouldReadRelationshipGroupCommand() throws Throwable
-    {
+    void shouldReadRelationshipGroupCommand() throws Throwable {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipGroupRecord before = new RelationshipGroupRecord( 42 ).initialize( false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF );
-        RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, 3, 4, 5, 6, 7, 8 );
+        RelationshipGroupRecord before =
+                new RelationshipGroupRecord(42).initialize(false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF);
+        RelationshipGroupRecord after = new RelationshipGroupRecord(42).initialize(true, 3, 4, 5, 6, 7, 8);
         after.setCreated();
 
-        new Command.RelationshipGroupCommand( writer(), before, after ).serialize( channel );
+        new Command.RelationshipGroupCommand(writer(), before, after).serialize(channel);
 
         // When
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.RelationshipGroupCommand );
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.RelationshipGroupCommand);
 
         Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
 
         // Then
-        assertBeforeAndAfterEquals( relationshipGroupCommand, before, after );
+        assertBeforeAndAfterEquals(relationshipGroupCommand, before, after);
     }
 
     @Test
-    void readRelationshipGroupCommandWithSecondaryUnit() throws IOException
-    {
+    void readRelationshipGroupCommandWithSecondaryUnit() throws IOException {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipGroupRecord before = new RelationshipGroupRecord( 42 ).initialize( false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF );
-        RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, 3, 4, 5, 6, 7, 8 );
-        after.setSecondaryUnitIdOnCreate( 17 );
+        RelationshipGroupRecord before =
+                new RelationshipGroupRecord(42).initialize(false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF);
+        RelationshipGroupRecord after = new RelationshipGroupRecord(42).initialize(true, 3, 4, 5, 6, 7, 8);
+        after.setSecondaryUnitIdOnCreate(17);
         after.setCreated();
 
-        new Command.RelationshipGroupCommand( writer(), before, after ).serialize( channel );
+        new Command.RelationshipGroupCommand(writer(), before, after).serialize(channel);
 
         // When
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.RelationshipGroupCommand );
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.RelationshipGroupCommand);
 
         Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
 
         // Then
-        assertBeforeAndAfterEquals( relationshipGroupCommand, before, after );
+        assertBeforeAndAfterEquals(relationshipGroupCommand, before, after);
     }
 
     @Test
-    void readRelationshipGroupCommandWithNonRequiredSecondaryUnit() throws IOException
-    {
+    void readRelationshipGroupCommandWithNonRequiredSecondaryUnit() throws IOException {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipGroupRecord before = new RelationshipGroupRecord( 42 ).initialize( false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF );
-        RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, 3, 4, 5, 6, 7, 8 );
-        after.setSecondaryUnitIdOnCreate( 17 );
+        RelationshipGroupRecord before =
+                new RelationshipGroupRecord(42).initialize(false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF);
+        RelationshipGroupRecord after = new RelationshipGroupRecord(42).initialize(true, 3, 4, 5, 6, 7, 8);
+        after.setSecondaryUnitIdOnCreate(17);
         after.setCreated();
 
-        new Command.RelationshipGroupCommand( writer(), before, after ).serialize( channel );
+        new Command.RelationshipGroupCommand(writer(), before, after).serialize(channel);
 
         // When
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.RelationshipGroupCommand );
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.RelationshipGroupCommand);
 
         Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
 
         // Then
-        assertBeforeAndAfterEquals( relationshipGroupCommand, before, after );
+        assertBeforeAndAfterEquals(relationshipGroupCommand, before, after);
     }
 
     @Test
-    void readRelationshipGroupCommandWithFixedReferenceFormat() throws IOException
-    {
+    void readRelationshipGroupCommandWithFixedReferenceFormat() throws IOException {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipGroupRecord before = new RelationshipGroupRecord( 42 ).initialize( false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF );
-        before.setUseFixedReferences( true );
-        RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, 3, 4, 5, 6, 7, 8 );
-        after.setUseFixedReferences( true );
+        RelationshipGroupRecord before =
+                new RelationshipGroupRecord(42).initialize(false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF);
+        before.setUseFixedReferences(true);
+        RelationshipGroupRecord after = new RelationshipGroupRecord(42).initialize(true, 3, 4, 5, 6, 7, 8);
+        after.setUseFixedReferences(true);
         after.setCreated();
 
-        new Command.RelationshipGroupCommand( writer(), before, after ).serialize( channel );
+        new Command.RelationshipGroupCommand(writer(), before, after).serialize(channel);
 
         // When
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.RelationshipGroupCommand );
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.RelationshipGroupCommand);
 
         Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
 
         // Then
-        assertBeforeAndAfterEquals( relationshipGroupCommand, before, after );
-        assertTrue( relationshipGroupCommand.getBefore().isUseFixedReferences() );
-        assertTrue( relationshipGroupCommand.getAfter().isUseFixedReferences() );
+        assertBeforeAndAfterEquals(relationshipGroupCommand, before, after);
+        assertTrue(relationshipGroupCommand.getBefore().isUseFixedReferences());
+        assertTrue(relationshipGroupCommand.getAfter().isUseFixedReferences());
     }
 
     @Test
-    public void readRelationshipGroupWithBiggerThanShortRelationshipType() throws IOException
-    {
+    public void readRelationshipGroupWithBiggerThanShortRelationshipType() throws IOException {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipGroupRecord before = new RelationshipGroupRecord( 42 ).initialize( false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF );
-        RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, (1 << Short.SIZE) + 10, 4, 5, 6, 7, 8 );
+        RelationshipGroupRecord before =
+                new RelationshipGroupRecord(42).initialize(false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF);
+        RelationshipGroupRecord after =
+                new RelationshipGroupRecord(42).initialize(true, (1 << Short.SIZE) + 10, 4, 5, 6, 7, 8);
         after.setCreated();
 
-        new Command.RelationshipGroupCommand( writer(), before, after ).serialize( channel );
+        new Command.RelationshipGroupCommand(writer(), before, after).serialize(channel);
 
         // When
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.RelationshipGroupCommand );
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.RelationshipGroupCommand);
 
         Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
 
         // Then
-        assertBeforeAndAfterEquals( relationshipGroupCommand, before, after );
+        assertBeforeAndAfterEquals(relationshipGroupCommand, before, after);
     }
 
     @Test
-    void nodeCommandWithFixedReferenceFormat() throws Exception
-    {
+    void nodeCommandWithFixedReferenceFormat() throws Exception {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        NodeRecord before = new NodeRecord( 42 ).initialize( true, 99, false, 33, 66 );
-        NodeRecord after = new NodeRecord( 42 ).initialize( true, 99, false, 33, 66 );
-        before.setUseFixedReferences( true );
-        after.setUseFixedReferences( true );
+        NodeRecord before = new NodeRecord(42).initialize(true, 99, false, 33, 66);
+        NodeRecord after = new NodeRecord(42).initialize(true, 99, false, 33, 66);
+        before.setUseFixedReferences(true);
+        after.setUseFixedReferences(true);
 
-        new Command.NodeCommand( writer(), before, after ).serialize( channel );
+        new Command.NodeCommand(writer(), before, after).serialize(channel);
 
         // When
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.NodeCommand );
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.NodeCommand);
 
         Command.NodeCommand nodeCommand = (Command.NodeCommand) command;
 
         // Then
-        assertBeforeAndAfterEquals( nodeCommand, before, after );
-        assertTrue( nodeCommand.getBefore().isUseFixedReferences() );
-        assertTrue( nodeCommand.getAfter().isUseFixedReferences() );
+        assertBeforeAndAfterEquals(nodeCommand, before, after);
+        assertTrue(nodeCommand.getBefore().isUseFixedReferences());
+        assertTrue(nodeCommand.getAfter().isUseFixedReferences());
     }
 
     @Test
-    void readPropertyCommandWithFixedReferenceFormat() throws IOException
-    {
+    void readPropertyCommandWithFixedReferenceFormat() throws IOException {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        PropertyRecord before = new PropertyRecord( 1 );
-        PropertyRecord after = new PropertyRecord( 1 );
-        before.setUseFixedReferences( true );
-        after.setUseFixedReferences( true );
+        PropertyRecord before = new PropertyRecord(1);
+        PropertyRecord after = new PropertyRecord(1);
+        before.setUseFixedReferences(true);
+        after.setUseFixedReferences(true);
 
-        new Command.PropertyCommand( writer(), before, after ).serialize( channel );
+        new Command.PropertyCommand(writer(), before, after).serialize(channel);
 
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.PropertyCommand );
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.PropertyCommand);
 
         Command.PropertyCommand propertyCommand = (Command.PropertyCommand) command;
 
         // Then
-        assertBeforeAndAfterEquals( propertyCommand, before, after );
-        assertTrue( propertyCommand.getBefore().isUseFixedReferences() );
-        assertTrue( propertyCommand.getAfter().isUseFixedReferences() );
+        assertBeforeAndAfterEquals(propertyCommand, before, after);
+        assertTrue(propertyCommand.getBefore().isUseFixedReferences());
+        assertTrue(propertyCommand.getAfter().isUseFixedReferences());
     }
 
     @Test
-    void shouldReadSomeCommands() throws Exception
-    {
+    void shouldReadSomeCommands() throws Exception {
         // GIVEN
         LogCommandSerialization writer = writer();
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        writer.writeNodeCommand( channel, Commands.createNode( 0 ) );
-        writer.writeNodeCommand( channel, Commands.createNode( 1 ) );
-        writer.writeRelationshipTypeTokenCommand( channel, Commands.createRelationshipTypeToken( 0, 0 ) );
-        writer.writeRelationshipCommand( channel, Commands.createRelationship( 0, 0, 1, 0 ) );
-        writer.writePropertyKeyTokenCommand( channel, Commands.createPropertyKeyToken( 0, 0 ) );
-        writer.writePropertyCommand( channel, Commands.createProperty( 0, PropertyType.SHORT_STRING, 0 ) );
+        writer.writeNodeCommand(channel, Commands.createNode(0));
+        writer.writeNodeCommand(channel, Commands.createNode(1));
+        writer.writeRelationshipTypeTokenCommand(channel, Commands.createRelationshipTypeToken(0, 0));
+        writer.writeRelationshipCommand(channel, Commands.createRelationship(0, 0, 1, 0));
+        writer.writePropertyKeyTokenCommand(channel, Commands.createPropertyKeyToken(0, 0));
+        writer.writePropertyCommand(channel, Commands.createProperty(0, PropertyType.SHORT_STRING, 0));
         CommandReader reader = createReader();
 
         // THEN
-        assertTrue( reader.read( channel ) instanceof Command.NodeCommand );
-        assertTrue( reader.read( channel ) instanceof Command.NodeCommand );
-        assertTrue( reader.read( channel ) instanceof Command.RelationshipTypeTokenCommand );
-        assertTrue( reader.read( channel ) instanceof Command.RelationshipCommand );
-        assertTrue( reader.read( channel ) instanceof Command.PropertyKeyTokenCommand );
-        assertTrue( reader.read( channel ) instanceof Command.PropertyCommand );
+        assertTrue(reader.read(channel) instanceof Command.NodeCommand);
+        assertTrue(reader.read(channel) instanceof Command.NodeCommand);
+        assertTrue(reader.read(channel) instanceof Command.RelationshipTypeTokenCommand);
+        assertTrue(reader.read(channel) instanceof Command.RelationshipCommand);
+        assertTrue(reader.read(channel) instanceof Command.PropertyKeyTokenCommand);
+        assertTrue(reader.read(channel) instanceof Command.PropertyCommand);
     }
 
     @Test
-    void shouldReadSchemaCommand() throws Exception
-    {
+    void shouldReadSchemaCommand() throws Exception {
         // given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        SchemaRecord before = new SchemaRecord( 42 );
+        SchemaRecord before = new SchemaRecord(42);
         SchemaRecord after = before.copy();
-        after.initialize( true, 353 );
-        after.setConstraint( true );
+        after.initialize(true, 353);
+        after.setConstraint(true);
         after.setCreated();
 
         long id = after.getId();
-        SchemaRule rule = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 2, 3 ) ).withName( "index_" + id ).materialise( id );
-        writer().writeSchemaRuleCommand( channel, new Command.SchemaRuleCommand( writer(), before, after, rule ) );
+        SchemaRule rule = IndexPrototype.forSchema(SchemaDescriptors.forLabel(1, 2, 3))
+                .withName("index_" + id)
+                .materialise(id);
+        writer().writeSchemaRuleCommand(channel, new Command.SchemaRuleCommand(writer(), before, after, rule));
 
         CommandReader reader = createReader();
-        Command.SchemaRuleCommand command = (Command.SchemaRuleCommand) reader.read( channel );
+        Command.SchemaRuleCommand command = (Command.SchemaRuleCommand) reader.read(channel);
 
-        assertBeforeAndAfterEquals( command, before, after );
+        assertBeforeAndAfterEquals(command, before, after);
     }
 
     @Test
-    void shouldReadAndWriteMetaDataCommand() throws IOException
-    {
+    void shouldReadAndWriteMetaDataCommand() throws IOException {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         MetaDataRecord before = new MetaDataRecord();
         MetaDataRecord after = new MetaDataRecord();
-        after.initialize( true, 999 );
-        new Command.MetaDataCommand( writer(), before, after ).serialize( channel );
+        after.initialize(true, 999);
+        new Command.MetaDataCommand(writer(), before, after).serialize(channel);
 
         // When
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.MetaDataCommand );
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.MetaDataCommand);
 
         Command.MetaDataCommand readCommand = (Command.MetaDataCommand) command;
 
         // Then
-        assertBeforeAndAfterEquals( readCommand, before, after );
+        assertBeforeAndAfterEquals(readCommand, before, after);
     }
 
     @Test
-    void shouldReadRelationshipGroupCommandIncludingExternalDegrees() throws Throwable
-    {
+    void shouldReadRelationshipGroupCommandIncludingExternalDegrees() throws Throwable {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipGroupRecord before = new RelationshipGroupRecord( 42 ).initialize( false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF );
-        RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, 3, 4, 5, 6, 7, 8 );
-        after.setHasExternalDegreesOut( random.nextBoolean() );
-        after.setHasExternalDegreesIn( random.nextBoolean() );
-        after.setHasExternalDegreesLoop( random.nextBoolean() );
+        RelationshipGroupRecord before =
+                new RelationshipGroupRecord(42).initialize(false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF);
+        RelationshipGroupRecord after = new RelationshipGroupRecord(42).initialize(true, 3, 4, 5, 6, 7, 8);
+        after.setHasExternalDegreesOut(random.nextBoolean());
+        after.setHasExternalDegreesIn(random.nextBoolean());
+        after.setHasExternalDegreesLoop(random.nextBoolean());
         after.setCreated();
 
-        new Command.RelationshipGroupCommand( writer(), before, after ).serialize( channel );
+        new Command.RelationshipGroupCommand(writer(), before, after).serialize(channel);
 
         // When
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.RelationshipGroupCommand);
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.RelationshipGroupCommand);
 
         Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
 
         // Then
-        assertBeforeAndAfterEquals( relationshipGroupCommand, before, after );
+        assertBeforeAndAfterEquals(relationshipGroupCommand, before, after);
     }
 
     @Test
-    void shouldReadRelationshipGroupWithLargerThanShortTypeIncludingExternalDegrees() throws Throwable
-    {
+    void shouldReadRelationshipGroupWithLargerThanShortTypeIncludingExternalDegrees() throws Throwable {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipGroupRecord before = new RelationshipGroupRecord( 42 ).initialize( false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF );
-        RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, (1 << Short.SIZE) + 10, 4, 5, 6, 7, 8 );
-        after.setHasExternalDegreesOut( random.nextBoolean() );
-        after.setHasExternalDegreesIn( random.nextBoolean() );
-        after.setHasExternalDegreesLoop( random.nextBoolean() );
+        RelationshipGroupRecord before =
+                new RelationshipGroupRecord(42).initialize(false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF);
+        RelationshipGroupRecord after =
+                new RelationshipGroupRecord(42).initialize(true, (1 << Short.SIZE) + 10, 4, 5, 6, 7, 8);
+        after.setHasExternalDegreesOut(random.nextBoolean());
+        after.setHasExternalDegreesIn(random.nextBoolean());
+        after.setHasExternalDegreesLoop(random.nextBoolean());
         after.setCreated();
 
-        new Command.RelationshipGroupCommand( writer(), before, after ).serialize( channel );
+        new Command.RelationshipGroupCommand(writer(), before, after).serialize(channel);
 
         // When
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.RelationshipGroupCommand);
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.RelationshipGroupCommand);
 
         Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
 
         // Then
-        assertBeforeAndAfterEquals( relationshipGroupCommand, before, after );
+        assertBeforeAndAfterEquals(relationshipGroupCommand, before, after);
     }
 
-    @RepeatedTest( 10 )
-    void propertyKeyCommand() throws Exception
-    {
-        testDoubleSerialization( Command.PropertyKeyTokenCommand.class, createRandomPropertyKeyTokenCommand() );
+    @RepeatedTest(10)
+    void propertyKeyCommand() throws Exception {
+        testDoubleSerialization(Command.PropertyKeyTokenCommand.class, createRandomPropertyKeyTokenCommand());
     }
 
-    Command.PropertyKeyTokenCommand createRandomPropertyKeyTokenCommand()
-    {
+    Command.PropertyKeyTokenCommand createRandomPropertyKeyTokenCommand() {
         var id = random.nextInt();
-        var before = createRandomPropertyKeyTokenRecord( id );
-        var after = createRandomPropertyKeyTokenRecord( id );
-        return new Command.PropertyKeyTokenCommand( writer(), before, after );
+        var before = createRandomPropertyKeyTokenRecord(id);
+        var after = createRandomPropertyKeyTokenRecord(id);
+        return new Command.PropertyKeyTokenCommand(writer(), before, after);
     }
 
-    PropertyKeyTokenRecord createRandomPropertyKeyTokenRecord( int id )
-    {
-        var record = new PropertyKeyTokenRecord( id );
-        record.initialize( random.nextBoolean(), random.nextInt(), random.nextInt() );
-        record.setInternal( random.nextBoolean() );
-        record.setCreated( random.nextBoolean() );
-        addDynamicRecords( record::addNameRecord );
+    PropertyKeyTokenRecord createRandomPropertyKeyTokenRecord(int id) {
+        var record = new PropertyKeyTokenRecord(id);
+        record.initialize(random.nextBoolean(), random.nextInt(), random.nextInt());
+        record.setInternal(random.nextBoolean());
+        record.setCreated(random.nextBoolean());
+        addDynamicRecords(record::addNameRecord);
         return record;
     }
 
-    @RepeatedTest( 10 )
-    void labelTokenCommand() throws Exception
-    {
-        testDoubleSerialization( Command.LabelTokenCommand.class, createRandomLabelTokenCommand() );
+    @RepeatedTest(10)
+    void labelTokenCommand() throws Exception {
+        testDoubleSerialization(Command.LabelTokenCommand.class, createRandomLabelTokenCommand());
     }
 
-    Command.LabelTokenCommand createRandomLabelTokenCommand()
-    {
+    Command.LabelTokenCommand createRandomLabelTokenCommand() {
         var id = random.nextInt();
-        var before = createRandomLabelTokenRecord( id );
-        var after = createRandomLabelTokenRecord( id );
-        return new Command.LabelTokenCommand( writer(), before, after );
+        var before = createRandomLabelTokenRecord(id);
+        var after = createRandomLabelTokenRecord(id);
+        return new Command.LabelTokenCommand(writer(), before, after);
     }
 
-    LabelTokenRecord createRandomLabelTokenRecord( int id )
-    {
-        var record = new LabelTokenRecord( id );
-        record.initialize( random.nextBoolean(), random.nextInt() );
-        record.setInternal( random.nextBoolean() );
-        record.setCreated( random.nextBoolean() );
-        addDynamicRecords( record::addNameRecord );
+    LabelTokenRecord createRandomLabelTokenRecord(int id) {
+        var record = new LabelTokenRecord(id);
+        record.initialize(random.nextBoolean(), random.nextInt());
+        record.setInternal(random.nextBoolean());
+        record.setCreated(random.nextBoolean());
+        addDynamicRecords(record::addNameRecord);
         return record;
     }
 
-    @RepeatedTest( 10 )
-    void relationshipTypeTokenCommand() throws Exception
-    {
-        testDoubleSerialization( Command.RelationshipTypeTokenCommand.class, createRandomRelationshipTypeTokenCommand() );
+    @RepeatedTest(10)
+    void relationshipTypeTokenCommand() throws Exception {
+        testDoubleSerialization(Command.RelationshipTypeTokenCommand.class, createRandomRelationshipTypeTokenCommand());
     }
 
-    Command.RelationshipTypeTokenCommand createRandomRelationshipTypeTokenCommand()
-    {
+    Command.RelationshipTypeTokenCommand createRandomRelationshipTypeTokenCommand() {
         var id = random.nextInt();
-        var before = createRandomRelationshipTypeTokenRecord( id );
-        var after = createRandomRelationshipTypeTokenRecord( id );
-        return new Command.RelationshipTypeTokenCommand( writer(), before, after );
+        var before = createRandomRelationshipTypeTokenRecord(id);
+        var after = createRandomRelationshipTypeTokenRecord(id);
+        return new Command.RelationshipTypeTokenCommand(writer(), before, after);
     }
 
-    RelationshipTypeTokenRecord createRandomRelationshipTypeTokenRecord( int id )
-    {
-        var record = new RelationshipTypeTokenRecord( id );
-        record.initialize( random.nextBoolean(), random.nextInt() );
-        record.setInternal( random.nextBoolean() );
-        record.setCreated( random.nextBoolean() );
-        addDynamicRecords( record::addNameRecord );
+    RelationshipTypeTokenRecord createRandomRelationshipTypeTokenRecord(int id) {
+        var record = new RelationshipTypeTokenRecord(id);
+        record.initialize(random.nextBoolean(), random.nextInt());
+        record.setInternal(random.nextBoolean());
+        record.setCreated(random.nextBoolean());
+        addDynamicRecords(record::addNameRecord);
 
         return record;
     }
 
-    private void addDynamicRecords( Consumer<DynamicRecord> consumer )
-    {
-        int limit = random.nextInt( 10 );
-        for ( int i = 0; i < limit; i++ )
-        {
-            consumer.accept( createRandomDynamicRecord() );
+    private void addDynamicRecords(Consumer<DynamicRecord> consumer) {
+        int limit = random.nextInt(10);
+        for (int i = 0; i < limit; i++) {
+            consumer.accept(createRandomDynamicRecord());
         }
     }
 
-    private DynamicRecord createRandomDynamicRecord()
-    {
-        var dynamicRecord = new DynamicRecord( random.nextLong( Integer.MAX_VALUE ) );
-        dynamicRecord.setInUse( random.nextBoolean() );
+    private DynamicRecord createRandomDynamicRecord() {
+        var dynamicRecord = new DynamicRecord(random.nextLong(Integer.MAX_VALUE));
+        dynamicRecord.setInUse(random.nextBoolean());
 
-        if ( dynamicRecord.inUse() )
-        {
-            dynamicRecord.setType( random.nextInt() );
-            dynamicRecord.setNextBlock( random.nextLong( Integer.MAX_VALUE ) );
-            dynamicRecord.setStartRecord( random.nextBoolean() );
-            dynamicRecord.setData( random.nextBytes( new byte[29] ) );
+        if (dynamicRecord.inUse()) {
+            dynamicRecord.setType(random.nextInt());
+            dynamicRecord.setNextBlock(random.nextLong(Integer.MAX_VALUE));
+            dynamicRecord.setStartRecord(random.nextBoolean());
+            dynamicRecord.setData(random.nextBytes(new byte[29]));
         }
 
         return dynamicRecord;
     }
 
-    @RepeatedTest( 10 )
-    void schemaCommandSerialization() throws IOException
-    {
-        testDoubleSerialization( Command.SchemaRuleCommand.class, createRandomSchemaCommand() );
+    @RepeatedTest(10)
+    void schemaCommandSerialization() throws IOException {
+        testDoubleSerialization(Command.SchemaRuleCommand.class, createRandomSchemaCommand());
     }
 
-    Command.SchemaRuleCommand createRandomSchemaCommand()
-    {
-        var id = Math.abs( random.nextLong() );
-        var before = createRandomSchemaRecord( id );
-        var after = createRandomSchemaRecord( id );
-        SchemaRule rule = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 2, 3 ) ).withName( "index_" + id ).materialise( id );
-        return new Command.SchemaRuleCommand( writer(), before, after, rule );
+    Command.SchemaRuleCommand createRandomSchemaCommand() {
+        var id = Math.abs(random.nextLong());
+        var before = createRandomSchemaRecord(id);
+        var after = createRandomSchemaRecord(id);
+        SchemaRule rule = IndexPrototype.forSchema(SchemaDescriptors.forLabel(1, 2, 3))
+                .withName("index_" + id)
+                .materialise(id);
+        return new Command.SchemaRuleCommand(writer(), before, after, rule);
     }
 
-    SchemaRecord createRandomSchemaRecord( long id )
-    {
-        var record = new SchemaRecord( id );
+    SchemaRecord createRandomSchemaRecord(long id) {
+        var record = new SchemaRecord(id);
         var inUse = random.nextBoolean();
-        record.initialize( inUse, inUse ? random.nextLong() : -1 );
-        if ( random.nextBoolean() )
-        {
+        record.initialize(inUse, inUse ? random.nextLong() : -1);
+        if (random.nextBoolean()) {
             record.setCreated();
         }
-        if ( inUse )
-        {
-            record.setConstraint( random.nextBoolean() );
+        if (inUse) {
+            record.setConstraint(random.nextBoolean());
         }
         return record;
     }
 
-    @RepeatedTest( 10 )
-    void propertyCommandSerialization() throws IOException
-    {
-        testDoubleSerialization( Command.PropertyCommand.class, createRandomProperty() );
+    @RepeatedTest(10)
+    void propertyCommandSerialization() throws IOException {
+        testDoubleSerialization(Command.PropertyCommand.class, createRandomProperty());
     }
 
-    Command.PropertyCommand createRandomProperty()
-    {
-        var id = Math.abs( random.nextLong() );
-        var before = createRandomPropertyRecord( id );
-        var after = createRandomPropertyRecord( id );
-        return new Command.PropertyCommand( writer(), before, after );
+    Command.PropertyCommand createRandomProperty() {
+        var id = Math.abs(random.nextLong());
+        var before = createRandomPropertyRecord(id);
+        var after = createRandomPropertyRecord(id);
+        return new Command.PropertyCommand(writer(), before, after);
     }
 
-    PropertyRecord createRandomPropertyRecord( long id )
-    {
-        var record = new PropertyRecord( id );
-        record.initialize( random.nextBoolean(), random.nextLong(), random.nextLong() );
-        if ( random.nextBoolean() )
-        {
+    PropertyRecord createRandomPropertyRecord(long id) {
+        var record = new PropertyRecord(id);
+        record.initialize(random.nextBoolean(), random.nextLong(), random.nextLong());
+        if (random.nextBoolean()) {
             record.setCreated();
         }
-        if ( record.inUse() )
-        {
+        if (record.inUse()) {
             PropertyBlock block = new PropertyBlock();
-            PropertyStore.encodeValue( block, random.nextInt( 1000 ), Values.of( 123 ), null, null, NULL_CONTEXT, INSTANCE );
-            record.addPropertyBlock( block );
+            PropertyStore.encodeValue(block, random.nextInt(1000), Values.of(123), null, null, NULL_CONTEXT, INSTANCE);
+            record.addPropertyBlock(block);
         }
-        if ( random.nextBoolean() )
-        {
-            record.addDeletedRecord( new DynamicRecord( random.nextLong( 1000 ) ) );
+        if (random.nextBoolean()) {
+            record.addDeletedRecord(new DynamicRecord(random.nextLong(1000)));
         }
-        record.setUseFixedReferences( random.nextBoolean() );
-        switch ( random.nextInt( 3 ) )
-        {
-        case 0 -> record.setNodeId( 44 );
-        case 1 -> record.setRelId( 88 );
-        default -> record.setSchemaRuleId( 11 );
+        record.setUseFixedReferences(random.nextBoolean());
+        switch (random.nextInt(3)) {
+            case 0 -> record.setNodeId(44);
+            case 1 -> record.setRelId(88);
+            default -> record.setSchemaRuleId(11);
         }
 
         return record;
     }
 
-    @RepeatedTest( 10 )
-    void nodeCommandSerialization() throws IOException
-    {
-        testDoubleSerialization( Command.NodeCommand.class, createRandomNode() );
+    @RepeatedTest(10)
+    void nodeCommandSerialization() throws IOException {
+        testDoubleSerialization(Command.NodeCommand.class, createRandomNode());
     }
 
-    private Command.NodeCommand createRandomNode()
-    {
-        var id = Math.abs( random.nextLong() );
-        var before = createRandomNodeRecord( id );
-        var after = createRandomNodeRecord( id );
-        return new Command.NodeCommand( writer(), before, after );
+    private Command.NodeCommand createRandomNode() {
+        var id = Math.abs(random.nextLong());
+        var before = createRandomNodeRecord(id);
+        var after = createRandomNodeRecord(id);
+        return new Command.NodeCommand(writer(), before, after);
     }
 
-    NodeRecord createRandomNodeRecord( long id )
-    {
-        var record = new NodeRecord( id );
+    NodeRecord createRandomNodeRecord(long id) {
+        var record = new NodeRecord(id);
         var inUse = random.nextBoolean();
-        if ( random.nextBoolean() )
-        {
+        if (random.nextBoolean()) {
             record.setCreated();
         }
-        if ( inUse )
-        {
-            record.initialize( inUse, random.nextLong(), random.nextBoolean(), random.nextLong(), random.nextLong() );
+        if (inUse) {
+            record.initialize(inUse, random.nextLong(), random.nextBoolean(), random.nextLong(), random.nextLong());
         }
 
-        if ( random.nextBoolean() )
-        {
+        if (random.nextBoolean()) {
             var labelField = record.getLabelField();
-            record.setLabelField( labelField, randomLabelDynamicRecords( id, NodeLabelsField.fieldPointsToDynamicRecordOfLabels( labelField ) ) );
+            record.setLabelField(
+                    labelField,
+                    randomLabelDynamicRecords(id, NodeLabelsField.fieldPointsToDynamicRecordOfLabels(labelField)));
         }
 
-        if ( random.nextBoolean() )
-        {
-            if ( random.nextBoolean() )
-            {
-                record.setSecondaryUnitIdOnCreate( random.nextLong( 1000 ) );
-            }
-            else
-            {
-                record.setSecondaryUnitIdOnLoad( random.nextLong( 1000 ) );
+        if (random.nextBoolean()) {
+            if (random.nextBoolean()) {
+                record.setSecondaryUnitIdOnCreate(random.nextLong(1000));
+            } else {
+                record.setSecondaryUnitIdOnLoad(random.nextLong(1000));
             }
         }
-        record.setUseFixedReferences( random.nextBoolean() );
+        record.setUseFixedReferences(random.nextBoolean());
         return record;
     }
 
-    private List<DynamicRecord> randomLabelDynamicRecords( long nodeId, boolean mustIncludeUsed )
-    {
-        if ( mustIncludeUsed || random.nextBoolean() )
-        {
-            var labels = random.random().longs().limit( random.nextInt( 1, 10 ) ).sorted().toArray();
-            var records = DynamicNodeLabels.allocateRecordsForDynamicLabels( nodeId,
-                                                                             labels,
-                                                                             new RandomizedDynamicRecordAllocator(), NULL_CONTEXT,
-                                                                             INSTANCE );
-            if ( mustIncludeUsed )
-            {
-                records.get( 0 ).setInUse( true );
+    private List<DynamicRecord> randomLabelDynamicRecords(long nodeId, boolean mustIncludeUsed) {
+        if (mustIncludeUsed || random.nextBoolean()) {
+            var labels = random.random()
+                    .longs()
+                    .limit(random.nextInt(1, 10))
+                    .sorted()
+                    .toArray();
+            var records = DynamicNodeLabels.allocateRecordsForDynamicLabels(
+                    nodeId, labels, new RandomizedDynamicRecordAllocator(), NULL_CONTEXT, INSTANCE);
+            if (mustIncludeUsed) {
+                records.get(0).setInUse(true);
             }
             return records;
         }
         return emptyList();
     }
 
-    @RepeatedTest( 10 )
-    void relationshipCommandSerialization() throws IOException
-    {
-        testDoubleSerialization( Command.RelationshipCommand.class, createRandomRelationship() );
+    @RepeatedTest(10)
+    void relationshipCommandSerialization() throws IOException {
+        testDoubleSerialization(Command.RelationshipCommand.class, createRandomRelationship());
     }
 
-    private Command.RelationshipCommand createRandomRelationship()
-    {
-        var id = Math.abs( random.nextLong() );
-        var before = createRandomRelationshipRecord( id );
-        var after = createRandomRelationshipRecord( id );
-        return new Command.RelationshipCommand( writer(), before, after );
+    private Command.RelationshipCommand createRandomRelationship() {
+        var id = Math.abs(random.nextLong());
+        var before = createRandomRelationshipRecord(id);
+        var after = createRandomRelationshipRecord(id);
+        return new Command.RelationshipCommand(writer(), before, after);
     }
 
-    RelationshipRecord createRandomRelationshipRecord( long id )
-    {
-        var record = new RelationshipRecord( id );
+    RelationshipRecord createRandomRelationshipRecord(long id) {
+        var record = new RelationshipRecord(id);
         var inUse = random.nextBoolean();
-        if ( random.nextBoolean() )
-        {
+        if (random.nextBoolean()) {
             record.setCreated();
         }
-        if ( inUse )
-        {
-            record.initialize( inUse, random.nextLong(), random.nextLong(), random.nextLong(), random.nextInt(),
-                               random.nextLong(), random.nextLong(), random.nextLong(), random.nextLong(), random.nextBoolean(), random.nextBoolean() );
+        if (inUse) {
+            record.initialize(
+                    inUse,
+                    random.nextLong(),
+                    random.nextLong(),
+                    random.nextLong(),
+                    random.nextInt(),
+                    random.nextLong(),
+                    random.nextLong(),
+                    random.nextLong(),
+                    random.nextLong(),
+                    random.nextBoolean(),
+                    random.nextBoolean());
         }
 
-        if ( random.nextBoolean() )
-        {
-            if ( random.nextBoolean() )
-            {
-                record.setSecondaryUnitIdOnCreate( random.nextLong( 1000 ) );
-            }
-            else
-            {
-                record.setSecondaryUnitIdOnLoad( random.nextLong( 1000 ) );
+        if (random.nextBoolean()) {
+            if (random.nextBoolean()) {
+                record.setSecondaryUnitIdOnCreate(random.nextLong(1000));
+            } else {
+                record.setSecondaryUnitIdOnLoad(random.nextLong(1000));
             }
         }
-        record.setUseFixedReferences( random.nextBoolean() );
+        record.setUseFixedReferences(random.nextBoolean());
         return record;
     }
 
-    @RepeatedTest( 10 )
-    void relationshipGroupCommandSerialization() throws IOException
-    {
-        testDoubleSerialization( Command.RelationshipGroupCommand.class, createRandomRelationshipGroup() );
+    @RepeatedTest(10)
+    void relationshipGroupCommandSerialization() throws IOException {
+        testDoubleSerialization(Command.RelationshipGroupCommand.class, createRandomRelationshipGroup());
     }
 
-    private Command.RelationshipGroupCommand createRandomRelationshipGroup()
-    {
-        var id = Math.abs( random.nextLong() );
-        var before = createRandomRelationshipGroupRecord( id );
-        var after = createRandomRelationshipGroupRecord( id );
-        return new Command.RelationshipGroupCommand( writer(), before, after );
+    private Command.RelationshipGroupCommand createRandomRelationshipGroup() {
+        var id = Math.abs(random.nextLong());
+        var before = createRandomRelationshipGroupRecord(id);
+        var after = createRandomRelationshipGroupRecord(id);
+        return new Command.RelationshipGroupCommand(writer(), before, after);
     }
 
-    RelationshipGroupRecord createRandomRelationshipGroupRecord( long id )
-    {
-        var record = new RelationshipGroupRecord( id );
-        record.initialize( random.nextBoolean(), random.nextInt( 0xffffff ), random.nextLong(), random.nextLong(), random.nextLong(), random.nextLong(),
-                           random.nextLong() );
+    RelationshipGroupRecord createRandomRelationshipGroupRecord(long id) {
+        var record = new RelationshipGroupRecord(id);
+        record.initialize(
+                random.nextBoolean(),
+                random.nextInt(0xffffff),
+                random.nextLong(),
+                random.nextLong(),
+                random.nextLong(),
+                random.nextLong(),
+                random.nextLong());
 
-        record.setCreated( random.nextBoolean() );
-        record.setHasExternalDegreesOut( random.nextBoolean() );
-        record.setHasExternalDegreesIn( random.nextBoolean() );
-        record.setHasExternalDegreesLoop( random.nextBoolean() );
+        record.setCreated(random.nextBoolean());
+        record.setHasExternalDegreesOut(random.nextBoolean());
+        record.setHasExternalDegreesIn(random.nextBoolean());
+        record.setHasExternalDegreesLoop(random.nextBoolean());
 
-        if ( random.nextBoolean() )
-        {
-            if ( random.nextBoolean() )
-            {
-                record.setSecondaryUnitIdOnCreate( random.nextLong( 1000 ) );
-            }
-            else
-            {
-                record.setSecondaryUnitIdOnLoad( random.nextLong( 1000 ) );
+        if (random.nextBoolean()) {
+            if (random.nextBoolean()) {
+                record.setSecondaryUnitIdOnCreate(random.nextLong(1000));
+            } else {
+                record.setSecondaryUnitIdOnLoad(random.nextLong(1000));
             }
         }
-        record.setUseFixedReferences( random.nextBoolean() );
+        record.setUseFixedReferences(random.nextBoolean());
         return record;
     }
 
@@ -898,89 +854,88 @@ public class LogCommandSerializationV5_0Test
      * <p>
      * Possible improvement: validate that original record and deserialized record are applied to store they produce equal data.
      */
-    private <T extends Command.BaseCommand<?>> void testDoubleSerialization( Class<T> type, T original ) throws IOException
-    {
+    private <T extends Command.BaseCommand<?>> void testDoubleSerialization(Class<T> type, T original)
+            throws IOException {
         InMemoryClosableChannel originalChannel = new InMemoryClosableChannel();
 
         originalChannel.beginChecksum();
-        original.serialize( originalChannel );
+        original.serialize(originalChannel);
         var originalChecksum = originalChannel.putChecksum();
 
         // When
         CommandReader reader = createReader();
-        var readOnce = (Command.BaseCommand<?>) reader.read( originalChannel );
-        assertThat( readOnce ).isInstanceOf( type );
+        var readOnce = (Command.BaseCommand<?>) reader.read(originalChannel);
+        assertThat(readOnce).isInstanceOf(type);
 
         var anotherChannel = new InMemoryClosableChannel();
         anotherChannel.beginChecksum();
-        readOnce.serialize( anotherChannel );
+        readOnce.serialize(anotherChannel);
         var anotherChecksum = anotherChannel.putChecksum();
 
-        var readTwice = (Command.BaseCommand<?>) reader.read( anotherChannel );
-        assertThat( readTwice ).isInstanceOf( type );
+        var readTwice = (Command.BaseCommand<?>) reader.read(anotherChannel);
+        assertThat(readTwice).isInstanceOf(type);
 
-        assertCommandsEqual( original, readOnce );
-        assertCommandsEqual( readOnce, readTwice );
-        assertThat( originalChecksum ).as( "Checksums must be equal after double serialization \n" +
-                                           "Original: " + original + "\n" +
-                                           "Read once: " + readOnce + "\n" +
-                                           "Read twice: " + readTwice )
-                                      .isEqualTo( anotherChecksum );
+        assertCommandsEqual(original, readOnce);
+        assertCommandsEqual(readOnce, readTwice);
+        assertThat(originalChecksum)
+                .as("Checksums must be equal after double serialization \n" + "Original: "
+                        + original + "\n" + "Read once: "
+                        + readOnce + "\n" + "Read twice: "
+                        + readTwice)
+                .isEqualTo(anotherChecksum);
     }
 
-    private static void assertCommandsEqual( Command.BaseCommand<?> left, Command.BaseCommand<?> right )
-    {
-        assertEqualsIncludingFlags( left.getBefore(), right.getBefore() );
-        assertEqualsIncludingFlags( left.getAfter(), right.getAfter() );
+    private static void assertCommandsEqual(Command.BaseCommand<?> left, Command.BaseCommand<?> right) {
+        assertEqualsIncludingFlags(left.getBefore(), right.getBefore());
+        assertEqualsIncludingFlags(left.getAfter(), right.getAfter());
     }
 
-    private static void assertEqualsIncludingFlags( AbstractBaseRecord left, AbstractBaseRecord right )
-    {
-        assertThat( left ).isEqualTo( right );
-        assertThat( left.isCreated() ).as( "Created flag mismatch:\nleft " + left + " \nright " + right )
-                                      .isEqualTo( right.isCreated() );
-        assertThat( left.isUseFixedReferences() ).as( "Fixed references flag mismatch:\nleft " + left + " \nright " + right )
-                                                 .isEqualTo( right.isUseFixedReferences() );
-        assertThat( left.getSecondaryUnitId() ).as( "Secondary unit id mismatch:\nleft " + left + " \nright " + right ).
-                                               isEqualTo( right.getSecondaryUnitId() );
-        assertThat( left.requiresSecondaryUnit() ).as( "Secondary unit required flag mismatch:\nleft " + left + " \nright " + right )
-                                                  .isEqualTo( right.requiresSecondaryUnit() );
-        assertThat( left.isSecondaryUnitCreated() ).as( "Secondary unit created flag mismatch:\nleft " + left + " \nright " + right )
-                                                   .isEqualTo( right.isSecondaryUnitCreated() );
+    private static void assertEqualsIncludingFlags(AbstractBaseRecord left, AbstractBaseRecord right) {
+        assertThat(left).isEqualTo(right);
+        assertThat(left.isCreated())
+                .as("Created flag mismatch:\nleft " + left + " \nright " + right)
+                .isEqualTo(right.isCreated());
+        assertThat(left.isUseFixedReferences())
+                .as("Fixed references flag mismatch:\nleft " + left + " \nright " + right)
+                .isEqualTo(right.isUseFixedReferences());
+        assertThat(left.getSecondaryUnitId())
+                .as("Secondary unit id mismatch:\nleft " + left + " \nright " + right)
+                .isEqualTo(right.getSecondaryUnitId());
+        assertThat(left.requiresSecondaryUnit())
+                .as("Secondary unit required flag mismatch:\nleft " + left + " \nright " + right)
+                .isEqualTo(right.requiresSecondaryUnit());
+        assertThat(left.isSecondaryUnitCreated())
+                .as("Secondary unit created flag mismatch:\nleft " + left + " \nright " + right)
+                .isEqualTo(right.isSecondaryUnitCreated());
     }
 
-    private static <RECORD extends AbstractBaseRecord> void assertBeforeAndAfterEquals( Command.BaseCommand<RECORD> command, RECORD before, RECORD after )
-    {
-        assertEqualsIncludingFlags( before, command.getBefore() );
-        assertEqualsIncludingFlags( after, command.getAfter() );
+    private static <RECORD extends AbstractBaseRecord> void assertBeforeAndAfterEquals(
+            Command.BaseCommand<RECORD> command, RECORD before, RECORD after) {
+        assertEqualsIncludingFlags(before, command.getBefore());
+        assertEqualsIncludingFlags(after, command.getAfter());
     }
 
-    private CommandReader createReader()
-    {
+    private CommandReader createReader() {
         return LogCommandSerializationV5_0.INSTANCE;
     }
 
-    private LogCommandSerialization writer()
-    {
+    private LogCommandSerialization writer() {
         return LogCommandSerializationV5_0.INSTANCE;
     }
 
-    private class RandomizedDynamicRecordAllocator implements DynamicRecordAllocator
-    {
+    private class RandomizedDynamicRecordAllocator implements DynamicRecordAllocator {
         private long idGenerator = 1;
 
         @Override
-        public int getRecordDataSize()
-        {
+        public int getRecordDataSize() {
             return 23;
         }
 
         @Override
-        public DynamicRecord nextRecord( CursorContext cursorContext )
-        {
-            var dynamicRecord = new DynamicRecord( idGenerator++ );
-            dynamicRecord.setInUse( random.nextBoolean() );
-            dynamicRecord.setCreated( random.nextBoolean() );
+        public DynamicRecord nextRecord(CursorContext cursorContext) {
+            var dynamicRecord = new DynamicRecord(idGenerator++);
+            dynamicRecord.setInUse(random.nextBoolean());
+            dynamicRecord.setCreated(random.nextBoolean());
             return dynamicRecord;
         }
     }

@@ -19,14 +19,20 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
+import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.IndexMonitor;
@@ -66,327 +72,288 @@ import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Value;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
-import static org.neo4j.storageengine.api.RelationshipSelection.selection;
-
-class DefaultRelationshipTraversalCursorTest
-{
+class DefaultRelationshipTraversalCursorTest {
     private static final long node = 42;
     private static final int type = 9999;
     private static final int type2 = 9998;
     private static final long relationship = 100;
-    private final DefaultPooledCursors pool = mock( DefaultPooledCursors.class );
+    private final DefaultPooledCursors pool = mock(DefaultPooledCursors.class);
 
     // Regular traversal of a sparse chain
 
     @Test
-    void regularTraversal()
-    {
+    void regularTraversal() {
         // given
-        StorageRelationshipTraversalCursor storeCursor = storeCursor( 100, 102, 104 );
-        DefaultRelationshipTraversalCursor cursor = new DefaultRelationshipTraversalCursor( pool::accept, storeCursor, mock( DefaultNodeCursor.class ) );
+        StorageRelationshipTraversalCursor storeCursor = storeCursor(100, 102, 104);
+        DefaultRelationshipTraversalCursor cursor =
+                new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, mock(DefaultNodeCursor.class));
         Read read = emptyTxState();
 
         // when
-        cursor.init( node, relationship, ALL_RELATIONSHIPS, read );
+        cursor.init(node, relationship, ALL_RELATIONSHIPS, read);
 
         // then
-        assertRelationships( cursor, 100, 102, 104 );
+        assertRelationships(cursor, 100, 102, 104);
     }
 
     @Test
-    void regularTraversalWithTxState()
-    {
+    void regularTraversalWithTxState() {
         // given
-        StorageRelationshipTraversalCursor storeCursor = storeCursor( 100, 102, 104 );
-        DefaultRelationshipTraversalCursor cursor = new DefaultRelationshipTraversalCursor( pool::accept, storeCursor, mock( DefaultNodeCursor.class ) );
-        Read read = txState( 3, 4 );
+        StorageRelationshipTraversalCursor storeCursor = storeCursor(100, 102, 104);
+        DefaultRelationshipTraversalCursor cursor =
+                new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, mock(DefaultNodeCursor.class));
+        Read read = txState(3, 4);
 
         // when
-        cursor.init( node, relationship, ALL_RELATIONSHIPS, read );
+        cursor.init(node, relationship, ALL_RELATIONSHIPS, read);
 
         // then
-        assertRelationships( cursor, 3, 4, 100, 102, 104 );
+        assertRelationships(cursor, 3, 4, 100, 102, 104);
     }
 
     // Sparse traversal but with tx-state filtering
 
     @Test
-    void traversalWithTxStateFiltering()
-    {
+    void traversalWithTxStateFiltering() {
         // given
-        StorageRelationshipTraversalCursor storeCursor =
-                storeCursor(
-                        rel( 100, node, 50, type ), // <- the filter template
-                        rel( 102, node, 51, type ),
-                        rel( 104, node, 52, type ) );
+        StorageRelationshipTraversalCursor storeCursor = storeCursor(
+                rel(100, node, 50, type), // <- the filter template
+                rel(102, node, 51, type),
+                rel(104, node, 52, type));
 
-        DefaultRelationshipTraversalCursor cursor = new DefaultRelationshipTraversalCursor( pool::accept, storeCursor, mock( DefaultNodeCursor.class ) );
+        DefaultRelationshipTraversalCursor cursor =
+                new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, mock(DefaultNodeCursor.class));
         Read read = txState(
-                rel( 3, node, 50, type ),
-                rel( 4, 50, node, type ),
-                rel( 5, node, 50, type2 ),
-                rel( 6, node, node, type ),
-                rel( 7, node, 52, type )
-        );
+                rel(3, node, 50, type),
+                rel(4, 50, node, type),
+                rel(5, node, 50, type2),
+                rel(6, node, node, type),
+                rel(7, node, 52, type));
 
         // when
-        cursor.init( node, relationship,
+        cursor.init(
+                node,
+                relationship,
                 // relationships of a specific type/direction
-                selection( type, Direction.OUTGOING ), read );
+                selection(type, Direction.OUTGOING),
+                read);
 
         // then
-        assertRelationships( cursor, 3, 7, 6, 100, 102, 104 );
+        assertRelationships(cursor, 3, 7, 6, 100, 102, 104);
     }
 
     // Empty store, but filter tx-state
 
     @Test
-    void emptyStoreOutgoingOfType()
-    {
+    void emptyStoreOutgoingOfType() {
         // given
         StorageRelationshipTraversalCursor storeCursor = emptyStoreCursor();
 
-        DefaultRelationshipTraversalCursor cursor = new DefaultRelationshipTraversalCursor( pool::accept, storeCursor, mock( DefaultNodeCursor.class ) );
+        DefaultRelationshipTraversalCursor cursor =
+                new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, mock(DefaultNodeCursor.class));
         Read read = txState(
-                rel( 3, node, 50, type ),
-                rel( 4, 50, node, type ),
-                rel( 5, node, 50, type2 ),
-                rel( 6, node, node, type ),
-                rel( 7, node, 52, type )
-        );
+                rel(3, node, 50, type),
+                rel(4, 50, node, type),
+                rel(5, node, 50, type2),
+                rel(6, node, node, type),
+                rel(7, node, 52, type));
 
         // when
-        cursor.init( node, relationship, selection( type, Direction.OUTGOING ), read );
+        cursor.init(node, relationship, selection(type, Direction.OUTGOING), read);
 
         // then
-        assertRelationships( cursor, 3, 7, 6 );
+        assertRelationships(cursor, 3, 7, 6);
     }
 
     @Test
-    void emptyStoreIncomingOfType()
-    {
+    void emptyStoreIncomingOfType() {
         // given
         StorageRelationshipTraversalCursor storeCursor = emptyStoreCursor();
 
-        DefaultRelationshipTraversalCursor cursor = new DefaultRelationshipTraversalCursor( pool::accept, storeCursor, mock( DefaultNodeCursor.class ) );
+        DefaultRelationshipTraversalCursor cursor =
+                new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, mock(DefaultNodeCursor.class));
         Read read = txState(
-                rel( 3, node, 50, type ),
-                rel( 4, 50, node, type ),
-                rel( 5, 50, node, type2 ),
-                rel( 6, node, node, type ),
-                rel( 7, 56, node, type ),
-                rel( 8, node, 52, type )
-        );
+                rel(3, node, 50, type),
+                rel(4, 50, node, type),
+                rel(5, 50, node, type2),
+                rel(6, node, node, type),
+                rel(7, 56, node, type),
+                rel(8, node, 52, type));
 
         // when
-        cursor.init( node, relationship, selection( type, Direction.INCOMING ), read );
+        cursor.init(node, relationship, selection(type, Direction.INCOMING), read);
 
         // then
-        assertRelationships( cursor, 4, 7, 6 );
+        assertRelationships(cursor, 4, 7, 6);
     }
 
     @Test
-    void emptyStoreAllOfType()
-    {
+    void emptyStoreAllOfType() {
         // given
         StorageRelationshipTraversalCursor storeCursor = emptyStoreCursor();
 
-        DefaultRelationshipTraversalCursor cursor = new DefaultRelationshipTraversalCursor( pool::accept, storeCursor, mock( DefaultNodeCursor.class ) );
+        DefaultRelationshipTraversalCursor cursor =
+                new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, mock(DefaultNodeCursor.class));
         Read read = txState(
-                rel( 3, node, 50, type ),
-                rel( 2, node, node, type ),
-                rel( 5, 50, node, type2 ),
-                rel( 6, node, node, type ),
-                rel( 7, 56, node, type ),
-                rel( 8, node, 52, type )
-        );
+                rel(3, node, 50, type),
+                rel(2, node, node, type),
+                rel(5, 50, node, type2),
+                rel(6, node, node, type),
+                rel(7, 56, node, type),
+                rel(8, node, 52, type));
 
         // when
-        cursor.init( node, relationship, selection( type, Direction.BOTH ), read );
+        cursor.init(node, relationship, selection(type, Direction.BOTH), read);
 
         // then
-        assertRelationships( cursor, 3, 8, 7, 2, 6 );
+        assertRelationships(cursor, 3, 8, 7, 2, 6);
     }
 
     // HELPERS
 
-    private static Read emptyTxState()
-    {
-        KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
-        Read read = new TestRead( ktx );
-        when( ktx.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
+    private static Read emptyTxState() {
+        KernelTransactionImplementation ktx = mock(KernelTransactionImplementation.class);
+        Read read = new TestRead(ktx);
+        when(ktx.securityContext()).thenReturn(SecurityContext.AUTH_DISABLED);
         return read;
     }
 
-    private static Read txState( long... ids )
-    {
-        return txState( LongStream.of( ids ).mapToObj( id -> rel( id, node, node, type ) ).toArray( Rel[]::new ) );
+    private static Read txState(long... ids) {
+        return txState(
+                LongStream.of(ids).mapToObj(id -> rel(id, node, node, type)).toArray(Rel[]::new));
     }
 
-    private static Read txState( Rel... rels )
-    {
-        KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
-        Read read = new TestRead( ktx );
+    private static Read txState(Rel... rels) {
+        KernelTransactionImplementation ktx = mock(KernelTransactionImplementation.class);
+        Read read = new TestRead(ktx);
 
-        when( ktx.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
-        if ( rels.length > 0 )
-        {
+        when(ktx.securityContext()).thenReturn(SecurityContext.AUTH_DISABLED);
+        if (rels.length > 0) {
             TxState txState = new TxState();
-            for ( Rel rel : rels )
-            {
-                txState.relationshipDoCreate( rel.relId, rel.type, rel.sourceId, rel.targetId );
+            for (Rel rel : rels) {
+                txState.relationshipDoCreate(rel.relId, rel.type, rel.sourceId, rel.targetId);
             }
-            when( read.hasTxStateWithChanges() ).thenReturn( true );
-            when( read.txState() ).thenReturn( txState );
+            when(read.hasTxStateWithChanges()).thenReturn(true);
+            when(read.txState()).thenReturn(txState);
         }
         return read;
     }
 
-    private static void assertRelationships( DefaultRelationshipTraversalCursor cursor, long... expected )
-    {
-        for ( long expectedId : expected )
-        {
-            assertTrue( cursor.next(), "Expected relationship " + expectedId + " but got none" );
-            assertEquals( expectedId, cursor.relationshipReference(),
-                          "Expected relationship " + expectedId + " got " + cursor.relationshipReference() );
+    private static void assertRelationships(DefaultRelationshipTraversalCursor cursor, long... expected) {
+        for (long expectedId : expected) {
+            assertTrue(cursor.next(), "Expected relationship " + expectedId + " but got none");
+            assertEquals(
+                    expectedId,
+                    cursor.relationshipReference(),
+                    "Expected relationship " + expectedId + " got " + cursor.relationshipReference());
         }
-        assertFalse( cursor.next(), "Expected no more relationships, but got " + cursor.relationshipReference() );
+        assertFalse(cursor.next(), "Expected no more relationships, but got " + cursor.relationshipReference());
     }
 
-    private static Rel rel( long relId, long startId, long endId, int type )
-    {
-        return new Rel( relId, startId, endId, type );
+    private static Rel rel(long relId, long startId, long endId, int type) {
+        return new Rel(relId, startId, endId, type);
     }
 
-    private static final Rel NO_REL = rel( -1L, -1L, -1L, -1 );
+    private static final Rel NO_REL = rel(-1L, -1L, -1L, -1);
 
-    private static class Rel
-    {
+    private static class Rel {
         final long relId;
         final long sourceId;
         final long targetId;
         final int type;
 
-        Rel( long relId, long sourceId, long targetId, int type )
-        {
+        Rel(long relId, long sourceId, long targetId, int type) {
             this.relId = relId;
             this.sourceId = sourceId;
             this.targetId = targetId;
             this.type = type;
         }
 
-        RelationshipDirection direction( long nodeReference )
-        {
-            if ( sourceId == targetId )
-            {
+        RelationshipDirection direction(long nodeReference) {
+            if (sourceId == targetId) {
                 return RelationshipDirection.LOOP;
             }
             return nodeReference == sourceId ? RelationshipDirection.OUTGOING : RelationshipDirection.INCOMING;
         }
     }
 
-    private static StorageRelationshipTraversalCursor emptyStoreCursor()
-    {
-        return storeCursor( new Rel[0] );
+    private static StorageRelationshipTraversalCursor emptyStoreCursor() {
+        return storeCursor(new Rel[0]);
     }
 
-    private static StorageRelationshipTraversalCursor storeCursor( long... ids )
-    {
-        return storeCursor( LongStream.of( ids ).mapToObj( id -> rel( id, -1L, -1L, -1 ) ).toArray( Rel[]::new ) );
+    private static StorageRelationshipTraversalCursor storeCursor(long... ids) {
+        return storeCursor(
+                LongStream.of(ids).mapToObj(id -> rel(id, -1L, -1L, -1)).toArray(Rel[]::new));
     }
 
-    private static StorageRelationshipTraversalCursor storeCursor( Rel... rels )
-    {
-        return new StorageRelationshipTraversalCursor()
-        {
+    private static StorageRelationshipTraversalCursor storeCursor(Rel... rels) {
+        return new StorageRelationshipTraversalCursor() {
             private long nodeReference;
             private RelationshipSelection selection;
             private int i = -1;
             private Rel rel = NO_REL;
 
             @Override
-            public long neighbourNodeReference()
-            {
+            public long neighbourNodeReference() {
                 return rel.sourceId == node ? rel.targetId : rel.sourceId;
             }
 
             @Override
-            public long originNodeReference()
-            {
+            public long originNodeReference() {
                 return node;
             }
 
             @Override
-            public void init( long nodeReference, long reference, RelationshipSelection selection )
-            {
+            public void init(long nodeReference, long reference, RelationshipSelection selection) {
                 this.nodeReference = nodeReference;
                 this.selection = selection;
             }
 
             @Override
-            public int type()
-            {
+            public int type() {
                 return rel.type;
             }
 
             @Override
-            public long sourceNodeReference()
-            {
+            public long sourceNodeReference() {
                 return rel.sourceId;
             }
 
             @Override
-            public long targetNodeReference()
-            {
+            public long targetNodeReference() {
                 return rel.targetId;
             }
 
             @Override
-            public boolean hasProperties()
-            {
-                throw new UnsupportedOperationException( "not implemented" );
+            public boolean hasProperties() {
+                throw new UnsupportedOperationException("not implemented");
             }
 
             @Override
-            public Reference propertiesReference()
-            {
-                throw new UnsupportedOperationException( "not implemented" );
+            public Reference propertiesReference() {
+                throw new UnsupportedOperationException("not implemented");
             }
 
             @Override
-            public void properties( StoragePropertyCursor propertyCursor, PropertySelection selection )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
+            public void properties(StoragePropertyCursor propertyCursor, PropertySelection selection) {
+                throw new UnsupportedOperationException("not implemented");
             }
 
             @Override
-            public long entityReference()
-            {
+            public long entityReference() {
                 return rel.relId;
             }
 
             @Override
-            public boolean next()
-            {
-                while ( i + 1 < rels.length )
-                {
+            public boolean next() {
+                while (i + 1 < rels.length) {
                     i++;
-                    if ( i < 0 || i >= rels.length )
-                    {
+                    if (i < 0 || i >= rels.length) {
                         rel = NO_REL;
                         return false;
-                    }
-                    else
-                    {
+                    } else {
                         rel = rels[i];
-                        if ( selection.test( rel.type, rel.direction( nodeReference ) ) )
-                        {
+                        if (selection.test(rel.type, rel.direction(nodeReference))) {
                             return true;
                         }
                     }
@@ -395,422 +362,351 @@ class DefaultRelationshipTraversalCursorTest
             }
 
             @Override
-            public void reset()
-            {
-            }
+            public void reset() {}
 
             @Override
-            public void setForceLoad()
-            {
-            }
+            public void setForceLoad() {}
 
             @Override
-            public void close()
-            {
-            }
+            public void close() {}
         };
     }
 
-    private static class TestRead extends Read
-    {
-        TestRead( KernelTransactionImplementation ktx )
-        {
-            super( mock( StorageReader.class ), mock( DefaultPooledCursors.class ), ktx, mock( StorageLocks.class ) );
+    private static class TestRead extends Read {
+        TestRead(KernelTransactionImplementation ktx) {
+            super(mock(StorageReader.class), mock(DefaultPooledCursors.class), ktx, mock(StorageLocks.class));
         }
 
         @Override
-        public ValueIndexReader newValueIndexReader( IndexDescriptor index )
-        {
+        public ValueIndexReader newValueIndexReader(IndexDescriptor index) {
             return null;
         }
 
         @Override
-        public UserFunctionHandle functionGet( QualifiedName name )
-        {
+        public UserFunctionHandle functionGet(QualifiedName name) {
             return null;
         }
 
         @Override
-        public Stream<UserFunctionSignature> functionGetAll( )
-        {
+        public Stream<UserFunctionSignature> functionGetAll() {
             return null;
         }
 
         @Override
-        public UserFunctionHandle aggregationFunctionGet( QualifiedName name )
-        {
+        public UserFunctionHandle aggregationFunctionGet(QualifiedName name) {
             return null;
         }
 
         @Override
-        public Stream<UserFunctionSignature> aggregationFunctionGetAll( )
-        {
+        public Stream<UserFunctionSignature> aggregationFunctionGetAll() {
             return null;
         }
 
         @Override
-        public ProcedureHandle procedureGet( QualifiedName name )
-        {
+        public ProcedureHandle procedureGet(QualifiedName name) {
             return null;
         }
 
         @Override
-        public Set<ProcedureSignature> proceduresGetAll()
-        {
+        public Set<ProcedureSignature> proceduresGetAll() {
             return null;
         }
 
         @Override
-        public RawIterator<AnyValue[],ProcedureException> procedureCallRead( int id, AnyValue[] arguments, ProcedureCallContext context )
-        {
+        public RawIterator<AnyValue[], ProcedureException> procedureCallRead(
+                int id, AnyValue[] arguments, ProcedureCallContext context) {
             return null;
         }
 
         @Override
-        public RawIterator<AnyValue[],ProcedureException> procedureCallWrite( int id, AnyValue[] arguments, ProcedureCallContext context )
-        {
+        public RawIterator<AnyValue[], ProcedureException> procedureCallWrite(
+                int id, AnyValue[] arguments, ProcedureCallContext context) {
             return null;
         }
 
         @Override
-        public RawIterator<AnyValue[],ProcedureException> procedureCallSchema( int id, AnyValue[] arguments, ProcedureCallContext context )
-        {
+        public RawIterator<AnyValue[], ProcedureException> procedureCallSchema(
+                int id, AnyValue[] arguments, ProcedureCallContext context) {
             return null;
         }
 
         @Override
-        public RawIterator<AnyValue[],ProcedureException> procedureCallDbms( int id, AnyValue[] arguments, ProcedureCallContext context )
-        {
+        public RawIterator<AnyValue[], ProcedureException> procedureCallDbms(
+                int id, AnyValue[] arguments, ProcedureCallContext context) {
             return null;
         }
 
         @Override
-        public AnyValue functionCall( int id, AnyValue[] arguments )
-        {
+        public AnyValue functionCall(int id, AnyValue[] arguments) {
             return null;
         }
 
         @Override
-        public AnyValue builtInFunctionCall( int id, AnyValue[] arguments ) throws ProcedureException
-        {
+        public AnyValue builtInFunctionCall(int id, AnyValue[] arguments) throws ProcedureException {
             return null;
         }
 
         @Override
-        public UserAggregator aggregationFunction( int id )
-        {
+        public UserAggregator aggregationFunction(int id) {
             return null;
         }
 
         @Override
-        public UserAggregator builtInAggregationFunction( int id ) throws ProcedureException
-        {
+        public UserAggregator builtInAggregationFunction(int id) throws ProcedureException {
             return null;
         }
 
         @Override
-        public CursorContext cursorContext()
-        {
+        public CursorContext cursorContext() {
             return null;
         }
 
         @Override
-        public MemoryTracker memoryTracker()
-        {
+        public MemoryTracker memoryTracker() {
             return null;
         }
 
         @Override
-        public IndexMonitor monitor()
-        {
+        public IndexMonitor monitor() {
             return IndexMonitor.NO_MONITOR;
         }
 
         @Override
-        public IndexReadSession indexReadSession( IndexDescriptor index )
-        {
+        public IndexReadSession indexReadSession(IndexDescriptor index) {
             return null;
         }
 
         @Override
-        public TokenReadSession tokenReadSession( IndexDescriptor index ) throws IndexNotFoundKernelException
-        {
+        public TokenReadSession tokenReadSession(IndexDescriptor index) throws IndexNotFoundKernelException {
             return null;
         }
 
         @Override
-        public boolean nodeExists( long reference )
-        {
+        public boolean nodeExists(long reference) {
             return false;
         }
 
         @Override
-        public long countsForNode( int labelId )
-        {
+        public long countsForNode(int labelId) {
             return 0;
         }
 
         @Override
-        public long countsForNodeWithoutTxState( int labelId )
-        {
+        public long countsForNodeWithoutTxState(int labelId) {
             return 0;
         }
 
         @Override
-        public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
-        {
+        public long countsForRelationship(int startLabelId, int typeId, int endLabelId) {
             return 0;
         }
 
         @Override
-        public long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId )
-        {
+        public long countsForRelationshipWithoutTxState(int startLabelId, int typeId, int endLabelId) {
             return 0;
         }
 
         @Override
-        public long nodesGetCount()
-        {
+        public long nodesGetCount() {
             return 0;
         }
 
         @Override
-        public long relationshipsGetCount()
-        {
+        public long relationshipsGetCount() {
             return 0;
         }
 
         @Override
-        public boolean relationshipExists( long reference )
-        {
+        public boolean relationshipExists(long reference) {
             return false;
         }
 
         @Override
-        public boolean nodeDeletedInTransaction( long node )
-        {
+        public boolean nodeDeletedInTransaction(long node) {
             return false;
         }
 
         @Override
-        public boolean relationshipDeletedInTransaction( long relationship )
-        {
+        public boolean relationshipDeletedInTransaction(long relationship) {
             return false;
         }
 
         @Override
-        public Value nodePropertyChangeInTransactionOrNull( long node, int propertyKeyId )
-        {
+        public Value nodePropertyChangeInTransactionOrNull(long node, int propertyKeyId) {
             return null;
         }
 
         @Override
-        public Value relationshipPropertyChangeInTransactionOrNull( long relationship, int propertyKeyId )
-        {
+        public Value relationshipPropertyChangeInTransactionOrNull(long relationship, int propertyKeyId) {
             return null;
         }
 
         @Override
-        public boolean transactionStateHasChanges()
-        {
+        public boolean transactionStateHasChanges() {
             return false;
         }
 
         @Override
-        public Iterator<IndexDescriptor> indexForSchemaNonTransactional( SchemaDescriptor schema )
-        {
+        public Iterator<IndexDescriptor> indexForSchemaNonTransactional(SchemaDescriptor schema) {
             return null;
         }
 
         @Override
-        public IndexDescriptor indexForSchemaAndIndexTypeNonTransactional( SchemaDescriptor schema, IndexType indexType )
-        {
+        public IndexDescriptor indexForSchemaAndIndexTypeNonTransactional(
+                SchemaDescriptor schema, IndexType indexType) {
             return null;
         }
 
         @Override
-        public Iterator<IndexDescriptor> indexForSchemaNonLocking( SchemaDescriptor schema )
-        {
+        public Iterator<IndexDescriptor> indexForSchemaNonLocking(SchemaDescriptor schema) {
             return null;
         }
 
         @Override
-        public Iterator<IndexDescriptor> getLabelIndexesNonLocking( int labelId )
-        {
+        public Iterator<IndexDescriptor> getLabelIndexesNonLocking(int labelId) {
             return null;
         }
 
         @Override
-        public Iterator<IndexDescriptor> getRelTypeIndexesNonLocking( int labelId )
-        {
+        public Iterator<IndexDescriptor> getRelTypeIndexesNonLocking(int labelId) {
             return null;
         }
 
         @Override
-        public Iterator<IndexDescriptor> indexesGetAllNonLocking()
-        {
+        public Iterator<IndexDescriptor> indexesGetAllNonLocking() {
             return null;
         }
 
         @Override
-        public double indexUniqueValuesSelectivity( IndexDescriptor index )
-        {
+        public double indexUniqueValuesSelectivity(IndexDescriptor index) {
             return 0;
         }
 
         @Override
-        public long indexSize( IndexDescriptor index )
-        {
+        public long indexSize(IndexDescriptor index) {
             return 0;
         }
 
         @Override
-        public IndexSample indexSample( IndexDescriptor index )
-        {
+        public IndexSample indexSample(IndexDescriptor index) {
             return null;
         }
 
         @Override
-        public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor )
-        {
+        public Iterator<ConstraintDescriptor> constraintsGetForSchema(SchemaDescriptor descriptor) {
             return null;
         }
 
         @Override
-        public Iterator<ConstraintDescriptor> constraintsGetForSchemaNonLocking( SchemaDescriptor descriptor )
-        {
+        public Iterator<ConstraintDescriptor> constraintsGetForSchemaNonLocking(SchemaDescriptor descriptor) {
             return null;
         }
 
         @Override
-        public boolean constraintExists( ConstraintDescriptor descriptor )
-        {
+        public boolean constraintExists(ConstraintDescriptor descriptor) {
             return false;
         }
 
         @Override
-        public SchemaReadCore snapshot()
-        {
+        public SchemaReadCore snapshot() {
             return null;
         }
 
         @Override
-        public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
-        {
+        public Long indexGetOwningUniquenessConstraintId(IndexDescriptor index) {
             return null;
         }
 
         @Override
-        public <K, V> V schemaStateGetOrCreate( K key, Function<K,V> creator )
-        {
+        public <K, V> V schemaStateGetOrCreate(K key, Function<K, V> creator) {
             return null;
         }
 
         @Override
-        public void schemaStateFlush()
-        {
-
-        }
+        public void schemaStateFlush() {}
 
         @Override
-        public IndexDescriptor indexGetForName( String name )
-        {
+        public IndexDescriptor indexGetForName(String name) {
             return null;
         }
 
         @Override
-        public ConstraintDescriptor constraintGetForName( String name )
-        {
+        public ConstraintDescriptor constraintGetForName(String name) {
             return null;
         }
 
         @Override
-        public Iterator<IndexDescriptor> index( SchemaDescriptor schema )
-        {
+        public Iterator<IndexDescriptor> index(SchemaDescriptor schema) {
             return null;
         }
 
         @Override
-        public IndexDescriptor index( SchemaDescriptor schema, IndexType type )
-        {
+        public IndexDescriptor index(SchemaDescriptor schema, IndexType type) {
             return null;
         }
 
         @Override
-        public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
-        {
+        public Iterator<IndexDescriptor> indexesGetForLabel(int labelId) {
             return null;
         }
 
         @Override
-        public Iterator<IndexDescriptor> indexesGetForRelationshipType( int relationshipType )
-        {
+        public Iterator<IndexDescriptor> indexesGetForRelationshipType(int relationshipType) {
             return null;
         }
 
         @Override
-        public Iterator<IndexDescriptor> indexesGetAll()
-        {
+        public Iterator<IndexDescriptor> indexesGetAll() {
             return null;
         }
 
         @Override
-        public InternalIndexState indexGetState( IndexDescriptor index )
-        {
+        public InternalIndexState indexGetState(IndexDescriptor index) {
             return null;
         }
 
         @Override
-        public InternalIndexState indexGetStateNonLocking( IndexDescriptor index )
-        {
+        public InternalIndexState indexGetStateNonLocking(IndexDescriptor index) {
             return null;
         }
 
         @Override
-        public PopulationProgress indexGetPopulationProgress( IndexDescriptor index )
-        {
+        public PopulationProgress indexGetPopulationProgress(IndexDescriptor index) {
             return null;
         }
 
         @Override
-        public String indexGetFailure( IndexDescriptor index )
-        {
+        public String indexGetFailure(IndexDescriptor index) {
             return null;
         }
 
         @Override
-        public Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId )
-        {
+        public Iterator<ConstraintDescriptor> constraintsGetForLabel(int labelId) {
             return null;
         }
 
         @Override
-        public Iterator<ConstraintDescriptor> constraintsGetForLabelNonLocking( int labelId )
-        {
+        public Iterator<ConstraintDescriptor> constraintsGetForLabelNonLocking(int labelId) {
             return null;
         }
 
         @Override
-        public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
-        {
+        public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType(int typeId) {
             return null;
         }
 
         @Override
-        public Iterator<ConstraintDescriptor> constraintsGetForRelationshipTypeNonLocking( int typeId )
-        {
+        public Iterator<ConstraintDescriptor> constraintsGetForRelationshipTypeNonLocking(int typeId) {
             return null;
         }
 
         @Override
-        public Iterator<ConstraintDescriptor> constraintsGetAll()
-        {
+        public Iterator<ConstraintDescriptor> constraintsGetAll() {
             return null;
         }
 
         @Override
-        public Iterator<ConstraintDescriptor> constraintsGetAllNonLocking()
-        {
+        public Iterator<ConstraintDescriptor> constraintsGetAllNonLocking() {
             return null;
         }
     }

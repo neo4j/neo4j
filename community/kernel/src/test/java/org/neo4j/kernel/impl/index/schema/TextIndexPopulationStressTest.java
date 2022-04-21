@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.internal.schema.IndexType;
-import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
-import org.neo4j.monitoring.Monitors;
-
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
@@ -33,20 +29,32 @@ import static org.neo4j.values.storable.ValueType.STRING_ALPHANUMERIC;
 import static org.neo4j.values.storable.ValueType.STRING_ASCII;
 import static org.neo4j.values.storable.ValueType.STRING_BMP;
 
-class TextIndexPopulationStressTest extends IndexPopulationStressTest
-{
-    TextIndexPopulationStressTest()
-    {
-        super( true, randomValues -> randomValues.nextValueOfTypes( CHAR, STRING, STRING_ALPHANUMERIC, STRING_ASCII, STRING_BMP ), test ->
-        {
-            DatabaseIndexContext context = DatabaseIndexContext.builder( test.pageCache, test.fs, test.contextFactory, DEFAULT_DATABASE_NAME ).build();
-            return new TextIndexProvider( context.fileSystem, directoryFactory( false ), test.directory(), new Monitors(), defaults(), writable() );
-        } );
+import org.neo4j.internal.schema.IndexType;
+import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
+import org.neo4j.monitoring.Monitors;
+
+class TextIndexPopulationStressTest extends IndexPopulationStressTest {
+    TextIndexPopulationStressTest() {
+        super(
+                true,
+                randomValues ->
+                        randomValues.nextValueOfTypes(CHAR, STRING, STRING_ALPHANUMERIC, STRING_ASCII, STRING_BMP),
+                test -> {
+                    DatabaseIndexContext context = DatabaseIndexContext.builder(
+                                    test.pageCache, test.fs, test.contextFactory, DEFAULT_DATABASE_NAME)
+                            .build();
+                    return new TextIndexProvider(
+                            context.fileSystem,
+                            directoryFactory(false),
+                            test.directory(),
+                            new Monitors(),
+                            defaults(),
+                            writable());
+                });
     }
 
     @Override
-    IndexType indexType()
-    {
+    IndexType indexType() {
         return IndexType.TEXT;
     }
 }

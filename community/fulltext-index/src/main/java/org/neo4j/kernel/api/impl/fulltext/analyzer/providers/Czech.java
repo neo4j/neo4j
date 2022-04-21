@@ -21,27 +21,22 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.cz.CzechAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Czech extends AnalyzerProvider
-{
-    public Czech()
-    {
-        super( "czech" );
+public class Czech extends AnalyzerProvider {
+    public Czech() {
+        super("czech");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
+    public Analyzer createAnalyzer() {
         return new CzechAnalyzer();
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return "Czech analyzer with stemming and stop word filtering.";
     }
 }

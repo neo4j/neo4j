@@ -23,9 +23,8 @@ import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.Random;
 
-public final class LegacyStoreId
-{
-    public static final LegacyStoreId UNKNOWN = new LegacyStoreId( -1, -1, -1 );
+public final class LegacyStoreId {
+    public static final LegacyStoreId UNKNOWN = new LegacyStoreId(-1, -1, -1);
 
     private static final Random r = new SecureRandom();
 
@@ -33,8 +32,7 @@ public final class LegacyStoreId
     private final long randomId;
     private final long storeVersion;
 
-    public LegacyStoreId( long storeVersion )
-    {
+    public LegacyStoreId(long storeVersion) {
         long currentTimeMillis = System.currentTimeMillis();
         long randomLong = r.nextLong();
         this.storeVersion = storeVersion;
@@ -42,86 +40,73 @@ public final class LegacyStoreId
         this.randomId = randomLong;
     }
 
-    public LegacyStoreId( long creationTime, long randomId, long storeVersion )
-    {
+    public LegacyStoreId(long creationTime, long randomId, long storeVersion) {
         this.creationTime = creationTime;
         this.randomId = randomId;
         this.storeVersion = storeVersion;
     }
 
-    public long getCreationTime()
-    {
+    public long getCreationTime() {
         return creationTime;
     }
 
-    public long getRandomId()
-    {
+    public long getRandomId() {
         return randomId;
     }
 
-    public long getStoreVersion()
-    {
+    public long getStoreVersion() {
         return storeVersion;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         LegacyStoreId storeId = (LegacyStoreId) o;
-        return creationTime == storeId.creationTime &&
-               randomId == storeId.randomId &&
-               storeVersion == storeId.storeVersion;
+        return creationTime == storeId.creationTime
+                && randomId == storeId.randomId
+                && storeVersion == storeId.storeVersion;
     }
 
-    public boolean equalsIgnoringVersion( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equalsIgnoringVersion(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         LegacyStoreId storeId = (LegacyStoreId) o;
         return creationTime == storeId.creationTime && randomId == storeId.randomId;
     }
 
-    public boolean compatibleIncludingMinorUpgrade( StorageEngineFactory storageEngineFactory, LegacyStoreId otherStoreId )
-    {
-        if ( !equalsIgnoringVersion( otherStoreId ) )
-        {
-            return false; //Different store, not compatible
+    public boolean compatibleIncludingMinorUpgrade(
+            StorageEngineFactory storageEngineFactory, LegacyStoreId otherStoreId) {
+        if (!equalsIgnoringVersion(otherStoreId)) {
+            return false; // Different store, not compatible
         }
-        if ( getStoreVersion() == otherStoreId.getStoreVersion() )
-        {
-            return true; //Same store, same version, compatible
+        if (getStoreVersion() == otherStoreId.getStoreVersion()) {
+            return true; // Same store, same version, compatible
         }
 
-        return storageEngineFactory.rollingUpgradeCompatibility().isVersionCompatibleForRollingUpgrade( getStoreVersion(), otherStoreId.getStoreVersion() );
+        return storageEngineFactory
+                .rollingUpgradeCompatibility()
+                .isVersionCompatibleForRollingUpgrade(getStoreVersion(), otherStoreId.getStoreVersion());
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( creationTime, randomId, storeVersion );
+    public int hashCode() {
+        return Objects.hash(creationTime, randomId, storeVersion);
     }
 
     @Override
-    public String toString()
-    {
-        return "StoreId{" +
-                "creationTime=" + creationTime +
-                ", randomId=" + randomId +
-                ", storeVersion=" + storeVersion +
-                '}';
+    public String toString() {
+        return "StoreId{" + "creationTime="
+                + creationTime + ", randomId="
+                + randomId + ", storeVersion="
+                + storeVersion + '}';
     }
 }

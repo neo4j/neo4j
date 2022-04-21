@@ -24,6 +24,4 @@ import org.neo4j.test.Unzip;
 /**
  * Here as a place holder for using {@link Unzip} to find old db tarballs.
  */
-public interface Legacy43Store
-{
-}
+public interface Legacy43Store {}

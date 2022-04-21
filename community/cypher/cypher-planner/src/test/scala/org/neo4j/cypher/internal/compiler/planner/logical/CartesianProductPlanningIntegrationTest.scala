@@ -47,10 +47,18 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
       .setAllNodesCardinality(1500)
       .setLabelCardinality("Few", 2)
       .setLabelCardinality("Many", 1000)
-      .addNodeIndex("Many", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex(
+        "Many",
+        Seq("prop"),
+        existsSelectivity = 1.0,
+        uniqueSelectivity = 0.1,
+        providesOrder = IndexOrderCapability.BOTH
+      )
       .build()
 
-    val plan = cfg.plan(s"MATCH $nodes, ($orderedNode:Many) WHERE $orderedNode.prop IS NOT NULL RETURN * ORDER BY $orderedNode.prop").stripProduceResults
+    val plan = cfg.plan(
+      s"MATCH $nodes, ($orderedNode:Many) WHERE $orderedNode.prop IS NOT NULL RETURN * ORDER BY $orderedNode.prop"
+    ).stripProduceResults
 
     // We do not want a Sort
     plan shouldBe a[CartesianProduct]
@@ -73,7 +81,10 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
   test("should build plans so the overall cost is minimized (lhsCost + lhsCardinality * rhsCost)") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
-      .setLabelCardinality("Label", 1000 * PlannerDefaults.DEFAULT_PROPERTY_SELECTIVITY.factor) // to get the same cardinality on both sides of cartesian
+      .setLabelCardinality(
+        "Label",
+        1000 * PlannerDefaults.DEFAULT_PROPERTY_SELECTIVITY.factor
+      ) // to get the same cardinality on both sides of cartesian
       .build()
 
     val plan = cfg.plan("MATCH (n), (m) WHERE n.prop is not null AND m:Label RETURN n, m").stripProduceResults
@@ -106,7 +117,6 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
         |""".stripMargin
     val volcanoPlan = volcano.plan(query)
     val batchedPlan = batched.plan(query)
-
 
     // Volcano:
     // A x B = 30 + 30 * 20 = 630
@@ -146,32 +156,28 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
       .|.|.nodeByLabelScan("c", "C")
       .|.nodeByLabelScan("b", "B")
       .nodeByLabelScan("a", "A")
-      .build()
-    ) or equal(batched.planBuilder()
+      .build()) or equal(batched.planBuilder()
       .produceResults("a", "b", "c")
       .cartesianProduct()
       .|.cartesianProduct()
       .|.|.nodeByLabelScan("b", "B")
       .|.nodeByLabelScan("c", "C")
       .nodeByLabelScan("a", "A")
-      .build()
-    ) or equal(batched.planBuilder()
+      .build()) or equal(batched.planBuilder()
       .produceResults("a", "b", "c")
       .cartesianProduct()
       .|.nodeByLabelScan("a", "A")
       .cartesianProduct()
       .|.nodeByLabelScan("c", "C")
       .nodeByLabelScan("b", "B")
-      .build()
-    ) or equal(batched.planBuilder()
+      .build()) or equal(batched.planBuilder()
       .produceResults("a", "b", "c")
       .cartesianProduct()
       .|.nodeByLabelScan("a", "A")
       .cartesianProduct()
       .|.nodeByLabelScan("b", "B")
       .nodeByLabelScan("c", "C")
-      .build()
-    ))
+      .build()))
   }
 
   test("should plan cartesian product of two plans so the cost is minimized") {
@@ -215,13 +221,11 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
       .cartesianProduct()
       .|.nodeByLabelScan("a", "A")
       .nodeByLabelScan("b", "B")
-      .build()
-    ) or equal(batched.planBuilder()
+      .build()) or equal(batched.planBuilder()
       .produceResults("a", "b")
       .cartesianProduct()
       .|.nodeByLabelScan("b", "B")
       .nodeByLabelScan("a", "A")
-      .build()
-    ))
+      .build()))
   }
 }

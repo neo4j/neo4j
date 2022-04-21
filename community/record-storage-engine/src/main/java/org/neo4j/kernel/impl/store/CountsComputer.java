@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.util.function.Function;
+import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.NO_MONITOR;
+import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 
+import java.util.function.Function;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.batchimport.Configuration;
@@ -39,11 +41,7 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.NO_MONITOR;
-import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
-
-public class CountsComputer implements CountsBuilder
-{
+public class CountsComputer implements CountsBuilder {
     private final NeoStores neoStores;
     private final NodeStore nodes;
     private final RelationshipStore relationships;
@@ -56,19 +54,46 @@ public class CountsComputer implements CountsBuilder
     private final CursorContextFactory contextFactory;
     private final MemoryTracker memoryTracker;
 
-    public CountsComputer( NeoStores stores, PageCache pageCache, CursorContextFactory contextFactory, DatabaseLayout databaseLayout,
-            MemoryTracker memoryTracker, InternalLog log )
-    {
-        this( stores, stores.getMetaDataStore().getLastCommittedTransactionId(), stores.getNodeStore(), stores.getRelationshipStore(),
-                (int) stores.getLabelTokenStore().getHighId(), (int) stores.getRelationshipTypeTokenStore().getHighId(),
-                NumberArrayFactories.auto( pageCache, contextFactory, databaseLayout.databaseDirectory(), true, NO_MONITOR, log,
-                                databaseLayout.getDatabaseName() ), databaseLayout, ProgressReporter.SILENT, contextFactory, memoryTracker );
+    public CountsComputer(
+            NeoStores stores,
+            PageCache pageCache,
+            CursorContextFactory contextFactory,
+            DatabaseLayout databaseLayout,
+            MemoryTracker memoryTracker,
+            InternalLog log) {
+        this(
+                stores,
+                stores.getMetaDataStore().getLastCommittedTransactionId(),
+                stores.getNodeStore(),
+                stores.getRelationshipStore(),
+                (int) stores.getLabelTokenStore().getHighId(),
+                (int) stores.getRelationshipTypeTokenStore().getHighId(),
+                NumberArrayFactories.auto(
+                        pageCache,
+                        contextFactory,
+                        databaseLayout.databaseDirectory(),
+                        true,
+                        NO_MONITOR,
+                        log,
+                        databaseLayout.getDatabaseName()),
+                databaseLayout,
+                ProgressReporter.SILENT,
+                contextFactory,
+                memoryTracker);
     }
 
-    public CountsComputer( NeoStores stores, long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships, int highLabelId,
-            int highRelationshipTypeId, NumberArrayFactory numberArrayFactory, DatabaseLayout databaseLayout, ProgressReporter progressMonitor,
-            CursorContextFactory contextFactory, MemoryTracker memoryTracker )
-    {
+    public CountsComputer(
+            NeoStores stores,
+            long lastCommittedTransactionId,
+            NodeStore nodes,
+            RelationshipStore relationships,
+            int highLabelId,
+            int highRelationshipTypeId,
+            NumberArrayFactory numberArrayFactory,
+            DatabaseLayout databaseLayout,
+            ProgressReporter progressMonitor,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
         this.neoStores = stores;
         this.lastCommittedTransactionId = lastCommittedTransactionId;
         this.nodes = nodes;
@@ -83,42 +108,56 @@ public class CountsComputer implements CountsBuilder
     }
 
     @Override
-    public void initialize( CountsAccessor.Updater countsUpdater, CursorContext cursorContext, MemoryTracker memoryTracker )
-    {
-        if ( hasNotEmptyNodesOrRelationshipsStores( cursorContext ) )
-        {
-            progressMonitor.start( nodes.getHighestPossibleIdInUse( cursorContext ) + relationships.getHighestPossibleIdInUse( cursorContext ) );
-            populateCountStore( countsUpdater );
+    public void initialize(
+            CountsAccessor.Updater countsUpdater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+        if (hasNotEmptyNodesOrRelationshipsStores(cursorContext)) {
+            progressMonitor.start(nodes.getHighestPossibleIdInUse(cursorContext)
+                    + relationships.getHighestPossibleIdInUse(cursorContext));
+            populateCountStore(countsUpdater);
         }
         progressMonitor.completed();
     }
 
-    private boolean hasNotEmptyNodesOrRelationshipsStores( CursorContext cursorContext )
-    {
-        return (nodes.getHighestPossibleIdInUse( cursorContext ) != -1) || (relationships.getHighestPossibleIdInUse( cursorContext ) != -1);
+    private boolean hasNotEmptyNodesOrRelationshipsStores(CursorContext cursorContext) {
+        return (nodes.getHighestPossibleIdInUse(cursorContext) != -1)
+                || (relationships.getHighestPossibleIdInUse(cursorContext) != -1);
     }
 
-    private void populateCountStore( CountsAccessor.Updater countsUpdater )
-    {
-        try ( NodeLabelsCache cache = new NodeLabelsCache( numberArrayFactory, nodes.getHighId(), highLabelId, memoryTracker ) )
-        {
+    private void populateCountStore(CountsAccessor.Updater countsUpdater) {
+        try (NodeLabelsCache cache =
+                new NodeLabelsCache(numberArrayFactory, nodes.getHighId(), highLabelId, memoryTracker)) {
             Configuration configuration = Configuration.defaultConfiguration();
 
             // Count nodes
-            Function<CursorContext,StoreCursors> storeCursorsFunction = cursorContext -> new CachedStoreCursors( neoStores, cursorContext );
-            superviseDynamicExecution(
-                    new NodeCountsStage( configuration, cache, nodes, highLabelId, countsUpdater, progressMonitor, contextFactory,
-                            storeCursorsFunction ) );
+            Function<CursorContext, StoreCursors> storeCursorsFunction =
+                    cursorContext -> new CachedStoreCursors(neoStores, cursorContext);
+            superviseDynamicExecution(new NodeCountsStage(
+                    configuration,
+                    cache,
+                    nodes,
+                    highLabelId,
+                    countsUpdater,
+                    progressMonitor,
+                    contextFactory,
+                    storeCursorsFunction));
             // Count relationships
-            superviseDynamicExecution(
-                    new RelationshipCountsStage( configuration, cache, relationships, highLabelId, highRelationshipTypeId, countsUpdater,
-                            numberArrayFactory, progressMonitor, contextFactory, storeCursorsFunction, memoryTracker ) );
+            superviseDynamicExecution(new RelationshipCountsStage(
+                    configuration,
+                    cache,
+                    relationships,
+                    highLabelId,
+                    highRelationshipTypeId,
+                    countsUpdater,
+                    numberArrayFactory,
+                    progressMonitor,
+                    contextFactory,
+                    storeCursorsFunction,
+                    memoryTracker));
         }
     }
 
     @Override
-    public long lastCommittedTxId()
-    {
+    public long lastCommittedTxId() {
         return lastCommittedTransactionId;
     }
 }

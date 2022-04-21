@@ -19,8 +19,9 @@
  */
 package org.neo4j.consistency.checker;
 
-import org.junit.jupiter.api.Test;
+import static org.mockito.ArgumentMatchers.any;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyReport;
 import org.neo4j.exceptions.KernelException;
@@ -28,230 +29,229 @@ import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 
-import static org.mockito.ArgumentMatchers.any;
-
-class RelationshipCheckerTest extends CheckerTestBase
-{
+class RelationshipCheckerTest extends CheckerTestBase {
     private int type;
 
     @Override
-    void initialData( KernelTransaction tx ) throws KernelException
-    {
-        type = tx.tokenWrite().relationshipTypeGetOrCreateForName( "A" );
+    void initialData(KernelTransaction tx) throws KernelException {
+        type = tx.tokenWrite().relationshipTypeGetOrCreateForName("A");
     }
 
     @Test
-    void shouldReportSourceNodeNotInUse() throws Exception
-    {
+    void shouldReportSourceNodeNotInUse() throws Exception {
         // given
-        try ( AutoCloseable ignored = tx() )
-        {
-            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
-            long node = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
-            relationship( relationship, nodeStore.nextId( CursorContext.NULL_CONTEXT ), node, type, NULL, NULL, NULL, NULL, true, true );
+        try (AutoCloseable ignored = tx()) {
+            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
+            long node = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            relationship(
+                    relationship,
+                    nodeStore.nextId(CursorContext.NULL_CONTEXT),
+                    node,
+                    type,
+                    NULL,
+                    NULL,
+                    NULL,
+                    NULL,
+                    true,
+                    true);
         }
 
         // when
         check();
 
         // then
-        expect( RelationshipConsistencyReport.class, report -> report.sourceNodeNotInUse( any() ) );
+        expect(RelationshipConsistencyReport.class, report -> report.sourceNodeNotInUse(any()));
     }
 
     @Test
-    void shouldReportTargetNodeNotInUse() throws Exception
-    {
+    void shouldReportTargetNodeNotInUse() throws Exception {
         // given
-        try ( AutoCloseable ignored = tx() )
-        {
-            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
-            long node = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
-            relationship( relationship, node, nodeStore.nextId( CursorContext.NULL_CONTEXT ), type, NULL, NULL, NULL, NULL, true, true );
+        try (AutoCloseable ignored = tx()) {
+            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
+            long node = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            relationship(
+                    relationship,
+                    node,
+                    nodeStore.nextId(CursorContext.NULL_CONTEXT),
+                    type,
+                    NULL,
+                    NULL,
+                    NULL,
+                    NULL,
+                    true,
+                    true);
         }
 
         // when
         check();
 
         // then
-        expect( RelationshipConsistencyReport.class, report -> report.targetNodeNotInUse( any() ) );
+        expect(RelationshipConsistencyReport.class, report -> report.targetNodeNotInUse(any()));
     }
 
     @Test
-    void shouldReportSourceNodeNotInUseWhenAboveHighId() throws Exception
-    {
+    void shouldReportSourceNodeNotInUseWhenAboveHighId() throws Exception {
         // given
-        try ( AutoCloseable ignored = tx() )
-        {
-            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
-            long node = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
-            relationship( relationship, node + 10, node, type, NULL, NULL, NULL, NULL, true, true );
+        try (AutoCloseable ignored = tx()) {
+            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
+            long node = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            relationship(relationship, node + 10, node, type, NULL, NULL, NULL, NULL, true, true);
         }
 
         // when
         check();
 
         // then
-        expect( RelationshipConsistencyReport.class, report -> report.sourceNodeNotInUse( any() ) );
+        expect(RelationshipConsistencyReport.class, report -> report.sourceNodeNotInUse(any()));
     }
 
     @Test
-    void shouldReportTargetNodeNotInUseWhenAboveHighId() throws Exception
-    {
+    void shouldReportTargetNodeNotInUseWhenAboveHighId() throws Exception {
         // given
-        try ( AutoCloseable ignored = tx() )
-        {
-            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
-            long node = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
-            relationship( relationship, node, node + 10, type, NULL, NULL, NULL, NULL, true, true );
+        try (AutoCloseable ignored = tx()) {
+            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
+            long node = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            relationship(relationship, node, node + 10, type, NULL, NULL, NULL, NULL, true, true);
         }
 
         // when
         check();
 
         // then
-        expect( RelationshipConsistencyReport.class, report -> report.targetNodeNotInUse( any() ) );
+        expect(RelationshipConsistencyReport.class, report -> report.targetNodeNotInUse(any()));
     }
 
     @Test
-    void shouldReportSourceNodeDoesNotReferenceBack() throws Exception
-    {
+    void shouldReportSourceNodeDoesNotReferenceBack() throws Exception {
         // given
-        try ( AutoCloseable ignored = tx() )
-        {
-            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
-            long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationshipStore.nextId( CursorContext.NULL_CONTEXT ) );
-            long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
-            relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true );
+        try (AutoCloseable ignored = tx()) {
+            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
+            long node1 = nodePlusCached(
+                    nodeStore.nextId(CursorContext.NULL_CONTEXT),
+                    NULL,
+                    relationshipStore.nextId(CursorContext.NULL_CONTEXT));
+            long node2 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true);
         }
 
         // when
         check();
 
         // then
-        expect( RelationshipConsistencyReport.class, report -> report.sourceNodeDoesNotReferenceBack( any() ) );
+        expect(RelationshipConsistencyReport.class, report -> report.sourceNodeDoesNotReferenceBack(any()));
     }
 
     @Test
-    void shouldReportTargetNodeDoesNotReferenceBack() throws Exception
-    {
+    void shouldReportTargetNodeDoesNotReferenceBack() throws Exception {
         // given
-        try ( AutoCloseable ignored = tx() )
-        {
-            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
-            long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
-            long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationshipStore.nextId( CursorContext.NULL_CONTEXT ) );
-            relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true );
+        try (AutoCloseable ignored = tx()) {
+            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
+            long node1 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            long node2 = nodePlusCached(
+                    nodeStore.nextId(CursorContext.NULL_CONTEXT),
+                    NULL,
+                    relationshipStore.nextId(CursorContext.NULL_CONTEXT));
+            relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true);
         }
 
         // when
         check();
 
         // then
-        expect( RelationshipConsistencyReport.class, report -> report.targetNodeDoesNotReferenceBack( any() ) );
+        expect(RelationshipConsistencyReport.class, report -> report.targetNodeDoesNotReferenceBack(any()));
     }
 
     @Test
-    void shouldReportRelationshipNotFirstInSourceChain() throws Exception
-    {
+    void shouldReportRelationshipNotFirstInSourceChain() throws Exception {
         // given
-        try ( AutoCloseable ignored = tx() )
-        {
-            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
-            long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
-            long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
-            relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, false, true );
+        try (AutoCloseable ignored = tx()) {
+            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
+            long node1 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            long node2 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, false, true);
         }
 
         // when
         check();
 
         // then
-        expect( NodeConsistencyReport.class, report -> report.relationshipNotFirstInSourceChain( any() ) );
+        expect(NodeConsistencyReport.class, report -> report.relationshipNotFirstInSourceChain(any()));
     }
 
     @Test
-    void shouldReportRelationshipNotFirstInTargetChain() throws Exception
-    {
+    void shouldReportRelationshipNotFirstInTargetChain() throws Exception {
         // given
-        try ( AutoCloseable ignored = tx() )
-        {
-            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
-            long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
-            long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
-            relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, false );
+        try (AutoCloseable ignored = tx()) {
+            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
+            long node1 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            long node2 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, false);
         }
 
         // when
         check();
 
         // then
-        expect( NodeConsistencyReport.class, report -> report.relationshipNotFirstInTargetChain( any() ) );
+        expect(NodeConsistencyReport.class, report -> report.relationshipNotFirstInTargetChain(any()));
     }
 
     @Test
-    void shouldReportSourceNodeHasNoRelationships() throws Exception
-    {
+    void shouldReportSourceNodeHasNoRelationships() throws Exception {
         // given
-        try ( AutoCloseable ignored = tx() )
-        {
-            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
-            long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, NULL );
-            long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
-            relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true );
+        try (AutoCloseable ignored = tx()) {
+            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
+            long node1 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, NULL);
+            long node2 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true);
         }
 
         // when
         check();
 
         // then
-        expect( RelationshipConsistencyReport.class, report -> report.sourceNodeHasNoRelationships( any() ) );
+        expect(RelationshipConsistencyReport.class, report -> report.sourceNodeHasNoRelationships(any()));
     }
 
     @Test
-    void shouldReportTargetNodeHasNoRelationships() throws Exception
-    {
+    void shouldReportTargetNodeHasNoRelationships() throws Exception {
         // given
-        try ( AutoCloseable ignored = tx() )
-        {
-            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
-            long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
-            long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, NULL );
-            relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true );
+        try (AutoCloseable ignored = tx()) {
+            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
+            long node1 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            long node2 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, NULL);
+            relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true);
         }
 
         // when
         check();
 
         // then
-        expect( RelationshipConsistencyReport.class, report -> report.targetNodeHasNoRelationships( any() ) );
+        expect(RelationshipConsistencyReport.class, report -> report.targetNodeHasNoRelationships(any()));
     }
 
     @Test
-    void shouldReportRelationshipTypeNotInUse() throws Exception
-    {
+    void shouldReportRelationshipTypeNotInUse() throws Exception {
         // given
-        try ( AutoCloseable ignored = tx() )
-        {
-            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
-            long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
-            long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
-            relationship( relationship, node1, node2, type + 1, NULL, NULL, NULL, NULL, true, true );
+        try (AutoCloseable ignored = tx()) {
+            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
+            long node1 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            long node2 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            relationship(relationship, node1, node2, type + 1, NULL, NULL, NULL, NULL, true, true);
         }
 
         // when
         check();
 
         // then
-        expect( RelationshipConsistencyReport.class, report -> report.relationshipTypeNotInUse( any() ) );
+        expect(RelationshipConsistencyReport.class, report -> report.relationshipTypeNotInUse(any()));
     }
 
-    private void check() throws Exception
-    {
-        check( context() );
+    private void check() throws Exception {
+        check(context());
     }
 
-    private void check( CheckerContext checkerContext ) throws Exception
-    {
-        new RelationshipChecker( checkerContext, noMandatoryProperties ).check( LongRange.range( 0, nodeStore.getHighId() ), true, true );
+    private void check(CheckerContext checkerContext) throws Exception {
+        new RelationshipChecker(checkerContext, noMandatoryProperties)
+                .check(LongRange.range(0, nodeStore.getHighId()), true, true);
     }
 }

@@ -21,22 +21,19 @@ package org.neo4j.bolt.testing.client;
 
 import java.io.IOException;
 import java.net.SocketAddress;
-
 import org.apache.commons.lang3.NotImplementedException;
 import org.neo4j.internal.helpers.HostnamePort;
 
-public interface TransportConnection
-{
-    TransportConnection connect( HostnamePort address ) throws Exception;
+public interface TransportConnection {
+    TransportConnection connect(HostnamePort address) throws Exception;
 
-    default TransportConnection connect( SocketAddress address ) throws Exception
-    {
+    default TransportConnection connect(SocketAddress address) throws Exception {
         throw new NotImplementedException();
     }
 
-    TransportConnection send( byte[] rawBytes ) throws IOException;
+    TransportConnection send(byte[] rawBytes) throws IOException;
 
-    byte[] recv( int length ) throws IOException, InterruptedException;
+    byte[] recv(int length) throws IOException, InterruptedException;
 
     void disconnect() throws IOException;
 }

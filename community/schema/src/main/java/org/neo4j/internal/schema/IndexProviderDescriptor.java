@@ -21,74 +21,62 @@ package org.neo4j.internal.schema;
 
 import java.util.Objects;
 
-public class IndexProviderDescriptor
-{
+public class IndexProviderDescriptor {
     /**
      * Indicate that {@link IndexProviderDescriptor} has not yet been decided.
      * Specifically before transaction that create a new index has committed.
      */
-    public static final IndexProviderDescriptor UNDECIDED = new IndexProviderDescriptor( "Undecided", "0" );
+    public static final IndexProviderDescriptor UNDECIDED = new IndexProviderDescriptor("Undecided", "0");
 
     private final String key;
     private final String version;
 
-    public IndexProviderDescriptor( String key, String version )
-    {
-        if ( key == null )
-        {
-            throw new IllegalArgumentException( "null provider key prohibited" );
+    public IndexProviderDescriptor(String key, String version) {
+        if (key == null) {
+            throw new IllegalArgumentException("null provider key prohibited");
         }
-        if ( key.isEmpty() )
-        {
-            throw new IllegalArgumentException( "empty provider key prohibited" );
+        if (key.isEmpty()) {
+            throw new IllegalArgumentException("empty provider key prohibited");
         }
-        if ( version == null )
-        {
-            throw new IllegalArgumentException( "null provider version prohibited" );
+        if (version == null) {
+            throw new IllegalArgumentException("null provider version prohibited");
         }
 
         this.key = key;
         this.version = version;
     }
 
-    public String getKey()
-    {
+    public String getKey() {
         return key;
     }
 
-    public String getVersion()
-    {
+    public String getVersion() {
         return version;
     }
 
     /**
      * @return a combination of {@link #getKey()} and {@link #getVersion()} with a '-' in between.
      */
-    public String name()
-    {
+    public String name() {
         return key + "-" + version;
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( key, version );
+    public int hashCode() {
+        return Objects.hash(key, version);
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        if ( obj != null && this.getClass() == obj.getClass() )
-        {
+    public boolean equals(Object obj) {
+        if (obj != null && this.getClass() == obj.getClass()) {
             IndexProviderDescriptor otherDescriptor = (IndexProviderDescriptor) obj;
-            return key.equals( otherDescriptor.getKey() ) && version.equals( otherDescriptor.getVersion() );
+            return key.equals(otherDescriptor.getKey()) && version.equals(otherDescriptor.getVersion());
         }
         return false;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "{key=" + key + ", version=" + version + "}";
     }
 }

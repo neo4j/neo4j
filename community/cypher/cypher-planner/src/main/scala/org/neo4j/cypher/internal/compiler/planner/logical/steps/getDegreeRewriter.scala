@@ -54,41 +54,43 @@ case object getDegreeRewriter extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance(that)
 
-  private val instance = bottomUp(rewriter,
+  private val instance = bottomUp(
+    rewriter,
     // Do not traverse into NestedPlanExpressions as they have been optimized already by an earlier call to plan
-    _.isInstanceOf[NestedPlanExpression])
+    _.isInstanceOf[NestedPlanExpression]
+  )
 
   private def rewriter = Rewriter.lift {
 
-    //GetDegree > limit
-    case e@GreaterThan(GetDegree(node, typ, dir), limit) =>
+    // GetDegree > limit
+    case e @ GreaterThan(GetDegree(node, typ, dir), limit) =>
       HasDegreeGreaterThan(node, typ, dir, limit)(e.position)
-    //limit > GetDegree
-    case e@GreaterThan(limit, GetDegree(node, typ, dir)) =>
+    // limit > GetDegree
+    case e @ GreaterThan(limit, GetDegree(node, typ, dir)) =>
       HasDegreeLessThan(node, typ, dir, limit)(e.position)
-    //GetDegree >= limit
-    case e@GreaterThanOrEqual(GetDegree(node, typ, dir), limit) =>
+    // GetDegree >= limit
+    case e @ GreaterThanOrEqual(GetDegree(node, typ, dir), limit) =>
       HasDegreeGreaterThanOrEqual(node, typ, dir, limit)(e.position)
-    //limit >= GetDegree
-    case e@GreaterThanOrEqual(limit, GetDegree(node, typ, dir)) =>
+    // limit >= GetDegree
+    case e @ GreaterThanOrEqual(limit, GetDegree(node, typ, dir)) =>
       HasDegreeLessThanOrEqual(node, typ, dir, limit)(e.position)
-    //GetDegree < limit
-    case e@LessThan(GetDegree(node, typ, dir), limit) =>
+    // GetDegree < limit
+    case e @ LessThan(GetDegree(node, typ, dir), limit) =>
       HasDegreeLessThan(node, typ, dir, limit)(e.position)
-    //limit < GreaterThan
-    case e@LessThan(limit, GetDegree(node, typ, dir)) =>
+    // limit < GreaterThan
+    case e @ LessThan(limit, GetDegree(node, typ, dir)) =>
       HasDegreeGreaterThan(node, typ, dir, limit)(e.position)
-    //GetDegree <= limit
-    case e@LessThanOrEqual(GetDegree(node, typ, dir), limit) =>
+    // GetDegree <= limit
+    case e @ LessThanOrEqual(GetDegree(node, typ, dir), limit) =>
       HasDegreeLessThanOrEqual(node, typ, dir, limit)(e.position)
-    //limit <= GreaterThan
-    case e@LessThanOrEqual(limit, GetDegree(node, typ, dir)) =>
+    // limit <= GreaterThan
+    case e @ LessThanOrEqual(limit, GetDegree(node, typ, dir)) =>
       HasDegreeGreaterThanOrEqual(node, typ, dir, limit)(e.position)
-    //GetDegree = limit
-    case e@Equals(GetDegree(node, typ, dir), value) =>
+    // GetDegree = limit
+    case e @ Equals(GetDegree(node, typ, dir), value) =>
       HasDegree(node, typ, dir, value)(e.position)
-    //limit = GreaterThan
-    case e@Equals(value, GetDegree(node, typ, dir)) =>
+    // limit = GreaterThan
+    case e @ Equals(value, GetDegree(node, typ, dir)) =>
       HasDegree(node, typ, dir, value)(e.position)
 
     // LENGTH( (a)-[]->() )
@@ -100,33 +102,43 @@ case object getDegreeRewriter extends Rewriter {
       existsToUsingHasDegreeGreaterThan(func, node, types, dir)
   }
 
-  private def calculateUsingGetDegree(node: LogicalVariable, types: Seq[RelTypeName], dir: SemanticDirection): Expression = {
+  private def calculateUsingGetDegree(
+    node: LogicalVariable,
+    types: Seq[RelTypeName],
+    dir: SemanticDirection
+  ): Expression = {
     types
       .map(typ => GetDegree(node.copyId, Some(typ), dir)(typ.position))
       .reduceOption[Expression](Add(_, _)(InputPosition.NONE))
       .getOrElse(GetDegree(node.copyId, None, dir)(InputPosition.NONE))
   }
 
-  private def existsToUsingHasDegreeGreaterThan(expr: Expression, node: LogicalVariable, types: Seq[RelTypeName], dir: SemanticDirection): Expression = {
-    val all = types.map(typ => HasDegreeGreaterThan(node.copyId, Some(typ), dir, SignedDecimalIntegerLiteral("0")(expr.position))(typ.position))
-    if (all.isEmpty) HasDegreeGreaterThan(node.copyId, None, dir, SignedDecimalIntegerLiteral("0")(expr.position))(expr.position)
+  private def existsToUsingHasDegreeGreaterThan(
+    expr: Expression,
+    node: LogicalVariable,
+    types: Seq[RelTypeName],
+    dir: SemanticDirection
+  ): Expression = {
+    val all = types.map(typ =>
+      HasDegreeGreaterThan(node.copyId, Some(typ), dir, SignedDecimalIntegerLiteral("0")(expr.position))(typ.position)
+    )
+    if (all.isEmpty)
+      HasDegreeGreaterThan(node.copyId, None, dir, SignedDecimalIntegerLiteral("0")(expr.position))(expr.position)
     else if (all.size == 1) all.head
     else Ors(all)(expr.position)
   }
 }
 
 object RelationshipsPatternSolvableByGetDegree {
-  def unapply(arg: Any): Option[(LogicalVariable, LogicalVariable, LogicalVariable, Seq[RelTypeName], SemanticDirection)] = arg match {
-    // (a)-[r:X|Y]->(b)
-    case RelationshipsPattern
-      (RelationshipChain
-        (NodePattern
-          (Some(node), None, None, None),
-        RelationshipPattern
-          (Some(rel), types, None, None, None, dir, _),
-        NodePattern
-          (Some(otherNode), None, None, None))) =>
 
+  def unapply(arg: Any)
+    : Option[(LogicalVariable, LogicalVariable, LogicalVariable, Seq[RelTypeName], SemanticDirection)] = arg match {
+    // (a)-[r:X|Y]->(b)
+    case RelationshipsPattern(RelationshipChain(
+        NodePattern(Some(node), None, None, None),
+        RelationshipPattern(Some(rel), types, None, None, None, dir, _),
+        NodePattern(Some(otherNode), None, None, None)
+      )) =>
       Some((node, rel, otherNode, types, dir))
 
     case _ => None
@@ -134,6 +146,7 @@ object RelationshipsPatternSolvableByGetDegree {
 }
 
 object PatternExpressionOrComprehension {
+
   def unapply(arg: Any): Option[RelationshipsPattern] = arg match {
     case PatternExpression(relPattern) =>
       Some(relPattern)
@@ -145,25 +158,39 @@ object PatternExpressionOrComprehension {
 }
 
 object FunctionOfPattern {
-  def unapply(arg: Any): Option[(FunctionInvocation, LogicalVariable, Seq[RelTypeName], SemanticDirection)] = arg match {
-    case func@FunctionInvocation(_, _, _, IndexedSeq(pe@PatternExpressionOrComprehension(RelationshipsPatternSolvableByGetDegree(node, rel, otherNode, types, dir))))
-    =>
-      val peDeps = pe.dependencies
-      if (peDeps.contains(node) && !peDeps.contains(rel) && !peDeps.contains(otherNode)) {
-        Some((func, node, types, dir))
-      } else if (!peDeps.contains(node) && !peDeps.contains(rel) && peDeps.contains(otherNode)) {
-        Some((func, otherNode, types, dir.reversed))
-      } else {
-        None
-      }
 
-    case _ => None
-  }
+  def unapply(arg: Any): Option[(FunctionInvocation, LogicalVariable, Seq[RelTypeName], SemanticDirection)] =
+    arg match {
+      case func @ FunctionInvocation(
+          _,
+          _,
+          _,
+          IndexedSeq(pe @ PatternExpressionOrComprehension(RelationshipsPatternSolvableByGetDegree(
+            node,
+            rel,
+            otherNode,
+            types,
+            dir
+          )))
+        ) =>
+        val peDeps = pe.dependencies
+        if (peDeps.contains(node) && !peDeps.contains(rel) && !peDeps.contains(otherNode)) {
+          Some((func, node, types, dir))
+        } else if (!peDeps.contains(node) && !peDeps.contains(rel) && peDeps.contains(otherNode)) {
+          Some((func, otherNode, types, dir.reversed))
+        } else {
+          None
+        }
+
+      case _ => None
+    }
 }
 
 object LengthFunctionOfPattern {
+
   def unapply(arg: Any): Option[(LogicalVariable, Seq[RelTypeName], SemanticDirection)] = arg match {
-    case FunctionOfPattern(func, node, types, dir) if func.function == functions.Length || func.function == functions.Size =>
+    case FunctionOfPattern(func, node, types, dir)
+      if func.function == functions.Length || func.function == functions.Size =>
       Some((node, types, dir))
     case _ => None
   }

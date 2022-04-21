@@ -21,10 +21,11 @@ package org.neo4j.kernel.api.exceptions;
 
 import org.neo4j.exceptions.KernelException;
 
-public class RelationshipTypeNotFoundException extends KernelException
-{
-    public RelationshipTypeNotFoundException( String relationshipType, Exception cause )
-    {
-        super( Status.Schema.RelationshipTypeAccessFailed, cause, "Relationship type '" + relationshipType + "' not found" );
+public class RelationshipTypeNotFoundException extends KernelException {
+    public RelationshipTypeNotFoundException(String relationshipType, Exception cause) {
+        super(
+                Status.Schema.RelationshipTypeAccessFailed,
+                cause,
+                "Relationship type '" + relationshipType + "' not found");
     }
 }

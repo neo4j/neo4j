@@ -19,49 +19,38 @@
  */
 package org.neo4j.internal.helpers.collection;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-class LfuCacheTest
-{
+class LfuCacheTest {
     @Test
-    void shouldThrowWhenMaxSizeIsNotGreaterThanZero()
-    {
-        assertThrows( IllegalArgumentException.class, () -> new LfuCache<>( "TestCache", 0 ) );
+    void shouldThrowWhenMaxSizeIsNotGreaterThanZero() {
+        assertThrows(IllegalArgumentException.class, () -> new LfuCache<>("TestCache", 0));
     }
 
     @Test
-    void shouldThrowWhenPuttingEntryWithNullKey()
-    {
-        assertThrows( NullPointerException.class, () ->
-                new LfuCache<>( "TestCache", 70 ).put( null, new Object() ) );
+    void shouldThrowWhenPuttingEntryWithNullKey() {
+        assertThrows(NullPointerException.class, () -> new LfuCache<>("TestCache", 70).put(null, new Object()));
     }
 
     @Test
-    void shouldThrowWhenPuttingEntryWithNullValue()
-    {
-        assertThrows( NullPointerException.class, () ->
-                new LfuCache<>( "TestCache", 70 ).put( new Object(), null ) );
+    void shouldThrowWhenPuttingEntryWithNullValue() {
+        assertThrows(NullPointerException.class, () -> new LfuCache<>("TestCache", 70).put(new Object(), null));
     }
 
     @Test
-    void shouldThrowWhenGettingWithANullKey()
-    {
-        assertThrows( NullPointerException.class, () ->
-                new LfuCache<>( "TestCache", 70 ).get( null ) );
+    void shouldThrowWhenGettingWithANullKey() {
+        assertThrows(NullPointerException.class, () -> new LfuCache<>("TestCache", 70).get(null));
     }
 
     @Test
-    void shouldWork()
-    {
-        LfuCache<Integer, String> cache = new LfuCache<>( "TestCache", 3 );
+    void shouldWork() {
+        LfuCache<Integer, String> cache = new LfuCache<>("TestCache", 3);
 
         String s1 = "1";
         Integer key1 = 1;
@@ -74,32 +63,31 @@ class LfuCacheTest
         String s5 = "5";
         Integer key5 = 5;
 
-        cache.put( key1, s1 );
-        cache.put( key2, s2 );
-        cache.put( key3, s3 );
-        cache.get( key2 );
+        cache.put(key1, s1);
+        cache.put(key2, s2);
+        cache.put(key3, s3);
+        cache.get(key2);
 
-        assertEquals( new HashSet<>( Arrays.asList(key1, key2, key3) ), cache.keySet());
+        assertEquals(new HashSet<>(Arrays.asList(key1, key2, key3)), cache.keySet());
 
-        cache.put( key4, s4 );
+        cache.put(key4, s4);
 
-        assertEquals( new HashSet<>( Arrays.asList(key2, key3, key4) ), cache.keySet());
+        assertEquals(new HashSet<>(Arrays.asList(key2, key3, key4)), cache.keySet());
 
-        cache.put( key5, s5 );
+        cache.put(key5, s5);
 
         int size = cache.size();
 
-        assertEquals( 3, size );
-        assertEquals( s2, cache.get( key2 ) );
+        assertEquals(3, size);
+        assertEquals(s2, cache.get(key2));
 
         cache.clear();
-        assertEquals( 0, cache.size() );
+        assertEquals(0, cache.size());
     }
 
     @Test
-    void shouldClear()
-    {
-        LfuCache<Integer, String> cache = new LfuCache<>( "TestCache", 3 );
+    void shouldClear() {
+        LfuCache<Integer, String> cache = new LfuCache<>("TestCache", 3);
 
         String s1 = "1";
         Integer key1 = 1;
@@ -112,24 +100,24 @@ class LfuCacheTest
         String s5 = "5";
         Integer key5 = 5;
 
-        cache.put( key1, s1 );
-        cache.put( key2, s2 );
-        cache.put( key3, s3 );
-        cache.get( key2 );
+        cache.put(key1, s1);
+        cache.put(key2, s2);
+        cache.put(key3, s3);
+        cache.get(key2);
 
-        assertEquals( Set.of( new Integer[]{key1, key2, key3} ), cache.keySet() );
-        assertEquals( cache.maxSize(), cache.size() );
+        assertEquals(Set.of(new Integer[] {key1, key2, key3}), cache.keySet());
+        assertEquals(cache.maxSize(), cache.size());
 
-        cache.put( key4, s4 );
+        cache.put(key4, s4);
 
-        assertEquals( Set.of( new Integer[]{key2, key3, key4} ), cache.keySet() );
+        assertEquals(Set.of(new Integer[] {key2, key3, key4}), cache.keySet());
 
-        cache.put( key5, s5 );
+        cache.put(key5, s5);
 
-        assertEquals( cache.maxSize(), cache.size() );
+        assertEquals(cache.maxSize(), cache.size());
 
-        cache.clear( );
+        cache.clear();
 
-        assertEquals( 0, cache.size() );
+        assertEquals(0, cache.size());
     }
 }

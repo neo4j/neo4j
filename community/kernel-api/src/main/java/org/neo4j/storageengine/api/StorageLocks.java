@@ -22,20 +22,25 @@ package org.neo4j.storageengine.api;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
-public interface StorageLocks
-{
-    //Transaction api locks
-    void acquireExclusiveNodeLock( LockTracer lockTracer, long... ids );
-    void releaseExclusiveNodeLock( long... ids );
-    void acquireSharedNodeLock( LockTracer lockTracer, long... ids );
-    void releaseSharedNodeLock( long... ids );
+public interface StorageLocks {
+    // Transaction api locks
+    void acquireExclusiveNodeLock(LockTracer lockTracer, long... ids);
 
-    void acquireExclusiveRelationshipLock( LockTracer lockTracer, long... ids );
-    void releaseExclusiveRelationshipLock( long... ids );
-    void acquireSharedRelationshipLock( LockTracer lockTracer, long... ids );
-    void releaseSharedRelationshipLock( long... ids );
+    void releaseExclusiveNodeLock(long... ids);
 
-    //Creation locks
+    void acquireSharedNodeLock(LockTracer lockTracer, long... ids);
+
+    void releaseSharedNodeLock(long... ids);
+
+    void acquireExclusiveRelationshipLock(LockTracer lockTracer, long... ids);
+
+    void releaseExclusiveRelationshipLock(long... ids);
+
+    void acquireSharedRelationshipLock(LockTracer lockTracer, long... ids);
+
+    void releaseSharedRelationshipLock(long... ids);
+
+    // Creation locks
     /**
      * Acquire the required locks (during transaction creation phase) for creating a relationship
      * Additional locks may be taken during transaction commit
@@ -44,7 +49,12 @@ public interface StorageLocks
      * @param targetNode The target node id of the relationship to be created
      * @param relationship The relationship id
      */
-    void acquireRelationshipCreationLock( ReadableTransactionState txState, LockTracer lockTracer, long sourceNode, long targetNode, long relationship );
+    void acquireRelationshipCreationLock(
+            ReadableTransactionState txState,
+            LockTracer lockTracer,
+            long sourceNode,
+            long targetNode,
+            long relationship);
 
     /**
      * Acquire the required locks (during transaction creation phase) for deleting a relationship
@@ -55,7 +65,12 @@ public interface StorageLocks
      * @param targetNode The target node id of the relationship to be deleted
      * @param relationship The id of the relationship to be deleted
      */
-    void acquireRelationshipDeletionLock( ReadableTransactionState txState, LockTracer lockTracer, long sourceNode, long targetNode, long relationship );
+    void acquireRelationshipDeletionLock(
+            ReadableTransactionState txState,
+            LockTracer lockTracer,
+            long sourceNode,
+            long targetNode,
+            long relationship);
 
     /**
      * Acquire the required locks (during transaction creation phase) for deleting a node
@@ -64,7 +79,7 @@ public interface StorageLocks
      * @param txState The transaction state
      * @param node The id of the node to be deleted
      */
-    void acquireNodeDeletionLock( ReadableTransactionState txState, LockTracer lockTracer, long node );
+    void acquireNodeDeletionLock(ReadableTransactionState txState, LockTracer lockTracer, long node);
 
     /**
      * Acquire the required locks (during transaction creation phase) for removing or adding a label from a node
@@ -73,5 +88,5 @@ public interface StorageLocks
      * @param node The id of the node to be deleted
      * @param labelId The id of the label to be deleted
      */
-    void acquireNodeLabelChangeLock( LockTracer lockTracer, long node, int labelId );
+    void acquireNodeLabelChangeLock(LockTracer lockTracer, long node, int labelId);
 }

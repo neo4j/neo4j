@@ -47,6 +47,7 @@ object FeatureDatabaseManagementService {
   }
 
   sealed trait TestApiKind
+
   object TestApiKind {
     case object Bolt extends TestApiKind
     case object Embedded extends TestApiKind
@@ -55,6 +56,7 @@ object FeatureDatabaseManagementService {
 
   trait TestUsingBolt extends TestBase {
     override val testApiKind: TestApiKind = TestApiKind.Bolt
+
     override def dbms: FeatureDatabaseManagementService = {
       val config = baseConfig
         .set(BoltConnector.enabled, java.lang.Boolean.TRUE)
@@ -68,6 +70,7 @@ object FeatureDatabaseManagementService {
 
   trait TestUsingEmbedded extends TestBase {
     override val testApiKind: TestApiKind = TestApiKind.Embedded
+
     override def dbms: FeatureDatabaseManagementService = {
       val config = baseConfig.build()
       val managementService = createBackingDbms(config)
@@ -78,6 +81,7 @@ object FeatureDatabaseManagementService {
 
   trait TestUsingHttp extends TestBase {
     override val testApiKind: TestApiKind = TestApiKind.Http
+
     override def dbms: FeatureDatabaseManagementService = {
       val config = baseConfig
         .set(HttpConnector.enabled, java.lang.Boolean.TRUE)
@@ -90,9 +94,11 @@ object FeatureDatabaseManagementService {
   }
 }
 
-case class FeatureDatabaseManagementService(private val databaseManagementService: DatabaseManagementService,
-                                            private val executorFactory: CypherExecutorFactory,
-                                            private val databaseName: Option[String] = None) {
+case class FeatureDatabaseManagementService(
+  private val databaseManagementService: DatabaseManagementService,
+  private val executorFactory: CypherExecutorFactory,
+  private val databaseName: Option[String] = None
+) {
 
   private val database: GraphDatabaseFacade =
     databaseManagementService.database(databaseName.getOrElse(DEFAULT_DATABASE_NAME)).asInstanceOf[GraphDatabaseFacade]

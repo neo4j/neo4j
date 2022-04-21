@@ -21,7 +21,6 @@ package org.neo4j.internal.kernel.api;
 
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
-
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -31,8 +30,7 @@ import org.neo4j.values.storable.Values;
 /**
  * Defines the write operations of the Kernel API.
  */
-public interface Write
-{
+public interface Write {
     /**
      * Create a node.
      *
@@ -50,7 +48,7 @@ public interface Write
      * @param labels The labels to assign to the newly created node.
      * @return The internal id of the created node.
      */
-    long nodeCreateWithLabels( int[] labels ) throws ConstraintValidationException;
+    long nodeCreateWithLabels(int[] labels) throws ConstraintValidationException;
 
     /**
      * Delete a node.
@@ -58,7 +56,7 @@ public interface Write
      * @param node the internal id of the node to delete
      * @return returns true if it deleted a node or false if no node was found for this id
      */
-    boolean nodeDelete( long node );
+    boolean nodeDelete(long node);
 
     /**
      * Deletes the node and all relationships connecting the node
@@ -66,7 +64,7 @@ public interface Write
      * @param node the node to delete
      * @return the number of deleted relationships
      */
-    int nodeDetachDelete( long node ) throws KernelException;
+    int nodeDetachDelete(long node) throws KernelException;
 
     /**
      * Create a relationship between two nodes.
@@ -76,14 +74,14 @@ public interface Write
      * @param targetNode the target internal node id
      * @return the internal id of the created relationship
      */
-    long relationshipCreate( long sourceNode, int relationshipType, long targetNode ) throws EntityNotFoundException;
+    long relationshipCreate(long sourceNode, int relationshipType, long targetNode) throws EntityNotFoundException;
 
     /**
      * Delete a relationship
      *
      * @param relationship the internal id of the relationship to delete
      */
-    boolean relationshipDelete( long relationship );
+    boolean relationshipDelete(long relationship);
 
     /**
      * Add a label to a node
@@ -93,7 +91,7 @@ public interface Write
      * @return {@code true} if a label was added otherwise {@code false}
      * @throws ConstraintValidationException if adding the label to node breaks a constraint
      */
-    boolean nodeAddLabel( long node, int nodeLabel ) throws KernelException;
+    boolean nodeAddLabel(long node, int nodeLabel) throws KernelException;
 
     /**
      * Remove a label from a node
@@ -102,7 +100,7 @@ public interface Write
      * @param nodeLabel the internal id of the label to remove
      * @return {@code true} if node was removed otherwise {@code false}
      */
-    boolean nodeRemoveLabel( long node, int nodeLabel ) throws EntityNotFoundException;
+    boolean nodeRemoveLabel(long node, int nodeLabel) throws EntityNotFoundException;
 
     /**
      * Set a property on a node
@@ -112,8 +110,7 @@ public interface Write
      * @param value the value to set
      * @return The replaced value, or Values.NO_VALUE if the node did not have the property before
      */
-    Value nodeSetProperty( long node, int propertyKey, Value value )
-            throws KernelException;
+    Value nodeSetProperty(long node, int propertyKey, Value value) throws KernelException;
 
     /**
      * Applies multiple label and property changes to a node in one call, checking constraints on the resulting data, not the intermediary state,
@@ -125,7 +122,7 @@ public interface Write
      * @param removedLabels removed labels, applied idempotently.
      * @param properties added/changed/removed properties. A value of {@link Values#NO_VALUE} means the property should be removed.
      */
-    void nodeApplyChanges( long node, IntSet addedLabels, IntSet removedLabels, IntObjectMap<Value> properties )
+    void nodeApplyChanges(long node, IntSet addedLabels, IntSet removedLabels, IntObjectMap<Value> properties)
             throws EntityNotFoundException, ConstraintValidationException;
 
     /**
@@ -135,8 +132,7 @@ public interface Write
      * @param relationship the internal relationship id.
      * @param properties added/changed/removed properties. A value of {@link Values#NO_VALUE} means the property should be removed.
      */
-    void relationshipApplyChanges( long relationship, IntObjectMap<Value> properties )
-            throws EntityNotFoundException;
+    void relationshipApplyChanges(long relationship, IntObjectMap<Value> properties) throws EntityNotFoundException;
 
     /**
      * Remove a property from a node
@@ -145,7 +141,7 @@ public interface Write
      * @param propertyKey the property key id
      * @return The removed value, or Values.NO_VALUE if the node did not have the property before
      */
-    Value nodeRemoveProperty( long node, int propertyKey ) throws EntityNotFoundException;
+    Value nodeRemoveProperty(long node, int propertyKey) throws EntityNotFoundException;
 
     /**
      * Set a property on a relationship
@@ -155,7 +151,7 @@ public interface Write
      * @param value the value to set
      * @return The replaced value, or Values.NO_VALUE if the relationship did not have the property before
      */
-    Value relationshipSetProperty( long relationship, int propertyKey, Value value ) throws EntityNotFoundException;
+    Value relationshipSetProperty(long relationship, int propertyKey, Value value) throws EntityNotFoundException;
 
     /**
      * Remove a property from a relationship
@@ -164,5 +160,5 @@ public interface Write
      * @param propertyKey the property key id
      * @return The removed value, or Values.NO_VALUE if the relationship did not have the property before
      */
-    Value relationshipRemoveProperty( long relationship, int propertyKey ) throws EntityNotFoundException;
+    Value relationshipRemoveProperty(long relationship, int propertyKey) throws EntityNotFoundException;
 }

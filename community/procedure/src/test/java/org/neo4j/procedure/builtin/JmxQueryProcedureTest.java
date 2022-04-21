@@ -19,8 +19,14 @@
  */
 package org.neo4j.procedure.builtin;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.internal.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.helpers.collection.Iterators.asSet;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
+import static org.neo4j.values.storable.Values.stringValue;
 
 import java.lang.management.ManagementFactory;
 import javax.management.MBeanAttributeInfo;
@@ -32,159 +38,150 @@ import javax.management.openmbean.CompositeDataSupport;
 import javax.management.openmbean.CompositeType;
 import javax.management.openmbean.OpenType;
 import javax.management.openmbean.SimpleType;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.internal.helpers.collection.Iterators.asList;
-import static org.neo4j.internal.helpers.collection.Iterators.asSet;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
-import static org.neo4j.values.storable.Values.stringValue;
-
-class JmxQueryProcedureTest
-{
+class JmxQueryProcedureTest {
     private MBeanServer jmxServer;
     private ObjectName beanName;
     private String attributeName;
 
     @BeforeEach
-    void setup() throws Throwable
-    {
-        jmxServer = mock( MBeanServer.class );
-        beanName = new ObjectName( "org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference" );
+    void setup() throws Throwable {
+        jmxServer = mock(MBeanServer.class);
+        beanName = new ObjectName("org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference");
         attributeName = "name";
 
-        when( jmxServer.queryNames( new ObjectName( "*:*" ), null ) )
-                .thenReturn( asSet( beanName ) );
-        when( jmxServer.getMBeanInfo( beanName ) )
-                .thenReturn( new MBeanInfo(
+        when(jmxServer.queryNames(new ObjectName("*:*"), null)).thenReturn(asSet(beanName));
+        when(jmxServer.getMBeanInfo(beanName))
+                .thenReturn(new MBeanInfo(
                         "org.neo4j.SomeMBean",
                         "This is a description",
-                        new MBeanAttributeInfo[]{
-                                new MBeanAttributeInfo( attributeName, "someType", "This is the attribute desc.",
-                                        true, false, false )
+                        new MBeanAttributeInfo[] {
+                            new MBeanAttributeInfo(
+                                    attributeName, "someType", "This is the attribute desc.", true, false, false)
                         },
-                        null, null, null ) );
+                        null,
+                        null,
+                        null));
     }
 
     @Test
-    void shouldHandleBasicMBean() throws Throwable
-    {
+    void shouldHandleBasicMBean() throws Throwable {
         // given
-        when( jmxServer.getAttribute( beanName, "name" ) ).thenReturn( "Hello, world!" );
-        JmxQueryProcedure procedure = new JmxQueryProcedure( ProcedureSignature.procedureName( "bob" ), jmxServer );
+        when(jmxServer.getAttribute(beanName, "name")).thenReturn("Hello, world!");
+        JmxQueryProcedure procedure = new JmxQueryProcedure(ProcedureSignature.procedureName("bob"), jmxServer);
 
         // when
-        RawIterator<AnyValue[],ProcedureException> result =
-                procedure.apply( null, new AnyValue[]{stringValue( "*:*" )}, EMPTY_RESOURCE_TRACKER );
+        RawIterator<AnyValue[], ProcedureException> result =
+                procedure.apply(null, new AnyValue[] {stringValue("*:*")}, EMPTY_RESOURCE_TRACKER);
 
         // then
-        assertThat( asList( result ) ).contains( new AnyValue[]{
-                    stringValue( "org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference" ),
-                    stringValue( "This is a description" ),
-                    ValueUtils.of( map( attributeName, map(
+        assertThat(asList(result)).contains(new AnyValue[] {
+            stringValue("org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference"),
+            stringValue("This is a description"),
+            ValueUtils.of(map(
+                    attributeName,
+                    map(
                             "description", "This is the attribute desc.",
-                            "value", "Hello, world!"
-                    ) ) )
-            } );
+                            "value", "Hello, world!")))
+        });
     }
 
     @Test
-    void shouldHandleMBeanThatThrowsOnGetAttribute() throws Throwable
-    {
+    void shouldHandleMBeanThatThrowsOnGetAttribute() throws Throwable {
         // given some JVM MBeans do not allow accessing their attributes, despite marking
         // then as readable
-        when( jmxServer.getAttribute( beanName, "name" ) )
-            // We throw the exact combo thrown by JVM MBeans here, so that any other exception will bubble up,
-            // and we can make an informed decision about swallowing more exception on an as-needed basis.
-            .thenThrow( new RuntimeMBeanException(
-                    new UnsupportedOperationException( "Haha, screw discoverable services!" ) ) );
+        when(jmxServer.getAttribute(beanName, "name"))
+                // We throw the exact combo thrown by JVM MBeans here, so that any other exception will bubble up,
+                // and we can make an informed decision about swallowing more exception on an as-needed basis.
+                .thenThrow(new RuntimeMBeanException(
+                        new UnsupportedOperationException("Haha, screw discoverable services!")));
 
-        JmxQueryProcedure procedure = new JmxQueryProcedure( ProcedureSignature.procedureName( "bob" ), jmxServer );
+        JmxQueryProcedure procedure = new JmxQueryProcedure(ProcedureSignature.procedureName("bob"), jmxServer);
 
         // when
-        RawIterator<AnyValue[],ProcedureException> result = procedure.apply( null, new AnyValue[]{stringValue( "*:*" )}, EMPTY_RESOURCE_TRACKER );
+        RawIterator<AnyValue[], ProcedureException> result =
+                procedure.apply(null, new AnyValue[] {stringValue("*:*")}, EMPTY_RESOURCE_TRACKER);
 
         // then
-        assertThat( asList( result ) ).contains(
-                new AnyValue[]{
-                        stringValue( "org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference" ),
-                        stringValue( "This is a description" ),
-                        ValueUtils.of( map( attributeName, map(
-                                "description", "This is the attribute desc.",
-                                "value", null
-                        ) ) )
-                } );
+        assertThat(asList(result)).contains(new AnyValue[] {
+            stringValue("org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference"),
+            stringValue("This is a description"),
+            ValueUtils.of(map(attributeName, map("description", "This is the attribute desc.", "value", null)))
+        });
     }
 
     @Test
-    void shouldHandleCompositeAttributes() throws Throwable
-    {
+    void shouldHandleCompositeAttributes() throws Throwable {
         // given
-        ObjectName beanName = new ObjectName( "org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference" );
-        when( jmxServer.queryNames( new ObjectName( "*:*" ), null ) )
-                .thenReturn( asSet( beanName ) );
-        when( jmxServer.getMBeanInfo( beanName ) )
-                .thenReturn( new MBeanInfo(
+        ObjectName beanName = new ObjectName("org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference");
+        when(jmxServer.queryNames(new ObjectName("*:*"), null)).thenReturn(asSet(beanName));
+        when(jmxServer.getMBeanInfo(beanName))
+                .thenReturn(new MBeanInfo(
                         "org.neo4j.SomeMBean",
                         "This is a description",
-                        new MBeanAttributeInfo[]{
-                                new MBeanAttributeInfo( "name", "differenceMaker", "Who makes the difference?",
-                                        true, false, false )
+                        new MBeanAttributeInfo[] {
+                            new MBeanAttributeInfo(
+                                    "name", "differenceMaker", "Who makes the difference?", true, false, false)
                         },
-                        null, null, null ) );
-        when( jmxServer.getAttribute( beanName, "name" ) ).thenReturn(
-                new CompositeDataSupport( new CompositeType(
-                        "myComposite",
-                        "Composite description",
-                        new String[]{"key1", "key2"},
-                        new String[]{"Can't be empty", "Also can't be empty"},
-                        new OpenType<?>[]{SimpleType.STRING, SimpleType.INTEGER} ), map(
-                    "key1", "Hello",
-                    "key2", 123
-                ) ) );
+                        null,
+                        null,
+                        null));
+        when(jmxServer.getAttribute(beanName, "name"))
+                .thenReturn(new CompositeDataSupport(
+                        new CompositeType(
+                                "myComposite",
+                                "Composite description",
+                                new String[] {"key1", "key2"},
+                                new String[] {"Can't be empty", "Also can't be empty"},
+                                new OpenType<?>[] {SimpleType.STRING, SimpleType.INTEGER}),
+                        map("key1", "Hello", "key2", 123)));
 
-        JmxQueryProcedure procedure = new JmxQueryProcedure( ProcedureSignature.procedureName( "bob" ), jmxServer );
+        JmxQueryProcedure procedure = new JmxQueryProcedure(ProcedureSignature.procedureName("bob"), jmxServer);
 
         // when
-        RawIterator<AnyValue[],ProcedureException> result = procedure.apply( null, new AnyValue[]{stringValue( "*:*" )}, EMPTY_RESOURCE_TRACKER );
+        RawIterator<AnyValue[], ProcedureException> result =
+                procedure.apply(null, new AnyValue[] {stringValue("*:*")}, EMPTY_RESOURCE_TRACKER);
 
         // then
-        assertThat( asList( result ) ).contains(
-                new AnyValue[]{
-                        stringValue( "org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference" ),
-                        stringValue( "This is a description" ),
-                        ValueUtils.of( map( attributeName, map(
-                                "description", "Who makes the difference?",
-                                "value", map(
-                                        "description", "Composite description",
-                                        "properties", map(
-                                                "key1", "Hello",
-                                                "key2", 123 ) ) ) ) )} );
+        assertThat(asList(result)).contains(new AnyValue[] {
+            stringValue("org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference"),
+            stringValue("This is a description"),
+            ValueUtils.of(map(
+                    attributeName,
+                    map(
+                            "description",
+                            "Who makes the difference?",
+                            "value",
+                            map(
+                                    "description",
+                                    "Composite description",
+                                    "properties",
+                                    map("key1", "Hello", "key2", 123)))))
+        });
     }
 
     @Test
-    void shouldConvertAllStandardBeansWithoutError() throws Throwable
-    {
+    void shouldConvertAllStandardBeansWithoutError() throws Throwable {
         // given
         MBeanServer jmxServer = ManagementFactory.getPlatformMBeanServer();
 
-        JmxQueryProcedure procedure = new JmxQueryProcedure( ProcedureSignature.procedureName( "bob" ), jmxServer );
+        JmxQueryProcedure procedure = new JmxQueryProcedure(ProcedureSignature.procedureName("bob"), jmxServer);
 
         // when
-        RawIterator<AnyValue[],ProcedureException> result = procedure.apply( null, new AnyValue[]{stringValue( "*:*" )}, EMPTY_RESOURCE_TRACKER );
+        RawIterator<AnyValue[], ProcedureException> result =
+                procedure.apply(null, new AnyValue[] {stringValue("*:*")}, EMPTY_RESOURCE_TRACKER);
 
         // then we verify that we respond with the expected number of beans without error
         //      .. we don't assert more than this, this is more of a smoke test to ensure
         //      that independent of platform, we never throw exceptions even when converting every
         //      single MBean into Neo4j types, and we always get the correct number of MBeans out.
-        assertThat( asList( result ) ).hasSize( jmxServer.getMBeanCount() );
+        assertThat(asList(result)).hasSize(jmxServer.getMBeanCount());
     }
 }

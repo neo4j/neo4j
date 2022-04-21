@@ -19,26 +19,21 @@
  */
 package org.neo4j.configuration.helpers;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 
-public class ConfigPatternBuilder
-{
+public class ConfigPatternBuilder {
     // Map supported wildcards to their java regex definition.
     // N.b. we do not currently offer a way to escape wildcard characters (i.e. match on literal '?' or '*')
-    private static final Map<Character,String> supportedWildcards = Map.of(
+    private static final Map<Character, String> supportedWildcards = Map.of(
             '?', ".{0,1}",
-            '*', ".+"
-    );
+            '*', ".+");
 
-    private static final String wildcardCharacters = supportedWildcards.keySet()
-                                                                       .stream()
-                                                                       .map( Object::toString )
-                                                                       .collect( Collectors.joining( "" ) );
+    private static final String wildcardCharacters =
+            supportedWildcards.keySet().stream().map(Object::toString).collect(Collectors.joining(""));
 
     /**
      * Converts a user-supplied string containing supported wildcards into a Java Regular Expression Pattern that can be used to test if strings match the
@@ -50,14 +45,12 @@ public class ConfigPatternBuilder
      * @param patternFlags a java.util.regex.Pattern bitmask to coinfigure pattern behaviour
      * @return an optional containing a Pattern if the user-supplied string contains wildcards.
      */
-    public static Optional<Pattern> optionalPatternFromConfigString( String pattern, int patternFlags )
-    {
-        if ( !StringUtils.containsAny( pattern, wildcardCharacters ) )
-        {
+    public static Optional<Pattern> optionalPatternFromConfigString(String pattern, int patternFlags) {
+        if (!StringUtils.containsAny(pattern, wildcardCharacters)) {
             return Optional.empty();
         }
 
-        return Optional.of( patternFromConfigString( pattern, patternFlags ) );
+        return Optional.of(patternFromConfigString(pattern, patternFlags));
     }
 
     /**
@@ -68,38 +61,30 @@ public class ConfigPatternBuilder
      * @param patternFlags a java.util.regex.Pattern bitmask to coinfigure pattern behaviour
      * @return a Pattern
      */
-    public static Pattern patternFromConfigString( String pattern, int patternFlags )
-    {
-        return buildRegexPattern( pattern, patternFlags );
+    public static Pattern patternFromConfigString(String pattern, int patternFlags) {
+        return buildRegexPattern(pattern, patternFlags);
     }
 
-    private static Pattern buildRegexPattern( String name, int patternFlags )
-    {
+    private static Pattern buildRegexPattern(String name, int patternFlags) {
         final var pattern = new StringBuilder();
         StringBuilder buffer = new StringBuilder();
-        for ( int i = 0; i < name.length(); i++ )
-        {
-            final var ch = name.charAt( i );
-            if ( supportedWildcards.containsKey( ch ) )
-            {
-                flushBuffer( buffer, pattern );
-                pattern.append( supportedWildcards.get( ch ) );
-            }
-            else
-            {
-                buffer.append( ch );
+        for (int i = 0; i < name.length(); i++) {
+            final var ch = name.charAt(i);
+            if (supportedWildcards.containsKey(ch)) {
+                flushBuffer(buffer, pattern);
+                pattern.append(supportedWildcards.get(ch));
+            } else {
+                buffer.append(ch);
             }
         }
-        flushBuffer( buffer, pattern );
-        return Pattern.compile( pattern.toString(), patternFlags );
+        flushBuffer(buffer, pattern);
+        return Pattern.compile(pattern.toString(), patternFlags);
     }
 
-    private static void flushBuffer( StringBuilder fromBuffer, StringBuilder toPattern )
-    {
-        if ( fromBuffer.length() > 0 )
-        {
-            toPattern.append( Pattern.quote( fromBuffer.toString() ) );
-            fromBuffer.delete( 0, Integer.MAX_VALUE );
+    private static void flushBuffer(StringBuilder fromBuffer, StringBuilder toPattern) {
+        if (fromBuffer.length() > 0) {
+            toPattern.append(Pattern.quote(fromBuffer.toString()));
+            fromBuffer.delete(0, Integer.MAX_VALUE);
         }
     }
 }

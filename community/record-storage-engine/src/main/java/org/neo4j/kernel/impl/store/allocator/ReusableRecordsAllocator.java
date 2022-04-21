@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.store.allocator;
 
 import java.util.Collection;
 import java.util.Iterator;
-
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
@@ -32,44 +31,37 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
  * As part of record allocation provided records will be marked as created if they where not used before
  * and marked as used.
  */
-public class ReusableRecordsAllocator implements DynamicRecordAllocator
-{
+public class ReusableRecordsAllocator implements DynamicRecordAllocator {
     private final int recordSize;
     private final Iterator<DynamicRecord> recordIterator;
 
-    public ReusableRecordsAllocator( int recordSize, DynamicRecord... records )
-    {
+    public ReusableRecordsAllocator(int recordSize, DynamicRecord... records) {
         this.recordSize = recordSize;
-        this.recordIterator = Iterators.iterator( records );
+        this.recordIterator = Iterators.iterator(records);
     }
 
-    public ReusableRecordsAllocator( int recordSize, Collection<DynamicRecord> records )
-    {
+    public ReusableRecordsAllocator(int recordSize, Collection<DynamicRecord> records) {
         this.recordSize = recordSize;
         this.recordIterator = records.iterator();
     }
 
-    public ReusableRecordsAllocator( int recordSize, Iterator<DynamicRecord> recordsIterator )
-    {
+    public ReusableRecordsAllocator(int recordSize, Iterator<DynamicRecord> recordsIterator) {
         this.recordSize = recordSize;
         this.recordIterator = recordsIterator;
     }
 
     @Override
-    public int getRecordDataSize()
-    {
+    public int getRecordDataSize() {
         return recordSize;
     }
 
     @Override
-    public DynamicRecord nextRecord( CursorContext cursorContext )
-    {
+    public DynamicRecord nextRecord(CursorContext cursorContext) {
         DynamicRecord record = recordIterator.next();
-        if ( !record.inUse() )
-        {
+        if (!record.inUse()) {
             record.setCreated();
         }
-        record.setInUse( true );
+        record.setInUse(true);
         return record;
     }
 
@@ -77,8 +69,7 @@ public class ReusableRecordsAllocator implements DynamicRecordAllocator
      * Check if we have more available pre allocated records
      * @return true if record is available
      */
-    public boolean hasNext()
-    {
+    public boolean hasNext() {
         return recordIterator.hasNext();
     }
 }

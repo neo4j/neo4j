@@ -22,8 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 
-class SizeEstimationMonitor implements SeekCursor.Monitor
-{
+class SizeEstimationMonitor implements SeekCursor.Monitor {
     private static final int DEPTH_NOT_DECIDED = -1;
 
     private final MutableIntObjectMap<Stats> depthStats = IntObjectMaps.mutable.empty();
@@ -31,60 +30,48 @@ class SizeEstimationMonitor implements SeekCursor.Monitor
     private boolean allHaveSameDepth = true;
 
     @Override
-    public void internalNode( int depth, int keyCount )
-    {
-        depthStats.getIfAbsentPut( depth, Stats::new ).add( keyCount + 1 );
+    public void internalNode(int depth, int keyCount) {
+        depthStats.getIfAbsentPut(depth, Stats::new).add(keyCount + 1);
     }
 
     @Override
-    public void leafNode( int depth, int keyCount )
-    {
-        depthStats.getIfAbsentPut( depth, Stats::new ).add( keyCount );
-        if ( treeDepth == DEPTH_NOT_DECIDED )
-        {
+    public void leafNode(int depth, int keyCount) {
+        depthStats.getIfAbsentPut(depth, Stats::new).add(keyCount);
+        if (treeDepth == DEPTH_NOT_DECIDED) {
             treeDepth = depth;
-        }
-        else if ( treeDepth != depth )
-        {
+        } else if (treeDepth != depth) {
             allHaveSameDepth = false;
         }
     }
 
-    void clear()
-    {
+    void clear() {
         treeDepth = DEPTH_NOT_DECIDED;
         allHaveSameDepth = true;
         depthStats.clear();
     }
 
-    boolean isConsistent()
-    {
+    boolean isConsistent() {
         return allHaveSameDepth;
     }
 
-    long estimateNumberOfKeys()
-    {
+    long estimateNumberOfKeys() {
         double count = 1;
-        for ( int i = 0; i <= treeDepth; i++ )
-        {
-            count *= depthStats.get( i ).averageNumberOfKeys();
+        for (int i = 0; i <= treeDepth; i++) {
+            count *= depthStats.get(i).averageNumberOfKeys();
         }
         return (long) count;
     }
 
-    private static class Stats
-    {
+    private static class Stats {
         int numberOfVisitedNodes;
         int numberOfKeys;
 
-        void add( int keyCount )
-        {
+        void add(int keyCount) {
             numberOfVisitedNodes++;
             numberOfKeys += keyCount;
         }
 
-        double averageNumberOfKeys()
-        {
+        double averageNumberOfKeys() {
             return (double) numberOfKeys / numberOfVisitedNodes;
         }
     }

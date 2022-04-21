@@ -33,7 +33,10 @@ import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.internal.helpers.ArrayUtil
 import org.neo4j.kernel.api.KernelTransaction
 
-abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT], runtime: CypherRuntime[CONTEXT]) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT]
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   protected val SIZE: Int = 10
 
@@ -64,12 +67,12 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .build()
 
     // then
-    assertOnMemory(logicalQuery, inputValues(input:_*), 3, 1)
+    assertOnMemory(logicalQuery, inputValues(input: _*), 3, 1)
   }
 
   test("should profile memory of distinct") {
     given {
-      nodePropertyGraph(SIZE, { case i => Map("p" -> i)})
+      nodePropertyGraph(SIZE, { case i => Map("p" -> i) })
     }
 
     // when
@@ -101,7 +104,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
 
   test("should profile memory of grouping aggregation - one large group") {
     given {
-      nodePropertyGraph(SIZE, { case _ => Map("p" -> 0)})
+      nodePropertyGraph(SIZE, { case _ => Map("p" -> 0) })
     }
 
     // when
@@ -117,7 +120,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
 
   test("should profile memory of grouping aggregation - many groups") {
     given {
-      nodePropertyGraph(SIZE, { case i => Map("p" -> i)})
+      nodePropertyGraph(SIZE, { case i => Map("p" -> i) })
     }
 
     // when
@@ -225,7 +228,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .build()
 
     // then
-    assertOnMemory(logicalQuery, inputValues(input:_*), 3, 1)
+    assertOnMemory(logicalQuery, inputValues(input: _*), 3, 1)
   }
 
   test("should profile memory of partial top n, where n > max array size") {
@@ -239,7 +242,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .build()
 
     // then
-    assertOnMemory(logicalQuery, inputValues(input:_*), 3, 1)
+    assertOnMemory(logicalQuery, inputValues(input: _*), 3, 1)
   }
 
   test("should profile memory of ordered distinct") {
@@ -253,7 +256,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .build()
 
     // then
-    assertOnMemory(logicalQuery, inputValues(input:_*), 3, 1)
+    assertOnMemory(logicalQuery, inputValues(input: _*), 3, 1)
   }
 
   test("should profile memory of ordered aggregation") {
@@ -309,9 +312,12 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
 
   test("should profile memory of IN") {
     given {
-      nodePropertyGraph(SIZE, {
-        case _ => Map("p" -> Array(1, 2, 3, 4))
-      })
+      nodePropertyGraph(
+        SIZE,
+        {
+          case _ => Map("p" -> Array(1, 2, 3, 4))
+        }
+      )
     }
 
     // when
@@ -341,13 +347,18 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
     assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
   }
 
-  //noinspection SameParameterValue
-  protected def assertOnMemory(logicalQuery: LogicalQuery, input: InputValues, numOperators: Int, allocatingOperators: Int*): Unit = {
+  // noinspection SameParameterValue
+  protected def assertOnMemory(
+    logicalQuery: LogicalQuery,
+    input: InputValues,
+    numOperators: Int,
+    allocatingOperators: Int*
+  ): Unit = {
     val runtimeResult = profile(logicalQuery, runtime, input.stream())
     consume(runtimeResult)
 
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    for(i <- 0 until numOperators) {
+    for (i <- 0 until numOperators) {
       withClue(s"Memory allocations of plan $i: ") {
         if (allocatingOperators.contains(i)) {
           queryProfile.operatorProfile(i).maxAllocatedMemory() should be > 0L
@@ -363,7 +374,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
 /**
  * Tests for runtime with full language support
  */
-trait FullSupportProfileMemoryTestBase [CONTEXT <: RuntimeContext] {
+trait FullSupportProfileMemoryTestBase[CONTEXT <: RuntimeContext] {
   self: ProfileMemoryTestBase[CONTEXT] =>
 
   test("should profile memory of eager") {
@@ -384,7 +395,7 @@ trait FullSupportProfileMemoryTestBase [CONTEXT <: RuntimeContext] {
 
   test("should profile memory of percentileDisc aggregation") {
     given {
-      nodePropertyGraph(SIZE, { case i => Map("p" -> i)})
+      nodePropertyGraph(SIZE, { case i => Map("p" -> i) })
     }
 
     // when
@@ -394,14 +405,13 @@ trait FullSupportProfileMemoryTestBase [CONTEXT <: RuntimeContext] {
       .allNodeScan("x")
       .build()
 
-
     // then
     assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
   }
 
   test("should profile memory of percentileCont aggregation") {
     given {
-      nodePropertyGraph(SIZE, { case i => Map("p" -> i)})
+      nodePropertyGraph(SIZE, { case i => Map("p" -> i) })
     }
 
     // when
@@ -410,7 +420,6 @@ trait FullSupportProfileMemoryTestBase [CONTEXT <: RuntimeContext] {
       .aggregation(Seq.empty, Seq("percentileCont(x.p, 0.1) AS c"))
       .allNodeScan("x")
       .build()
-
 
     // then
     assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
@@ -427,7 +436,6 @@ trait FullSupportProfileMemoryTestBase [CONTEXT <: RuntimeContext] {
       .aggregation(Seq.empty, Seq("count(DISTINCT x) AS c"))
       .allNodeScan("x")
       .build()
-
 
     // then
     assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
@@ -486,9 +494,12 @@ trait FullSupportProfileMemoryTestBase [CONTEXT <: RuntimeContext] {
   test("should profile memory of value hash join") {
     // given
     given {
-      nodePropertyGraph(SIZE, {
-        case i => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        SIZE,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
 
     // when
@@ -505,10 +516,13 @@ trait FullSupportProfileMemoryTestBase [CONTEXT <: RuntimeContext] {
 
   test("should profile memory of operators inside transactionForeach") {
     // given
-    givenWithTransactionType (
-      nodePropertyGraph(SIZE, {
-        case i => Map("prop" -> i)
-      }),
+    givenWithTransactionType(
+      nodePropertyGraph(
+        SIZE,
+        {
+          case i => Map("prop" -> i)
+        }
+      ),
       KernelTransaction.Type.IMPLICIT
     )
 

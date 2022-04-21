@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.expressions
 
 import org.neo4j.cypher.internal.util.InputPosition
 
-
 case class ListLiteral(expressions: Seq[Expression])(val position: InputPosition) extends Expression {
 
   def map(f: Expression => Expression) = copy(expressions = expressions.map(f))(position)
@@ -27,7 +26,7 @@ case class ListLiteral(expressions: Seq[Expression])(val position: InputPosition
 }
 
 case class ListSlice(list: Expression, from: Option[Expression], to: Option[Expression])(val position: InputPosition)
-  extends Expression
+    extends Expression
 
 case class ContainerIndex(expr: Expression, idx: Expression)(val position: InputPosition)
-  extends Expression
+    extends Expression

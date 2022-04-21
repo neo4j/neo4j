@@ -86,17 +86,14 @@ import static org.neo4j.kernel.lifecycle.LifecycleStatus.STOPPED;
  * This adapter will not allow a shutdown lifecycle to be reinitialized
  * and started again.
  */
-public abstract class SafeLifecycle implements Lifecycle, LifecycleStatusProvider
-{
+public abstract class SafeLifecycle implements Lifecycle, LifecycleStatusProvider {
     private volatile LifecycleStatus state;
 
-    protected SafeLifecycle()
-    {
-        this( NONE );
+    protected SafeLifecycle() {
+        this(NONE);
     }
 
-    SafeLifecycle( LifecycleStatus state )
-    {
+    SafeLifecycle(LifecycleStatus state) {
         this.state = state;
     }
 
@@ -106,82 +103,62 @@ public abstract class SafeLifecycle implements Lifecycle, LifecycleStatusProvide
      * @param op The state transition operation.
      * @param force Causes the state to be updated regardless of if the operation throws.
      */
-    private void transition( LifecycleStatus expected, LifecycleStatus to, Operation op, boolean force ) throws Exception
-    {
-        if ( state != expected )
-        {
-            throw new IllegalStateException( String.format( "Expected %s but was %s", expected, state ) );
+    private void transition(LifecycleStatus expected, LifecycleStatus to, Operation op, boolean force)
+            throws Exception {
+        if (state != expected) {
+            throw new IllegalStateException(String.format("Expected %s but was %s", expected, state));
         }
 
-        if ( force )
-        {
+        if (force) {
             state = to;
             op.run();
-        }
-        else
-        {
+        } else {
             op.run();
             state = to;
         }
     }
 
     @Override
-    public final synchronized void init() throws Exception
-    {
-        transition( NONE, STOPPED, this::init0, false );
+    public final synchronized void init() throws Exception {
+        transition(NONE, STOPPED, this::init0, false);
     }
 
     @Override
-    public final synchronized void start() throws Exception
-    {
-        transition( STOPPED, STARTED, this::start0, false );
+    public final synchronized void start() throws Exception {
+        transition(STOPPED, STARTED, this::start0, false);
     }
 
     @Override
-    public final synchronized void stop() throws Exception
-    {
-        if ( state == STOPPED )
-        {
+    public final synchronized void stop() throws Exception {
+        if (state == STOPPED) {
             return;
         }
-        transition( STARTED, STOPPED, this::stop0, true );
+        transition(STARTED, STOPPED, this::stop0, true);
     }
 
     @Override
-    public final synchronized void shutdown() throws Exception
-    {
-        if ( state == NONE )
-        {
+    public final synchronized void shutdown() throws Exception {
+        if (state == NONE) {
             state = NONE;
             return;
         }
-        transition( STOPPED, SHUTDOWN, this::shutdown0, true );
+        transition(STOPPED, SHUTDOWN, this::shutdown0, true);
     }
 
-    public void init0() throws Exception
-    {
-    }
+    public void init0() throws Exception {}
 
-    public void start0() throws Exception
-    {
-    }
+    public void start0() throws Exception {}
 
-    public void stop0() throws Exception
-    {
-    }
+    public void stop0() throws Exception {}
 
-    public void shutdown0() throws Exception
-    {
-    }
+    public void shutdown0() throws Exception {}
 
     @Override
-    public LifecycleStatus getStatus()
-    {
+    public LifecycleStatus getStatus() {
         return state;
     }
 
-    interface Operation
-    {
+    interface Operation {
         void run() throws Exception;
     }
 }

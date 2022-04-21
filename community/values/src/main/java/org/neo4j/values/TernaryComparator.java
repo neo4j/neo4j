@@ -24,12 +24,11 @@ import java.util.Comparator;
 /**
  * Comparator that allows undefined comparison.
  */
-public interface TernaryComparator<T> extends Comparator<T>
-{
+public interface TernaryComparator<T> extends Comparator<T> {
     /**
      * Compares two values under ternary logic, see {@link Comparison}
      * @param o1 the left-hand side of the comparison
      * @param o2 the right-hand side of the comparison
      */
-    Comparison ternaryCompare( T o1, T o2 );
+    Comparison ternaryCompare(T o1, T o2);
 }

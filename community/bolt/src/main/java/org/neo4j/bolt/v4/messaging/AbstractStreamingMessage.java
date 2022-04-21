@@ -19,8 +19,11 @@
  */
 package org.neo4j.bolt.v4.messaging;
 
-import java.util.Objects;
+import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.bolt.v4.runtime.InTransactionState.QUERY_ID_KEY;
 
+import java.util.Objects;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
@@ -30,12 +33,7 @@ import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 
-import static java.lang.String.format;
-import static java.util.Objects.requireNonNull;
-import static org.neo4j.bolt.v4.runtime.InTransactionState.QUERY_ID_KEY;
-
-public abstract class AbstractStreamingMessage implements RequestMessage
-{
+public abstract class AbstractStreamingMessage implements RequestMessage {
     private static final String STREAM_LIMIT_KEY = "n";
     private static final long STREAM_LIMIT_MINIMAL = 1;
     public static final long STREAM_LIMIT_UNLIMITED = -1;
@@ -44,92 +42,76 @@ public abstract class AbstractStreamingMessage implements RequestMessage
     private final long n;
     private final int statementId;
 
-    public AbstractStreamingMessage( MapValue meta, String name ) throws BoltIOException
-    {
-        this.meta = requireNonNull( meta );
-        this.n = parseN( meta, name );
-        this.statementId = parseStatementId( meta );
+    public AbstractStreamingMessage(MapValue meta, String name) throws BoltIOException {
+        this.meta = requireNonNull(meta);
+        this.n = parseN(meta, name);
+        this.statementId = parseStatementId(meta);
     }
 
-    private static long parseN( MapValue meta, String name ) throws BoltIOException
-    {
-        AnyValue anyValue = meta.get( STREAM_LIMIT_KEY );
-        if ( anyValue != Values.NO_VALUE && anyValue instanceof LongValue )
-        {
+    private static long parseN(MapValue meta, String name) throws BoltIOException {
+        AnyValue anyValue = meta.get(STREAM_LIMIT_KEY);
+        if (anyValue != Values.NO_VALUE && anyValue instanceof LongValue) {
             long size = ((LongValue) anyValue).longValue();
-            if ( size != STREAM_LIMIT_UNLIMITED && size < STREAM_LIMIT_MINIMAL )
-            {
-                throw new BoltIOException( Status.Request.Invalid,
-                        format( "Expecting %s size to be at least %s, but got: %s", name, STREAM_LIMIT_MINIMAL, size ) );
+            if (size != STREAM_LIMIT_UNLIMITED && size < STREAM_LIMIT_MINIMAL) {
+                throw new BoltIOException(
+                        Status.Request.Invalid,
+                        format("Expecting %s size to be at least %s, but got: %s", name, STREAM_LIMIT_MINIMAL, size));
             }
             return size;
-        }
-        else
-        {
-            throw new BoltIOException( Status.Request.Invalid, format( "Expecting %s size n to be a Long value, but got: %s", name, anyValue ) );
+        } else {
+            throw new BoltIOException(
+                    Status.Request.Invalid,
+                    format("Expecting %s size n to be a Long value, but got: %s", name, anyValue));
         }
     }
 
-    private static int parseStatementId( MapValue meta )
-    {
-        AnyValue anyValue = meta.get( QUERY_ID_KEY );
-        if ( anyValue != Values.NO_VALUE && anyValue instanceof LongValue )
-        {
+    private static int parseStatementId(MapValue meta) {
+        AnyValue anyValue = meta.get(QUERY_ID_KEY);
+        if (anyValue != Values.NO_VALUE && anyValue instanceof LongValue) {
             long id = ((LongValue) anyValue).longValue();
-            return Math.toIntExact( id );
-        }
-        else
-        {
+            return Math.toIntExact(id);
+        } else {
             return StatementMetadata.ABSENT_QUERY_ID;
         }
     }
 
-    public long n()
-    {
+    public long n() {
         return this.n;
     }
 
-    public int statementId()
-    {
+    public int statementId() {
         return statementId;
     }
 
-    public MapValue meta()
-    {
+    public MapValue meta() {
         return meta;
     }
 
     @Override
-    public boolean safeToProcessInAnyState()
-    {
+    public boolean safeToProcessInAnyState() {
         return false;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         AbstractStreamingMessage that = (AbstractStreamingMessage) o;
-        return Objects.equals( meta, that.meta );
+        return Objects.equals(meta, that.meta);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( meta );
+    public int hashCode() {
+        return Objects.hash(meta);
     }
 
     @Override
-    public String toString()
-    {
-        return String.format( "%s %s", name(), meta() );
+    public String toString() {
+        return String.format("%s %s", name(), meta());
     }
 
     abstract String name();

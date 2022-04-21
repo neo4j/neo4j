@@ -20,7 +20,6 @@
 package org.neo4j.kernel.internal;
 
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -34,8 +33,7 @@ import org.neo4j.kernel.impl.factory.DbmsInfo;
 /**
  * This API can be used to get access to services.
  */
-public interface GraphDatabaseAPI extends GraphDatabaseService
-{
+public interface GraphDatabaseAPI extends GraphDatabaseService {
     /**
      * Look up database components for direct access.
      * Usage of this method is generally an indication of architectural error.
@@ -60,7 +58,7 @@ public interface GraphDatabaseAPI extends GraphDatabaseService
      * @param loginContext transaction login context
      * @return internal transaction
      */
-    InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext );
+    InternalTransaction beginTransaction(KernelTransaction.Type type, LoginContext loginContext);
 
     /**
      * Begin internal transaction with specified type and access mode
@@ -69,7 +67,8 @@ public interface GraphDatabaseAPI extends GraphDatabaseService
      * @param clientInfo transaction client info
      * @return internal transaction
      */
-    InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo );
+    InternalTransaction beginTransaction(
+            KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo);
 
     /**
      * Begin internal transaction with specified type, access mode and timeout
@@ -80,6 +79,10 @@ public interface GraphDatabaseAPI extends GraphDatabaseService
      * @param unit time unit of timeout argument
      * @return internal transaction
      */
-    InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, long timeout,
-            TimeUnit unit );
+    InternalTransaction beginTransaction(
+            KernelTransaction.Type type,
+            LoginContext loginContext,
+            ClientConnectionInfo clientInfo,
+            long timeout,
+            TimeUnit unit);
 }

@@ -19,8 +19,11 @@
  */
 package org.neo4j.kernel.impl;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.DeadlockDetected;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -36,125 +39,109 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.DeadlockDetected;
-
 @ImpermanentDbmsExtension
-class TransactionExceptionMappingIT
-{
+class TransactionExceptionMappingIT {
     @Inject
     private GraphDatabaseAPI database;
+
     @Inject
     private DatabaseManagementService managementService;
 
     @Test
-    void transactionFailureOnTransactionClose()
-    {
-        var rootCause = new TransactionFailureException( "Test failure" );
-        var e = assertThrows( Exception.class, () ->
-        {
-            try ( var tx = database.beginTransaction( KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED ) )
-            {
-                tx.addCloseCallback( () ->
-                {
+    void transactionFailureOnTransactionClose() {
+        var rootCause = new TransactionFailureException("Test failure");
+        var e = assertThrows(Exception.class, () -> {
+            try (var tx = database.beginTransaction(KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED)) {
+                tx.addCloseCallback(() -> {
                     throw rootCause;
-                } );
+                });
                 tx.commit();
             }
-        } );
-        assertThat( e ).isInstanceOf( TransactionFailureException.class ).hasRootCause( rootCause );
+        });
+        assertThat(e).isInstanceOf(TransactionFailureException.class).hasRootCause(rootCause);
     }
 
     @Test
-    void nonTransientTransientFailureOnTransactionClose()
-    {
-        var rootCause = new ReadAndDeleteTransactionConflictException( true );
-        managementService.registerTransactionEventListener( database.databaseName(), new TransactionEventListenerAdapter<>()
-        {
-            @Override
-            public Object beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService ) throws Exception
-            {
-                throw rootCause;
-            }
-        } );
-        var e = assertThrows( Exception.class, () ->
-        {
-            try ( var tx = database.beginTx() )
-            {
+    void nonTransientTransientFailureOnTransactionClose() {
+        var rootCause = new ReadAndDeleteTransactionConflictException(true);
+        managementService.registerTransactionEventListener(
+                database.databaseName(), new TransactionEventListenerAdapter<>() {
+                    @Override
+                    public Object beforeCommit(
+                            TransactionData data, Transaction transaction, GraphDatabaseService databaseService)
+                            throws Exception {
+                        throw rootCause;
+                    }
+                });
+        var e = assertThrows(Exception.class, () -> {
+            try (var tx = database.beginTx()) {
                 tx.createNode();
                 tx.commit();
             }
-        } );
-        assertThat( e ).isInstanceOf( TransactionFailureException.class );
+        });
+        assertThat(e).isInstanceOf(TransactionFailureException.class);
     }
 
     @Test
-    void transientTransientFailureOnTransactionClose()
-    {
-        var rootCause = new TransientTransactionFailureException( DeadlockDetected, "Deadlock detected." );
-        managementService.registerTransactionEventListener( database.databaseName(), new TransactionEventListenerAdapter<>()
-        {
-            @Override
-            public Object beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService ) throws Exception
-            {
-                throw rootCause;
-            }
-        } );
-        var e = assertThrows( Exception.class, () ->
-        {
-            try ( var tx = database.beginTx() )
-            {
+    void transientTransientFailureOnTransactionClose() {
+        var rootCause = new TransientTransactionFailureException(DeadlockDetected, "Deadlock detected.");
+        managementService.registerTransactionEventListener(
+                database.databaseName(), new TransactionEventListenerAdapter<>() {
+                    @Override
+                    public Object beforeCommit(
+                            TransactionData data, Transaction transaction, GraphDatabaseService databaseService)
+                            throws Exception {
+                        throw rootCause;
+                    }
+                });
+        var e = assertThrows(Exception.class, () -> {
+            try (var tx = database.beginTx()) {
                 tx.createNode();
                 tx.commit();
             }
-        } );
-        assertThat( e ).isInstanceOf( TransientTransactionFailureException.class );
+        });
+        assertThat(e).isInstanceOf(TransientTransactionFailureException.class);
     }
 
     @Test
-    void transientExceptionOnDeadlockDetectedError()
-    {
-        var rootCause = new DeadlockDetectedException( "No panic!" );
-        managementService.registerTransactionEventListener( database.databaseName(), new TransactionEventListenerAdapter<>()
-        {
-            @Override
-            public Object beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService ) throws Exception
-            {
-                throw rootCause;
-            }
-        } );
-        var e = assertThrows( Exception.class, () ->
-        {
-            try ( var tx = database.beginTx() )
-            {
+    void transientExceptionOnDeadlockDetectedError() {
+        var rootCause = new DeadlockDetectedException("No panic!");
+        managementService.registerTransactionEventListener(
+                database.databaseName(), new TransactionEventListenerAdapter<>() {
+                    @Override
+                    public Object beforeCommit(
+                            TransactionData data, Transaction transaction, GraphDatabaseService databaseService)
+                            throws Exception {
+                        throw rootCause;
+                    }
+                });
+        var e = assertThrows(Exception.class, () -> {
+            try (var tx = database.beginTx()) {
                 tx.createNode();
                 tx.commit();
             }
-        } );
-        assertThat( e ).isInstanceOf( TransientTransactionFailureException.class );
+        });
+        assertThat(e).isInstanceOf(TransientTransactionFailureException.class);
     }
 
     @Test
-    void transientExceptionOnAnyTransientException()
-    {
-        var rootCause = new ReadAndDeleteTransactionConflictException( false );
-        managementService.registerTransactionEventListener( database.databaseName(), new TransactionEventListenerAdapter<>()
-        {
-            @Override
-            public Object beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService ) throws Exception
-            {
-                throw rootCause;
-            }
-        } );
-        var e = assertThrows( Exception.class, () ->
-        {
-            try ( var tx = database.beginTx() )
-            {
+    void transientExceptionOnAnyTransientException() {
+        var rootCause = new ReadAndDeleteTransactionConflictException(false);
+        managementService.registerTransactionEventListener(
+                database.databaseName(), new TransactionEventListenerAdapter<>() {
+                    @Override
+                    public Object beforeCommit(
+                            TransactionData data, Transaction transaction, GraphDatabaseService databaseService)
+                            throws Exception {
+                        throw rootCause;
+                    }
+                });
+        var e = assertThrows(Exception.class, () -> {
+            try (var tx = database.beginTx()) {
                 tx.createNode();
                 tx.commit();
             }
-        } );
-        assertThat( e ).isInstanceOf( TransientTransactionFailureException.class );
+        });
+        assertThat(e).isInstanceOf(TransientTransactionFailureException.class);
     }
 }

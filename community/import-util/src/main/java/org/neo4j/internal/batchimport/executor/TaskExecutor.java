@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport.executor;
 
 import java.util.concurrent.ExecutorService;
-
 import org.neo4j.internal.batchimport.Parallelizable;
 import org.neo4j.internal.batchimport.staging.Panicable;
 
@@ -31,15 +30,14 @@ import org.neo4j.internal.batchimport.staging.Panicable;
  * @param <LOCAL> object/state local to each thread, that submitted {@link Task tasks} can get access to
  * when {@link Task#run(Object) running}.
  */
-public interface TaskExecutor<LOCAL> extends Parallelizable, AutoCloseable, Panicable
-{
+public interface TaskExecutor<LOCAL> extends Parallelizable, AutoCloseable, Panicable {
     /**
      * Submits a task to be executed by one of the processors in this {@link TaskExecutor}. Tasks will be
      * executed in the order of which they arrive.
      *
      * @param task a {@link Runnable} defining the task to be executed.
      */
-    void submit( Task<LOCAL> task );
+    void submit(Task<LOCAL> task);
 
     /**
      * Closes this {@link TaskExecutor}, disallowing new tasks to be {@link #submit(Task) submitted}.

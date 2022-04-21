@@ -19,8 +19,9 @@
  */
 package org.neo4j.internal.batchimport.input.csv;
 
-import java.io.IOException;
+import static org.neo4j.internal.batchimport.input.csv.CsvInputIterator.seeker;
 
+import java.io.IOException;
 import org.neo4j.csv.reader.Chunker;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractors;
@@ -30,13 +31,10 @@ import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 
-import static org.neo4j.internal.batchimport.input.csv.CsvInputIterator.seeker;
-
 /**
  * {@link InputChunk} parsing next entry on each call to {@link #next(InputEntityVisitor)}.
  */
-public class LazyCsvInputChunk implements CsvInputChunk
-{
+public class LazyCsvInputChunk implements CsvInputChunk {
     private final IdType idType;
     private final int delimiter;
     private final Collector badCollector;
@@ -53,9 +51,15 @@ public class LazyCsvInputChunk implements CsvInputChunk
     private InputEntityVisitor previousVisitor;
     private InputEntityVisitor visitor;
 
-    public LazyCsvInputChunk( IdType idType, int delimiter, Collector badCollector, Extractors extractors, Chunk processingChunk, Configuration config,
-            Decorator decorator, Header header )
-    {
+    public LazyCsvInputChunk(
+            IdType idType,
+            int delimiter,
+            Collector badCollector,
+            Extractors extractors,
+            Chunk processingChunk,
+            Configuration config,
+            Decorator decorator,
+            Header header) {
         this.idType = idType;
         this.badCollector = badCollector;
         this.extractors = extractors;
@@ -67,46 +71,39 @@ public class LazyCsvInputChunk implements CsvInputChunk
     }
 
     @Override
-    public boolean fillFrom( Chunker chunker ) throws IOException
-    {
-        if ( chunker.nextChunk( processingChunk ) )
-        {
+    public boolean fillFrom(Chunker chunker) throws IOException {
+        if (chunker.nextChunk(processingChunk)) {
             closeCurrentParser();
             this.visitor = null;
-            this.parser = new CsvInputParser( seeker( processingChunk, config ), delimiter, idType, new Header( header ), badCollector, extractors );
+            this.parser = new CsvInputParser(
+                    seeker(processingChunk, config), delimiter, idType, new Header(header), badCollector, extractors);
             return header.entries().length != 0;
         }
         return false;
     }
 
-    private void closeCurrentParser() throws IOException
-    {
-        if ( parser != null )
-        {
+    private void closeCurrentParser() throws IOException {
+        if (parser != null) {
             parser.close();
         }
     }
 
     @Override
-    public boolean next( InputEntityVisitor nakedVisitor ) throws IOException
-    {
-        if ( visitor == null || nakedVisitor != previousVisitor )
-        {
-            decorateVisitor( nakedVisitor );
+    public boolean next(InputEntityVisitor nakedVisitor) throws IOException {
+        if (visitor == null || nakedVisitor != previousVisitor) {
+            decorateVisitor(nakedVisitor);
         }
 
-        return parser.next( visitor );
+        return parser.next(visitor);
     }
 
-    private void decorateVisitor( InputEntityVisitor nakedVisitor )
-    {
-        visitor = decorator.apply( nakedVisitor );
+    private void decorateVisitor(InputEntityVisitor nakedVisitor) {
+        visitor = decorator.apply(nakedVisitor);
         previousVisitor = nakedVisitor;
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         closeCurrentParser();
     }
 }

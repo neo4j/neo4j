@@ -27,7 +27,8 @@ import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 
-class DistinctFunction(value: Expression, inner: AggregationFunction, memoryTracker: MemoryTracker) extends AggregationFunction {
+class DistinctFunction(value: Expression, inner: AggregationFunction, memoryTracker: MemoryTracker)
+    extends AggregationFunction {
   private var seen: DistinctSet[AnyValue] = _
 
   override def apply(ctx: ReadableRow, state: QueryState): Unit = {

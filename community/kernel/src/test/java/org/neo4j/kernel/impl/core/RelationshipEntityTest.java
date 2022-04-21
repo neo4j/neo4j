@@ -19,8 +19,13 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.jupiter.api.Test;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -29,101 +34,92 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-class RelationshipEntityTest
-{
+class RelationshipEntityTest {
     @Test
-    void shouldUseCursorForReadingPropertiesIfPresentAndCorrectlyLocated()
-    {
+    void shouldUseCursorForReadingPropertiesIfPresentAndCorrectlyLocated() {
         // given
         InternalTransaction internalTransaction = mockedInternalTransaction();
 
         long id = 1;
-        RelationshipTraversalCursor relationshipTraversalCursor = mock( RelationshipTraversalCursor.class );
-        when( relationshipTraversalCursor.isClosed() ).thenReturn( false );
-        when( relationshipTraversalCursor.relationshipReference() ).thenReturn( id );
-        RelationshipEntity relationship = new RelationshipEntity( internalTransaction, id, 2, 3, 4, relationshipTraversalCursor );
+        RelationshipTraversalCursor relationshipTraversalCursor = mock(RelationshipTraversalCursor.class);
+        when(relationshipTraversalCursor.isClosed()).thenReturn(false);
+        when(relationshipTraversalCursor.relationshipReference()).thenReturn(id);
+        RelationshipEntity relationship =
+                new RelationshipEntity(internalTransaction, id, 2, 3, 4, relationshipTraversalCursor);
 
         // when
-        relationship.getAllProperties( mock( PropertyCursor.class ) );
+        relationship.getAllProperties(mock(PropertyCursor.class));
 
         // then
-        verify( relationshipTraversalCursor ).properties( any(), any() );
-        verify( internalTransaction.kernelTransaction(), never() ).ambientRelationshipCursor();
+        verify(relationshipTraversalCursor).properties(any(), any());
+        verify(internalTransaction.kernelTransaction(), never()).ambientRelationshipCursor();
     }
 
     @Test
-    void shouldNotUseCursorForReadingPropertiesIfPresentButNotCorrectlyLocated()
-    {
+    void shouldNotUseCursorForReadingPropertiesIfPresentButNotCorrectlyLocated() {
         // given
         InternalTransaction internalTransaction = mockedInternalTransaction();
 
         long id = 1;
-        RelationshipTraversalCursor relationshipTraversalCursor = mock( RelationshipTraversalCursor.class );
-        when( relationshipTraversalCursor.isClosed() ).thenReturn( false );
-        when( relationshipTraversalCursor.relationshipReference() ).thenReturn( id + 1 );
-        RelationshipEntity relationship = new RelationshipEntity( internalTransaction, id, 2, 3, 4, relationshipTraversalCursor );
+        RelationshipTraversalCursor relationshipTraversalCursor = mock(RelationshipTraversalCursor.class);
+        when(relationshipTraversalCursor.isClosed()).thenReturn(false);
+        when(relationshipTraversalCursor.relationshipReference()).thenReturn(id + 1);
+        RelationshipEntity relationship =
+                new RelationshipEntity(internalTransaction, id, 2, 3, 4, relationshipTraversalCursor);
 
         // when
-        relationship.getAllProperties( mock( PropertyCursor.class ) );
+        relationship.getAllProperties(mock(PropertyCursor.class));
 
         // then
-        verify( relationshipTraversalCursor, never() ).properties( any() );
-        verify( internalTransaction.kernelTransaction() ).ambientRelationshipCursor();
+        verify(relationshipTraversalCursor, never()).properties(any());
+        verify(internalTransaction.kernelTransaction()).ambientRelationshipCursor();
     }
 
     @Test
-    void shouldNotUseCursorForReadingPropertiesIfClosed()
-    {
+    void shouldNotUseCursorForReadingPropertiesIfClosed() {
         // given
         InternalTransaction internalTransaction = mockedInternalTransaction();
 
         long id = 1;
-        RelationshipTraversalCursor relationshipTraversalCursor = mock( RelationshipTraversalCursor.class );
-        when( relationshipTraversalCursor.isClosed() ).thenReturn( true );
-        when( relationshipTraversalCursor.relationshipReference() ).thenReturn( id );
-        RelationshipEntity relationship = new RelationshipEntity( internalTransaction, id, 2, 3, 4, relationshipTraversalCursor );
+        RelationshipTraversalCursor relationshipTraversalCursor = mock(RelationshipTraversalCursor.class);
+        when(relationshipTraversalCursor.isClosed()).thenReturn(true);
+        when(relationshipTraversalCursor.relationshipReference()).thenReturn(id);
+        RelationshipEntity relationship =
+                new RelationshipEntity(internalTransaction, id, 2, 3, 4, relationshipTraversalCursor);
 
         // when
-        relationship.getAllProperties( mock( PropertyCursor.class ) );
+        relationship.getAllProperties(mock(PropertyCursor.class));
 
         // then
-        verify( relationshipTraversalCursor, never() ).properties( any() );
-        verify( internalTransaction.kernelTransaction() ).ambientRelationshipCursor();
+        verify(relationshipTraversalCursor, never()).properties(any());
+        verify(internalTransaction.kernelTransaction()).ambientRelationshipCursor();
     }
 
     @Test
-    void shouldNotUseCursorForReadingPropertiesIfNotPresent()
-    {
+    void shouldNotUseCursorForReadingPropertiesIfNotPresent() {
         // given
         InternalTransaction internalTransaction = mockedInternalTransaction();
 
         long id = 1;
-        RelationshipEntity relationship = new RelationshipEntity( internalTransaction, id, 2, 3, 4 );
+        RelationshipEntity relationship = new RelationshipEntity(internalTransaction, id, 2, 3, 4);
 
         // when
-        relationship.getAllProperties( mock( PropertyCursor.class ) );
+        relationship.getAllProperties(mock(PropertyCursor.class));
 
         // then
-        verify( internalTransaction.kernelTransaction() ).ambientRelationshipCursor();
+        verify(internalTransaction.kernelTransaction()).ambientRelationshipCursor();
     }
 
-    private InternalTransaction mockedInternalTransaction()
-    {
-        InternalTransaction internalTransaction = mock( InternalTransaction.class );
-        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
-        Read dataRead = mock( Read.class );
-        RelationshipScanCursor ambientRelationshipScanCursor = mock( RelationshipScanCursor.class );
-        when( ambientRelationshipScanCursor.next() ).thenReturn( true );
-        when( kernelTransaction.dataRead() ).thenReturn( dataRead );
-        when( kernelTransaction.tokenRead() ).thenReturn( mock( TokenRead.class ) );
-        when( kernelTransaction.ambientRelationshipCursor() ).thenReturn( ambientRelationshipScanCursor );
-        when( internalTransaction.kernelTransaction() ).thenReturn( kernelTransaction );
+    private InternalTransaction mockedInternalTransaction() {
+        InternalTransaction internalTransaction = mock(InternalTransaction.class);
+        KernelTransaction kernelTransaction = mock(KernelTransaction.class);
+        Read dataRead = mock(Read.class);
+        RelationshipScanCursor ambientRelationshipScanCursor = mock(RelationshipScanCursor.class);
+        when(ambientRelationshipScanCursor.next()).thenReturn(true);
+        when(kernelTransaction.dataRead()).thenReturn(dataRead);
+        when(kernelTransaction.tokenRead()).thenReturn(mock(TokenRead.class));
+        when(kernelTransaction.ambientRelationshipCursor()).thenReturn(ambientRelationshipScanCursor);
+        when(internalTransaction.kernelTransaction()).thenReturn(kernelTransaction);
         return internalTransaction;
     }
 }

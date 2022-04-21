@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.startup;
 
-interface VerboseCommand
-{
+interface VerboseCommand {
     String ARG_VERBOSE = "--verbose";
+
     boolean verbose();
 }

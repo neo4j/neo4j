@@ -19,22 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.neo4j.internal.nativeimpl.NativeAccess;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.utils.TestDirectory;
-
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.RETURNS_MOCKS;
@@ -44,81 +28,88 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicLong;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.nativeimpl.NativeAccess;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.utils.TestDirectory;
+
 @TestDirectoryExtension
-class LogFileChannelNativeAccessorTest
-{
+class LogFileChannelNativeAccessorTest {
 
     @Inject
     private FileSystemAbstraction fileSystem;
+
     @Inject
     private TestDirectory testDirectory;
+
     private LogFileChannelNativeAccessor channelNativeAccessor;
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private StoreChannel testStoreChannel;
     private NativeAccess nativeAccess;
 
     @BeforeEach
-    void setUp() throws IOException
-    {
-        var filesContext = mock( TransactionLogFilesContext.class );
-        nativeAccess = mock( NativeAccess.class, RETURNS_MOCKS );
-        when( filesContext.getNativeAccess() ).thenReturn( nativeAccess );
-        when( filesContext.getLogProvider() ).thenReturn( logProvider );
-        when( filesContext.getRotationThreshold() ).thenReturn( new AtomicLong( 5 ) );
+    void setUp() throws IOException {
+        var filesContext = mock(TransactionLogFilesContext.class);
+        nativeAccess = mock(NativeAccess.class, RETURNS_MOCKS);
+        when(filesContext.getNativeAccess()).thenReturn(nativeAccess);
+        when(filesContext.getLogProvider()).thenReturn(logProvider);
+        when(filesContext.getRotationThreshold()).thenReturn(new AtomicLong(5));
 
-        channelNativeAccessor = new LogFileChannelNativeAccessor( fileSystem, filesContext );
-        Path originalFile = testDirectory.file( "test" );
-        testStoreChannel = fileSystem.write( originalFile );
+        channelNativeAccessor = new LogFileChannelNativeAccessor(fileSystem, filesContext);
+        Path originalFile = testDirectory.file("test");
+        testStoreChannel = fileSystem.write(originalFile);
     }
 
     @AfterEach
-    void tearDown() throws IOException
-    {
-        if ( testStoreChannel != null )
-        {
+    void tearDown() throws IOException {
+        if (testStoreChannel != null) {
             testStoreChannel.close();
         }
     }
 
     @Test
-    void adviseSequentialAccess()
-    {
-        channelNativeAccessor.adviseSequentialAccessAndKeepInCache( testStoreChannel, 0 );
+    void adviseSequentialAccess() {
+        channelNativeAccessor.adviseSequentialAccessAndKeepInCache(testStoreChannel, 0);
 
-        verify( nativeAccess ).tryAdviseSequentialAccess( anyInt() );
+        verify(nativeAccess).tryAdviseSequentialAccess(anyInt());
     }
 
     @Test
-    void doNotAdviseSequentialAccessOfClosedChannel() throws IOException
-    {
+    void doNotAdviseSequentialAccessOfClosedChannel() throws IOException {
         testStoreChannel.close();
-        channelNativeAccessor.adviseSequentialAccessAndKeepInCache( testStoreChannel, 0 );
+        channelNativeAccessor.adviseSequentialAccessAndKeepInCache(testStoreChannel, 0);
 
-        verify( nativeAccess, never() ).tryAdviseSequentialAccess( anyInt() );
+        verify(nativeAccess, never()).tryAdviseSequentialAccess(anyInt());
     }
 
     @Test
-    void evictOpenChannel()
-    {
-        channelNativeAccessor.evictFromSystemCache( testStoreChannel, 0 );
-        verify( nativeAccess ).tryEvictFromCache( anyInt() );
+    void evictOpenChannel() {
+        channelNativeAccessor.evictFromSystemCache(testStoreChannel, 0);
+        verify(nativeAccess).tryEvictFromCache(anyInt());
     }
 
     @Test
-    void doNotEvictClosedChannel() throws IOException
-    {
+    void doNotEvictClosedChannel() throws IOException {
         testStoreChannel.close();
 
-        reset( nativeAccess );
+        reset(nativeAccess);
 
-        channelNativeAccessor.evictFromSystemCache( testStoreChannel, 0 );
-        verify( nativeAccess, never() ).tryEvictFromCache( anyInt() );
+        channelNativeAccessor.evictFromSystemCache(testStoreChannel, 0);
+        verify(nativeAccess, never()).tryEvictFromCache(anyInt());
     }
 
     @Test
-    void preallocateChannel()
-    {
-        channelNativeAccessor.preallocateSpace( testStoreChannel, 3 );
-        verify( nativeAccess ).tryPreallocateSpace( anyInt(), anyLong() );
+    void preallocateChannel() {
+        channelNativeAccessor.preallocateSpace(testStoreChannel, 3);
+        verify(nativeAccess).tryPreallocateSpace(anyInt(), anyLong());
     }
 }

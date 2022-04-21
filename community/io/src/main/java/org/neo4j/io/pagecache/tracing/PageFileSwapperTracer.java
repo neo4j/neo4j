@@ -25,213 +25,175 @@ import org.neo4j.io.pagecache.monitoring.PageFileCounters;
  * Tracer that receives a steady stream of events and data about what
  * mapped page file is doing.
  */
-public interface PageFileSwapperTracer extends PageFileCounters
-{
+public interface PageFileSwapperTracer extends PageFileCounters {
     PageFileSwapperTracer NULL = new NullPageFileSwapperTracer();
 
     /**
      * Report number of observed pins
      * @param pins number of pins
      */
-    void pins( long pins );
+    void pins(long pins);
 
     /**
      * Report number of observed unpins
      * @param unpins number of unpins
      */
-    void unpins( long unpins );
+    void unpins(long unpins);
 
     /**
      * Report number of observer hits
      * @param hits number of hits
      */
-    void hits( long hits );
+    void hits(long hits);
 
     /**
      * Report number of observed fault attempts
      * @param faults number of fault attempts
      */
-    void faults( long faults );
+    void faults(long faults);
 
     /**
      * Report number of observed no-faults
      * @param noFaults number of no-faults
      */
-    void noFaults( long noFaults );
+    void noFaults(long noFaults);
 
     /**
      * Report number of observed failed faults
      * @param failedFaults number of failed faults
      */
-    void failedFaults( long failedFaults );
+    void failedFaults(long failedFaults);
 
     /**
      * Report number of bytes read
      * @param bytesRead number of read bytes
      */
-    void bytesRead( long bytesRead );
+    void bytesRead(long bytesRead);
 
     /**
      * Report number of observed evictions
      * @param evictions number of evictions
      */
-    void evictions( long evictions );
+    void evictions(long evictions);
 
     /**
      * Report number of eviction exceptions
      * @param evictionExceptions number of eviction exceptions
      */
-    void evictionExceptions( long evictionExceptions );
+    void evictionExceptions(long evictionExceptions);
 
     /**
      * Report number of bytes written
      * @param bytesWritten number of written bytes
      */
-    void bytesWritten( long bytesWritten );
+    void bytesWritten(long bytesWritten);
 
     /**
      * Report number of flushes
      * @param flushes number of flushes
      */
-    void flushes( long flushes );
+    void flushes(long flushes);
 
     /**
      * Report number of merges
      * @param merges number of merges
      */
-    void merges( long merges );
+    void merges(long merges);
 
-    class NullPageFileSwapperTracer implements PageFileSwapperTracer
-    {
+    class NullPageFileSwapperTracer implements PageFileSwapperTracer {
         @Override
-        public void pins( long pins )
-        {
-        }
+        public void pins(long pins) {}
 
         @Override
-        public void unpins( long unpins )
-        {
-        }
+        public void unpins(long unpins) {}
 
         @Override
-        public void hits( long hits )
-        {
-        }
+        public void hits(long hits) {}
 
         @Override
-        public void faults( long faults )
-        {
-        }
+        public void faults(long faults) {}
 
         @Override
-        public void noFaults( long noFaults )
-        {
-        }
+        public void noFaults(long noFaults) {}
 
         @Override
-        public void failedFaults( long failedFaults )
-        {
-        }
+        public void failedFaults(long failedFaults) {}
 
         @Override
-        public void bytesRead( long bytesRead )
-        {
-        }
+        public void bytesRead(long bytesRead) {}
 
         @Override
-        public void evictions( long evictions )
-        {
-        }
+        public void evictions(long evictions) {}
 
         @Override
-        public void evictionExceptions( long evictionExceptions )
-        {
-        }
+        public void evictionExceptions(long evictionExceptions) {}
 
         @Override
-        public void bytesWritten( long bytesWritten )
-        {
-        }
+        public void bytesWritten(long bytesWritten) {}
 
         @Override
-        public void flushes( long flushes )
-        {
-        }
+        public void flushes(long flushes) {}
 
         @Override
-        public void merges( long merges )
-        {
-        }
+        public void merges(long merges) {}
 
         @Override
-        public long faults()
-        {
+        public long faults() {
             return 0;
         }
 
         @Override
-        public long failedFaults()
-        {
+        public long failedFaults() {
             return 0;
         }
 
         @Override
-        public long noFaults()
-        {
+        public long noFaults() {
             return 0;
         }
 
         @Override
-        public long evictions()
-        {
+        public long evictions() {
             return 0;
         }
 
         @Override
-        public long pins()
-        {
+        public long pins() {
             return 0;
         }
 
         @Override
-        public long unpins()
-        {
+        public long unpins() {
             return 0;
         }
 
         @Override
-        public long hits()
-        {
+        public long hits() {
             return 0;
         }
 
         @Override
-        public long flushes()
-        {
+        public long flushes() {
             return 0;
         }
 
         @Override
-        public long merges()
-        {
+        public long merges() {
             return 0;
         }
 
         @Override
-        public long bytesRead()
-        {
+        public long bytesRead() {
             return 0;
         }
 
         @Override
-        public long bytesWritten()
-        {
+        public long bytesWritten() {
             return 0;
         }
 
         @Override
-        public long evictionExceptions()
-        {
+        public long evictionExceptions() {
             return 0;
         }
     }

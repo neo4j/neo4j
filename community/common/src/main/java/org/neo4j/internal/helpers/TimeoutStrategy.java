@@ -19,17 +19,15 @@
  */
 package org.neo4j.internal.helpers;
 
-public interface TimeoutStrategy
-{
+public interface TimeoutStrategy {
     Timeout newTimeout();
 
-    interface Timeout
-    {
+    interface Timeout {
         long getMillis();
+
         void increment();
 
-        default long getAndIncrement()
-        {
+        default long getAndIncrement() {
             long current = getMillis();
             increment();
             return current;

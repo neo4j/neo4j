@@ -103,7 +103,9 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result should equal(Selection(Seq(predicate1, predicate2), inner))
   }
 
-  test("when two predicates not already solved are solvable, should not greedily pick the first but cost compare the alternative orders") {
+  test(
+    "when two predicates not already solved are solvable, should not greedily pick the first but cost compare the alternative orders"
+  ) {
     // Given
     val context = newMockedLogicalPlanningContext(planContext)
 
@@ -121,17 +123,22 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     var didVerify = false
     val verifyingContext = context.copy(
       costComparisonListener = new CostComparisonListener {
-        override def report[X](projector: X => LogicalPlan,
-                               input: Iterable[X],
-                               inputOrdering: Ordering[X],
-                               context: LogicalPlanningContext,
-                               resolved: => String,
-                               resolvedPerPlan: LogicalPlan => String,
-                               heuristic: SelectorHeuristic): Unit = {
+        override def report[X](
+          projector: X => LogicalPlan,
+          input: Iterable[X],
+          inputOrdering: Ordering[X],
+          context: LogicalPlanningContext,
+          resolved: => String,
+          resolvedPerPlan: LogicalPlan => String,
+          heuristic: SelectorHeuristic
+        ): Unit = {
           val plans = input.map(projector).toSet
           plans should equal(Set(
             expectedPlan,
-            Selection(Seq(eqs), NodeHashJoin(Set("x"), inner, NodeByLabelScan("x", labelName("X"), Set.empty, IndexOrderNone)))
+            Selection(
+              Seq(eqs),
+              NodeHashJoin(Set("x"), inner, NodeByLabelScan("x", labelName("X"), Set.empty, IndexOrderNone))
+            )
           ))
           didVerify = true
         }
@@ -183,12 +190,19 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should not introduce semi apply for unsolved exclusive pattern predicate when nodes not applicable") {
     // MATCH (a) WHERE (a)-->()
     val relChain = RelationshipChain(
-      NodePattern(Some(varFor("a")), None, None, None)_,
-      RelationshipPattern(Some(varFor("  UNNAMED1")), Seq.empty[RelTypeName], None, None, None, SemanticDirection.OUTGOING) _,
-      NodePattern(Some(varFor("  UNNAMED2")), None, None, None)_
-    )_
+      NodePattern(Some(varFor("a")), None, None, None) _,
+      RelationshipPattern(
+        Some(varFor("  UNNAMED1")),
+        Seq.empty[RelTypeName],
+        None,
+        None,
+        None,
+        SemanticDirection.OUTGOING
+      ) _,
+      NodePattern(Some(varFor("  UNNAMED2")), None, None, None) _
+    ) _
 
-    val patternExp = Exists(PatternExpression(RelationshipsPattern(relChain)_)(Set(varFor("a")), "", ""))_
+    val patternExp = Exists(PatternExpression(RelationshipsPattern(relChain) _)(Set(varFor("a")), "", "")) _
 
     val predicate = Predicate(Set("a"), patternExp)
     val selections = Selections(Set(predicate))

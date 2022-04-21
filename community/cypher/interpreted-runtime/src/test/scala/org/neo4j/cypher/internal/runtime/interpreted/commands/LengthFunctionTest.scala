@@ -36,35 +36,38 @@ import org.neo4j.values.storable.Values.intValue
 class LengthFunctionTest extends CypherFunSuite {
 
   test("length can be used on paths") {
-    //given
+    // given
     val p = PathImpl(mock[Node], mock[Relationship], mock[Node])
     val m = CypherRow.from("p" -> ValueUtils.fromPath(p))
     val lengthFunction = LengthFunction(Variable("p"))
 
-    //when
+    // when
     val result = lengthFunction(m, QueryStateHelper.empty)
 
-    //then
+    // then
     result should equal(intValue(1))
   }
+
   test("length cannot be used on collections") {
-    //given
+    // given
     val l = Seq("it", "was", "the")
     val m = CypherRow.from("l" -> l)
     val lengthFunction = LengthFunction(Variable("l"))
 
-    //when/then
+    // when/then
     val e = intercept[CypherTypeException](lengthFunction.apply(m, QueryStateHelper.empty))
-    e.getMessage should be("Invalid input for function 'length()': Expected a Path, got: List{String(\"it\"), String(\"was\"), String(\"the\")}")
+    e.getMessage should be(
+      "Invalid input for function 'length()': Expected a Path, got: List{String(\"it\"), String(\"was\"), String(\"the\")}"
+    )
   }
 
   test("length cannot be used on strings") {
-    //given
+    // given
     val s = "it was the"
     val m = CypherRow.from("s" -> s)
     val lengthFunction = LengthFunction(Variable("s"))
 
-    //when/then
+    // when/then
     val e = intercept[CypherTypeException](lengthFunction.apply(m, QueryStateHelper.empty))
     e.getMessage should be("Invalid input for function 'length()': Expected a Path, got: String(\"it was the\")")
   }

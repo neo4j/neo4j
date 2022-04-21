@@ -19,12 +19,19 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import static java.util.Collections.emptyIterator;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allIterator;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingIterator;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingIterator;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.nio.file.Path;
 import java.util.Iterator;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
@@ -53,18 +60,8 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.Value;
 
-import static java.util.Collections.emptyIterator;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allIterator;
-import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingIterator;
-import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingIterator;
-import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
-import static org.neo4j.values.storable.Values.NO_VALUE;
-
 @TestDirectoryExtension
-public abstract class KernelIntegrationTest
-{
+public abstract class KernelIntegrationTest {
     @Inject
     protected TestDirectory testDir;
 
@@ -77,51 +74,42 @@ public abstract class KernelIntegrationTest
     protected DependencyResolver dependencyResolver;
     private DatabaseManagementService managementService;
 
-    protected TokenWrite tokenWriteInNewTransaction()
-    {
-        beginTransaction( AnonymousContext.writeToken() );
+    protected TokenWrite tokenWriteInNewTransaction() {
+        beginTransaction(AnonymousContext.writeToken());
         return kernelTransaction.tokenWrite();
     }
 
-    protected Write dataWriteInNewTransaction() throws KernelException
-    {
-        beginTransaction( AnonymousContext.write() );
+    protected Write dataWriteInNewTransaction() throws KernelException {
+        beginTransaction(AnonymousContext.write());
         return kernelTransaction.dataWrite();
     }
 
-    protected SchemaWrite schemaWriteInNewTransaction() throws KernelException
-    {
-        beginTransaction( AUTH_DISABLED );
+    protected SchemaWrite schemaWriteInNewTransaction() throws KernelException {
+        beginTransaction(AUTH_DISABLED);
         return kernelTransaction.schemaWrite();
     }
 
-    protected Procedures procs()
-    {
-        if ( kernelTransaction == null )
-        {
-            beginTransaction( AnonymousContext.read() );
+    protected Procedures procs() {
+        if (kernelTransaction == null) {
+            beginTransaction(AnonymousContext.read());
         }
         return kernelTransaction.procedures();
     }
 
-    protected Procedures procsSchema()
-    {
-        if ( kernelTransaction == null )
-        {
-            beginTransaction( AnonymousContext.full() );
+    protected Procedures procsSchema() {
+        if (kernelTransaction == null) {
+            beginTransaction(AnonymousContext.full());
         }
         return kernelTransaction.procedures();
     }
 
-    protected KernelTransaction newTransaction()
-    {
-        beginTransaction( AnonymousContext.read() );
+    protected KernelTransaction newTransaction() {
+        beginTransaction(AnonymousContext.read());
         return kernelTransaction;
     }
 
-    protected KernelTransaction newTransaction( LoginContext loginContext )
-    {
-        beginTransaction( loginContext );
+    protected KernelTransaction newTransaction(LoginContext loginContext) {
+        beginTransaction(loginContext);
         return kernelTransaction;
     }
 
@@ -129,8 +117,7 @@ public abstract class KernelIntegrationTest
      * Create a temporary section wherein other transactions can be started an committed, and after which the <em>current</em> transaction will be restored as
      * current.
      */
-    protected Resource captureTransaction()
-    {
+    protected Resource captureTransaction() {
         InternalTransaction tx = transaction;
         KernelTransaction ktx = kernelTransaction;
         return () -> {
@@ -139,180 +126,165 @@ public abstract class KernelIntegrationTest
         };
     }
 
-    protected void commit()
-    {
+    protected void commit() {
         transaction.commit();
         transaction = null;
         kernelTransaction = null;
     }
 
-    protected void rollback()
-    {
+    protected void rollback() {
         transaction.rollback();
         transaction = null;
         kernelTransaction = null;
     }
 
-    private void beginTransaction( LoginContext context )
-    {
-        transaction = db.beginTransaction( IMPLICIT, context );
+    private void beginTransaction(LoginContext context) {
+        transaction = db.beginTransaction(IMPLICIT, context);
         kernelTransaction = transaction.kernelTransaction();
     }
 
     @BeforeEach
-    public void setup()
-    {
+    public void setup() {
         startDb();
     }
 
     @AfterEach
-    public void cleanup() throws Exception
-    {
+    public void cleanup() throws Exception {
         stopDb();
     }
 
-    public String getDatabaseName()
-    {
+    public String getDatabaseName() {
         return DEFAULT_DATABASE_NAME;
     }
 
-    private void startDb()
-    {
+    private void startDb() {
         managementService = createDatabaseService();
-        db = (GraphDatabaseAPI) managementService.database( getDatabaseName() );
+        db = (GraphDatabaseAPI) managementService.database(getDatabaseName());
         dependencyResolver = db.getDependencyResolver();
-        kernel = dependencyResolver.resolveDependency( Kernel.class );
-        indexingService = dependencyResolver.resolveDependency( IndexingService.class );
+        kernel = dependencyResolver.resolveDependency(Kernel.class);
+        indexingService = dependencyResolver.resolveDependency(IndexingService.class);
     }
 
-    protected GraphDatabaseAPI openDatabase( String databaseName )
-    {
-        return (GraphDatabaseAPI) managementService.database( databaseName );
+    protected GraphDatabaseAPI openDatabase(String databaseName) {
+        return (GraphDatabaseAPI) managementService.database(databaseName);
     }
 
-    protected void shutdownDatabase( String databaseName )
-    {
-        managementService.shutdownDatabase( databaseName );
+    protected void shutdownDatabase(String databaseName) {
+        managementService.shutdownDatabase(databaseName);
     }
 
-    protected DatabaseManagementService createDatabaseService()
-    {
-        TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder = configure( createGraphDatabaseFactory( testDir.homePath() ) )
-                .setFileSystem( testDir.getFileSystem() );
-        return configure( databaseManagementServiceBuilder ).build();
+    protected DatabaseManagementService createDatabaseService() {
+        TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder =
+                configure(createGraphDatabaseFactory(testDir.homePath())).setFileSystem(testDir.getFileSystem());
+        return configure(databaseManagementServiceBuilder).build();
     }
 
-    protected TestDatabaseManagementServiceBuilder createGraphDatabaseFactory( Path databaseRootDir )
-    {
-        return new TestDatabaseManagementServiceBuilder( databaseRootDir );
+    protected TestDatabaseManagementServiceBuilder createGraphDatabaseFactory(Path databaseRootDir) {
+        return new TestDatabaseManagementServiceBuilder(databaseRootDir);
     }
 
-    protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder )
-    {
+    protected TestDatabaseManagementServiceBuilder configure(
+            TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder) {
         return databaseManagementServiceBuilder;
     }
 
-    void dbWithNoCache() throws TransactionFailureException
-    {
+    void dbWithNoCache() throws TransactionFailureException {
         stopDb();
         startDb();
     }
 
-    private void stopDb() throws TransactionFailureException
-    {
-        if ( kernelTransaction != null && kernelTransaction.isOpen() )
-        {
+    private void stopDb() throws TransactionFailureException {
+        if (kernelTransaction != null && kernelTransaction.isOpen()) {
             kernelTransaction.close();
         }
         managementService.shutdown();
     }
 
-    protected void restartDb() throws TransactionFailureException
-    {
+    protected void restartDb() throws TransactionFailureException {
         stopDb();
         startDb();
     }
 
-    static Value relationshipGetProperty( KernelTransaction transaction, long relationship, int property )
-    {
-        try ( RelationshipScanCursor cursor = transaction.cursors().allocateRelationshipScanCursor( transaction.cursorContext() );
-              PropertyCursor properties = transaction.cursors().allocatePropertyCursor( transaction.cursorContext(), transaction.memoryTracker() ) )
-        {
-            transaction.dataRead().singleRelationship( relationship, cursor );
-            if ( !cursor.next() )
-            {
+    static Value relationshipGetProperty(KernelTransaction transaction, long relationship, int property) {
+        try (RelationshipScanCursor cursor =
+                        transaction.cursors().allocateRelationshipScanCursor(transaction.cursorContext());
+                PropertyCursor properties = transaction
+                        .cursors()
+                        .allocatePropertyCursor(transaction.cursorContext(), transaction.memoryTracker())) {
+            transaction.dataRead().singleRelationship(relationship, cursor);
+            if (!cursor.next()) {
                 return NO_VALUE;
-            }
-            else
-            {
-                cursor.properties( properties, PropertySelection.selection( property ) );
+            } else {
+                cursor.properties(properties, PropertySelection.selection(property));
                 return properties.next() ? properties.propertyValue() : NO_VALUE;
             }
         }
     }
 
-    static Iterator<Long> nodeGetRelationships( KernelTransaction transaction, long node, Direction direction )
-    {
-        return nodeGetRelationships( transaction, node, direction, null );
+    static Iterator<Long> nodeGetRelationships(KernelTransaction transaction, long node, Direction direction) {
+        return nodeGetRelationships(transaction, node, direction, null);
     }
 
-    static Iterator<Long> nodeGetRelationships( KernelTransaction transaction, long node, Direction direction, int[] types )
-    {
-        try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor( transaction.cursorContext() ) )
-        {
-            transaction.dataRead().singleNode( node, cursor );
-            if ( !cursor.next() )
-            {
+    static Iterator<Long> nodeGetRelationships(
+            KernelTransaction transaction, long node, Direction direction, int[] types) {
+        try (NodeCursor cursor = transaction.cursors().allocateNodeCursor(transaction.cursorContext())) {
+            transaction.dataRead().singleNode(node, cursor);
+            if (!cursor.next()) {
                 return emptyIterator();
             }
 
-            switch ( direction )
-            {
-            case OUTGOING:
-                return outgoingIterator( transaction.cursors(), cursor, types,
-                        ( id, startNodeId, typeId, endNodeId, relCursor ) -> id,  transaction.cursorContext()  );
-            case INCOMING:
-                return incomingIterator( transaction.cursors(), cursor, types,
-                        ( id, startNodeId, typeId, endNodeId, relCursor ) -> id, transaction.cursorContext()  );
-            case BOTH:
-                return allIterator( transaction.cursors(), cursor, types,
-                        ( id, startNodeId, typeId, endNodeId, relCursor ) -> id, transaction.cursorContext() );
-            default:
-                throw new IllegalStateException( direction + " is not a valid direction" );
+            switch (direction) {
+                case OUTGOING:
+                    return outgoingIterator(
+                            transaction.cursors(),
+                            cursor,
+                            types,
+                            (id, startNodeId, typeId, endNodeId, relCursor) -> id,
+                            transaction.cursorContext());
+                case INCOMING:
+                    return incomingIterator(
+                            transaction.cursors(),
+                            cursor,
+                            types,
+                            (id, startNodeId, typeId, endNodeId, relCursor) -> id,
+                            transaction.cursorContext());
+                case BOTH:
+                    return allIterator(
+                            transaction.cursors(),
+                            cursor,
+                            types,
+                            (id, startNodeId, typeId, endNodeId, relCursor) -> id,
+                            transaction.cursorContext());
+                default:
+                    throw new IllegalStateException(direction + " is not a valid direction");
             }
         }
     }
 
-    protected static int countNodes( KernelTransaction transaction )
-    {
+    protected static int countNodes(KernelTransaction transaction) {
         int result = 0;
-        try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor( transaction.cursorContext() ) )
-        {
-            transaction.dataRead().allNodesScan( cursor );
-            while ( cursor.next() )
-            {
+        try (NodeCursor cursor = transaction.cursors().allocateNodeCursor(transaction.cursorContext())) {
+            transaction.dataRead().allNodesScan(cursor);
+            while (cursor.next()) {
                 result++;
             }
         }
         return result;
     }
 
-    public static int countRelationships( KernelTransaction transaction )
-    {
+    public static int countRelationships(KernelTransaction transaction) {
         int result = 0;
-        try ( RelationshipScanCursor cursor = transaction.cursors().allocateRelationshipScanCursor( transaction.cursorContext() ) )
-        {
-            transaction.dataRead().allRelationshipsScan( cursor );
-            while ( cursor.next() )
-            {
+        try (RelationshipScanCursor cursor =
+                transaction.cursors().allocateRelationshipScanCursor(transaction.cursorContext())) {
+            transaction.dataRead().allRelationshipsScan(cursor);
+            while (cursor.next()) {
                 result++;
             }
         }
         return result;
     }
 
-    KernelImpl internalKernel()
-    {
-        return (KernelImpl)kernel;
+    KernelImpl internalKernel() {
+        return (KernelImpl) kernel;
     }
 }

@@ -31,14 +31,19 @@ import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
-class TransactionalQueryErrorBoltAcceptanceTest extends TransactionalQueryErrorAcceptanceTestBase with FeatureDatabaseManagementService.TestUsingBolt
-class TransactionalQueryErrorEmbeddedAcceptanceTest extends TransactionalQueryErrorAcceptanceTestBase with FeatureDatabaseManagementService.TestUsingEmbedded
-class TransactionalQueryErrorHttpAcceptanceTest extends TransactionalQueryErrorAcceptanceTestBase with FeatureDatabaseManagementService.TestUsingHttp
+class TransactionalQueryErrorBoltAcceptanceTest extends TransactionalQueryErrorAcceptanceTestBase
+    with FeatureDatabaseManagementService.TestUsingBolt
+
+class TransactionalQueryErrorEmbeddedAcceptanceTest extends TransactionalQueryErrorAcceptanceTestBase
+    with FeatureDatabaseManagementService.TestUsingEmbedded
+
+class TransactionalQueryErrorHttpAcceptanceTest extends TransactionalQueryErrorAcceptanceTestBase
+    with FeatureDatabaseManagementService.TestUsingHttp
 
 abstract class TransactionalQueryErrorAcceptanceTestBase
-  extends CypherFunSuite
-  with FeatureDatabaseManagementService.TestBase
-  with CreateTempFileTestSupport {
+    extends CypherFunSuite
+    with FeatureDatabaseManagementService.TestBase
+    with CreateTempFileTestSupport {
 
   // This is an absolute mess...
 
@@ -50,7 +55,9 @@ abstract class TransactionalQueryErrorAcceptanceTestBase
       case TestApiKind.Embedded =>
         the[TransactionFailureException]
           .thrownBy(code)
-          .getMessage.should(include("can only be executed in an implicit transaction, but tried to execute in an explicit transaction."))
+          .getMessage.should(include(
+            "can only be executed in an implicit transaction, but tried to execute in an explicit transaction."
+          ))
 
       case _ =>
         expectError(

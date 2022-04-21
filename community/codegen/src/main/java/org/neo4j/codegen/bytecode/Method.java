@@ -19,30 +19,25 @@
  */
 package org.neo4j.codegen.bytecode;
 
+import static org.objectweb.asm.Opcodes.RETURN;
 
 import org.objectweb.asm.MethodVisitor;
 
-import static org.objectweb.asm.Opcodes.RETURN;
-
-public class Method implements Block
-{
+public class Method implements Block {
     private final MethodVisitor methodVisitor;
     private final boolean isVoid;
 
-    public Method( MethodVisitor methodVisitor, boolean isVoid )
-    {
+    public Method(MethodVisitor methodVisitor, boolean isVoid) {
         this.methodVisitor = methodVisitor;
         this.isVoid = isVoid;
     }
 
     @Override
-    public void endBlock()
-    {
-        if ( isVoid )
-        {
-            methodVisitor.visitInsn( RETURN );
+    public void endBlock() {
+        if (isVoid) {
+            methodVisitor.visitInsn(RETURN);
         }
-        //we rely on asm to keep track of stack depth
-        methodVisitor.visitMaxs( 0, 0 );
+        // we rely on asm to keep track of stack depth
+        methodVisitor.visitMaxs(0, 0);
     }
 }

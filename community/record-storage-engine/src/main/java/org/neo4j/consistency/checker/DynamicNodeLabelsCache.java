@@ -19,68 +19,57 @@
  */
 package org.neo4j.consistency.checker;
 
+import static java.lang.Math.toIntExact;
+
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.neo4j.internal.batchimport.cache.IntArray;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.memory.MemoryTracker;
-
-import static java.lang.Math.toIntExact;
 
 /**
  * Basically a dynamically growing int[] to store label ids in. Should only be used to store the dynamic node labels, not all the inlined
  * label ids too since it prioritizes simplicity over space efficiency.
  */
-class DynamicNodeLabelsCache implements AutoCloseable
-{
+class DynamicNodeLabelsCache implements AutoCloseable {
     private final IntArray cache;
     private final AtomicLong nextIndex = new AtomicLong();
 
-   DynamicNodeLabelsCache( MemoryTracker memoryTracker )
-    {
-        cache = NumberArrayFactories.OFF_HEAP.newDynamicIntArray( 100_000, 0, memoryTracker );
+    DynamicNodeLabelsCache(MemoryTracker memoryTracker) {
+        cache = NumberArrayFactories.OFF_HEAP.newDynamicIntArray(100_000, 0, memoryTracker);
     }
 
-    long put( long[] labels )
-    {
-        final long index = nextIndex.getAndAdd( labels.length + 1 );
-        cache.set( index, labels.length );
-        for ( int i = 0; i < labels.length; i++ )
-        {
-            cache.set( index + 1 + i, toIntExact( labels[i] ) );
+    long put(long[] labels) {
+        final long index = nextIndex.getAndAdd(labels.length + 1);
+        cache.set(index, labels.length);
+        for (int i = 0; i < labels.length; i++) {
+            cache.set(index + 1 + i, toIntExact(labels[i]));
         }
         return index;
     }
 
-    long[] get( long index, long[] into )
-    {
-        int count = cache.get( index );
-        if ( count > into.length )
-        {
-            into = Arrays.copyOf( into, count );
+    long[] get(long index, long[] into) {
+        int count = cache.get(index);
+        if (count > into.length) {
+            into = Arrays.copyOf(into, count);
         }
-        for ( int i = 0; i < count; i++ )
-        {
-            into[i] = cache.get( index + 1 + i );
+        for (int i = 0; i < count; i++) {
+            into[i] = cache.get(index + 1 + i);
         }
-        if ( count < into.length )
-        {
+        if (count < into.length) {
             // -1 terminate it
             into[count] = -1;
         }
         return into;
     }
 
-    void clear()
-    {
+    void clear() {
         cache.clear();
-        nextIndex.set( 0 );
+        nextIndex.set(0);
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         cache.close();
     }
 }

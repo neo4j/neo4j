@@ -28,8 +28,8 @@ import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.storageengine.api.PropertySelection;
 
-public class RelationshipTypePropertyIterator extends PropertyFilteringIterator<Relationship,RelationshipTypeIndexCursor,RelationshipScanCursor>
-{
+public class RelationshipTypePropertyIterator
+        extends PropertyFilteringIterator<Relationship, RelationshipTypeIndexCursor, RelationshipScanCursor> {
     private final Read read;
 
     public RelationshipTypePropertyIterator(
@@ -37,29 +37,34 @@ public class RelationshipTypePropertyIterator extends PropertyFilteringIterator<
             RelationshipTypeIndexCursor relationshipTypeIndexCursor,
             RelationshipScanCursor relationshipScanCursor,
             PropertyCursor propertyCursor,
-            CursorEntityFactory<RelationshipTypeIndexCursor,Relationship> relationshipFactory,
+            CursorEntityFactory<RelationshipTypeIndexCursor, Relationship> relationshipFactory,
             ResourceTracker resourceTracker,
-            PropertyIndexQuery... queries )
-    {
-        super( relationshipTypeIndexCursor, relationshipScanCursor, propertyCursor, relationshipFactory, resourceTracker, queries );
+            PropertyIndexQuery... queries) {
+        super(
+                relationshipTypeIndexCursor,
+                relationshipScanCursor,
+                propertyCursor,
+                relationshipFactory,
+                resourceTracker,
+                queries);
         this.read = read;
     }
 
     @Override
-    protected long entityReference( RelationshipTypeIndexCursor cursor )
-    {
+    protected long entityReference(RelationshipTypeIndexCursor cursor) {
         return cursor.relationshipReference();
     }
 
     @Override
-    protected void singleEntity( long id, RelationshipScanCursor cursor )
-    {
-        read.singleRelationship( id, cursor );
+    protected void singleEntity(long id, RelationshipScanCursor cursor) {
+        read.singleRelationship(id, cursor);
     }
 
     @Override
-    protected void properties( RelationshipScanCursor relationshipScanCursor, PropertyCursor propertyCursor, PropertySelection propertySelection )
-    {
-        relationshipScanCursor.properties( propertyCursor );
+    protected void properties(
+            RelationshipScanCursor relationshipScanCursor,
+            PropertyCursor propertyCursor,
+            PropertySelection propertySelection) {
+        relationshipScanCursor.properties(propertyCursor);
     }
 }

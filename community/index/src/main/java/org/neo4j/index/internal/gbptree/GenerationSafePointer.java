@@ -19,12 +19,12 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.neo4j.io.pagecache.PageCursor;
-
 import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.get6BLong;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.getUnsignedInt;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.put6BLong;
+
+import org.neo4j.io.pagecache.PageCursor;
 
 /**
  * Provides static methods for getting and manipulating GSP (generation-safe pointer) data.
@@ -46,8 +46,7 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.put6BLong;
  * <li>{@link #verifyChecksum(PageCursor, long, long)}</li>
  * </ol>
  */
-class GenerationSafePointer
-{
+class GenerationSafePointer {
     private static final int EMPTY_POINTER = 0;
     static final int EMPTY_GENERATION = 0;
 
@@ -62,14 +61,9 @@ class GenerationSafePointer
     static final int GENERATION_SIZE = 4;
     static final int POINTER_SIZE = 6;
     static final int CHECKSUM_SIZE = 2;
-    static final int SIZE =
-            GENERATION_SIZE +
-            POINTER_SIZE +
-            CHECKSUM_SIZE;
+    static final int SIZE = GENERATION_SIZE + POINTER_SIZE + CHECKSUM_SIZE;
 
-    private GenerationSafePointer()
-    {
-    }
+    private GenerationSafePointer() {}
 
     /**
      * Writes GSP at the given {@code offset}, the two fields (generation, pointer) + a checksum will be written.
@@ -78,62 +72,51 @@ class GenerationSafePointer
      * @param generation generation to write.
      * @param pointer pointer to write.
      */
-    static void write( PageCursor cursor, long generation, long pointer )
-    {
-        assertGenerationOnWrite( generation );
-        assertPointerOnWrite( pointer );
-        writeGSP( cursor, generation, pointer );
+    static void write(PageCursor cursor, long generation, long pointer) {
+        assertGenerationOnWrite(generation);
+        assertPointerOnWrite(pointer);
+        writeGSP(cursor, generation, pointer);
     }
 
-    private static void writeGSP( PageCursor cursor, long generation, long pointer )
-    {
-        cursor.putInt( (int) generation );
-        put6BLong( cursor, pointer );
-        cursor.putShort( checksumOf( generation, pointer ) );
+    private static void writeGSP(PageCursor cursor, long generation, long pointer) {
+        cursor.putInt((int) generation);
+        put6BLong(cursor, pointer);
+        cursor.putShort(checksumOf(generation, pointer));
     }
 
-    static void clean( PageCursor cursor )
-    {
-        writeGSP( cursor, EMPTY_GENERATION, EMPTY_POINTER );
+    static void clean(PageCursor cursor) {
+        writeGSP(cursor, EMPTY_GENERATION, EMPTY_POINTER);
     }
 
-    static void assertGenerationOnWrite( long generation )
-    {
-        if ( generation < MIN_GENERATION || generation > MAX_GENERATION )
-        {
-            throw new IllegalArgumentException( "Can not write pointer with generation " + generation +
-                    " because outside boundary for valid generation." );
+    static void assertGenerationOnWrite(long generation) {
+        if (generation < MIN_GENERATION || generation > MAX_GENERATION) {
+            throw new IllegalArgumentException("Can not write pointer with generation " + generation
+                    + " because outside boundary for valid generation.");
         }
     }
 
-    private static void assertPointerOnWrite( long pointer )
-    {
-        if ( (pointer > MAX_POINTER || pointer < MIN_POINTER) && TreeNode.isNode( pointer ) )
-        {
-            throw new IllegalArgumentException( "Can not write pointer " + pointer +
-                    " because outside boundary for valid pointer" );
+    private static void assertPointerOnWrite(long pointer) {
+        if ((pointer > MAX_POINTER || pointer < MIN_POINTER) && TreeNode.isNode(pointer)) {
+            throw new IllegalArgumentException(
+                    "Can not write pointer " + pointer + " because outside boundary for valid pointer");
         }
     }
 
-    static long readGeneration( PageCursor cursor )
-    {
-        return getUnsignedInt( cursor );
+    static long readGeneration(PageCursor cursor) {
+        return getUnsignedInt(cursor);
     }
 
-    static long readPointer( PageCursor cursor )
-    {
-        return get6BLong( cursor );
+    static long readPointer(PageCursor cursor) {
+        return get6BLong(cursor);
     }
 
-    static short readChecksum( PageCursor cursor )
-    {
+    static short readChecksum(PageCursor cursor) {
         return cursor.getShort();
     }
 
-    static boolean verifyChecksum( PageCursor cursor, long generation, long pointer )
-    {
+    static boolean verifyChecksum(PageCursor cursor, long generation, long pointer) {
         short checksum = cursor.getShort();
-        return checksum == checksumOf( generation, pointer );
+        return checksum == checksumOf(generation, pointer);
     }
 
     /**
@@ -144,8 +127,7 @@ class GenerationSafePointer
      *
      * @return a {@code short} which is the checksum of the generation-pointer.
      */
-    static short checksumOf( long generation, long pointer )
-    {
+    static short checksumOf(long generation, long pointer) {
         short result = 0;
         result ^= ((short) generation) & UNSIGNED_SHORT_MASK;
         result ^= ((short) (generation >>> Short.SIZE)) & UNSIGNED_SHORT_MASK;
@@ -155,14 +137,13 @@ class GenerationSafePointer
         return result;
     }
 
-    public static boolean isEmpty( long generation, long pointer )
-    {
+    public static boolean isEmpty(long generation, long pointer) {
         return generation == EMPTY_GENERATION && pointer == EMPTY_POINTER;
     }
 
-    static String toString( long generation, long pointer, short checksum, boolean correctChecksum )
-    {
-        return format( "GSP[generation=%d, pointer=%d, checksum=%s]",
-                generation, pointer, checksum + (correctChecksum ? "(OK)" : "(NOT OK)") );
+    static String toString(long generation, long pointer, short checksum, boolean correctChecksum) {
+        return format(
+                "GSP[generation=%d, pointer=%d, checksum=%s]",
+                generation, pointer, checksum + (correctChecksum ? "(OK)" : "(NOT OK)"));
     }
 }

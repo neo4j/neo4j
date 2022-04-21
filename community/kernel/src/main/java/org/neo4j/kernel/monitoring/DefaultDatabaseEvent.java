@@ -22,23 +22,19 @@ package org.neo4j.kernel.monitoring;
 import org.neo4j.graphdb.event.DatabaseEventContext;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-public class DefaultDatabaseEvent implements DatabaseEventContext
-{
+public class DefaultDatabaseEvent implements DatabaseEventContext {
     private final NamedDatabaseId databaseId;
 
-    public DefaultDatabaseEvent( NamedDatabaseId databaseId )
-    {
+    public DefaultDatabaseEvent(NamedDatabaseId databaseId) {
         this.databaseId = databaseId;
     }
 
     @Override
-    public String getDatabaseName()
-    {
+    public String getDatabaseName() {
         return databaseId.name();
     }
 
-    public NamedDatabaseId getDatabaseId()
-    {
+    public NamedDatabaseId getDatabaseId() {
         return databaseId;
     }
 }

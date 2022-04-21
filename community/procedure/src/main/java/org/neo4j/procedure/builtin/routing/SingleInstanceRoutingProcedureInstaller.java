@@ -19,17 +19,15 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
-import java.util.List;
+import static org.neo4j.procedure.builtin.routing.RoutingTableTTLProvider.ttlFromConfig;
 
+import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.logging.InternalLogProvider;
 
-import static org.neo4j.procedure.builtin.routing.RoutingTableTTLProvider.ttlFromConfig;
-
-public final class SingleInstanceRoutingProcedureInstaller extends AbstractRoutingProcedureInstaller
-{
+public final class SingleInstanceRoutingProcedureInstaller extends AbstractRoutingProcedureInstaller {
     private static final String DESCRIPTION = "Returns endpoints of this instance.";
 
     private final DatabaseManager<?> databaseManager;
@@ -38,9 +36,12 @@ public final class SingleInstanceRoutingProcedureInstaller extends AbstractRouti
     private final Config config;
     private final InternalLogProvider logProvider;
 
-    public SingleInstanceRoutingProcedureInstaller( DatabaseManager<?> databaseManager, ClientRoutingDomainChecker clientRoutingDomainChecker,
-                                                    ConnectorPortRegister portRegister, Config config, InternalLogProvider logProvider )
-    {
+    public SingleInstanceRoutingProcedureInstaller(
+            DatabaseManager<?> databaseManager,
+            ClientRoutingDomainChecker clientRoutingDomainChecker,
+            ConnectorPortRegister portRegister,
+            Config config,
+            InternalLogProvider logProvider) {
         this.databaseManager = databaseManager;
         this.clientRoutingDomainChecker = clientRoutingDomainChecker;
         this.portRegister = portRegister;
@@ -49,13 +50,19 @@ public final class SingleInstanceRoutingProcedureInstaller extends AbstractRouti
     }
 
     @Override
-    public GetRoutingTableProcedure createProcedure( List<String> namespace )
-    {
-        LocalRoutingTableProcedureValidator validator = new LocalRoutingTableProcedureValidator( databaseManager );
+    public GetRoutingTableProcedure createProcedure(List<String> namespace) {
+        LocalRoutingTableProcedureValidator validator = new LocalRoutingTableProcedureValidator(databaseManager);
         SingleAddressRoutingTableProvider routingTableProvider = new SingleAddressRoutingTableProvider(
-                portRegister, RoutingOption.ROUTE_WRITE_AND_READ, config, logProvider, ttlFromConfig( config ) );
+                portRegister, RoutingOption.ROUTE_WRITE_AND_READ, config, logProvider, ttlFromConfig(config));
 
-        return new GetRoutingTableProcedure( namespace, DESCRIPTION, databaseManager, validator, routingTableProvider, clientRoutingDomainChecker,
-                                             config, logProvider );
+        return new GetRoutingTableProcedure(
+                namespace,
+                DESCRIPTION,
+                databaseManager,
+                validator,
+                routingTableProvider,
+                clientRoutingDomainChecker,
+                config,
+                logProvider);
     }
 }

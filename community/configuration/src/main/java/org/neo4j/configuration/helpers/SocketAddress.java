@@ -19,42 +19,36 @@
  */
 package org.neo4j.configuration.helpers;
 
+import static java.util.Arrays.asList;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
+
 import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-
 import org.neo4j.annotations.api.PublicApi;
-
-import static java.util.Arrays.asList;
-import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 /**
  * Socket address derived from configuration.
  * There is no network awareness at all, just stores the raw configuration exactly as it comes.
  */
 @PublicApi
-public class SocketAddress
-{
-    private static final Set<String> WILDCARDS = new HashSet<>( asList( "0.0.0.0", "::" ) );
+public class SocketAddress {
+    private static final Set<String> WILDCARDS = new HashSet<>(asList("0.0.0.0", "::"));
     private final String hostname;
     private final int port;
 
-    public SocketAddress( String hostname )
-    {
-        this( hostname, -1 );
+    public SocketAddress(String hostname) {
+        this(hostname, -1);
     }
 
-    public SocketAddress( int port )
-    {
-        this( null, port );
+    public SocketAddress(int port) {
+        this(null, port);
     }
 
-    public SocketAddress( String hostname, int port )
-    {
-        if ( hostname != null && (hostname.contains( "[" ) || hostname.contains( "]" )) )
-        {
-            throw new IllegalArgumentException( "hostname cannot contain '[' or ']'" );
+    public SocketAddress(String hostname, int port) {
+        if (hostname != null && (hostname.contains("[") || hostname.contains("]"))) {
+            throw new IllegalArgumentException("hostname cannot contain '[' or ']'");
         }
 
         this.hostname = hostname != null ? hostname : "";
@@ -64,80 +58,65 @@ public class SocketAddress
     /**
      * @return hostname or IP address; we don't care.
      */
-    public String getHostname()
-    {
+    public String getHostname() {
         return hostname;
     }
 
-    public int getPort()
-    {
+    public int getPort() {
         return port;
     }
 
-    public InetSocketAddress socketAddress()
-    {
-        return new InetSocketAddress( hostname, port );
+    public InetSocketAddress socketAddress() {
+        return new InetSocketAddress(hostname, port);
     }
 
-    public boolean isWildcard()
-    {
-        return WILDCARDS.contains( hostname );
+    public boolean isWildcard() {
+        return WILDCARDS.contains(hostname);
     }
 
-    public boolean isIPv6()
-    {
-        return isHostnameIPv6( hostname );
+    public boolean isIPv6() {
+        return isHostnameIPv6(hostname);
     }
 
     @Override
-    public String toString()
-    {
-        return format( hostname, port );
+    public String toString() {
+        return format(hostname, port);
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         SocketAddress that = (SocketAddress) o;
-        return port == that.port && Objects.equals( hostname, that.hostname );
+        return port == that.port && Objects.equals(hostname, that.hostname);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( hostname, port );
+    public int hashCode() {
+        return Objects.hash(hostname, port);
     }
 
-    public static String format( java.net.SocketAddress address )
-    {
-        if ( address instanceof InetSocketAddress inetSocketAddress )
-        {
-            return format( inetSocketAddress.getHostString(), inetSocketAddress.getPort() );
+    public static String format(java.net.SocketAddress address) {
+        if (address instanceof InetSocketAddress inetSocketAddress) {
+            return format(inetSocketAddress.getHostString(), inetSocketAddress.getPort());
         }
         return address == null ? EMPTY : address.toString();
     }
 
-    public static String format( String hostname, int port )
-    {
-        String portStr = port >= 0 ? String.format( ":%s", port ) : "";
+    public static String format(String hostname, int port) {
+        String portStr = port >= 0 ? String.format(":%s", port) : "";
         String hostnameStr = "";
-        if ( hostname != null )
-        {
-            hostnameStr = isHostnameIPv6( hostname ) ? String.format( "[%s]", hostname ) : hostname;
+        if (hostname != null) {
+            hostnameStr = isHostnameIPv6(hostname) ? String.format("[%s]", hostname) : hostname;
         }
         return hostnameStr + portStr;
     }
 
-    private static boolean isHostnameIPv6( String hostname )
-    {
-        return hostname.contains( ":" );
+    private static boolean isHostnameIPv6(String hostname) {
+        return hostname.contains(":");
     }
 }

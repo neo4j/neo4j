@@ -19,10 +19,13 @@
  */
 package org.neo4j.graphdb.factory.module.edition;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import java.util.function.Predicate;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.factory.module.ModularDatabaseCreationContext;
@@ -38,47 +41,37 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-
 @Neo4jLayoutExtension
-class CommunityEditionModuleIntegrationTest
-{
+class CommunityEditionModuleIntegrationTest {
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private RecordDatabaseLayout databaseLayout;
 
     @Test
-    void createBufferedIdComponentsByDefault()
-    {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).build();
-        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        try
-        {
+    void createBufferedIdComponentsByDefault() {
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder(testDirectory.homePath()).build();
+        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+        try {
             DependencyResolver dependencyResolver = database.getDependencyResolver();
-            IdController idController = dependencyResolver.resolveDependency( IdController.class );
-            IdGeneratorFactory idGeneratorFactory = dependencyResolver.resolveDependency( IdGeneratorFactory.class );
+            IdController idController = dependencyResolver.resolveDependency(IdController.class);
+            IdGeneratorFactory idGeneratorFactory = dependencyResolver.resolveDependency(IdGeneratorFactory.class);
 
-            assertThat( idController ).isInstanceOf( BufferedIdController.class );
-            assertThat( idGeneratorFactory ).isInstanceOf( BufferingIdGeneratorFactory.class );
-        }
-        finally
-        {
+            assertThat(idController).isInstanceOf(BufferedIdController.class);
+            assertThat(idGeneratorFactory).isInstanceOf(BufferingIdGeneratorFactory.class);
+        } finally {
             managementService.shutdown();
         }
     }
 
     @Test
-    void fileWatcherFileNameFilter()
-    {
+    void fileWatcherFileNameFilter() {
         Predicate<String> filter = ModularDatabaseCreationContext.defaultFileWatcherFilter();
-        assertFalse( filter.test( databaseLayout.metadataStore().getFileName().toString() ) );
-        assertFalse( filter.test( databaseLayout.nodeStore().getFileName().toString() ) );
-        assertTrue( filter.test( TransactionLogFilesHelper.DEFAULT_NAME + ".1" ) );
-        assertTrue( filter.test( TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX + ".1" ) );
+        assertFalse(filter.test(databaseLayout.metadataStore().getFileName().toString()));
+        assertFalse(filter.test(databaseLayout.nodeStore().getFileName().toString()));
+        assertTrue(filter.test(TransactionLogFilesHelper.DEFAULT_NAME + ".1"));
+        assertTrue(filter.test(TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX + ".1"));
     }
-
 }

@@ -19,22 +19,19 @@
  */
 package org.neo4j.bolt.transport.pipeline;
 
-import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-
-import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
-
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-class KeepAliveHandlerTest
-{
+import io.netty.channel.embedded.EmbeddedChannel;
+import java.io.IOException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
+
+class KeepAliveHandlerTest {
 
     private static final long KEEP_ALIVE_TIMEOUT_SECONDS = 1;
 
@@ -43,37 +40,33 @@ class KeepAliveHandlerTest
     private EmbeddedChannel channel;
 
     @BeforeEach
-    void setupChannel() throws IOException
-    {
-        messageWriter = mock( BoltResponseMessageWriter.class );
-        handler = new KeepAliveHandler( KEEP_ALIVE_TIMEOUT_SECONDS, messageWriter );
+    void setupChannel() throws IOException {
+        messageWriter = mock(BoltResponseMessageWriter.class);
+        handler = new KeepAliveHandler(KEEP_ALIVE_TIMEOUT_SECONDS, messageWriter);
 
-        channel = new EmbeddedChannel( handler );
+        channel = new EmbeddedChannel(handler);
     }
 
-    private void sleepUntilTimeout() throws InterruptedException
-    {
-        Thread.sleep( KEEP_ALIVE_TIMEOUT_SECONDS + 500 );
+    private void sleepUntilTimeout() throws InterruptedException {
+        Thread.sleep(KEEP_ALIVE_TIMEOUT_SECONDS + 500);
     }
 
     @Test
-    void shouldFlushBufferOrSendKeepAliveWhenActive() throws IOException, InterruptedException
-    {
-        handler.setActive( true );
+    void shouldFlushBufferOrSendKeepAliveWhenActive() throws IOException, InterruptedException {
+        handler.setActive(true);
 
         sleepUntilTimeout();
         channel.runPendingTasks();
 
-        verify( messageWriter, atLeastOnce() ).flushBufferOrSendKeepAlive();
-        verifyNoMoreInteractions( messageWriter );
+        verify(messageWriter, atLeastOnce()).flushBufferOrSendKeepAlive();
+        verifyNoMoreInteractions(messageWriter);
     }
 
     @Test
-    void shouldIgnoreIdleConnectionsWhenInactive() throws InterruptedException
-    {
+    void shouldIgnoreIdleConnectionsWhenInactive() throws InterruptedException {
         sleepUntilTimeout();
         channel.runPendingTasks();
 
-        verifyNoInteractions( messageWriter );
+        verifyNoInteractions(messageWriter);
     }
 }

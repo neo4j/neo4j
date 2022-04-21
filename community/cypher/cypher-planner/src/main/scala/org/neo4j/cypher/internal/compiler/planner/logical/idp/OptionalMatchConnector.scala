@@ -27,13 +27,15 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case object OptionalMatchConnector
-  extends ComponentConnector {
+    extends ComponentConnector {
 
-  override def solverStep(goalBitAllocation: GoalBitAllocation,
-                          queryGraph: QueryGraph,
-                          interestingOrderConfig: InterestingOrderConfig,
-                          kit: QueryPlannerKit,
-                          context: LogicalPlanningContext): ComponentConnectorSolverStep = {
+  override def solverStep(
+    goalBitAllocation: GoalBitAllocation,
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    kit: QueryPlannerKit,
+    context: LogicalPlanningContext
+  ): ComponentConnectorSolverStep = {
 
     // A map from each OPTIONAL MATCH QueryGraph to solvers that can connect the plan for that optional match
     // to the current LHS plan.

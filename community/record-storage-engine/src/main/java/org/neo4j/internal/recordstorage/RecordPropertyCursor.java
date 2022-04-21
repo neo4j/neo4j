@@ -19,11 +19,13 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
+import static org.neo4j.internal.recordstorage.InconsistentDataReadException.CYCLE_DETECTION_THRESHOLD;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.ALWAYS;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.nio.ByteBuffer;
-
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.common.EntityType;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.ScopedBuffer;
@@ -58,12 +60,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.internal.recordstorage.InconsistentDataReadException.CYCLE_DETECTION_THRESHOLD;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.ALWAYS;
-import static org.neo4j.values.storable.Values.NO_VALUE;
-
-public class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCursor
-{
+public class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCursor {
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
     private static final int INITIAL_POSITION = -1;
     public static final int DEFAULT_PROPERTY_BUFFER_CAPACITY = 512;
@@ -89,9 +86,8 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     private PropertySelection selection;
     private int propertyKey;
 
-    RecordPropertyCursor( PropertyStore propertyStore, CursorContext cursorContext, MemoryTracker memoryTracker )
-    {
-        super( NO_ID );
+    RecordPropertyCursor(PropertyStore propertyStore, CursorContext cursorContext, MemoryTracker memoryTracker) {
+        super(NO_ID);
         this.propertyStore = propertyStore;
         this.cursorContext = cursorContext;
         this.memoryTracker = memoryTracker;
@@ -99,15 +95,13 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     }
 
     @Override
-    public void initNodeProperties( Reference reference, PropertySelection selection, long ownerReference )
-    {
-        init( reference, selection, ownerReference, EntityType.NODE );
+    public void initNodeProperties(Reference reference, PropertySelection selection, long ownerReference) {
+        init(reference, selection, ownerReference, EntityType.NODE);
     }
 
     @Override
-    public void initRelationshipProperties( Reference reference, PropertySelection selection, long ownerReference )
-    {
-        init( reference, selection, ownerReference, EntityType.RELATIONSHIP );
+    public void initRelationshipProperties(Reference reference, PropertySelection selection, long ownerReference) {
+        init(reference, selection, ownerReference, EntityType.RELATIONSHIP);
     }
 
     /**
@@ -115,23 +109,20 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
      * @param reference properties reference, actual property record id.
      * @param selection which properties to read.
      */
-    private void init( Reference reference, PropertySelection selection, long ownerReference, EntityType ownerEntityType )
-    {
-        if ( getId() != NO_ID )
-        {
+    private void init(
+            Reference reference, PropertySelection selection, long ownerReference, EntityType ownerEntityType) {
+        if (getId() != NO_ID) {
             clear();
         }
 
-        //Set to high value to force a read
+        // Set to high value to force a read
         long referenceId = ((LongReference) reference).id;
         this.block = Integer.MAX_VALUE;
         this.ownerReference = ownerReference;
         this.ownerEntityType = ownerEntityType;
-        if ( referenceId != NO_ID )
-        {
-            if ( page == null )
-            {
-                page = propertyPage( referenceId );
+        if (referenceId != NO_ID) {
+            if (page == null) {
+                page = propertyPage(referenceId);
             }
         }
 
@@ -145,78 +136,62 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     }
 
     @Override
-    public boolean next()
-    {
-        while ( true )
-        {
-            //Figure out number of blocks of record
+    public boolean next() {
+        while (true) {
+            // Figure out number of blocks of record
             int numberOfBlocks = getNumberOfBlocks();
-            while ( block < numberOfBlocks )
-            {
-                //We have just read a record, so we are at the beginning
-                if ( block == INITIAL_POSITION )
-                {
+            while (block < numberOfBlocks) {
+                // We have just read a record, so we are at the beginning
+                if (block == INITIAL_POSITION) {
                     block = 0;
-                }
-                else
-                {
-                    //Figure out the type and how many blocks that are used
+                } else {
+                    // Figure out the type and how many blocks that are used
                     long current = currentBlock();
-                    PropertyType type = PropertyType.getPropertyTypeOrNull( current );
-                    if ( type == null )
-                    {
+                    PropertyType type = PropertyType.getPropertyTypeOrNull(current);
+                    if (type == null) {
                         break;
                     }
-                    block += type.calculateNumberOfBlocksUsed( current );
+                    block += type.calculateNumberOfBlocksUsed(current);
                 }
-                //nothing left, need to read a new record
-                if ( block >= numberOfBlocks || type() == null )
-                {
+                // nothing left, need to read a new record
+                if (block >= numberOfBlocks || type() == null) {
                     break;
                 }
 
-                propertyKey = PropertyBlock.keyIndexId( currentBlock() );
-                if ( selection.test( propertyKey ) )
-                {
+                propertyKey = PropertyBlock.keyIndexId(currentBlock());
+                if (selection.test(propertyKey)) {
                     return true;
                 }
             }
 
-            if ( next == NO_ID )
-            {
+            if (next == NO_ID) {
                 return false;
             }
 
-            property( this, next, page );
+            property(this, next, page);
             next = getNextProp();
             block = INITIAL_POSITION;
 
-            if ( ++numSeenPropertyRecords >= CYCLE_DETECTION_THRESHOLD )
-            {
-                if ( cycleDetection == null )
-                {
+            if (++numSeenPropertyRecords >= CYCLE_DETECTION_THRESHOLD) {
+                if (cycleDetection == null) {
                     cycleDetection = LongSets.mutable.empty();
                 }
-                if ( !cycleDetection.add( next ) )
-                {
+                if (!cycleDetection.add(next)) {
                     throw new InconsistentDataReadException(
-                            "Aborting property reading due to detected chain cycle, starting at property record id:%d from owner %s:%d", first,
-                            ownerEntityType, ownerReference );
+                            "Aborting property reading due to detected chain cycle, starting at property record id:%d from owner %s:%d",
+                            first, ownerEntityType, ownerReference);
                 }
             }
         }
     }
 
-    private long currentBlock()
-    {
+    private long currentBlock() {
         return getBlocks()[block];
     }
 
     @Override
-    public void reset()
-    {
-        if ( open )
-        {
+    public void reset() {
+        if (open) {
             open = false;
             loadMode = RecordLoadOverride.none();
             clear();
@@ -228,317 +203,268 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     }
 
     @Override
-    public void setForceLoad()
-    {
+    public void setForceLoad() {
         this.loadMode = RecordLoadOverride.FORCE;
     }
 
     @Override
-    public int propertyKey()
-    {
+    public int propertyKey() {
         return propertyKey;
     }
 
     @Override
-    public ValueGroup propertyType()
-    {
+    public ValueGroup propertyType() {
         PropertyType type = type();
-        if ( type == null )
-        {
+        if (type == null) {
             return ValueGroup.NO_VALUE;
         }
-        switch ( type )
-        {
-        case BOOL:
-            return ValueGroup.BOOLEAN;
-        case BYTE:
-        case SHORT:
-        case INT:
-        case LONG:
-        case FLOAT:
-        case DOUBLE:
-            return ValueGroup.NUMBER;
-        case STRING:
-        case CHAR:
-        case SHORT_STRING:
-            return ValueGroup.TEXT;
-        case TEMPORAL:
-        case GEOMETRY:
-        case SHORT_ARRAY:
-        case ARRAY:
-            // value read is needed to get correct value group since type is not fine grained enough to match all ValueGroups
-            return propertyValue().valueGroup();
-        default:
-            throw new UnsupportedOperationException( "not implemented" );
+        switch (type) {
+            case BOOL:
+                return ValueGroup.BOOLEAN;
+            case BYTE:
+            case SHORT:
+            case INT:
+            case LONG:
+            case FLOAT:
+            case DOUBLE:
+                return ValueGroup.NUMBER;
+            case STRING:
+            case CHAR:
+            case SHORT_STRING:
+                return ValueGroup.TEXT;
+            case TEMPORAL:
+            case GEOMETRY:
+            case SHORT_ARRAY:
+            case ARRAY:
+                // value read is needed to get correct value group since type is not fine grained enough to match all
+                // ValueGroups
+                return propertyValue().valueGroup();
+            default:
+                throw new UnsupportedOperationException("not implemented");
         }
     }
 
-    private PropertyType type()
-    {
-        return PropertyType.getPropertyTypeOrNull( currentBlock() );
+    private PropertyType type() {
+        return PropertyType.getPropertyTypeOrNull(currentBlock());
     }
 
     @Override
-    public Value propertyValue()
-    {
-        try
-        {
+    public Value propertyValue() {
+        try {
             return readValue();
-        }
-        catch ( InvalidRecordException | InconsistentDataReadException e )
-        {
-            throw new InconsistentDataReadException( e, "Unable to read property value in record:%d, starting at property record id:%d from owner %s:%d",
-                    getId(), first, ownerEntityType, ownerReference );
+        } catch (InvalidRecordException | InconsistentDataReadException e) {
+            throw new InconsistentDataReadException(
+                    e,
+                    "Unable to read property value in record:%d, starting at property record id:%d from owner %s:%d",
+                    getId(),
+                    first,
+                    ownerEntityType,
+                    ownerReference);
         }
     }
 
-    private Value readValue()
-    {
+    private Value readValue() {
         PropertyType type = type();
-        if ( type == null )
-        {
+        if (type == null) {
             return NO_VALUE;
         }
-        switch ( type )
-        {
-        case BOOL:
-            return readBoolean();
-        case BYTE:
-            return readByte();
-        case SHORT:
-            return readShort();
-        case INT:
-            return readInt();
-        case LONG:
-            return readLong();
-        case FLOAT:
-            return readFloat();
-        case DOUBLE:
-            return readDouble();
-        case CHAR:
-            return readChar();
-        case SHORT_STRING:
-            return readShortString();
-        case SHORT_ARRAY:
-            return readShortArray();
-        case STRING:
-            return readLongString();
-        case ARRAY:
-            return readLongArray();
-        case GEOMETRY:
-            return geometryValue();
-        case TEMPORAL:
-            return temporalValue();
-        default:
-            throw new IllegalStateException( "Unsupported PropertyType: " + type.name() );
+        switch (type) {
+            case BOOL:
+                return readBoolean();
+            case BYTE:
+                return readByte();
+            case SHORT:
+                return readShort();
+            case INT:
+                return readInt();
+            case LONG:
+                return readLong();
+            case FLOAT:
+                return readFloat();
+            case DOUBLE:
+                return readDouble();
+            case CHAR:
+                return readChar();
+            case SHORT_STRING:
+                return readShortString();
+            case SHORT_ARRAY:
+                return readShortArray();
+            case STRING:
+                return readLongString();
+            case ARRAY:
+                return readLongArray();
+            case GEOMETRY:
+                return geometryValue();
+            case TEMPORAL:
+                return temporalValue();
+            default:
+                throw new IllegalStateException("Unsupported PropertyType: " + type.name());
         }
     }
 
-    private Value geometryValue()
-    {
-        return GeometryType.decode( getBlocks(), block );
+    private Value geometryValue() {
+        return GeometryType.decode(getBlocks(), block);
     }
 
-    private Value temporalValue()
-    {
-        return TemporalType.decode( getBlocks(), block );
+    private Value temporalValue() {
+        return TemporalType.decode(getBlocks(), block);
     }
 
-    private ArrayValue readLongArray()
-    {
-        long reference = PropertyBlock.fetchLong( currentBlock() );
-        if ( arrayPage == null )
-        {
-            arrayPage = arrayPage( reference );
+    private ArrayValue readLongArray() {
+        long reference = PropertyBlock.fetchLong(currentBlock());
+        if (arrayPage == null) {
+            arrayPage = arrayPage(reference);
         }
-        return array( this, reference, arrayPage );
+        return array(this, reference, arrayPage);
     }
 
-    private TextValue readLongString()
-    {
-        long reference = PropertyBlock.fetchLong( currentBlock() );
-        if ( stringPage == null )
-        {
-            stringPage = stringPage( reference );
+    private TextValue readLongString() {
+        long reference = PropertyBlock.fetchLong(currentBlock());
+        if (stringPage == null) {
+            stringPage = stringPage(reference);
         }
-        return string( this, reference, stringPage );
+        return string(this, reference, stringPage);
     }
 
-    private Value readShortArray()
-    {
-        Bits bits = Bits.bits( MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY );
-        int blocksUsed = ShortArray.calculateNumberOfBlocksUsed( currentBlock() );
-        for ( int i = 0; i < blocksUsed; i++ )
-        {
-            bits.put( getBlocks()[block + i] );
+    private Value readShortArray() {
+        Bits bits = Bits.bits(MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY);
+        int blocksUsed = ShortArray.calculateNumberOfBlocksUsed(currentBlock());
+        for (int i = 0; i < blocksUsed; i++) {
+            bits.put(getBlocks()[block + i]);
         }
-        return ShortArray.decode( bits );
+        return ShortArray.decode(bits);
     }
 
-    private TextValue readShortString()
-    {
-        return LongerShortString.decode( getBlocks(), block );
+    private TextValue readShortString() {
+        return LongerShortString.decode(getBlocks(), block);
     }
 
-    private TextValue readChar()
-    {
-        return Values.charValue( (char) PropertyBlock.fetchShort( currentBlock() ) );
+    private TextValue readChar() {
+        return Values.charValue((char) PropertyBlock.fetchShort(currentBlock()));
     }
 
-    private DoubleValue readDouble()
-    {
-        return Values.doubleValue( Double.longBitsToDouble( getBlocks()[block + 1] ) );
+    private DoubleValue readDouble() {
+        return Values.doubleValue(Double.longBitsToDouble(getBlocks()[block + 1]));
     }
 
-    private FloatValue readFloat()
-    {
-        return Values.floatValue( Float.intBitsToFloat( PropertyBlock.fetchInt( currentBlock() ) ) );
+    private FloatValue readFloat() {
+        return Values.floatValue(Float.intBitsToFloat(PropertyBlock.fetchInt(currentBlock())));
     }
 
-    private LongValue readLong()
-    {
-        if ( PropertyBlock.valueIsInlined( currentBlock() ) )
-        {
-            return Values.longValue( PropertyBlock.fetchLong( currentBlock() ) >>> 1 );
-        }
-        else
-        {
-            return Values.longValue( getBlocks()[block + 1] );
+    private LongValue readLong() {
+        if (PropertyBlock.valueIsInlined(currentBlock())) {
+            return Values.longValue(PropertyBlock.fetchLong(currentBlock()) >>> 1);
+        } else {
+            return Values.longValue(getBlocks()[block + 1]);
         }
     }
 
-    private IntValue readInt()
-    {
-        return Values.intValue( PropertyBlock.fetchInt( currentBlock() ) );
+    private IntValue readInt() {
+        return Values.intValue(PropertyBlock.fetchInt(currentBlock()));
     }
 
-    private ShortValue readShort()
-    {
-        return Values.shortValue( PropertyBlock.fetchShort( currentBlock() ) );
+    private ShortValue readShort() {
+        return Values.shortValue(PropertyBlock.fetchShort(currentBlock()));
     }
 
-    private ByteValue readByte()
-    {
-        return Values.byteValue( PropertyBlock.fetchByte( currentBlock() ) );
+    private ByteValue readByte() {
+        return Values.byteValue(PropertyBlock.fetchByte(currentBlock()));
     }
 
-    private BooleanValue readBoolean()
-    {
-        return Values.booleanValue( PropertyBlock.fetchByte( currentBlock() ) == 1 );
+    private BooleanValue readBoolean() {
+        return Values.booleanValue(PropertyBlock.fetchByte(currentBlock()) == 1);
     }
 
     @Override
-    public PropertyRecord copy()
-    {
-        throw new UnsupportedOperationException( "Record cursors are not copyable." );
+    public PropertyRecord copy() {
+        throw new UnsupportedOperationException("Record cursors are not copyable.");
     }
 
     @Override
-    public String toString()
-    {
-        if ( !open )
-        {
+    public String toString() {
+        if (!open) {
             return "PropertyCursor[closed state]";
-        }
-        else
-        {
-            return "PropertyCursor[id=" + getId() + ", open state with: block=" + block + ", next=" + next +
-                   ", underlying record=" + super.toString() + "]";
+        } else {
+            return "PropertyCursor[id=" + getId() + ", open state with: block=" + block + ", next=" + next
+                    + ", underlying record=" + super.toString() + "]";
         }
     }
 
     @Override
-    public void close()
-    {
-        if ( stringPage != null )
-        {
+    public void close() {
+        if (stringPage != null) {
             stringPage.close();
             stringPage = null;
         }
-        if ( arrayPage != null )
-        {
+        if (arrayPage != null) {
             arrayPage.close();
             arrayPage = null;
         }
-        if ( page != null )
-        {
+        if (page != null) {
             page.close();
             page = null;
         }
-        if ( scopedBuffer != null )
-        {
+        if (scopedBuffer != null) {
             scopedBuffer.close();
             scopedBuffer = null;
             buffer = null;
         }
     }
 
-    private PageCursor propertyPage( long reference )
-    {
-        return propertyStore.openPageCursorForReading( reference, cursorContext );
+    private PageCursor propertyPage(long reference) {
+        return propertyStore.openPageCursorForReading(reference, cursorContext);
     }
 
-    private PageCursor stringPage( long reference )
-    {
-        return propertyStore.openStringPageCursor( reference, cursorContext );
+    private PageCursor stringPage(long reference) {
+        return propertyStore.openStringPageCursor(reference, cursorContext);
     }
 
-    private PageCursor arrayPage( long reference )
-    {
-        return propertyStore.openArrayPageCursor( reference, cursorContext );
+    private PageCursor arrayPage(long reference) {
+        return propertyStore.openArrayPageCursor(reference, cursorContext);
     }
 
-    private void property( PropertyRecord record, long reference, PageCursor pageCursor )
-    {
+    private void property(PropertyRecord record, long reference, PageCursor pageCursor) {
         // We need to load forcefully here since otherwise we can have inconsistent reads
         // for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
-        propertyStore.getRecordByCursor( reference, record, loadMode.orElse( ALWAYS ), pageCursor );
+        propertyStore.getRecordByCursor(reference, record, loadMode.orElse(ALWAYS), pageCursor);
     }
 
-    private TextValue string( RecordPropertyCursor cursor, long reference, PageCursor page )
-    {
-        propertyStore.loadString( reference, cursor, page, loadMode.orElse( ALWAYS ) );
+    private TextValue string(RecordPropertyCursor cursor, long reference, PageCursor page) {
+        propertyStore.loadString(reference, cursor, page, loadMode.orElse(ALWAYS));
         buffer.flip();
         byte[] bytes = new byte[buffer.limit()];
-        buffer.get( bytes );
-        return Values.utf8Value( bytes );
+        buffer.get(bytes);
+        return Values.utf8Value(bytes);
     }
 
-    private ArrayValue array( RecordPropertyCursor cursor, long reference, PageCursor page )
-    {
-        propertyStore.loadArray( reference, cursor, page, loadMode.orElse( ALWAYS ) );
+    private ArrayValue array(RecordPropertyCursor cursor, long reference, PageCursor page) {
+        propertyStore.loadArray(reference, cursor, page, loadMode.orElse(ALWAYS));
         buffer.flip();
-        return PropertyStore.readArrayFromBuffer( buffer );
+        return PropertyStore.readArrayFromBuffer(buffer);
     }
 
-    public void setScopedBuffer( ScopedBuffer scopedBuffer )
-    {
+    public void setScopedBuffer(ScopedBuffer scopedBuffer) {
         this.scopedBuffer = scopedBuffer;
         this.buffer = scopedBuffer.getBuffer();
     }
 
-    public ByteBuffer getOrCreateClearBuffer()
-    {
-        if ( buffer == null )
-        {
-            setScopedBuffer( new HeapScopedBuffer( DEFAULT_PROPERTY_BUFFER_CAPACITY, memoryTracker ) );
-        }
-        else
-        {
+    public ByteBuffer getOrCreateClearBuffer() {
+        if (buffer == null) {
+            setScopedBuffer(new HeapScopedBuffer(DEFAULT_PROPERTY_BUFFER_CAPACITY, memoryTracker));
+        } else {
             buffer.clear();
         }
         return buffer;
     }
 
-    public ByteBuffer growBuffer( int minAdditionalCapacity )
-    {
+    public ByteBuffer growBuffer(int minAdditionalCapacity) {
         buffer.flip();
         int oldCapacity = buffer.capacity();
-        int newCapacity = Math.max( oldCapacity, minAdditionalCapacity ) + oldCapacity;
+        int newCapacity = Math.max(oldCapacity, minAdditionalCapacity) + oldCapacity;
 
         var oldScopedBuffer = scopedBuffer;
-        setScopedBuffer( new HeapScopedBuffer( newCapacity, memoryTracker ) );
-        buffer.put( oldScopedBuffer.getBuffer() );
+        setScopedBuffer(new HeapScopedBuffer(newCapacity, memoryTracker));
+        buffer.put(oldScopedBuffer.getBuffer());
         oldScopedBuffer.close();
 
         return buffer;

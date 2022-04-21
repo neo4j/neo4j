@@ -22,31 +22,25 @@ package org.neo4j.logging;
 /**
  * A {@link InternalLogProvider} implementation that discards all messages
  */
-public final class NullLogProvider implements InternalLogProvider
-{
+public final class NullLogProvider implements InternalLogProvider {
     private static final NullLogProvider INSTANCE = new NullLogProvider();
 
-    private NullLogProvider()
-    {
-    }
+    private NullLogProvider() {}
 
     /**
      * @return A singleton {@link NullLogProvider} instance
      */
-    public static NullLogProvider getInstance()
-    {
+    public static NullLogProvider getInstance() {
         return INSTANCE;
     }
 
     @Override
-    public InternalLog getLog( Class<?> loggingClass )
-    {
+    public InternalLog getLog(Class<?> loggingClass) {
         return NullLog.getInstance();
     }
 
     @Override
-    public InternalLog getLog( String name )
-    {
+    public InternalLog getLog(String name) {
         return NullLog.getInstance();
     }
 }

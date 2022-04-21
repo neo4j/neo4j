@@ -22,26 +22,22 @@ package org.neo4j.tooling.procedure.messages;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.VariableElement;
 
-public class ContextFieldError implements CompilationMessage
-{
+public class ContextFieldError implements CompilationMessage {
     private final Element element;
     private final String contents;
 
-    public ContextFieldError( VariableElement element, String message, Object... args )
-    {
+    public ContextFieldError(VariableElement element, String message, Object... args) {
         this.element = element;
-        this.contents = String.format( message, args );
+        this.contents = String.format(message, args);
     }
 
     @Override
-    public Element getElement()
-    {
+    public Element getElement() {
         return element;
     }
 
     @Override
-    public String getContents()
-    {
+    public String getContents() {
         return contents;
     }
 }

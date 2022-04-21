@@ -44,14 +44,17 @@ object ProvidedOrder {
   }
 
   def unapply(arg: ProvidedOrder): Option[Seq[ColumnOrder]] = arg match {
-    case NoProvidedOrder => Some(Seq.empty)
+    case NoProvidedOrder                      => Some(Seq.empty)
     case NonEmptyProvidedOrder(allColumns, _) => Some(allColumns.toIndexedSeq)
   }
 
   val empty: ProvidedOrder = NoProvidedOrder
 
-  def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder = NonEmptyProvidedOrder(NonEmptyList(Asc(expression, projections)), Self)
-  def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder = NonEmptyProvidedOrder(NonEmptyList(Desc(expression, projections)), Self)
+  def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder =
+    NonEmptyProvidedOrder(NonEmptyList(Asc(expression, projections)), Self)
+
+  def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder =
+    NonEmptyProvidedOrder(NonEmptyList(Desc(expression, projections)), Self)
 }
 
 sealed trait ProvidedOrderFactory {
@@ -62,6 +65,7 @@ sealed trait ProvidedOrderFactory {
 }
 
 case object DefaultProvidedOrderFactory extends ProvidedOrderFactory {
+
   override def providedOrder(columns: Seq[ColumnOrder], orderOrigin: OrderOrigin): ProvidedOrder =
     ProvidedOrder.apply(columns, orderOrigin)
 
@@ -76,8 +80,12 @@ case object DefaultProvidedOrderFactory extends ProvidedOrderFactory {
 
 case object NoProvidedOrderFactory extends ProvidedOrderFactory {
   override def providedOrder(columns: Seq[ColumnOrder], orderOrigin: OrderOrigin): ProvidedOrder = ProvidedOrder.empty
-  override def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): ProvidedOrder = ProvidedOrder.empty
-  override def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): ProvidedOrder = ProvidedOrder.empty
+
+  override def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): ProvidedOrder =
+    ProvidedOrder.empty
+
+  override def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): ProvidedOrder =
+    ProvidedOrder.empty
   override def assertOnNoProvidedOrder: Boolean = false
 }
 
@@ -87,6 +95,7 @@ case object NoProvidedOrderFactory extends ProvidedOrderFactory {
  * if they are in any defined order.
  */
 sealed trait ProvidedOrder {
+
   /**
    * @return sequence of columns with sort direction
    */
@@ -156,7 +165,8 @@ case object NoProvidedOrder extends ProvidedOrder {
   override def fromBoth: ProvidedOrder = this
 }
 
-case class NonEmptyProvidedOrder(allColumns: NonEmptyList[ColumnOrder], theOrderOrigin: OrderOrigin) extends ProvidedOrder {
+case class NonEmptyProvidedOrder(allColumns: NonEmptyList[ColumnOrder], theOrderOrigin: OrderOrigin)
+    extends ProvidedOrder {
 
   override def columns: Seq[ColumnOrder] = allColumns.toIndexedSeq
 
@@ -164,8 +174,11 @@ case class NonEmptyProvidedOrder(allColumns: NonEmptyList[ColumnOrder], theOrder
 
   override def orderOrigin: Option[OrderOrigin] = Some(theOrderOrigin)
 
-  def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder = NonEmptyProvidedOrder(allColumns :+ Asc(expression, projections), theOrderOrigin)
-  def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder = NonEmptyProvidedOrder(allColumns :+ Desc(expression, projections), theOrderOrigin)
+  def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder =
+    NonEmptyProvidedOrder(allColumns :+ Asc(expression, projections), theOrderOrigin)
+
+  def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder =
+    NonEmptyProvidedOrder(allColumns :+ Desc(expression, projections), theOrderOrigin)
 
   override def fromLeft: NonEmptyProvidedOrder = copy(theOrderOrigin = ProvidedOrder.Left)
   override def fromRight: NonEmptyProvidedOrder = copy(theOrderOrigin = ProvidedOrder.Right)
@@ -178,10 +191,10 @@ case class NonEmptyProvidedOrder(allColumns: NonEmptyList[ColumnOrder], theOrder
   }
 
   override def upToExcluding(args: Set[String]): ProvidedOrder = {
-    val (_, trimmed) = columns.foldLeft((false,Seq.empty[ColumnOrder])) {
-      case (acc, _) if acc._1 => acc
+    val (_, trimmed) = columns.foldLeft((false, Seq.empty[ColumnOrder])) {
+      case (acc, _) if acc._1                                                  => acc
       case (acc, col) if args.intersect(col.dependencies.map(_.name)).nonEmpty => (true, acc._2)
-      case (acc, col) => (acc._1, acc._2 :+ col)
+      case (acc, col)                                                          => (acc._1, acc._2 :+ col)
     }
     if (trimmed.isEmpty) {
       NoProvidedOrder
@@ -192,7 +205,7 @@ case class NonEmptyProvidedOrder(allColumns: NonEmptyList[ColumnOrder], theOrder
 
   override def commonPrefixWith(otherOrder: ProvidedOrder): ProvidedOrder = otherOrder match {
     case NoProvidedOrder => NoProvidedOrder
-    case other:NonEmptyProvidedOrder =>
+    case other: NonEmptyProvidedOrder =>
       val newColumns = columns.zip(other.columns).takeWhile { case (a, b) => a == b }.map(_._1)
       if (newColumns.isEmpty) NoProvidedOrder else copy(allColumns = NonEmptyList.from(newColumns))
   }

@@ -33,15 +33,18 @@ import org.neo4j.cypher.internal.util.InputPosition
 object RelationshipLeafPlanner {
 
   trait RelationshipLeafPlanProvider {
+
     /**
      * @param patternForLeafPlan the pattern to use for the leaf plan
      * @param originalPattern    the original pattern, as it appears in the query graph
      * @param hiddenSelections   selections that make the leaf plan solve the originalPattern instead
      * @return the leaf plan including the hidden selections
      */
-    def getRelationshipLeafPlan(patternForLeafPlan: PatternRelationship,
-                                originalPattern: PatternRelationship,
-                                hiddenSelections: Seq[Expression]): LogicalPlan
+    def getRelationshipLeafPlan(
+      patternForLeafPlan: PatternRelationship,
+      originalPattern: PatternRelationship,
+      hiddenSelections: Seq[Expression]
+    ): LogicalPlan
   }
 
   /**
@@ -54,11 +57,12 @@ object RelationshipLeafPlanner {
    * @param relationshipLeafPlanProvider a RelationshipLeafPlanProvider
    * @return the leaf plan, with the correct hidden selections.
    */
-  def planHiddenSelectionAndRelationshipLeafPlan(argumentIds: Set[String],
-                                                 relationship: PatternRelationship,
-                                                 context: LogicalPlanningContext,
-                                                 relationshipLeafPlanProvider: RelationshipLeafPlanProvider,
-                                                 ): LogicalPlan = {
+  def planHiddenSelectionAndRelationshipLeafPlan(
+    argumentIds: Set[String],
+    relationship: PatternRelationship,
+    context: LogicalPlanningContext,
+    relationshipLeafPlanProvider: RelationshipLeafPlanProvider
+  ): LogicalPlan = {
     val startNodeAndEndNodeIsSame = relationship.left == relationship.right
     val startOrEndNodeIsBound = relationship.coveredIds.intersect(argumentIds).nonEmpty
     if (!startOrEndNodeIsBound && !startNodeAndEndNodeIsSame) {
@@ -86,9 +90,11 @@ object RelationshipLeafPlanner {
    * Generate new variable names for start and end node, but only for those nodes that are arguments.
    * Otherwise, return the same variable name.
    */
-  private def generateNewStartEndNodes(oldNodes: (String, String),
-                                       argumentIds: Set[String],
-                                       context: LogicalPlanningContext): (String, String) = {
+  private def generateNewStartEndNodes(
+    oldNodes: (String, String),
+    argumentIds: Set[String],
+    context: LogicalPlanningContext
+  ): (String, String) = {
     val (left, right) = oldNodes
     val newLeft = if (!argumentIds.contains(left)) left else context.anonymousVariableNameGenerator.nextName
     val newRight = if (!argumentIds.contains(right)) right else context.anonymousVariableNameGenerator.nextName
@@ -99,9 +105,11 @@ object RelationshipLeafPlanner {
    * Generate new variable names for start and end node of a PatternRelationship, but only for those nodes that are arguments.
    * Return a PatternRelationship with the updates nodes.
    */
-  private def generateNewPatternRelationship(oldRelationship: PatternRelationship,
-                                             argumentIds: Set[String],
-                                             context: LogicalPlanningContext): PatternRelationship = {
+  private def generateNewPatternRelationship(
+    oldRelationship: PatternRelationship,
+    argumentIds: Set[String],
+    context: LogicalPlanningContext
+  ): PatternRelationship = {
     oldRelationship.copy(nodes = generateNewStartEndNodes(oldRelationship.nodes, argumentIds, context))
   }
 

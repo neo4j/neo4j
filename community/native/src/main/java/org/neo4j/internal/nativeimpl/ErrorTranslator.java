@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.nativeimpl;
 
-public interface ErrorTranslator
-{
-    boolean isOutOfDiskSpace( NativeCallResult callResult );
+public interface ErrorTranslator {
+    boolean isOutOfDiskSpace(NativeCallResult callResult);
 }

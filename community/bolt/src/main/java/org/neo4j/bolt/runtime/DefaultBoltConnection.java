@@ -19,8 +19,10 @@
  */
 package org.neo4j.bolt.runtime;
 
-import io.netty.channel.Channel;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.commons.lang3.exception.ExceptionUtils.hasCause;
 
+import io.netty.channel.Channel;
 import java.net.SocketAddress;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -28,7 +30,6 @@ import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
@@ -41,12 +42,8 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.util.FeatureToggles;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.commons.lang3.exception.ExceptionUtils.hasCause;
-
-public class DefaultBoltConnection implements BoltConnection
-{
-    static final int DEFAULT_MAX_BATCH_SIZE = FeatureToggles.getInteger( BoltServer.class, "max_batch_size", 100 );
+public class DefaultBoltConnection implements BoltConnection {
+    static final int DEFAULT_MAX_BATCH_SIZE = FeatureToggles.getInteger(BoltServer.class, "max_batch_size", 100);
 
     private final String id;
 
@@ -64,28 +61,33 @@ public class DefaultBoltConnection implements BoltConnection
 
     private final AtomicBoolean shouldClose = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
-    private final AtomicBoolean idle = new AtomicBoolean( true );
+    private final AtomicBoolean idle = new AtomicBoolean(true);
 
     private final BoltConnectionMetricsMonitor metricsMonitor;
     private final Clock clock;
     private final BoltResponseMessageWriter messageWriter;
     private final KeepAliveHandler keepAliveHandler;
 
-    DefaultBoltConnection( BoltChannel channel, BoltResponseMessageWriter messageWriter, BoltStateMachine machine,
-                           LogService logService, BoltConnectionLifetimeListener listener,
-                           BoltConnectionQueueMonitor queueMonitor, int maxBatchSize, KeepAliveHandler keepAliveHandler,
-                           BoltConnectionMetricsMonitor metricsMonitor,
-                           Clock clock )
-    {
+    DefaultBoltConnection(
+            BoltChannel channel,
+            BoltResponseMessageWriter messageWriter,
+            BoltStateMachine machine,
+            LogService logService,
+            BoltConnectionLifetimeListener listener,
+            BoltConnectionQueueMonitor queueMonitor,
+            int maxBatchSize,
+            KeepAliveHandler keepAliveHandler,
+            BoltConnectionMetricsMonitor metricsMonitor,
+            Clock clock) {
         this.id = channel.id();
         this.channel = channel;
         this.machine = machine;
         this.listener = listener;
         this.queueMonitor = queueMonitor;
-        this.log = logService.getInternalLog( getClass() );
-        this.userLog = logService.getUserLog( getClass() );
+        this.log = logService.getInternalLog(getClass());
+        this.userLog = logService.getUserLog(getClass());
         this.maxBatchSize = maxBatchSize;
-        this.batch = new ArrayList<>( maxBatchSize );
+        this.batch = new ArrayList<>(maxBatchSize);
         this.metricsMonitor = metricsMonitor;
         this.clock = clock;
         this.messageWriter = messageWriter;
@@ -93,163 +95,130 @@ public class DefaultBoltConnection implements BoltConnection
     }
 
     @Override
-    public String id()
-    {
+    public String id() {
         return id;
     }
 
     @Override
-    public boolean idle()
-    {
+    public boolean idle() {
         // Checking additionally for whether the job queue is empty in order to respect
         // pending and accepted jobs
         return idle.get() && queue.isEmpty();
     }
 
     @Override
-    public SocketAddress localAddress()
-    {
+    public SocketAddress localAddress() {
         return channel.serverAddress();
     }
 
     @Override
-    public SocketAddress remoteAddress()
-    {
+    public SocketAddress remoteAddress() {
         return channel.clientAddress();
     }
 
     @Override
-    public Channel channel()
-    {
+    public Channel channel() {
         return channel.rawChannel();
     }
 
     @Override
-    public boolean hasPendingJobs()
-    {
+    public boolean hasPendingJobs() {
         return !queue.isEmpty();
     }
 
     @Override
-    public void start()
-    {
+    public void start() {
         notifyCreated();
         metricsMonitor.connectionOpened();
     }
 
     @Override
-    public void enqueue( Job job )
-    {
+    public void enqueue(Job job) {
         metricsMonitor.messageReceived();
         long queuedAt = clock.millis();
-        enqueueInternal( machine ->
-                         {
-                             if ( keepAliveHandler != null )
-                             {
-                                 keepAliveHandler.setActive( true );
-                             }
+        enqueueInternal(machine -> {
+            if (keepAliveHandler != null) {
+                keepAliveHandler.setActive(true);
+            }
 
-                             long queueTime = clock.millis() - queuedAt;
-                             metricsMonitor.messageProcessingStarted( queueTime );
-                             try
-                             {
-                                 job.perform( machine );
-                                 metricsMonitor.messageProcessingCompleted( clock.millis() - queuedAt - queueTime );
-                             }
-                             catch ( Throwable t )
-                             {
-                                 metricsMonitor.messageProcessingFailed();
-                                 throw t;
-                             }
-                             finally
-                             {
-                                 if ( keepAliveHandler != null && !machine.hasOpenStatement() )
-                                 {
-                                     keepAliveHandler.setActive( false );
-                                 }
-                             }
-                         } );
+            long queueTime = clock.millis() - queuedAt;
+            metricsMonitor.messageProcessingStarted(queueTime);
+            try {
+                job.perform(machine);
+                metricsMonitor.messageProcessingCompleted(clock.millis() - queuedAt - queueTime);
+            } catch (Throwable t) {
+                metricsMonitor.messageProcessingFailed();
+                throw t;
+            } finally {
+                if (keepAliveHandler != null && !machine.hasOpenStatement()) {
+                    keepAliveHandler.setActive(false);
+                }
+            }
+        });
     }
 
     @Override
-    public boolean processNextBatch()
-    {
-        return processNextBatch( maxBatchSize, false );
+    public boolean processNextBatch() {
+        return processNextBatch(maxBatchSize, false);
     }
 
-    private boolean processNextBatch( int batchCount, boolean exitIfNoJobsAvailable )
-    {
-        idle.set( false );
+    private boolean processNextBatch(int batchCount, boolean exitIfNoJobsAvailable) {
+        idle.set(false);
         metricsMonitor.connectionActivated();
 
-        try
-        {
-            boolean continueProcessing = processNextBatchInternal( batchCount, exitIfNoJobsAvailable );
+        try {
+            boolean continueProcessing = processNextBatchInternal(batchCount, exitIfNoJobsAvailable);
 
-            if ( !continueProcessing )
-            {
+            if (!continueProcessing) {
                 metricsMonitor.connectionClosed();
             }
 
             return continueProcessing;
-        }
-        finally
-        {
-            idle.set( true );
+        } finally {
+            idle.set(true);
             metricsMonitor.connectionWaiting();
         }
     }
 
-    private boolean processNextBatchInternal( int batchCount, boolean exitIfNoJobsAvailable )
-    {
-        try
-        {
+    private boolean processNextBatchInternal(int batchCount, boolean exitIfNoJobsAvailable) {
+        try {
             boolean waitForMessage = false;
             boolean loop = false;
-            do
-            {
+            do {
                 // exit loop if we'll close the connection
-                if ( willClose() )
-                {
+                if (willClose()) {
                     break;
                 }
 
                 // do we have pending jobs or shall we wait for new jobs to
                 // arrive, which is required only for releasing stickiness
                 // condition to this thread
-                if ( waitForMessage || !queue.isEmpty() )
-                {
-                    queue.drainTo( batch, batchCount );
+                if (waitForMessage || !queue.isEmpty()) {
+                    queue.drainTo(batch, batchCount);
                     // if we expect one message but did not get any (because it was already
                     // processed), silently exit
-                    if ( batch.isEmpty() && !exitIfNoJobsAvailable )
-                    {
+                    if (batch.isEmpty() && !exitIfNoJobsAvailable) {
                         // loop until we get a new job, if we cannot then validate
                         // transaction to check for termination condition. We'll
                         // break loop if we'll close the connection
-                        while ( !willClose() )
-                        {
-                            Job nextJob = queue.poll( 10, SECONDS );
-                            if ( nextJob != null )
-                            {
-                                batch.add( nextJob );
+                        while (!willClose()) {
+                            Job nextJob = queue.poll(10, SECONDS);
+                            if (nextJob != null) {
+                                batch.add(nextJob);
 
                                 break;
-                            }
-                            else
-                            {
+                            } else {
                                 machine.validateTransaction();
                             }
                         }
                     }
-                    notifyDrained( batch );
+                    notifyDrained(batch);
 
                     // execute each job that's in the batch
-                    while ( !batch.isEmpty() )
-                    {
-                        Job current = batch.remove( 0 );
+                    while (!batch.isEmpty()) {
+                        Job current = batch.remove(0);
 
-                        current.perform( machine );
+                        current.perform(machine);
                     }
 
                     // do we have any condition that require this connection to
@@ -260,43 +229,29 @@ public class DefaultBoltConnection implements BoltConnection
                 }
 
                 // we processed all pending messages, let's flush underlying channel
-                if ( queue.isEmpty() )
-                {
+                if (queue.isEmpty()) {
                     messageWriter.flush();
                 }
-            }
-            while ( loop );
+            } while (loop);
 
             // assert only if we'll stay alive
             assert willClose() || !machine.hasOpenStatement();
-        }
-        catch ( BoltConnectionAuthFatality ex )
-        {
-            shouldClose.set( true );
-            if ( ex.isLoggable() )
-            {
-                userLog.warn( ex.getMessage() );
+        } catch (BoltConnectionAuthFatality ex) {
+            shouldClose.set(true);
+            if (ex.isLoggable()) {
+                userLog.warn(ex.getMessage());
             }
-        }
-        catch ( BoltProtocolBreachFatality ex )
-        {
-            shouldClose.set( true );
-            log.error( String.format( "Protocol breach detected in bolt session '%s'.", id() ), ex );
-        }
-        catch ( InterruptedException ex )
-        {
-            shouldClose.set( true );
-            log.info( "Bolt session '%s' is interrupted probably due to server shutdown.", id() );
-        }
-        catch ( Throwable t )
-        {
-            shouldClose.set( true );
-            userLog.error( String.format( "Unexpected error detected in bolt session '%s'.", id() ), t );
-        }
-        finally
-        {
-            if ( willClose() )
-            {
+        } catch (BoltProtocolBreachFatality ex) {
+            shouldClose.set(true);
+            log.error(String.format("Protocol breach detected in bolt session '%s'.", id()), ex);
+        } catch (InterruptedException ex) {
+            shouldClose.set(true);
+            log.info("Bolt session '%s' is interrupted probably due to server shutdown.", id());
+        } catch (Throwable t) {
+            shouldClose.set(true);
+            userLog.error(String.format("Unexpected error detected in bolt session '%s'.", id()), t);
+        } finally {
+            if (willClose()) {
                 close();
             }
         }
@@ -305,150 +260,118 @@ public class DefaultBoltConnection implements BoltConnection
     }
 
     @Override
-    public void handleSchedulingError( Throwable t )
-    {
+    public void handleSchedulingError(Throwable t) {
         // if the connection is closing, don't output any logs
-        if ( !willClose() )
-        {
+        if (!willClose()) {
             String message;
             Neo4jError error;
-            if ( hasCause( t, RejectedExecutionException.class ) )
-            {
-                error = Neo4jError.from( Status.Request.NoThreadsAvailable, Status.Request.NoThreadsAvailable.code().description() );
-                message = String.format( "Unable to schedule bolt session '%s' for execution since there are no available threads to " +
-                        "serve it at the moment. You can retry at a later time or consider increasing max thread pool size for bolt connector(s).", id() );
-            }
-            else
-            {
-                error = Neo4jError.fatalFrom( t );
-                message = String.format( "Unexpected error during scheduling of bolt session '%s'.", id() );
+            if (hasCause(t, RejectedExecutionException.class)) {
+                error = Neo4jError.from(
+                        Status.Request.NoThreadsAvailable,
+                        Status.Request.NoThreadsAvailable.code().description());
+                message = String.format(
+                        "Unable to schedule bolt session '%s' for execution since there are no available threads to "
+                                + "serve it at the moment. You can retry at a later time or consider increasing max thread pool size for bolt connector(s).",
+                        id());
+            } else {
+                error = Neo4jError.fatalFrom(t);
+                message = String.format("Unexpected error during scheduling of bolt session '%s'.", id());
             }
 
-            log.error( message, t );
-            userLog.error( message );
-            machine.markFailed( error );
+            log.error(message, t);
+            userLog.error(message);
+            machine.markFailed(error);
         }
 
         // this will ensure that the scheduled job will be executed on this thread (fork-join pool)
         // and it will either send a failure response to the client or close the connection and its
         // related resources (if closing)
-        processNextBatch( 1, true );
+        processNextBatch(1, true);
         // we close the connection directly to enforce the client to stop waiting for
         // any more messages responses besides the failure message.
         close();
     }
 
     @Override
-    public void interrupt()
-    {
+    public void interrupt() {
         machine.interrupt();
     }
 
     @Override
-    public void stop()
-    {
-        if ( shouldClose.compareAndSet( false, true ) )
-        {
+    public void stop() {
+        if (shouldClose.compareAndSet(false, true)) {
             machine.markForTermination();
 
             // Enqueue an empty job for close to be handled linearly
             // This is for already executing connections
-            enqueueInternal( ignore ->
-            {
-
-            } );
+            enqueueInternal(ignore -> {});
         }
     }
 
     @Override
-    @Deprecated( forRemoval = true )
-    public void keepAlive()
-    {
-        try
-        {
+    @Deprecated(forRemoval = true)
+    public void keepAlive() {
+        try {
             messageWriter.keepAlive();
-        }
-        catch ( Throwable e )
-        {
-            log.error( "Failed to perform keep alive check.", e );
-            shouldClose.set( true );
+        } catch (Throwable e) {
+            log.error("Failed to perform keep alive check.", e);
+            shouldClose.set(true);
         }
     }
 
     @Override
-    public void initKeepAliveTimer()
-    {
+    public void initKeepAliveTimer() {
         messageWriter.initKeepAliveTimer();
     }
 
-    private boolean willClose()
-    {
+    private boolean willClose() {
         return shouldClose.get();
     }
 
-    private void close()
-    {
-        if ( closed.compareAndSet( false, true ) )
-        {
-            try
-            {
+    private void close() {
+        if (closed.compareAndSet(false, true)) {
+            try {
                 messageWriter.close();
-            }
-            catch ( Throwable t )
-            {
-                log.error( String.format( "Unable to close pack output of bolt session '%s'.", id() ), t );
+            } catch (Throwable t) {
+                log.error(String.format("Unable to close pack output of bolt session '%s'.", id()), t);
             }
 
-            try
-            {
+            try {
                 machine.close();
-            }
-            catch ( Throwable t )
-            {
-                log.error( String.format( "Unable to close state machine of bolt session '%s'.", id() ), t );
-            }
-            finally
-            {
+            } catch (Throwable t) {
+                log.error(String.format("Unable to close state machine of bolt session '%s'.", id()), t);
+            } finally {
                 notifyDestroyed();
             }
         }
     }
 
-    private void enqueueInternal( Job job )
-    {
-        queue.offer( job );
-        notifyEnqueued( job );
+    private void enqueueInternal(Job job) {
+        queue.offer(job);
+        notifyEnqueued(job);
     }
 
-    private void notifyCreated()
-    {
-        if ( listener != null )
-        {
-            listener.created( this );
+    private void notifyCreated() {
+        if (listener != null) {
+            listener.created(this);
         }
     }
 
-    private void notifyDestroyed()
-    {
-        if ( listener != null )
-        {
-            listener.closed( this );
+    private void notifyDestroyed() {
+        if (listener != null) {
+            listener.closed(this);
         }
     }
 
-    private void notifyEnqueued( Job job )
-    {
-        if ( queueMonitor != null )
-        {
-            queueMonitor.enqueued( this, job );
+    private void notifyEnqueued(Job job) {
+        if (queueMonitor != null) {
+            queueMonitor.enqueued(this, job);
         }
     }
 
-    private void notifyDrained( List<Job> jobs )
-    {
-        if ( queueMonitor != null && !jobs.isEmpty() )
-        {
-            queueMonitor.drained( this, jobs );
+    private void notifyDrained(List<Job> jobs) {
+        if (queueMonitor != null && !jobs.isEmpty()) {
+            queueMonitor.drained(this, jobs);
         }
     }
 }

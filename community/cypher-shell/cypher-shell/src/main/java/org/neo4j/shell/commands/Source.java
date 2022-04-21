@@ -19,64 +19,54 @@
  */
 package org.neo4j.shell.commands;
 
+import static java.lang.String.format;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.List;
-
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.parser.ShellStatementParser;
 import org.neo4j.shell.parser.StatementParser;
 
-import static java.lang.String.format;
-
 /**
  * This command reads a cypher file frome the filesystem and executes the statements therein.
  */
-public class Source implements Command
-{
+public class Source implements Command {
     private final CypherShell cypherShell;
     private final StatementParser statementParser;
 
-    public Source( CypherShell cypherShell, StatementParser statementParser )
-    {
+    public Source(CypherShell cypherShell, StatementParser statementParser) {
         this.cypherShell = cypherShell;
         this.statementParser = statementParser;
     }
 
     @Override
-    public void execute( final List<String> args ) throws ExitException, CommandException
-    {
-        requireArgumentCount( args, 1 );
-        String filename = args.get( 0 );
+    public void execute(final List<String> args) throws ExitException, CommandException {
+        requireArgumentCount(args, 1);
+        String filename = args.get(0);
 
-        try ( Reader reader = new InputStreamReader( new FileInputStream( filename ) ) )
-        {
-            cypherShell.execute( statementParser.parse( reader ).statements() );
-        }
-        catch ( IOException e )
-        {
-            throw new CommandException( format( "Cannot find file: '%s'", filename ), e );
+        try (Reader reader = new InputStreamReader(new FileInputStream(filename))) {
+            cypherShell.execute(statementParser.parse(reader).statements());
+        } catch (IOException e) {
+            throw new CommandException(format("Cannot find file: '%s'", filename), e);
         }
     }
 
-    public static class Factory implements Command.Factory
-    {
+    public static class Factory implements Command.Factory {
         @Override
-        public Metadata metadata()
-        {
+        public Metadata metadata() {
             var description = "Executes Cypher statements from a file";
             var help = "Executes Cypher statements from a file";
-            return new Metadata( ":source", description, "[filename]", help, List.of() );
+            return new Metadata(":source", description, "[filename]", help, List.of());
         }
 
         @Override
-        public Command executor( Arguments args )
-        {
-            return new Source( args.cypherShell(), new ShellStatementParser() );
+        public Command executor(Arguments args) {
+            return new Source(args.cypherShell(), new ShellStatementParser());
         }
     }
 }

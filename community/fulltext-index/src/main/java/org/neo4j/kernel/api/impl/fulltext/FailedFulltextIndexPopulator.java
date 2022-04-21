@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Map;
-
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
@@ -32,77 +31,64 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 
-class FailedFulltextIndexPopulator extends IndexPopulator.Adapter
-{
+class FailedFulltextIndexPopulator extends IndexPopulator.Adapter {
     private final IndexDescriptor index;
     private final DatabaseIndex<FulltextIndexReader> fulltextIndex;
     private final Exception exception;
 
-    FailedFulltextIndexPopulator( IndexDescriptor index, DatabaseIndex<FulltextIndexReader> fulltextIndex, Exception exception )
-    {
+    FailedFulltextIndexPopulator(
+            IndexDescriptor index, DatabaseIndex<FulltextIndexReader> fulltextIndex, Exception exception) {
         this.index = index;
         this.fulltextIndex = fulltextIndex;
         this.exception = exception;
     }
 
     @Override
-    public void create()
-    {
-        // We don't fail in create(), because if this population job is running as part of a multiple-index-population job,
-        // then throwing from create would fail the entire index population cohort. And we only want to fail this one index.
+    public void create() {
+        // We don't fail in create(), because if this population job is running as part of a multiple-index-population
+        // job,
+        // then throwing from create would fail the entire index population cohort. And we only want to fail this one
+        // index.
     }
 
     @Override
-    public void drop()
-    {
+    public void drop() {
         fulltextIndex.drop();
     }
 
     @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext )
-    {
+    public void add(Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext) {
         throw failedException();
     }
 
-    private IllegalStateException failedException()
-    {
-        return new IllegalStateException( "Failed to create index populator.", exception );
+    private IllegalStateException failedException() {
+        return new IllegalStateException("Failed to create index populator.", exception);
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( CursorContext cursorContext )
-    {
-        return new IndexUpdater()
-        {
+    public IndexUpdater newPopulatingUpdater(CursorContext cursorContext) {
+        return new IndexUpdater() {
             @Override
-            public void process( IndexEntryUpdate<?> update )
-            {
+            public void process(IndexEntryUpdate<?> update) {
                 throw failedException();
             }
 
             @Override
-            public void close()
-            {
-            }
+            public void close() {}
         };
     }
 
     @Override
-    public void markAsFailed( String failure )
-    {
-        try
-        {
-            fulltextIndex.markAsFailed( failure );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+    public void markAsFailed(String failure) {
+        try {
+            fulltextIndex.markAsFailed(failure);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public Map<String,Value> indexConfig()
-    {
+    public Map<String, Value> indexConfig() {
         return index.getIndexConfig().asMap();
     }
 }

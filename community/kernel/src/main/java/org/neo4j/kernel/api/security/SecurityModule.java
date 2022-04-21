@@ -24,19 +24,15 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.logging.InternalLog;
 
-public abstract class SecurityModule implements SecurityProvider
-{
-    protected static void registerProcedure( GlobalProcedures globalProcedures, InternalLog log, Class procedureClass, String warning )
-    {
-        try
-        {
-            globalProcedures.registerProcedure( procedureClass, true, warning );
-        }
-        catch ( KernelException e )
-        {
+public abstract class SecurityModule implements SecurityProvider {
+    protected static void registerProcedure(
+            GlobalProcedures globalProcedures, InternalLog log, Class procedureClass, String warning) {
+        try {
+            globalProcedures.registerProcedure(procedureClass, true, warning);
+        } catch (KernelException e) {
             String message = "Failed to register security procedures: " + e.getMessage();
-            log.error( message, e );
-            throw new RuntimeException( message, e );
+            log.error(message, e);
+            throw new RuntimeException(message, e);
         }
     }
 

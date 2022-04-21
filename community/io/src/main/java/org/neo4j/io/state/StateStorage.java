@@ -25,11 +25,10 @@ import java.io.IOException;
  * Instances of StateStorage provide a mechanism for writing durable pieces of state to individual files
  * @param <STATE> Type of state
  */
-public interface StateStorage<STATE>
-{
+public interface StateStorage<STATE> {
     STATE getInitialState();
 
-    void writeState( STATE state ) throws IOException;
+    void writeState(STATE state) throws IOException;
 
     boolean exists();
 }

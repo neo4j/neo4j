@@ -19,48 +19,44 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class LayoutTest
-{
+import org.junit.jupiter.api.Test;
+
+class LayoutTest {
     @Test
-    void shouldCreateDifferentIdentifierWithDifferentName()
-    {
+    void shouldCreateDifferentIdentifierWithDifferentName() {
         // GIVEN
         String firstName = "one";
         String secondName = "two";
         int checksum = 123;
 
         // WHEN
-        long firstIdentifier = Layout.namedIdentifier( firstName, checksum );
-        long secondIdentifier = Layout.namedIdentifier( secondName, checksum );
+        long firstIdentifier = Layout.namedIdentifier(firstName, checksum);
+        long secondIdentifier = Layout.namedIdentifier(secondName, checksum);
 
         // THEN
-        assertNotEquals( firstIdentifier, secondIdentifier );
+        assertNotEquals(firstIdentifier, secondIdentifier);
     }
 
     @Test
-    void shouldCreateDifferentIdentifierWithDifferentChecksums()
-    {
+    void shouldCreateDifferentIdentifierWithDifferentChecksums() {
         // GIVEN
         String name = "name";
         int firstChecksum = 123;
         int secondChecksum = 456;
 
         // WHEN
-        long firstIdentifier = Layout.namedIdentifier( name, firstChecksum );
-        long secondIdentifier = Layout.namedIdentifier( name, secondChecksum );
+        long firstIdentifier = Layout.namedIdentifier(name, firstChecksum);
+        long secondIdentifier = Layout.namedIdentifier(name, secondChecksum);
 
         // THEN
-        assertNotEquals( firstIdentifier, secondIdentifier );
+        assertNotEquals(firstIdentifier, secondIdentifier);
     }
 
     @Test
-    void shouldFailOnTooLongName()
-    {
-        assertThrows( IllegalArgumentException.class, () -> Layout.namedIdentifier( "too-long", 12 ) );
+    void shouldFailOnTooLongName() {
+        assertThrows(IllegalArgumentException.class, () -> Layout.namedIdentifier("too-long", 12));
     }
 }

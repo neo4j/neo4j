@@ -19,6 +19,8 @@
  */
 package org.neo4j.consistency.checker;
 
+import static java.lang.Long.min;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -26,19 +28,15 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
 import org.neo4j.internal.helpers.NamedThreadFactory;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.util.concurrent.Futures;
 
-import static java.lang.Long.min;
-
 /**
  * Contains logic for executing checker tasks in parallel.
  */
-class ParallelExecution
-{
+class ParallelExecution {
     static final Consumer<Throwable> NOOP_EXCEPTION_HANDLER = t -> {};
     static final int DEFAULT_IDS_PER_CHUNK = 1_000_000;
 
@@ -46,8 +44,7 @@ class ParallelExecution
     private final Consumer<Throwable> exceptionHandler;
     private int idsPerChunk;
 
-    ParallelExecution( int numberOfThreads, Consumer<Throwable> exceptionHandler, int idsPerChunk )
-    {
+    ParallelExecution(int numberOfThreads, Consumer<Throwable> exceptionHandler, int idsPerChunk) {
         this.numberOfThreads = numberOfThreads;
         this.exceptionHandler = exceptionHandler;
         this.idsPerChunk = idsPerChunk;
@@ -61,9 +58,8 @@ class ParallelExecution
      * @param runnables jobs to run.
      * @throws Exception on any job exception.
      */
-    void run( String taskName, ThrowingRunnable... runnables ) throws Exception
-    {
-        run( taskName, numberOfThreads, runnables );
+    void run(String taskName, ThrowingRunnable... runnables) throws Exception {
+        run(taskName, numberOfThreads, runnables);
     }
 
     /**
@@ -74,53 +70,44 @@ class ParallelExecution
      * @param runnables jobs to run.
      * @throws Exception on any job exception.
      */
-    void runAll( String taskName, ThrowingRunnable... runnables ) throws Exception
-    {
-        run( taskName, runnables.length, runnables );
+    void runAll(String taskName, ThrowingRunnable... runnables) throws Exception {
+        run(taskName, runnables.length, runnables);
     }
 
-    private void run( String taskName, int numberOfThreads, ThrowingRunnable... runnables ) throws Exception
-    {
-        var pool = Executors.newFixedThreadPool( numberOfThreads, new NamedThreadFactory( getClass().getSimpleName() + "-" + taskName ) );
-        try
-        {
-            List<InternalTask> tasks = Arrays.stream( runnables ).map( InternalTask::new ).collect( Collectors.toList() );
-            Futures.getAllResults( pool.invokeAll( tasks ) );
-        }
-        finally
-        {
+    private void run(String taskName, int numberOfThreads, ThrowingRunnable... runnables) throws Exception {
+        var pool = Executors.newFixedThreadPool(
+                numberOfThreads, new NamedThreadFactory(getClass().getSimpleName() + "-" + taskName));
+        try {
+            List<InternalTask> tasks =
+                    Arrays.stream(runnables).map(InternalTask::new).collect(Collectors.toList());
+            Futures.getAllResults(pool.invokeAll(tasks));
+        } finally {
             pool.shutdown();
         }
     }
 
-    ThrowingRunnable[] partition( RecordStore<?> store, RangeOperation rangeOperation )
-    {
-        LongRange range = LongRange.range( store.getNumberOfReservedLowIds(), store.getHighId() );
-        return partition( range, rangeOperation );
+    ThrowingRunnable[] partition(RecordStore<?> store, RangeOperation rangeOperation) {
+        LongRange range = LongRange.range(store.getNumberOfReservedLowIds(), store.getHighId());
+        return partition(range, rangeOperation);
     }
 
-    ThrowingRunnable[] partition( LongRange range, RangeOperation rangeOperation )
-    {
+    ThrowingRunnable[] partition(LongRange range, RangeOperation rangeOperation) {
         List<ThrowingRunnable> partitions = new ArrayList<>();
-        for ( long id = range.from(); id < range.to(); id += idsPerChunk )
-        {
-            long to = min( id + idsPerChunk, range.to() );
+        for (long id = range.from(); id < range.to(); id += idsPerChunk) {
+            long to = min(id + idsPerChunk, range.to());
             boolean last = to == range.to();
-            partitions.add( rangeOperation.operation( id, to, last ) );
+            partitions.add(rangeOperation.operation(id, to, last));
         }
-        return partitions.toArray( new ThrowingRunnable[0] );
+        return partitions.toArray(new ThrowingRunnable[0]);
     }
 
-    int getNumberOfThreads()
-    {
+    int getNumberOfThreads() {
         return numberOfThreads;
     }
 
-    interface ThrowingRunnable extends Callable<Void>
-    {
+    interface ThrowingRunnable extends Callable<Void> {
         @Override
-        default Void call() throws Exception
-        {
+        default Void call() throws Exception {
             doRun();
             return null;
         }
@@ -128,32 +115,26 @@ class ParallelExecution
         void doRun() throws Exception;
     }
 
-    private class InternalTask implements Callable<Void>
-    {
+    private class InternalTask implements Callable<Void> {
         private final ThrowingRunnable runnable;
-        InternalTask( ThrowingRunnable runnable )
-        {
+
+        InternalTask(ThrowingRunnable runnable) {
             this.runnable = runnable;
         }
 
         @Override
-        public Void call() throws Exception
-        {
-            try
-            {
+        public Void call() throws Exception {
+            try {
                 runnable.call();
-            }
-            catch ( Throwable t )
-            {
-                exceptionHandler.accept( t );
+            } catch (Throwable t) {
+                exceptionHandler.accept(t);
                 throw t;
             }
             return null;
         }
     }
 
-    interface RangeOperation
-    {
-        ThrowingRunnable operation( long from, long to, boolean last );
+    interface RangeOperation {
+        ThrowingRunnable operation(long from, long to, boolean last);
     }
 }

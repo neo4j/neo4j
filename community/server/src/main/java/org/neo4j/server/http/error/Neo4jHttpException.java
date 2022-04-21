@@ -21,7 +21,6 @@ package org.neo4j.server.http.error;
 
 import java.util.Collections;
 import java.util.List;
-
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.Neo4jError;
 
@@ -29,38 +28,32 @@ import org.neo4j.server.rest.Neo4jError;
  * An exception that is processed by {@link Neo4jHttpExceptionMapper},
  * which converts it into a HTTP response.
  */
-public class Neo4jHttpException extends RuntimeException
-{
+public class Neo4jHttpException extends RuntimeException {
     private final int httpStatus;
     private final List<Neo4jError> neo4jErrors;
 
-    public Neo4jHttpException( int httpStatus, List<Neo4jError> neo4jErrors )
-    {
+    public Neo4jHttpException(int httpStatus, List<Neo4jError> neo4jErrors) {
         this.httpStatus = httpStatus;
         this.neo4jErrors = neo4jErrors;
     }
 
-    public Neo4jHttpException( int httpStatus, Status status,  Throwable cause )
-    {
+    public Neo4jHttpException(int httpStatus, Status status, Throwable cause) {
         this.httpStatus = httpStatus;
-        Neo4jError neo4jError = new Neo4jError( status, cause );
-        neo4jErrors = Collections.singletonList( neo4jError );
+        Neo4jError neo4jError = new Neo4jError(status, cause);
+        neo4jErrors = Collections.singletonList(neo4jError);
     }
 
-    public Neo4jHttpException( int httpStatus, Status status,  String message )
-    {
+    public Neo4jHttpException(int httpStatus, Status status, String message) {
         this.httpStatus = httpStatus;
-        Neo4jError neo4jError = new Neo4jError( status, message );
-        neo4jErrors = Collections.singletonList( neo4jError );
+        Neo4jError neo4jError = new Neo4jError(status, message);
+        neo4jErrors = Collections.singletonList(neo4jError);
     }
 
-    public int getHttpStatus()
-    {
+    public int getHttpStatus() {
         return httpStatus;
     }
 
-    public List<Neo4jError> getNeo4jErrors()
-    {
+    public List<Neo4jError> getNeo4jErrors() {
         return neo4jErrors;
     }
 }

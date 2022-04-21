@@ -19,32 +19,28 @@
  */
 package org.neo4j.kernel.diagnostics.providers;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 @TestDirectoryExtension
-class SystemDiagnosticsTest
-{
+class SystemDiagnosticsTest {
     @Inject
     private TestDirectory directory;
 
     @Test
-    void shouldHandleCanonicalizingWildcardPaths()
-    {
+    void shouldHandleCanonicalizingWildcardPaths() {
         // given
-        String path = directory.directory( "mydir" ) + File.separator + "*";
+        String path = directory.directory("mydir") + File.separator + "*";
 
         // when
-        String canonicalized = SystemDiagnostics.canonicalize( path );
+        String canonicalized = SystemDiagnostics.canonicalize(path);
 
         // then
-        assertThat( canonicalized ).isEqualTo( path );
+        assertThat(canonicalized).isEqualTo(path);
     }
 }

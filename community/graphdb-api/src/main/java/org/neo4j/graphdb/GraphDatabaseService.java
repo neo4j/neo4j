@@ -22,7 +22,6 @@ package org.neo4j.graphdb;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.annotations.api.PublicApi;
 
 /**
@@ -31,8 +30,7 @@ import org.neo4j.annotations.api.PublicApi;
  * new transactions with {@link #beginTx()}.
  */
 @PublicApi
-public interface GraphDatabaseService
-{
+public interface GraphDatabaseService {
     /**
      * Check if the database is currently in a usable state.
      * This method is equivalent to calling {@link #isAvailable(long)} with 0 as the requested timeout.
@@ -48,7 +46,7 @@ public interface GraphDatabaseService
      *   If the database has been shut down {@code false} is returned immediately.
      * @return the state of the database: {@code true} if it is available, otherwise {@code false}
      */
-    boolean isAvailable( long timeoutMillis );
+    boolean isAvailable(long timeoutMillis);
 
     /**
      * Starts a new {@link Transaction transaction} and associates it with the current thread.
@@ -81,7 +79,7 @@ public interface GraphDatabaseService
      * @param unit time unit of timeout argument
      * @return a new transaction instance
      */
-    Transaction beginTx( long timeout, TimeUnit unit );
+    Transaction beginTx(long timeout, TimeUnit unit);
 
     /**
      * Executes query in a separate transaction.
@@ -90,7 +88,7 @@ public interface GraphDatabaseService
      * @param query The query to execute
      * @throws QueryExecutionException If the Query contains errors
      */
-    void executeTransactionally( String query ) throws QueryExecutionException;
+    void executeTransactionally(String query) throws QueryExecutionException;
 
     /**
      * Executes query in a separate transaction.
@@ -100,7 +98,7 @@ public interface GraphDatabaseService
      * @param parameters Parameters for the query
      * @throws QueryExecutionException If the Query contains errors
      */
-    void executeTransactionally( String query, Map<String,Object> parameters ) throws QueryExecutionException;
+    void executeTransactionally(String query, Map<String, Object> parameters) throws QueryExecutionException;
 
     /**
      * Executes query in a separate transaction and allow to query result to be consumed by provided {@link ResultTransformer}.
@@ -111,7 +109,8 @@ public interface GraphDatabaseService
      * @param resultTransformer Query results consumer
      * @throws QueryExecutionException If the query contains errors
      */
-    <T> T executeTransactionally( String query, Map<String,Object> parameters, ResultTransformer<T> resultTransformer ) throws QueryExecutionException;
+    <T> T executeTransactionally(String query, Map<String, Object> parameters, ResultTransformer<T> resultTransformer)
+            throws QueryExecutionException;
 
     /**
      * Executes query in a separate transaction and allows query result to be consumed by provided {@link ResultTransformer}.
@@ -125,8 +124,9 @@ public interface GraphDatabaseService
      * @param timeout Maximum duration of underlying transaction
      * @throws QueryExecutionException If the query contains errors
      */
-    <T> T executeTransactionally( String query, Map<String,Object> parameters, ResultTransformer<T> resultTransformer,
-            Duration timeout ) throws QueryExecutionException;
+    <T> T executeTransactionally(
+            String query, Map<String, Object> parameters, ResultTransformer<T> resultTransformer, Duration timeout)
+            throws QueryExecutionException;
 
     /**
      * Return name of underlying database

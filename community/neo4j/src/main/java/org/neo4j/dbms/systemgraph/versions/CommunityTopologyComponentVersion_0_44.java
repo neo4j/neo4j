@@ -19,26 +19,22 @@
  */
 package org.neo4j.dbms.systemgraph.versions;
 
-import org.neo4j.graphdb.Transaction;
-
 import static org.neo4j.dbms.systemgraph.CommunityTopologyGraphVersion.COMMUNITY_TOPOLOGY_44;
+
+import org.neo4j.graphdb.Transaction;
 
 /**
  * This is the CommunityTopologyComponent version for Neo4j 4.4
  */
-public class CommunityTopologyComponentVersion_0_44 extends KnownCommunityTopologyComponentVersion
-{
-    public CommunityTopologyComponentVersion_0_44()
-    {
-        super( COMMUNITY_TOPOLOGY_44 );
+public class CommunityTopologyComponentVersion_0_44 extends KnownCommunityTopologyComponentVersion {
+    public CommunityTopologyComponentVersion_0_44() {
+        super(COMMUNITY_TOPOLOGY_44);
     }
 
     @Override
-    public void upgradeTopologyGraph( Transaction tx, int fromVersion ) throws Exception
-    {
-       if ( fromVersion < version )
-       {
-           this.setVersionProperty( tx, version );
-       }
+    public void upgradeTopologyGraph(Transaction tx, int fromVersion) throws Exception {
+        if (fromVersion < version) {
+            this.setVersionProperty(tx, version);
+        }
     }
 }

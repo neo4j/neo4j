@@ -22,43 +22,33 @@ package org.neo4j.internal.batchimport.stats;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-
 import org.neo4j.internal.batchimport.staging.Step;
 
 /**
  * Provides stats about a {@link Step}.
  */
-public class StepStats implements StatsProvider
-{
+public class StepStats implements StatsProvider {
     private final String name;
     private final boolean stillWorking;
     private final Collection<StatsProvider> providers;
 
-    public StepStats( String name, boolean stillWorking, Collection<StatsProvider> providers )
-    {
+    public StepStats(String name, boolean stillWorking, Collection<StatsProvider> providers) {
         this.name = name;
         this.stillWorking = stillWorking;
-        this.providers = new ArrayList<>( providers );
+        this.providers = new ArrayList<>(providers);
     }
 
     @Override
-    public Key[] keys()
-    {
+    public Key[] keys() {
         Key[] keys = null;
-        for ( StatsProvider provider : providers )
-        {
+        for (StatsProvider provider : providers) {
             Key[] providerKeys = provider.keys();
-            if ( keys == null )
-            {
+            if (keys == null) {
                 keys = providerKeys;
-            }
-            else
-            {
-                for ( Key providerKey : providerKeys )
-                {
-                    if ( !arrayContains( keys, providerKey ) )
-                    {
-                        keys = Arrays.copyOf( keys, keys.length + 1 );
+            } else {
+                for (Key providerKey : providerKeys) {
+                    if (!arrayContains(keys, providerKey)) {
+                        keys = Arrays.copyOf(keys, keys.length + 1);
                         keys[keys.length - 1] = providerKey;
                     }
                 }
@@ -67,12 +57,9 @@ public class StepStats implements StatsProvider
         return keys;
     }
 
-    private static <T> boolean arrayContains( T[] array, T item )
-    {
-        for ( T arrayItem : array )
-        {
-            if ( arrayItem.equals( item ) )
-            {
+    private static <T> boolean arrayContains(T[] array, T item) {
+        for (T arrayItem : array) {
+            if (arrayItem.equals(item)) {
                 return true;
             }
         }
@@ -80,13 +67,10 @@ public class StepStats implements StatsProvider
     }
 
     @Override
-    public Stat stat( Key key )
-    {
-        for ( StatsProvider provider : providers )
-        {
-            Stat stat = provider.stat( key );
-            if ( stat != null )
-            {
+    public Stat stat(Key key) {
+        for (StatsProvider provider : providers) {
+            Stat stat = provider.stat(key);
+            if (stat != null) {
                 return stat;
             }
         }
@@ -94,28 +78,23 @@ public class StepStats implements StatsProvider
     }
 
     @Override
-    public String toString()
-    {
-        return toString( DetailLevel.IMPORTANT );
+    public String toString() {
+        return toString(DetailLevel.IMPORTANT);
     }
 
-    public String toString( DetailLevel detailLevel )
-    {
+    public String toString(DetailLevel detailLevel) {
         StringBuilder builder = new StringBuilder();
-        if ( !stillWorking && detailLevel == DetailLevel.BASIC )
-        {
-            builder.append( " DONE" );
+        if (!stillWorking && detailLevel == DetailLevel.BASIC) {
+            builder.append(" DONE");
         }
 
         int i = 0;
-        for ( Key key : keys() )
-        {
-            Stat stat = stat( key );
-            if ( detailLevel.ordinal() >= stat.detailLevel().ordinal() )
-            {
-                builder.append( i++ > 0 ? " " : "" )
-                       .append( key.shortName() != null ? key.shortName() + ":" : "" )
-                       .append( stat );
+        for (Key key : keys()) {
+            Stat stat = stat(key);
+            if (detailLevel.ordinal() >= stat.detailLevel().ordinal()) {
+                builder.append(i++ > 0 ? " " : "")
+                        .append(key.shortName() != null ? key.shortName() + ":" : "")
+                        .append(stat);
             }
         }
         return name + (builder.length() > 0 ? ":" + builder : "");

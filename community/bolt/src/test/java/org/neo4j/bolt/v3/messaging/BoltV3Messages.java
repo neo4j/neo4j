@@ -19,9 +19,13 @@
  */
 package org.neo4j.bolt.v3.messaging;
 
+import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
+import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
+import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
+
 import java.util.Map;
 import java.util.stream.Stream;
-
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.AccessMode;
@@ -36,96 +40,74 @@ import org.neo4j.bolt.v3.runtime.bookmarking.BookmarksParserV3;
 import org.neo4j.bolt.v4.messaging.BoltV4Messages;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
-import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
-import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
-
 /**
  * Quick access of all messages of Bolt Protocol V3
  */
-public class BoltV3Messages
-{
+public class BoltV3Messages {
     private static final String USER_AGENT = "BoltV3Messages/0.0";
-    private static final RequestMessage HELLO = new HelloMessage( map( "user_agent", USER_AGENT ) );
-    private static final RequestMessage RUN_RETURN_ONE = new RunMessage( "RETURN 1" );
+    private static final RequestMessage HELLO = new HelloMessage(map("user_agent", USER_AGENT));
+    private static final RequestMessage RUN_RETURN_ONE = new RunMessage("RETURN 1");
     private static final RequestMessage BEGIN = new BeginMessage();
 
-    public static Stream<RequestMessage> supported()
-    {
-        return Stream.of( hello(), goodbye(), run(), discardAll(), pullAll(), begin(), commit(), rollback(), reset() );
+    public static Stream<RequestMessage> supported() {
+        return Stream.of(hello(), goodbye(), run(), discardAll(), pullAll(), begin(), commit(), rollback(), reset());
     }
 
-    public static Stream<RequestMessage> unsupported() throws BoltIOException
-    {
+    public static Stream<RequestMessage> unsupported() throws BoltIOException {
         return Stream.of(
                 // bolt v4 messages new message types
-                BoltV4Messages.pull( 10 ),
-                BoltV4Messages.discard(10 )
-        );
+                BoltV4Messages.pull(10), BoltV4Messages.discard(10));
     }
 
-    public static RequestMessage hello()
-    {
+    public static RequestMessage hello() {
         return HELLO;
     }
 
-    public static RequestMessage goodbye()
-    {
+    public static RequestMessage goodbye() {
         return GOODBYE_MESSAGE;
     }
 
-    public static RequestMessage run()
-    {
+    public static RequestMessage run() {
         return RUN_RETURN_ONE;
     }
 
-    public static RequestMessage run( String statement )
-    {
-        return new RunMessage( statement );
+    public static RequestMessage run(String statement) {
+        return new RunMessage(statement);
     }
 
-    public static RequestMessage discardAll()
-    {
+    public static RequestMessage discardAll() {
         return DiscardAllMessage.INSTANCE;
     }
 
-    public static RequestMessage pullAll()
-    {
+    public static RequestMessage pullAll() {
         return PullAllMessage.INSTANCE;
     }
 
-    public static RequestMessage begin()
-    {
+    public static RequestMessage begin() {
         return BEGIN;
     }
 
-    public static RequestMessage begin( MapValue bookmarks ) throws BoltIOException
-    {
-        var bookmarkList = BookmarksParserV3.INSTANCE.parseBookmarks( bookmarks );
-        return new BeginMessage( MapValue.EMPTY, bookmarkList, null, AccessMode.WRITE, Map.of() );
+    public static RequestMessage begin(MapValue bookmarks) throws BoltIOException {
+        var bookmarkList = BookmarksParserV3.INSTANCE.parseBookmarks(bookmarks);
+        return new BeginMessage(MapValue.EMPTY, bookmarkList, null, AccessMode.WRITE, Map.of());
     }
 
-    public static RequestMessage commit()
-    {
+    public static RequestMessage commit() {
         return COMMIT_MESSAGE;
     }
 
-    public static RequestMessage rollback()
-    {
+    public static RequestMessage rollback() {
         return ROLLBACK_MESSAGE;
     }
 
-    public static RequestMessage reset()
-    {
+    public static RequestMessage reset() {
         return ResetMessage.INSTANCE;
     }
 
     /**
      * Internal message, can never be sent from clients
      */
-    public static RequestMessage interrupt()
-    {
+    public static RequestMessage interrupt() {
         return InterruptSignal.INSTANCE;
     }
 }

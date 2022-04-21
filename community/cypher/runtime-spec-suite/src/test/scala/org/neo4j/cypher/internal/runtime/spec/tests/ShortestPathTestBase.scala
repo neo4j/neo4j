@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import java.util
-
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -33,10 +31,12 @@ import org.neo4j.graphdb.Direction.OUTGOING
 import org.neo4j.graphdb.Label
 import org.neo4j.internal.helpers.collection.Iterables.single
 
+import java.util
+
 abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
-  protected  val sizeHint: Int
+  protected val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("shortest path in a linked chain graph") {
@@ -193,7 +193,11 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "r", "y", "path")
-      .shortestPath("(x)-[r:A*]->(y)", Some("path"), predicates = Seq(s"All(n in nodes(path) WHERE id(n) <> ${forbidden.getId})"))
+      .shortestPath(
+        "(x)-[r:A*]->(y)",
+        Some("path"),
+        predicates = Seq(s"All(n in nodes(path) WHERE id(n) <> ${forbidden.getId})")
+      )
       .cartesianProduct()
       .|.nodeByLabelScan("y", "END", IndexOrderNone)
       .nodeByLabelScan("x", "START", IndexOrderNone)
@@ -217,7 +221,11 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
-      .shortestPath("(x)-[r:A*]->(y)", Some("path"), predicates = Seq(s"All(n in nodes(path) WHERE id(n) <> ${start.getId})"))
+      .shortestPath(
+        "(x)-[r:A*]->(y)",
+        Some("path"),
+        predicates = Seq(s"All(n in nodes(path) WHERE id(n) <> ${start.getId})")
+      )
       .cartesianProduct()
       .|.nodeByLabelScan("y", "END", IndexOrderNone)
       .nodeByLabelScan("x", "START", IndexOrderNone)
@@ -239,7 +247,11 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
-      .shortestPath("(X)-[r:A*]->(y)", Some("path"), predicates = Seq(s"All(n in nodes(path) WHERE id(n) <> ${start.getId})"))
+      .shortestPath(
+        "(X)-[r:A*]->(y)",
+        Some("path"),
+        predicates = Seq(s"All(n in nodes(path) WHERE id(n) <> ${start.getId})")
+      )
       .projection("x AS X")
       .cartesianProduct()
       .|.nodeByLabelScan("y", "END", IndexOrderNone)
@@ -266,7 +278,11 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "r", "y", "path")
-      .shortestPath("(x)-[r:A*]->(y)", Some("path"), predicates = Seq(s"All(rel in relationships(path) WHERE id(rel) <> ${forbidden.getId})")) // OBS: r != rel
+      .shortestPath(
+        "(x)-[r:A*]->(y)",
+        Some("path"),
+        predicates = Seq(s"All(rel in relationships(path) WHERE id(rel) <> ${forbidden.getId})")
+      ) // OBS: r != rel
       .cartesianProduct()
       .|.nodeByLabelScan("y", "END", IndexOrderNone)
       .nodeByLabelScan("x", "START", IndexOrderNone)

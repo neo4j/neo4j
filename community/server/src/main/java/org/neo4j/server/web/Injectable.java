@@ -24,8 +24,7 @@ package org.neo4j.server.web;
  *
  * @param <T> the type of the value, or an interface the value implements.
  */
-public interface Injectable<T>
-{
+public interface Injectable<T> {
     /**
      * Get the injectable value.
      *
@@ -50,19 +49,15 @@ public interface Injectable<T>
      * @param <T> same as type
      * @return
      */
-    static <T> Injectable<T> injectable( Class<T> type, T obj )
-    {
-        return new Injectable<>()
-        {
+    static <T> Injectable<T> injectable(Class<T> type, T obj) {
+        return new Injectable<>() {
             @Override
-            public T getValue()
-            {
+            public T getValue() {
                 return obj;
             }
 
             @Override
-            public Class<T> getType()
-            {
+            public Class<T> getType() {
                 return type;
             }
         };

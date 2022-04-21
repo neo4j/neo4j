@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.internal;
 
-import org.apache.commons.lang3.mutable.MutableLong;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.neo4j.io.ByteUnit.bytesToString;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -32,7 +32,10 @@ import java.nio.file.Path;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
+import org.apache.commons.lang3.mutable.MutableLong;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexType;
@@ -44,14 +47,8 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.neo4j.io.ByteUnit.bytesToString;
-
 @DbmsExtension
-class KernelDiagnosticsIT
-{
+class KernelDiagnosticsIT {
     @Inject
     private GraphDatabaseAPI db;
 
@@ -59,98 +56,83 @@ class KernelDiagnosticsIT
     private FileSystemAbstraction fs;
 
     @ParameterizedTest
-    @EnumSource( value = IndexType.class, mode = EnumSource.Mode.EXCLUDE, names = { "LOOKUP" } )
-    void shouldIncludeNativeIndexFilesInTotalMappedSize( IndexType indexType )
-    {
+    @EnumSource(
+            value = IndexType.class,
+            mode = EnumSource.Mode.EXCLUDE,
+            names = {"LOOKUP"})
+    void shouldIncludeNativeIndexFilesInTotalMappedSize(IndexType indexType) {
         // given
-        createIndexAndData( indexType );
+        createIndexAndData(indexType);
 
         // when
         DatabaseLayout databaseLayout = db.databaseLayout();
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
-        StoreFilesDiagnostics files = new StoreFilesDiagnostics( storageEngineFactory, fs, databaseLayout );
+        StoreFilesDiagnostics files = new StoreFilesDiagnostics(storageEngineFactory, fs, databaseLayout);
         SizeCapture capture = new SizeCapture();
-        files.dump( capture::log );
-        assertNotNull( capture.size );
+        files.dump(capture::log);
+        assertNotNull(capture.size);
 
         // then
-        long expected = manuallyCountTotalMappedFileSize( databaseLayout.databaseDirectory() );
-        assertEquals( bytesToString( expected ), capture.size );
+        long expected = manuallyCountTotalMappedFileSize(databaseLayout.databaseDirectory());
+        assertEquals(bytesToString(expected), capture.size);
     }
 
-    private void createIndexAndData( IndexType indexType )
-    {
-        Label label = Label.label( "Label-" + indexType );
+    private void createIndexAndData(IndexType indexType) {
+        Label label = Label.label("Label-" + indexType);
         String key = "key";
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( int i = 0; i < 100; i++ )
-            {
-                tx.createNode( label ).setProperty( key, "" + i );
+        try (Transaction tx = db.beginTx()) {
+            for (int i = 0; i < 100; i++) {
+                tx.createNode(label).setProperty(key, "" + i);
             }
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( label ).on( key ).withIndexType( indexType ).create();
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().indexFor(label).on(key).withIndexType(indexType).create();
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, MINUTES );
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, MINUTES);
             tx.commit();
         }
     }
 
-    private static long manuallyCountTotalMappedFileSize( Path dbDir )
-    {
+    private static long manuallyCountTotalMappedFileSize(Path dbDir) {
         MutableLong result = new MutableLong();
-        NativeIndexFileFilter nativeIndexFilter = new NativeIndexFileFilter( dbDir );
-        manuallyCountTotalMappedFileSize( dbDir, result, nativeIndexFilter );
+        NativeIndexFileFilter nativeIndexFilter = new NativeIndexFileFilter(dbDir);
+        manuallyCountTotalMappedFileSize(dbDir, result, nativeIndexFilter);
         return result.getValue();
     }
 
-    private static void manuallyCountTotalMappedFileSize( Path dir, MutableLong result, NativeIndexFileFilter nativeIndexFilter )
-    {
-        Set<String> storeFiles = Stream.of( StoreType.values() ).map( type -> type.getDatabaseFile().getName() ).collect( Collectors.toSet() );
-        try ( DirectoryStream<Path> paths = Files.newDirectoryStream( dir ) )
-        {
-            for ( Path path : paths )
-            {
-                if ( Files.isDirectory( path ) )
-                {
-                    manuallyCountTotalMappedFileSize( path, result, nativeIndexFilter );
-                }
-                else if ( storeFiles.contains( path.getFileName().toString() ) || nativeIndexFilter.test( path ) )
-                {
-                    try
-                    {
-                        result.add( Files.size( path ) );
-                    }
-                    catch ( IOException ignored )
-                    {
+    private static void manuallyCountTotalMappedFileSize(
+            Path dir, MutableLong result, NativeIndexFileFilter nativeIndexFilter) {
+        Set<String> storeFiles = Stream.of(StoreType.values())
+                .map(type -> type.getDatabaseFile().getName())
+                .collect(Collectors.toSet());
+        try (DirectoryStream<Path> paths = Files.newDirectoryStream(dir)) {
+            for (Path path : paths) {
+                if (Files.isDirectory(path)) {
+                    manuallyCountTotalMappedFileSize(path, result, nativeIndexFilter);
+                } else if (storeFiles.contains(path.getFileName().toString()) || nativeIndexFilter.test(path)) {
+                    try {
+                        result.add(Files.size(path));
+                    } catch (IOException ignored) {
                         // Preserve behaviour of File.length()
                     }
                 }
             }
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    private static class SizeCapture
-    {
+    private static class SizeCapture {
         private String size;
 
-        public void log( String message )
-        {
-            if ( message.contains( "Total size of mapped files" ) )
-            {
-                int beginPos = message.lastIndexOf( ": " );
-                Assertions.assertTrue( beginPos != -1 );
-                size = message.substring( beginPos + 2 );
+        public void log(String message) {
+            if (message.contains("Total size of mapped files")) {
+                int beginPos = message.lastIndexOf(": ");
+                Assertions.assertTrue(beginPos != -1);
+                size = message.substring(beginPos + 2);
             }
         }
     }

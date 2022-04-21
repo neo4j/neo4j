@@ -82,9 +82,24 @@ class LiteralsParserTest extends JavaccParserTestBase[Any, Any] with AstConstruc
     }
 
     val validDoubles = Seq(
-      "1.23", "13434.23399", ".3454", "-0.0", "-54366.4", "-0.3454",
-      "1E23", "1e23", "1E+23", "1.34E99", "9E-443", "0.0d", ".0d",
-      "1e0d", "0.0f", "0.0somegibberish", "0.0")
+      "1.23",
+      "13434.23399",
+      ".3454",
+      "-0.0",
+      "-54366.4",
+      "-0.3454",
+      "1E23",
+      "1e23",
+      "1E+23",
+      "1.34E99",
+      "9E-443",
+      "0.0d",
+      ".0d",
+      "1e0d",
+      "0.0f",
+      "0.0somegibberish",
+      "0.0"
+    )
     for (d <- validDoubles) withClue(d) {
       parsing(d) shouldGive DecimalDoubleLiteral(d)(t)
     }
@@ -103,7 +118,7 @@ class LiteralsParserTest extends JavaccParserTestBase[Any, Any] with AstConstruc
     parsing("$`the funny horse`") shouldGive expressions.Parameter("the funny horse", CTAny)(t)
     parsing("$0") shouldGive expressions.Parameter("0", CTAny)(t)
 
-    //parameter number boundaries
+    // parameter number boundaries
 
     parsing("$1_2") shouldGive parameter("1_2", CTAny)
     parsing("$1") shouldGive parameter("1", CTAny)

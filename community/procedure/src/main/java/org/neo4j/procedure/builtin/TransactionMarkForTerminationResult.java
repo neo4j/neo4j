@@ -19,21 +19,18 @@
  */
 package org.neo4j.procedure.builtin;
 
-public class TransactionMarkForTerminationResult
-{
+public class TransactionMarkForTerminationResult {
     private static final String TERMINATION_MESSAGE = "Transaction terminated.";
 
     public final String transactionId;
     public final String username;
     public final String message;
 
-    TransactionMarkForTerminationResult( String transactionId, String userName )
-    {
-        this( transactionId, userName, TERMINATION_MESSAGE );
+    TransactionMarkForTerminationResult(String transactionId, String userName) {
+        this(transactionId, userName, TERMINATION_MESSAGE);
     }
 
-    TransactionMarkForTerminationResult( String transactionId, String username, String message )
-    {
+    TransactionMarkForTerminationResult(String transactionId, String username, String message) {
         this.transactionId = transactionId;
         this.username = username;
         this.message = message;

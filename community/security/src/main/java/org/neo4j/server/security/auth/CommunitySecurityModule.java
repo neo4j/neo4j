@@ -19,9 +19,11 @@
  */
 package org.neo4j.server.security.auth;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
+
 import java.nio.file.Path;
 import java.util.function.Supplier;
-
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -40,85 +42,78 @@ import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
 import org.neo4j.time.Clocks;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
-
-public class CommunitySecurityModule extends SecurityModule
-{
+public class CommunitySecurityModule extends SecurityModule {
     private final InternalLogProvider logProvider;
     private final Config config;
     private final Dependencies globalDependencies;
     private BasicSystemGraphRealm authManager;
 
-    public CommunitySecurityModule(
-            LogService logService,
-            Config config,
-            Dependencies globalDependencies )
-    {
+    public CommunitySecurityModule(LogService logService, Config config, Dependencies globalDependencies) {
         this.logProvider = logService.getUserLogProvider();
         this.config = config;
         this.globalDependencies = globalDependencies;
     }
 
     @Override
-    public void setup()
-    {
-        Supplier<GraphDatabaseService> systemSupplier = () ->
-        {
-            DatabaseManager<?> databaseManager = globalDependencies.resolveDependency( DatabaseManager.class );
-            return databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ).orElseThrow(
-                    () -> new RuntimeException( "No database called `" + SYSTEM_DATABASE_NAME + "` was found." ) ).databaseFacade();
+    public void setup() {
+        Supplier<GraphDatabaseService> systemSupplier = () -> {
+            DatabaseManager<?> databaseManager = globalDependencies.resolveDependency(DatabaseManager.class);
+            return databaseManager
+                    .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
+                    .orElseThrow(
+                            () -> new RuntimeException("No database called `" + SYSTEM_DATABASE_NAME + "` was found."))
+                    .databaseFacade();
         };
 
         authManager = new BasicSystemGraphRealm(
-                new SystemGraphRealmHelper( systemSupplier, new SecureHasher() ),
-                createAuthenticationStrategy( config )
-        );
+                new SystemGraphRealmHelper(systemSupplier, new SecureHasher()), createAuthenticationStrategy(config));
 
-        registerProcedure( globalDependencies.resolveDependency( GlobalProcedures.class ), logProvider.getLog( getClass() ), AuthProcedures.class, null );
+        registerProcedure(
+                globalDependencies.resolveDependency(GlobalProcedures.class),
+                logProvider.getLog(getClass()),
+                AuthProcedures.class,
+                null);
     }
 
     @Override
-    public AuthManager authManager()
-    {
+    public AuthManager authManager() {
         return authManager;
     }
 
     @Override
-    public AuthManager inClusterAuthManager()
-    {
+    public AuthManager inClusterAuthManager() {
         return null;
     }
 
     @Override
-    public AuthManager loopbackAuthManager()
-    {
+    public AuthManager loopbackAuthManager() {
         return null;
     }
 
     private static final String INITIAL_USER_STORE_FILENAME = "auth.ini";
 
-    private static FileUserRepository getInitialUserRepository( Config config, InternalLogProvider logProvider, FileSystemAbstraction fileSystem )
-    {
-        return new FileUserRepository( fileSystem, getInitialUserRepositoryFile( config ), logProvider );
+    private static FileUserRepository getInitialUserRepository(
+            Config config, InternalLogProvider logProvider, FileSystemAbstraction fileSystem) {
+        return new FileUserRepository(fileSystem, getInitialUserRepositoryFile(config), logProvider);
     }
 
-    public static Path getInitialUserRepositoryFile( Config config )
-    {
-        Path authStoreDir = config.get( GraphDatabaseInternalSettings.auth_store_directory );
-        return authStoreDir.resolve( INITIAL_USER_STORE_FILENAME );
+    public static Path getInitialUserRepositoryFile(Config config) {
+        Path authStoreDir = config.get(GraphDatabaseInternalSettings.auth_store_directory);
+        return authStoreDir.resolve(INITIAL_USER_STORE_FILENAME);
     }
 
-    public static UserSecurityGraphComponent createSecurityComponent( AbstractSecurityLog securityLog, Config config, FileSystemAbstraction fileSystem,
-                                                                      InternalLogProvider logProvider )
-    {
-        UserRepository initialUserRepository = CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem );
+    public static UserSecurityGraphComponent createSecurityComponent(
+            AbstractSecurityLog securityLog,
+            Config config,
+            FileSystemAbstraction fileSystem,
+            InternalLogProvider logProvider) {
+        UserRepository initialUserRepository =
+                CommunitySecurityModule.getInitialUserRepository(config, logProvider, fileSystem);
 
-        return new UserSecurityGraphComponent( securityLog, initialUserRepository, config );
+        return new UserSecurityGraphComponent(securityLog, initialUserRepository, config);
     }
 
-    public static AuthenticationStrategy createAuthenticationStrategy( Config config )
-    {
-        return new RateLimitedAuthenticationStrategy( Clocks.systemClock(), config );
+    public static AuthenticationStrategy createAuthenticationStrategy(Config config) {
+        return new RateLimitedAuthenticationStrategy(Clocks.systemClock(), config);
     }
 }

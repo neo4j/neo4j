@@ -37,10 +37,14 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Ref
 
 object CachedSimpleMetricsFactory extends MetricsFactory {
-  override def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel,
-                                       selectivityCalculator: SelectivityCalculator,
-                                       evaluator: ExpressionEvaluator): CardinalityModel = {
-    val wrapped: StatisticsBackedCardinalityModel = SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel, selectivityCalculator, evaluator)
+
+  override def newCardinalityEstimator(
+    queryGraphCardinalityModel: QueryGraphCardinalityModel,
+    selectivityCalculator: SelectivityCalculator,
+    evaluator: ExpressionEvaluator
+  ): CardinalityModel = {
+    val wrapped: StatisticsBackedCardinalityModel =
+      SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel, selectivityCalculator, evaluator)
     new CachedStatisticsBackedCardinalityModel(wrapped)
   }
 
@@ -52,29 +56,58 @@ object CachedSimpleMetricsFactory extends MetricsFactory {
    * The reason for this is that the objects are mutable and during planning we modify them instead of creating new ones.
    */
   override def newCostModel(executionModel: ExecutionModel): CostModel = {
-    val cached = CachedFunction((plan: LogicalPlan,
-       input: QueryGraphSolverInput,
-       semanticTable: SemanticTable,
-       cardinalities: Ref[Cardinalities],
-       providedOrders: Ref[ProvidedOrders],
-       monitor: CostModelMonitor) => {
-        SimpleMetricsFactory.newCostModel(executionModel).costFor (plan, input, semanticTable, cardinalities.value,
-          providedOrders.value, monitor)
-      })
-    (plan: LogicalPlan, input: Metrics.QueryGraphSolverInput, semanticTable: SemanticTable, cardinalities: Cardinalities, providedOrders: ProvidedOrders, monitor: CostModelMonitor) => {
+    val cached = CachedFunction(
+      (
+        plan: LogicalPlan,
+        input: QueryGraphSolverInput,
+        semanticTable: SemanticTable,
+        cardinalities: Ref[Cardinalities],
+        providedOrders: Ref[ProvidedOrders],
+        monitor: CostModelMonitor
+      ) => {
+        SimpleMetricsFactory.newCostModel(executionModel).costFor(
+          plan,
+          input,
+          semanticTable,
+          cardinalities.value,
+          providedOrders.value,
+          monitor
+        )
+      }
+    )
+    (
+      plan: LogicalPlan,
+      input: Metrics.QueryGraphSolverInput,
+      semanticTable: SemanticTable,
+      cardinalities: Cardinalities,
+      providedOrders: ProvidedOrders,
+      monitor: CostModelMonitor
+    ) => {
       cached(plan, input, semanticTable, Ref(cardinalities), Ref(providedOrders), monitor)
     }
   }
 
-  override def newQueryGraphCardinalityModel(planContext: PlanContext, selectivityCalculator: SelectivityCalculator): QueryGraphCardinalityModel = {
-    val wrapped: QueryGraphCardinalityModel = SimpleMetricsFactory.newQueryGraphCardinalityModel(planContext, selectivityCalculator)
-    val cached = CachedFunction[QueryGraph, Metrics.QueryGraphSolverInput, SemanticTable, IndexCompatiblePredicatesProviderContext, Cardinality] {
+  override def newQueryGraphCardinalityModel(
+    planContext: PlanContext,
+    selectivityCalculator: SelectivityCalculator
+  ): QueryGraphCardinalityModel = {
+    val wrapped: QueryGraphCardinalityModel =
+      SimpleMetricsFactory.newQueryGraphCardinalityModel(planContext, selectivityCalculator)
+    val cached = CachedFunction[
+      QueryGraph,
+      Metrics.QueryGraphSolverInput,
+      SemanticTable,
+      IndexCompatiblePredicatesProviderContext,
+      Cardinality
+    ] {
       (a, b, c, d) => wrapped(a, b, c, d)
     }
-    (queryGraph: QueryGraph,
-                         input: Metrics.QueryGraphSolverInput,
-                         semanticTable: SemanticTable,
-                         indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext) => {
+    (
+      queryGraph: QueryGraph,
+      input: Metrics.QueryGraphSolverInput,
+      semanticTable: SemanticTable,
+      indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+    ) => {
       cached.apply(queryGraph, input, semanticTable, indexPredicateProviderContext)
     }
   }

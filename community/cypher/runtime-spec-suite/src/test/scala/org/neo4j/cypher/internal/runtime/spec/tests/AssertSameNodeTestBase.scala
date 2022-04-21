@@ -30,16 +30,21 @@ import org.neo4j.exceptions.MergeConstraintConflictException
 import org.neo4j.graphdb.schema.IndexType
 
 abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
-                                                               edition: Edition[CONTEXT],
-                                                               runtime: CypherRuntime[CONTEXT],
-                                                               val sizeHint: Int
-                                                             ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  val sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+
   test("should verify that two nodes are identical") {
     val nodes = given {
       uniqueIndex("Honey", "prop")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -60,9 +65,13 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   test("should fail if two nodes are different") {
     given {
       uniqueIndex("Honey", "prop")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -73,16 +82,20 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
       .nodeIndexOperator("x:Honey(prop = 20)")
       .build()
 
-    //then
+    // then
     a[MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
   }
 
   test("should verify that many nodes are identical") {
     val nodes = given {
       uniqueIndex("Honey", "prop")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -107,9 +120,13 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   test("should fail if two nodes out of many are different") {
     given {
       uniqueIndex("Honey", "prop")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -124,16 +141,20 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
       .nodeIndexOperator("x:Honey(prop = 20)")
       .build()
 
-    //then
+    // then
     a[MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
   }
 
   test("should verify that three nodes are identical") {
     val nodes = given {
       uniqueIndex("Honey", "prop")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -156,9 +177,13 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   test("should fail if any of  that three nodes are different") {
     given {
       uniqueIndex("Honey", "prop")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -171,16 +196,20 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
       .nodeIndexOperator("x:Honey(prop = 20)")
       .build()
 
-    //then
+    // then
     a[MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
   }
 
   test("should verify that two nodes are identical on the RHS of an apply") {
     val nodes = given {
       uniqueIndex("Honey", "prop")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -203,9 +232,13 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   test("should fail if two nodes are different on the RHS of an apply") {
     given {
       uniqueIndex("Honey", "prop")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -218,16 +251,20 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
       .argument()
       .build()
 
-    //then
+    // then
     a[MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
   }
 
   test("should fail if only lhs is empty") {
     given {
       uniqueIndex("Honey", "prop")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -238,16 +275,20 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
       .nodeIndexOperator(s"x:Honey(prop = ${sizeHint + 1})")
       .build()
 
-    //then
+    // then
     a[MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
   }
 
   test("should fail if only rhs is empty") {
     given {
       uniqueIndex("Honey", "prop")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -258,16 +299,20 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
       .nodeIndexOperator("x:Honey(prop = 20)")
       .build()
 
-    //then
+    // then
     a[MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
   }
 
   test("should work if lhs and rhs are empty") {
     given {
       uniqueIndex("Honey", "prop")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -287,9 +332,13 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   test("should assert same nodes on top of range seek and fail") {
     given {
       uniqueIndex("Honey", "prop")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -308,9 +357,13 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
     given {
       uniqueIndex("Person", "id")
       uniqueIndex("Person", "email")
-      nodePropertyGraph(1, {
-        case _ => Map("email" -> "smth@neo.com")
-      }, "Person")
+      nodePropertyGraph(
+        1,
+        {
+          case _ => Map("email" -> "smth@neo.com")
+        },
+        "Person"
+      )
     }
 
     // when
@@ -322,16 +375,22 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     // then
-    a [MergeConstraintConflictException] should be thrownBy consume(execute(logicalQuery, runtime))
+    a[MergeConstraintConflictException] should be thrownBy consume(execute(logicalQuery, runtime))
   }
 
-  test("should fail on merge using multiple unique indexes if it found a node matching single property only, flipped order") {
+  test(
+    "should fail on merge using multiple unique indexes if it found a node matching single property only, flipped order"
+  ) {
     given {
       uniqueIndex("Person", "id")
       uniqueIndex("Person", "email")
-      nodePropertyGraph(1, {
-        case _ => Map("id" -> 42)
-      }, "Person")
+      nodePropertyGraph(
+        1,
+        {
+          case _ => Map("id" -> 42)
+        },
+        "Person"
+      )
     }
 
     // when
@@ -343,15 +402,20 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     // then
-    a [MergeConstraintConflictException] should be thrownBy consume(execute(logicalQuery, runtime))
+    a[MergeConstraintConflictException] should be thrownBy consume(execute(logicalQuery, runtime))
   }
+
   test("two unique indexes same node") {
     val nodes = given {
       uniqueIndex("L", "prop1")
       uniqueIndex("L", "prop2")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop1" -> i, "prop2" -> i.toString)
-      }, "L")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop1" -> i, "prop2" -> i.toString)
+        },
+        "L"
+      )
     }
 
     // when
@@ -373,9 +437,13 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
     given {
       uniqueIndex("L", "prop1")
       uniqueIndex("L", "prop2")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop1" -> i, "prop2" -> i.toString)
-      }, "L")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop1" -> i, "prop2" -> i.toString)
+        },
+        "L"
+      )
     }
 
     // when
@@ -386,43 +454,51 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
       .nodeIndexOperator("x:L(prop1 = 20)")
       .build()
 
-    //then
-    a [MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
+    // then
+    a[MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
   }
 }
 
 trait EnterpriseAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
   self: AssertSameNodeTestBase[CONTEXT] =>
 
-    test("one node key constraint, same node") {
-      val nodes = given {
-        nodeKey("L", "prop1", "prop2")
-        nodePropertyGraph(sizeHint, {
+  test("one node key constraint, same node") {
+    val nodes = given {
+      nodeKey("L", "prop1", "prop2")
+      nodePropertyGraph(
+        sizeHint,
+        {
           case i => Map("prop1" -> i, "prop2" -> i.toString)
-        }, "L")
-      }
-
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("x")
-        .assertSameNode("x")
-        .|.nodeIndexOperator("x:L(prop1 = 20, prop2 = '20')", unique = true, indexType = IndexType.RANGE)
-        .nodeIndexOperator("x:L(prop1 = 20, prop2 = '20')", unique = true, indexType = IndexType.RANGE)
-        .build(readOnly = false)
-
-      val runtimeResult = execute(logicalQuery, runtime)
-
-      // then
-      val expected = nodes(20)
-      runtimeResult should beColumns("x").withSingleRow(expected)
+        },
+        "L"
+      )
     }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .assertSameNode("x")
+      .|.nodeIndexOperator("x:L(prop1 = 20, prop2 = '20')", unique = true, indexType = IndexType.RANGE)
+      .nodeIndexOperator("x:L(prop1 = 20, prop2 = '20')", unique = true, indexType = IndexType.RANGE)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes(20)
+    runtimeResult should beColumns("x").withSingleRow(expected)
+  }
 
   test("one node key constraint, different nodes") {
     given {
       nodeKey("L", "prop1", "prop2")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop1" -> i, "prop2" -> i.toString)
-      }, "L")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop1" -> i, "prop2" -> i.toString)
+        },
+        "L"
+      )
     }
 
     // when
@@ -433,17 +509,21 @@ trait EnterpriseAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
       .nodeIndexOperator("x:L(prop1 = 20, prop2 = 20)", unique = true, indexType = IndexType.RANGE)
       .build(readOnly = false)
 
-    //then
-    a [MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
+    // then
+    a[MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
   }
 
   test("two node key constraints, same node") {
     val nodes = given {
       nodeKey("L", "prop1", "prop2")
       nodeKey("L", "prop3", "prop4")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop1" -> i, "prop2" -> i.toString, "prop3" -> i, "prop4" -> i.toString)
-      }, "L")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop1" -> i, "prop2" -> i.toString, "prop3" -> i, "prop4" -> i.toString)
+        },
+        "L"
+      )
     }
 
     // when
@@ -465,9 +545,13 @@ trait EnterpriseAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
     given {
       nodeKey("L", "prop1", "prop2")
       nodeKey("L", "prop3", "prop4")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop1" -> i, "prop2" -> i.toString, "prop3" -> i, "prop4" -> i.toString)
-      }, "L")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop1" -> i, "prop2" -> i.toString, "prop3" -> i, "prop4" -> i.toString)
+        },
+        "L"
+      )
     }
 
     // when
@@ -478,12 +562,11 @@ trait EnterpriseAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
       .nodeIndexOperator("x:L(prop1 = 20, prop2 = 20)", unique = true, indexType = IndexType.RANGE)
       .build(readOnly = false)
 
-    //then
-    a [MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
+    // then
+    a[MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
   }
 
 }
-
 
 /**
  * These are tests for cases which don't really happen in production
@@ -495,9 +578,13 @@ trait EsotericAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
   test("should fail if lhs is not a node") {
     given {
       uniqueIndex("Honey", "prop")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -509,16 +596,20 @@ trait EsotericAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
       .nodeIndexOperator("y:Honey(prop = 20)")
       .build()
 
-    //then
-    a [CypherTypeException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
+    // then
+    a[CypherTypeException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
   }
 
   test("should fail if rhs is not a node") {
     given {
       uniqueIndex("Honey", "prop")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -530,16 +621,22 @@ trait EsotericAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
       .nodeIndexOperator("x:Honey(prop = 20)")
       .build()
 
-    //then
-    a [CypherTypeException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
+    // then
+    a[CypherTypeException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
   }
 
   test("should handle more nodes on the lhs") {
     val (nodes, _) = given {
       uniqueIndex("Honey", "prop")
-      bipartiteGraph(sizeHint, "Honey", "Bee", "R", {
-        case i => Map("prop" -> i)
-      })
+      bipartiteGraph(
+        sizeHint,
+        "Honey",
+        "Bee",
+        "R",
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
 
     // when
@@ -561,9 +658,15 @@ trait EsotericAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
   test("should handle more nodes on the rhs") {
     val (nodes, _) = given {
       uniqueIndex("Honey", "prop")
-      bipartiteGraph(sizeHint, "Honey", "Bee", "R", {
-        case i => Map("prop" -> i)
-      })
+      bipartiteGraph(
+        sizeHint,
+        "Honey",
+        "Bee",
+        "R",
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
 
     // when
@@ -585,9 +688,15 @@ trait EsotericAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
   test("should fail if some of the nodes coming from rhs are different") {
     given {
       uniqueIndex("Honey", "prop")
-      bipartiteGraph(sizeHint, "Honey", "Bee", "R", {
-        case i => Map("prop" -> i)
-      })
+      bipartiteGraph(
+        sizeHint,
+        "Honey",
+        "Bee",
+        "R",
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
 
     // when
@@ -601,9 +710,8 @@ trait EsotericAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
 
     execute(logicalQuery, runtime)
 
-    //then
-    a [MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
+    // then
+    a[MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
   }
 
 }
-

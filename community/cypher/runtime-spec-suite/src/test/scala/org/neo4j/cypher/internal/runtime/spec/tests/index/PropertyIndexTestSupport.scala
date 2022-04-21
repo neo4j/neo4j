@@ -37,7 +37,7 @@ import org.scalactic.source.Position
 trait PropertyIndexTestSupport[CONTEXT <: RuntimeContext] {
   self: RuntimeTestSuite[CONTEXT] =>
 
-  private val defaultSupportedTypes: Seq[ValueType] =  {
+  private val defaultSupportedTypes: Seq[ValueType] = {
     val unsupportedTypes = Set(ValueType.CHAR, ValueType.CHAR_ARRAY, ValueType.BYTE, ValueType.BYTE_ARRAY)
     ValueType.values().toSeq.filterNot(unsupportedTypes.contains)
   }
@@ -56,7 +56,12 @@ trait PropertyIndexTestSupport[CONTEXT <: RuntimeContext] {
   }
 
   private val indexToTest: Seq[IndexInTest] = Seq[IndexInTest](
-    IndexInTest(RangeIndexProvider.DESCRIPTOR, RangeIndexProvider.CAPABILITY, IndexType.RANGE, supportedPropertyTypes()),
+    IndexInTest(
+      RangeIndexProvider.DESCRIPTOR,
+      RangeIndexProvider.CAPABILITY,
+      IndexType.RANGE,
+      supportedPropertyTypes()
+    ),
     IndexInTest(TextIndexProvider.DESCRIPTOR, TextIndexProvider.CAPABILITY, IndexType.TEXT, supportedPropertyTypes()),
     IndexInTest(PointIndexProvider.DESCRIPTOR, PointIndexProvider.CAPABILITY, IndexType.POINT, supportedPropertyTypes())
   )
@@ -66,7 +71,8 @@ trait PropertyIndexTestSupport[CONTEXT <: RuntimeContext] {
   def testWithIndex(name: String)(testFun: IndexInTest => Any)(implicit pos: Position): Unit =
     testWithIndex(_ => true, name)(testFun)
 
-  def testWithIndex(indexFilter: IndexInTest => Boolean, name: String)(testFun: IndexInTest => Any)(implicit pos: Position): Unit = {
+  def testWithIndex(indexFilter: IndexInTest => Boolean, name: String)(testFun: IndexInTest => Any)(implicit
+  pos: Position): Unit = {
     val indexToUse = indexToTest.filter(indexFilter)
     if (indexToUse.isEmpty) {
       fail("Found no index to test with.")
@@ -87,7 +93,7 @@ class IndexInTest(
 
   def supportsUniqueness(queryType: IndexQueryType): Boolean = {
     supports(queryType) &&
-      indexType != IndexType.TEXT && indexType != IndexType.POINT // Is there no better way?
+    indexType != IndexType.TEXT && indexType != IndexType.POINT // Is there no better way?
   }
 
   def supportsValues(query: IndexQueryType): Boolean = provideValueSupport(query).nonEmpty
@@ -127,11 +133,20 @@ class IndexInTest(
 }
 
 object IndexInTest {
-  def apply(descriptor: IndexProviderDescriptor, capability: IndexCapability, indexType: IndexType, propertyTypes: Seq[ValueType]): IndexInTest = {
+
+  def apply(
+    descriptor: IndexProviderDescriptor,
+    capability: IndexCapability,
+    indexType: IndexType,
+    propertyTypes: Seq[ValueType]
+  ): IndexInTest = {
     new IndexInTest(capability, buildValueTypeSupport(capability, propertyTypes), indexType)
   }
 
-  private def buildValueTypeSupport(capability: IndexCapability, propertyTypes: Seq[ValueType]): Map[IndexQueryType, Seq[ValueType]] = {
+  private def buildValueTypeSupport(
+    capability: IndexCapability,
+    propertyTypes: Seq[ValueType]
+  ): Map[IndexQueryType, Seq[ValueType]] = {
     IndexQueryType.values()
       .map(query => query -> propertyTypes.filter(t => capability.isQuerySupported(query, t.valueGroup.category())))
       .toMap

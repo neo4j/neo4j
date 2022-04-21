@@ -22,17 +22,14 @@ package org.neo4j.kernel.api.exceptions.index;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class IndexPopulationFailedKernelException extends KernelException
-{
+public class IndexPopulationFailedKernelException extends KernelException {
     private static final String FORMAT_MESSAGE = "Failed to populate index %s";
 
-    public IndexPopulationFailedKernelException( String indexUserDescription, Throwable cause )
-    {
-        super( Status.Schema.IndexCreationFailed, cause, FORMAT_MESSAGE, indexUserDescription );
+    public IndexPopulationFailedKernelException(String indexUserDescription, Throwable cause) {
+        super(Status.Schema.IndexCreationFailed, cause, FORMAT_MESSAGE, indexUserDescription);
     }
 
-    public IndexPopulationFailedKernelException( String indexUserDescription, String message )
-    {
-        super( Status.Schema.IndexCreationFailed, FORMAT_MESSAGE + ", due to " + message, indexUserDescription );
+    public IndexPopulationFailedKernelException(String indexUserDescription, String message) {
+        super(Status.Schema.IndexCreationFailed, FORMAT_MESSAGE + ", due to " + message, indexUserDescription);
     }
 }

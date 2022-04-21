@@ -23,38 +23,32 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-class ActorsManager
-{
+class ActorsManager {
     private final ConcurrentLinkedQueue<ActorImpl> actors = new ConcurrentLinkedQueue<>();
 
     private final String managerName;
     private final ThreadGroup threadGroup;
 
-    ActorsManager( String name )
-    {
+    ActorsManager(String name) {
         this.managerName = name;
-        this.threadGroup = new ThreadGroup( managerName );
+        this.threadGroup = new ThreadGroup(managerName);
     }
 
-    void stopAllActors() throws InterruptedException
-    {
+    void stopAllActors() throws InterruptedException {
         List<ActorImpl> stoppedActors = new ArrayList<>();
         ActorImpl actor;
-        while ( (actor = actors.poll()) != null )
-        {
+        while ((actor = actors.poll()) != null) {
             actor.stop();
-            stoppedActors.add( actor );
+            stoppedActors.add(actor);
         }
-        for ( ActorImpl stoppedActor : stoppedActors )
-        {
+        for (ActorImpl stoppedActor : stoppedActors) {
             stoppedActor.join();
         }
     }
 
-    Actor createActor( String name )
-    {
-        ActorImpl actor = new ActorImpl( threadGroup, "Actor:" + managerName + "." + name );
-        actors.offer( actor );
+    Actor createActor(String name) {
+        ActorImpl actor = new ActorImpl(threadGroup, "Actor:" + managerName + "." + name);
+        actors.offer(actor);
         return actor;
     }
 }

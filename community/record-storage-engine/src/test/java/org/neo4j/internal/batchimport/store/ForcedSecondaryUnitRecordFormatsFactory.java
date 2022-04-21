@@ -24,17 +24,14 @@ import org.neo4j.kernel.impl.store.format.ForcedSecondaryUnitRecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 
 @ServiceProvider
-public class ForcedSecondaryUnitRecordFormatsFactory implements RecordFormats.Factory
-{
+public class ForcedSecondaryUnitRecordFormatsFactory implements RecordFormats.Factory {
     @Override
-    public String getName()
-    {
+    public String getName() {
         return ForcedSecondaryUnitRecordFormats.DEFAULT_RECORD_FORMATS.name();
     }
 
     @Override
-    public RecordFormats newInstance()
-    {
+    public RecordFormats newInstance() {
         return ForcedSecondaryUnitRecordFormats.DEFAULT_RECORD_FORMATS;
     }
 }

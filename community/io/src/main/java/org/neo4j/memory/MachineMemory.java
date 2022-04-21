@@ -21,11 +21,9 @@ package org.neo4j.memory;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryUsage;
-
 import org.neo4j.io.os.OsBeanUtil;
 
-public interface MachineMemory
-{
+public interface MachineMemory {
     /**
      * @return total amount of physical memory in bytes, or -1 if the functionality is not supported.
      */
@@ -37,17 +35,14 @@ public interface MachineMemory
      */
     MemoryUsage getHeapMemoryUsage();
 
-    MachineMemory DEFAULT = new MachineMemory()
-    {
+    MachineMemory DEFAULT = new MachineMemory() {
         @Override
-        public long getTotalPhysicalMemory()
-        {
+        public long getTotalPhysicalMemory() {
             return OsBeanUtil.getTotalPhysicalMemory();
         }
 
         @Override
-        public MemoryUsage getHeapMemoryUsage()
-        {
+        public MemoryUsage getHeapMemoryUsage() {
             return ManagementFactory.getMemoryMXBean().getHeapMemoryUsage();
         }
     };

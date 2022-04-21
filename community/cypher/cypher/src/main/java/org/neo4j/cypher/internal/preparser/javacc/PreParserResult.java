@@ -21,55 +21,46 @@ package org.neo4j.cypher.internal.preparser.javacc;
 
 import java.util.List;
 import java.util.Objects;
-
 import org.neo4j.cypher.internal.PreParserOption;
 import org.neo4j.cypher.internal.util.InputPosition;
 
-public class PreParserResult
-{
+public class PreParserResult {
     private final List<PreParserOption> options;
     private final InputPosition position;
-    private static final String EMPTY_QUERY_PARSER_EXCEPTION_MSG = "Unexpected end of input: expected CYPHER, EXPLAIN, PROFILE or Query";
+    private static final String EMPTY_QUERY_PARSER_EXCEPTION_MSG =
+            "Unexpected end of input: expected CYPHER, EXPLAIN, PROFILE or Query";
 
-    public PreParserResult( List<PreParserOption> options, InputPosition position )
-    {
+    public PreParserResult(List<PreParserOption> options, InputPosition position) {
         this.options = options;
         this.position = position;
     }
 
-    public List<PreParserOption> options()
-    {
+    public List<PreParserOption> options() {
         return options;
     }
 
-    public InputPosition position()
-    {
+    public InputPosition position() {
         return position;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         PreParserResult that = (PreParserResult) o;
-        return Objects.equals( options, that.options ) && Objects.equals( position, that.position );
+        return Objects.equals(options, that.options) && Objects.equals(position, that.position);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( options, position );
+    public int hashCode() {
+        return Objects.hash(options, position);
     }
 
-    public static String getEmptyQueryExceptionMsg()
-    {
+    public static String getEmptyQueryExceptionMsg() {
         return EMPTY_QUERY_PARSER_EXCEPTION_MSG;
     }
 }

@@ -21,6 +21,4 @@ package org.neo4j.server.bind;
 
 import java.util.function.Supplier;
 
-record LazyFactoryBinding<T>( Class<? extends Supplier<T>> supplierType, Class<T> type )
-{
-}
+record LazyFactoryBinding<T>(Class<? extends Supplier<T>> supplierType, Class<T> type) {}

@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.Arrays;
+import static java.lang.String.format;
 
+import java.util.Arrays;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexOrder;
@@ -28,28 +29,21 @@ import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.values.storable.ValueCategory;
 
-import static java.lang.String.format;
-
-class QueryValidator
-{
-    static void validateOrder( IndexCapability capability, IndexOrder indexOrder, PropertyIndexQuery... predicates )
-    {
-        if ( indexOrder == IndexOrder.NONE )
-        {
+class QueryValidator {
+    static void validateOrder(IndexCapability capability, IndexOrder indexOrder, PropertyIndexQuery... predicates) {
+        if (indexOrder == IndexOrder.NONE) {
             return;
         }
 
         final var valueCategories = new ValueCategory[predicates.length];
-        for ( int i = 0; i < predicates.length; i++ )
-        {
+        for (int i = 0; i < predicates.length; i++) {
             valueCategories[i] = predicates[i].valueGroup().category();
         }
 
-        final var orderCapability = capability.orderCapability( valueCategories );
-        if ( indexOrder == IndexOrder.ASCENDING && !orderCapability.supportsAsc()
-             || indexOrder == IndexOrder.DESCENDING && !orderCapability.supportsDesc() )
-        {
-            invalidOrder( indexOrder, orderCapability, predicates );
+        final var orderCapability = capability.orderCapability(valueCategories);
+        if (indexOrder == IndexOrder.ASCENDING && !orderCapability.supportsAsc()
+                || indexOrder == IndexOrder.DESCENDING && !orderCapability.supportsDesc()) {
+            invalidOrder(indexOrder, orderCapability, predicates);
         }
     }
 
@@ -81,71 +75,65 @@ class QueryValidator
      *
      * @param predicates The query for which we want to check the composite validity.
      */
-    static void validateCompositeQuery( PropertyIndexQuery... predicates )
-    {
-        if ( predicates.length == 1 && predicates[0].type() == IndexQueryType.FULLTEXT_SEARCH )
-        {
-            invalidQuerySingular( IndexQueryType.FULLTEXT_SEARCH, predicates );
+    static void validateCompositeQuery(PropertyIndexQuery... predicates) {
+        if (predicates.length == 1 && predicates[0].type() == IndexQueryType.FULLTEXT_SEARCH) {
+            invalidQuerySingular(IndexQueryType.FULLTEXT_SEARCH, predicates);
         }
 
-        for ( int i = 1; i < predicates.length; i++ )
-        {
+        for (int i = 1; i < predicates.length; i++) {
             final var type = predicates[i].type();
             final var prevType = predicates[i - 1].type();
 
-            switch ( type )
-            {
-                case EXISTS ->
-                {
-                    // all predicates that are supported in a composite query, can be followed by an EXISTS, as EXISTS has the least precision;
-                    // thus, if current type is EXISTS, then previous type is allowed to be any type that is valid for composite queries
-                    switch ( prevType )
-                    {
-                        case EXISTS, EXACT, RANGE, BOUNDING_BOX, STRING_PREFIX -> { }
-                        default -> invalidQueryInComposite( prevType, predicates );
+            switch (type) {
+                case EXISTS -> {
+                    // all predicates that are supported in a composite query, can be followed by an EXISTS, as EXISTS
+                    // has the least precision;
+                    // thus, if current type is EXISTS, then previous type is allowed to be any type that is valid for
+                    // composite queries
+                    switch (prevType) {
+                        case EXISTS, EXACT, RANGE, BOUNDING_BOX, STRING_PREFIX -> {}
+                        default -> invalidQueryInComposite(prevType, predicates);
                     }
                 }
 
-                case EXACT, RANGE, BOUNDING_BOX, STRING_PREFIX ->
-                {
+                case EXACT, RANGE, BOUNDING_BOX, STRING_PREFIX -> {
                     // all other predicates that are supported in a composite query, can _only_ follow an EXACT;
                     // if the previous type is not an EXACT, then the precision is not decreasing
-                    if ( prevType != IndexQueryType.EXACT )
-                    {
-                        invalidQueryPrecisionInComposite( predicates );
+                    if (prevType != IndexQueryType.EXACT) {
+                        invalidQueryPrecisionInComposite(predicates);
                     }
                 }
 
-                default -> invalidQueryInComposite( type, predicates );
+                default -> invalidQueryInComposite(type, predicates);
             }
         }
     }
 
-    private static void invalidOrder( IndexOrder indexOrder, IndexOrderCapability orderCapability, PropertyIndexQuery... predicates )
-    {
-        throw new UnsupportedOperationException(
-                format( "Tried to query index with unsupported order %s. For query %s supports ascending: %b, supports descending: %b.",
-                        indexOrder, Arrays.toString( predicates ), orderCapability.supportsAsc(), orderCapability.supportsDesc() ) );
+    private static void invalidOrder(
+            IndexOrder indexOrder, IndexOrderCapability orderCapability, PropertyIndexQuery... predicates) {
+        throw new UnsupportedOperationException(format(
+                "Tried to query index with unsupported order %s. For query %s supports ascending: %b, supports descending: %b.",
+                indexOrder,
+                Arrays.toString(predicates),
+                orderCapability.supportsAsc(),
+                orderCapability.supportsDesc()));
     }
 
-    private static void invalidQuerySingular( IndexQueryType type, PropertyIndexQuery... predicates )
-    {
-        throw new IllegalArgumentException(
-                format( "Tried to query index with illegal composite query. %s queries are not allowed on this index. Query was: %s ",
-                        type, Arrays.toString( predicates ) ) );
+    private static void invalidQuerySingular(IndexQueryType type, PropertyIndexQuery... predicates) {
+        throw new IllegalArgumentException(format(
+                "Tried to query index with illegal composite query. %s queries are not allowed on this index. Query was: %s ",
+                type, Arrays.toString(predicates)));
     }
 
-    private static void invalidQueryInComposite( IndexQueryType type, PropertyIndexQuery... predicates )
-    {
-        throw new IllegalArgumentException(
-                format( "Tried to query index with illegal composite query. %s queries are not allowed in composite query. Query was: %s ",
-                        type, Arrays.toString( predicates ) ) );
+    private static void invalidQueryInComposite(IndexQueryType type, PropertyIndexQuery... predicates) {
+        throw new IllegalArgumentException(format(
+                "Tried to query index with illegal composite query. %s queries are not allowed in composite query. Query was: %s ",
+                type, Arrays.toString(predicates)));
     }
 
-    private static void invalidQueryPrecisionInComposite( PropertyIndexQuery... predicates )
-    {
-        throw new IllegalArgumentException(
-                format( "Tried to query index with illegal composite query. Composite query must have decreasing precision. Query was: %s ",
-                        Arrays.toString( predicates ) ) );
+    private static void invalidQueryPrecisionInComposite(PropertyIndexQuery... predicates) {
+        throw new IllegalArgumentException(format(
+                "Tried to query index with illegal composite query. Composite query must have decreasing precision. Query was: %s ",
+                Arrays.toString(predicates)));
     }
 }

@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
@@ -41,73 +40,68 @@ import org.neo4j.server.http.cypher.format.api.TransactionInfoEvent;
 import org.neo4j.server.http.cypher.format.api.TransactionNotificationState;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 
-class OutputEventStreamImpl implements OutputEventSource, OutputEventStream
-{
+class OutputEventStreamImpl implements OutputEventSource, OutputEventStream {
 
     private final Consumer<OutputEventStream> startListener;
-    private final Map<String,Object> parameters;
+    private final Map<String, Object> parameters;
     private final TransactionUriScheme uriInfo;
     private Consumer<OutputEvent> eventListener;
 
-    OutputEventStreamImpl( Map<String,Object> parameters, TransactionUriScheme uriInfo, Consumer<OutputEventStream> startListener )
-    {
+    OutputEventStreamImpl(
+            Map<String, Object> parameters, TransactionUriScheme uriInfo, Consumer<OutputEventStream> startListener) {
         this.parameters = parameters;
         this.startListener = startListener;
         this.uriInfo = uriInfo;
     }
 
     @Override
-    public void produceEvents( Consumer<OutputEvent> eventListener )
-    {
+    public void produceEvents(Consumer<OutputEvent> eventListener) {
         this.eventListener = eventListener;
-        startListener.accept( this );
+        startListener.accept(this);
     }
 
     @Override
-    public Map<String,Object> getParameters()
-    {
+    public Map<String, Object> getParameters() {
         return parameters;
     }
 
     @Override
-    public void writeStatementStart( Statement statement, List<String> columns )
-    {
-        notifyListener( new StatementStartEvent( statement, columns ) );
+    public void writeStatementStart(Statement statement, List<String> columns) {
+        notifyListener(new StatementStartEvent(statement, columns));
     }
 
     @Override
-    public void writeStatementEnd( QueryExecutionType queryExecutionType, QueryStatistics queryStatistics, ExecutionPlanDescription executionPlanDescription,
-            Iterable<Notification> notifications )
-    {
-        notifyListener( new StatementEndEvent( queryExecutionType, queryStatistics, executionPlanDescription, notifications ) );
+    public void writeStatementEnd(
+            QueryExecutionType queryExecutionType,
+            QueryStatistics queryStatistics,
+            ExecutionPlanDescription executionPlanDescription,
+            Iterable<Notification> notifications) {
+        notifyListener(
+                new StatementEndEvent(queryExecutionType, queryStatistics, executionPlanDescription, notifications));
     }
 
     @Override
-    public void writeRecord( List<String> columns, Function<String,Object> valueSupplier )
-    {
-        notifyListener( new RecordEvent( columns, valueSupplier ) );
+    public void writeRecord(List<String> columns, Function<String, Object> valueSupplier) {
+        notifyListener(new RecordEvent(columns, valueSupplier));
     }
 
     @Override
-    public void writeTransactionInfo( TransactionNotificationState notification, URI commitUri, long expirationTimestamp )
-    {
-        notifyListener( new TransactionInfoEvent( notification, commitUri, expirationTimestamp ) );
+    public void writeTransactionInfo(
+            TransactionNotificationState notification, URI commitUri, long expirationTimestamp) {
+        notifyListener(new TransactionInfoEvent(notification, commitUri, expirationTimestamp));
     }
 
     @Override
-    public void writeFailure( Status status, String message )
-    {
-        notifyListener( new FailureEvent( status, message ) );
+    public void writeFailure(Status status, String message) {
+        notifyListener(new FailureEvent(status, message));
     }
 
-    private void notifyListener( OutputEvent event )
-    {
-        eventListener.accept( event );
+    private void notifyListener(OutputEvent event) {
+        eventListener.accept(event);
     }
 
     @Override
-    public TransactionUriScheme getUriInfo()
-    {
+    public TransactionUriScheme getUriInfo() {
         return uriInfo;
     }
 }

@@ -36,29 +36,29 @@ import org.neo4j.cypher.internal.util.topDown
 
 case object HasLabelsOrTypesReplacedIfPossible extends StepSequencer.Condition
 
-
 trait HasLabelsAndHasTypeNormalizer extends Rewriter {
 
   override def apply(that: AnyRef): AnyRef = instance(that)
 
   def rewrite(expression: Expression): Expression = expression match {
-    case p@HasLabelsOrTypes(e, labels) if isNode(e)         =>
+    case p @ HasLabelsOrTypes(e, labels) if isNode(e) =>
       HasLabels(e, labels.map(l => LabelName(l.name)(l.position)))(p.position)
-    case p@HasLabelsOrTypes(e, labels) if isRelationship(e) =>
+    case p @ HasLabelsOrTypes(e, labels) if isRelationship(e) =>
       HasTypes(e, labels.map(l => RelTypeName(l.name)(l.position)))(p.position)
     case e =>
       e
   }
 
-  protected val instance: Rewriter = topDown(Rewriter.lift{
-    case e:Expression => rewrite(e)
+  protected val instance: Rewriter = topDown(Rewriter.lift {
+    case e: Expression => rewrite(e)
   })
 
   def isNode(expr: Expression): Boolean
   def isRelationship(expr: Expression): Boolean
 }
 
-case class normalizeHasLabelsAndHasType(semanticState: SemanticState) extends HasLabelsAndHasTypeNormalizer  {
+case class normalizeHasLabelsAndHasType(semanticState: SemanticState) extends HasLabelsAndHasTypeNormalizer {
+
   def isNode(expr: Expression): Boolean =
     semanticState.expressionType(expr).actual == CTNode.invariant
 
@@ -73,11 +73,13 @@ object normalizeHasLabelsAndHasType extends StepSequencer.Step with ASTRewriterF
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
+    PatternExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside PatternExpressions.
   )
 
-  override def getRewriter(semanticState: SemanticState,
-                           parameterTypeMapping: Map[String, CypherType],
-                           cypherExceptionFactory: CypherExceptionFactory,
-                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = normalizeHasLabelsAndHasType(semanticState)
+  override def getRewriter(
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, CypherType],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Rewriter = normalizeHasLabelsAndHasType(semanticState)
 }

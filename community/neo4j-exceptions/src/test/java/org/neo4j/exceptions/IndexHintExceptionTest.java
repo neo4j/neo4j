@@ -19,18 +19,6 @@
  */
 package org.neo4j.exceptions;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Stream;
-
-import org.neo4j.common.EntityType;
-import org.neo4j.exceptions.IndexHintException.IndexHintIndexType;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
@@ -39,66 +27,65 @@ import static org.neo4j.exceptions.IndexHintException.IndexHintIndexType.POINT;
 import static org.neo4j.exceptions.IndexHintException.IndexHintIndexType.RANGE;
 import static org.neo4j.exceptions.IndexHintException.IndexHintIndexType.TEXT;
 
-class IndexHintExceptionTest
-{
-    @ParameterizedTest( name = "Hint on {0}, {1}, {2}, {3}, {4} is shown as {5}" )
-    @MethodSource( "testCases" )
-    void indexFormatStringTest( String variableName,
-                                String labelOrRelType,
-                                List<String> properties,
-                                EntityType entityType,
-                                IndexHintIndexType indexType,
-                                String expected )
-    {
-        String actual = IndexHintException.indexFormatString( variableName, labelOrRelType, properties, entityType, indexType );
-        assertEquals( expected, actual );
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.common.EntityType;
+import org.neo4j.exceptions.IndexHintException.IndexHintIndexType;
+
+class IndexHintExceptionTest {
+    @ParameterizedTest(name = "Hint on {0}, {1}, {2}, {3}, {4} is shown as {5}")
+    @MethodSource("testCases")
+    void indexFormatStringTest(
+            String variableName,
+            String labelOrRelType,
+            List<String> properties,
+            EntityType entityType,
+            IndexHintIndexType indexType,
+            String expected) {
+        String actual =
+                IndexHintException.indexFormatString(variableName, labelOrRelType, properties, entityType, indexType);
+        assertEquals(expected, actual);
     }
 
-    static Stream<Arguments> testCases()
-    {
+    static Stream<Arguments> testCases() {
         return Stream.of(
-                basicHint( NODE, ANY, "INDEX FOR (`person`:`Person`) ON (`person`.`name`)" ),
-                basicHint( NODE, TEXT, "TEXT INDEX FOR (`person`:`Person`) ON (`person`.`name`)" ),
-                basicHint( NODE, RANGE, "RANGE INDEX FOR (`person`:`Person`) ON (`person`.`name`)" ),
-                basicHint( NODE, POINT, "POINT INDEX FOR (`person`:`Person`) ON (`person`.`name`)" ),
-                basicHint( RELATIONSHIP, ANY, "INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" ),
-                basicHint( RELATIONSHIP, TEXT, "TEXT INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" ),
-                basicHint( RELATIONSHIP, RANGE, "RANGE INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" ),
-                basicHint( RELATIONSHIP, POINT, "POINT INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" ),
-                compositeHint( NODE, ANY, "INDEX FOR (`person`:`Person`) ON (`person`.`name`, `person`.`surname`)" ),
-                compositeHint( RELATIONSHIP, ANY, "INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`, `person`.`surname`)" ),
-                escapedHint( NODE, ANY, "INDEX FOR (`pers``on`:`Pers``on`) ON (`pers``on`.`nam``e`, `pers``on`.`s``urname`)" ),
-                escapedHint( RELATIONSHIP, ANY, "INDEX FOR ()-[`pers``on`:`Pers``on`]-() ON (`pers``on`.`nam``e`, `pers``on`.`s``urname`)" )
-        );
+                basicHint(NODE, ANY, "INDEX FOR (`person`:`Person`) ON (`person`.`name`)"),
+                basicHint(NODE, TEXT, "TEXT INDEX FOR (`person`:`Person`) ON (`person`.`name`)"),
+                basicHint(NODE, RANGE, "RANGE INDEX FOR (`person`:`Person`) ON (`person`.`name`)"),
+                basicHint(NODE, POINT, "POINT INDEX FOR (`person`:`Person`) ON (`person`.`name`)"),
+                basicHint(RELATIONSHIP, ANY, "INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)"),
+                basicHint(RELATIONSHIP, TEXT, "TEXT INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)"),
+                basicHint(RELATIONSHIP, RANGE, "RANGE INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)"),
+                basicHint(RELATIONSHIP, POINT, "POINT INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)"),
+                compositeHint(NODE, ANY, "INDEX FOR (`person`:`Person`) ON (`person`.`name`, `person`.`surname`)"),
+                compositeHint(
+                        RELATIONSHIP,
+                        ANY,
+                        "INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`, `person`.`surname`)"),
+                escapedHint(
+                        NODE,
+                        ANY,
+                        "INDEX FOR (`pers``on`:`Pers``on`) ON (`pers``on`.`nam``e`, `pers``on`.`s``urname`)"),
+                escapedHint(
+                        RELATIONSHIP,
+                        ANY,
+                        "INDEX FOR ()-[`pers``on`:`Pers``on`]-() ON (`pers``on`.`nam``e`, `pers``on`.`s``urname`)"));
     }
 
-    static Arguments basicHint( EntityType entityType, IndexHintIndexType indexType, String expected )
-    {
-        return Arguments.of( "person",
-                             "Person",
-                             Collections.singletonList( "name" ),
-                             entityType,
-                             indexType,
-                             expected );
+    static Arguments basicHint(EntityType entityType, IndexHintIndexType indexType, String expected) {
+        return Arguments.of("person", "Person", Collections.singletonList("name"), entityType, indexType, expected);
     }
 
-    static Arguments compositeHint( EntityType entityType, IndexHintIndexType indexType, String expected )
-    {
-        return Arguments.of( "person",
-                             "Person",
-                             Arrays.asList( "name", "surname" ),
-                             entityType,
-                             indexType,
-                             expected );
+    static Arguments compositeHint(EntityType entityType, IndexHintIndexType indexType, String expected) {
+        return Arguments.of("person", "Person", Arrays.asList("name", "surname"), entityType, indexType, expected);
     }
 
-    static Arguments escapedHint( EntityType entityType, IndexHintIndexType indexType, String expected )
-    {
-        return Arguments.of( "pers`on",
-                             "Pers`on",
-                             Arrays.asList( "nam`e", "s`urname" ),
-                             entityType,
-                             indexType,
-                             expected );
+    static Arguments escapedHint(EntityType entityType, IndexHintIndexType indexType, String expected) {
+        return Arguments.of("pers`on", "Pers`on", Arrays.asList("nam`e", "s`urname"), entityType, indexType, expected);
     }
 }

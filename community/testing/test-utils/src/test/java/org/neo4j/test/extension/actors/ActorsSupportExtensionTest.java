@@ -19,22 +19,6 @@
  */
 package org.neo4j.test.extension.actors;
 
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.MethodSource;
-
-import java.lang.reflect.Executable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.IntStream;
-
-import org.neo4j.test.extension.Inject;
-
 import static java.time.Duration.ofMinutes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,130 +28,125 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
-class ActorsSupportExtensionTest
-{
+import java.lang.reflect.Executable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.test.extension.Inject;
+
+class ActorsSupportExtensionTest {
     @Nested
     @ActorsExtension
-    class InjectOneField
-    {
+    class InjectOneField {
         @Inject
         Actor actor;
 
         @Test
-        void actorMustBeInjected()
-        {
-            assertNotNull( actor );
+        void actorMustBeInjected() {
+            assertNotNull(actor);
         }
 
         @Test
-        void actorMustRunSubmittedTasks()
-        {
-            assertTimeoutPreemptively( ofMinutes( 1 ), () ->
-            {
-                CountDownLatch l1 = new CountDownLatch( 1 );
-                Future<Void> f1 = actor.submit( l1::countDown );
+        void actorMustRunSubmittedTasks() {
+            assertTimeoutPreemptively(ofMinutes(1), () -> {
+                CountDownLatch l1 = new CountDownLatch(1);
+                Future<Void> f1 = actor.submit(l1::countDown);
                 l1.await();
-                assertNull( f1.get() );
+                assertNull(f1.get());
 
-                CountDownLatch l2 = new CountDownLatch( 1 );
-                Future<String> f2 = actor.submit( l2::countDown, "bla" );
+                CountDownLatch l2 = new CountDownLatch(1);
+                Future<String> f2 = actor.submit(l2::countDown, "bla");
                 l2.await();
-                assertEquals( "bla", f2.get() );
+                assertEquals("bla", f2.get());
 
-                CountDownLatch l3 = new CountDownLatch( 1 );
-                Future<String> f3 = actor.submit( () ->
-                {
+                CountDownLatch l3 = new CountDownLatch(1);
+                Future<String> f3 = actor.submit(() -> {
                     l3.countDown();
                     return "bla";
-                } );
+                });
                 l3.await();
-                assertEquals( "bla", f3.get() );
-            } );
+                assertEquals("bla", f3.get());
+            });
         }
 
         @Test
-        void mustBeAbleToObserveTimedWaiting()
-        {
-            assertTimeoutPreemptively( ofMinutes( 1 ), () ->
-            {
-                CountDownLatch latch = new CountDownLatch( 1 );
-                Future<?> future = actor.submit( () ->
-                {
+        void mustBeAbleToObserveTimedWaiting() {
+            assertTimeoutPreemptively(ofMinutes(1), () -> {
+                CountDownLatch latch = new CountDownLatch(1);
+                Future<?> future = actor.submit(() -> {
                     latch.await();
                     return null;
-                } );
-                actor.untilWaitingIn( CountDownLatch.class.getMethod( "await" ) );
+                });
+                actor.untilWaitingIn(CountDownLatch.class.getMethod("await"));
                 latch.countDown();
                 future.get();
-            } );
+            });
         }
 
         @Test
-        void untilMethodsMustThrowIfActorIsNotStarted()
-        {
-            assertThrows( IllegalStateException.class, () -> actor.untilWaiting() );
+        void untilMethodsMustThrowIfActorIsNotStarted() {
+            assertThrows(IllegalStateException.class, () -> actor.untilWaiting());
         }
 
         @Test
-        void untilMethodsMustThrowIfActorIsStopped() throws Exception
-        {
-            actor.submit( () -> {} ).get(); // Ensure that the actor has started.
+        void untilMethodsMustThrowIfActorIsStopped() throws Exception {
+            actor.submit(() -> {}).get(); // Ensure that the actor has started.
             ActorImpl actorImpl = (ActorImpl) actor;
             actorImpl.stop();
             actorImpl.join();
-            assertThrows( AssertionError.class, () -> actor.untilWaiting() );
+            assertThrows(AssertionError.class, () -> actor.untilWaiting());
         }
 
         @Test
-        void submitMethodsMustThrowIfActorIsStopped() throws Exception
-        {
-            actor.submit( () -> {} ).get(); // Ensure that the actor has started.
+        void submitMethodsMustThrowIfActorIsStopped() throws Exception {
+            actor.submit(() -> {}).get(); // Ensure that the actor has started.
             ActorImpl actorImpl = (ActorImpl) actor;
             actorImpl.stop();
             actorImpl.join();
-            assertThrows( IllegalStateException.class, () -> actor.submit( () -> {} ) );
+            assertThrows(IllegalStateException.class, () -> actor.submit(() -> {}));
         }
 
         @Test
-        void untilMethodsMustThrowIfActorIsIdle() throws Exception
-        {
-            actor.submit( () -> {} ).get(); // Ensure that the actor has started.
+        void untilMethodsMustThrowIfActorIsIdle() throws Exception {
+            actor.submit(() -> {}).get(); // Ensure that the actor has started.
             // Because nothing is running, and no tasks are queued up, so there is nothing to wait for.
-            assertThrows( IllegalStateException.class, () -> actor.untilWaiting() );
+            assertThrows(IllegalStateException.class, () -> actor.untilWaiting());
         }
 
         @Test
-        void mustBeAbleToInterruptActors() throws Exception
-        {
-            CountDownLatch l1 = new CountDownLatch( 1 );
-            Future<?> f1 = actor.submit( () ->
-            {
+        void mustBeAbleToInterruptActors() throws Exception {
+            CountDownLatch l1 = new CountDownLatch(1);
+            Future<?> f1 = actor.submit(() -> {
                 l1.await();
                 return null;
-            } );
-            actor.untilWaitingIn( CountDownLatch.class.getMethod( "await" ) );
+            });
+            actor.untilWaitingIn(CountDownLatch.class.getMethod("await"));
             actor.interrupt();
-            ExecutionException ee = assertThrows( ExecutionException.class, f1::get );
-            assertThat( ee.getCause() ).isInstanceOf( InterruptedException.class );
+            ExecutionException ee = assertThrows(ExecutionException.class, f1::get);
+            assertThat(ee.getCause()).isInstanceOf(InterruptedException.class);
         }
 
         @Test
-        void mustBeAbleToInterruptUntilMethods()
-        {
+        void mustBeAbleToInterruptUntilMethods() {
             Object lock = new Object();
-            synchronized ( lock )
-            {
-                actor.submit( () ->
-                {
-                    synchronized ( lock )
-                    {
+            synchronized (lock) {
+                actor.submit(() -> {
+                    synchronized (lock) {
                         return null;
                     }
-                } );
+                });
 
                 Thread.currentThread().interrupt();
                 // The actor will not be waiting. It will be in BLOCKED state, because that's how 'synchronized' works.
-                assertThrows( InterruptedException.class, actor::untilWaiting );
+                assertThrows(InterruptedException.class, actor::untilWaiting);
             }
         }
 
@@ -175,23 +154,17 @@ class ActorsSupportExtensionTest
          * This is the example code used in the javadoc for {@link Actor#untilWaitingIn(Executable)}.
          */
         @Test
-        void example() throws Exception
-        {
-            actor.submit( new Sleeper()::sleep );
-            actor.untilWaitingIn( Sleeper.class.getMethod( "sleep" ) );
+        void example() throws Exception {
+            actor.submit(new Sleeper()::sleep);
+            actor.untilWaitingIn(Sleeper.class.getMethod("sleep"));
             actor.interrupt();
         }
 
-        class Sleeper
-        {
-            public void sleep()
-            {
-                try
-                {
-                    Thread.sleep( 1_000 );
-                }
-                catch ( InterruptedException ignore )
-                {
+        class Sleeper {
+            public void sleep() {
+                try {
+                    Thread.sleep(1_000);
+                } catch (InterruptedException ignore) {
                 }
             }
         }
@@ -199,147 +172,130 @@ class ActorsSupportExtensionTest
 
     @Nested
     @ActorsExtension
-    class InjectTwoFields
-    {
+    class InjectTwoFields {
         @Inject
         Actor emil;
+
         @Inject
         Actor jim;
 
         @Test
-        void actorsMustBeDifferent()
-        {
-            assertNotNull( emil );
-            assertNotNull( jim );
-            assertNotSame( emil, jim );
+        void actorsMustBeDifferent() {
+            assertNotNull(emil);
+            assertNotNull(jim);
+            assertNotSame(emil, jim);
         }
 
         @Test
-        void actorsMustBeIndependent()
-        {
-            assertTimeoutPreemptively( ofMinutes( 1 ), () ->
-            {
-                CountDownLatch l1 = new CountDownLatch( 1 );
-                CountDownLatch l2 = new CountDownLatch( 1 );
-                Future<?> f1 = emil.submit( () ->
-                {
+        void actorsMustBeIndependent() {
+            assertTimeoutPreemptively(ofMinutes(1), () -> {
+                CountDownLatch l1 = new CountDownLatch(1);
+                CountDownLatch l2 = new CountDownLatch(1);
+                Future<?> f1 = emil.submit(() -> {
                     l1.await();
                     return null;
-                } );
-                Future<?> f2 = jim.submit( () ->
-                {
+                });
+                Future<?> f2 = jim.submit(() -> {
                     l2.await();
                     return null;
-                } );
-                emil.untilWaitingIn( CountDownLatch.class.getMethod( "await" ) );
-                jim.untilWaitingIn( CountDownLatch.class.getMethod( "await" ) );
+                });
+                emil.untilWaitingIn(CountDownLatch.class.getMethod("await"));
+                jim.untilWaitingIn(CountDownLatch.class.getMethod("await"));
                 l1.countDown();
                 l2.countDown();
                 f1.get();
                 f2.get();
-            } );
+            });
         }
     }
 
     @Nested
     @ActorsExtension
-    class NestingTestOuter
-    {
+    class NestingTestOuter {
         @Inject
         Actor outerActor;
 
         @Nested
         @ActorsExtension
-        class Middle
-        {
+        class Middle {
             @Inject
             Actor middleActor;
 
             @Nested
             @ActorsExtension
-            class Inner
-            {
+            class Inner {
                 @Inject
                 Actor innerActor;
 
                 @Test
-                void nestingTest() throws Exception
-                {
+                void nestingTest() throws Exception {
                     AtomicInteger counter = new AtomicInteger();
-                    Future<Integer> f1 = innerActor.submit( counter::incrementAndGet );
-                    Future<Integer> f2 = middleActor.submit( counter::incrementAndGet );
-                    Future<Integer> f3 = outerActor.submit( counter::incrementAndGet );
+                    Future<Integer> f1 = innerActor.submit(counter::incrementAndGet);
+                    Future<Integer> f2 = middleActor.submit(counter::incrementAndGet);
+                    Future<Integer> f3 = outerActor.submit(counter::incrementAndGet);
                     f1.get();
                     f2.get();
                     f3.get();
-                    assertEquals( 3, counter.get() );
+                    assertEquals(3, counter.get());
                 }
             }
 
             @Test
-            void nestingTest() throws Exception
-            {
+            void nestingTest() throws Exception {
                 AtomicInteger counter = new AtomicInteger();
-                Future<Integer> f1 = middleActor.submit( counter::incrementAndGet );
-                Future<Integer> f2 = outerActor.submit( counter::incrementAndGet );
+                Future<Integer> f1 = middleActor.submit(counter::incrementAndGet);
+                Future<Integer> f2 = outerActor.submit(counter::incrementAndGet);
                 f1.get();
                 f2.get();
-                assertEquals( 2, counter.get() );
+                assertEquals(2, counter.get());
             }
         }
 
         @Test
-        void nestingTest() throws Exception
-        {
+        void nestingTest() throws Exception {
             AtomicInteger counter = new AtomicInteger();
-            Future<Integer> f1 = outerActor.submit( counter::incrementAndGet );
+            Future<Integer> f1 = outerActor.submit(counter::incrementAndGet);
             f1.get();
-            assertEquals( 1, counter.get() );
+            assertEquals(1, counter.get());
         }
     }
 
-    static IntStream parameters()
-    {
-        return IntStream.range( 1, 10 );
+    static IntStream parameters() {
+        return IntStream.range(1, 10);
     }
 
-    enum ParametersEnum
-    {
-        A, B
+    enum ParametersEnum {
+        A,
+        B
     }
 
     @Nested
     @ActorsExtension
-    class ActorsAndParameterisedTests
-    {
+    class ActorsAndParameterisedTests {
         @Inject
         Actor actor;
 
         @ParameterizedTest
-        @MethodSource( "org.neo4j.test.extension.actors.ActorsSupportExtensionTest#parameters" )
-        void methodSourcedParameterisedTestWithActors( int ignored ) throws Exception
-        {
-            actor.submit( () -> {} ).get();
+        @MethodSource("org.neo4j.test.extension.actors.ActorsSupportExtensionTest#parameters")
+        void methodSourcedParameterisedTestWithActors(int ignored) throws Exception {
+            actor.submit(() -> {}).get();
         }
 
         @ParameterizedTest
-        @EnumSource( ParametersEnum.class )
-        void enumSourcedParameterisedTestWithActors( ParametersEnum ignored ) throws Exception
-        {
-            actor.submit( () -> {} ).get();
+        @EnumSource(ParametersEnum.class)
+        void enumSourcedParameterisedTestWithActors(ParametersEnum ignored) throws Exception {
+            actor.submit(() -> {}).get();
         }
     }
 
     @Nested
-    class ActorsAndParameterisedTestTemplates extends ActorsAndParameterisedTests
-    {
+    class ActorsAndParameterisedTestTemplates extends ActorsAndParameterisedTests {
         // Running tests inherited from the super class.
     }
 
     @Nested
-    @TestInstance( TestInstance.Lifecycle.PER_CLASS )
-    class ActorsAndParameterisedTestWithPerClassLifecycle extends ActorsAndParameterisedTests
-    {
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    class ActorsAndParameterisedTestWithPerClassLifecycle extends ActorsAndParameterisedTests {
         // Running tests inherited from the super class.
     }
 }

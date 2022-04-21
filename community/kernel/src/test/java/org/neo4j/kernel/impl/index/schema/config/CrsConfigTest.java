@@ -19,52 +19,55 @@
  */
 package org.neo4j.kernel.impl.index.schema.config;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-
+import org.apache.commons.lang3.ArrayUtils;
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 @TestDirectoryExtension
-class CrsConfigTest
-{
+class CrsConfigTest {
     @Inject
     private TestDirectory testDirectory;
 
     @Test
-    void testCrsConfigMigration() throws IOException
-    {
-        Path confFile = testDirectory.createFile( "test.conf" );
-        Files.write( confFile, Arrays.asList(
-                "unsupported.dbms.db.spatial.crs.cartesian-3d.min.x=1",
-                "unsupported.dbms.db.spatial.crs.cartesian-3d.min.y=2",
-                "unsupported.dbms.db.spatial.crs.cartesian-3d.min.z=3",
-                "unsupported.dbms.db.spatial.crs.cartesian.min.x=3",
-                "unsupported.dbms.db.spatial.crs.cartesian.max.x=4"
-        ) );
+    void testCrsConfigMigration() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(
+                confFile,
+                Arrays.asList(
+                        "unsupported.dbms.db.spatial.crs.cartesian-3d.min.x=1",
+                        "unsupported.dbms.db.spatial.crs.cartesian-3d.min.y=2",
+                        "unsupported.dbms.db.spatial.crs.cartesian-3d.min.z=3",
+                        "unsupported.dbms.db.spatial.crs.cartesian.min.x=3",
+                        "unsupported.dbms.db.spatial.crs.cartesian.max.x=4"));
 
-        Config config = Config.newBuilder()
-                .fromFile( confFile )
-                .build();
+        Config config = Config.newBuilder().fromFile(confFile).build();
 
         final double DELTA = 0.00000001;
 
-        List<Double> cartesian3Dmin = config.get( CrsConfig.group( CoordinateReferenceSystem.CARTESIAN_3D ).min );
-        assertArrayEquals( new double[] { 1.0, 2.0, 3.0 }, ArrayUtils.toPrimitive( cartesian3Dmin.toArray( new Double[0] ) ), DELTA );
-        assertEquals( 3.0, config.get( CrsConfig.group( CoordinateReferenceSystem.CARTESIAN ).min ).get( 0 ), DELTA );
-        assertEquals( 4.0, config.get( CrsConfig.group( CoordinateReferenceSystem.CARTESIAN ).max ).get( 0 ), DELTA );
+        List<Double> cartesian3Dmin = config.get(CrsConfig.group(CoordinateReferenceSystem.CARTESIAN_3D).min);
+        assertArrayEquals(
+                new double[] {1.0, 2.0, 3.0}, ArrayUtils.toPrimitive(cartesian3Dmin.toArray(new Double[0])), DELTA);
+        assertEquals(
+                3.0,
+                config.get(CrsConfig.group(CoordinateReferenceSystem.CARTESIAN).min)
+                        .get(0),
+                DELTA);
+        assertEquals(
+                4.0,
+                config.get(CrsConfig.group(CoordinateReferenceSystem.CARTESIAN).max)
+                        .get(0),
+                DELTA);
     }
-
 }

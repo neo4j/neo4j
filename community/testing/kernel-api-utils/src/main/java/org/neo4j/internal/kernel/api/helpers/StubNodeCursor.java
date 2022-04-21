@@ -19,11 +19,12 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
+import static org.neo4j.storageengine.api.LongReference.longReference;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -37,208 +38,168 @@ import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.storageengine.api.LongReference.longReference;
-
-public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
-{
+public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor {
     private int offset = -1;
     private final boolean dense;
     private final boolean supportsFastRelationshipsTo;
     private final List<NodeData> nodes = new ArrayList<>();
     private int degree;
 
-    public StubNodeCursor()
-    {
-        this( true );
+    public StubNodeCursor() {
+        this(true);
     }
 
-    public StubNodeCursor( boolean dense )
-    {
-        this( dense, true );
+    public StubNodeCursor(boolean dense) {
+        this(dense, true);
     }
 
-    public StubNodeCursor( boolean dense, boolean supportsFastRelationshipsTo )
-    {
+    public StubNodeCursor(boolean dense, boolean supportsFastRelationshipsTo) {
         this.dense = dense;
         this.supportsFastRelationshipsTo = supportsFastRelationshipsTo;
     }
 
-    void single( long reference )
-    {
+    void single(long reference) {
         offset = Integer.MAX_VALUE;
-        for ( int i = 0; i < nodes.size(); i++ )
-        {
-            if ( reference == nodes.get( i ).id )
-            {
+        for (int i = 0; i < nodes.size(); i++) {
+            if (reference == nodes.get(i).id) {
                 offset = i - 1;
             }
         }
     }
 
-    void scan()
-    {
+    void scan() {
         offset = -1;
     }
 
-    public StubNodeCursor withNode( long id )
-    {
-        nodes.add( new NodeData( id, new long[]{}, Collections.emptyMap() ) );
+    public StubNodeCursor withNode(long id) {
+        nodes.add(new NodeData(id, new long[] {}, Collections.emptyMap()));
         return this;
     }
 
-    public StubNodeCursor withNode( long id, long... labels )
-    {
-        nodes.add( new NodeData( id, labels, Collections.emptyMap() ) );
+    public StubNodeCursor withNode(long id, long... labels) {
+        nodes.add(new NodeData(id, labels, Collections.emptyMap()));
         return this;
     }
 
-    public StubNodeCursor withNode( long id, long[] labels, Map<Integer,Value> properties )
-    {
-        nodes.add( new NodeData( id, labels, properties ) );
+    public StubNodeCursor withNode(long id, long[] labels, Map<Integer, Value> properties) {
+        nodes.add(new NodeData(id, labels, properties));
         return this;
     }
 
-    public StubNodeCursor withDegree( int degree )
-    {
+    public StubNodeCursor withDegree(int degree) {
         this.degree = degree;
         return this;
     }
 
     @Override
-    public long nodeReference()
-    {
-        return offset >= 0 && offset < nodes.size() ? nodes.get( offset ).id : -1;
+    public long nodeReference() {
+        return offset >= 0 && offset < nodes.size() ? nodes.get(offset).id : -1;
     }
 
     @Override
-    public TokenSet labels()
-    {
-        return offset >= 0 && offset < nodes.size() ? nodes.get( offset ).labelSet() : TokenSet.NONE;
+    public TokenSet labels() {
+        return offset >= 0 && offset < nodes.size() ? nodes.get(offset).labelSet() : TokenSet.NONE;
     }
 
     @Override
-    public TokenSet labelsIgnoringTxStateSetRemove()
-    {
+    public TokenSet labelsIgnoringTxStateSetRemove() {
         return labels();
     }
 
     @Override
-    public boolean hasLabel( int label )
-    {
-        return labels().contains( label );
+    public boolean hasLabel(int label) {
+        return labels().contains(label);
     }
 
     @Override
-    public boolean supportsFastRelationshipsTo()
-    {
+    public boolean supportsFastRelationshipsTo() {
         return supportsFastRelationshipsTo;
     }
 
     @Override
-    public void relationshipsTo( RelationshipTraversalCursor relationships, RelationshipSelection selection, long neighbourNodeReference )
-    {
-        if ( !supportsFastRelationshipsTo )
-        {
-            throw new UnsupportedOperationException( "Not supported by this instance" );
+    public void relationshipsTo(
+            RelationshipTraversalCursor relationships, RelationshipSelection selection, long neighbourNodeReference) {
+        if (!supportsFastRelationshipsTo) {
+            throw new UnsupportedOperationException("Not supported by this instance");
         }
 
-        ((StubRelationshipCursor) relationships).initialize( nodeReference(), selection, neighbourNodeReference );
+        ((StubRelationshipCursor) relationships).initialize(nodeReference(), selection, neighbourNodeReference);
     }
 
     @Override
-    public void relationships( RelationshipTraversalCursor relationships, RelationshipSelection selection )
-    {
-        ((StubRelationshipCursor) relationships).initialize( nodeReference(), selection, -1 );
+    public void relationships(RelationshipTraversalCursor relationships, RelationshipSelection selection) {
+        ((StubRelationshipCursor) relationships).initialize(nodeReference(), selection, -1);
     }
 
     @Override
-    public void properties( PropertyCursor cursor, PropertySelection selection )
-    {
-        ((StubPropertyCursor) cursor).init( nodes.get( offset ).properties, selection );
+    public void properties(PropertyCursor cursor, PropertySelection selection) {
+        ((StubPropertyCursor) cursor).init(nodes.get(offset).properties, selection);
     }
 
     @Override
-    public long relationshipsReference()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
+    public long relationshipsReference() {
+        throw new UnsupportedOperationException("not implemented");
     }
 
     @Override
-    public Reference propertiesReference()
-    {
-        if ( offset >= 0 && offset < nodes.size() )
-        {
-            NodeData node = nodes.get( offset );
-            if ( !node.properties.isEmpty() )
-            {
-                return longReference( node.id );
+    public Reference propertiesReference() {
+        if (offset >= 0 && offset < nodes.size()) {
+            NodeData node = nodes.get(offset);
+            if (!node.properties.isEmpty()) {
+                return longReference(node.id);
             }
         }
         return LongReference.NULL_REFERENCE;
     }
 
     @Override
-    public boolean supportsFastDegreeLookup()
-    {
+    public boolean supportsFastDegreeLookup() {
         return dense;
     }
 
     @Override
-    public int[] relationshipTypes()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public int[] relationshipTypes() {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public Degrees degrees( RelationshipSelection selection )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public Degrees degrees(RelationshipSelection selection) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public int degree( RelationshipSelection selection )
-    {
+    public int degree(RelationshipSelection selection) {
         return degree;
     }
 
     @Override
-    public int degreeWithMax( int maxDegree, RelationshipSelection selection )
-    {
-        return Math.min( maxDegree, this.degree );
+    public int degreeWithMax(int maxDegree, RelationshipSelection selection) {
+        return Math.min(maxDegree, this.degree);
     }
 
     @Override
-    public void setTracer( KernelReadTracer tracer )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
+    public void setTracer(KernelReadTracer tracer) {
+        throw new UnsupportedOperationException("not implemented");
     }
 
     @Override
-    public void removeTracer()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
+    public void removeTracer() {
+        throw new UnsupportedOperationException("not implemented");
     }
 
     @Override
-    public boolean next()
-    {
-        if ( offset == Integer.MAX_VALUE )
-        {
+    public boolean next() {
+        if (offset == Integer.MAX_VALUE) {
             return false;
         }
         return ++offset < nodes.size();
     }
 
     @Override
-    public void closeInternal()
-    {
-
-    }
+    public void closeInternal() {}
 
     @Override
-    public boolean isClosed()
-    {
+    public boolean isClosed() {
         return false;
     }
-
 }

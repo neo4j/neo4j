@@ -19,26 +19,24 @@
  */
 package org.neo4j.capabilities;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
-class CapabilityInstanceTest
-{
+import org.junit.jupiter.api.Test;
+
+class CapabilityInstanceTest {
     @Test
-    void testCapabilityInstance()
-    {
-        var capability = new Capability<>( Name.of( "dbms.cypher.can_create_user" ), Type.BOOLEAN );
-        var instance = new CapabilityInstance<>( capability );
+    void testCapabilityInstance() {
+        var capability = new Capability<>(Name.of("dbms.cypher.can_create_user"), Type.BOOLEAN);
+        var instance = new CapabilityInstance<>(capability);
 
-        assertThat( instance.capability() ).isEqualTo( capability );
+        assertThat(instance.capability()).isEqualTo(capability);
 
-        assertThat( instance.get() ).isNull();
+        assertThat(instance.get()).isNull();
 
-        instance.set( true );
-        assertThat( instance.get() ).isTrue();
+        instance.set(true);
+        assertThat(instance.get()).isTrue();
 
-        instance.supply( () -> false );
-        assertThat( instance.get() ).isFalse();
+        instance.supply(() -> false);
+        assertThat(instance.get()).isFalse();
     }
 }

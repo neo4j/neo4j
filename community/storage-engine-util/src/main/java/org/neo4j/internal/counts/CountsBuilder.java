@@ -27,22 +27,18 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 /**
  * Provides counts data for building a counts store from scratch.
  */
-public interface CountsBuilder
-{
-    void initialize( CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker );
+public interface CountsBuilder {
+    void initialize(CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker);
 
     long lastCommittedTxId();
 
-    CountsBuilder EMPTY = new CountsBuilder()
-    {
+    CountsBuilder EMPTY = new CountsBuilder() {
         @Override
-        public void initialize( CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
-        {
-        }
+        public void initialize(
+                CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {}
 
         @Override
-        public long lastCommittedTxId()
-        {
+        public long lastCommittedTxId() {
             return TransactionIdStore.BASE_TX_ID;
         }
     };

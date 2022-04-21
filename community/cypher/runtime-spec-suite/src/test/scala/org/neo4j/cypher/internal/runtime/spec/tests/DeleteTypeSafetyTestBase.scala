@@ -54,7 +54,7 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    a [CypherTypeException] should be thrownBy consume(runtimeResult)
+    a[CypherTypeException] should be thrownBy consume(runtimeResult)
   }
 
   test("delete node fail to delete path") {
@@ -72,7 +72,7 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    a [CypherTypeException] should be thrownBy consume(runtimeResult)
+    a[CypherTypeException] should be thrownBy consume(runtimeResult)
   }
 
   test("delete path fail to delete node") {
@@ -90,7 +90,7 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    a [CypherTypeException] should be thrownBy consume(runtimeResult)
+    a[CypherTypeException] should be thrownBy consume(runtimeResult)
   }
 
   test("delete path fail to delete relationship") {
@@ -109,7 +109,7 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    a [CypherTypeException] should be thrownBy consume(runtimeResult)
+    a[CypherTypeException] should be thrownBy consume(runtimeResult)
   }
 
   test("delete relationship fail to delete node") {
@@ -127,7 +127,7 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    a [CypherTypeException] should be thrownBy consume(runtimeResult)
+    a[CypherTypeException] should be thrownBy consume(runtimeResult)
   }
 
   test("delete relationship fail to delete path") {
@@ -145,7 +145,7 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    a [CypherTypeException] should be thrownBy consume(runtimeResult)
+    a[CypherTypeException] should be thrownBy consume(runtimeResult)
   }
 
   test("detach delete node fail to delete relationship") {
@@ -164,7 +164,7 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    a [CypherTypeException] should be thrownBy consume(runtimeResult)
+    a[CypherTypeException] should be thrownBy consume(runtimeResult)
   }
 
   test("detach delete node fail to delete path") {
@@ -182,7 +182,7 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    a [CypherTypeException] should be thrownBy consume(runtimeResult)
+    a[CypherTypeException] should be thrownBy consume(runtimeResult)
   }
 
   test("detach delete path fail to delete node") {
@@ -200,7 +200,7 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    a [CypherTypeException] should be thrownBy consume(runtimeResult)
+    a[CypherTypeException] should be thrownBy consume(runtimeResult)
   }
 
   test("detach delete path fail to delete relationship") {
@@ -219,6 +219,6 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    a [CypherTypeException] should be thrownBy consume(runtimeResult)
+    a[CypherTypeException] should be thrownBy consume(runtimeResult)
   }
 }

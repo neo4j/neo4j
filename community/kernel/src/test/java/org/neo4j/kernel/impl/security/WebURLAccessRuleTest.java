@@ -19,97 +19,101 @@
  */
 package org.neo4j.kernel.impl.security;
 
-import inet.ipaddr.IPAddressString;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import inet.ipaddr.IPAddressString;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-class WebURLAccessRuleTest
-{
+class WebURLAccessRuleTest {
     @Test
-    void shouldThrowWhenUrlIsWithinBlockedRange() throws MalformedURLException
-    {
-        final IPAddressString blockedIpv4Range = new IPAddressString( "127.0.0.0/8" );
-        final IPAddressString blockedIpv6Range = new IPAddressString( "0:0:0:0:0:0:0:1/8" );
-        final var urlAddresses = List.of( "http://localhost/test.csv", "https://localhost/test.csv", "ftp://localhost/test.csv", "http://[::1]/test.csv" );
+    void shouldThrowWhenUrlIsWithinBlockedRange() throws MalformedURLException {
+        final IPAddressString blockedIpv4Range = new IPAddressString("127.0.0.0/8");
+        final IPAddressString blockedIpv6Range = new IPAddressString("0:0:0:0:0:0:0:1/8");
+        final var urlAddresses = List.of(
+                "http://localhost/test.csv",
+                "https://localhost/test.csv",
+                "ftp://localhost/test.csv",
+                "http://[::1]/test.csv");
 
-        for ( var urlAddress : urlAddresses )
-        {
-            final URL url = new URL( urlAddress );
+        for (var urlAddress : urlAddresses) {
+            final URL url = new URL(urlAddress);
 
-            //set the config
-            final Config config = Config.defaults( GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of( blockedIpv4Range, blockedIpv6Range ) );
+            // set the config
+            final Config config = Config.defaults(
+                    GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range, blockedIpv6Range));
 
-            //execute the query
-            final var error = assertThrows( URLAccessValidationError.class, () ->
-                    URLAccessRules.webAccess().validate( config, url ) );
+            // execute the query
+            final var error = assertThrows(URLAccessValidationError.class, () -> URLAccessRules.webAccess()
+                    .validate(config, url));
 
-            //assert that the validation fails
-            assertThat( error.getMessage() ).contains( "blocked via the configuration property internal.dbms.cypher_ip_blocklist" );
+            // assert that the validation fails
+            assertThat(error.getMessage())
+                    .contains("blocked via the configuration property internal.dbms.cypher_ip_blocklist");
         }
     }
 
     @Test
-    void validationShouldPassWhenUrlIsNotWithinBlockedRange() throws MalformedURLException, URLAccessValidationError
-    {
-        final var urlAddresses = List.of( "http://localhost/test.csv", "https://localhost/test.csv", "ftp://localhost/test.csv", "http://[::1]/test.csv" );
+    void validationShouldPassWhenUrlIsNotWithinBlockedRange() throws MalformedURLException, URLAccessValidationError {
+        final var urlAddresses = List.of(
+                "http://localhost/test.csv",
+                "https://localhost/test.csv",
+                "ftp://localhost/test.csv",
+                "http://[::1]/test.csv");
 
-        for ( var urlAddress : urlAddresses )
-        {
-            final URL url = new URL( urlAddress );
+        for (var urlAddress : urlAddresses) {
+            final URL url = new URL(urlAddress);
 
-            //set the config
+            // set the config
             final Config config = Config.defaults();
 
-            //execute the query
-            final var result = URLAccessRules.webAccess().validate( config, url );
+            // execute the query
+            final var result = URLAccessRules.webAccess().validate(config, url);
 
-            //assert that the validation passes
+            // assert that the validation passes
             assert result == url;
         }
     }
 
     @Test
-    void shouldWorkWithNonRangeIps() throws MalformedURLException
-    {
-        final IPAddressString blockedIpv4Range = new IPAddressString( "127.0.0.1" );
-        final URL url = new URL( "http://localhost/test.csv" );
+    void shouldWorkWithNonRangeIps() throws MalformedURLException {
+        final IPAddressString blockedIpv4Range = new IPAddressString("127.0.0.1");
+        final URL url = new URL("http://localhost/test.csv");
 
-        //set the config
-        final Config config = Config.defaults( GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of( blockedIpv4Range ) );
+        // set the config
+        final Config config =
+                Config.defaults(GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range));
 
-        //execute the query
-        final var error = assertThrows( URLAccessValidationError.class, () ->
-                URLAccessRules.webAccess().validate( config, url ) );
+        // execute the query
+        final var error = assertThrows(
+                URLAccessValidationError.class, () -> URLAccessRules.webAccess().validate(config, url));
 
-        //assert that the validation fails
-        assertThat( error.getMessage() ).contains( "blocked via the configuration property internal.dbms.cypher_ip_blocklist" );
+        // assert that the validation fails
+        assertThat(error.getMessage())
+                .contains("blocked via the configuration property internal.dbms.cypher_ip_blocklist");
     }
 
     @Test
-    void shouldFailForInvalidIps() throws Exception
-    {
-        final IPAddressString blockedIpv4Range = new IPAddressString( "127.0.0.1" );
+    void shouldFailForInvalidIps() throws Exception {
+        final IPAddressString blockedIpv4Range = new IPAddressString("127.0.0.1");
         // The .invalid domain is always invalid, according to https://datatracker.ietf.org/doc/html/rfc2606#section-2
-        final URL url = new URL( "http://always.invalid/test.csv" );
+        final URL url = new URL("http://always.invalid/test.csv");
 
-        //set the config
-        final Config config = Config.defaults( GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of( blockedIpv4Range ) );
+        // set the config
+        final Config config =
+                Config.defaults(GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range));
 
-        //execute the query
-        final var error = assertThrows( URLAccessValidationError.class, () ->
-                URLAccessRules.webAccess().validate( config, url ) );
+        // execute the query
+        final var error = assertThrows(
+                URLAccessValidationError.class, () -> URLAccessRules.webAccess().validate(config, url));
 
-        //assert that the validation fails
-        assertThat( error.getMessage() ).contains( "Unable to verify access to always.invalid" );
+        // assert that the validation fails
+        assertThat(error.getMessage()).contains("Unable to verify access to always.invalid");
     }
 }

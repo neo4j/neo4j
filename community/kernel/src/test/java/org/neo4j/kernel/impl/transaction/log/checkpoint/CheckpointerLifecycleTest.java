@@ -19,44 +19,39 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.Health;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-class CheckpointerLifecycleTest
-{
-    private final CheckPointer checkPointer = mock( CheckPointer.class );
-    private final Health databaseHealth = mock( DatabaseHealth.class );
-    private final CheckpointerLifecycle checkpointLifecycle = new CheckpointerLifecycle( checkPointer, databaseHealth );
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.Health;
+
+class CheckpointerLifecycleTest {
+    private final CheckPointer checkPointer = mock(CheckPointer.class);
+    private final Health databaseHealth = mock(DatabaseHealth.class);
+    private final CheckpointerLifecycle checkpointLifecycle = new CheckpointerLifecycle(checkPointer, databaseHealth);
 
     @BeforeEach
-    void setUp()
-    {
-        when( databaseHealth.isHealthy() ).thenReturn( true );
+    void setUp() {
+        when(databaseHealth.isHealthy()).thenReturn(true);
     }
 
     @Test
-    void checkpointOnShutdown() throws Throwable
-    {
+    void checkpointOnShutdown() throws Throwable {
         checkpointLifecycle.shutdown();
 
-        verify( checkPointer ).forceCheckPoint( any( TriggerInfo.class ) );
+        verify(checkPointer).forceCheckPoint(any(TriggerInfo.class));
     }
 
     @Test
-    void skipCheckpointOnShutdownByRequest() throws Throwable
-    {
-        checkpointLifecycle.setCheckpointOnShutdown( false );
+    void skipCheckpointOnShutdownByRequest() throws Throwable {
+        checkpointLifecycle.setCheckpointOnShutdown(false);
         checkpointLifecycle.shutdown();
 
-        verifyNoInteractions( checkPointer );
+        verifyNoInteractions(checkPointer);
     }
 }

@@ -19,19 +19,31 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import MinMaxOrdering.NullOrdering
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class NullOrderingTest extends CypherFunSuite {
 
   val orderingForStrings: Ordering[String] = Ordering.String
 
   test("Should be able to put nulls first in a string sequence") {
-    Seq[String](null, "Annie", "", null, "Xavier").sorted(orderingForStrings.withNullsFirst) should equal(Seq[String](null, null, "", "Annie", "Xavier"))
+    Seq[String](null, "Annie", "", null, "Xavier").sorted(orderingForStrings.withNullsFirst) should equal(Seq[String](
+      null,
+      null,
+      "",
+      "Annie",
+      "Xavier"
+    ))
   }
 
   test("Should be able to put nulls last in a string sequence") {
-    Seq[String](null, "Annie", "", null, "Xavier").sorted(orderingForStrings.withNullsLast) should equal(Seq[String]("", "Annie", "Xavier", null, null))
+    Seq[String](null, "Annie", "", null, "Xavier").sorted(orderingForStrings.withNullsLast) should equal(Seq[String](
+      "",
+      "Annie",
+      "Xavier",
+      null,
+      null
+    ))
   }
 
 }

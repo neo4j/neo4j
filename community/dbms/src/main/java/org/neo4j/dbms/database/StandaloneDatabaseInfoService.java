@@ -19,12 +19,14 @@
  */
 package org.neo4j.dbms.database;
 
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DatabaseAccess.READ_ONLY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DatabaseAccess.READ_WRITE;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
@@ -34,11 +36,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.storageengine.StoreFileClosedException;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DatabaseAccess.READ_ONLY;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DatabaseAccess.READ_WRITE;
-
-public class StandaloneDatabaseInfoService implements DatabaseInfoService
-{
+public class StandaloneDatabaseInfoService implements DatabaseInfoService {
     private static final String ROLE_LABEL = "standalone";
 
     private final DatabaseIdRepository idRepository;
@@ -48,9 +46,12 @@ public class StandaloneDatabaseInfoService implements DatabaseInfoService
     private final DatabaseManager<?> databaseManager;
     private final DatabaseStateService stateService;
 
-    public StandaloneDatabaseInfoService( ServerId serverId, SocketAddress address,
-            DatabaseManager<?> databaseManager, DatabaseStateService stateService, ReadOnlyDatabases readOnlyDatabases )
-    {
+    public StandaloneDatabaseInfoService(
+            ServerId serverId,
+            SocketAddress address,
+            DatabaseManager<?> databaseManager,
+            DatabaseStateService stateService,
+            ReadOnlyDatabases readOnlyDatabases) {
         this.serverId = serverId;
         this.address = address;
         this.databaseManager = databaseManager;
@@ -60,52 +61,48 @@ public class StandaloneDatabaseInfoService implements DatabaseInfoService
     }
 
     @Override
-    public List<DatabaseInfo> lookupCachedInfo( Set<String> databaseNames )
-    {
-        return createDatabaseInfoStream( databaseNames )
-                .collect( Collectors.toList() );
+    public List<DatabaseInfo> lookupCachedInfo(Set<String> databaseNames) {
+        return createDatabaseInfoStream(databaseNames).collect(Collectors.toList());
     }
 
     @Override
-    public List<ExtendedDatabaseInfo> requestDetailedInfo( Set<String> databaseNames )
-    {
-        return createDatabaseInfoStream( databaseNames )
-                .map( databaseInfo -> databaseInfo.extendWith( getLastCommittedTransactionForDatabase( databaseInfo.namedDatabaseId() ) ) )
-                .collect( Collectors.toList() );
+    public List<ExtendedDatabaseInfo> requestDetailedInfo(Set<String> databaseNames) {
+        return createDatabaseInfoStream(databaseNames)
+                .map(databaseInfo ->
+                        databaseInfo.extendWith(getLastCommittedTransactionForDatabase(databaseInfo.namedDatabaseId())))
+                .collect(Collectors.toList());
     }
 
-    private Stream<DatabaseInfo> createDatabaseInfoStream( Set<String> databaseNames )
-    {
+    private Stream<DatabaseInfo> createDatabaseInfoStream(Set<String> databaseNames) {
         return databaseNames.stream()
-                            .map( idRepository::getByName )
-                            .flatMap( Optional::stream )
-                            .map( this::createInfoForDatabase );
+                .map(idRepository::getByName)
+                .flatMap(Optional::stream)
+                .map(this::createInfoForDatabase);
     }
 
-    private long getLastCommittedTransactionForDatabase( NamedDatabaseId namedDatabaseId )
-    {
-        return databaseManager.getDatabaseContext( namedDatabaseId )
-                              .map( DatabaseContext::dependencies )
-                              .map( dependencies -> dependencies.resolveDependency( TransactionIdStore.class ) )
-                              .flatMap( transactionIdStore ->
-                                        {
-                                            try
-                                            {
-                                                return Optional.of( transactionIdStore.getLastCommittedTransactionId() );
-                                            }
-                                            catch ( StoreFileClosedException e )
-                                            {
-                                                return Optional.empty();
-                                            }
-                                        } )
-                              .orElse( ExtendedDatabaseInfo.COMMITTED_TX_ID_NOT_AVAILABLE );
+    private long getLastCommittedTransactionForDatabase(NamedDatabaseId namedDatabaseId) {
+        return databaseManager
+                .getDatabaseContext(namedDatabaseId)
+                .map(DatabaseContext::dependencies)
+                .map(dependencies -> dependencies.resolveDependency(TransactionIdStore.class))
+                .flatMap(transactionIdStore -> {
+                    try {
+                        return Optional.of(transactionIdStore.getLastCommittedTransactionId());
+                    } catch (StoreFileClosedException e) {
+                        return Optional.empty();
+                    }
+                })
+                .orElse(ExtendedDatabaseInfo.COMMITTED_TX_ID_NOT_AVAILABLE);
     }
 
-    private DatabaseInfo createInfoForDatabase( NamedDatabaseId namedDatabaseId )
-    {
-        var status = stateService.stateOfDatabase( namedDatabaseId ).operatorState().description();
-        var error = stateService.causeOfFailure( namedDatabaseId ).map( Throwable::getMessage ).orElse( "" );
-        var access = readOnlyDatabases.isReadOnly( namedDatabaseId ) ? READ_ONLY : READ_WRITE;
-        return new DatabaseInfo( namedDatabaseId, serverId, access, address, null, ROLE_LABEL, status, error );
+    private DatabaseInfo createInfoForDatabase(NamedDatabaseId namedDatabaseId) {
+        var status =
+                stateService.stateOfDatabase(namedDatabaseId).operatorState().description();
+        var error = stateService
+                .causeOfFailure(namedDatabaseId)
+                .map(Throwable::getMessage)
+                .orElse("");
+        var access = readOnlyDatabases.isReadOnly(namedDatabaseId) ? READ_ONLY : READ_WRITE;
+        return new DatabaseInfo(namedDatabaseId, serverId, access, address, null, ROLE_LABEL, status, error);
     }
 }

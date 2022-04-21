@@ -28,8 +28,7 @@ import java.util.function.Consumer;
  * extra information. As an example, when the events triggering the check point are conditionalized wrt to a threshold,
  * thi can be used for adding the information about the threshold that actually allowed the check point to happen.
  */
-public interface TriggerInfo extends Consumer<String>
-{
+public interface TriggerInfo extends Consumer<String> {
     /**
      * This method can be used to retrieve the actual human-readable description about the events that triggered the
      * check point.
@@ -37,5 +36,5 @@ public interface TriggerInfo extends Consumer<String>
      * @param transactionId the transaction id we are check pointing on
      * @return the description of the events that triggered check pointing
      */
-    String describe( long transactionId );
+    String describe(long transactionId);
 }

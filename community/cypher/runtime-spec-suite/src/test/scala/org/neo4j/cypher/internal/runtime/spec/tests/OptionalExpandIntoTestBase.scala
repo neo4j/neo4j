@@ -39,7 +39,7 @@ import scala.jdk.CollectionConverters.IterableHasAsScala
 abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
-  protected  val sizeHint: Int
+  protected val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should optional expand and provide variables for relationship and end node - outgoing") {
@@ -104,7 +104,8 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
     val expected = for {
       x <- xs ++ moreXs
       y <- ys ++ moreYs
-      _rels = x.getRelationships(OUTGOING).asScala.filter(r => r.getEndNode == y && r.isType(RelationshipType.withName("R")))
+      _rels =
+        x.getRelationships(OUTGOING).asScala.filter(r => r.getEndNode == y && r.isType(RelationshipType.withName("R")))
       rels = if (_rels.nonEmpty) _rels else Seq(null)
       r <- rels
     } yield Array(x, r, y)
@@ -141,7 +142,9 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
     val expected = for {
       x <- xs ++ moreXs
       y <- ys ++ moreYs
-      _rels = x.getRelationships(OUTGOING).asScala.filter(r => r.getEndNode == y && (r.isType(RelationshipType.withName("R")) || r.isType(RelationshipType.withName("S"))))
+      _rels = x.getRelationships(OUTGOING).asScala.filter(r =>
+        r.getEndNode == y && (r.isType(RelationshipType.withName("R")) || r.isType(RelationshipType.withName("S")))
+      )
       rels = if (_rels.nonEmpty) _rels else Seq(null)
       r <- rels
     } yield Array(x, r, y)
@@ -211,7 +214,8 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
     val expected = for {
       x <- xs ++ moreXs
       y <- ys ++ moreYs
-      _rels = x.getRelationships(INCOMING).asScala.filter(r => r.getEndNode == y && r.isType(RelationshipType.withName("R")))
+      _rels =
+        x.getRelationships(INCOMING).asScala.filter(r => r.getEndNode == y && r.isType(RelationshipType.withName("R")))
       rels = if (_rels.nonEmpty) _rels else Seq(null)
       r <- rels
     } yield Array(x, r, y)
@@ -248,7 +252,9 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
     val expected = for {
       x <- xs ++ moreXs
       y <- ys ++ moreYs
-      _rels = x.getRelationships(INCOMING).asScala.filter(r => r.getEndNode == y && (r.isType(RelationshipType.withName("R")) || r.isType(RelationshipType.withName("S"))))
+      _rels = x.getRelationships(INCOMING).asScala.filter(r =>
+        r.getEndNode == y && (r.isType(RelationshipType.withName("R")) || r.isType(RelationshipType.withName("S")))
+      )
       rels = if (_rels.nonEmpty) _rels else Seq(null)
       r <- rels
     } yield Array(x, r, y)
@@ -318,7 +324,8 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
     val expected = for {
       x <- xs ++ moreXs
       y <- ys ++ moreYs
-      _rels = x.getRelationships(BOTH).asScala.filter(r => r.getEndNode == y && r.isType(RelationshipType.withName("R")))
+      _rels =
+        x.getRelationships(BOTH).asScala.filter(r => r.getEndNode == y && r.isType(RelationshipType.withName("R")))
       rels = if (_rels.nonEmpty) _rels else Seq(null)
       r <- rels
     } yield Array(x, r, y)
@@ -355,7 +362,9 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
     val expected = for {
       x <- xs ++ moreXs
       y <- ys ++ moreYs
-      _rels = x.getRelationships(BOTH).asScala.filter(r => r.getEndNode == y && (r.isType(RelationshipType.withName("R")) || r.isType(RelationshipType.withName("S"))))
+      _rels = x.getRelationships(BOTH).asScala.filter(r =>
+        r.getEndNode == y && (r.isType(RelationshipType.withName("R")) || r.isType(RelationshipType.withName("S")))
+      )
       rels = if (_rels.nonEmpty) _rels else Seq(null)
       r <- rels
     } yield Array(x, r, y)
@@ -366,7 +375,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
   test("should expand and handle self loops") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n by 2) yield {
+    val relTuples = (for (i <- 0 until n by 2) yield {
       Seq(
         (i, i, "ME")
       )
@@ -404,7 +413,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
     // given
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x","r")
+      .produceResults("x", "r")
       .optionalExpandInto("(x)-[r]->(x)")
       .allNodeScan("x")
       .build()
@@ -416,7 +425,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle types missing on compile") {
-    //flaky
+    // flaky
     assume(!(isParallel && runOnlySafeScenarios))
     val (n1, n2) = given {
       val n1 = tx.createNode(Label.label("X"))
@@ -437,7 +446,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       Array(n1, null, n2)
     ))
 
-    //CREATE S
+    // CREATE S
     val (m1, m2, m3, m4, m3m4) = given {
       val m3 = tx.createNode(Label.label("X"))
       val m4 = tx.createNode(Label.label("Y"))
@@ -451,7 +460,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       Array(m3, m3m4, m4)
     ))
 
-    //CREATE R
+    // CREATE R
     val (o1, o2, o3, o4, o5, o6, o3o4, o5o6) = given {
       val o5 = tx.createNode(Label.label("X"))
       val o6 = tx.createNode(Label.label("Y"))
@@ -494,7 +503,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       Array(n1, null, n2)
     ))
 
-    //CREATE S
+    // CREATE S
     val (m1, m2, m3, m4, m3m4) = given {
       val m3 = tx.createNode(Label.label("X"))
       val m4 = tx.createNode(Label.label("Y"))
@@ -508,7 +517,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       Array(m3, m3m4, m4)
     ))
 
-    //CREATE R
+    // CREATE R
     val (o1, o2, o3, o4, o5, o6, o3o4, o5o6) = given {
       val o5 = tx.createNode(Label.label("X"))
       val o6 = tx.createNode(Label.label("Y"))
@@ -583,7 +592,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
     // given
     val n = Math.sqrt(sizeHint).toInt
     given { nodeGraph(n, "Y") }
-    val input = inputValues((1 to n).map(Array[Any](_)):_*)
+    val input = inputValues((1 to n).map(Array[Any](_)): _*)
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "r")
@@ -594,7 +603,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // then
-    a [ParameterWrongTypeException] should be thrownBy consume(execute(logicalQuery, runtime, input))
+    a[ParameterWrongTypeException] should be thrownBy consume(execute(logicalQuery, runtime, input))
   }
 
   test("should support expandInto on RHS of apply") {
@@ -697,7 +706,9 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
     val expected = for {
       x <- xs
       y <- ys
-      _rels = x.getRelationships(OUTGOING).asScala.filter(r => r.getEndNode == y && r.getProperty("num").asInstanceOf[Int] > 20)
+      _rels = x.getRelationships(OUTGOING).asScala.filter(r =>
+        r.getEndNode == y && r.getProperty("num").asInstanceOf[Int] > 20
+      )
       rels = if (_rels.nonEmpty) _rels else Seq(null)
       r <- rels
     } yield Array(x, r, y)
@@ -708,7 +719,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
   test("should filter with a predicate on cached relationship property") {
     // given
     val rels = given {
-      val (_,rs) = circleGraph(sizeHint)
+      val (_, rs) = circleGraph(sizeHint)
       rs.indices.foreach(i => rs(i).setProperty("prop", i))
       rs
     }
@@ -757,7 +768,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
         c <- cs
         b <- bs
       } // r2
-        c.createRelationshipTo(b, RelationshipType.withName("R"))
+      c.createRelationshipTo(b, RelationshipType.withName("R"))
 
       r1s
     }
@@ -835,8 +846,8 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
         rel <- rels
         x = rel.getStartNode
         y = rel.getEndNode
-        if y.getId >= size /2
-        r = if (x.getId >= size /2) rel else null
+        if y.getId >= size / 2
+        r = if (x.getId >= size / 2) rel else null
         row <- List(Array(x, r, y))
       } yield row
 
@@ -881,7 +892,8 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
         Array[Any](start, end, zeroRel)
       } else {
         Array[Any](start, end, oneRel)
-      }}
+      }
+    }
 
     runtimeResult should beColumns("x", "y", "r").withRows(expected)
   }
@@ -952,7 +964,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x")
       .nonFuseable()
       .optionalExpandInto("(x)-[r2:B]->(y)", Some(s"y:M"))
-      .optionalExpandInto("(x)-[r1:A]->(y)", Some("y:NOT_THERE"))//this predicate will always fail
+      .optionalExpandInto("(x)-[r1:A]->(y)", Some("y:NOT_THERE")) // this predicate will always fail
       .cartesianProduct()
       .|.nodeByLabelScan("y", "M")
       .nodeByLabelScan("x", "N")
@@ -984,7 +996,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nonFuseable()
-      .optionalExpandInto("(x)-[r2:B]->(y)", Some("y:NOT_THERE"))//this predicate will always fail
+      .optionalExpandInto("(x)-[r2:B]->(y)", Some("y:NOT_THERE")) // this predicate will always fail
       .optionalExpandInto("(x)-[r1:A]->(y)", Some(s"y:${nodeLabel.name()}"))
       .cartesianProduct()
       .|.nodeByLabelScan("y", "M")
@@ -1019,7 +1031,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .nonFuseable()
       .limit(10)
       .optionalExpandInto("(x)-[r2:B]->(y)", Some(s"y:${nodeLabel.name()}"))
-      .optionalExpandInto("(x)-[r1:A]->(y)", Some("y:NOT_THERE"))//this predicate will always fail
+      .optionalExpandInto("(x)-[r1:A]->(y)", Some("y:NOT_THERE")) // this predicate will always fail
       .cartesianProduct()
       .|.nodeByLabelScan("y", "M")
       .nodeByLabelScan("x", "N")
@@ -1052,7 +1064,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x")
       .nonFuseable()
       .limit(10)
-      .optionalExpandInto("(x)-[r2:B]->(y)", Some("y:NOT_THERE"))//this predicate will always fail
+      .optionalExpandInto("(x)-[r2:B]->(y)", Some("y:NOT_THERE")) // this predicate will always fail
       .optionalExpandInto("(x)-[r1:A]->(y)", Some(s"y:${nodeLabel.name()}"))
       .cartesianProduct()
       .|.nodeByLabelScan("y", "M")
@@ -1087,14 +1099,14 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .nonFuseable()
       .apply()
       .|.optionalExpandInto("(x)-[r2:B]->(y)", Some(s"y:${nodeLabel.name()}"))
-      .|.optionalExpandInto("(x)-[r1:A]->(y)", Some("y:NOT_THERE")) //this predicate will always fail
+      .|.optionalExpandInto("(x)-[r1:A]->(y)", Some("y:NOT_THERE")) // this predicate will always fail
       .|.cartesianProduct()
       .|.|.nodeByLabelScan("y", "M")
       .|.nodeByLabelScan("x", "N")
       .input(variables = Seq("i"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(Seq.fill(10)(Array[Any](42)):_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Seq.fill(10)(Array[Any](42)): _*))
 
     // then
     runtimeResult should beColumns("x").withRows(singleColumn(nodes.flatMap(n => Seq.fill(30)(n))))
@@ -1121,7 +1133,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x")
       .nonFuseable()
       .apply()
-      .|.optionalExpandInto("(x)-[r2:B]->(y)", Some("y:NOT_THERE"))//this predicate will always fail
+      .|.optionalExpandInto("(x)-[r2:B]->(y)", Some("y:NOT_THERE")) // this predicate will always fail
       .|.optionalExpandInto("(x)-[r1:A]->(y)", Some(s"y:${nodeLabel.name()}"))
       .|.cartesianProduct()
       .|.|.nodeByLabelScan("y", "M")
@@ -1129,7 +1141,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("i"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(Seq.fill(10)(Array[Any](42)):_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Seq.fill(10)(Array[Any](42)): _*))
 
     // then
     runtimeResult should beColumns("x").withRows(singleColumn(nodes.flatMap(n => Seq.fill(20)(n))))

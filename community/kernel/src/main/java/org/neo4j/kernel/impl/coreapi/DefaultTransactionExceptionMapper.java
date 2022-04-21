@@ -27,44 +27,33 @@ import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class DefaultTransactionExceptionMapper implements TransactionExceptionMapper
-{
+public class DefaultTransactionExceptionMapper implements TransactionExceptionMapper {
     private static final String UNABLE_TO_COMPLETE_TRANSACTION = "Unable to complete transaction.";
 
     public static final DefaultTransactionExceptionMapper INSTANCE = new DefaultTransactionExceptionMapper();
 
-    private DefaultTransactionExceptionMapper()
-    {
-    }
+    private DefaultTransactionExceptionMapper() {}
 
     @Override
-    public RuntimeException mapException( Exception e )
-    {
-        if ( e instanceof TransientFailureException )
-        {
+    public RuntimeException mapException(Exception e) {
+        if (e instanceof TransientFailureException) {
             // We let transient exceptions pass through unchanged since they aren't really transaction failures
             // in the same sense as unexpected failures are. Such exception signals that the transaction
             // can be retried and might be successful the next time.
             return (TransientFailureException) e;
         }
-        if ( e instanceof ConstraintViolationTransactionFailureException )
-        {
-            return new ConstraintViolationException( e.getMessage(), e );
-        }
-        else if ( e instanceof Status.HasStatus )
-        {
+        if (e instanceof ConstraintViolationTransactionFailureException) {
+            return new ConstraintViolationException(e.getMessage(), e);
+        } else if (e instanceof Status.HasStatus) {
             Status status = ((Status.HasStatus) e).status();
             Status.Code statusCode = status.code();
             String statusExceptionMessage = UNABLE_TO_COMPLETE_TRANSACTION + ": " + statusCode.description();
-            if ( statusCode.classification() == Status.Classification.TransientError )
-            {
-                return new TransientTransactionFailureException( status, statusExceptionMessage, e );
+            if (statusCode.classification() == Status.Classification.TransientError) {
+                return new TransientTransactionFailureException(status, statusExceptionMessage, e);
             }
-            return new TransactionStatusFailureException( status, statusExceptionMessage, e );
-        }
-        else
-        {
-            return new TransactionFailureException( UNABLE_TO_COMPLETE_TRANSACTION, e );
+            return new TransactionStatusFailureException(status, statusExceptionMessage, e);
+        } else {
+            return new TransactionFailureException(UNABLE_TO_COMPLETE_TRANSACTION, e);
         }
     }
 }

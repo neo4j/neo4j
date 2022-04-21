@@ -19,40 +19,37 @@
  */
 package org.neo4j.kernel.impl.constraints;
 
+import static java.lang.String.format;
+import static org.neo4j.util.Preconditions.checkState;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-
 import org.neo4j.annotations.service.Service;
 import org.neo4j.service.NamedService;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 
-import static java.lang.String.format;
-import static org.neo4j.util.Preconditions.checkState;
-
 /**
  * Implements semantics of constraint creation and enforcement.
  */
 @Service
-public abstract class ConstraintSemantics implements NamedService, ConstraintValidator, ConstraintRuleAccessor
-{
+public abstract class ConstraintSemantics implements NamedService, ConstraintValidator, ConstraintRuleAccessor {
     private final int priority;
 
-    public static ConstraintSemantics getConstraintSemantics()
-    {
-        final Collection<ConstraintSemantics> candidates = Services.loadAll( ConstraintSemantics.class );
-        checkState( !candidates.isEmpty(), format( "At least one implementation of %s should be available.", ConstraintSemantics.class ) );
-        return Collections.max( candidates, Comparator.comparingInt( ConstraintSemantics::getPriority ) );
+    public static ConstraintSemantics getConstraintSemantics() {
+        final Collection<ConstraintSemantics> candidates = Services.loadAll(ConstraintSemantics.class);
+        checkState(
+                !candidates.isEmpty(),
+                format("At least one implementation of %s should be available.", ConstraintSemantics.class));
+        return Collections.max(candidates, Comparator.comparingInt(ConstraintSemantics::getPriority));
     }
 
-    protected ConstraintSemantics( int priority )
-    {
+    protected ConstraintSemantics(int priority) {
         this.priority = priority;
     }
 
-    public int getPriority()
-    {
+    public int getPriority() {
         return priority;
     }
 }

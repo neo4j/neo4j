@@ -24,13 +24,14 @@ package org.neo4j.internal.schema;
  * target schema descriptor, a visitor pattern is used to bounce the code path into the correct overloaded
  * processSpecific variant. See {@link SchemaDescriptor#processWith(SchemaProcessor)}.
  */
-public interface SchemaProcessor
-{
+public interface SchemaProcessor {
     /*
     The following section contains the overloaded process signatures for all concrete SchemaDescriptor implementers.
     Add new overloaded methods here when adding more concrete SchemaDescriptors.
      */
-    void processSpecific( LabelSchemaDescriptor schema );
-    void processSpecific( RelationTypeSchemaDescriptor schema );
-    void processSpecific( SchemaDescriptor schema );
+    void processSpecific(LabelSchemaDescriptor schema);
+
+    void processSpecific(RelationTypeSchemaDescriptor schema);
+
+    void processSpecific(SchemaDescriptor schema);
 }

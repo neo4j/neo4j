@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.nio.file.Path;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
+import java.nio.file.Path;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -36,44 +37,64 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-
-public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFactory<GenericNativeIndexProvider>
-{
+public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFactory<GenericNativeIndexProvider> {
     @Override
-    protected Class<?> loggingClass()
-    {
+    protected Class<?> loggingClass() {
         return GenericNativeIndexProvider.class;
     }
 
     @Override
-    public IndexProviderDescriptor descriptor()
-    {
+    public IndexProviderDescriptor descriptor() {
         return GenericNativeIndexProvider.DESCRIPTOR;
     }
 
     @Override
-    protected GenericNativeIndexProvider internalCreate( PageCache pageCache, FileSystemAbstraction fs, Monitors monitors,
-                                                         String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker,
-                                                         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                                                         DatabaseLayout databaseLayout, InternalLog log,
-                                                         TokenHolders tokenHolders, JobScheduler scheduler, CursorContextFactory contextFactory )
-    {
-        return create( pageCache, databaseLayout.databaseDirectory(), fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector,
-                       contextFactory, databaseLayout.getDatabaseName() );
+    protected GenericNativeIndexProvider internalCreate(
+            PageCache pageCache,
+            FileSystemAbstraction fs,
+            Monitors monitors,
+            String monitorTag,
+            Config config,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            DatabaseLayout databaseLayout,
+            InternalLog log,
+            TokenHolders tokenHolders,
+            JobScheduler scheduler,
+            CursorContextFactory contextFactory) {
+        return create(
+                pageCache,
+                databaseLayout.databaseDirectory(),
+                fs,
+                monitors,
+                monitorTag,
+                config,
+                readOnlyChecker,
+                recoveryCleanupWorkCollector,
+                contextFactory,
+                databaseLayout.getDatabaseName());
     }
 
     @VisibleForTesting
-    public static GenericNativeIndexProvider create( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, Monitors monitors,
-                                                     String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker,
-                                                     RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                                                     CursorContextFactory contextFactory, String databaseName )
-    {
-        IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( storeDir );
-        DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs, contextFactory, databaseName )
-                                                                        .withMonitors( monitors ).withTag( monitorTag )
-                                                                        .withReadOnlyChecker( readOnlyChecker )
-                                                                        .build();
-        return new GenericNativeIndexProvider( databaseIndexContext, directoryStructure, recoveryCleanupWorkCollector, config );
+    public static GenericNativeIndexProvider create(
+            PageCache pageCache,
+            Path storeDir,
+            FileSystemAbstraction fs,
+            Monitors monitors,
+            String monitorTag,
+            Config config,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            CursorContextFactory contextFactory,
+            String databaseName) {
+        IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider(storeDir);
+        DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder(
+                        pageCache, fs, contextFactory, databaseName)
+                .withMonitors(monitors)
+                .withTag(monitorTag)
+                .withReadOnlyChecker(readOnlyChecker)
+                .build();
+        return new GenericNativeIndexProvider(
+                databaseIndexContext, directoryStructure, recoveryCleanupWorkCollector, config);
     }
 }

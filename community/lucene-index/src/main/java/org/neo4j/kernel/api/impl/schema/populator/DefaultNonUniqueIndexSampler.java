@@ -21,13 +21,11 @@ package org.neo4j.kernel.api.impl.schema.populator;
 
 import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
-
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.NonUniqueIndexSampler;
 
-public class DefaultNonUniqueIndexSampler implements NonUniqueIndexSampler
-{
+public class DefaultNonUniqueIndexSampler implements NonUniqueIndexSampler {
     private final int sampleSizeLimit;
     private final MutableObjectLongMap<String> values;
 
@@ -39,72 +37,60 @@ public class DefaultNonUniqueIndexSampler implements NonUniqueIndexSampler
     private long accumulatedSampledSize;
     private long sampleSize;
 
-    public DefaultNonUniqueIndexSampler( int sampleSizeLimit )
-    {
-        this.values = new ObjectLongHashMap<>( calculateInitialSetSize( sampleSizeLimit ) );
+    public DefaultNonUniqueIndexSampler(int sampleSizeLimit) {
+        this.values = new ObjectLongHashMap<>(calculateInitialSetSize(sampleSizeLimit));
         this.sampleSizeLimit = sampleSizeLimit;
     }
 
     @Override
-    public void include( String value )
-    {
-        include( value, 1 );
+    public void include(String value) {
+        include(value, 1);
     }
 
     @Override
-    public void include( String value, long increment )
-    {
+    public void include(String value, long increment) {
         assert increment > 0;
-        if ( sampleSize >= sampleSizeLimit )
-        {
+        if (sampleSize >= sampleSizeLimit) {
             nextStep();
         }
 
-        if ( values.addToValue( value, increment ) == increment )
-        {
+        if (values.addToValue(value, increment) == increment) {
             sampleSize += value.length();
         }
     }
 
     @Override
-    public void exclude( String value )
-    {
-        exclude( value, 1 );
+    public void exclude(String value) {
+        exclude(value, 1);
     }
 
     @Override
-    public void exclude( String value, long decrement )
-    {
+    public void exclude(String value, long decrement) {
         assert decrement > 0;
-        if ( values.addToValue( value, -decrement ) <= 0 )
-        {
-            values.remove( value );
+        if (values.addToValue(value, -decrement) <= 0) {
+            values.remove(value);
             sampleSize -= value.length();
         }
     }
 
     @Override
-    public IndexSample sample( CursorContext cursorContext )
-    {
-        return sample( -1, cursorContext );
+    public IndexSample sample(CursorContext cursorContext) {
+        return sample(-1, cursorContext);
     }
 
     @Override
-    public IndexSample sample( int numDocs, CursorContext cursorContext )
-    {
-        if ( !values.isEmpty() )
-        {
+    public IndexSample sample(int numDocs, CursorContext cursorContext) {
+        if (!values.isEmpty()) {
             nextStep();
         }
 
         long uniqueValues = sampledSteps != 0 ? accumulatedUniqueValues / sampledSteps : 0;
         long sampledSize = sampledSteps != 0 ? accumulatedSampledSize / sampledSteps : 0;
 
-        return new IndexSample( numDocs < 0 ? accumulatedSampledSize : numDocs, uniqueValues, sampledSize );
+        return new IndexSample(numDocs < 0 ? accumulatedSampledSize : numDocs, uniqueValues, sampledSize);
     }
 
-    private void nextStep()
-    {
+    private void nextStep() {
         accumulatedUniqueValues += values.size();
         accumulatedSampledSize += values.sum();
         sampleSize = 0;
@@ -122,9 +108,8 @@ public class DefaultNonUniqueIndexSampler implements NonUniqueIndexSampler
      * @param sampleSizeLimit specified sample size limit
      * @return initial set size
      */
-    private static int calculateInitialSetSize( int sampleSizeLimit )
-    {
-        int basedOnSampleSize = Math.max( 10, (int) (Math.log( sampleSizeLimit ) / Math.log( 2 )) / 2 );
-        return 1 << Math.min( 16, basedOnSampleSize );
+    private static int calculateInitialSetSize(int sampleSizeLimit) {
+        int basedOnSampleSize = Math.max(10, (int) (Math.log(sampleSizeLimit) / Math.log(2)) / 2);
+        return 1 << Math.min(16, basedOnSampleSize);
     }
 }

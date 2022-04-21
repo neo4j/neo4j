@@ -22,7 +22,6 @@ package org.neo4j.internal.recordstorage;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -45,8 +44,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
-public class PrepareTrackingRecordFormats implements RecordFormats
-{
+public class PrepareTrackingRecordFormats implements RecordFormats {
     private final RecordFormats actual;
     private final Set<NodeRecord> nodePrepare = new HashSet<>();
     private final Set<RelationshipRecord> relationshipPrepare = new HashSet<>();
@@ -59,218 +57,183 @@ public class PrepareTrackingRecordFormats implements RecordFormats
     private final Set<RelationshipTypeTokenRecord> relationshipTypeTokenPrepare = new HashSet<>();
     private final Set<MetaDataRecord> metaDataPrepare = new HashSet<>();
 
-    public PrepareTrackingRecordFormats( RecordFormats actual )
-    {
+    public PrepareTrackingRecordFormats(RecordFormats actual) {
         this.actual = actual;
     }
 
     @Override
-    public String storeVersion()
-    {
+    public String storeVersion() {
         return actual.storeVersion();
     }
 
     @Override
-    public String introductionVersion()
-    {
+    public String introductionVersion() {
         return actual.introductionVersion();
     }
 
     @Override
-    public PrepareTrackingRecordFormat<NodeRecord> node()
-    {
-        return new PrepareTrackingRecordFormat<>( actual.node(), nodePrepare );
+    public PrepareTrackingRecordFormat<NodeRecord> node() {
+        return new PrepareTrackingRecordFormat<>(actual.node(), nodePrepare);
     }
 
     @Override
-    public PrepareTrackingRecordFormat<RelationshipGroupRecord> relationshipGroup()
-    {
-        return new PrepareTrackingRecordFormat<>( actual.relationshipGroup(), relationshipGroupPrepare );
+    public PrepareTrackingRecordFormat<RelationshipGroupRecord> relationshipGroup() {
+        return new PrepareTrackingRecordFormat<>(actual.relationshipGroup(), relationshipGroupPrepare);
     }
 
     @Override
-    public PrepareTrackingRecordFormat<RelationshipRecord> relationship()
-    {
-        return new PrepareTrackingRecordFormat<>( actual.relationship(), relationshipPrepare );
+    public PrepareTrackingRecordFormat<RelationshipRecord> relationship() {
+        return new PrepareTrackingRecordFormat<>(actual.relationship(), relationshipPrepare);
     }
 
     @Override
-    public PrepareTrackingRecordFormat<PropertyRecord> property()
-    {
-        return new PrepareTrackingRecordFormat<>( actual.property(), propertyPrepare );
+    public PrepareTrackingRecordFormat<PropertyRecord> property() {
+        return new PrepareTrackingRecordFormat<>(actual.property(), propertyPrepare);
     }
 
     @Override
-    public RecordFormat<SchemaRecord> schema()
-    {
-        return new PrepareTrackingRecordFormat<>( actual.schema(), schemaPrepare );
+    public RecordFormat<SchemaRecord> schema() {
+        return new PrepareTrackingRecordFormat<>(actual.schema(), schemaPrepare);
     }
 
     @Override
-    public PrepareTrackingRecordFormat<LabelTokenRecord> labelToken()
-    {
-        return new PrepareTrackingRecordFormat<>( actual.labelToken(), labelTokenPrepare );
+    public PrepareTrackingRecordFormat<LabelTokenRecord> labelToken() {
+        return new PrepareTrackingRecordFormat<>(actual.labelToken(), labelTokenPrepare);
     }
 
     @Override
-    public PrepareTrackingRecordFormat<PropertyKeyTokenRecord> propertyKeyToken()
-    {
-        return new PrepareTrackingRecordFormat<>( actual.propertyKeyToken(), propertyKeyTokenPrepare );
+    public PrepareTrackingRecordFormat<PropertyKeyTokenRecord> propertyKeyToken() {
+        return new PrepareTrackingRecordFormat<>(actual.propertyKeyToken(), propertyKeyTokenPrepare);
     }
 
     @Override
-    public PrepareTrackingRecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken()
-    {
-        return new PrepareTrackingRecordFormat<>( actual.relationshipTypeToken(), relationshipTypeTokenPrepare );
+    public PrepareTrackingRecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken() {
+        return new PrepareTrackingRecordFormat<>(actual.relationshipTypeToken(), relationshipTypeTokenPrepare);
     }
 
     @Override
-    public PrepareTrackingRecordFormat<DynamicRecord> dynamic()
-    {
-        return new PrepareTrackingRecordFormat<>( actual.dynamic(), dynamicPrepare );
+    public PrepareTrackingRecordFormat<DynamicRecord> dynamic() {
+        return new PrepareTrackingRecordFormat<>(actual.dynamic(), dynamicPrepare);
     }
 
     @Override
-    public PrepareTrackingRecordFormat<MetaDataRecord> metaData()
-    {
-        return new PrepareTrackingRecordFormat<>( actual.metaData(), metaDataPrepare );
+    public PrepareTrackingRecordFormat<MetaDataRecord> metaData() {
+        return new PrepareTrackingRecordFormat<>(actual.metaData(), metaDataPrepare);
     }
 
     @Override
-    public Capability[] capabilities()
-    {
+    public Capability[] capabilities() {
         return actual.capabilities();
     }
 
     @Override
-    public int majorVersion()
-    {
+    public int majorVersion() {
         return actual.majorVersion();
     }
 
     @Override
-    public int minorVersion()
-    {
+    public int minorVersion() {
         return actual.minorVersion();
     }
 
     @Override
-    public boolean hasCapability( Capability capability )
-    {
-        return actual.hasCapability( capability );
+    public boolean hasCapability(Capability capability) {
+        return actual.hasCapability(capability);
     }
 
     @Override
-    public FormatFamily getFormatFamily()
-    {
+    public FormatFamily getFormatFamily() {
         return FormatFamily.standard;
     }
 
     @Override
-    public boolean hasCompatibleCapabilities( RecordFormats other, CapabilityType type )
-    {
-        return actual.hasCompatibleCapabilities( other, type );
+    public boolean hasCompatibleCapabilities(RecordFormats other, CapabilityType type) {
+        return actual.hasCompatibleCapabilities(other, type);
     }
 
     @Override
-    public String name()
-    {
+    public String name() {
         return getClass().getName();
     }
 
     @Override
-    public boolean onlyForMigration()
-    {
+    public boolean onlyForMigration() {
         return actual.onlyForMigration();
     }
 
-    public static class PrepareTrackingRecordFormat<RECORD extends AbstractBaseRecord> implements RecordFormat<RECORD>
-    {
+    public static class PrepareTrackingRecordFormat<RECORD extends AbstractBaseRecord> implements RecordFormat<RECORD> {
         private final RecordFormat<RECORD> actual;
         private final Set<RECORD> prepare;
 
-        PrepareTrackingRecordFormat( RecordFormat<RECORD> actual, Set<RECORD> prepare )
-        {
+        PrepareTrackingRecordFormat(RecordFormat<RECORD> actual, Set<RECORD> prepare) {
             this.actual = actual;
             this.prepare = prepare;
         }
 
         @Override
-        public RECORD newRecord()
-        {
+        public RECORD newRecord() {
             return actual.newRecord();
         }
 
         @Override
-        public int getRecordSize( StoreHeader storeHeader )
-        {
-            return actual.getRecordSize( storeHeader );
+        public int getRecordSize(StoreHeader storeHeader) {
+            return actual.getRecordSize(storeHeader);
         }
 
         @Override
-        public int getRecordHeaderSize()
-        {
+        public int getRecordHeaderSize() {
             return actual.getRecordHeaderSize();
         }
 
         @Override
-        public boolean isInUse( PageCursor cursor )
-        {
-            return actual.isInUse( cursor );
+        public boolean isInUse(PageCursor cursor) {
+            return actual.isInUse(cursor);
         }
 
         @Override
-        public void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage ) throws IOException
-        {
-            actual.read( record, cursor, mode, recordSize, recordsPerPage );
+        public void read(RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage)
+                throws IOException {
+            actual.read(record, cursor, mode, recordSize, recordsPerPage);
         }
 
         @Override
-        public void prepare( RECORD record, int recordSize, IdSequence idSequence, CursorContext cursorContext )
-        {
-            prepare.add( record );
-            actual.prepare( record, recordSize, idSequence, cursorContext );
+        public void prepare(RECORD record, int recordSize, IdSequence idSequence, CursorContext cursorContext) {
+            prepare.add(record);
+            actual.prepare(record, recordSize, idSequence, cursorContext);
         }
 
         @Override
-        public void write( RECORD record, PageCursor cursor, int recordSize, int recordsPerPage ) throws IOException
-        {
-            actual.write( record, cursor, recordSize, recordsPerPage );
+        public void write(RECORD record, PageCursor cursor, int recordSize, int recordsPerPage) throws IOException {
+            actual.write(record, cursor, recordSize, recordsPerPage);
         }
 
         @Override
-        public long getNextRecordReference( RECORD record )
-        {
-            return actual.getNextRecordReference( record );
+        public long getNextRecordReference(RECORD record) {
+            return actual.getNextRecordReference(record);
         }
 
         @Override
-        public long getMaxId()
-        {
+        public long getMaxId() {
             return actual.getMaxId();
         }
 
         @Override
-        public int getFilePageSize( int pageSize, int recordSize )
-        {
-            return actual.getFilePageSize( pageSize, recordSize );
+        public int getFilePageSize(int pageSize, int recordSize) {
+            return actual.getFilePageSize(pageSize, recordSize);
         }
 
         @Override
-        public boolean equals( Object otherFormat )
-        {
-            return actual.equals( otherFormat );
+        public boolean equals(Object otherFormat) {
+            return actual.equals(otherFormat);
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             return actual.hashCode();
         }
 
-        public boolean prepared( RECORD record )
-        {
-            return prepare.contains( record );
+        public boolean prepared(RECORD record) {
+            return prepare.contains(record);
         }
     }
 }

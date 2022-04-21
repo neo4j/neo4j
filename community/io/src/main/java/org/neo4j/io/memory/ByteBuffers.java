@@ -21,15 +21,11 @@ package org.neo4j.io.memory;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.memory.MemoryTracker;
 
-public final class ByteBuffers
-{
-    private ByteBuffers()
-    {
-    }
+public final class ByteBuffers {
+    private ByteBuffers() {}
 
     /**
      * Allocate on heap byte buffer with default byte order
@@ -37,9 +33,8 @@ public final class ByteBuffers
      * @param memoryTracker underlying buffers allocation memory tracker
      * @return byte buffer with requested size
      */
-    public static ByteBuffer allocate( int capacity, MemoryTracker memoryTracker )
-    {
-        return allocate( capacity, ByteOrder.BIG_ENDIAN, memoryTracker );
+    public static ByteBuffer allocate(int capacity, MemoryTracker memoryTracker) {
+        return allocate(capacity, ByteOrder.BIG_ENDIAN, memoryTracker);
     }
 
     /**
@@ -49,16 +44,12 @@ public final class ByteBuffers
      * @param memoryTracker underlying buffers allocation memory tracker
      * @return byte buffer with requested size
      */
-    public static ByteBuffer allocate( int capacity, ByteOrder order, MemoryTracker memoryTracker )
-    {
-        memoryTracker.allocateHeap( capacity );
-        try
-        {
-            return ByteBuffer.allocate( capacity ).order( order );
-        }
-        catch ( Throwable any )
-        {
-            memoryTracker.releaseHeap( capacity );
+    public static ByteBuffer allocate(int capacity, ByteOrder order, MemoryTracker memoryTracker) {
+        memoryTracker.allocateHeap(capacity);
+        try {
+            return ByteBuffer.allocate(capacity).order(order);
+        } catch (Throwable any) {
+            memoryTracker.releaseHeap(capacity);
             throw any;
         }
     }
@@ -70,15 +61,11 @@ public final class ByteBuffers
      * @param capacity byte buffer capacity
      * @return byte buffer with requested size
      */
-    public static ByteBuffer allocateDirect( int capacity, MemoryTracker memoryTracker )
-    {
-        if ( UnsafeUtil.unsafeByteBufferAccessAvailable() )
-        {
-            return UnsafeUtil.allocateByteBuffer( capacity, memoryTracker );
-        }
-        else
-        {
-            return allocateDirectFallback( capacity, memoryTracker );
+    public static ByteBuffer allocateDirect(int capacity, MemoryTracker memoryTracker) {
+        if (UnsafeUtil.unsafeByteBufferAccessAvailable()) {
+            return UnsafeUtil.allocateByteBuffer(capacity, memoryTracker);
+        } else {
+            return allocateDirectFallback(capacity, memoryTracker);
         }
     }
 
@@ -86,41 +73,31 @@ public final class ByteBuffers
      * Release all the memory that was allocated for the buffer in case its native.
      * @param byteBuffer byte buffer to release
      */
-    public static void releaseBuffer( ByteBuffer byteBuffer, MemoryTracker memoryTracker )
-    {
-        if ( UnsafeUtil.unsafeByteBufferAccessAvailable() )
-        {
-            UnsafeUtil.releaseBuffer( byteBuffer, memoryTracker );
-        }
-        else
-        {
-            releaseBufferFallback( byteBuffer, memoryTracker );
+    public static void releaseBuffer(ByteBuffer byteBuffer, MemoryTracker memoryTracker) {
+        if (UnsafeUtil.unsafeByteBufferAccessAvailable()) {
+            UnsafeUtil.releaseBuffer(byteBuffer, memoryTracker);
+        } else {
+            releaseBufferFallback(byteBuffer, memoryTracker);
         }
     }
 
-    private static ByteBuffer allocateDirectFallback( int capacity, MemoryTracker memoryTracker )
-    {
-        memoryTracker.allocateNative( capacity );
-        try
-        {
-            return ByteBuffer.allocateDirect( capacity );
-        }
-        catch ( Throwable any )
-        {
-            memoryTracker.releaseNative( capacity );
+    private static ByteBuffer allocateDirectFallback(int capacity, MemoryTracker memoryTracker) {
+        memoryTracker.allocateNative(capacity);
+        try {
+            return ByteBuffer.allocateDirect(capacity);
+        } catch (Throwable any) {
+            memoryTracker.releaseNative(capacity);
             throw any;
         }
     }
 
-    private static void releaseBufferFallback( ByteBuffer byteBuffer, MemoryTracker memoryTracker )
-    {
-        if ( !byteBuffer.isDirect() )
-        {
-            memoryTracker.releaseHeap( byteBuffer.capacity() );
+    private static void releaseBufferFallback(ByteBuffer byteBuffer, MemoryTracker memoryTracker) {
+        if (!byteBuffer.isDirect()) {
+            memoryTracker.releaseHeap(byteBuffer.capacity());
             return;
         }
         var capacity = byteBuffer.capacity();
-        UnsafeUtil.invokeCleaner( byteBuffer );
-        memoryTracker.releaseNative( capacity );
+        UnsafeUtil.invokeCleaner(byteBuffer);
+        memoryTracker.releaseNative(capacity);
     }
 }

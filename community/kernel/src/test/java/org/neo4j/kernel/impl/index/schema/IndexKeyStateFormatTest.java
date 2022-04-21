@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.set.ImmutableSet;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.WRITE;
+import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -30,7 +32,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-
+import org.eclipse.collections.api.set.ImmutableSet;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
@@ -42,154 +46,134 @@ import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.WRITE;
-import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-
-abstract class IndexKeyStateFormatTest<KEY extends NativeIndexKey<KEY>> extends FormatCompatibilityVerifier
-{
+abstract class IndexKeyStateFormatTest<KEY extends NativeIndexKey<KEY>> extends FormatCompatibilityVerifier {
     protected static final int ENTITY_ID = 19570320;
+
     @RegisterExtension
     static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
+
     protected List<Value> values;
 
     @BeforeEach
-    public void setup()
-    {
+    public void setup() {
         values = new ArrayList<>();
-        populateValues( values );
+        populateValues(values);
     }
 
     /**
      * Implementing test is responsible for deciding what values should be tested.
      */
-    abstract void populateValues( List<Value> values );
+    abstract void populateValues(List<Value> values);
 
     /**
      * Layout that creates the index key.
      * Note that the layout is also tested to some extent.
      */
-    abstract Layout<KEY,?> getLayout();
+    abstract Layout<KEY, ?> getLayout();
 
     /**
      * Get detailed description of the key
      */
-    abstract String toDetailedString( KEY key );
+    abstract String toDetailedString(KEY key);
 
     @Override
-    protected void createStoreFile( Path storeFile ) throws IOException
-    {
-        withCursor( storeFile, true, c -> {
-            putFormatVersion( c );
-            putData( c );
-        } );
+    protected void createStoreFile(Path storeFile) throws IOException {
+        withCursor(storeFile, true, c -> {
+            putFormatVersion(c);
+            putData(c);
+        });
     }
 
     @Override
-    protected void verifyFormat( Path storeFile ) throws FormatViolationException, IOException
-    {
+    protected void verifyFormat(Path storeFile) throws FormatViolationException, IOException {
         AtomicReference<FormatViolationException> exception = new AtomicReference<>();
-        withCursor( storeFile, false, c ->
-        {
+        withCursor(storeFile, false, c -> {
             int major = c.getInt();
             int minor = c.getInt();
-            Layout<KEY,?> layout = getLayout();
-            if ( major != layout.majorVersion() || minor != layout.minorVersion() )
-            {
-                exception.set( new FormatViolationException( String.format( "Read format version %d.%d, but layout has version %d.%d",
-                        major, minor, layout.majorVersion(), layout.minorVersion() ) ) );
+            Layout<KEY, ?> layout = getLayout();
+            if (major != layout.majorVersion() || minor != layout.minorVersion()) {
+                exception.set(new FormatViolationException(String.format(
+                        "Read format version %d.%d, but layout has version %d.%d",
+                        major, minor, layout.majorVersion(), layout.minorVersion())));
             }
-        } );
-        if ( exception.get() != null )
-        {
+        });
+        if (exception.get() != null) {
             throw exception.get();
         }
     }
 
     @Override
-    protected void verifyContent( Path storeFile ) throws IOException
-    {
-        withCursor( storeFile, false, c ->
-        {
-            readFormatVersion( c );
-            verifyData( c );
-        } );
+    protected void verifyContent(Path storeFile) throws IOException {
+        withCursor(storeFile, false, c -> {
+            readFormatVersion(c);
+            verifyData(c);
+        });
     }
 
-    protected void initializeFromValue( KEY key, Value value )
-    {
-        key.initialize( ENTITY_ID );
-        for ( int i = 0; i < GenericKeyStateFormatTest.NUMBER_OF_SLOTS; i++ )
-        {
-            key.initFromValue( i, value, NativeIndexKey.Inclusion.NEUTRAL );
+    protected void initializeFromValue(KEY key, Value value) {
+        key.initialize(ENTITY_ID);
+        for (int i = 0; i < GenericKeyStateFormatTest.NUMBER_OF_SLOTS; i++) {
+            key.initFromValue(i, value, NativeIndexKey.Inclusion.NEUTRAL);
         }
     }
 
-    protected String detailedFailureMessage( KEY actualKey, KEY expectedKey )
-    {
-        return "expected " + toDetailedString( expectedKey ) + ", but was " + toDetailedString( actualKey );
+    protected String detailedFailureMessage(KEY actualKey, KEY expectedKey) {
+        return "expected " + toDetailedString(expectedKey) + ", but was " + toDetailedString(actualKey);
     }
 
-    private void withCursor( Path storeFile, boolean create, Consumer<PageCursor> cursorConsumer ) throws IOException
-    {
+    private void withCursor(Path storeFile, boolean create, Consumer<PageCursor> cursorConsumer) throws IOException {
         // TODO little-endian format add little-endian versions of formats
-        ImmutableSet<OpenOption> openOptions = create ? immutable.of( WRITE, CREATE, PageCacheOpenOptions.BIG_ENDIAN )
-                                                      : immutable.of( WRITE, PageCacheOpenOptions.BIG_ENDIAN );
-        try ( PageCache pageCache = pageCacheExtension.getPageCache( globalFs );
-              PagedFile pagedFile = pageCache.map( storeFile, pageCache.pageSize(), DEFAULT_DATABASE_NAME, openOptions );
-              PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, CursorContext.NULL_CONTEXT ) )
-        {
+        ImmutableSet<OpenOption> openOptions = create
+                ? immutable.of(WRITE, CREATE, PageCacheOpenOptions.BIG_ENDIAN)
+                : immutable.of(WRITE, PageCacheOpenOptions.BIG_ENDIAN);
+        try (PageCache pageCache = pageCacheExtension.getPageCache(globalFs);
+                PagedFile pagedFile =
+                        pageCache.map(storeFile, pageCache.pageSize(), DEFAULT_DATABASE_NAME, openOptions);
+                PageCursor cursor = pagedFile.io(0, PagedFile.PF_SHARED_WRITE_LOCK, CursorContext.NULL_CONTEXT)) {
             cursor.next();
-            cursorConsumer.accept( cursor );
+            cursorConsumer.accept(cursor);
         }
     }
 
-    private void putFormatVersion( PageCursor cursor )
-    {
-        Layout<KEY,?> layout = getLayout();
+    private void putFormatVersion(PageCursor cursor) {
+        Layout<KEY, ?> layout = getLayout();
         int major = layout.majorVersion();
-        cursor.putInt( major );
+        cursor.putInt(major);
         int minor = layout.minorVersion();
-        cursor.putInt( minor );
+        cursor.putInt(minor);
     }
 
-    private void putData( PageCursor c )
-    {
-        Layout<KEY,?> layout = getLayout();
+    private void putData(PageCursor c) {
+        Layout<KEY, ?> layout = getLayout();
         KEY key = layout.newKey();
-        for ( Value value : values )
-        {
-            initializeFromValue( key, value );
-            c.putInt( layout.keySize( key ) );
-            layout.writeKey( c, key );
+        for (Value value : values) {
+            initializeFromValue(key, value);
+            c.putInt(layout.keySize(key));
+            layout.writeKey(c, key);
         }
     }
 
-    private void verifyData( PageCursor c )
-    {
-        Layout<KEY,?> layout = getLayout();
+    private void verifyData(PageCursor c) {
+        Layout<KEY, ?> layout = getLayout();
         KEY readCompositeKey = layout.newKey();
         KEY comparison = layout.newKey();
-        for ( Value value : values )
-        {
+        for (Value value : values) {
             int keySize = c.getInt();
-            layout.readKey( c, readCompositeKey, keySize );
-            for ( Value readValue : readCompositeKey.asValues() )
-            {
-                initializeFromValue( comparison, value );
-                assertEquals( 0, layout.compare( readCompositeKey, comparison ), detailedFailureMessage( readCompositeKey, comparison ) );
-                if ( readValue != Values.NO_VALUE )
-                {
-                    assertEquals( value, readValue, "expected read value to be " + value + ", but was " + readValue );
+            layout.readKey(c, readCompositeKey, keySize);
+            for (Value readValue : readCompositeKey.asValues()) {
+                initializeFromValue(comparison, value);
+                assertEquals(
+                        0,
+                        layout.compare(readCompositeKey, comparison),
+                        detailedFailureMessage(readCompositeKey, comparison));
+                if (readValue != Values.NO_VALUE) {
+                    assertEquals(value, readValue, "expected read value to be " + value + ", but was " + readValue);
                 }
             }
         }
     }
 
-    private static void readFormatVersion( PageCursor c )
-    {
+    private static void readFormatVersion(PageCursor c) {
         c.getInt(); // Major version
         c.getInt(); // Minor version
     }

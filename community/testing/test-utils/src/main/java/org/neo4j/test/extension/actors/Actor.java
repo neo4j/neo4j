@@ -24,7 +24,6 @@ import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
-
 import org.neo4j.test.extension.Inject;
 
 /**
@@ -35,8 +34,7 @@ import org.neo4j.test.extension.Inject;
  * Instances of this interface are acquired by having them {@link Inject injected} into instance fields of test classes.
  * This requires that the test class are running with the {@link ActorsExtension}.
  */
-public interface Actor
-{
+public interface Actor {
     /**
      * Submit the given task to be executed by this actor.
      *
@@ -44,7 +42,7 @@ public interface Actor
      * @param <T> The return type of the callable.
      * @return A future that represents the asynchronous execution of the given callable.
      */
-    <T> Future<T> submit( Callable<T> callable );
+    <T> Future<T> submit(Callable<T> callable);
 
     /**
      * Submit the given task to be executed by this actor.
@@ -54,7 +52,7 @@ public interface Actor
      * @param <T> The type of the return value.
      * @return A future that represents the asynchronous execution of the given runnable.
      */
-    <T> Future<T> submit( Runnable runnable, T result );
+    <T> Future<T> submit(Runnable runnable, T result);
 
     /**
      * Submit the given task to be executed.
@@ -62,7 +60,7 @@ public interface Actor
      * @param runnable The runnable to be executed.
      * @return A future of void that represents the asynchronous execution of the given runnable.
      */
-    Future<Void> submit( Runnable runnable );
+    Future<Void> submit(Runnable runnable);
 
     /**
      * Wait for the actor thread to enter a waiting state.
@@ -116,7 +114,7 @@ public interface Actor
      * @param constructorOrMethod The {@link Method} or {@link Constructor} that the actor should be waiting in.
      * @throws InterruptedException If the calling thread is interrupted while waiting for the actor thread to reach the intended state.
      */
-    void untilWaitingIn( Executable constructorOrMethod ) throws InterruptedException;
+    void untilWaitingIn(Executable constructorOrMethod) throws InterruptedException;
 
     /**
      * Waits for the actor thread to enter {@link #untilWaiting() a waiting state} inside any method with the given name.
@@ -127,7 +125,7 @@ public interface Actor
      * @param methodName The name of the method wherein the actor should be waiting.
      * @throws InterruptedException If the calling thread is interrupted while waiting for the actor thread to reach the intended state.
      */
-    void untilWaitingIn( String methodName ) throws InterruptedException;
+    void untilWaitingIn(String methodName) throws InterruptedException;
 
     /**
      * Waits for the actor thread to enter any of the given states.
@@ -137,7 +135,7 @@ public interface Actor
      *
      * @param states The set of states to wait for.
      */
-    void untilThreadState( Thread.State... states );
+    void untilThreadState(Thread.State... states);
 
     /**
      * Interrupt the actor thread.

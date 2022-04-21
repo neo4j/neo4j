@@ -19,13 +19,13 @@
  */
 package org.neo4j.internal.id.indexed;
 
+import static java.lang.Integer.max;
+import static org.neo4j.util.Preconditions.requirePowerOfTwo;
+
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static java.lang.Integer.max;
-import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 
 /**
  * Concurrent bit-set for longs. Basically a {@link ConcurrentHashMap} where each map entry is a small bit-set.
@@ -33,102 +33,77 @@ import static org.neo4j.util.Preconditions.requirePowerOfTwo;
  * entry. Writers are exclusive and other concurrent writers will retry-spin for the lock until getting it.
  * Entries with all-zero bit-sets are removed by the writer removing the last bit.
  */
-class ConcurrentSparseLongBitSet
-{
-    private final ConcurrentHashMap<Long,Range> ranges = new ConcurrentHashMap<>();
+class ConcurrentSparseLongBitSet {
+    private final ConcurrentHashMap<Long, Range> ranges = new ConcurrentHashMap<>();
     private final int idsPerEntry;
     private final int longsPerRange;
 
-    ConcurrentSparseLongBitSet( int idsPerEntry )
-    {
-        requirePowerOfTwo( idsPerEntry );
+    ConcurrentSparseLongBitSet(int idsPerEntry) {
+        requirePowerOfTwo(idsPerEntry);
         this.idsPerEntry = idsPerEntry;
-        this.longsPerRange = max( 1, ((idsPerEntry - 1) / Long.SIZE) + 1 );
+        this.longsPerRange = max(1, ((idsPerEntry - 1) / Long.SIZE) + 1);
     }
 
-    int getIdsPerEntry()
-    {
+    int getIdsPerEntry() {
         return idsPerEntry;
     }
 
-    boolean set( long id, int slots, boolean value )
-    {
+    boolean set(long id, int slots, boolean value) {
         long idRange = id / idsPerEntry;
         int offset = (int) (id % idsPerEntry);
-        do
-        {
-            Range range = ranges.computeIfAbsent( idRange, r -> new Range( longsPerRange ) );
-            if ( range.lock() )
-            {
+        do {
+            Range range = ranges.computeIfAbsent(idRange, r -> new Range(longsPerRange));
+            if (range.lock()) {
                 boolean empty = false;
-                try
-                {
-                    if ( !range.set( offset, slots, value ) )
-                    {
+                try {
+                    if (!range.set(offset, slots, value)) {
                         return false;
                     }
-                    if ( !value )
-                    {
+                    if (!value) {
                         empty = range.isEmpty();
                     }
                     return true;
-                }
-                finally
-                {
-                    if ( !value && empty )
-                    {
+                } finally {
+                    if (!value && empty) {
                         range.close();
-                        Range removedRange = ranges.remove( idRange );
+                        Range removedRange = ranges.remove(idRange);
                         assert removedRange == range;
-                    }
-                    else
-                    {
+                    } else {
                         range.unlock();
                     }
                 }
             }
             // else this range is locked or closed, we'll just retry
-        }
-        while ( true );
+        } while (true);
     }
 
-    void snapshotRange( long idRange, long[] into )
-    {
+    void snapshotRange(long idRange, long[] into) {
         long lockStampBefore;
         long lockStampAfter;
-        do
-        {
-            Range range = ranges.get( idRange );
-            if ( range == null )
-            {
-                Arrays.fill( into, 0 );
+        do {
+            Range range = ranges.get(idRange);
+            if (range == null) {
+                Arrays.fill(into, 0);
                 return;
             }
 
             lockStampBefore = range.getLockStamp();
-            if ( range.isUnlocked() )
-            {
-                for ( int i = 0; i < into.length; i++ )
-                {
-                    into[i] = range.getLong( i );
+            if (range.isUnlocked()) {
+                for (int i = 0; i < into.length; i++) {
+                    into[i] = range.getLong(i);
                 }
                 lockStampAfter = range.getLockStamp();
-            }
-            else
-            {
+            } else {
                 lockStampAfter = lockStampBefore + 1;
             }
-        }
-        while ( lockStampAfter != lockStampBefore );
+        } while (lockStampAfter != lockStampBefore);
     }
 
-    int size()
-    {
+    int size() {
         return ranges.size();
     }
 
-    private static class Range
-    {
+    private static class Range {
         private static final int STATUS_UNLOCKED = 0;
         private static final int STATUS_LOCKED = 1;
         private static final int STATUS_CLOSED = 2;
@@ -137,6 +112,7 @@ class ConcurrentSparseLongBitSet
          * Accessed via unsafe so is effectively volatile and is updated atomically
          */
         private final long[] bits;
+
         private static final VarHandle BITS_ARRAY;
 
         private final int longs;
@@ -144,31 +120,28 @@ class ConcurrentSparseLongBitSet
         /**
          * 0=unlocked, 1=locked, 2=empty and dead.
          */
-        @SuppressWarnings( "unused" ) // accessed via VarHandle
+        @SuppressWarnings("unused") // accessed via VarHandle
         private int status;
+
         private static final VarHandle STATUS;
 
-        @SuppressWarnings( "unused" ) // accessed via VarHandle
+        @SuppressWarnings("unused") // accessed via VarHandle
         private long lockStamp;
+
         private static final VarHandle LOCK_STAMP;
 
-        static
-        {
-            try
-            {
+        static {
+            try {
                 MethodHandles.Lookup l = MethodHandles.lookup();
-                STATUS = l.findVarHandle( Range.class, "status", int.class );
-                LOCK_STAMP = l.findVarHandle( Range.class, "lockStamp", long.class );
-                BITS_ARRAY = MethodHandles.arrayElementVarHandle( long[].class );
-            }
-            catch ( ReflectiveOperationException e )
-            {
-                throw new ExceptionInInitializerError( e );
+                STATUS = l.findVarHandle(Range.class, "status", int.class);
+                LOCK_STAMP = l.findVarHandle(Range.class, "lockStamp", long.class);
+                BITS_ARRAY = MethodHandles.arrayElementVarHandle(long[].class);
+            } catch (ReflectiveOperationException e) {
+                throw new ExceptionInInitializerError(e);
             }
         }
 
-        private Range( int longs )
-        {
+        private Range(int longs) {
             this.longs = longs;
             // [0..longs]:       the actual bitset bits
             // [longs..longs*2]: temp bits
@@ -178,36 +151,30 @@ class ConcurrentSparseLongBitSet
         /**
          * @return {@code false} if this range is either locked or dead, otherwise {@code true} if it was locked and now owned by this thread.
          */
-        private boolean lock()
-        {
-            boolean locked = STATUS.compareAndSet( this, STATUS_UNLOCKED, STATUS_LOCKED );
-            if ( locked )
-            {
-                LOCK_STAMP.getAndAdd( this, 1L );
+        private boolean lock() {
+            boolean locked = STATUS.compareAndSet(this, STATUS_UNLOCKED, STATUS_LOCKED);
+            if (locked) {
+                LOCK_STAMP.getAndAdd(this, 1L);
             }
             return locked;
         }
 
-        private void unlock()
-        {
-            boolean unlocked = STATUS.compareAndSet( this, STATUS_LOCKED, STATUS_UNLOCKED );
+        private void unlock() {
+            boolean unlocked = STATUS.compareAndSet(this, STATUS_LOCKED, STATUS_UNLOCKED);
             assert unlocked;
         }
 
-        private void close()
-        {
-            boolean closed = STATUS.compareAndSet( this, STATUS_LOCKED, STATUS_CLOSED );
+        private void close() {
+            boolean closed = STATUS.compareAndSet(this, STATUS_LOCKED, STATUS_CLOSED);
             assert closed;
         }
 
-        private long getLong( int arrayIndex )
-        {
-            return (long) BITS_ARRAY.getVolatile( bits, arrayIndex );
+        private long getLong(int arrayIndex) {
+            return (long) BITS_ARRAY.getVolatile(bits, arrayIndex);
         }
 
-        private void setLong( int arrayIndex, long value )
-        {
-            BITS_ARRAY.setVolatile( bits, arrayIndex, value );
+        private void setLong(int arrayIndex, long value) {
+            BITS_ARRAY.setVolatile(bits, arrayIndex, value);
         }
 
         /**
@@ -220,67 +187,52 @@ class ConcurrentSparseLongBitSet
          * @return {@code true} if all bits between start and start+slots were the opposite of specified by {@code value}, such that all
          * bits were changed, otherwise {@code false}.
          */
-        boolean set( int start, int slots, boolean value )
-        {
-            Arrays.fill( bits, longs, bits.length, 0 );
-            BitsUtil.setBits( bits, start, slots, longs );
-            if ( value )
-            {
+        boolean set(int start, int slots, boolean value) {
+            Arrays.fill(bits, longs, bits.length, 0);
+            BitsUtil.setBits(bits, start, slots, longs);
+            if (value) {
                 // First check
-                for ( int i = 0; i < longs; i++ )
-                {
-                    if ( (getLong( i ) & bits[longs + i]) != 0 )
-                    {
+                for (int i = 0; i < longs; i++) {
+                    if ((getLong(i) & bits[longs + i]) != 0) {
                         return false;
                     }
                 }
 
                 // Then set
-                for ( int i = 0; i < longs; i++ )
-                {
-                    setLong( i, getLong( i ) | bits[longs + i] );
+                for (int i = 0; i < longs; i++) {
+                    setLong(i, getLong(i) | bits[longs + i]);
                 }
-            }
-            else
-            {
+            } else {
                 // First check
-                for ( int i = 0; i < longs; i++ )
-                {
-                    if ( (getLong( i ) & bits[longs + i]) != bits[longs + i] )
-                    {
+                for (int i = 0; i < longs; i++) {
+                    if ((getLong(i) & bits[longs + i]) != bits[longs + i]) {
                         return false;
                     }
                 }
 
                 // Then set
-                for ( int i = 0; i < longs; i++ )
-                {
-                    setLong( i, getLong( i ) & ~bits[longs + i] );
+                for (int i = 0; i < longs; i++) {
+                    setLong(i, getLong(i) & ~bits[longs + i]);
                 }
             }
             return true;
         }
 
-        private boolean isEmpty()
-        {
-            for ( int i = 0; i < longs; i++ )
-            {
-                if ( getLong( i ) != 0 )
-                {
+        private boolean isEmpty() {
+            for (int i = 0; i < longs; i++) {
+                if (getLong(i) != 0) {
                     return false;
                 }
             }
             return true;
         }
 
-        long getLockStamp()
-        {
-            return (long) LOCK_STAMP.getVolatile( this );
+        long getLockStamp() {
+            return (long) LOCK_STAMP.getVolatile(this);
         }
 
-        boolean isUnlocked()
-        {
-            return (int) STATUS.getVolatile( this ) == STATUS_UNLOCKED;
+        boolean isUnlocked() {
+            return (int) STATUS.getVolatile(this) == STATUS_UNLOCKED;
         }
     }
 }

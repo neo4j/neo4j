@@ -29,18 +29,20 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
 
-case class NodeIndexSeekPipe(ident: String,
-                             label: LabelToken,
-                             properties: Array[IndexedProperty],
-                             queryIndexId: Int,
-                             valueExpr: QueryExpression[Expression],
-                             indexMode: IndexSeekMode = IndexSeek,
-                             indexOrder: IndexOrder)
-                            (val id: Id = Id.INVALID_ID) extends Pipe with EntityIndexSeeker with IndexPipeWithValues {
+case class NodeIndexSeekPipe(
+  ident: String,
+  label: LabelToken,
+  properties: Array[IndexedProperty],
+  queryIndexId: Int,
+  valueExpr: QueryExpression[Expression],
+  indexMode: IndexSeekMode = IndexSeek,
+  indexOrder: IndexOrder
+)(val id: Id = Id.INVALID_ID) extends Pipe with EntityIndexSeeker with IndexPipeWithValues {
 
   override val propertyIds: Array[Int] = properties.map(_.propertyKeyToken.nameId.id)
 
   override val indexPropertyIndices: Array[Int] = properties.indices.filter(properties(_).shouldGetValue).toArray
+
   override val indexCachedProperties: Array[CachedProperty] =
     indexPropertyIndices.map(offset => properties(offset).asCachedProperty(ident))
   private val needsValues: Boolean = indexPropertyIndices.nonEmpty
@@ -48,7 +50,12 @@ case class NodeIndexSeekPipe(ident: String,
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val index = state.queryIndexes(queryIndexId)
     val baseContext = state.newRowWithArgument(rowFactory)
-    new NodeIndexIterator(state, state.query, baseContext, indexSeek(state, index, needsValues, indexOrder, baseContext))
+    new NodeIndexIterator(
+      state,
+      state.query,
+      baseContext,
+      indexSeek(state, index, needsValues, indexOrder, baseContext)
+    )
   }
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[NodeIndexSeekPipe]

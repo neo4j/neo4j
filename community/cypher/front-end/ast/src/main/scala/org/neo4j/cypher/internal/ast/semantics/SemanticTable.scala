@@ -38,35 +38,42 @@ import org.neo4j.cypher.internal.util.symbols.TypeSpec
 import scala.collection.mutable
 
 object SemanticTable {
-  def apply(types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = ASTAnnotationMap.empty,
-            recordedScopes: ASTAnnotationMap[ASTNode, Scope] = ASTAnnotationMap.empty) =
+
+  def apply(
+    types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = ASTAnnotationMap.empty,
+    recordedScopes: ASTAnnotationMap[ASTNode, Scope] = ASTAnnotationMap.empty
+  ) =
     new SemanticTable(types, recordedScopes)
 }
 
 class SemanticTable(
-                     val types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = ASTAnnotationMap.empty,
-                     val recordedScopes: ASTAnnotationMap[ASTNode, Scope] = ASTAnnotationMap.empty,
-                     val resolvedLabelNames: mutable.Map[String, LabelId] = new mutable.HashMap[String, LabelId],
-                     val resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = new mutable.HashMap[String, PropertyKeyId],
-                     val resolvedRelTypeNames: mutable.Map[String, RelTypeId] = new mutable.HashMap[String, RelTypeId]
-  ) extends Cloneable {
+  val types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = ASTAnnotationMap.empty,
+  val recordedScopes: ASTAnnotationMap[ASTNode, Scope] = ASTAnnotationMap.empty,
+  val resolvedLabelNames: mutable.Map[String, LabelId] = new mutable.HashMap[String, LabelId],
+  val resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = new mutable.HashMap[String, PropertyKeyId],
+  val resolvedRelTypeNames: mutable.Map[String, RelTypeId] = new mutable.HashMap[String, RelTypeId]
+) extends Cloneable {
 
-  def getTypeFor(s: String): TypeSpec = try {
-    val reducedType = types.collect {
-      case (PositionedNode(Variable(name)), typ) if name == s => typ.specified
-    }.reduce(_ & _)
+  def getTypeFor(s: String): TypeSpec =
+    try {
+      val reducedType = types.collect {
+        case (PositionedNode(Variable(name)), typ) if name == s => typ.specified
+      }.reduce(_ & _)
 
-    if (reducedType.isEmpty)
-      throw new IllegalStateException(s"This semantic table contains conflicting type information for variable $s")
+      if (reducedType.isEmpty)
+        throw new IllegalStateException(s"This semantic table contains conflicting type information for variable $s")
 
-    reducedType
-  } catch {
-    case e: UnsupportedOperationException =>
-      throw new IllegalStateException(s"Did not find any type information for variable $s", e)
-  }
+      reducedType
+    } catch {
+      case e: UnsupportedOperationException =>
+        throw new IllegalStateException(s"Did not find any type information for variable $s", e)
+    }
 
   def getActualTypeFor(expr: Expression): TypeSpec =
-    types.getOrElse(expr, throw new IllegalStateException(s"Did not find any type information for expression $expr")).actual
+    types.getOrElse(
+      expr,
+      throw new IllegalStateException(s"Did not find any type information for expression $expr")
+    ).actual
 
   def getOptionalActualTypeFor(expr: Expression): Option[TypeSpec] =
     types.get(expr).map(_.actual)
@@ -88,15 +95,16 @@ class SemanticTable(
   }
 
   def containsNode(expr: String): Boolean = types.exists {
-    case (PositionedNode(v@Variable(name)), _) => name == expr && isNode(v) // NOTE: Profiling showed that checking node type last is better
+    case (PositionedNode(v @ Variable(name)), _) =>
+      name == expr && isNode(v) // NOTE: Profiling showed that checking node type last is better
     case _ => false
   }
 
-  def id(labelName:LabelName):Option[LabelId] = resolvedLabelNames.get(labelName.name)
+  def id(labelName: LabelName): Option[LabelId] = resolvedLabelNames.get(labelName.name)
 
-  def id(propertyKeyName:PropertyKeyName):Option[PropertyKeyId] = resolvedPropertyKeyNames.get(propertyKeyName.name)
+  def id(propertyKeyName: PropertyKeyName): Option[PropertyKeyId] = resolvedPropertyKeyNames.get(propertyKeyName.name)
 
-  def id(resolvedRelTypeName:RelTypeName):Option[RelTypeId] = resolvedRelTypeNames.get(resolvedRelTypeName.name)
+  def id(resolvedRelTypeName: RelTypeName): Option[RelTypeId] = resolvedRelTypeNames.get(resolvedRelTypeName.name)
 
   def seen(expression: Expression): Boolean = types.contains(expression)
 
@@ -112,7 +120,8 @@ class SemanticTable(
   /**
    * Returns true if the specified variable exists, is a relationship and has no conflicting type information.
    */
-  def isRelationshipNoFail(variableName: String): Boolean = getOptionalActualTypeFor(variableName).contains(CTRelationship.invariant)
+  def isRelationshipNoFail(variableName: String): Boolean =
+    getOptionalActualTypeFor(variableName).contains(CTRelationship.invariant)
 
   def isRelationshipCollection(expr: String): Boolean = getTypeFor(expr) == CTList(CTRelationship).invariant
 
@@ -130,7 +139,8 @@ class SemanticTable(
   /**
    * Same as isRelationship, but will simply return false if no semantic information is available instead of failing.
    */
-  def isRelationshipNoFail(expr: Expression): Boolean = types.get(expr).map(_.specified).contains(CTRelationship.invariant)
+  def isRelationshipNoFail(expr: Expression): Boolean =
+    types.get(expr).map(_.specified).contains(CTRelationship.invariant)
 
   def addNode(expr: Variable): SemanticTable =
     addTypeInfo(expr, CTNode.invariant)
@@ -157,11 +167,17 @@ class SemanticTable(
   override def clone(): SemanticTable = copy()
 
   def copy(
-            types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = types,
-            recordedScopes: ASTAnnotationMap[ASTNode, Scope] = recordedScopes,
-            resolvedLabelIds: mutable.Map[String, LabelId] = resolvedLabelNames,
-            resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = resolvedPropertyKeyNames,
-            resolvedRelTypeNames: mutable.Map[String, RelTypeId] = resolvedRelTypeNames
+    types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = types,
+    recordedScopes: ASTAnnotationMap[ASTNode, Scope] = recordedScopes,
+    resolvedLabelIds: mutable.Map[String, LabelId] = resolvedLabelNames,
+    resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = resolvedPropertyKeyNames,
+    resolvedRelTypeNames: mutable.Map[String, RelTypeId] = resolvedRelTypeNames
   ) =
-    new SemanticTable(types, recordedScopes, resolvedLabelIds.clone(), resolvedPropertyKeyNames.clone(), resolvedRelTypeNames.clone())
+    new SemanticTable(
+      types,
+      recordedScopes,
+      resolvedLabelIds.clone(),
+      resolvedPropertyKeyNames.clone(),
+      resolvedRelTypeNames.clone()
+    )
 }

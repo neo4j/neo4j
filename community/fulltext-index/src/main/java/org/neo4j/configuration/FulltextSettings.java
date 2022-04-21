@@ -19,36 +19,37 @@
  */
 package org.neo4j.configuration;
 
-import org.neo4j.annotations.api.PublicApi;
-import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.api.impl.fulltext.analyzer.providers.StandardNoStopWords;
-
 import static org.neo4j.configuration.SettingConstraints.range;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 
+import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.kernel.api.impl.fulltext.analyzer.providers.StandardNoStopWords;
+
 @ServiceProvider
 @PublicApi
-public class FulltextSettings implements SettingsDeclaration
-{
+public class FulltextSettings implements SettingsDeclaration {
     private static final String DEFAULT_ANALYZER = StandardNoStopWords.ANALYZER_NAME;
 
-    @Description( "The name of the analyzer that the fulltext indexes should use by default." )
-    public static final Setting<String> fulltext_default_analyzer =
-            newBuilder( "dbms.index.fulltext.default_analyzer", STRING, DEFAULT_ANALYZER ).build();
+    @Description("The name of the analyzer that the fulltext indexes should use by default.")
+    public static final Setting<String> fulltext_default_analyzer = newBuilder(
+                    "dbms.index.fulltext.default_analyzer", STRING, DEFAULT_ANALYZER)
+            .build();
 
-    @Description( "Whether or not fulltext indexes should be eventually consistent by default or not." )
+    @Description("Whether or not fulltext indexes should be eventually consistent by default or not.")
     public static final Setting<Boolean> eventually_consistent =
-            newBuilder( "dbms.index.fulltext.eventually_consistent", BOOL, false ).build();
+            newBuilder("dbms.index.fulltext.eventually_consistent", BOOL, false).build();
 
-    @Description( "The eventually_consistent mode of the fulltext indexes works by queueing up index updates to be applied later in a background thread. " +
-            "This newBuilder sets an upper bound on how many index updates are allowed to be in this queue at any one point in time. When it is reached, " +
-            "the commit process will slow down and wait for the index update applier thread to make some more room in the queue." )
-    public static final Setting<Integer> eventually_consistent_index_update_queue_max_length =
-            newBuilder( "dbms.index.fulltext.eventually_consistent_index_update_queue_max_length", INT,  10000 )
-                    .addConstraint( range( 1, 50_000_000 ) )
-                    .build();
+    @Description(
+            "The eventually_consistent mode of the fulltext indexes works by queueing up index updates to be applied later in a background thread. "
+                    + "This newBuilder sets an upper bound on how many index updates are allowed to be in this queue at any one point in time. When it is reached, "
+                    + "the commit process will slow down and wait for the index update applier thread to make some more room in the queue.")
+    public static final Setting<Integer> eventually_consistent_index_update_queue_max_length = newBuilder(
+                    "dbms.index.fulltext.eventually_consistent_index_update_queue_max_length", INT, 10000)
+            .addConstraint(range(1, 50_000_000))
+            .build();
 }

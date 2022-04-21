@@ -31,41 +31,44 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 
-public class NodeLabelIndexOrderTest extends TokenIndexOrderTestBase<NodeLabelIndexCursor>
-{
+public class NodeLabelIndexOrderTest extends TokenIndexOrderTestBase<NodeLabelIndexCursor> {
 
     @Override
-    protected NodeLabelIndexCursor getIndexCursor( KernelTransaction tx )
-    {
-        return tx.cursors().allocateNodeLabelIndexCursor( tx.cursorContext() );
+    protected NodeLabelIndexCursor getIndexCursor(KernelTransaction tx) {
+        return tx.cursors().allocateNodeLabelIndexCursor(tx.cursorContext());
     }
 
     @Override
-    protected long entityReference( NodeLabelIndexCursor cursor )
-    {
+    protected long entityReference(NodeLabelIndexCursor cursor) {
         return cursor.nodeReference();
     }
 
     @Override
-    protected void tokenScan( IndexOrder indexOrder, KernelTransaction tx, int label, NodeLabelIndexCursor cursor ) throws KernelException
-    {
-        IndexDescriptor index = tx.schemaRead().index( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ) ).next();
-        TokenReadSession tokenReadSession = tx.dataRead().tokenReadSession( index );
-        tx.dataRead().nodeLabelScan( tokenReadSession, cursor, IndexQueryConstraints.ordered( indexOrder ), new TokenPredicate( label ), tx.cursorContext() );
+    protected void tokenScan(IndexOrder indexOrder, KernelTransaction tx, int label, NodeLabelIndexCursor cursor)
+            throws KernelException {
+        IndexDescriptor index = tx.schemaRead()
+                .index(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+                .next();
+        TokenReadSession tokenReadSession = tx.dataRead().tokenReadSession(index);
+        tx.dataRead()
+                .nodeLabelScan(
+                        tokenReadSession,
+                        cursor,
+                        IndexQueryConstraints.ordered(indexOrder),
+                        new TokenPredicate(label),
+                        tx.cursorContext());
     }
 
     @Override
-    protected int tokenByName( KernelTransaction tx, String name )
-    {
-        return tx.tokenRead().nodeLabel( name );
+    protected int tokenByName(KernelTransaction tx, String name) {
+        return tx.tokenRead().nodeLabel(name);
     }
 
     @Override
-    protected long entityWithToken( KernelTransaction tx, String name ) throws Exception
-    {
+    protected long entityWithToken(KernelTransaction tx, String name) throws Exception {
         Write write = tx.dataWrite();
         long node = write.nodeCreate();
-        write.nodeAddLabel( node, tx.tokenWrite().labelGetOrCreateForName( name ) );
+        write.nodeAddLabel(node, tx.tokenWrite().labelGetOrCreateForName(name));
         return node;
     }
 }

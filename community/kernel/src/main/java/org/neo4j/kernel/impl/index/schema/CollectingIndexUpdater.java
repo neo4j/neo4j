@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.util.ArrayList;
 import java.util.Collection;
-
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -29,49 +28,39 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 /**
  * Collects updates from {@link #process(IndexEntryUpdate)} and passes them to the {@link Applier} on {@link #close()}.
  */
-public class CollectingIndexUpdater implements IndexUpdater
-{
+public class CollectingIndexUpdater implements IndexUpdater {
     private final Applier applier;
 
     private boolean closed;
     private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
-    public CollectingIndexUpdater( Applier applier )
-    {
+    public CollectingIndexUpdater(Applier applier) {
         this.applier = applier;
     }
 
     @Override
-    public void process( IndexEntryUpdate<?> update )
-    {
+    public void process(IndexEntryUpdate<?> update) {
         assertOpen();
-        updates.add( update );
+        updates.add(update);
     }
 
     @Override
-    public void close() throws IndexEntryConflictException
-    {
+    public void close() throws IndexEntryConflictException {
         assertOpen();
-        try
-        {
-            applier.accept( updates );
-        }
-        finally
-        {
+        try {
+            applier.accept(updates);
+        } finally {
             closed = true;
         }
     }
 
-    private void assertOpen()
-    {
-        if ( closed )
-        {
-            throw new IllegalStateException( "Updater has been closed" );
+    private void assertOpen() {
+        if (closed) {
+            throw new IllegalStateException("Updater has been closed");
         }
     }
 
-    public interface Applier
-    {
-        void accept( Collection<IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException;
+    public interface Applier {
+        void accept(Collection<IndexEntryUpdate<?>> updates) throws IndexEntryConflictException;
     }
 }

@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.Comparator;
-import java.util.StringJoiner;
-
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
-
 import static java.util.Comparator.comparing;
 import static org.neo4j.kernel.impl.index.schema.GenericKey.TRUE;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.HIGH;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.LOW;
+
+import java.util.Comparator;
+import java.util.StringJoiner;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 
 /**
  * All functionality for reading, writing, comparing, calculating size etc a specific value type in a native index.
@@ -39,14 +38,13 @@ import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.LOW;
  * Looking solely at {@link GenericKey} it has a bunch of state with no specific meaning, but they get meaning when looking at them
  * through a {@link Type}, where e.g. the fields `long0` and `long1` means perhaps string length of a string or the integer value for a number type.
  */
-abstract class Type
-{
+abstract class Type {
     private static final long MASK_BOOLEAN = 0x1;
 
     /**
      * Compares {@link Type types} against each other. The ordering adheres to that of {@link ValueGroup}.
      */
-    static final Comparator<Type> COMPARATOR = comparing( t -> t.valueGroup );
+    static final Comparator<Type> COMPARATOR = comparing(t -> t.valueGroup);
 
     /**
      * {@link ValueGroup} for values that this type manages.
@@ -69,8 +67,7 @@ abstract class Type
      */
     private final Value maxValue;
 
-    Type( ValueGroup valueGroup, byte typeId, Value minValue, Value maxValue )
-    {
+    Type(ValueGroup valueGroup, byte typeId, Value minValue, Value maxValue) {
         this.valueGroup = valueGroup;
         this.typeId = typeId;
         this.minValue = minValue;
@@ -82,14 +79,14 @@ abstract class Type
      * @param state the {@link GenericKey} holding the initialized key state.
      * @return size, in bytes of the key state, not counting tree overhead or entity id.
      */
-    abstract int valueSize( GenericKey<?> state );
+    abstract int valueSize(GenericKey<?> state);
 
     /**
      * Copies key state from {@code from} to {@code to}.
      * @param to key state to copy into.
      * @param from key state to copy from.
      */
-    abstract void copyValue( GenericKey<?> to, GenericKey<?> from );
+    abstract void copyValue(GenericKey<?> to, GenericKey<?> from);
 
     /**
      * Calculates minimal splitter between {@code left} and {@code right} and copies that state, potentially a sub-part of that state into {@code into}.
@@ -97,10 +94,9 @@ abstract class Type
      * @param right right key state to compare.
      * @param into state which gets initialized with the minimal splitter key state between {@code left} and {@code right}.
      */
-    void minimalSplitter( GenericKey<?> left, GenericKey<?> right, GenericKey<?> into )
-    {
+    void minimalSplitter(GenericKey<?> left, GenericKey<?> right, GenericKey<?> into) {
         // if not a specific implementation then default is to just copy from 'right'
-        into.copyFromInternal( right );
+        into.copyFromInternal(right);
     }
 
     /**
@@ -108,7 +104,7 @@ abstract class Type
      * @param state key state to materialize a {@link Value} from.
      * @return a {@link Value} from the given {@code state}.
      */
-    abstract Value asValue( GenericKey<?> state );
+    abstract Value asValue(GenericKey<?> state);
 
     /**
      * Compares {@code left} and {@code right} key state. Follows semantics of {@link Comparator#compare(Object, Object)}.
@@ -116,14 +112,14 @@ abstract class Type
      * @param right right key state to compare.
      * @return comparison between the {@code left} and {@code right} key state.
      */
-    abstract int compareValue( GenericKey<?> left, GenericKey<?> right );
+    abstract int compareValue(GenericKey<?> left, GenericKey<?> right);
 
     /**
      * Serializes key state from {@code state} into the {@code cursor}.
      * @param cursor {@link PageCursor} initialized at correct offset, capable of writing the key state.
      * @param state key state to write to the {@code cursor}.
      */
-    abstract void putValue( PageCursor cursor, GenericKey<?> state );
+    abstract void putValue(PageCursor cursor, GenericKey<?> state);
 
     /**
      * Deserializes key state from {@code cursor} into {@code state}.
@@ -135,24 +131,22 @@ abstract class Type
      * for this key and that the cursor have been told about this error, via {@link PageCursor#setCursorException(String)}.
      * Otherwise, for a successful read, returns {@code true}.
      */
-    abstract boolean readValue( PageCursor cursor, int size, GenericKey<?> into );
+    abstract boolean readValue(PageCursor cursor, int size, GenericKey<?> into);
 
     /**
      * Initializes key state to be the lowest possible of this type, i.e. all actual key states of this type are bigger in comparison.
      * @param state key state to initialize as lowest of this type.
      */
-    void initializeAsLowest( GenericKey<?> state )
-    {
-        state.writeValue( minValue, LOW );
+    void initializeAsLowest(GenericKey<?> state) {
+        state.writeValue(minValue, LOW);
     }
 
     /**
      * Initializes key state to be the highest possible of this type, i.e. all actual key states of this type are smaller in comparison.
      * @param state key state to initialize as highest of this type.
      */
-    void initializeAsHighest( GenericKey<?> state )
-    {
-        state.writeValue( maxValue, HIGH );
+    void initializeAsHighest(GenericKey<?> state) {
+        state.writeValue(maxValue, HIGH);
     }
 
     /**
@@ -160,45 +154,39 @@ abstract class Type
      * @param state the key state containing the state to generate string representation for.
      * @return a string-representation of the key state of this type.
      */
-    String toString( GenericKey<?> state )
-    {
+    String toString(GenericKey<?> state) {
         // For most types it's a straight-forward Value#toString().
-        return asValue( state ).toString();
+        return asValue(state).toString();
     }
 
-    static byte[] ensureBigEnough( byte[] array, int targetLength )
-    {
+    static byte[] ensureBigEnough(byte[] array, int targetLength) {
         return array == null || array.length < targetLength ? new byte[targetLength] : array;
     }
 
-    static byte[][] ensureBigEnough( byte[][] array, int targetLength )
-    {
+    static byte[][] ensureBigEnough(byte[][] array, int targetLength) {
         return array == null || array.length < targetLength ? new byte[targetLength][] : array;
     }
 
-    static long[] ensureBigEnough( long[] array, int targetLength )
-    {
+    static long[] ensureBigEnough(long[] array, int targetLength) {
         return array == null || array.length < targetLength ? new long[targetLength] : array;
     }
 
-    static boolean booleanOf( long longValue )
-    {
+    static boolean booleanOf(long longValue) {
         return (longValue & MASK_BOOLEAN) == TRUE;
     }
 
-    String toDetailedString( GenericKey<?> state )
-    {
-        StringJoiner joiner = new StringJoiner( ", " );
-        joiner.add( toString( state ) );
+    String toDetailedString(GenericKey<?> state) {
+        StringJoiner joiner = new StringJoiner(", ");
+        joiner.add(toString(state));
 
         // Mutable, meta-state
-        joiner.add( "type=" + state.type.getClass().getSimpleName() );
-        joiner.add( "inclusion=" + state.inclusion );
-        joiner.add( "isArray=" + state.isArray );
+        joiner.add("type=" + state.type.getClass().getSimpleName());
+        joiner.add("inclusion=" + state.inclusion);
+        joiner.add("isArray=" + state.isArray);
 
-        addTypeSpecificDetails( joiner, state );
+        addTypeSpecificDetails(joiner, state);
         return joiner.toString();
     }
 
-    protected abstract void addTypeSpecificDetails( StringJoiner joiner, GenericKey<?> state );
+    protected abstract void addTypeSpecificDetails(StringJoiner joiner, GenericKey<?> state);
 }

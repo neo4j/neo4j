@@ -33,19 +33,23 @@ class DesugarDesugaredMapProjectionTest extends CypherFunSuite {
 
   assertRewrite(
     "match (n) return n{k:42} as x",
-    "match (n) return n{k:42} as x")
+    "match (n) return n{k:42} as x"
+  )
 
   assertRewrite(
     "match (n) return n{.id} as x",
-    "match (n) return n{id: n.id} as x")
+    "match (n) return n{id: n.id} as x"
+  )
 
   assertRewrite(
     "with '42' as existing match (n) return n{existing} as x",
-    "with '42' as existing match (n) return n{existing: existing} as x")
+    "with '42' as existing match (n) return n{existing: existing} as x"
+  )
 
   assertRewrite(
     "match (n) return n{.foo,.bar,.baz} as x",
-    "match (n) return n{foo: n.foo, bar: n.bar, baz: n.baz} as x")
+    "match (n) return n{foo: n.foo, bar: n.bar, baz: n.baz} as x"
+  )
 
   assertRewrite(
     "match (n) return n{.*, .apa} as x",
@@ -62,7 +66,6 @@ class DesugarDesugaredMapProjectionTest extends CypherFunSuite {
       |   .apa
       | }
       |} as x""".stripMargin,
-
     """match (n), (m)
       |return n {
       | foo: n.foo,
@@ -71,14 +74,19 @@ class DesugarDesugaredMapProjectionTest extends CypherFunSuite {
       |   baz: m.baz,
       |   apa: m.apa
       | }
-      |} as x""".stripMargin)
+      |} as x""".stripMargin
+  )
 
   def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {
     test(originalQuery + " is rewritten to " + expectedQuery) {
       def rewrite(q: String): Statement = {
         val exceptionFactory = OpenCypherExceptionFactory(None)
         val sequence: Rewriter = inSequence(normalizeWithAndReturnClauses(exceptionFactory, devNullLogger))
-        val originalAst = JavaCCParser.parse(q, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator).endoRewrite(sequence)
+        val originalAst = JavaCCParser.parse(
+          q,
+          OpenCypherExceptionFactory(None),
+          new AnonymousVariableNameGenerator
+        ).endoRewrite(sequence)
         val semanticCheckResult = originalAst.semanticCheck(SemanticState.clean)
         val withScopes = originalAst.endoRewrite(recordScopes(semanticCheckResult.state))
 

@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.Matchers
 
-class simplifyIterablePredicatesTest extends CypherFunSuite with Matchers with RewriteTest with AstRewritingTestSupport {
+class simplifyIterablePredicatesTest extends CypherFunSuite with Matchers with RewriteTest
+    with AstRewritingTestSupport {
 
   test("should rewrite simple any with literal") {
     assertRewrite(

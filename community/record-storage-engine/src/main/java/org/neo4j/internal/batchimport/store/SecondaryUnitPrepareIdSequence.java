@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport.store;
 
 import java.util.function.LongFunction;
-
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.context.CursorContext;
 
@@ -28,40 +27,31 @@ import org.neo4j.io.pagecache.context.CursorContext;
  * Assumes that records have been allocated such that there will be a free record, right after a given record,
  * to place the secondary unit of that record.
  */
-public class SecondaryUnitPrepareIdSequence implements PrepareIdSequence
-{
+public class SecondaryUnitPrepareIdSequence implements PrepareIdSequence {
     @Override
-    public LongFunction<IdSequence> apply( IdSequence idSequence )
-    {
+    public LongFunction<IdSequence> apply(IdSequence idSequence) {
         return new NeighbourIdSequence();
     }
 
-    private static class NeighbourIdSequence implements LongFunction<IdSequence>, IdSequence
-    {
+    private static class NeighbourIdSequence implements LongFunction<IdSequence>, IdSequence {
         private long id;
         private boolean returned;
 
         @Override
-        public IdSequence apply( long firstUnitId )
-        {
+        public IdSequence apply(long firstUnitId) {
             this.id = firstUnitId;
             returned = false;
             return this;
         }
 
         @Override
-        public long nextId( CursorContext cursorContext )
-        {
-            try
-            {
-                if ( returned )
-                {
-                    throw new IllegalStateException( "Already returned" );
+        public long nextId(CursorContext cursorContext) {
+            try {
+                if (returned) {
+                    throw new IllegalStateException("Already returned");
                 }
                 return id + 1;
-            }
-            finally
-            {
+            } finally {
                 returned = true;
             }
         }

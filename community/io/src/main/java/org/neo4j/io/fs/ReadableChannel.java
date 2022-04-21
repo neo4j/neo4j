@@ -26,8 +26,7 @@ import java.io.IOException;
  * Represents a channel from where primitive values can be read. Mirrors {@link WritableChannel} in
  * data types that can be read.
  */
-public interface ReadableChannel extends Closeable
-{
+public interface ReadableChannel extends Closeable {
     /**
      * @return the next {@code byte} in this channel.
      * @throws IOException I/O error from channel.
@@ -79,5 +78,5 @@ public interface ReadableChannel extends Closeable
      * @throws IOException I/O error from channel.
      * @throws ReadPastEndException if not enough data was available.
      */
-    void get( byte[] bytes, int length ) throws IOException;
+    void get(byte[] bytes, int length) throws IOException;
 }

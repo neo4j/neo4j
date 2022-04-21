@@ -21,18 +21,15 @@ package org.neo4j.internal.batchimport.input;
 
 import org.neo4j.internal.batchimport.input.csv.Type;
 
-public class MissingRelationshipDataException extends DataException
-{
+public class MissingRelationshipDataException extends DataException {
     private Type fieldType;
 
-    public MissingRelationshipDataException( Type missedField, String message )
-    {
-        super( message );
+    public MissingRelationshipDataException(Type missedField, String message) {
+        super(message);
         this.fieldType = missedField;
     }
 
-    public Type getFieldType()
-    {
+    public Type getFieldType() {
         return fieldType;
     }
 }

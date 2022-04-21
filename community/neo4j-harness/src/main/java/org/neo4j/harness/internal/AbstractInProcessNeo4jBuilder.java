@@ -19,7 +19,14 @@
  */
 package org.neo4j.harness.internal;
 
-import org.apache.commons.codec.digest.DigestUtils;
+import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
+import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
+import static org.neo4j.internal.helpers.collection.Iterables.addAll;
+import static org.neo4j.internal.helpers.collection.Iterables.append;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -27,7 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
-
+import org.apache.commons.codec.digest.DigestUtils;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -57,17 +64,7 @@ import org.neo4j.logging.log4j.Neo4jLoggerContext;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
-import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
-import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
-import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
-import static org.neo4j.internal.helpers.collection.Iterables.addAll;
-import static org.neo4j.internal.helpers.collection.Iterables.append;
-
-public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
-{
+public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder {
     private Path serverFolder;
     private final Extensions unmanagedExtentions = new Extensions();
     private final HarnessRegisteredProcs procedures = new HarnessRegisteredProcs();
@@ -76,201 +73,177 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
     private boolean disabledServer;
     private final Config.Builder config = Config.newBuilder();
 
-    public AbstractInProcessNeo4jBuilder()
-    {
-    }
+    public AbstractInProcessNeo4jBuilder() {}
 
-    public AbstractInProcessNeo4jBuilder( Path workingDir, String dataSubDir )
-    {
-        Path dataDir = workingDir.resolve( dataSubDir ).toAbsolutePath();
-        withWorkingDir( dataDir );
+    public AbstractInProcessNeo4jBuilder(Path workingDir, String dataSubDir) {
+        Path dataDir = workingDir.resolve(dataSubDir).toAbsolutePath();
+        withWorkingDir(dataDir);
     }
 
     @Override
-    public Neo4jBuilder withWorkingDir( Path workingDirectory )
-    {
-        Path dataDir = workingDirectory.resolve( randomFolderName() ).toAbsolutePath();
-        setWorkingDirectory( dataDir );
+    public Neo4jBuilder withWorkingDir(Path workingDirectory) {
+        Path dataDir = workingDirectory.resolve(randomFolderName()).toAbsolutePath();
+        setWorkingDirectory(dataDir);
         return this;
     }
 
     @Override
-    public Neo4jBuilder copyFrom( Path originalStoreDir )
-    {
-        try
-        {
-            FileUtils.copyDirectory( originalStoreDir, serverFolder );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+    public Neo4jBuilder copyFrom(Path originalStoreDir) {
+        try {
+            FileUtils.copyDirectory(originalStoreDir, serverFolder);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
         return this;
     }
 
     @Override
-    public InProcessNeo4j build()
-    {
-        Path userLogFile = serverFolder.resolve( "neo4j.log" );
-        Path internalLogFile = serverFolder.resolve( "debug.log" );
+    public InProcessNeo4j build() {
+        Path userLogFile = serverFolder.resolve("neo4j.log");
+        Path internalLogFile = serverFolder.resolve("debug.log");
 
-        config.set( ServerSettings.third_party_packages, unmanagedExtentions.toList() );
-        config.set( GraphDatabaseSettings.store_internal_log_path, internalLogFile.toAbsolutePath() );
+        config.set(ServerSettings.third_party_packages, unmanagedExtentions.toList());
+        config.set(GraphDatabaseSettings.store_internal_log_path, internalLogFile.toAbsolutePath());
 
-        var certificates = serverFolder.resolve( "certificates" );
-        if ( disabledServer )
-        {
-            config.set( HttpConnector.enabled, false );
-            config.set( HttpsConnector.enabled, false );
+        var certificates = serverFolder.resolve("certificates");
+        if (disabledServer) {
+            config.set(HttpConnector.enabled, false);
+            config.set(HttpsConnector.enabled, false);
         }
 
         Config dbConfig = config.build();
-        if ( dbConfig.get( HttpsConnector.enabled ) ||
-             dbConfig.get( BoltConnector.enabled ) && dbConfig.get( BoltConnector.encryption_level ) != BoltConnector.EncryptionLevel.DISABLED )
-        {
-            SelfSignedCertificateFactory.create( certificates );
-            List<SslPolicyConfig> policies = List.of( SslPolicyConfig.forScope( HTTPS ), SslPolicyConfig.forScope( BOLT ) );
-            for ( SslPolicyConfig policy : policies )
-            {
-                config.set( policy.enabled, Boolean.TRUE );
-                config.set( policy.base_directory, certificates );
-                config.set( policy.trust_all, true );
-                config.set( policy.client_auth, ClientAuth.NONE );
+        if (dbConfig.get(HttpsConnector.enabled)
+                || dbConfig.get(BoltConnector.enabled)
+                        && dbConfig.get(BoltConnector.encryption_level) != BoltConnector.EncryptionLevel.DISABLED) {
+            SelfSignedCertificateFactory.create(certificates);
+            List<SslPolicyConfig> policies = List.of(SslPolicyConfig.forScope(HTTPS), SslPolicyConfig.forScope(BOLT));
+            for (SslPolicyConfig policy : policies) {
+                config.set(policy.enabled, Boolean.TRUE);
+                config.set(policy.base_directory, certificates);
+                config.set(policy.trust_all, true);
+                config.set(policy.client_auth, ClientAuth.NONE);
             }
             dbConfig = config.build();
         }
 
-        Neo4jLoggerContext loggerContext =
-                LogConfig.createBuilder( new DefaultFileSystemAbstraction(), userLogFile, Level.INFO ).withTimezone( dbConfig.get( db_timezone ) ).build();
-        var userLogProvider = new Log4jLogProvider( loggerContext );
-        GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider );
-        dependencies = dependencies.extensions( buildExtensionList( dependencies ) );
+        Neo4jLoggerContext loggerContext = LogConfig.createBuilder(
+                        new DefaultFileSystemAbstraction(), userLogFile, Level.INFO)
+                .withTimezone(dbConfig.get(db_timezone))
+                .build();
+        var userLogProvider = new Log4jLogProvider(loggerContext);
+        GraphDatabaseDependencies dependencies =
+                GraphDatabaseDependencies.newDependencies().userLogProvider(userLogProvider);
+        dependencies = dependencies.extensions(buildExtensionList(dependencies));
 
-        var managementService = createNeo( dbConfig, dependencies );
+        var managementService = createNeo(dbConfig, dependencies);
 
-        InProcessNeo4j controls = new InProcessNeo4j( serverFolder, userLogFile, internalLogFile, managementService, dbConfig, userLogProvider );
+        InProcessNeo4j controls = new InProcessNeo4j(
+                serverFolder, userLogFile, internalLogFile, managementService, dbConfig, userLogProvider);
         controls.start();
 
-        try
-        {
-            fixtures.applyTo( controls );
-        }
-        catch ( Exception e )
-        {
+        try {
+            fixtures.applyTo(controls);
+        } catch (Exception e) {
             controls.close();
             throw e;
         }
         return controls;
     }
 
-    protected abstract DatabaseManagementService createNeo( Config config, ExternalDependencies dependencies );
+    protected abstract DatabaseManagementService createNeo(Config config, ExternalDependencies dependencies);
 
     @Override
-    public <T> Neo4jBuilder withConfig( Setting<T> setting, T value )
-    {
-        config.set( setting, value );
+    public <T> Neo4jBuilder withConfig(Setting<T> setting, T value) {
+        config.set(setting, value);
         return this;
     }
 
     @Override
-    public Neo4jBuilder withUnmanagedExtension( String mountPath, Class<?> extension )
-    {
-        return withUnmanagedExtension( mountPath, extension.getPackage().getName() );
+    public Neo4jBuilder withUnmanagedExtension(String mountPath, Class<?> extension) {
+        return withUnmanagedExtension(mountPath, extension.getPackage().getName());
     }
 
     @Override
-    public Neo4jBuilder withUnmanagedExtension( String mountPath, String packageName )
-    {
-        unmanagedExtentions.add( mountPath, packageName );
+    public Neo4jBuilder withUnmanagedExtension(String mountPath, String packageName) {
+        unmanagedExtentions.add(mountPath, packageName);
         return this;
     }
 
-    public Neo4jBuilder withExtensionFactories( Iterable<ExtensionFactory<?>> extensionFactories )
-    {
+    public Neo4jBuilder withExtensionFactories(Iterable<ExtensionFactory<?>> extensionFactories) {
         addAll(this.extensionFactories, extensionFactories);
         return this;
     }
 
     @Override
-    public Neo4jBuilder withDisabledServer()
-    {
+    public Neo4jBuilder withDisabledServer() {
         this.disabledServer = true;
         return this;
     }
 
     @Override
-    public Neo4jBuilder withFixture( Path cypherFileOrDirectory )
-    {
-        fixtures.add( cypherFileOrDirectory );
+    public Neo4jBuilder withFixture(Path cypherFileOrDirectory) {
+        fixtures.add(cypherFileOrDirectory);
         return this;
     }
 
     @Override
-    public Neo4jBuilder withFixture( String fixtureStatement )
-    {
-        fixtures.add( fixtureStatement );
+    public Neo4jBuilder withFixture(String fixtureStatement) {
+        fixtures.add(fixtureStatement);
         return this;
     }
 
     @Override
-    public Neo4jBuilder withFixture( Function<GraphDatabaseService,Void> fixtureFunction )
-    {
-        fixtures.add( fixtureFunction );
+    public Neo4jBuilder withFixture(Function<GraphDatabaseService, Void> fixtureFunction) {
+        fixtures.add(fixtureFunction);
         return this;
     }
 
     @Override
-    public Neo4jBuilder withProcedure( Class<?> procedureClass )
-    {
-        procedures.addProcedure( procedureClass );
+    public Neo4jBuilder withProcedure(Class<?> procedureClass) {
+        procedures.addProcedure(procedureClass);
         return this;
     }
 
     @Override
-    public Neo4jBuilder withFunction( Class<?> functionClass )
-    {
-        procedures.addFunction( functionClass );
+    public Neo4jBuilder withFunction(Class<?> functionClass) {
+        procedures.addFunction(functionClass);
         return this;
     }
 
     @Override
-    public Neo4jBuilder withAggregationFunction( Class<?> functionClass )
-    {
-        procedures.addAggregationFunction( functionClass );
+    public Neo4jBuilder withAggregationFunction(Class<?> functionClass) {
+        procedures.addAggregationFunction(functionClass);
         return this;
     }
 
-    private Iterable<ExtensionFactory<?>> buildExtensionList( GraphDatabaseDependencies dependencies )
-    {
-        Iterable<ExtensionFactory<?>> extensions = append( new Neo4jHarnessExtensions( procedures ), dependencies.extensions() );
-        return addAll( this.extensionFactories, extensions );
+    private Iterable<ExtensionFactory<?>> buildExtensionList(GraphDatabaseDependencies dependencies) {
+        Iterable<ExtensionFactory<?>> extensions =
+                append(new Neo4jHarnessExtensions(procedures), dependencies.extensions());
+        return addAll(this.extensionFactories, extensions);
     }
 
-    private void setWorkingDirectory( Path workingDir )
-    {
-        setDirectory( workingDir );
-        withConfig( auth_enabled, false );
-        withConfig( pagecache_memory, ByteUnit.mebiBytes( 8 ) );
+    private void setWorkingDirectory(Path workingDir) {
+        setDirectory(workingDir);
+        withConfig(auth_enabled, false);
+        withConfig(pagecache_memory, ByteUnit.mebiBytes(8));
 
-        withConfig( HttpConnector.enabled, true );
-        withConfig( HttpConnector.listen_address, new SocketAddress( "localhost", 0 ) );
+        withConfig(HttpConnector.enabled, true);
+        withConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0));
 
-        withConfig( HttpsConnector.enabled, false );
-        withConfig( HttpsConnector.listen_address, new SocketAddress( "localhost", 0 ) );
+        withConfig(HttpsConnector.enabled, false);
+        withConfig(HttpsConnector.listen_address, new SocketAddress("localhost", 0));
 
-        withConfig( BoltConnector.enabled, true );
-        withConfig( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
+        withConfig(BoltConnector.enabled, true);
+        withConfig(BoltConnector.listen_address, new SocketAddress("localhost", 0));
     }
 
-    private void setDirectory( Path dir )
-    {
+    private void setDirectory(Path dir) {
         this.serverFolder = dir;
-        config.set( neo4j_home, serverFolder.toAbsolutePath() );
+        config.set(neo4j_home, serverFolder.toAbsolutePath());
     }
 
-    private static String randomFolderName()
-    {
-        return DigestUtils.md5Hex( Long.toString( ThreadLocalRandom.current().nextLong() ) );
+    private static String randomFolderName() {
+        return DigestUtils.md5Hex(Long.toString(ThreadLocalRandom.current().nextLong()));
     }
 
     /**
@@ -278,30 +251,24 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
      * after other kernel extensions have initialized, since kernel extensions
      * can add custom injectables that procedures need.
      */
-    private static class Neo4jHarnessExtensions extends ExtensionFactory<Neo4jHarnessExtensions.Dependencies>
-    {
-        interface Dependencies
-        {
+    private static class Neo4jHarnessExtensions extends ExtensionFactory<Neo4jHarnessExtensions.Dependencies> {
+        interface Dependencies {
             GlobalProcedures procedures();
         }
 
         private final HarnessRegisteredProcs userProcs;
 
-        Neo4jHarnessExtensions( HarnessRegisteredProcs userProcs )
-        {
-            super( "harness" );
+        Neo4jHarnessExtensions(HarnessRegisteredProcs userProcs) {
+            super("harness");
             this.userProcs = userProcs;
         }
 
         @Override
-        public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
-        {
-            return new LifecycleAdapter()
-            {
+        public Lifecycle newInstance(ExtensionContext context, Dependencies dependencies) {
+            return new LifecycleAdapter() {
                 @Override
-                public void start() throws Exception
-                {
-                    userProcs.applyTo( dependencies.procedures() );
+                public void start() throws Exception {
+                    userProcs.applyTo(dependencies.procedures());
                 }
             };
         }

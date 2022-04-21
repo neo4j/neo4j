@@ -19,132 +19,103 @@
  */
 package org.neo4j.memory;
 
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-public final class MemoryPools
-{
+public final class MemoryPools {
     public static final ScopedMemoryPool NO_TRACKING = new NoTrackingMemoryPool();
     private final List<GlobalMemoryGroupTracker> pools = new CopyOnWriteArrayList<>();
     private final boolean trackingEnabled;
 
-    public MemoryPools()
-    {
-        this( true );
+    public MemoryPools() {
+        this(true);
     }
 
-    public MemoryPools( boolean trackingEnabled )
-    {
+    public MemoryPools(boolean trackingEnabled) {
         this.trackingEnabled = trackingEnabled;
     }
 
-    public GlobalMemoryGroupTracker pool( MemoryGroup group, long limit, String limitSettingName )
-    {
-        return this.pool( group, limit, true, limitSettingName );
+    public GlobalMemoryGroupTracker pool(MemoryGroup group, long limit, String limitSettingName) {
+        return this.pool(group, limit, true, limitSettingName);
     }
 
-    public GlobalMemoryGroupTracker pool( MemoryGroup group, long limit, boolean strict, String limitSettingName )
-    {
-        var pool = new GlobalMemoryGroupTracker( this, group, limit, strict, trackingEnabled, limitSettingName );
-        pools.add( pool );
+    public GlobalMemoryGroupTracker pool(MemoryGroup group, long limit, boolean strict, String limitSettingName) {
+        var pool = new GlobalMemoryGroupTracker(this, group, limit, strict, trackingEnabled, limitSettingName);
+        pools.add(pool);
         return pool;
     }
 
-    public void registerPool( GlobalMemoryGroupTracker pool )
-    {
-        pools.add( pool );
+    public void registerPool(GlobalMemoryGroupTracker pool) {
+        pools.add(pool);
     }
 
-    public boolean unregisterPool( GlobalMemoryGroupTracker pool )
-    {
-        return pools.remove( pool );
+    public boolean unregisterPool(GlobalMemoryGroupTracker pool) {
+        return pools.remove(pool);
     }
 
-    public List<GlobalMemoryGroupTracker> getPools()
-    {
-        return new ArrayList<>( pools );
+    public List<GlobalMemoryGroupTracker> getPools() {
+        return new ArrayList<>(pools);
     }
 
-    void releasePool( GlobalMemoryGroupTracker globalMemoryGroupTracker )
-    {
-        pools.remove( globalMemoryGroupTracker );
+    void releasePool(GlobalMemoryGroupTracker globalMemoryGroupTracker) {
+        pools.remove(globalMemoryGroupTracker);
     }
 
-    private static class NoTrackingMemoryPool implements ScopedMemoryPool
-    {
+    private static class NoTrackingMemoryPool implements ScopedMemoryPool {
         @Override
-        public MemoryGroup group()
-        {
+        public MemoryGroup group() {
             return MemoryGroup.NO_TRACKING;
         }
 
         @Override
-        public void reserveHeap( long bytes )
-        {
-        }
+        public void reserveHeap(long bytes) {}
 
         @Override
-        public void reserveNative( long bytes )
-        {
-        }
+        public void reserveNative(long bytes) {}
 
         @Override
-        public void releaseHeap( long bytes )
-        {
-        }
+        public void releaseHeap(long bytes) {}
 
         @Override
-        public void releaseNative( long bytes )
-        {
-        }
+        public void releaseNative(long bytes) {}
 
         @Override
-        public long totalSize()
-        {
+        public long totalSize() {
             return Long.MAX_VALUE;
         }
 
         @Override
-        public long usedHeap()
-        {
+        public long usedHeap() {
             return 0;
         }
 
         @Override
-        public long usedNative()
-        {
+        public long usedNative() {
             return 0;
         }
 
         @Override
-        public long totalUsed()
-        {
+        public long totalUsed() {
             return 0;
         }
 
         @Override
-        public long free()
-        {
+        public long free() {
             return Long.MAX_VALUE;
         }
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
 
         @Override
-        public MemoryTracker getPoolMemoryTracker()
-        {
+        public MemoryTracker getPoolMemoryTracker() {
             return INSTANCE;
         }
 
         @Override
-        public void setSize( long size )
-        {
-        }
+        public void setSize(long size) {}
     }
 }

@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel;
 
+import java.util.List;
 import org.eclipse.collections.api.map.primitive.ImmutableByteObjectMap;
 import org.eclipse.collections.impl.factory.primitive.ByteObjectMaps;
-
-import java.util.List;
 
 /**
  * One version scheme to unify various internal versions into one with the intent of conceptual simplification and simplification of version bumping.
@@ -33,67 +32,60 @@ import java.util.List;
  * contains versions that has some sort of format change. This kernel version codes doesn't follow the same codes as the DBMS runtime version codes
  * and kernel will have a translation between the two.
  */
-public enum KernelVersion
-{
-    V4_2( (byte) 2 ), // 4.2+. Removed checkpoint entries.
-    // 4.3(some drop)+. Not a change to log entry format, but record storage engine log format change. Since record storage commands
-    // has no command version of their own it relies on a bump of the parser set version to distinguish between versions unfortunately.
+public enum KernelVersion {
+    V4_2((byte) 2), // 4.2+. Removed checkpoint entries.
+    // 4.3(some drop)+. Not a change to log entry format, but record storage engine log format change. Since record
+    // storage commands
+    // has no command version of their own it relies on a bump of the parser set version to distinguish between versions
+    // unfortunately.
     // Also introduces token index and relationship property index features.
-    V4_3_D4( (byte) 3 ),
-    V4_4( (byte) 4 ), // 4.4. Introduces RANGE, POINT and TEXT index types.
-    V5_0( (byte) 5 ); // 5.0.
+    V4_3_D4((byte) 3),
+    V4_4((byte) 4), // 4.4. Introduces RANGE, POINT and TEXT index types.
+    V5_0((byte) 5); // 5.0.
 
     public static final KernelVersion EARLIEST = V4_2;
     public static final KernelVersion LATEST = V5_0;
     public static final KernelVersion VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED = V4_3_D4;
     public static final KernelVersion VERSION_RANGE_POINT_TEXT_INDEX_TYPES_ARE_INTRODUCED = V4_4;
     private static final ImmutableByteObjectMap<KernelVersion> versionMap =
-            ByteObjectMaps.immutable.from( List.of( values() ), KernelVersion::version, v -> v );
+            ByteObjectMaps.immutable.from(List.of(values()), KernelVersion::version, v -> v);
 
     private final byte version;
 
-    KernelVersion( byte version )
-    {
+    KernelVersion(byte version) {
         this.version = version;
     }
 
-    public byte version()
-    {
+    public byte version() {
         return this.version;
     }
 
-    public boolean isLatest()
-    {
+    public boolean isLatest() {
         return this == LATEST;
     }
 
-    public boolean isGreaterThan( KernelVersion other )
-    {
+    public boolean isGreaterThan(KernelVersion other) {
         return version > other.version;
     }
 
-    public boolean isLessThan( KernelVersion other )
-    {
+    public boolean isLessThan(KernelVersion other) {
         return version < other.version;
     }
 
-    public boolean isAtLeast( KernelVersion other )
-    {
+    public boolean isAtLeast(KernelVersion other) {
         return version >= other.version;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "KernelVersion{" + name() + ",version=" + version + '}';
     }
 
-    public static KernelVersion getForVersion( byte version )
-    {
-        KernelVersion kernelVersion = versionMap.get( version );
-        if ( kernelVersion == null )
-        {
-            throw new IllegalArgumentException( "No matching " + KernelVersion.class.getSimpleName() + " for version " + version );
+    public static KernelVersion getForVersion(byte version) {
+        KernelVersion kernelVersion = versionMap.get(version);
+        if (kernelVersion == null) {
+            throw new IllegalArgumentException(
+                    "No matching " + KernelVersion.class.getSimpleName() + " for version " + version);
         }
         return kernelVersion;
     }

@@ -26,75 +26,68 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
-
 import org.neo4j.common.Validator;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.util.Preconditions;
 
-public final class Validators
-{
-    public static final Validator<String> REGEX_FILE_EXISTS = fileWithRegexInName ->
-    {
-        if ( matchingFiles( fileWithRegexInName ).isEmpty() )
-        {
-            throw new IllegalArgumentException( "File '" + fileWithRegexInName + "' doesn't exist" );
+public final class Validators {
+    public static final Validator<String> REGEX_FILE_EXISTS = fileWithRegexInName -> {
+        if (matchingFiles(fileWithRegexInName).isEmpty()) {
+            throw new IllegalArgumentException("File '" + fileWithRegexInName + "' doesn't exist");
         }
     };
 
-    private Validators()
-    {
-    }
+    private Validators() {}
 
-    static List<Path> matchingFiles( String fileWithRegexInName )
-    {
-        // Special handling of regex patterns for Windows since Windows paths naturally contains \ characters and also regex can contain those
-        // so in order to support this on Windows then \\ will be required in regex patterns and will not be treated as directory delimiter.
-        // Get those double backslashes out of the way so that we can trust the File operations to return correct parent etc.
-        String parentSafeFileName = fileWithRegexInName.replace( "\\\\", "__" );
-        File absoluteParentSafeFile = new File( parentSafeFileName ).getAbsoluteFile();
+    static List<Path> matchingFiles(String fileWithRegexInName) {
+        // Special handling of regex patterns for Windows since Windows paths naturally contains \ characters and also
+        // regex can contain those
+        // so in order to support this on Windows then \\ will be required in regex patterns and will not be treated as
+        // directory delimiter.
+        // Get those double backslashes out of the way so that we can trust the File operations to return correct parent
+        // etc.
+        String parentSafeFileName = fileWithRegexInName.replace("\\\\", "__");
+        File absoluteParentSafeFile = new File(parentSafeFileName).getAbsoluteFile();
         File parent = absoluteParentSafeFile.getParentFile();
-        Preconditions.checkState( parent != null && parent.exists(), "Directory %s of %s doesn't exist", parent, fileWithRegexInName );
+        Preconditions.checkState(
+                parent != null && parent.exists(), "Directory %s of %s doesn't exist", parent, fileWithRegexInName);
 
-        // Then since we can't trust the file operations to do the right thing on Windows if there are regex backslashes we instead
+        // Then since we can't trust the file operations to do the right thing on Windows if there are regex backslashes
+        // we instead
         // get the pattern by cutting off the parent directory from the name manually.
-        int fileNameLength = absoluteParentSafeFile.getAbsolutePath().length() - parent.getAbsolutePath().length() - 1;
-        String patternString = fileWithRegexInName.substring( fileWithRegexInName.length() - fileNameLength ).replace( "\\\\", "\\" );
-        final Pattern pattern = Pattern.compile( patternString );
+        int fileNameLength = absoluteParentSafeFile.getAbsolutePath().length()
+                - parent.getAbsolutePath().length()
+                - 1;
+        String patternString = fileWithRegexInName
+                .substring(fileWithRegexInName.length() - fileNameLength)
+                .replace("\\\\", "\\");
+        final Pattern pattern = Pattern.compile(patternString);
         List<Path> paths = new ArrayList<>();
-        for ( File file : parent.listFiles() )
-        {
-            if ( pattern.matcher( file.getName() ).matches() )
-            {
-                paths.add( file.toPath() );
+        for (File file : parent.listFiles()) {
+            if (pattern.matcher(file.getName()).matches()) {
+                paths.add(file.toPath());
             }
         }
         return paths;
     }
 
-    public static final Validator<Path> CONTAINS_EXISTING_DATABASE = dbDir ->
-    {
-        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
-        {
-            if ( !isExistingDatabase( fileSystem, DatabaseLayout.ofFlat( dbDir ) ) )
-            {
-                throw new IllegalArgumentException( "Directory '" + dbDir + "' does not contain a database" );
+    public static final Validator<Path> CONTAINS_EXISTING_DATABASE = dbDir -> {
+        try (FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction()) {
+            if (!isExistingDatabase(fileSystem, DatabaseLayout.ofFlat(dbDir))) {
+                throw new IllegalArgumentException("Directory '" + dbDir + "' does not contain a database");
             }
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     };
 
-    public static boolean isExistingDatabase( FileSystemAbstraction fileSystem, DatabaseLayout layout )
-    {
-        return fileSystem.fileExists( layout.metadataStore() );
+    public static boolean isExistingDatabase(FileSystemAbstraction fileSystem, DatabaseLayout layout) {
+        return fileSystem.fileExists(layout.metadataStore());
     }
 
-    public static <T> Validator<T> emptyValidator()
-    {
+    public static <T> Validator<T> emptyValidator() {
         return value -> {};
     }
 }

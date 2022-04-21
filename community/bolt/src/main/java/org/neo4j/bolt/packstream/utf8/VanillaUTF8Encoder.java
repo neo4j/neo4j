@@ -25,11 +25,9 @@ import java.nio.charset.StandardCharsets;
 /**
  * Simple encoder that delegates to String#getBytes()
  */
-public class VanillaUTF8Encoder implements UTF8Encoder
-{
+public class VanillaUTF8Encoder implements UTF8Encoder {
     @Override
-    public ByteBuffer encode( String input )
-    {
-        return ByteBuffer.wrap( input.getBytes( StandardCharsets.UTF_8 ) );
+    public ByteBuffer encode(String input) {
+        return ByteBuffer.wrap(input.getBytes(StandardCharsets.UTF_8));
     }
 }

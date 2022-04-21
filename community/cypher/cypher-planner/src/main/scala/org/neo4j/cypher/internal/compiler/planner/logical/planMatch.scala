@@ -25,7 +25,11 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 
 case object planMatch extends MatchPlanner {
 
-  protected override def doPlan(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean): BestPlans = {
+  override protected def doPlan(
+    query: SinglePlannerQuery,
+    context: LogicalPlanningContext,
+    rhsPart: Boolean
+  ): BestPlans = {
     val interestingOrderConfig = InterestingOrderConfig.interestingOrderForPart(
       query = query,
       isRhs = rhsPart,
@@ -35,6 +39,7 @@ case object planMatch extends MatchPlanner {
     context.strategy.plan(
       query.queryGraph,
       interestingOrderConfig,
-      context)
+      context
+    )
   }
 }

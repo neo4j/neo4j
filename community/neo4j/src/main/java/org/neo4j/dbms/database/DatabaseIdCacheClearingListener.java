@@ -24,18 +24,15 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 
-public final class DatabaseIdCacheClearingListener extends TransactionEventListenerAdapter<Object>
-{
+public final class DatabaseIdCacheClearingListener extends TransactionEventListenerAdapter<Object> {
     private final DatabaseIdRepository.Caching repository;
 
-    public DatabaseIdCacheClearingListener( DatabaseIdRepository.Caching repository )
-    {
+    public DatabaseIdCacheClearingListener(DatabaseIdRepository.Caching repository) {
         this.repository = repository;
     }
 
     @Override
-    public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
-    {
+    public void afterCommit(TransactionData data, Object state, GraphDatabaseService databaseService) {
         repository.invalidateAll();
     }
 }

@@ -19,13 +19,16 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.assertj.core.util.Streams;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
+import org.assertj.core.util.Streams;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -41,60 +44,50 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-
 @EphemeralTestDirectoryExtension
-class SchemaRecoveryIT
-{
+class SchemaRecoveryIT {
     @Inject
     private volatile EphemeralFileSystemAbstraction fs;
+
     @Inject
     private TestDirectory testDirectory;
+
     private GraphDatabaseAPI db;
     private DatabaseManagementService managementService;
 
     @AfterEach
-    void shutdownDatabase()
-    {
-        if ( db != null )
-        {
+    void shutdownDatabase() {
+        if (db != null) {
             managementService.shutdown();
             db = null;
         }
     }
 
     @Test
-    void schemaTransactionsShouldSurviveRecovery()
-    {
+    void schemaTransactionsShouldSurviveRecovery() {
         // given
-        Label label = label( "User" );
+        Label label = label("User");
         String property = "email";
         startDb();
 
         long initialConstraintCount;
         long initialIndexCount;
-        try ( Transaction tx = db.beginTx() )
-        {
-            initialConstraintCount = Streams.stream(tx.schema().getConstraints()).count();
+        try (Transaction tx = db.beginTx()) {
+            initialConstraintCount =
+                    Streams.stream(tx.schema().getConstraints()).count();
             initialIndexCount = Streams.stream(tx.schema().getIndexes()).count();
         }
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().constraintFor(label).assertPropertyIsUnique(property).create();
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.createNode( label ).setProperty( property, "neo4j@neo4j.com" );
+        try (Transaction tx = db.beginTx()) {
+            tx.createNode(label).setProperty(property, "neo4j@neo4j.com");
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(1, TimeUnit.HOURS);
             tx.commit();
         }
         killDb();
@@ -103,35 +96,34 @@ class SchemaRecoveryIT
         startDb();
 
         // then
-        assertEquals( initialConstraintCount + 1, constraints( db ).size() );
-        assertEquals( initialIndexCount + 1, indexes( db ).size() );
+        assertEquals(initialConstraintCount + 1, constraints(db).size());
+        assertEquals(initialIndexCount + 1, indexes(db).size());
     }
 
     @Test
-    void inconsistentlyFlushedTokensShouldBeRecovered()
-    {
+    void inconsistentlyFlushedTokensShouldBeRecovered() {
         // given
-        Label label = label( "User" );
+        Label label = label("User");
         String property = "email";
         startDb();
 
         long initialConstraintCount;
         long initialIndexCount;
-        try ( Transaction tx = db.beginTx() )
-        {
-            initialConstraintCount = Streams.stream(tx.schema().getConstraints()).count();
+        try (Transaction tx = db.beginTx()) {
+            initialConstraintCount =
+                    Streams.stream(tx.schema().getConstraints()).count();
             initialIndexCount = Streams.stream(tx.schema().getIndexes()).count();
         }
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().constraintFor(label).assertPropertyIsUnique(property).create();
             tx.commit();
         }
 
-        // Flush the property token store, but NOT the property token ~name~ store. This means tokens will refer to unused dynamic records for their names.
-        RecordStorageEngine storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
-        storageEngine.testAccessNeoStores().getPropertyKeyTokenStore().flush( NULL_CONTEXT );
+        // Flush the property token store, but NOT the property token ~name~ store. This means tokens will refer to
+        // unused dynamic records for their names.
+        RecordStorageEngine storageEngine = db.getDependencyResolver().resolveDependency(RecordStorageEngine.class);
+        storageEngine.testAccessNeoStores().getPropertyKeyTokenStore().flush(NULL_CONTEXT);
 
         killDb();
 
@@ -139,50 +131,42 @@ class SchemaRecoveryIT
         startDb();
 
         // then assert that we can still read the schema correctly.
-        assertEquals( initialConstraintCount + 1, constraints( db ).size() );
-        assertEquals( initialIndexCount + 1, indexes( db ).size() );
+        assertEquals(initialConstraintCount + 1, constraints(db).size());
+        assertEquals(initialIndexCount + 1, indexes(db).size());
     }
 
-    private void startDb()
-    {
-        if ( db != null )
-        {
+    private void startDb() {
+        if (db != null) {
             managementService.shutdown();
         }
 
-        managementService = configure( new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
-                                               .setFileSystem( fs )
-                                               .impermanent() ).build();
-        db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        managementService = configure(new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
+                        .setFileSystem(fs)
+                        .impermanent())
+                .build();
+        db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
-    {
+    protected TestDatabaseManagementServiceBuilder configure(TestDatabaseManagementServiceBuilder builder) {
         return builder;
     }
 
-    private void killDb()
-    {
-        if ( db != null )
-        {
+    private void killDb() {
+        if (db != null) {
             fs = fs.snapshot();
             managementService.shutdown();
         }
     }
 
-    private static List<ConstraintDefinition> constraints( GraphDatabaseService database )
-    {
-        try ( Transaction tx = database.beginTx() )
-        {
-            return Iterables.asList( tx.schema().getConstraints() );
+    private static List<ConstraintDefinition> constraints(GraphDatabaseService database) {
+        try (Transaction tx = database.beginTx()) {
+            return Iterables.asList(tx.schema().getConstraints());
         }
     }
 
-    private static List<IndexDefinition> indexes( GraphDatabaseService database )
-    {
-        try ( Transaction tx = database.beginTx() )
-        {
-            return Iterables.asList( tx.schema().getIndexes() );
+    private static List<IndexDefinition> indexes(GraphDatabaseService database) {
+        try (Transaction tx = database.beginTx()) {
+            return Iterables.asList(tx.schema().getIndexes());
         }
     }
 }

@@ -19,36 +19,30 @@
  */
 package org.neo4j.cli;
 
-public class CommandFailedException extends RuntimeException
-{
+public class CommandFailedException extends RuntimeException {
     private static final int DEFAULT_ERROR_EXIT_CODE = 1;
 
     private final int exitCode;
 
-    public CommandFailedException( String message )
-    {
-        this( message, DEFAULT_ERROR_EXIT_CODE );
+    public CommandFailedException(String message) {
+        this(message, DEFAULT_ERROR_EXIT_CODE);
     }
 
-    public CommandFailedException( String message, int exitCode )
-    {
-        super( message );
+    public CommandFailedException(String message, int exitCode) {
+        super(message);
         this.exitCode = exitCode;
     }
 
-    public CommandFailedException( String message, Throwable cause )
-    {
-        this( message, cause, DEFAULT_ERROR_EXIT_CODE );
+    public CommandFailedException(String message, Throwable cause) {
+        this(message, cause, DEFAULT_ERROR_EXIT_CODE);
     }
 
-    public CommandFailedException( String message, Throwable cause, int exitCode )
-    {
-        super( message, cause );
+    public CommandFailedException(String message, Throwable cause, int exitCode) {
+        super(message, cause);
         this.exitCode = exitCode;
     }
 
-    public int getExitCode()
-    {
+    public int getExitCode() {
         return exitCode;
     }
 }

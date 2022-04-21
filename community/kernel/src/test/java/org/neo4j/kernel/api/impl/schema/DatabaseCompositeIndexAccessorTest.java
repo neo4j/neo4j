@@ -19,15 +19,25 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.assertj.core.api.Condition;
-import org.eclipse.collections.api.factory.Sets;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singletonList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.assertj.core.api.Assertions.anyOf;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.collection.PrimitiveLongCollections.toSet;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.internal.helpers.collection.Iterators.asSet;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
+import static org.neo4j.io.IOUtils.closeAll;
+import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.test.extension.Threading.waitingWhileIn;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,7 +50,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
+import org.assertj.core.api.Condition;
+import org.eclipse.collections.api.factory.Sets;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
@@ -85,43 +103,25 @@ import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.token.TokenHolders;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptySet;
-import static java.util.Collections.singletonList;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.assertj.core.api.Assertions.anyOf;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.collection.PrimitiveLongCollections.toSet;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.internal.helpers.collection.Iterators.asSet;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
-import static org.neo4j.io.IOUtils.closeAll;
-import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.test.extension.Threading.waitingWhileIn;
-
 @EphemeralPageCacheExtension
-@ExtendWith( ThreadingExtension.class )
-@TestInstance( TestInstance.Lifecycle.PER_CLASS )
-public class DatabaseCompositeIndexAccessorTest
-{
+@ExtendWith(ThreadingExtension.class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+public class DatabaseCompositeIndexAccessorTest {
     private static final int PROP_ID1 = 1;
     private static final int PROP_ID2 = 2;
     private static final Config CONFIG = Config.defaults();
-    private static final IndexSamplingConfig SAMPLING_CONFIG = new IndexSamplingConfig( CONFIG );
+    private static final IndexSamplingConfig SAMPLING_CONFIG = new IndexSamplingConfig(CONFIG);
     private static final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Inject
     private Threading threading;
+
     @Inject
     private PageCache pageCache;
+
     @Inject
     private FileSystemAbstraction fileSystem;
+
     @Inject
     private TestDirectory testDirectory;
 
@@ -130,148 +130,147 @@ public class DatabaseCompositeIndexAccessorTest
     private final Object[] values = {"value1", "values2"};
     private final Object[] values2 = {40, 42};
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-    private static final IndexPrototype SCHEMA_INDEX_DESCRIPTOR = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 0, PROP_ID1, PROP_ID2 ) );
-    private static final IndexPrototype UNIQUE_SCHEMA_INDEX_DESCRIPTOR = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( 1, PROP_ID1, PROP_ID2 ) );
+    private static final IndexPrototype SCHEMA_INDEX_DESCRIPTOR =
+            IndexPrototype.forSchema(SchemaDescriptors.forLabel(0, PROP_ID1, PROP_ID2));
+    private static final IndexPrototype UNIQUE_SCHEMA_INDEX_DESCRIPTOR =
+            IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(1, PROP_ID1, PROP_ID2));
     private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
     private Iterable<IndexProvider> providers;
 
     @BeforeAll
-    public void prepareProviders() throws IOException
-    {
+    public void prepareProviders() throws IOException {
         dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-        providers = getIndexProviders( pageCache, jobScheduler, fileSystem, testDirectory );
+        providers = getIndexProviders(pageCache, jobScheduler, fileSystem, testDirectory);
     }
 
     @AfterAll
-    public void after() throws IOException
-    {
-        closeAll( dirFactory, jobScheduler );
+    public void after() throws IOException {
+        closeAll(dirFactory, jobScheduler);
     }
 
     @Nested
-    @TestInstance( TestInstance.Lifecycle.PER_CLASS )
-    class CompositeTests
-    {
-        private List<IndexAccessor> indexAccessors() throws IOException
-        {
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    class CompositeTests {
+        private List<IndexAccessor> indexAccessors() throws IOException {
             List<IndexAccessor> accessors = new ArrayList<>();
-            for ( IndexProvider p : providers )
-            {
-                accessors.add( indexAccessor( p, p.completeConfiguration( SCHEMA_INDEX_DESCRIPTOR.withName( "index_" + 0 ).materialise( 0 ) ) ) );
-                accessors.add( indexAccessor( p, p.completeConfiguration( UNIQUE_SCHEMA_INDEX_DESCRIPTOR.withName( "constraint_" + 1 ).materialise( 1 ) ) ) );
+            for (IndexProvider p : providers) {
+                accessors.add(indexAccessor(
+                        p,
+                        p.completeConfiguration(
+                                SCHEMA_INDEX_DESCRIPTOR.withName("index_" + 0).materialise(0))));
+                accessors.add(indexAccessor(
+                        p,
+                        p.completeConfiguration(UNIQUE_SCHEMA_INDEX_DESCRIPTOR
+                                .withName("constraint_" + 1)
+                                .materialise(1))));
             }
             return accessors;
         }
 
         @ParameterizedTest
-        @MethodSource( "indexAccessors" )
-        void indexReaderShouldSupportScan( IndexAccessor accessor ) throws Exception
-        {
+        @MethodSource("indexAccessors")
+        void indexReaderShouldSupportScan(IndexAccessor accessor) throws Exception {
             // GIVEN
-            try ( accessor )
-            {
-                updateAndCommit( accessor, asList( add( nodeId, values ), add( nodeId2, values2 ) ) );
-                try ( var reader = accessor.newValueReader() )
-                {
+            try (accessor) {
+                updateAndCommit(accessor, asList(add(nodeId, values), add(nodeId2, values2)));
+                try (var reader = accessor.newValueReader()) {
 
                     // WHEN
-                    Set<Long> results = resultSet( reader, PropertyIndexQuery.exists( PROP_ID1 ), PropertyIndexQuery.exists( PROP_ID2 ) );
-                    Set<Long> results2 = resultSet( reader, exact( PROP_ID1, values[0] ), exact( PROP_ID2, values[1] ) );
+                    Set<Long> results =
+                            resultSet(reader, PropertyIndexQuery.exists(PROP_ID1), PropertyIndexQuery.exists(PROP_ID2));
+                    Set<Long> results2 = resultSet(reader, exact(PROP_ID1, values[0]), exact(PROP_ID2, values[1]));
 
                     // THEN
-                    assertEquals( asSet( nodeId, nodeId2 ), results );
-                    assertEquals( asSet( nodeId ), results2 );
+                    assertEquals(asSet(nodeId, nodeId2), results);
+                    assertEquals(asSet(nodeId), results2);
                 }
             }
         }
 
         @ParameterizedTest
-        @MethodSource( "indexAccessors" )
-        void multipleIndexReadersFromDifferentPointsInTimeCanSeeDifferentResults( IndexAccessor accessor ) throws Exception
-        {
+        @MethodSource("indexAccessors")
+        void multipleIndexReadersFromDifferentPointsInTimeCanSeeDifferentResults(IndexAccessor accessor)
+                throws Exception {
             // WHEN
-            try ( accessor )
-            {
-                updateAndCommit( accessor, singletonList( add( nodeId, values ) ) );
+            try (accessor) {
+                updateAndCommit(accessor, singletonList(add(nodeId, values)));
                 var firstReader = accessor.newValueReader();
-                updateAndCommit( accessor, singletonList( add( nodeId2, values2 ) ) );
+                updateAndCommit(accessor, singletonList(add(nodeId2, values2)));
                 var secondReader = accessor.newValueReader();
 
                 // THEN
-                assertEquals( asSet( nodeId ), resultSet( firstReader, exact( PROP_ID1, values[0] ), exact( PROP_ID2, values[1] ) ) );
-                assertThat( resultSet( firstReader, exact( PROP_ID1, values2[0] ), exact( PROP_ID2, values2[1] ) ) ).
-                        is( anyOf( new Condition<>( s -> s.equals( asSet() ), "empty set" ),
-                                new Condition<>( s -> s.equals( asSet( nodeId2 ) ), "one element" ) ) );
-                assertEquals( asSet( nodeId ), resultSet( secondReader, exact( PROP_ID1, values[0] ), exact( PROP_ID2, values[1] ) ) );
-                assertEquals( asSet( nodeId2 ), resultSet( secondReader, exact( PROP_ID1, values2[0] ), exact( PROP_ID2, values2[1] ) ) );
+                assertEquals(
+                        asSet(nodeId), resultSet(firstReader, exact(PROP_ID1, values[0]), exact(PROP_ID2, values[1])));
+                assertThat(resultSet(firstReader, exact(PROP_ID1, values2[0]), exact(PROP_ID2, values2[1])))
+                        .is(anyOf(
+                                new Condition<>(s -> s.equals(asSet()), "empty set"),
+                                new Condition<>(s -> s.equals(asSet(nodeId2)), "one element")));
+                assertEquals(
+                        asSet(nodeId), resultSet(secondReader, exact(PROP_ID1, values[0]), exact(PROP_ID2, values[1])));
+                assertEquals(
+                        asSet(nodeId2),
+                        resultSet(secondReader, exact(PROP_ID1, values2[0]), exact(PROP_ID2, values2[1])));
                 firstReader.close();
                 secondReader.close();
             }
         }
 
         @ParameterizedTest
-        @MethodSource( "indexAccessors" )
-        void canAddNewData( IndexAccessor accessor ) throws Exception
-        {
+        @MethodSource("indexAccessors")
+        void canAddNewData(IndexAccessor accessor) throws Exception {
             // WHEN
-            try ( accessor )
-            {
-                updateAndCommit( accessor, asList( add( nodeId, values ), add( nodeId2, values2 ) ) );
-                try ( var reader = accessor.newValueReader() )
-                {
-                    assertEquals( asSet( nodeId ), resultSet( reader, exact( PROP_ID1, values[0] ), exact( PROP_ID2, values[1] ) ) );
+            try (accessor) {
+                updateAndCommit(accessor, asList(add(nodeId, values), add(nodeId2, values2)));
+                try (var reader = accessor.newValueReader()) {
+                    assertEquals(
+                            asSet(nodeId), resultSet(reader, exact(PROP_ID1, values[0]), exact(PROP_ID2, values[1])));
                 }
             }
         }
 
         @ParameterizedTest
-        @MethodSource( "indexAccessors" )
-        void canChangeExistingData( IndexAccessor accessor ) throws Exception
-        {
+        @MethodSource("indexAccessors")
+        void canChangeExistingData(IndexAccessor accessor) throws Exception {
             // GIVEN
-            try ( accessor )
-            {
-                updateAndCommit( accessor, singletonList( add( nodeId, values ) ) );
+            try (accessor) {
+                updateAndCommit(accessor, singletonList(add(nodeId, values)));
 
                 // WHEN
-                updateAndCommit( accessor, singletonList( change( nodeId, values, values2 ) ) );
-                try ( var reader = accessor.newValueReader() )
-                {
+                updateAndCommit(accessor, singletonList(change(nodeId, values, values2)));
+                try (var reader = accessor.newValueReader()) {
                     // THEN
-                    assertEquals( asSet( nodeId ), resultSet( reader, exact( PROP_ID1, values2[0] ), exact( PROP_ID2, values2[1] ) ) );
-                    assertEquals( emptySet(), resultSet( reader, exact( PROP_ID1, values[0] ), exact( PROP_ID2, values[1] ) ) );
+                    assertEquals(
+                            asSet(nodeId), resultSet(reader, exact(PROP_ID1, values2[0]), exact(PROP_ID2, values2[1])));
+                    assertEquals(emptySet(), resultSet(reader, exact(PROP_ID1, values[0]), exact(PROP_ID2, values[1])));
                 }
             }
         }
 
         @ParameterizedTest
-        @MethodSource( "indexAccessors" )
-        void canRemoveExistingData( IndexAccessor accessor ) throws Exception
-        {
+        @MethodSource("indexAccessors")
+        void canRemoveExistingData(IndexAccessor accessor) throws Exception {
             // GIVEN
-            try ( accessor )
-            {
-                updateAndCommit( accessor, asList( add( nodeId, values ), add( nodeId2, values2 ) ) );
+            try (accessor) {
+                updateAndCommit(accessor, asList(add(nodeId, values), add(nodeId2, values2)));
 
                 // WHEN
-                updateAndCommit( accessor, singletonList( remove( nodeId, values ) ) );
-                try ( var reader = accessor.newValueReader() )
-                {
+                updateAndCommit(accessor, singletonList(remove(nodeId, values)));
+                try (var reader = accessor.newValueReader()) {
                     // THEN
-                    assertEquals( asSet( nodeId2 ), resultSet( reader, exact( PROP_ID1, values2[0] ), exact( PROP_ID2, values2[1] ) ) );
-                    assertEquals( asSet(), resultSet( reader, exact( PROP_ID1, values[0] ), exact( PROP_ID2, values[1] ) ) );
+                    assertEquals(
+                            asSet(nodeId2),
+                            resultSet(reader, exact(PROP_ID1, values2[0]), exact(PROP_ID2, values2[1])));
+                    assertEquals(asSet(), resultSet(reader, exact(PROP_ID1, values[0]), exact(PROP_ID2, values[1])));
                 }
             }
         }
 
         @ParameterizedTest
-        @MethodSource( "indexAccessors" )
-        void shouldStopSamplingWhenIndexIsDropped( IndexAccessor accessor ) throws Exception
-        {
+        @MethodSource("indexAccessors")
+        void shouldStopSamplingWhenIndexIsDropped(IndexAccessor accessor) throws Exception {
             // given
-            try ( accessor )
-            {
-                updateAndCommit( accessor, asList( add( nodeId, values ), add( nodeId2, values2 ) ) );
+            try (accessor) {
+                updateAndCommit(accessor, asList(add(nodeId, values), add(nodeId2, values2)));
 
                 // when
                 var indexReader = accessor.newValueReader(); // needs to be acquired before drop() is called
@@ -279,93 +278,97 @@ public class DatabaseCompositeIndexAccessorTest
 
                 AtomicBoolean droppedLatch = new AtomicBoolean();
                 AtomicReference<Thread> dropper = new AtomicReference<>();
-                Predicate<Thread> awaitCompletion = waitingWhileIn( TaskCoordinator.class, "awaitCompletion" );
-                Future<Void> drop = threading.execute( nothing ->
-                {
-                    dropper.set( Thread.currentThread() );
-                    try
-                    {
-                        accessor.drop();
-                    }
-                    finally
-                    {
-                        droppedLatch.set( true );
-                    }
-                    return null;
-                }, null );
+                Predicate<Thread> awaitCompletion = waitingWhileIn(TaskCoordinator.class, "awaitCompletion");
+                Future<Void> drop = threading.execute(
+                        nothing -> {
+                            dropper.set(Thread.currentThread());
+                            try {
+                                accessor.drop();
+                            } finally {
+                                droppedLatch.set(true);
+                            }
+                            return null;
+                        },
+                        null);
 
-                var e = assertThrows( IndexNotFoundKernelException.class, () ->
-                {
-                    try ( var reader = indexReader /* do not inline! */; IndexSampler sampler = indexSampler /* do not inline! */ )
-                    {
-                        while ( !droppedLatch.get() && !awaitCompletion.test( dropper.get() ) )
-                        {
-                            LockSupport.parkNanos( MILLISECONDS.toNanos( 10 ) );
+                var e = assertThrows(IndexNotFoundKernelException.class, () -> {
+                    try (var reader = indexReader /* do not inline! */;
+                            IndexSampler sampler = indexSampler /* do not inline! */) {
+                        while (!droppedLatch.get() && !awaitCompletion.test(dropper.get())) {
+                            LockSupport.parkNanos(MILLISECONDS.toNanos(10));
                         }
-                        sampler.sampleIndex( CursorContext.NULL_CONTEXT );
-                    }
-                    finally
-                    {
+                        sampler.sampleIndex(CursorContext.NULL_CONTEXT);
+                    } finally {
                         drop.get();
                     }
-                } );
-                assertThat( e ).hasMessage( "Index dropped while sampling." );
+                });
+                assertThat(e).hasMessage("Index dropped while sampling.");
             }
         }
     }
 
-    private static Iterable<IndexProvider> getIndexProviders( PageCache pageCache, JobScheduler jobScheduler, FileSystemAbstraction fileSystem,
-            TestDirectory testDirectory )
-    {
-        Collection<AbstractIndexProviderFactory<?>> indexProviderFactories = List.of( new RangeIndexProviderFactory() );
-        return indexProviderFactories.stream().map( f -> f.create( pageCache, fileSystem, new SimpleLogService( logProvider ),
-                                                                   new Monitors(), CONFIG, writable(), DbmsInfo.UNKNOWN, RecoveryCleanupWorkCollector.ignore(),
-                                                                   DatabaseLayout.ofFlat( testDirectory.homePath() ),
-                                                                   new TokenHolders( null, null, null ), jobScheduler,
-                                                                   new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) ) ).collect( Collectors.toList() );
+    private static Iterable<IndexProvider> getIndexProviders(
+            PageCache pageCache,
+            JobScheduler jobScheduler,
+            FileSystemAbstraction fileSystem,
+            TestDirectory testDirectory) {
+        Collection<AbstractIndexProviderFactory<?>> indexProviderFactories = List.of(new RangeIndexProviderFactory());
+        return indexProviderFactories.stream()
+                .map(f -> f.create(
+                        pageCache,
+                        fileSystem,
+                        new SimpleLogService(logProvider),
+                        new Monitors(),
+                        CONFIG,
+                        writable(),
+                        DbmsInfo.UNKNOWN,
+                        RecoveryCleanupWorkCollector.ignore(),
+                        DatabaseLayout.ofFlat(testDirectory.homePath()),
+                        new TokenHolders(null, null, null),
+                        jobScheduler,
+                        new CursorContextFactory(PageCacheTracer.NULL, EMPTY)))
+                .collect(Collectors.toList());
     }
 
-    private static IndexAccessor indexAccessor( IndexProvider provider, IndexDescriptor descriptor ) throws IOException
-    {
-        IndexPopulator populator = provider.getPopulator( descriptor, SAMPLING_CONFIG, heapBufferFactory( 1024 ), INSTANCE, SIMPLE_NAME_LOOKUP,
-                                                          Sets.immutable.empty() );
+    private static IndexAccessor indexAccessor(IndexProvider provider, IndexDescriptor descriptor) throws IOException {
+        IndexPopulator populator = provider.getPopulator(
+                descriptor,
+                SAMPLING_CONFIG,
+                heapBufferFactory(1024),
+                INSTANCE,
+                SIMPLE_NAME_LOOKUP,
+                Sets.immutable.empty());
         populator.create();
-        populator.close( true, CursorContext.NULL_CONTEXT );
+        populator.close(true, CursorContext.NULL_CONTEXT);
 
-        return provider.getOnlineAccessor( descriptor, SAMPLING_CONFIG, SIMPLE_NAME_LOOKUP, Sets.immutable.empty() );
+        return provider.getOnlineAccessor(descriptor, SAMPLING_CONFIG, SIMPLE_NAME_LOOKUP, Sets.immutable.empty());
     }
 
-    private static Set<Long> resultSet( ValueIndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
-    {
-        try ( NodeValueIterator results = new NodeValueIterator() )
-        {
-            reader.query( results, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), queries );
-            return toSet( results );
+    private static Set<Long> resultSet(ValueIndexReader reader, PropertyIndexQuery... queries)
+            throws IndexNotApplicableKernelException {
+        try (NodeValueIterator results = new NodeValueIterator()) {
+            reader.query(results, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), queries);
+            return toSet(results);
         }
     }
 
-    private static IndexEntryUpdate<?> add( long nodeId, Object... values )
-    {
-        return IndexQueryHelper.add( nodeId, SCHEMA_INDEX_DESCRIPTOR, values );
+    private static IndexEntryUpdate<?> add(long nodeId, Object... values) {
+        return IndexQueryHelper.add(nodeId, SCHEMA_INDEX_DESCRIPTOR, values);
     }
 
-    private static IndexEntryUpdate<?> remove( long nodeId, Object... values )
-    {
-        return IndexQueryHelper.remove( nodeId, SCHEMA_INDEX_DESCRIPTOR, values );
+    private static IndexEntryUpdate<?> remove(long nodeId, Object... values) {
+        return IndexQueryHelper.remove(nodeId, SCHEMA_INDEX_DESCRIPTOR, values);
     }
 
-    private static IndexEntryUpdate<?> change( long nodeId, Object[] valuesBefore, Object[] valuesAfter )
-    {
-        return IndexQueryHelper.change( nodeId, SCHEMA_INDEX_DESCRIPTOR, valuesBefore, valuesAfter );
+    private static IndexEntryUpdate<?> change(long nodeId, Object[] valuesBefore, Object[] valuesAfter) {
+        return IndexQueryHelper.change(nodeId, SCHEMA_INDEX_DESCRIPTOR, valuesBefore, valuesAfter);
     }
 
-    private static void updateAndCommit( IndexAccessor accessor, List<IndexEntryUpdate<?>> nodePropertyUpdates ) throws IndexEntryConflictException
-    {
-        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
-        {
-            for ( IndexEntryUpdate<?> update : nodePropertyUpdates )
-            {
-                updater.process( update );
+    private static void updateAndCommit(IndexAccessor accessor, List<IndexEntryUpdate<?>> nodePropertyUpdates)
+            throws IndexEntryConflictException {
+        try (IndexUpdater updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
+            for (IndexEntryUpdate<?> update : nodePropertyUpdates) {
+                updater.process(update);
             }
         }
     }

@@ -36,8 +36,9 @@ import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.intValue
 import org.neo4j.values.virtual.VirtualValues.list
 
-abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                             runtime: CypherRuntime[CONTEXT]) extends RuntimeTestSuite(edition, runtime) {
+abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT], runtime: CypherRuntime[CONTEXT])
+    extends RuntimeTestSuite(edition, runtime) {
+
   test("hasLabel on top of allNodeScan") {
     // given
     val size = 100
@@ -138,9 +139,13 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     // given
     val size = 100
     given {
-      nodePropertyGraph(size, {
-        case i: Int => Map("prop" -> i)
-      }, "Label")
+      nodePropertyGraph(
+        size,
+        {
+          case i: Int => Map("prop" -> i)
+        },
+        "Label"
+      )
     }
 
     // when
@@ -160,9 +165,13 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     // given
     val size = 100
     given {
-      nodePropertyGraph(size, {
-        case i: Int => Map("prop" -> i)
-      }, "Label")
+      nodePropertyGraph(
+        size,
+        {
+          case i: Int => Map("prop" -> i)
+        },
+        "Label"
+      )
     }
 
     // when
@@ -183,9 +192,13 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val size = 100
     given {
       nodeIndex("Label", "prop")
-      nodePropertyGraph(size, {
-        case i: Int => Map("prop" -> i)
-      }, "Label")
+      nodePropertyGraph(
+        size,
+        {
+          case i: Int => Map("prop" -> i)
+        },
+        "Label"
+      )
     }
 
     // when
@@ -205,9 +218,13 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     // given
     val size = 100
     given {
-      nodePropertyGraph(size, {
-        case i if i % 2 == 0 => Map("prop" -> i)
-      }, "Label")
+      nodePropertyGraph(
+        size,
+        {
+          case i if i % 2 == 0 => Map("prop" -> i)
+        },
+        "Label"
+      )
     }
 
     // when
@@ -227,9 +244,13 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     // given
     val size = 100
     given {
-      nodePropertyGraph(size, {
-        case i if i % 2 == 0 => Map("prop" -> i)
-      }, "Label")
+      nodePropertyGraph(
+        size,
+        {
+          case i if i % 2 == 0 => Map("prop" -> i)
+        },
+        "Label"
+      )
     }
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -249,10 +270,14 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val size = 100
     given {
       nodeIndex("Label", "other")
-      nodePropertyGraph(size, {
-        case i if i % 2 == 0 => Map("prop" -> i, "other" -> i)
-        case i => Map("other" -> i)
-      }, "Label")
+      nodePropertyGraph(
+        size,
+        {
+          case i if i % 2 == 0 => Map("prop" -> i, "other" -> i)
+          case i               => Map("other" -> i)
+        },
+        "Label"
+      )
     }
 
     // when
@@ -329,9 +354,13 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     // given
     val size = 100
     given {
-      nodePropertyGraph(size, {
-        case i: Int => Map("prop" -> i)
-      }, "Label")
+      nodePropertyGraph(
+        size,
+        {
+          case i: Int => Map("prop" -> i)
+        },
+        "Label"
+      )
     }
 
     // when
@@ -349,7 +378,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
 
   test("should ignore if trying to get node property from node that isn't there") {
     // given
-    given { nodePropertyGraph(1, { case i: Int => Map("prop" -> i)}, "Label") }
+    given { nodePropertyGraph(1, { case i: Int => Map("prop" -> i) }, "Label") }
     val node = mock[Node]
     when(node.getId).thenReturn(1337L)
 
@@ -368,7 +397,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("should handle relationship property access") {
     // given
     val size = 100
-    val  rels = given {
+    val rels = given {
       val (_, rels) = circleGraph(size, "L")
       rels.foreach(_.setProperty("prop", 42))
       rels
@@ -390,7 +419,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("should return null if relationship property is not there") {
     // given
     val size = 100
-    val  rels = given {
+    val rels = given {
       val (_, rels) = circleGraph(size, "L")
       rels.foreach(_.setProperty("prop", 42))
       rels
@@ -412,7 +441,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
 
   test("should ignore if trying to get relationship property from relationship that isn't there") {
     // given
-    given { nodePropertyGraph(1, { case i: Int => Map("prop" -> i)}, "Label") }
+    given { nodePropertyGraph(1, { case i: Int => Map("prop" -> i) }, "Label") }
     val relationship = mock[Relationship]
     when(relationship.getId).thenReturn(1337L)
 
@@ -449,7 +478,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = (0 until halfSize).map(i => Array[Any](i, halfSize+i))
+    val expected = (0 until halfSize).map(i => Array[Any](i, halfSize + i))
     runtimeResult should beColumns("longNodeProp", "refNodeProp").withRows(expected)
   }
 
@@ -473,7 +502,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = (0 until halfSize).map(i => Array[Any](i, halfSize+i))
+    val expected = (0 until halfSize).map(i => Array[Any](i, halfSize + i))
     runtimeResult should beColumns("longNodeProp", "refNodeProp").withRows(expected)
   }
 
@@ -489,7 +518,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
       .input(variables = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     val expected = for (i <- 0 until size) yield Array[Any](i, true)
@@ -508,7 +537,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
       .input(variables = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     val expected = for (i <- 0 until size) yield Array[Any](i, false)
@@ -527,7 +556,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
       .input(variables = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     val expected = for (i <- 0 until size) yield Array[Any](i, true)
@@ -546,7 +575,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
       .input(variables = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     val expected = for (i <- 0 until size) yield Array[Any](i, true)
@@ -764,9 +793,13 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
   test("should throw if node was deleted before accessing node property") {
     // given
     val nodes = given {
-      nodePropertyGraph(1, {
-        case i: Int => Map("prop" -> i)
-      }, "Label")
+      nodePropertyGraph(
+        1,
+        {
+          case i: Int => Map("prop" -> i)
+        },
+        "Label"
+      )
     }
 
     // when
@@ -779,12 +812,12 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
     val input = inputValues(nodes.map(n => Array[Any](n)): _*).stream()
 
     // then
-    an [EntityNotFoundException] should be thrownBy consume(execute(logicalQuery, runtime, input))
+    an[EntityNotFoundException] should be thrownBy consume(execute(logicalQuery, runtime, input))
   }
 
   test("should throw if relationship was deleted before accessing relationship property") {
     // given
-    val  rels = given {
+    val rels = given {
       val (_, rels) = circleGraph(2, "L")
       rels.foreach(_.setProperty("prop", 42))
       rels
@@ -800,13 +833,13 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
     val input = inputValues(rels.map(r => Array[Any](r)): _*).stream()
 
     // then
-    an [EntityNotFoundException] should be thrownBy consume(execute(logicalQuery, runtime, input))
+    an[EntityNotFoundException] should be thrownBy consume(execute(logicalQuery, runtime, input))
   }
 
   test("should handle IN list") {
     // given
     val size = 100
-    val input = for (i <- 0 until size) yield Array[Any](list((0 to i).map(intValue):_*))
+    val input = for (i <- 0 until size) yield Array[Any](list((0 to i).map(intValue): _*))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -815,7 +848,7 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
       .input(variables = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     val expected = for (i <- 0 until size) yield Array[Any]((0 to i).toArray, i >= 5)
@@ -825,7 +858,8 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
   test("should handle IN list where list contains nulls") {
     // given
     val size = 100
-    val input = for (s <- 0 until size) yield Array[Any](list((0 to s).map(i => if (i % 2 == 0) NO_VALUE else intValue(i)):_*))
+    val input = for (s <- 0 until size)
+      yield Array[Any](list((0 to s).map(i => if (i % 2 == 0) NO_VALUE else intValue(i)): _*))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -834,7 +868,7 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
       .input(variables = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     val expected = for (i <- 0 until size) yield Array[Any](if (i >= 5) true else null)
@@ -873,9 +907,15 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
     given {
       for (i <- 0 until size) {
         if (i % 2 == 0) {
-          tx.createNode(label("START")).createRelationshipTo(tx.createNode(label("END")), RelationshipType.withName("A"))
+          tx.createNode(label("START")).createRelationshipTo(
+            tx.createNode(label("END")),
+            RelationshipType.withName("A")
+          )
         } else {
-          tx.createNode(label("START")).createRelationshipTo(tx.createNode(label("END")), RelationshipType.withName("B"))
+          tx.createNode(label("START")).createRelationshipTo(
+            tx.createNode(label("END")),
+            RelationshipType.withName("B")
+          )
         }
       }
     }
@@ -922,7 +962,7 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
     runtimeResult should beColumns("hasType").withRows(singleColumn((0 until size).map {
       case i if i % 3 == 0 => true
       case i if i % 3 == 1 => false
-      case i => null
+      case i               => null
     }))
   }
 
@@ -932,9 +972,15 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
     given {
       for (i <- 0 until size) {
         if (i % 3 == 0) {
-          tx.createNode(label("START")).createRelationshipTo(tx.createNode(label("END")), RelationshipType.withName("A"))
+          tx.createNode(label("START")).createRelationshipTo(
+            tx.createNode(label("END")),
+            RelationshipType.withName("A")
+          )
         } else if (i % 3 == 1) {
-          tx.createNode(label("START")).createRelationshipTo(tx.createNode(label("END")), RelationshipType.withName("B"))
+          tx.createNode(label("START")).createRelationshipTo(
+            tx.createNode(label("END")),
+            RelationshipType.withName("B")
+          )
         } else {
           tx.createNode(label("START"))
           tx.createNode(label("END"))
@@ -953,11 +999,11 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
 
     val runtimeResult = execute(logicalQuery, runtime)
 
-    runtimeResult should beColumns("hasType").withRows(singleColumn((0 until size*size).map {
-      case i if i >= size => null
+    runtimeResult should beColumns("hasType").withRows(singleColumn((0 until size * size).map {
+      case i if i >= size  => null
       case i if i % 3 == 0 => true
       case i if i % 3 == 1 => false
-      case _ => null
+      case _               => null
     }))
   }
 

@@ -41,8 +41,7 @@ import java.nio.file.Path;
  *        `-- partition index files
  * </pre>
  */
-public interface FolderLayout
-{
+public interface FolderLayout {
     /**
      * Get root folder of partitioned index
      *
@@ -56,5 +55,5 @@ public interface FolderLayout
      * @param partition index of partition to get folder for
      * @return the file that represents directory where partition with given index is located.
      */
-    Path getPartitionFolder( int partition );
+    Path getPartitionFolder(int partition);
 }

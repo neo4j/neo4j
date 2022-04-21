@@ -22,7 +22,6 @@ package org.neo4j.graphdb.factory.module;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 import java.util.function.Predicate;
-
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -77,8 +76,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 
-public class ModularDatabaseCreationContext implements DatabaseCreationContext
-{
+public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     private final NamedDatabaseId namedDatabaseId;
     private final Config globalConfig;
     private final DatabaseConfig databaseConfig;
@@ -108,7 +106,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final CursorContextFactory contextFactory;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final Iterable<ExtensionFactory<?>> extensionFactories;
-    private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
+    private final Function<DatabaseLayout, DatabaseLayoutWatcher> watcherServiceFactory;
     private final DatabaseLayout databaseLayout;
     private final DatabaseEventListeners eventListeners;
     private final GlobalTransactionEventListeners transactionEventListeners;
@@ -121,71 +119,73 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final GlobalMemoryGroupTracker otherMemoryPool;
     private final ReadOnlyDatabases readOnlyDatabases;
 
-    public ModularDatabaseCreationContext( NamedDatabaseId namedDatabaseId,
-                                           GlobalModule globalModule,
-                                           Dependencies globalDependencies,
-                                           DatabaseConfig databaseConfig,
-                                           CursorContextFactory contextFactory,
-                                           ConstraintSemantics constraintSemantics,
-                                           QueryEngineProvider queryEngineProvider,
-                                           DatabaseTransactionStats transactionStats,
-                                           Predicate<String> databaseFileFilter,
-                                           AccessCapabilityFactory accessCapabilityFactory,
-                                           ExternalIdReuseConditionProvider externalIdReuseConditionProvider,
-                                           Locks locks,
-                                           DatabaseIdContext databaseIdContext,
-                                           CommitProcessFactory commitProcessFactory,
-                                           TokenHolders tokenHolders,
-                                           DatabaseStartupController databaseStartupController,
-                                           ReadOnlyDatabases readOnlyDatabases )
-    {
-        this( namedDatabaseId,
-              globalModule,
-              globalDependencies,
-              contextFactory,
-              databaseConfig,
-              globalModule.getGlobalMonitors(),
-              LeaseService.NO_LEASES,
-              DatabaseCreationContext.selectStorageEngine( globalModule.getFileSystem(),
-                                                           globalModule.getNeo4jLayout(),
-                                                           globalModule.getPageCache(),
-                                                           databaseConfig,
-                                                           namedDatabaseId ),
-              constraintSemantics,
-              queryEngineProvider,
-              transactionStats,
-              databaseFileFilter,
-              accessCapabilityFactory,
-              externalIdReuseConditionProvider,
-              locks,
-              databaseIdContext,
-              commitProcessFactory,
-              tokenHolders,
-              databaseStartupController,
-              readOnlyDatabases );
+    public ModularDatabaseCreationContext(
+            NamedDatabaseId namedDatabaseId,
+            GlobalModule globalModule,
+            Dependencies globalDependencies,
+            DatabaseConfig databaseConfig,
+            CursorContextFactory contextFactory,
+            ConstraintSemantics constraintSemantics,
+            QueryEngineProvider queryEngineProvider,
+            DatabaseTransactionStats transactionStats,
+            Predicate<String> databaseFileFilter,
+            AccessCapabilityFactory accessCapabilityFactory,
+            ExternalIdReuseConditionProvider externalIdReuseConditionProvider,
+            Locks locks,
+            DatabaseIdContext databaseIdContext,
+            CommitProcessFactory commitProcessFactory,
+            TokenHolders tokenHolders,
+            DatabaseStartupController databaseStartupController,
+            ReadOnlyDatabases readOnlyDatabases) {
+        this(
+                namedDatabaseId,
+                globalModule,
+                globalDependencies,
+                contextFactory,
+                databaseConfig,
+                globalModule.getGlobalMonitors(),
+                LeaseService.NO_LEASES,
+                DatabaseCreationContext.selectStorageEngine(
+                        globalModule.getFileSystem(),
+                        globalModule.getNeo4jLayout(),
+                        globalModule.getPageCache(),
+                        databaseConfig,
+                        namedDatabaseId),
+                constraintSemantics,
+                queryEngineProvider,
+                transactionStats,
+                databaseFileFilter,
+                accessCapabilityFactory,
+                externalIdReuseConditionProvider,
+                locks,
+                databaseIdContext,
+                commitProcessFactory,
+                tokenHolders,
+                databaseStartupController,
+                readOnlyDatabases);
     }
 
-    public ModularDatabaseCreationContext( NamedDatabaseId namedDatabaseId,
-                                           GlobalModule globalModule,
-                                           Dependencies globalDependencies,
-                                           CursorContextFactory contextFactory,
-                                           DatabaseConfig databaseConfig,
-                                           Monitors parentMonitors,
-                                           LeaseService leaseService,
-                                           StorageEngineFactory storageEngineFactory,
-                                           ConstraintSemantics constraintSemantics,
-                                           QueryEngineProvider queryEngineProvider,
-                                           DatabaseTransactionStats transactionStats,
-                                           Predicate<String> databaseFileFilter,
-                                           AccessCapabilityFactory accessCapabilityFactory,
-                                           ExternalIdReuseConditionProvider externalIdReuseConditionProvider,
-                                           Locks locks,
-                                           DatabaseIdContext databaseIdContext,
-                                           CommitProcessFactory commitProcessFactory,
-                                           TokenHolders tokenHolders,
-                                           DatabaseStartupController databaseStartupController,
-                                           ReadOnlyDatabases readOnlyDatabases )
-    {
+    public ModularDatabaseCreationContext(
+            NamedDatabaseId namedDatabaseId,
+            GlobalModule globalModule,
+            Dependencies globalDependencies,
+            CursorContextFactory contextFactory,
+            DatabaseConfig databaseConfig,
+            Monitors parentMonitors,
+            LeaseService leaseService,
+            StorageEngineFactory storageEngineFactory,
+            ConstraintSemantics constraintSemantics,
+            QueryEngineProvider queryEngineProvider,
+            DatabaseTransactionStats transactionStats,
+            Predicate<String> databaseFileFilter,
+            AccessCapabilityFactory accessCapabilityFactory,
+            ExternalIdReuseConditionProvider externalIdReuseConditionProvider,
+            Locks locks,
+            DatabaseIdContext databaseIdContext,
+            CommitProcessFactory commitProcessFactory,
+            TokenHolders tokenHolders,
+            DatabaseStartupController databaseStartupController,
+            ReadOnlyDatabases readOnlyDatabases) {
         this.namedDatabaseId = namedDatabaseId;
         this.globalConfig = globalModule.getGlobalConfig();
         this.databaseConfig = databaseConfig;
@@ -196,7 +196,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.idController = databaseIdContext.getIdController();
         this.transactionsMemoryPool = globalModule.getTransactionsMemoryPool();
         this.otherMemoryPool = globalModule.getOtherMemoryPool();
-        this.databaseLogService = new DatabaseLogService( namedDatabaseId, globalModule.getLogService() );
+        this.databaseLogService = new DatabaseLogService(namedDatabaseId, globalModule.getLogService());
         this.scheduler = globalModule.getJobScheduler();
         this.globalDependencies = globalDependencies;
         this.tokenHolders = tokenHolders;
@@ -206,27 +206,27 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.fs = globalModule.getFileSystem();
         this.transactionStats = transactionStats;
         this.eventListeners = globalModule.getDatabaseEventListeners();
-        this.databaseHealthFactory = () -> new DatabaseHealth( new DatabasePanicEventGenerator( eventListeners, namedDatabaseId ),
-                                                               databaseLogService.getInternalLog( DatabaseHealth.class ) );
+        this.databaseHealthFactory = () -> new DatabaseHealth(
+                new DatabasePanicEventGenerator(eventListeners, namedDatabaseId),
+                databaseLogService.getInternalLog(DatabaseHealth.class));
         this.commitProcessFactory = commitProcessFactory;
         this.pageCache = globalModule.getPageCache();
         this.constraintSemantics = constraintSemantics;
         this.tracers = globalModule.getTracers();
-        this.globalProcedures = globalDependencies.resolveDependency( GlobalProcedures.class );
+        this.globalProcedures = globalDependencies.resolveDependency(GlobalProcedures.class);
         this.ioControllerService = globalModule.getIoControllerService();
         this.clock = globalModule.getGlobalClock();
         this.storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
         this.dbmsInfo = globalModule.getDbmsInfo();
         this.collectionsFactorySupplier = globalModule.getCollectionsFactorySupplier();
         this.extensionFactories = globalModule.getExtensionFactories();
-        this.watcherServiceFactory =
-                databaseLayout -> createDatabaseFileSystemWatcher( globalModule.getFileWatcher(), databaseLayout, globalModule.getLogService(),
-                                                                   databaseFileFilter );
-        this.databaseAvailabilityGuardFactory =
-                databaseTimeoutMillis -> databaseAvailabilityGuardFactory( namedDatabaseId, globalModule, databaseTimeoutMillis );
+        this.watcherServiceFactory = databaseLayout -> createDatabaseFileSystemWatcher(
+                globalModule.getFileWatcher(), databaseLayout, globalModule.getLogService(), databaseFileFilter);
+        this.databaseAvailabilityGuardFactory = databaseTimeoutMillis ->
+                databaseAvailabilityGuardFactory(namedDatabaseId, globalModule, databaseTimeoutMillis);
         Neo4jLayout neo4jLayout = globalModule.getNeo4jLayout();
         this.storageEngineFactory = storageEngineFactory;
-        this.databaseLayout = storageEngineFactory.databaseLayout( neo4jLayout, namedDatabaseId.name() );
+        this.databaseLayout = storageEngineFactory.databaseLayout(neo4jLayout, namedDatabaseId.name());
         this.fileLockerService = globalModule.getFileLockerService();
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.leaseService = leaseService;
@@ -235,266 +235,226 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public NamedDatabaseId getNamedDatabaseId()
-    {
+    public NamedDatabaseId getNamedDatabaseId() {
         return namedDatabaseId;
     }
 
     @Override
-    public DatabaseLayout getDatabaseLayout()
-    {
+    public DatabaseLayout getDatabaseLayout() {
         return databaseLayout;
     }
 
     @Override
-    public Config getGlobalConfig()
-    {
+    public Config getGlobalConfig() {
         return globalConfig;
     }
 
     @Override
-    public DatabaseConfig getDatabaseConfig()
-    {
+    public DatabaseConfig getDatabaseConfig() {
         return databaseConfig;
     }
 
     @Override
-    public IdGeneratorFactory getIdGeneratorFactory()
-    {
+    public IdGeneratorFactory getIdGeneratorFactory() {
         return idGeneratorFactory;
     }
 
     @Override
-    public DatabaseLogService getDatabaseLogService()
-    {
+    public DatabaseLogService getDatabaseLogService() {
         return databaseLogService;
     }
 
     @Override
-    public JobScheduler getScheduler()
-    {
+    public JobScheduler getScheduler() {
         return scheduler;
     }
 
     @Override
-    public DependencyResolver getGlobalDependencies()
-    {
+    public DependencyResolver getGlobalDependencies() {
         return globalDependencies;
     }
 
     @Override
-    public TokenHolders getTokenHolders()
-    {
+    public TokenHolders getTokenHolders() {
         return tokenHolders;
     }
 
     @Override
-    public Locks getLocks()
-    {
+    public Locks getLocks() {
         return locks;
     }
 
     @Override
-    public GlobalTransactionEventListeners getTransactionEventListeners()
-    {
+    public GlobalTransactionEventListeners getTransactionEventListeners() {
         return transactionEventListeners;
     }
 
     @Override
-    public FileSystemAbstraction getFs()
-    {
+    public FileSystemAbstraction getFs() {
         return fs;
     }
 
     @Override
-    public DatabaseTransactionStats getTransactionStats()
-    {
+    public DatabaseTransactionStats getTransactionStats() {
         return transactionStats;
     }
 
     @Override
-    public Factory<DatabaseHealth> getDatabaseHealthFactory()
-    {
+    public Factory<DatabaseHealth> getDatabaseHealthFactory() {
         return databaseHealthFactory;
     }
 
     @Override
-    public CommitProcessFactory getCommitProcessFactory()
-    {
+    public CommitProcessFactory getCommitProcessFactory() {
         return commitProcessFactory;
     }
 
     @Override
-    public PageCache getPageCache()
-    {
+    public PageCache getPageCache() {
         return pageCache;
     }
 
     @Override
-    public ConstraintSemantics getConstraintSemantics()
-    {
+    public ConstraintSemantics getConstraintSemantics() {
         return constraintSemantics;
     }
 
     @Override
-    public Monitors getMonitors()
-    {
+    public Monitors getMonitors() {
         return parentMonitors;
     }
 
     @Override
-    public Tracers getTracers()
-    {
+    public Tracers getTracers() {
         return tracers;
     }
 
     @Override
-    public GlobalProcedures getGlobalProcedures()
-    {
+    public GlobalProcedures getGlobalProcedures() {
         return globalProcedures;
     }
 
     @Override
-    public IOControllerService getIoControllerService()
-    {
+    public IOControllerService getIoControllerService() {
         return ioControllerService;
     }
 
     @Override
-    public LongFunction<DatabaseAvailabilityGuard> getDatabaseAvailabilityGuardFactory()
-    {
+    public LongFunction<DatabaseAvailabilityGuard> getDatabaseAvailabilityGuardFactory() {
         return databaseAvailabilityGuardFactory;
     }
 
     @Override
-    public SystemNanoClock getClock()
-    {
+    public SystemNanoClock getClock() {
         return clock;
     }
 
     @Override
-    public StoreCopyCheckPointMutex getStoreCopyCheckPointMutex()
-    {
+    public StoreCopyCheckPointMutex getStoreCopyCheckPointMutex() {
         return storeCopyCheckPointMutex;
     }
 
     @Override
-    public IdController getIdController()
-    {
+    public IdController getIdController() {
         return idController;
     }
 
     @Override
-    public DbmsInfo getDbmsInfo()
-    {
+    public DbmsInfo getDbmsInfo() {
         return dbmsInfo;
     }
 
     @Override
-    public CollectionsFactorySupplier getCollectionsFactorySupplier()
-    {
+    public CollectionsFactorySupplier getCollectionsFactorySupplier() {
         return collectionsFactorySupplier;
     }
 
     @Override
-    public Iterable<ExtensionFactory<?>> getExtensionFactories()
-    {
+    public Iterable<ExtensionFactory<?>> getExtensionFactories() {
         return extensionFactories;
     }
 
     @Override
-    public Function<DatabaseLayout,DatabaseLayoutWatcher> getWatcherServiceFactory()
-    {
+    public Function<DatabaseLayout, DatabaseLayoutWatcher> getWatcherServiceFactory() {
         return watcherServiceFactory;
     }
 
     @Override
-    public QueryEngineProvider getEngineProvider()
-    {
+    public QueryEngineProvider getEngineProvider() {
         return queryEngineProvider;
     }
 
     @Override
-    public DatabaseEventListeners getDatabaseEventListeners()
-    {
+    public DatabaseEventListeners getDatabaseEventListeners() {
         return eventListeners;
     }
 
     @Override
-    public StorageEngineFactory getStorageEngineFactory()
-    {
+    public StorageEngineFactory getStorageEngineFactory() {
         return storageEngineFactory;
     }
 
     @Override
-    public FileLockerService getFileLockerService()
-    {
+    public FileLockerService getFileLockerService() {
         return fileLockerService;
     }
 
     @Override
-    public AccessCapabilityFactory getAccessCapabilityFactory()
-    {
+    public AccessCapabilityFactory getAccessCapabilityFactory() {
         return accessCapabilityFactory;
     }
 
     @Override
-    public LeaseService getLeaseService()
-    {
+    public LeaseService getLeaseService() {
         return leaseService;
     }
 
     @Override
-    public DatabaseStartupController getStartupController()
-    {
+    public DatabaseStartupController getStartupController() {
         return startupController;
     }
 
     @Override
-    public GlobalMemoryGroupTracker getTransactionsMemoryPool()
-    {
+    public GlobalMemoryGroupTracker getTransactionsMemoryPool() {
         return transactionsMemoryPool;
     }
 
     @Override
-    public GlobalMemoryGroupTracker getOtherMemoryPool()
-    {
+    public GlobalMemoryGroupTracker getOtherMemoryPool() {
         return otherMemoryPool;
     }
 
     @Override
-    public ReadOnlyDatabases getDbmsReadOnlyChecker()
-    {
+    public ReadOnlyDatabases getDbmsReadOnlyChecker() {
         return readOnlyDatabases;
     }
 
     @Override
-    public CursorContextFactory getContextFactory()
-    {
+    public CursorContextFactory getContextFactory() {
         return contextFactory;
     }
 
     @Override
-    public ExternalIdReuseConditionProvider externalIdReuseConditionProvider()
-    {
+    public ExternalIdReuseConditionProvider externalIdReuseConditionProvider() {
         return externalIdReuseConditionProvider;
     }
 
-    private DatabaseAvailabilityGuard databaseAvailabilityGuardFactory( NamedDatabaseId namedDatabaseId, GlobalModule globalModule, long databaseTimeoutMillis )
-    {
-        InternalLog guardLog = databaseLogService.getInternalLog( DatabaseAvailabilityGuard.class );
-        return new DatabaseAvailabilityGuard( namedDatabaseId, clock, guardLog, databaseTimeoutMillis, globalModule.getGlobalAvailabilityGuard() );
+    private DatabaseAvailabilityGuard databaseAvailabilityGuardFactory(
+            NamedDatabaseId namedDatabaseId, GlobalModule globalModule, long databaseTimeoutMillis) {
+        InternalLog guardLog = databaseLogService.getInternalLog(DatabaseAvailabilityGuard.class);
+        return new DatabaseAvailabilityGuard(
+                namedDatabaseId, clock, guardLog, databaseTimeoutMillis, globalModule.getGlobalAvailabilityGuard());
     }
 
-    private static DatabaseLayoutWatcher createDatabaseFileSystemWatcher( FileWatcher watcher, DatabaseLayout databaseLayout, LogService logging,
-                                                                          Predicate<String> fileNameFilter )
-    {
-        var listenerFactory = new DefaultFileDeletionListenerFactory( databaseLayout, logging, fileNameFilter );
-        return new DatabaseLayoutWatcher( watcher, databaseLayout, listenerFactory );
+    private static DatabaseLayoutWatcher createDatabaseFileSystemWatcher(
+            FileWatcher watcher, DatabaseLayout databaseLayout, LogService logging, Predicate<String> fileNameFilter) {
+        var listenerFactory = new DefaultFileDeletionListenerFactory(databaseLayout, logging, fileNameFilter);
+        return new DatabaseLayoutWatcher(watcher, databaseLayout, listenerFactory);
     }
 
-    public static Predicate<String> defaultFileWatcherFilter()
-    {
-        return Predicates.any( TransactionLogFilesHelper.DEFAULT_FILENAME_PREDICATE, BufferingIdGeneratorFactory.PAGED_ID_BUFFER_FILE_NAME_FILTER );
+    public static Predicate<String> defaultFileWatcherFilter() {
+        return Predicates.any(
+                TransactionLogFilesHelper.DEFAULT_FILENAME_PREDICATE,
+                BufferingIdGeneratorFactory.PAGED_ID_BUFFER_FILE_NAME_FILTER);
     }
 }

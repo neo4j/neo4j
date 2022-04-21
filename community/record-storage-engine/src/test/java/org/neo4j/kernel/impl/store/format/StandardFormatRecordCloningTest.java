@@ -21,23 +21,19 @@ package org.neo4j.kernel.impl.store.format;
 
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 
-public class StandardFormatRecordCloningTest extends AbstractRecordCloningTest
-{
+public class StandardFormatRecordCloningTest extends AbstractRecordCloningTest {
     @Override
-    protected RecordFormats formats()
-    {
+    protected RecordFormats formats() {
         return Standard.LATEST_RECORD_FORMATS;
     }
 
     @Override
-    protected int entityBits()
-    {
+    protected int entityBits() {
         return 35;
     }
 
     @Override
-    protected int propertyBits()
-    {
+    protected int propertyBits() {
         return 36;
     }
 }

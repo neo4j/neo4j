@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
-
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.PageCursor;
@@ -47,8 +46,7 @@ import org.neo4j.storageengine.util.IdUpdateListener;
  *
  * @param <RECORD> type of {@link AbstractBaseRecord}.
  */
-public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequence
-{
+public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequence {
     /**
      * @return the {@link Path} that backs this store.
      */
@@ -63,7 +61,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * @param cursorContext underlying page cursor context.
      * @return highest id in use in this store.
      */
-    long getHighestPossibleIdInUse( CursorContext cursorContext );
+    long getHighestPossibleIdInUse(CursorContext cursorContext);
 
     /**
      * Sets highest id in use for this store. This is for when records are applied to this store where
@@ -73,7 +71,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      *
      * @param highestIdInUse highest id that is now in use in this store.
      */
-    void setHighestPossibleIdInUse( long highestIdInUse );
+    void setHighestPossibleIdInUse(long highestIdInUse);
 
     /**
      * @return a new record instance for receiving data by {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}.
@@ -89,7 +87,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * @param cursorContext underlying page cursor context.
      * @return PageCursor for reading records.
      */
-    PageCursor openPageCursorForReading( long id, CursorContext cursorContext );
+    PageCursor openPageCursorForReading(long id, CursorContext cursorContext);
 
     /**
      * Opens a {@link PageCursor} on this store, capable of reading records using
@@ -101,7 +99,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * @param cursorContext underlying page cursor context.
      * @return PageCursor for reading records.
      */
-    PageCursor openPageCursorForReadingWithPrefetching( long id, CursorContext cursorContext );
+    PageCursor openPageCursorForReadingWithPrefetching(long id, CursorContext cursorContext);
 
     /**
      * Opens a {@link PageCursor} on this store, capable of writing records using
@@ -112,7 +110,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * @param cursorContext underlying page cursor context.
      * @return PageCursor for writing records.
      */
-    PageCursor openPageCursorForWriting( long id, CursorContext cursorContext );
+    PageCursor openPageCursorForWriting(long id, CursorContext cursorContext);
 
     /**
      * Reads a record from the store into {@code target}. Depending on {@link RecordLoad} given there will
@@ -140,7 +138,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * @param cursor the PageCursor to use for record loading.
      * @throws InvalidRecordException if record not in use and the {@code mode} allows for throwing.
      */
-    RECORD getRecordByCursor( long id, RECORD target, RecordLoad mode, PageCursor cursor ) throws InvalidRecordException;
+    RECORD getRecordByCursor(long id, RECORD target, RecordLoad mode, PageCursor cursor) throws InvalidRecordException;
 
     /**
      * Reads a record from the store into {@code target}, see
@@ -155,7 +153,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * @param cursor pageCursor to use for record loading.
      * @throws InvalidRecordException if record not in use and the {@code mode} allows for throwing.
      */
-    void nextRecordByCursor( RECORD target, RecordLoad mode, PageCursor cursor ) throws InvalidRecordException;
+    void nextRecordByCursor(RECORD target, RecordLoad mode, PageCursor cursor) throws InvalidRecordException;
 
     /**
      * For stores that have other stores coupled underneath, the "top level" record will have a flag
@@ -165,7 +163,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * @param record record to make heavy, if not already.
      * @param storeCursors pageCursor provider to be used for record loading.
      */
-    void ensureHeavy( RECORD record, StoreCursors storeCursors );
+    void ensureHeavy(RECORD record, StoreCursors storeCursors);
 
     /**
      * Reads records that belong together, a chain of records that as a whole forms the entirety of a data item.
@@ -180,7 +178,8 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * @return {@link Collection} of records in the loaded chain.
      * @throws InvalidRecordException if some record not in use and the {@code mode} is allows for throwing.
      */
-    List<RECORD> getRecords( long firstId, RecordLoad mode, boolean guardForCycles, PageCursor pageCursor ) throws InvalidRecordException;
+    List<RECORD> getRecords(long firstId, RecordLoad mode, boolean guardForCycles, PageCursor pageCursor)
+            throws InvalidRecordException;
 
     /**
      * Streams records that belong together, a chain of records that as a whole forms the entirety of a data item.
@@ -194,8 +193,12 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * @param pageCursor page cursor to be used for record reading
      * @param subscriber The subscriber of the data, will receive records until the subscriber returns <code>false</code>
      */
-    void streamRecords( long firstId, RecordLoad mode, boolean guardForCycles, PageCursor pageCursor,
-                        RecordSubscriber<RECORD> subscriber );
+    void streamRecords(
+            long firstId,
+            RecordLoad mode,
+            boolean guardForCycles,
+            PageCursor pageCursor,
+            RecordSubscriber<RECORD> subscriber);
 
     /**
      * Updates this store with the contents of {@code record} at the record id
@@ -206,11 +209,16 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * specified by the record.
      * @param cursorContext underlying page cursor context.
      */
-    void updateRecord( RECORD record, IdUpdateListener idUpdates, PageCursor cursor, CursorContext cursorContext, StoreCursors storeCursors );
+    void updateRecord(
+            RECORD record,
+            IdUpdateListener idUpdates,
+            PageCursor cursor,
+            CursorContext cursorContext,
+            StoreCursors storeCursors);
 
-    default void updateRecord( RECORD record, PageCursor cursor, CursorContext cursorContext, StoreCursors storeCursors )
-    {
-        updateRecord( record, IdUpdateListener.DIRECT, cursor, cursorContext, storeCursors );
+    default void updateRecord(
+            RECORD record, PageCursor cursor, CursorContext cursorContext, StoreCursors storeCursors) {
+        updateRecord(record, IdUpdateListener.DIRECT, cursor, cursorContext, storeCursors);
     }
 
     /**
@@ -244,7 +252,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * This call is blocking and will ensure all updates since last call to this method are durable
      * once the call returns.
      */
-    void flush( CursorContext cursorContext );
+    void flush(CursorContext cursorContext);
 
     /**
      * Some stores may have meta data stored in the header of the store file. Since all records in a store
@@ -269,7 +277,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * @param record record to prepare, potentially updating it with more information before converting into a command.
      * @param cursorContext underlying page cursor context
      */
-    void prepareForCommit( RECORD record, CursorContext cursorContext );
+    void prepareForCommit(RECORD record, CursorContext cursorContext);
 
     /**
      * Called once all changes to a record is ready to be converted into a command.
@@ -279,7 +287,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * @param idSequence {@link IdSequence} to use for potentially generating additional ids required by this record.
      * @param cursorContext underlying page cursor context
      */
-    void prepareForCommit( RECORD record, IdSequence idSequence, CursorContext cursorContext );
+    void prepareForCommit(RECORD record, IdSequence idSequence, CursorContext cursorContext);
 
     /**
      * Scan the given range of records both inclusive, and pass all the in-use ones to the given processor, one by one.
@@ -290,5 +298,6 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * @param pageCursor pageCursor to use for record reading.
      * @throws EXCEPTION on error reading from store.
      */
-    <EXCEPTION extends Exception> void scanAllRecords( Visitor<RECORD,EXCEPTION> visitor, PageCursor pageCursor ) throws EXCEPTION;
+    <EXCEPTION extends Exception> void scanAllRecords(Visitor<RECORD, EXCEPTION> visitor, PageCursor pageCursor)
+            throws EXCEPTION;
 }

@@ -19,58 +19,53 @@
  */
 package org.neo4j.bolt.testing.client;
 
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-
-import java.io.IOException;
-
-import org.neo4j.test.extension.SuppressOutputExtension;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@ExtendWith( SuppressOutputExtension.class )
-@ResourceLock( Resources.SYSTEM_OUT )
-public class WebSocketConnectionTest
-{
+import java.io.IOException;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.neo4j.test.extension.SuppressOutputExtension;
+
+@ExtendWith(SuppressOutputExtension.class)
+@ResourceLock(Resources.SYSTEM_OUT)
+public class WebSocketConnectionTest {
 
     @Test
-    public void shouldNotThrowAnyExceptionWhenDataReceivedBeforeClose() throws Throwable
-    {
+    public void shouldNotThrowAnyExceptionWhenDataReceivedBeforeClose() throws Throwable {
         // Given
-        WebSocketClient client = mock( WebSocketClient.class );
-        WebSocketConnection conn = new WebSocketConnection( client );
-        when( client.isStopped() ).thenReturn( true );
+        WebSocketClient client = mock(WebSocketClient.class);
+        WebSocketConnection conn = new WebSocketConnection(client);
+        when(client.isStopped()).thenReturn(true);
 
         byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
         // When
-        conn.onWebSocketBinary( data, 0, 10 );
-        conn.recv( 10 );
+        conn.onWebSocketBinary(data, 0, 10);
+        conn.recv(10);
 
         // Then
         // no exception
     }
 
     @Test
-    public void shouldThrowIOExceptionWhenNotEnoughDataReceivedBeforeClose() throws Throwable
-    {
+    public void shouldThrowIOExceptionWhenNotEnoughDataReceivedBeforeClose() throws Throwable {
         // Given
-        WebSocketClient client = mock( WebSocketClient.class );
-        WebSocketConnection conn = new WebSocketConnection( client );
-        when( client.isStopped() ).thenReturn( true, true );
+        WebSocketClient client = mock(WebSocketClient.class);
+        WebSocketConnection conn = new WebSocketConnection(client);
+        when(client.isStopped()).thenReturn(true, true);
 
         byte[] data = {0, 1, 2, 3};
 
         // When && Then
-        conn.onWebSocketBinary( data, 0, 4 );
+        conn.onWebSocketBinary(data, 0, 4);
 
-        var e = assertThrows( IOException.class, () -> conn.recv( 10 ) );
-        assertEquals( "Connection closed while waiting for data from the server.", e.getMessage() );
+        var e = assertThrows(IOException.class, () -> conn.recv(10));
+        assertEquals("Connection closed while waiting for data from the server.", e.getMessage());
     }
 }

@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.util.symbols
 
 object RelationshipType {
+
   val instance = new RelationshipType() {
     val parentType = CTMap
     override val toString = "Relationship"

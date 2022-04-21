@@ -19,84 +19,71 @@
  */
 package org.neo4j.cypher.internal.security;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
 import org.apache.shiro.crypto.RandomNumberGenerator;
 import org.apache.shiro.crypto.SecureRandomNumberGenerator;
 import org.apache.shiro.crypto.hash.SimpleHash;
 import org.apache.shiro.util.ByteSource;
 
-import java.util.HashMap;
-import java.util.Map;
-
-public class SecureHasher
-{
+public class SecureHasher {
     private final String hashAlgorithm;
     private final int hashIterations;
     private static final int SALT_BYTES_SIZE = 32;
 
     private RandomNumberGenerator randomNumberGenerator;
     private HashedCredentialsMatcher hashedCredentialsMatcher;
-    private Map<Integer,HashedCredentialsMatcher> hashedCredentialsMatchers;
+    private Map<Integer, HashedCredentialsMatcher> hashedCredentialsMatchers;
 
-    public SecureHasher()
-    {
-        this( SecureHasherConfigurations.CURRENT_VERSION );
+    public SecureHasher() {
+        this(SecureHasherConfigurations.CURRENT_VERSION);
     }
 
-    public SecureHasher( String version )
-    {
-        SecureHasherConfiguration configuration = SecureHasherConfigurations.configurations.get( version );
+    public SecureHasher(String version) {
+        SecureHasherConfiguration configuration = SecureHasherConfigurations.configurations.get(version);
         hashAlgorithm = configuration.algorithm;
         hashIterations = configuration.iterations;
     }
 
-    private RandomNumberGenerator getRandomNumberGenerator()
-    {
-        if ( randomNumberGenerator == null )
-        {
+    private RandomNumberGenerator getRandomNumberGenerator() {
+        if (randomNumberGenerator == null) {
             randomNumberGenerator = new SecureRandomNumberGenerator();
         }
 
         return randomNumberGenerator;
     }
 
-    public SimpleHash hash( byte[] source )
-    {
+    public SimpleHash hash(byte[] source) {
         ByteSource salt = generateRandomSalt();
-        return new SimpleHash( hashAlgorithm, source, salt, hashIterations );
+        return new SimpleHash(hashAlgorithm, source, salt, hashIterations);
     }
 
-    public HashedCredentialsMatcher getHashedCredentialsMatcher()
-    {
-        if ( hashedCredentialsMatcher == null )
-        {
-            hashedCredentialsMatcher = new HashedCredentialsMatcher( hashAlgorithm );
-            hashedCredentialsMatcher.setHashIterations( hashIterations );
+    public HashedCredentialsMatcher getHashedCredentialsMatcher() {
+        if (hashedCredentialsMatcher == null) {
+            hashedCredentialsMatcher = new HashedCredentialsMatcher(hashAlgorithm);
+            hashedCredentialsMatcher.setHashIterations(hashIterations);
         }
 
         return hashedCredentialsMatcher;
     }
 
-    public HashedCredentialsMatcher getHashedCredentialsMatcherWithIterations( int iterations )
-    {
-        if ( hashedCredentialsMatchers == null )
-        {
+    public HashedCredentialsMatcher getHashedCredentialsMatcherWithIterations(int iterations) {
+        if (hashedCredentialsMatchers == null) {
             hashedCredentialsMatchers = new HashMap<>();
         }
 
-        HashedCredentialsMatcher matcher = hashedCredentialsMatchers.get( iterations );
-        if ( matcher == null )
-        {
-            matcher = new HashedCredentialsMatcher( hashAlgorithm );
-            matcher.setHashIterations( iterations );
-            hashedCredentialsMatchers.put( iterations, matcher );
+        HashedCredentialsMatcher matcher = hashedCredentialsMatchers.get(iterations);
+        if (matcher == null) {
+            matcher = new HashedCredentialsMatcher(hashAlgorithm);
+            matcher.setHashIterations(iterations);
+            hashedCredentialsMatchers.put(iterations, matcher);
         }
 
         return matcher;
     }
 
-    private ByteSource generateRandomSalt()
-    {
-        return getRandomNumberGenerator().nextBytes( SecureHasher.SALT_BYTES_SIZE );
+    private ByteSource generateRandomSalt() {
+        return getRandomNumberGenerator().nextBytes(SecureHasher.SALT_BYTES_SIZE);
     }
 }

@@ -19,11 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
+import static java.lang.String.format;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
+
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.function.LongSupplier;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
@@ -34,13 +38,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogFileCreateEvent;
 
-import static java.lang.String.format;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
-
-public class TransactionLogChannelAllocator
-{
+public class TransactionLogChannelAllocator {
     private final TransactionLogFilesContext logFilesContext;
     private final FileSystemAbstraction fileSystem;
     private final TransactionLogFilesHelper fileHelper;
@@ -48,9 +46,11 @@ public class TransactionLogChannelAllocator
     private final ChannelNativeAccessor nativeChannelAccessor;
     private final DatabaseTracer databaseTracer;
 
-    public TransactionLogChannelAllocator( TransactionLogFilesContext logFilesContext, TransactionLogFilesHelper fileHelper, LogHeaderCache logHeaderCache,
-            ChannelNativeAccessor nativeChannelAccessor )
-    {
+    public TransactionLogChannelAllocator(
+            TransactionLogFilesContext logFilesContext,
+            TransactionLogFilesHelper fileHelper,
+            LogHeaderCache logHeaderCache,
+            ChannelNativeAccessor nativeChannelAccessor) {
         this.logFilesContext = logFilesContext;
         this.fileSystem = logFilesContext.getFileSystem();
         this.databaseTracer = logFilesContext.getDatabaseTracers().getDatabaseTracer();
@@ -59,110 +59,95 @@ public class TransactionLogChannelAllocator
         this.nativeChannelAccessor = nativeChannelAccessor;
     }
 
-    public PhysicalLogVersionedStoreChannel createLogChannel( long version, LongSupplier lastCommittedTransactionId ) throws IOException
-    {
-        AllocatedFile allocatedFile = allocateFile( version );
+    public PhysicalLogVersionedStoreChannel createLogChannel(long version, LongSupplier lastCommittedTransactionId)
+            throws IOException {
+        AllocatedFile allocatedFile = allocateFile(version);
         var storeChannel = allocatedFile.storeChannel();
         var logFile = allocatedFile.path();
-        try ( var scopedBuffer = new HeapScopedBuffer( CURRENT_FORMAT_LOG_HEADER_SIZE, logFilesContext.getMemoryTracker() ) )
-        {
+        try (var scopedBuffer =
+                new HeapScopedBuffer(CURRENT_FORMAT_LOG_HEADER_SIZE, logFilesContext.getMemoryTracker())) {
             var buffer = scopedBuffer.getBuffer();
-            LogHeader header = readLogHeader( buffer, storeChannel, false, logFile );
-            if ( header == null )
-            {
-                try ( LogFileCreateEvent ignored = databaseTracer.createLogFile() )
-                {
+            LogHeader header = readLogHeader(buffer, storeChannel, false, logFile);
+            if (header == null) {
+                try (LogFileCreateEvent ignored = databaseTracer.createLogFile()) {
                     // we always write file header from the beginning of the file
-                    storeChannel.position( 0 );
+                    storeChannel.position(0);
                     long lastTxId = lastCommittedTransactionId.getAsLong();
-                    LogHeader logHeader = new LogHeader( version, lastTxId, logFilesContext.getStoreId() );
-                    LogHeaderWriter.writeLogHeader( storeChannel, logHeader, logFilesContext.getMemoryTracker() );
-                    logHeaderCache.putHeader( version, logHeader );
+                    LogHeader logHeader = new LogHeader(version, lastTxId, logFilesContext.getStoreId());
+                    LogHeaderWriter.writeLogHeader(storeChannel, logHeader, logFilesContext.getMemoryTracker());
+                    logHeaderCache.putHeader(version, logHeader);
                 }
             }
             byte formatVersion = header == null ? CURRENT_LOG_FORMAT_VERSION : header.getLogFormatVersion();
-            return new PhysicalLogVersionedStoreChannel( storeChannel, version, formatVersion, logFile, nativeChannelAccessor, databaseTracer );
+            return new PhysicalLogVersionedStoreChannel(
+                    storeChannel, version, formatVersion, logFile, nativeChannelAccessor, databaseTracer);
         }
     }
 
-    public PhysicalLogVersionedStoreChannel openLogChannel( long version ) throws IOException
-    {
-        return openLogChannel( version, false );
+    public PhysicalLogVersionedStoreChannel openLogChannel(long version) throws IOException {
+        return openLogChannel(version, false);
     }
 
-    public PhysicalLogVersionedStoreChannel openLogChannel( long version, boolean raw ) throws IOException
-    {
-        Path fileToOpen = fileHelper.getLogFileForVersion( version );
+    public PhysicalLogVersionedStoreChannel openLogChannel(long version, boolean raw) throws IOException {
+        Path fileToOpen = fileHelper.getLogFileForVersion(version);
 
-        if ( !fileSystem.fileExists( fileToOpen ) )
-        {
-            throw new NoSuchFileException( fileToOpen.toAbsolutePath().toString() );
+        if (!fileSystem.fileExists(fileToOpen)) {
+            throw new NoSuchFileException(fileToOpen.toAbsolutePath().toString());
         }
-        databaseTracer.openLogFile( fileToOpen );
+        databaseTracer.openLogFile(fileToOpen);
 
         StoreChannel rawChannel = null;
-        try
-        {
-            rawChannel = fileSystem.read( fileToOpen );
-            try ( var scopedBuffer = new HeapScopedBuffer( CURRENT_FORMAT_LOG_HEADER_SIZE, logFilesContext.getMemoryTracker() ) )
-            {
+        try {
+            rawChannel = fileSystem.read(fileToOpen);
+            try (var scopedBuffer =
+                    new HeapScopedBuffer(CURRENT_FORMAT_LOG_HEADER_SIZE, logFilesContext.getMemoryTracker())) {
                 var buffer = scopedBuffer.getBuffer();
-                LogHeader header = readLogHeader( buffer, rawChannel, true, fileToOpen );
-                if ( (header == null) || (header.getLogVersion() != version) )
-                {
-                    throw new IllegalStateException(
-                            format( "Unexpected log file header. Expected header version: %d, actual header: %s", version,
-                                    header != null ? header.toString() : "null header." ) );
+                LogHeader header = readLogHeader(buffer, rawChannel, true, fileToOpen);
+                if ((header == null) || (header.getLogVersion() != version)) {
+                    throw new IllegalStateException(format(
+                            "Unexpected log file header. Expected header version: %d, actual header: %s",
+                            version, header != null ? header.toString() : "null header."));
                 }
-                var versionedStoreChannel = new PhysicalLogVersionedStoreChannel( rawChannel, version, header.getLogFormatVersion(),
-                        fileToOpen, nativeChannelAccessor, databaseTracer, raw );
-                if ( !raw )
-                {
-                    nativeChannelAccessor.adviseSequentialAccessAndKeepInCache( rawChannel, version );
+                var versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
+                        rawChannel,
+                        version,
+                        header.getLogFormatVersion(),
+                        fileToOpen,
+                        nativeChannelAccessor,
+                        databaseTracer,
+                        raw);
+                if (!raw) {
+                    nativeChannelAccessor.adviseSequentialAccessAndKeepInCache(rawChannel, version);
                 }
                 return versionedStoreChannel;
             }
-        }
-        catch ( NoSuchFileException cause )
-        {
-            throw (NoSuchFileException) new NoSuchFileException( fileToOpen.toAbsolutePath().toString() ).initCause( cause );
-        }
-        catch ( Throwable unexpectedError )
-        {
-            if ( rawChannel != null )
-            {
+        } catch (NoSuchFileException cause) {
+            throw (NoSuchFileException)
+                    new NoSuchFileException(fileToOpen.toAbsolutePath().toString()).initCause(cause);
+        } catch (Throwable unexpectedError) {
+            if (rawChannel != null) {
                 // If we managed to open the file before failing, then close the channel
-                try
-                {
+                try {
                     rawChannel.close();
-                }
-                catch ( IOException e )
-                {
-                    unexpectedError.addSuppressed( e );
+                } catch (IOException e) {
+                    unexpectedError.addSuppressed(e);
                 }
             }
             throw unexpectedError;
         }
     }
 
-    private AllocatedFile allocateFile( long version ) throws IOException
-    {
-        Path file = fileHelper.getLogFileForVersion( version );
-        boolean fileExist = fileSystem.fileExists( file );
-        StoreChannel storeChannel = fileSystem.write( file );
-        if ( fileExist )
-        {
-            nativeChannelAccessor.adviseSequentialAccessAndKeepInCache( storeChannel, version );
+    private AllocatedFile allocateFile(long version) throws IOException {
+        Path file = fileHelper.getLogFileForVersion(version);
+        boolean fileExist = fileSystem.fileExists(file);
+        StoreChannel storeChannel = fileSystem.write(file);
+        if (fileExist) {
+            nativeChannelAccessor.adviseSequentialAccessAndKeepInCache(storeChannel, version);
+        } else if (logFilesContext.getTryPreallocateTransactionLogs().get()) {
+            nativeChannelAccessor.preallocateSpace(storeChannel, version);
         }
-        else if ( logFilesContext.getTryPreallocateTransactionLogs().get() )
-        {
-            nativeChannelAccessor.preallocateSpace( storeChannel, version );
-        }
-        return new AllocatedFile( file, storeChannel );
+        return new AllocatedFile(file, storeChannel);
     }
 
-    private record AllocatedFile( Path path, StoreChannel storeChannel )
-    {
-    }
-
+    private record AllocatedFile(Path path, StoreChannel storeChannel) {}
 }

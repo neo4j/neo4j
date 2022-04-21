@@ -20,23 +20,20 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.util.Map;
-
 import org.neo4j.values.storable.Value;
 
 /**
  * A consumer of a scan over entities generating a tuple of entity id, tokens and property map
  * for each scanned entity.
  */
-public interface PropertyScanConsumer
-{
+public interface PropertyScanConsumer {
     Batch newBatch();
 
-    interface Batch
-    {
+    interface Batch {
         /**
          * Adds a record to the batch.
          */
-        void addRecord( long entityId, long[] tokens, Map<Integer,Value> properties );
+        void addRecord(long entityId, long[] tokens, Map<Integer, Value> properties);
 
         /**
          * Processes the batch.

@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NameId
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.longValue
 
 class NodeCountFromCountStorePipeTest extends CypherFunSuite with ImplicitDummyPos {
@@ -36,7 +36,7 @@ class NodeCountFromCountStorePipeTest extends CypherFunSuite with ImplicitDummyP
     implicit val table = new SemanticTable()
     table.resolvedLabelNames.put("A", LabelId(12))
 
-    val pipe = NodeCountFromCountStorePipe("count(n)", List(Some(LazyLabel(LabelName("A")_))))()
+    val pipe = NodeCountFromCountStorePipe("count(n)", List(Some(LazyLabel(LabelName("A") _))))()
 
     val queryContext = mock[QueryContext]
     when(queryContext.nodeCountByCountStore(12)).thenReturn(42L)
@@ -47,7 +47,7 @@ class NodeCountFromCountStorePipeTest extends CypherFunSuite with ImplicitDummyP
   test("should return zero if label is missing") {
     implicit val table = new SemanticTable()
 
-    val pipe = NodeCountFromCountStorePipe("count(n)", List(Some(LazyLabel(LabelName("A")_))))()
+    val pipe = NodeCountFromCountStorePipe("count(n)", List(Some(LazyLabel(LabelName("A") _))))()
 
     val mockedContext: QueryContext = mock[QueryContext]
     when(mockedContext.nodeCountByCountStore(12)).thenReturn(42L)

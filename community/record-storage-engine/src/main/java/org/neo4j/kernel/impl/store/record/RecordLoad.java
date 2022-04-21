@@ -43,15 +43,14 @@ import org.neo4j.kernel.impl.store.InvalidRecordException;
  * There are also "LENIENT" variants of all those (except #FORCE), with the difference that reading a record which is not the first unit
  * in a multi-unit record won't raise a cursor exception.
  */
-public enum RecordLoad
-{
-    LENIENT_NORMAL( false, true, true ),
-    LENIENT_CHECK( false, false, true ),
-    LENIENT_ALWAYS( true, false, true ),
-    NORMAL( LENIENT_NORMAL ),
-    CHECK( LENIENT_CHECK ),
-    ALWAYS( LENIENT_ALWAYS ),
-    FORCE( true, false, false, false, null );
+public enum RecordLoad {
+    LENIENT_NORMAL(false, true, true),
+    LENIENT_CHECK(false, false, true),
+    LENIENT_ALWAYS(true, false, true),
+    NORMAL(LENIENT_NORMAL),
+    CHECK(LENIENT_CHECK),
+    ALWAYS(LENIENT_ALWAYS),
+    FORCE(true, false, false, false, null);
 
     /**
      * <ul>
@@ -99,22 +98,29 @@ public enum RecordLoad
      * and its {@link #lenientVariant} set to {@code null}, which means it's already a lenient variant and will return
      * itself in {@link #lenient()}
      */
-    RecordLoad( boolean alwaysLoad, boolean failOnUnused, boolean failOnCursorException )
-    {
-        this( alwaysLoad, failOnUnused, failOnCursorException, false, null );
+    RecordLoad(boolean alwaysLoad, boolean failOnUnused, boolean failOnCursorException) {
+        this(alwaysLoad, failOnUnused, failOnCursorException, false, null);
     }
 
     /**
      * Constructor for strict variants, i.e. has the parameters of the {@code lenientVariant}, except for {@link #failOnNonFirstUnit}
      * which is {@code true}.
      */
-    RecordLoad( RecordLoad lenientVariant )
-    {
-        this( lenientVariant.alwaysLoad, lenientVariant.failOnUnused, lenientVariant.failOnCursorException, true, lenientVariant );
+    RecordLoad(RecordLoad lenientVariant) {
+        this(
+                lenientVariant.alwaysLoad,
+                lenientVariant.failOnUnused,
+                lenientVariant.failOnCursorException,
+                true,
+                lenientVariant);
     }
 
-    RecordLoad( boolean alwaysLoad, boolean failOnUnused, boolean failOnCursorException, boolean failOnNonFirstUnit, RecordLoad lenientVariant )
-    {
+    RecordLoad(
+            boolean alwaysLoad,
+            boolean failOnUnused,
+            boolean failOnCursorException,
+            boolean failOnNonFirstUnit,
+            RecordLoad lenientVariant) {
         this.alwaysLoad = alwaysLoad;
         this.failOnUnused = failOnUnused;
         this.failOnCursorException = failOnCursorException;
@@ -125,22 +131,19 @@ public enum RecordLoad
     /**
      * Checks whether a record should be fully loaded from {@link PageCursor}, based on inUse status.
      */
-    public final boolean shouldLoad( boolean inUse )
-    {
+    public final boolean shouldLoad(boolean inUse) {
         return inUse || alwaysLoad;
     }
 
     /**
      * Verifies that a record's in use status is in line with the mode, might throw {@link InvalidRecordException}.
      */
-    public final boolean verify( AbstractBaseRecord record )
-    {
+    public final boolean verify(AbstractBaseRecord record) {
         boolean inUse = record.inUse();
-        if ( failOnUnused && !inUse )
-        {
-            throw new InvalidRecordException( record + " not in use" );
+        if (failOnUnused && !inUse) {
+            throw new InvalidRecordException(record + " not in use");
         }
-        return shouldLoad( inUse );
+        return shouldLoad(inUse);
     }
 
     /**
@@ -149,21 +152,14 @@ public enum RecordLoad
      * on the cursor.
      * @param cursor The {@link PageCursor} to be checked for errors.
      */
-    public final void clearOrThrowCursorError( PageCursor cursor )
-    {
-        if ( failOnCursorException )
-        {
-            try
-            {
+    public final void clearOrThrowCursorError(PageCursor cursor) {
+        if (failOnCursorException) {
+            try {
                 cursor.checkAndClearCursorException();
+            } catch (CursorException e) {
+                throw new InvalidRecordException(e);
             }
-            catch ( CursorException e )
-            {
-                throw new InvalidRecordException( e );
-            }
-        }
-        else
-        {
+        } else {
             // The FORCE mode does not bother with reporting decoding errors...
             // ... but it must still clear them, since the page cursor may be reused to read other records
             cursor.clearCursorException();
@@ -176,18 +172,15 @@ public enum RecordLoad
      * @param cursor The {@link PageCursor} to check the bounds flag for.
      * @return {@code true} if an out-of-bounds condition should be reported up the stack, {@code false} otherwise.
      */
-    public boolean checkForOutOfBounds( PageCursor cursor )
-    {
+    public boolean checkForOutOfBounds(PageCursor cursor) {
         return cursor.checkAndClearBoundsFlag() && failOnCursorException;
     }
 
-    public boolean failOnNonFirstUnit()
-    {
+    public boolean failOnNonFirstUnit() {
         return failOnNonFirstUnit;
     }
 
-    public RecordLoad lenient()
-    {
+    public RecordLoad lenient() {
         return lenientVariant == null ? this : lenientVariant;
     }
 }

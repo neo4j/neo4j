@@ -31,8 +31,7 @@ import org.neo4j.values.storable.Values;
  * Validates {@link Value values} that are about to get indexed into a Lucene index.
  * Values passing this validation are OK to commit and apply to a Lucene index.
  */
-public class LuceneIndexValueValidator implements IndexValueValidator
-{
+public class LuceneIndexValueValidator implements IndexValueValidator {
     // Maximum bytes value length that supported by indexes.
     // Absolute hard maximum length for a term, in bytes once
     // encoded as UTF8.  If a term arrives from the analyzer
@@ -44,44 +43,38 @@ public class LuceneIndexValueValidator implements IndexValueValidator
     private final TokenNameLookup tokenNameLookup;
     private final int checkThreshold;
 
-    public LuceneIndexValueValidator( IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
-    {
+    public LuceneIndexValueValidator(IndexDescriptor descriptor, TokenNameLookup tokenNameLookup) {
         this.descriptor = descriptor;
         this.tokenNameLookup = tokenNameLookup;
-        // This check threshold is for not having to check every value that comes in, only those that may have a chance to exceed the max length.
+        // This check threshold is for not having to check every value that comes in, only those that may have a chance
+        // to exceed the max length.
         // The value 5 comes from a safer 4, which is the number of bytes that a max size UTF-8 code point needs.
         this.checkThreshold = MAX_TERM_LENGTH / 5;
     }
 
     @Override
-    public void validate( long entityId, Value... values )
-    {
-        // In Lucene all values in a tuple (composite index) will be placed in a separate field, so validate their fields individually.
-        for ( Value value : values )
-        {
-            validate( entityId, value );
+    public void validate(long entityId, Value... values) {
+        // In Lucene all values in a tuple (composite index) will be placed in a separate field, so validate their
+        // fields individually.
+        for (Value value : values) {
+            validate(entityId, value);
         }
     }
 
-    private void validate( long entityId, Value value )
-    {
-        Preconditions.checkArgument( value != null && value != Values.NO_VALUE, "Null value" );
-        if ( Values.isTextValue( value ) && ((TextValue)value).length() >= checkThreshold )
-        {
-            int length = ((TextValue)value).stringValue().getBytes().length;
-            validateActualLength( entityId, value, length );
+    private void validate(long entityId, Value value) {
+        Preconditions.checkArgument(value != null && value != Values.NO_VALUE, "Null value");
+        if (Values.isTextValue(value) && ((TextValue) value).length() >= checkThreshold) {
+            int length = ((TextValue) value).stringValue().getBytes().length;
+            validateActualLength(entityId, value, length);
         }
-        if ( Values.isArrayValue( value ) )
-        {
-            validateActualLength( entityId, value, ArrayEncoder.encode( value ).getBytes().length );
+        if (Values.isArrayValue(value)) {
+            validateActualLength(entityId, value, ArrayEncoder.encode(value).getBytes().length);
         }
     }
 
-    private void validateActualLength( long entityId, Value value, int length )
-    {
-        if ( length > MAX_TERM_LENGTH )
-        {
-            IndexValueValidator.throwSizeViolationException( descriptor, tokenNameLookup, entityId, length, value );
+    private void validateActualLength(long entityId, Value value, int length) {
+        if (length > MAX_TERM_LENGTH) {
+            IndexValueValidator.throwSizeViolationException(descriptor, tokenNameLookup, entityId, length, value);
         }
     }
 }

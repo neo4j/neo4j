@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.query;
 
-public interface QueryCacheStatistics
-{
+public interface QueryCacheStatistics {
     Long preParserCacheEntries();
 
     Long astCacheEntries();

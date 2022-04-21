@@ -21,27 +21,22 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.hu.HungarianAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Hungarian extends AnalyzerProvider
-{
-    public Hungarian()
-    {
-        super( "hungarian" );
+public class Hungarian extends AnalyzerProvider {
+    public Hungarian() {
+        super("hungarian");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
+    public Analyzer createAnalyzer() {
         return new HungarianAnalyzer();
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return "Hungarian analyzer with stemming and stop word filtering.";
     }
 }

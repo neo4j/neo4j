@@ -19,26 +19,6 @@
  */
 package org.neo4j.bolt.v3.messaging.decoder;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetTime;
-import java.time.ZonedDateTime;
-import java.util.stream.Stream;
-
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.LongValue;
-import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.NodeValue;
-import org.neo4j.values.virtual.RelationshipValue;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.storable.Values.byteArray;
@@ -50,70 +30,80 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
-class PrimitiveOnlyValueWriterTest
-{
-    @Test
-    void shouldConvertStringValueToString()
-    {
-        PrimitiveOnlyValueWriter writer = new PrimitiveOnlyValueWriter();
-        TextValue value = stringValue( "Hello" );
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.LongValue;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 
-        assertEquals( "Hello", writer.valueAsObject( value ) );
+class PrimitiveOnlyValueWriterTest {
+    @Test
+    void shouldConvertStringValueToString() {
+        PrimitiveOnlyValueWriter writer = new PrimitiveOnlyValueWriter();
+        TextValue value = stringValue("Hello");
+
+        assertEquals("Hello", writer.valueAsObject(value));
     }
 
     @Test
-    void shouldConvertLongValueToLong()
-    {
+    void shouldConvertLongValueToLong() {
         PrimitiveOnlyValueWriter writer = new PrimitiveOnlyValueWriter();
-        LongValue value = longValue( 42 );
+        LongValue value = longValue(42);
 
-        assertEquals( 42L, writer.valueAsObject( value ) );
+        assertEquals(42L, writer.valueAsObject(value));
     }
 
     @Test
-    void shouldConvertMultipleValues()
-    {
+    void shouldConvertMultipleValues() {
         PrimitiveOnlyValueWriter writer = new PrimitiveOnlyValueWriter();
 
-        TextValue value1 = stringValue( "Hello" );
-        TextValue value2 = stringValue( " " );
-        TextValue value3 = stringValue( "World!" );
-        LongValue value4 = longValue( 42 );
+        TextValue value1 = stringValue("Hello");
+        TextValue value2 = stringValue(" ");
+        TextValue value3 = stringValue("World!");
+        LongValue value4 = longValue(42);
 
-        assertEquals( "Hello", writer.valueAsObject( value1 ) );
-        assertEquals( " ", writer.valueAsObject( value2 ) );
-        assertEquals( "World!", writer.valueAsObject( value3 ) );
-        assertEquals( 42L, writer.valueAsObject( value4 ) );
+        assertEquals("Hello", writer.valueAsObject(value1));
+        assertEquals(" ", writer.valueAsObject(value2));
+        assertEquals("World!", writer.valueAsObject(value3));
+        assertEquals(42L, writer.valueAsObject(value4));
     }
 
     @ParameterizedTest
-    @MethodSource( "unsupportedValues" )
-    void shouldFailToWriteComplexValue( AnyValue value )
-    {
+    @MethodSource("unsupportedValues")
+    void shouldFailToWriteComplexValue(AnyValue value) {
         PrimitiveOnlyValueWriter writer = new PrimitiveOnlyValueWriter();
-        assertThrows( UnsupportedOperationException.class, () -> writer.valueAsObject( value ) );
+        assertThrows(UnsupportedOperationException.class, () -> writer.valueAsObject(value));
     }
 
-    private static Stream<AnyValue> unsupportedValues()
-    {
+    private static Stream<AnyValue> unsupportedValues() {
         return Stream.of(
-                nodeValue( 42, "n", null, stringArray( "Person" ), EMPTY_MAP ),
+                nodeValue(42, "n", null, stringArray("Person"), EMPTY_MAP),
                 newRelationshipValue(),
-                pointValue( CoordinateReferenceSystem.WGS_84, new double[2] ),
-                byteArray( new byte[]{1, 2, 3} ),
-                Values.of( Duration.ofHours( 1 ) ),
-                Values.of( LocalDate.now() ),
-                Values.of( LocalTime.now() ),
-                Values.of( OffsetTime.now() ),
-                Values.of( LocalDateTime.now() ),
-                Values.of( ZonedDateTime.now() )
-        );
+                pointValue(CoordinateReferenceSystem.WGS_84, new double[2]),
+                byteArray(new byte[] {1, 2, 3}),
+                Values.of(Duration.ofHours(1)),
+                Values.of(LocalDate.now()),
+                Values.of(LocalTime.now()),
+                Values.of(OffsetTime.now()),
+                Values.of(LocalDateTime.now()),
+                Values.of(ZonedDateTime.now()));
     }
 
-    private static RelationshipValue newRelationshipValue()
-    {
-        NodeValue startNode = nodeValue( 24, "n1", null, stringArray( "Person" ), EMPTY_MAP );
-        NodeValue endNode = nodeValue( 42, "n2", null, stringArray( "Person" ), EMPTY_MAP );
-        return relationshipValue( 42, "r", null, startNode, endNode, stringValue( "KNOWS" ), EMPTY_MAP );
+    private static RelationshipValue newRelationshipValue() {
+        NodeValue startNode = nodeValue(24, "n1", null, stringArray("Person"), EMPTY_MAP);
+        NodeValue endNode = nodeValue(42, "n2", null, stringArray("Person"), EMPTY_MAP);
+        return relationshipValue(42, "r", null, startNode, endNode, stringValue("KNOWS"), EMPTY_MAP);
     }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.procedure.impl;
 
 import java.lang.reflect.Field;
-
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -29,33 +28,29 @@ import org.neo4j.kernel.api.procedure.Context;
 /**
  * On calling apply, injects the `value` for the field `field` on the provided `object`.
  */
-public class FieldSetter
-{
+public class FieldSetter {
     private final Field field;
-    private final ThrowingFunction<Context,?,ProcedureException> provider;
+    private final ThrowingFunction<Context, ?, ProcedureException> provider;
 
-    FieldSetter( Field field, ThrowingFunction<Context,?,ProcedureException> provider )
-    {
+    FieldSetter(Field field, ThrowingFunction<Context, ?, ProcedureException> provider) {
         this.field = field;
         this.provider = provider;
     }
 
-    public Object get( Context ctx ) throws ProcedureException
-    {
-        try
-        {
-            return provider.apply( ctx );
-        }
-        catch ( Throwable e )
-        {
-            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, e,
+    public Object get(Context ctx) throws ProcedureException {
+        try {
+            return provider.apply(ctx);
+        } catch (Throwable e) {
+            throw new ProcedureException(
+                    Status.Procedure.ProcedureCallFailed,
+                    e,
                     "Unable to inject component to field `%s`, please ensure it is public and non-final: %s",
-                    field.getName(), e.getMessage() );
+                    field.getName(),
+                    e.getMessage());
         }
     }
 
-    Field field()
-    {
+    Field field() {
         return field;
     }
 }

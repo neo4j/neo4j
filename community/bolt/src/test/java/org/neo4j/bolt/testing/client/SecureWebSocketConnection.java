@@ -19,29 +19,26 @@
  */
 package org.neo4j.bolt.testing.client;
 
+import java.net.URI;
+import java.util.function.Supplier;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
-import java.net.URI;
-import java.util.function.Supplier;
-
-public class SecureWebSocketConnection extends WebSocketConnection
-{
-    public SecureWebSocketConnection()
-    {
-        super( createTestClientSupplier(), address -> URI.create( "wss://" + address.getHost() + ":" + address.getPort() ) );
+public class SecureWebSocketConnection extends WebSocketConnection {
+    public SecureWebSocketConnection() {
+        super(
+                createTestClientSupplier(),
+                address -> URI.create("wss://" + address.getHost() + ":" + address.getPort()));
     }
 
-    private static Supplier<WebSocketClient> createTestClientSupplier()
-    {
-        return () ->
-        {
-            var sslContextFactory = new SslContextFactory.Client( /* trustAll= */ true );
+    private static Supplier<WebSocketClient> createTestClientSupplier() {
+        return () -> {
+            var sslContextFactory = new SslContextFactory.Client(/* trustAll= */ true);
             /* remove extra filters added by jetty on cipher suites */
             sslContextFactory.setExcludeCipherSuites();
-            var httpClient = new HttpClient( sslContextFactory );
-            return new WebSocketClient( httpClient );
+            var httpClient = new HttpClient(sslContextFactory);
+            return new WebSocketClient(httpClient);
         };
     }
 }

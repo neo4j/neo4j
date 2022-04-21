@@ -22,7 +22,6 @@ package org.neo4j.kernel.api;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
-
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -35,8 +34,7 @@ import org.neo4j.lock.ActiveLock;
 /**
  * View of a {@link KernelTransaction} that provides a limited set of actions against the transaction.
  */
-public interface KernelTransactionHandle
-{
+public interface KernelTransactionHandle {
 
     /**
      * The timestamp of the last transaction that was committed to the store when the underlying transaction started.
@@ -89,7 +87,7 @@ public interface KernelTransactionHandle
      * @return {@code true} if the underlying transaction was marked for termination, {@code false} otherwise
      * (when this handle represents an old transaction that has been closed).
      */
-    boolean markForTermination( Status reason );
+    boolean markForTermination(Status reason);
 
     /**
      * Security context of underlying transaction that transaction has when handle was created.
@@ -117,7 +115,7 @@ public interface KernelTransactionHandle
      * @param tx the expected transaction.
      * @return {@code true} if this handle represents {@code tx}, {@code false} otherwise.
      */
-    boolean isUnderlyingTransaction( KernelTransaction tx );
+    boolean isUnderlyingTransaction(KernelTransaction tx);
 
     /**
      * User transaction id of underlying transaction. User transaction id is a not negative long number.

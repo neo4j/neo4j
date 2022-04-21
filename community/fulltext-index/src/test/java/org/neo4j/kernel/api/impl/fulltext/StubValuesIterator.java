@@ -21,51 +21,43 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 
-class StubValuesIterator implements ValuesIterator
-{
+class StubValuesIterator implements ValuesIterator {
     private List<Long> entityIds = new ArrayList<>();
     private List<Float> scores = new ArrayList<>();
     private int nextIndex;
 
-    public StubValuesIterator add( long entityId, float score )
-    {
-        entityIds.add( entityId );
-        scores.add( score );
+    public StubValuesIterator add(long entityId, float score) {
+        entityIds.add(entityId);
+        scores.add(score);
         return this;
     }
 
     @Override
-    public int remaining()
-    {
+    public int remaining() {
         return entityIds.size() - nextIndex;
     }
 
     @Override
-    public float currentScore()
-    {
-        return scores.get( nextIndex - 1 );
+    public float currentScore() {
+        return scores.get(nextIndex - 1);
     }
 
     @Override
-    public long next()
-    {
-        long entityId = entityIds.get( nextIndex );
+    public long next() {
+        long entityId = entityIds.get(nextIndex);
         nextIndex++;
         return entityId;
     }
 
     @Override
-    public boolean hasNext()
-    {
+    public boolean hasNext() {
         return remaining() > 0;
     }
 
     @Override
-    public long current()
-    {
-        return entityIds.get( nextIndex - 1 );
+    public long current() {
+        return entityIds.get(nextIndex - 1);
     }
 }

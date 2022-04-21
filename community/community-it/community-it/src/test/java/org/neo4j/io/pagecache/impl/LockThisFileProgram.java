@@ -25,21 +25,16 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
-public class LockThisFileProgram
-{
+public class LockThisFileProgram {
     public static final String LOCKED_OUTPUT = "locked";
 
-    private LockThisFileProgram()
-    {
-    }
+    private LockThisFileProgram() {}
 
-    public static void main( String[] args ) throws IOException
-    {
-        Path path = Paths.get( args[0] );
-        try ( FileChannel channel = FileChannel.open( path, StandardOpenOption.READ, StandardOpenOption.WRITE );
-              java.nio.channels.FileLock lock = channel.lock() )
-        {
-            System.out.println( LOCKED_OUTPUT );
+    public static void main(String[] args) throws IOException {
+        Path path = Paths.get(args[0]);
+        try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE);
+                java.nio.channels.FileLock lock = channel.lock()) {
+            System.out.println(LOCKED_OUTPUT);
             System.out.flush();
             System.in.read();
         }

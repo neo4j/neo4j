@@ -19,13 +19,19 @@
  */
 package org.neo4j.db;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.snapshot_query;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
+import static org.neo4j.snapshot.TestVersionContext.testCursorContext;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -46,27 +52,18 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.snapshot_query;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
-import static org.neo4j.snapshot.TestVersionContext.testCursorContext;
-
 @TestDirectoryExtension
-class QueryRestartIT
-{
+class QueryRestartIT {
     @Inject
     private TestDirectory testDirectory;
+
     private GraphDatabaseService database;
     private TestTransactionVersionContextSupplier.Factory testContextSupplierFactory;
     private Path storeDir;
     private DatabaseManagementService managementService;
 
     @BeforeEach
-    void setUp() throws IOException
-    {
+    void setUp() throws IOException {
         storeDir = testDirectory.homePath();
         testContextSupplierFactory = new TestTransactionVersionContextSupplier.Factory();
         database = startSnapshotQueryDb();
@@ -74,133 +71,120 @@ class QueryRestartIT
         // Checkpoint to make the counts store flush its changes map so that it will need to read on next query
         checkpoint();
 
-        testContextSupplierFactory.setTestVersionContextSupplier( databaseName -> testCursorContext( managementService, databaseName ) );
+        testContextSupplierFactory.setTestVersionContextSupplier(
+                databaseName -> testCursorContext(managementService, databaseName));
     }
 
-    private void checkpoint() throws IOException
-    {
-        ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "Test" ) );
+    private void checkpoint() throws IOException {
+        ((GraphDatabaseAPI) database)
+                .getDependencyResolver()
+                .resolveDependency(CheckPointer.class)
+                .forceCheckPoint(new SimpleTriggerInfo("Test"));
     }
 
     @AfterEach
-    void tearDown()
-    {
-        if ( managementService != null )
-        {
+    void tearDown() {
+        if (managementService != null) {
             managementService.shutdown();
         }
     }
 
     @Test
-    void executeQueryWithoutRestarts()
-    {
-        try ( Transaction transaction = database.beginTx() )
-        {
-            var testVersionContext = getTestVersionContext( transaction );
-            testVersionContext.setWrongLastClosedTxId( false );
-            Result result = transaction.execute( "MATCH (n:label) RETURN n.c" );
-            while ( result.hasNext() )
-            {
-                assertEquals( "d", result.next().get( "n.c" ) );
+    void executeQueryWithoutRestarts() {
+        try (Transaction transaction = database.beginTx()) {
+            var testVersionContext = getTestVersionContext(transaction);
+            testVersionContext.setWrongLastClosedTxId(false);
+            Result result = transaction.execute("MATCH (n:label) RETURN n.c");
+            while (result.hasNext()) {
+                assertEquals("d", result.next().get("n.c"));
             }
             // This extra printing is here to investigate flakiness of this test
-            if ( testVersionContext.getAdditionalAttempts() > 0 )
-            {
-                System.err.println( "Unexpected call to markAsDirty/isDirty:" );
-                testVersionContext.printDirtyCalls( System.err );
+            if (testVersionContext.getAdditionalAttempts() > 0) {
+                System.err.println("Unexpected call to markAsDirty/isDirty:");
+                testVersionContext.printDirtyCalls(System.err);
             }
-            assertEquals( 0, testVersionContext.getAdditionalAttempts() );
+            assertEquals(0, testVersionContext.getAdditionalAttempts());
             transaction.commit();
         }
     }
 
     @Test
-    void executeQueryWithSingleRetry()
-    {
-        try ( Transaction transaction = database.beginTx() )
-        {
-            var testVersionContext = getTestVersionContext( transaction );
-            Result result = transaction.execute( "MATCH (n) RETURN n.c" );
-            assertThat( testVersionContext.getAdditionalAttempts() ).isNotZero();
-            while ( result.hasNext() )
-            {
-                assertEquals( "d", result.next().get( "n.c" ) );
+    void executeQueryWithSingleRetry() {
+        try (Transaction transaction = database.beginTx()) {
+            var testVersionContext = getTestVersionContext(transaction);
+            Result result = transaction.execute("MATCH (n) RETURN n.c");
+            assertThat(testVersionContext.getAdditionalAttempts()).isNotZero();
+            while (result.hasNext()) {
+                assertEquals("d", result.next().get("n.c"));
             }
             transaction.commit();
         }
     }
 
     @Test
-    void executeCountStoreQueryWithSingleRetry()
-    {
-        try ( Transaction transaction = database.beginTx() )
-        {
-            var testVersionContext = getTestVersionContext( transaction );
-            Result result = transaction.execute( "MATCH (n:toRetry) RETURN count(n)" );
-            assertThat( testVersionContext.getAdditionalAttempts() ).isNotZero();
-            while ( result.hasNext() )
-            {
-                assertEquals( 1L, result.next().get( "count(n)" ) );
+    void executeCountStoreQueryWithSingleRetry() {
+        try (Transaction transaction = database.beginTx()) {
+            var testVersionContext = getTestVersionContext(transaction);
+            Result result = transaction.execute("MATCH (n:toRetry) RETURN count(n)");
+            assertThat(testVersionContext.getAdditionalAttempts()).isNotZero();
+            while (result.hasNext()) {
+                assertEquals(1L, result.next().get("count(n)"));
             }
             transaction.commit();
         }
     }
 
     @Test
-    void executeLabelScanQueryWithSingleRetry()
-    {
-        try ( Transaction transaction = database.beginTx() )
-        {
-            var testVersionContext = getTestVersionContext( transaction );
-            Result result = transaction.execute( "MATCH (n:toRetry) RETURN n.c" );
-            assertThat( testVersionContext.getAdditionalAttempts() ).isNotZero();
-            while ( result.hasNext() )
-            {
-                assertEquals( "d", result.next().get( "n.c" ) );
+    void executeLabelScanQueryWithSingleRetry() {
+        try (Transaction transaction = database.beginTx()) {
+            var testVersionContext = getTestVersionContext(transaction);
+            Result result = transaction.execute("MATCH (n:toRetry) RETURN n.c");
+            assertThat(testVersionContext.getAdditionalAttempts()).isNotZero();
+            while (result.hasNext()) {
+                assertEquals("d", result.next().get("n.c"));
             }
             transaction.commit();
         }
     }
 
     @Test
-    void queryThatModifiesDataAndSeesUnstableSnapshotShouldThrowException()
-    {
-        try ( Transaction transaction = database.beginTx() )
-        {
-            QueryExecutionException e = assertThrows( QueryExecutionException.class, () -> transaction.execute( "MATCH (n:toRetry) CREATE () RETURN n.c" ) );
-            assertEquals( "Unable to get clean data snapshot for query " + "'MATCH (n:toRetry) CREATE () RETURN n.c' that performs updates.", e.getMessage() );
+    void queryThatModifiesDataAndSeesUnstableSnapshotShouldThrowException() {
+        try (Transaction transaction = database.beginTx()) {
+            QueryExecutionException e = assertThrows(
+                    QueryExecutionException.class, () -> transaction.execute("MATCH (n:toRetry) CREATE () RETURN n.c"));
+            assertEquals(
+                    "Unable to get clean data snapshot for query "
+                            + "'MATCH (n:toRetry) CREATE () RETURN n.c' that performs updates.",
+                    e.getMessage());
             transaction.commit();
         }
     }
 
-    private GraphDatabaseService startSnapshotQueryDb()
-    {
+    private GraphDatabaseService startSnapshotQueryDb() {
         // Inject TransactionVersionContextSupplier
         Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( testContextSupplierFactory );
+        dependencies.satisfyDependencies(testContextSupplierFactory);
 
-        managementService = new TestDatabaseManagementServiceBuilder( storeDir )
-                .setExternalDependencies( dependencies )
-                .setConfig( snapshot_query, true )
-                .setConfig( index_background_sampling_enabled, false )
+        managementService = new TestDatabaseManagementServiceBuilder(storeDir)
+                .setExternalDependencies(dependencies)
+                .setConfig(snapshot_query, true)
+                .setConfig(index_background_sampling_enabled, false)
                 .build();
-        return managementService.database( DEFAULT_DATABASE_NAME );
+        return managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    private void createData()
-    {
-        Label label = Label.label( "toRetry" );
-        try ( Transaction transaction = database.beginTx() )
-        {
-            Node node = transaction.createNode( label );
-            node.setProperty( "c", "d" );
+    private void createData() {
+        Label label = Label.label("toRetry");
+        try (Transaction transaction = database.beginTx()) {
+            Node node = transaction.createNode(label);
+            node.setProperty("c", "d");
             transaction.commit();
         }
     }
 
-    private static TestVersionContext getTestVersionContext( Transaction transaction )
-    {
-        CursorContext cursorContext = ((InternalTransaction) transaction).kernelTransaction().cursorContext();
-        return  (TestVersionContext) cursorContext.getVersionContext();
+    private static TestVersionContext getTestVersionContext(Transaction transaction) {
+        CursorContext cursorContext =
+                ((InternalTransaction) transaction).kernelTransaction().cursorContext();
+        return (TestVersionContext) cursorContext.getVersionContext();
     }
 }

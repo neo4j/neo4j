@@ -28,18 +28,22 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.schema.IndexType
 
 abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
-                                                             edition: Edition[CONTEXT],
-                                                             runtime: CypherRuntime[CONTEXT],
-                                                             sizeHint: Int
-                                                           ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should be case sensitive for STARTS WITH with indexes") {
     given {
       nodeIndex(IndexType.TEXT, "Label", "text")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 2 == 0 => Map("text" -> "CASE")
-        case i if i % 2 == 1 => Map("text" -> "case")
-      }, "Label")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 2 == 0 => Map("text" -> "CASE")
+          case i if i % 2 == 1 => Map("text" -> "case")
+        },
+        "Label"
+      )
     }
 
     // when
@@ -59,10 +63,14 @@ abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
   test("should be case sensitive for STARTS WITH with unique indexes") {
     given {
       uniqueNodeIndex(IndexType.RANGE, "Label", "text")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 2 == 0 => Map("text" -> s"CASE $i")
-        case i if i % 2 == 1 => Map("text" -> s"case $i")
-      }, "Label")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 2 == 0 => Map("text" -> s"CASE $i")
+          case i if i % 2 == 1 => Map("text" -> s"case $i")
+        },
+        "Label"
+      )
     }
 
     // when
@@ -82,10 +90,14 @@ abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
   test("should handle null input") {
     given {
       nodeIndex(IndexType.TEXT, "Label", "text")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 2 == 0 => Map("text" -> "CASE")
-        case i if i % 2 == 1 => Map("text" -> "case")
-      }, "Label")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 2 == 0 => Map("text" -> "CASE")
+          case i if i % 2 == 1 => Map("text" -> "case")
+        },
+        "Label"
+      )
     }
 
     // when
@@ -104,10 +116,14 @@ abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
   test("should handle non-text input") {
     given {
       nodeIndex(IndexType.TEXT, "Label", "text")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 2 == 0 => Map("text" -> "CASE")
-        case i if i % 2 == 1 => Map("text" -> "case")
-      }, "Label")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 2 == 0 => Map("text" -> "CASE")
+          case i if i % 2 == 1 => Map("text" -> "case")
+        },
+        "Label"
+      )
     }
 
     // when
@@ -117,17 +133,20 @@ abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
       .nodeIndexOperator("x:Label(text STARTS WITH 1337)", indexType = IndexType.TEXT)
       .build()
 
-
     // then
-   execute(logicalQuery, runtime) should beColumns(("text")).withNoRows()
+    execute(logicalQuery, runtime) should beColumns(("text")).withNoRows()
   }
 
   test("should cache properties") {
     val nodes = given {
       nodeIndex(IndexType.RANGE, "Label", "text")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("text" -> i.toString)
-      }, "Label")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("text" -> i.toString)
+        },
+        "Label"
+      )
     }
 
     // when
@@ -140,16 +159,20 @@ abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.zipWithIndex.collect{ case (n, i) if i.toString.startsWith("1") => Array(n, i.toString)}
+    val expected = nodes.zipWithIndex.collect { case (n, i) if i.toString.startsWith("1") => Array(n, i.toString) }
     runtimeResult should beColumns("x", "text").withRows(expected)
   }
 
   test("should cache properties with a unique index") {
     val nodes = given {
       uniqueNodeIndex(IndexType.RANGE, "Label", "text")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("text" -> i.toString)
-      }, "Label")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("text" -> i.toString)
+        },
+        "Label"
+      )
     }
 
     // when
@@ -162,7 +185,7 @@ abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.zipWithIndex.collect{ case (n, i) if i.toString.startsWith("1") => Array(n, i.toString)}
+    val expected = nodes.zipWithIndex.collect { case (n, i) if i.toString.startsWith("1") => Array(n, i.toString) }
     runtimeResult should beColumns("x", "text").withRows(expected)
   }
 }

@@ -19,15 +19,20 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.helpers.collection.Iterables.count;
+import static org.neo4j.internal.helpers.collection.Iterators.loop;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -44,16 +49,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.helpers.collection.Iterables.count;
-import static org.neo4j.internal.helpers.collection.Iterators.loop;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
-
 @EphemeralTestDirectoryExtension
-public class SchemaIndexAcceptanceTest
-{
+public class SchemaIndexAcceptanceTest {
     @Inject
     private EphemeralFileSystemAbstraction fs;
 
@@ -61,232 +58,219 @@ public class SchemaIndexAcceptanceTest
     private TestDirectory testDirectory;
 
     private GraphDatabaseService db;
-    private final Label label = label( "PERSON" );
+    private final Label label = label("PERSON");
     private final String propertyKey = "key";
     private DatabaseManagementService managementService;
 
     @BeforeEach
-    void before()
-    {
-        db = newDb( fs );
+    void before() {
+        db = newDb(fs);
     }
 
     @AfterEach
-    void after()
-    {
+    void after() {
         managementService.shutdown();
     }
 
     @Test
-    void creatingIndexOnExistingDataBuildsIndexWhichWillBeOnlineNextStartup()
-    {
+    void creatingIndexOnExistingDataBuildsIndexWhichWillBeOnlineNextStartup() {
         Node node1;
         Node node2;
         Node node3;
-        try ( Transaction tx = db.beginTx() )
-        {
-            node1 = createNode( tx, label, "name", "One" );
-            node2 = createNode( tx, label, "name", "Two" );
-            node3 = createNode( tx, label, "name", "Three" );
+        try (Transaction tx = db.beginTx()) {
+            node1 = createNode(tx, label, "name", "One");
+            node2 = createNode(tx, label, "name", "Two");
+            node3 = createNode(tx, label, "name", "Three");
             tx.commit();
         }
 
-        createIndex( db, label, propertyKey );
+        createIndex(db, label, propertyKey);
 
         restart();
 
-        try ( Transaction transaction = db.beginTx() )
-        {
-            assertThat( findNodesByLabelAndProperty( label, "name", "One", transaction ) ).containsOnly( node1 );
-            assertThat( findNodesByLabelAndProperty( label, "name", "Two", transaction ) ).containsOnly( node2 );
-            assertThat( findNodesByLabelAndProperty( label, "name", "Three", transaction ) ).containsOnly( node3 );
+        try (Transaction transaction = db.beginTx()) {
+            assertThat(findNodesByLabelAndProperty(label, "name", "One", transaction))
+                    .containsOnly(node1);
+            assertThat(findNodesByLabelAndProperty(label, "name", "Two", transaction))
+                    .containsOnly(node2);
+            assertThat(findNodesByLabelAndProperty(label, "name", "Three", transaction))
+                    .containsOnly(node3);
         }
     }
 
     @Test
-    void shouldIndexArrays()
-    {
+    void shouldIndexArrays() {
         long[] arrayPropertyValue = {42, 23, 87};
-        createIndex( db, label, propertyKey );
+        createIndex(db, label, propertyKey);
         Node node1;
-        try ( Transaction tx = db.beginTx() )
-        {
-            node1 = createNode( tx, label, propertyKey, arrayPropertyValue );
+        try (Transaction tx = db.beginTx()) {
+            node1 = createNode(tx, label, propertyKey, arrayPropertyValue);
             tx.commit();
         }
 
         restart();
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertThat( getIndexes( tx, label ) ).extracting( i -> tx.schema().getIndexState( i ) ).containsOnly( IndexState.ONLINE );
+        try (Transaction tx = db.beginTx()) {
+            assertThat(getIndexes(tx, label))
+                    .extracting(i -> tx.schema().getIndexState(i))
+                    .containsOnly(IndexState.ONLINE);
         }
-        try ( Transaction transaction = db.beginTx() )
-        {
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, transaction ) ).containsOnly( node1 );
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, new long[]{42, 23}, transaction ) ).isEmpty();
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), transaction ) ).isEmpty();
+        try (Transaction transaction = db.beginTx()) {
+            assertThat(findNodesByLabelAndProperty(label, propertyKey, arrayPropertyValue, transaction))
+                    .containsOnly(node1);
+            assertThat(findNodesByLabelAndProperty(label, propertyKey, new long[] {42, 23}, transaction))
+                    .isEmpty();
+            assertThat(findNodesByLabelAndProperty(
+                            label, propertyKey, Arrays.toString(arrayPropertyValue), transaction))
+                    .isEmpty();
             transaction.commit();
         }
     }
 
     @Test
-    void shouldIndexStringArrays()
-    {
+    void shouldIndexStringArrays() {
         String[] arrayPropertyValue = {"A, B", "C"};
-        createIndex( db, label, propertyKey );
+        createIndex(db, label, propertyKey);
         Node node1;
-        try ( Transaction tx = db.beginTx() )
-        {
-            node1 = createNode( tx, label, propertyKey, arrayPropertyValue );
+        try (Transaction tx = db.beginTx()) {
+            node1 = createNode(tx, label, propertyKey, arrayPropertyValue);
             tx.commit();
         }
 
         restart();
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertThat( getIndexes( tx, label ) ).extracting( i -> tx.schema().getIndexState( i ) ).containsOnly( IndexState.ONLINE );
+        try (Transaction tx = db.beginTx()) {
+            assertThat(getIndexes(tx, label))
+                    .extracting(i -> tx.schema().getIndexState(i))
+                    .containsOnly(IndexState.ONLINE);
         }
-        try ( Transaction transaction = db.beginTx() )
-        {
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, transaction ) ).containsOnly( node1 );
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, new String[]{"A", "B, C"}, transaction ) ).isEmpty();
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), transaction ) ).isEmpty();
+        try (Transaction transaction = db.beginTx()) {
+            assertThat(findNodesByLabelAndProperty(label, propertyKey, arrayPropertyValue, transaction))
+                    .containsOnly(node1);
+            assertThat(findNodesByLabelAndProperty(label, propertyKey, new String[] {"A", "B, C"}, transaction))
+                    .isEmpty();
+            assertThat(findNodesByLabelAndProperty(
+                            label, propertyKey, Arrays.toString(arrayPropertyValue), transaction))
+                    .isEmpty();
         }
-
     }
 
     @Test
-    void shouldIndexArraysPostPopulation()
-    {
+    void shouldIndexArraysPostPopulation() {
         long[] arrayPropertyValue = {42, 23, 87};
         Node node1;
-        try ( Transaction tx = db.beginTx() )
-        {
-            node1 = createNode( tx, label, propertyKey, arrayPropertyValue );
+        try (Transaction tx = db.beginTx()) {
+            node1 = createNode(tx, label, propertyKey, arrayPropertyValue);
             tx.commit();
         }
 
-        createIndex( db, label, propertyKey );
+        createIndex(db, label, propertyKey);
 
         restart();
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertThat( getIndexes( tx, label ) ).extracting( i -> tx.schema().getIndexState( i ) ).containsOnly( IndexState.ONLINE );
+        try (Transaction tx = db.beginTx()) {
+            assertThat(getIndexes(tx, label))
+                    .extracting(i -> tx.schema().getIndexState(i))
+                    .containsOnly(IndexState.ONLINE);
         }
-        try ( Transaction transaction = db.beginTx() )
-        {
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, transaction ) ).containsOnly( node1 );
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, new long[]{42, 23}, transaction ) ).isEmpty();
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), transaction ) ).isEmpty();
+        try (Transaction transaction = db.beginTx()) {
+            assertThat(findNodesByLabelAndProperty(label, propertyKey, arrayPropertyValue, transaction))
+                    .containsOnly(node1);
+            assertThat(findNodesByLabelAndProperty(label, propertyKey, new long[] {42, 23}, transaction))
+                    .isEmpty();
+            assertThat(findNodesByLabelAndProperty(
+                            label, propertyKey, Arrays.toString(arrayPropertyValue), transaction))
+                    .isEmpty();
         }
     }
 
     @Test
-    void recoveryAfterCreateAndDropIndex()
-    {
+    void recoveryAfterCreateAndDropIndex() {
         // GIVEN
-        IndexDefinition indexDefinition = createIndex( db, label, propertyKey );
-        createSomeData( label, propertyKey );
-        doStuff( db, label, propertyKey );
-        dropIndex( indexDefinition );
-        doStuff( db, label, propertyKey );
+        IndexDefinition indexDefinition = createIndex(db, label, propertyKey);
+        createSomeData(label, propertyKey);
+        doStuff(db, label, propertyKey);
+        dropIndex(indexDefinition);
+        doStuff(db, label, propertyKey);
 
         // WHEN
         crashAndRestart();
 
         // THEN
-        try ( Transaction transaction = db.beginTx() )
-        {
-            assertThat( getIndexes( transaction, label ) ).isEmpty();
+        try (Transaction transaction = db.beginTx()) {
+            assertThat(getIndexes(transaction, label)).isEmpty();
         }
     }
 
-    private GraphDatabaseService newDb( EphemeralFileSystemAbstraction fileSystemAbstraction )
-    {
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).setFileSystem(
-                new UncloseableDelegatingFileSystemAbstraction( fileSystemAbstraction ) ).impermanent().build();
-        return managementService.database( DEFAULT_DATABASE_NAME );
+    private GraphDatabaseService newDb(EphemeralFileSystemAbstraction fileSystemAbstraction) {
+        managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
+                .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fileSystemAbstraction))
+                .impermanent()
+                .build();
+        return managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    private void crashAndRestart()
-    {
+    private void crashAndRestart() {
         EphemeralFileSystemAbstraction crashSnapshot = fs.snapshot();
         managementService.shutdown();
-        db = newDb( crashSnapshot );
+        db = newDb(crashSnapshot);
     }
 
-    private void restart()
-    {
+    private void restart() {
         managementService.shutdown();
-        db = newDb( fs );
+        db = newDb(fs);
     }
 
-    private static Node createNode( Transaction tx, Label label, Object... properties )
-    {
-        Node node = tx.createNode( label );
-        for ( Map.Entry<String, Object> property : map( properties ).entrySet() )
-        {
-            node.setProperty( property.getKey(), property.getValue() );
+    private static Node createNode(Transaction tx, Label label, Object... properties) {
+        Node node = tx.createNode(label);
+        for (Map.Entry<String, Object> property : map(properties).entrySet()) {
+            node.setProperty(property.getKey(), property.getValue());
         }
         return node;
     }
 
-    private void dropIndex( IndexDefinition indexDefinition )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().getIndexByName( indexDefinition.getName() ).drop();
+    private void dropIndex(IndexDefinition indexDefinition) {
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().getIndexByName(indexDefinition.getName()).drop();
             tx.commit();
         }
     }
 
-    private static void doStuff( GraphDatabaseService db, Label label, String propertyKey )
-    {
-        try ( Transaction tx = db.beginTx();
-              ResourceIterator<Node> nodes = tx.findNodes( label, propertyKey, 3323 ) )
-        {
-            for ( Node node : loop( nodes ) )
-            {
-                count( node.getLabels() );
+    private static void doStuff(GraphDatabaseService db, Label label, String propertyKey) {
+        try (Transaction tx = db.beginTx();
+                ResourceIterator<Node> nodes = tx.findNodes(label, propertyKey, 3323)) {
+            for (Node node : loop(nodes)) {
+                count(node.getLabels());
             }
         }
     }
 
-    private void createSomeData( Label label, String propertyKey )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = tx.createNode( label );
-            node.setProperty( propertyKey, "yeah" );
+    private void createSomeData(Label label, String propertyKey) {
+        try (Transaction tx = db.beginTx()) {
+            Node node = tx.createNode(label);
+            node.setProperty(propertyKey, "yeah");
             tx.commit();
         }
     }
 
-    private static List<Node> findNodesByLabelAndProperty( Label label, String propertyName, Object value, Transaction transaction )
-    {
-        return Iterators.asList( transaction.findNodes( label, propertyName, value ) );
+    private static List<Node> findNodesByLabelAndProperty(
+            Label label, String propertyName, Object value, Transaction transaction) {
+        return Iterators.asList(transaction.findNodes(label, propertyName, value));
     }
 
-    private static Iterable<IndexDefinition> getIndexes( Transaction transaction, Label label )
-    {
-        return transaction.schema().getIndexes( label );
+    private static Iterable<IndexDefinition> getIndexes(Transaction transaction, Label label) {
+        return transaction.schema().getIndexes(label);
     }
 
-    private static IndexDefinition createIndex( GraphDatabaseService db, Label label, String property )
-    {
+    private static IndexDefinition createIndex(GraphDatabaseService db, Label label, String property) {
         IndexDefinition indexDefinition;
-        try ( Transaction tx = db.beginTx() )
-        {
-            indexDefinition = tx.schema().indexFor( label ).on( property ).create();
+        try (Transaction tx = db.beginTx()) {
+            indexDefinition = tx.schema().indexFor(label).on(property).create();
             tx.commit();
         }
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
         }
         return indexDefinition;
     }

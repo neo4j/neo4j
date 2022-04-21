@@ -22,27 +22,24 @@ package org.neo4j.kernel.api.impl.index.storage;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 
-public class IndexStorageFactory implements AutoCloseable
-{
+public class IndexStorageFactory implements AutoCloseable {
     private final DirectoryFactory dirFactory;
     private final FileSystemAbstraction fileSystem;
     private final IndexDirectoryStructure structure;
 
-    public IndexStorageFactory( DirectoryFactory dirFactory, FileSystemAbstraction fileSystem, IndexDirectoryStructure structure )
-    {
+    public IndexStorageFactory(
+            DirectoryFactory dirFactory, FileSystemAbstraction fileSystem, IndexDirectoryStructure structure) {
         this.dirFactory = dirFactory;
         this.fileSystem = fileSystem;
         this.structure = structure;
     }
 
-    public PartitionedIndexStorage indexStorageOf( long indexId )
-    {
-        return new PartitionedIndexStorage( dirFactory, fileSystem, structure.directoryForIndex( indexId ) );
+    public PartitionedIndexStorage indexStorageOf(long indexId) {
+        return new PartitionedIndexStorage(dirFactory, fileSystem, structure.directoryForIndex(indexId));
     }
 
     @Override
-    public void close() throws Exception
-    {
+    public void close() throws Exception {
         dirFactory.close();
     }
 }

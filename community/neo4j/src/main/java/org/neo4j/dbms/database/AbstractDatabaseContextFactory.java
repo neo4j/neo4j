@@ -19,9 +19,16 @@
  */
 package org.neo4j.dbms.database;
 
+import static java.lang.String.format;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.multi_version_store;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.snapshot_query;
+import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockManager;
+import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
+import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
+import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
+
 import java.util.Optional;
 import java.util.function.Supplier;
-
 import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
@@ -40,82 +47,66 @@ import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 
-import static java.lang.String.format;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.multi_version_store;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.snapshot_query;
-import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockManager;
-import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
-import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
-import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
-
-public abstract class AbstractDatabaseContextFactory<DB> implements DatabaseContextFactory<DB>
-{
+public abstract class AbstractDatabaseContextFactory<DB> implements DatabaseContextFactory<DB> {
     protected final GlobalModule globalModule;
     protected final IdContextFactory idContextFactory;
 
-    public AbstractDatabaseContextFactory( GlobalModule globalModule, IdContextFactory idContextFactory )
-    {
+    public AbstractDatabaseContextFactory(GlobalModule globalModule, IdContextFactory idContextFactory) {
         this.globalModule = globalModule;
         this.idContextFactory = idContextFactory;
     }
 
-    public static Supplier<Locks> createLockSupplier( GlobalModule globalModule, LocksFactory lockFactory )
-    {
-        return () -> createLockManager( lockFactory, globalModule.getGlobalConfig(), globalModule.getGlobalClock() );
+    public static Supplier<Locks> createLockSupplier(GlobalModule globalModule, LocksFactory lockFactory) {
+        return () -> createLockManager(lockFactory, globalModule.getGlobalConfig(), globalModule.getGlobalClock());
     }
 
-    public static TokenHolders createTokenHolderProvider( GlobalModule platform, NamedDatabaseId databaseId )
-    {
-        DatabaseManager<?> databaseManager = platform.getGlobalDependencies().resolveDependency( DatabaseManager.class );
-        Supplier<Kernel> kernelSupplier = () ->
-        {
-            var databaseContext = databaseManager.getDatabaseContext( databaseId )
-                                                 .orElseThrow( () -> new IllegalStateException( format( "Database %s not found.", databaseId.name() ) ) );
-            return databaseContext.dependencies().resolveDependency( Kernel.class );
+    public static TokenHolders createTokenHolderProvider(GlobalModule platform, NamedDatabaseId databaseId) {
+        DatabaseManager<?> databaseManager = platform.getGlobalDependencies().resolveDependency(DatabaseManager.class);
+        Supplier<Kernel> kernelSupplier = () -> {
+            var databaseContext = databaseManager
+                    .getDatabaseContext(databaseId)
+                    .orElseThrow(() -> new IllegalStateException(format("Database %s not found.", databaseId.name())));
+            return databaseContext.dependencies().resolveDependency(Kernel.class);
         };
         return new TokenHolders(
-                new DelegatingTokenHolder( createPropertyKeyCreator( kernelSupplier ), TYPE_PROPERTY_KEY ),
-                new DelegatingTokenHolder( createLabelIdCreator( kernelSupplier ), TYPE_LABEL ),
-                new DelegatingTokenHolder( createRelationshipTypeCreator( kernelSupplier ), TYPE_RELATIONSHIP_TYPE ) );
+                new DelegatingTokenHolder(createPropertyKeyCreator(kernelSupplier), TYPE_PROPERTY_KEY),
+                new DelegatingTokenHolder(createLabelIdCreator(kernelSupplier), TYPE_LABEL),
+                new DelegatingTokenHolder(createRelationshipTypeCreator(kernelSupplier), TYPE_RELATIONSHIP_TYPE));
     }
 
-    private static TokenCreator createRelationshipTypeCreator( Supplier<Kernel> kernelSupplier )
-    {
-        return new DefaultRelationshipTypeCreator( kernelSupplier );
+    private static TokenCreator createRelationshipTypeCreator(Supplier<Kernel> kernelSupplier) {
+        return new DefaultRelationshipTypeCreator(kernelSupplier);
     }
 
-    private static TokenCreator createPropertyKeyCreator( Supplier<Kernel> kernelSupplier )
-    {
-        return new DefaultPropertyTokenCreator( kernelSupplier );
+    private static TokenCreator createPropertyKeyCreator(Supplier<Kernel> kernelSupplier) {
+        return new DefaultPropertyTokenCreator(kernelSupplier);
     }
 
-    private static TokenCreator createLabelIdCreator( Supplier<Kernel> kernelSupplier )
-    {
-        return new DefaultLabelIdCreator( kernelSupplier );
+    private static TokenCreator createLabelIdCreator(Supplier<Kernel> kernelSupplier) {
+        return new DefaultLabelIdCreator(kernelSupplier);
     }
 
-    protected final CursorContextFactory createContextFactory( DatabaseConfig databaseConfig, NamedDatabaseId databaseId )
-    {
+    protected final CursorContextFactory createContextFactory(
+            DatabaseConfig databaseConfig, NamedDatabaseId databaseId) {
         var pageCacheTracer = globalModule.getTracers().getPageCacheTracer();
-        var factory = externalVersionContextSupplierFactory( globalModule )
-                .orElse( internalVersionContextSupplierFactory( databaseConfig ) );
-        return new CursorContextFactory( pageCacheTracer, factory.create( databaseId ) );
+        var factory = externalVersionContextSupplierFactory(globalModule)
+                .orElse(internalVersionContextSupplierFactory(databaseConfig));
+        return new CursorContextFactory(pageCacheTracer, factory.create(databaseId));
     }
 
-    private static Optional<VersionContextSupplier.Factory> externalVersionContextSupplierFactory( GlobalModule globalModule )
-    {
+    private static Optional<VersionContextSupplier.Factory> externalVersionContextSupplierFactory(
+            GlobalModule globalModule) {
         var externalDependencies = globalModule.getExternalDependencyResolver();
         var klass = VersionContextSupplier.Factory.class;
-        if ( externalDependencies.containsDependency( klass ) )
-        {
-            return Optional.of( externalDependencies.resolveDependency( klass ) );
+        if (externalDependencies.containsDependency(klass)) {
+            return Optional.of(externalDependencies.resolveDependency(klass));
         }
         return Optional.empty();
     }
 
-    private static VersionContextSupplier.Factory internalVersionContextSupplierFactory( DatabaseConfig databaseConfig )
-    {
-        return databaseId -> databaseConfig.get( multi_version_store ) || databaseConfig.get( snapshot_query ) ? new TransactionVersionContextSupplier()
-                                                                                                               : EmptyVersionContextSupplier.EMPTY;
+    private static VersionContextSupplier.Factory internalVersionContextSupplierFactory(DatabaseConfig databaseConfig) {
+        return databaseId -> databaseConfig.get(multi_version_store) || databaseConfig.get(snapshot_query)
+                ? new TransactionVersionContextSupplier()
+                : EmptyVersionContextSupplier.EMPTY;
     }
 }

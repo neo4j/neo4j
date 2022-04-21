@@ -32,8 +32,7 @@ case class ContainerIndexExists(expression: Expression, index: Expression) exten
 
   override def children: Seq[AstNode[_]] = Seq(expression, index)
 
-  override def isMatch(row: ReadableRow,
-                       state: QueryState): Option[Boolean] = expression(row, state) match {
+  override def isMatch(row: ReadableRow, state: QueryState): Option[Boolean] = expression(row, state) match {
     case IsNoValue() => None
     case value =>
       val idx = index(row, state)
@@ -54,6 +53,8 @@ case class ContainerIndexExists(expression: Expression, index: Expression) exten
   }
 
   override def containsIsNull: Boolean = false
-  override def rewrite(f: Expression => Expression): Expression = f(ContainerIndexExists(expression.rewrite(f), index.rewrite(f)))
+
+  override def rewrite(f: Expression => Expression): Expression =
+    f(ContainerIndexExists(expression.rewrite(f), index.rewrite(f)))
 
 }

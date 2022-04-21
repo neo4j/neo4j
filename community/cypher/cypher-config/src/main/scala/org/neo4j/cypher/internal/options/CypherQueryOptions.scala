@@ -43,14 +43,21 @@ case class CypherQueryOptions(
   connectComponentsPlanner: CypherConnectComponentsPlannerOption,
   debugOptions: CypherDebugOptions
 ) {
+
   if (ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS((expressionEngine, runtime)))
-    throw new InvalidCypherOption(s"Cannot combine EXPRESSION ENGINE '${expressionEngine.name}' with RUNTIME '${runtime.name}'")
+    throw new InvalidCypherOption(
+      s"Cannot combine EXPRESSION ENGINE '${expressionEngine.name}' with RUNTIME '${runtime.name}'"
+    )
 
   if (ILLEGAL_OPERATOR_ENGINE_RUNTIME_COMBINATIONS((operatorEngine, runtime)))
-    throw new InvalidCypherOption(s"Cannot combine OPERATOR ENGINE '${operatorEngine.name}' with RUNTIME '${runtime.name}'")
+    throw new InvalidCypherOption(
+      s"Cannot combine OPERATOR ENGINE '${operatorEngine.name}' with RUNTIME '${runtime.name}'"
+    )
 
   if (ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS((interpretedPipesFallback, runtime)))
-    throw new InvalidCypherOption(s"Cannot combine INTERPRETED PIPES FALLBACK '${interpretedPipesFallback.name}' with RUNTIME '${runtime.name}'")
+    throw new InvalidCypherOption(
+      s"Cannot combine INTERPRETED PIPES FALLBACK '${interpretedPipesFallback.name}' with RUNTIME '${runtime.name}'"
+    )
 
   def render: String = CypherQueryOptions.renderer.render(this)
 
@@ -78,14 +85,21 @@ object CypherQueryOptions {
     }
   }
 
-  private final def ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS: Set[(CypherExpressionEngineOption, CypherRuntimeOption)] =
+  final private def ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS
+    : Set[(CypherExpressionEngineOption, CypherRuntimeOption)] =
     Set(
-      (CypherExpressionEngineOption.compiled, CypherRuntimeOption.interpreted))
-  private final def ILLEGAL_OPERATOR_ENGINE_RUNTIME_COMBINATIONS: Set[(CypherOperatorEngineOption, CypherRuntimeOption)] =
+      (CypherExpressionEngineOption.compiled, CypherRuntimeOption.interpreted)
+    )
+
+  final private def ILLEGAL_OPERATOR_ENGINE_RUNTIME_COMBINATIONS
+    : Set[(CypherOperatorEngineOption, CypherRuntimeOption)] =
     Set(
       (CypherOperatorEngineOption.compiled, CypherRuntimeOption.slotted),
-      (CypherOperatorEngineOption.compiled, CypherRuntimeOption.interpreted))
-  private final def ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS: Set[(CypherInterpretedPipesFallbackOption, CypherRuntimeOption)] =
+      (CypherOperatorEngineOption.compiled, CypherRuntimeOption.interpreted)
+    )
+
+  final private def ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS
+    : Set[(CypherInterpretedPipesFallbackOption, CypherRuntimeOption)] =
     Set(
       (CypherInterpretedPipesFallbackOption.disabled, CypherRuntimeOption.slotted),
       (CypherInterpretedPipesFallbackOption.disabled, CypherRuntimeOption.interpreted),
@@ -103,13 +117,15 @@ sealed abstract class CypherExecutionMode(val modeName: String) extends CypherOp
 }
 
 case object CypherExecutionMode extends CypherOptionCompanion[CypherExecutionMode](
-  name = "execution mode",
-) {
+      name = "execution mode"
+    ) {
 
   case object default extends CypherExecutionMode("normal")
+
   case object profile extends CypherExecutionMode("PROFILE") {
     override def render: String = modeName
   }
+
   case object explain extends CypherExecutionMode("EXPLAIN") {
     override def render: String = modeName
     override def cacheKey: String = ""
@@ -129,10 +145,10 @@ sealed abstract class CypherVersion(versionName: String) extends CypherOption(ve
 }
 
 case object CypherVersion extends CypherOptionCompanion[CypherVersion](
-  name = "version",
-  setting = Some(GraphDatabaseSettings.cypher_parser_version),
-  cypherConfigField = Some(_.version),
-) {
+      name = "version",
+      setting = Some(GraphDatabaseSettings.cypher_parser_version),
+      cypherConfigField = Some(_.version)
+    ) {
   case object v3_5 extends CypherVersion("3.5")
   case object v4_3 extends CypherVersion("4.3")
   case object v4_4 extends CypherVersion("4.4")
@@ -151,10 +167,10 @@ sealed abstract class CypherPlannerOption(plannerName: String) extends CypherKey
 }
 
 case object CypherPlannerOption extends CypherOptionCompanion[CypherPlannerOption](
-  name = "planner",
-  setting = Some(GraphDatabaseSettings.cypher_planner),
-  cypherConfigField = Some(_.planner),
-) {
+      name = "planner",
+      setting = Some(GraphDatabaseSettings.cypher_planner),
+      cypherConfigField = Some(_.planner)
+    ) {
 
   case object default extends CypherPlannerOption(CypherOption.DEFAULT)
   case object cost extends CypherPlannerOption("cost")
@@ -174,10 +190,10 @@ sealed abstract class CypherRuntimeOption(runtimeName: String) extends CypherKey
 }
 
 case object CypherRuntimeOption extends CypherOptionCompanion[CypherRuntimeOption](
-  name = "runtime",
-  setting = Some(GraphDatabaseInternalSettings.cypher_runtime),
-  cypherConfigField = Some(_.runtime),
-) {
+      name = "runtime",
+      setting = Some(GraphDatabaseInternalSettings.cypher_runtime),
+      cypherConfigField = Some(_.runtime)
+    ) {
 
   case object default extends CypherRuntimeOption(CypherOption.DEFAULT)
   case object interpreted extends CypherRuntimeOption("interpreted")
@@ -198,8 +214,8 @@ sealed abstract class CypherUpdateStrategy(strategy: String) extends CypherKeyVa
 }
 
 case object CypherUpdateStrategy extends CypherOptionCompanion[CypherUpdateStrategy](
-  name = "updateStrategy",
-) {
+      name = "updateStrategy"
+    ) {
 
   case object default extends CypherUpdateStrategy(CypherOption.DEFAULT)
   case object eager extends CypherUpdateStrategy("eager")
@@ -217,10 +233,10 @@ sealed abstract class CypherExpressionEngineOption(engineName: String) extends C
 }
 
 case object CypherExpressionEngineOption extends CypherOptionCompanion[CypherExpressionEngineOption](
-  name = "expressionEngine",
-  setting = Some(GraphDatabaseInternalSettings.cypher_expression_engine),
-  cypherConfigField = Some(_.expressionEngineOption)
-) {
+      name = "expressionEngine",
+      setting = Some(GraphDatabaseInternalSettings.cypher_expression_engine),
+      cypherConfigField = Some(_.expressionEngineOption)
+    ) {
 
   case object default extends CypherExpressionEngineOption(CypherOption.DEFAULT)
   case object interpreted extends CypherExpressionEngineOption("interpreted")
@@ -240,10 +256,10 @@ sealed abstract class CypherOperatorEngineOption(mode: String) extends CypherKey
 }
 
 case object CypherOperatorEngineOption extends CypherOptionCompanion[CypherOperatorEngineOption](
-  name = "operatorEngine",
-  setting = Some(GraphDatabaseInternalSettings.cypher_operator_engine),
-  cypherConfigField = Some(_.operatorEngine),
-) {
+      name = "operatorEngine",
+      setting = Some(GraphDatabaseInternalSettings.cypher_operator_engine),
+      cypherConfigField = Some(_.operatorEngine)
+    ) {
   case object default extends CypherOperatorEngineOption(CypherOption.DEFAULT)
   case object compiled extends CypherOperatorEngineOption("compiled")
   case object interpreted extends CypherOperatorEngineOption("interpreted")
@@ -261,10 +277,10 @@ sealed abstract class CypherInterpretedPipesFallbackOption(mode: String) extends
 }
 
 case object CypherInterpretedPipesFallbackOption extends CypherOptionCompanion[CypherInterpretedPipesFallbackOption](
-  name = "interpretedPipesFallback",
-  setting = Some(GraphDatabaseInternalSettings.cypher_pipelined_interpreted_pipes_fallback),
-  cypherConfigField = Some(_.interpretedPipesFallback),
-) {
+      name = "interpretedPipesFallback",
+      setting = Some(GraphDatabaseInternalSettings.cypher_pipelined_interpreted_pipes_fallback),
+      cypherConfigField = Some(_.interpretedPipesFallback)
+    ) {
 
   case object default extends CypherInterpretedPipesFallbackOption(CypherOption.DEFAULT)
   case object disabled extends CypherInterpretedPipesFallbackOption("disabled")
@@ -285,8 +301,8 @@ sealed abstract class CypherReplanOption(strategy: String) extends CypherKeyValu
 }
 
 case object CypherReplanOption extends CypherOptionCompanion[CypherReplanOption](
-  name = "replan",
-) {
+      name = "replan"
+    ) {
 
   case object default extends CypherReplanOption(CypherOption.DEFAULT)
   case object force extends CypherReplanOption("force")
@@ -305,8 +321,8 @@ sealed abstract class CypherConnectComponentsPlannerOption(planner: String) exte
 }
 
 case object CypherConnectComponentsPlannerOption extends CypherOptionCompanion[CypherConnectComponentsPlannerOption](
-  name = "connectComponentsPlanner",
-) {
+      name = "connectComponentsPlanner"
+    ) {
 
   case object default extends CypherConnectComponentsPlannerOption(CypherOption.DEFAULT)
   case object greedy extends CypherConnectComponentsPlannerOption("greedy")
@@ -325,9 +341,9 @@ sealed abstract class CypherDebugOption(flag: String) extends CypherKeyValueOpti
 }
 
 case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
-  name = "debug",
-  cypherConfigBooleans = Map(disallowSplittingTop -> (_.disallowSplittingTop))
-) {
+      name = "debug",
+      cypherConfigBooleans = Map(disallowSplittingTop -> (_.disallowSplittingTop))
+    ) {
   // Unused. We need to have a default
   case object default extends CypherDebugOption("none")
   case object tostring extends CypherDebugOption("tostring")

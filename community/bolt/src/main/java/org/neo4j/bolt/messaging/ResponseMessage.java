@@ -21,8 +21,7 @@ package org.neo4j.bolt.messaging;
 
 import org.neo4j.util.VisibleForTesting;
 
-public interface ResponseMessage
-{
+public interface ResponseMessage {
     byte signature();
 
     /**

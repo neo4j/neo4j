@@ -19,68 +19,60 @@
  */
 package org.neo4j.test.server;
 
+import static org.neo4j.test.extension.SuppressOutput.suppressAll;
+
+import java.util.concurrent.Callable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
-
-import java.util.concurrent.Callable;
-
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.neo4j.test.extension.SuppressOutput.suppressAll;
-
 @TestDirectoryExtension
-@ExtendWith( SuppressOutputExtension.class )
-@ResourceLock( Resources.SYSTEM_OUT )
-public class ExclusiveWebContainerTestBase
-{
+@ExtendWith(SuppressOutputExtension.class)
+@ResourceLock(Resources.SYSTEM_OUT)
+public class ExclusiveWebContainerTestBase {
     @Inject
     protected TestDirectory testDirectory;
+
     @Inject
     protected SuppressOutput suppressOutput;
+
     protected String methodName;
 
     @BeforeAll
-    public static void ensureServerNotRunning() throws Exception
-    {
-        System.setProperty( "org.neo4j.useInsecureCertificateGeneration", "true" );
-        suppressAll().call( (Callable<Void>) () ->
-        {
+    public static void ensureServerNotRunning() throws Exception {
+        System.setProperty("org.neo4j.useInsecureCertificateGeneration", "true");
+        suppressAll().call((Callable<Void>) () -> {
             WebContainerHolder.ensureNotRunning();
             return null;
-        } );
+        });
     }
 
     @BeforeEach
-    public void init( TestInfo testInfo )
-    {
+    public void init(TestInfo testInfo) {
         methodName = testInfo.getTestMethod().get().getName();
     }
 
-    protected static String txEndpoint()
-    {
-        return txEndpoint( "neo4j" );
+    protected static String txEndpoint() {
+        return txEndpoint("neo4j");
     }
 
-    private static String txEndpoint( String database )
-    {
-        return String.format( "db/%s/tx", database );
+    private static String txEndpoint(String database) {
+        return String.format("db/%s/tx", database);
     }
 
-    protected static String txCommitEndpoint()
-    {
-        return txCommitEndpoint( "neo4j" );
+    protected static String txCommitEndpoint() {
+        return txCommitEndpoint("neo4j");
     }
 
-    protected static String txCommitEndpoint( String database )
-    {
-        return txEndpoint( database ) + "/commit";
+    protected static String txCommitEndpoint(String database) {
+        return txEndpoint(database) + "/commit";
     }
 }

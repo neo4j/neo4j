@@ -19,17 +19,15 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.iterator.LongIterator;
+import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.NoSuchElementException;
-
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.schema.IndexOrder;
-
-import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
 /**
  * {@link LongIterator} which iterate over multiple {@link TokenScanValue} and for each
@@ -38,8 +36,7 @@ import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
  * The provided {@link Seeker} is managed externally,
  * this because implemented interface lacks close-method.
  */
-class TokenScanValueIterator extends TokenScanValueIndexAccessor implements PrimitiveLongResourceIterator
-{
+class TokenScanValueIterator extends TokenScanValueIndexAccessor implements PrimitiveLongResourceIterator {
     public static final long NO_ID = -1;
     private long fromId;
     private boolean hasNextDecided;
@@ -50,17 +47,14 @@ class TokenScanValueIterator extends TokenScanValueIndexAccessor implements Prim
      * @param fromId entity to start from (exclusive). The cursor gives entries that are effectively small bit-sets, and the fromId may
      * be somewhere inside a bit-set range.
      */
-    TokenScanValueIterator( Seeker<TokenScanKey,TokenScanValue> cursor, long fromId )
-    {
-        super( cursor );
+    TokenScanValueIterator(Seeker<TokenScanKey, TokenScanValue> cursor, long fromId) {
+        super(cursor);
         this.fromId = fromId;
     }
 
     @Override
-    public boolean hasNext()
-    {
-        if ( !hasNextDecided )
-        {
+    public boolean hasNext() {
+        if (!hasNextDecided) {
             hasNext = fetchNext();
             hasNextDecided = true;
         }
@@ -68,11 +62,9 @@ class TokenScanValueIterator extends TokenScanValueIndexAccessor implements Prim
     }
 
     @Override
-    public long next()
-    {
-        if ( !hasNext() )
-        {
-            throw new NoSuchElementException( "No more elements in " + this );
+    public long next() {
+        if (!hasNext()) {
+            throw new NoSuchElementException("No more elements in " + this);
         }
         hasNextDecided = false;
         return next;
@@ -83,44 +75,37 @@ class TokenScanValueIterator extends TokenScanValueIndexAccessor implements Prim
      * goes to next {@link TokenScanValue} by progressing the {@link Seeker}. Returns {@code true}
      * if it found next entity id, otherwise {@code false}.
      */
-    protected boolean fetchNext()
-    {
-        while ( true )
-        {
-            if ( bits != 0 )
-            {
-                int delta = Long.numberOfTrailingZeros( bits );
+    protected boolean fetchNext() {
+        while (true) {
+            if (bits != 0) {
+                int delta = Long.numberOfTrailingZeros(bits);
                 bits &= bits - 1;
-                next =  baseEntityId + delta ;
+                next = baseEntityId + delta;
                 hasNext = true;
                 return true;
             }
 
-            try
-            {
-                if ( !cursor.next() )
-                {
+            try {
+                if (!cursor.next()) {
                     close();
                     return false;
                 }
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
 
             TokenScanKey key = cursor.key();
             baseEntityId = key.idRange * RANGE_SIZE;
             bits = cursor.value().bits;
 
-            if ( fromId != NO_ID )
-            {
-                // If we've been told to start at a specific id then trim off ids in this range less than or equal to that id
-                long range = TokenIndexUpdater.rangeOf( fromId );
-                if ( range == key.idRange )
-                {
-                    // Only do this if we're in the idRange that fromId is in, otherwise there were no ids this time in this range
-                    long relativeStartId = offsetOf( fromId );
+            if (fromId != NO_ID) {
+                // If we've been told to start at a specific id then trim off ids in this range less than or equal to
+                // that id
+                long range = TokenIndexUpdater.rangeOf(fromId);
+                if (range == key.idRange) {
+                    // Only do this if we're in the idRange that fromId is in, otherwise there were no ids this time in
+                    // this range
+                    long relativeStartId = offsetOf(fromId);
                     long mask = relativeStartId == RANGE_SIZE - 1 ? -1 : (1L << (relativeStartId + 1)) - 1;
                     bits &= ~mask;
                 }
@@ -129,12 +114,11 @@ class TokenScanValueIterator extends TokenScanValueIndexAccessor implements Prim
             }
 
             //noinspection AssertWithSideEffects
-            assert keysInOrder( key, IndexOrder.ASCENDING );
+            assert keysInOrder(key, IndexOrder.ASCENDING);
         }
     }
 
-    private static int offsetOf( long entityId )
-    {
+    private static int offsetOf(long entityId) {
         return (int) (entityId % RANGE_SIZE);
     }
 }

@@ -29,12 +29,10 @@ import org.neo4j.graphdb.traversal.PathEvaluator;
  * Evaluator which can hold multiple {@link Evaluator}s and delegate to them
  * all for evaluation requests.
  */
-public class MultiEvaluator<STATE> extends PathEvaluator.Adapter<STATE>
-{
+public class MultiEvaluator<STATE> extends PathEvaluator.Adapter<STATE> {
     private final PathEvaluator[] evaluators;
 
-    MultiEvaluator( PathEvaluator... evaluators )
-    {
+    MultiEvaluator(PathEvaluator... evaluators) {
         this.evaluators = evaluators;
     }
 
@@ -54,31 +52,25 @@ public class MultiEvaluator<STATE> extends PathEvaluator.Adapter<STATE>
      * @see Evaluator
      */
     @Override
-    public Evaluation evaluate( Path position, BranchState<STATE> state )
-    {
+    public Evaluation evaluate(Path position, BranchState<STATE> state) {
         boolean includes = true;
         boolean continues = true;
-        for ( PathEvaluator<STATE> evaluator : this.evaluators )
-        {
-            Evaluation bla = evaluator.evaluate( position, state );
-            if ( !bla.includes() )
-            {
+        for (PathEvaluator<STATE> evaluator : this.evaluators) {
+            Evaluation bla = evaluator.evaluate(position, state);
+            if (!bla.includes()) {
                 includes = false;
-                if ( !continues )
-                {
+                if (!continues) {
                     return Evaluation.EXCLUDE_AND_PRUNE;
                 }
             }
-            if ( !bla.continues() )
-            {
+            if (!bla.continues()) {
                 continues = false;
-                if ( !includes )
-                {
+                if (!includes) {
                     return Evaluation.EXCLUDE_AND_PRUNE;
                 }
             }
         }
-        return Evaluation.of( includes, continues );
+        return Evaluation.of(includes, continues);
     }
 
     /**
@@ -91,11 +83,10 @@ public class MultiEvaluator<STATE> extends PathEvaluator.Adapter<STATE>
      * @return a new instance containing the current list of evaluator plus
      * the supplied one.
      */
-    public MultiEvaluator<STATE> add( PathEvaluator<STATE> evaluator )
-    {
+    public MultiEvaluator<STATE> add(PathEvaluator<STATE> evaluator) {
         PathEvaluator[] newArray = new PathEvaluator[this.evaluators.length + 1];
-        System.arraycopy( this.evaluators, 0, newArray, 0, this.evaluators.length );
+        System.arraycopy(this.evaluators, 0, newArray, 0, this.evaluators.length);
         newArray[newArray.length - 1] = evaluator;
-        return new MultiEvaluator<>( newArray );
+        return new MultiEvaluator<>(newArray);
     }
 }

@@ -33,17 +33,18 @@ import org.neo4j.graphdb.schema.IndexType
  *  - `{idName: relationship, leftNode: relationship.startNode, relationship.endNode}`
  *  - `{idName: relationship, leftNode: relationship.endNode, relationship.startNode}`
  */
-case class UndirectedRelationshipIndexEndsWithScan(idName: String,
-                                                   leftNode: String,
-                                                   rightNode: String,
-                                                   override val typeToken: RelationshipTypeToken,
-                                                   property: IndexedProperty,
-                                                   valueExpr: Expression,
-                                                   argumentIds: Set[String],
-                                                   indexOrder: IndexOrder,
-                                                   override val indexType: IndexType)
-                                                  (implicit idGen: IdGen)
-  extends RelationshipIndexLeafPlan(idGen) {
+case class UndirectedRelationshipIndexEndsWithScan(
+  idName: String,
+  leftNode: String,
+  rightNode: String,
+  override val typeToken: RelationshipTypeToken,
+  property: IndexedProperty,
+  valueExpr: Expression,
+  argumentIds: Set[String],
+  indexOrder: IndexOrder,
+  override val indexType: IndexType
+)(implicit idGen: IdGen)
+    extends RelationshipIndexLeafPlan(idGen) {
 
   override def properties: Seq[IndexedProperty] = Seq(property)
 
@@ -51,7 +52,8 @@ case class UndirectedRelationshipIndexEndsWithScan(idName: String,
 
   override def usedVariables: Set[String] = valueExpr.dependencies.map(_.name)
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipIndexEndsWithScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+  override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipIndexEndsWithScan =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: UndirectedRelationshipIndexEndsWithScan =
     copy(property = property.copy(getValueFromIndex = DoNotGetValue))(SameId(this.id))

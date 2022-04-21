@@ -19,6 +19,15 @@
  */
 package org.neo4j.procedure.builtin;
 
+import static org.neo4j.internal.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.helpers.collection.Iterators.stream;
+import static org.neo4j.kernel.impl.api.TokenAccess.LABELS;
+import static org.neo4j.kernel.impl.api.TokenAccess.PROPERTY_KEYS;
+import static org.neo4j.kernel.impl.api.TokenAccess.RELATIONSHIP_TYPES;
+import static org.neo4j.procedure.Mode.READ;
+import static org.neo4j.procedure.builtin.ProceduresTimeFormatHelper.formatTime;
+import static org.neo4j.storageengine.util.StoreIdDecodeUtils.decodeId;
+
 import java.security.NoSuchAlgorithmException;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -28,7 +37,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
@@ -65,20 +73,11 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.storageengine.api.StoreIdProvider;
 
-import static org.neo4j.internal.helpers.collection.Iterators.asList;
-import static org.neo4j.internal.helpers.collection.Iterators.stream;
-import static org.neo4j.kernel.impl.api.TokenAccess.LABELS;
-import static org.neo4j.kernel.impl.api.TokenAccess.PROPERTY_KEYS;
-import static org.neo4j.kernel.impl.api.TokenAccess.RELATIONSHIP_TYPES;
-import static org.neo4j.procedure.Mode.READ;
-import static org.neo4j.procedure.builtin.ProceduresTimeFormatHelper.formatTime;
-import static org.neo4j.storageengine.util.StoreIdDecodeUtils.decodeId;
-
-@SuppressWarnings( {"unused", "WeakerAccess"} )
-public class BuiltInProcedures
-{
+@SuppressWarnings({"unused", "WeakerAccess"})
+public class BuiltInProcedures {
     private static final int NOT_EXISTING_INDEX_ID = -1;
-    static final long LONG_FIELD_NOT_CALCULATED = -1;  // the user should not even see this because that column should be filtered away (not yielded)
+    static final long LONG_FIELD_NOT_CALCULATED =
+            -1; // the user should not even see this because that column should be filtered away (not yielded)
 
     @Context
     public KernelTransaction kernelTransaction;
@@ -96,22 +95,19 @@ public class BuiltInProcedures
     public ProcedureCallContext callContext;
 
     @SystemProcedure
-    @Description( "Provides information regarding the database." )
-    @Procedure( name = "db.info", mode = READ )
-    public Stream<DatabaseInfo> databaseInfo() throws NoSuchAlgorithmException
-    {
-        var storeIdProvider = graphDatabaseAPI.getDependencyResolver().resolveDependency( StoreIdProvider.class );
-        var creationTime = formatTime( storeIdProvider.getStoreId().getCreationTime(), getConfiguredTimeZone() );
-        return Stream.of( new DatabaseInfo( decodeId( storeIdProvider ), graphDatabaseAPI.databaseName(), creationTime ) );
+    @Description("Provides information regarding the database.")
+    @Procedure(name = "db.info", mode = READ)
+    public Stream<DatabaseInfo> databaseInfo() throws NoSuchAlgorithmException {
+        var storeIdProvider = graphDatabaseAPI.getDependencyResolver().resolveDependency(StoreIdProvider.class);
+        var creationTime = formatTime(storeIdProvider.getStoreId().getCreationTime(), getConfiguredTimeZone());
+        return Stream.of(new DatabaseInfo(decodeId(storeIdProvider), graphDatabaseAPI.databaseName(), creationTime));
     }
 
     @SystemProcedure
-    @Description( "List all available labels in the database." )
-    @Procedure( name = "db.labels", mode = READ )
-    public Stream<LabelResult> listLabels()
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+    @Description("List all available labels in the database.")
+    @Procedure(name = "db.labels", mode = READ)
+    public Stream<LabelResult> listLabels() {
+        if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
 
@@ -119,114 +115,115 @@ public class BuiltInProcedures
         TokenRead tokenRead = kernelTransaction.tokenRead();
 
         List<LabelResult> labelsInUse;
-        try ( KernelTransaction.Revertable ignore = kernelTransaction.overrideWith( SecurityContext.AUTH_DISABLED ) )
-        {
+        try (KernelTransaction.Revertable ignore = kernelTransaction.overrideWith(SecurityContext.AUTH_DISABLED)) {
             // Get all labels that are in use as seen by a super user
-            labelsInUse = stream( LABELS.inUse( kernelTransaction ) )
+            labelsInUse = stream(LABELS.inUse(kernelTransaction))
                     // filter out labels that are denied or aren't explicitly allowed
-                    .filter( label -> mode.allowsTraverseNode( tokenRead.nodeLabel( label.name() ) ) )
-                    .map( LabelResult::new )
-                    .collect( Collectors.toList() );
+                    .filter(label -> mode.allowsTraverseNode(tokenRead.nodeLabel(label.name())))
+                    .map(LabelResult::new)
+                    .collect(Collectors.toList());
         }
         return labelsInUse.stream();
     }
 
     @SystemProcedure
-    @Description( "List all property keys in the database." )
-    @Procedure( name = "db.propertyKeys", mode = READ )
-    public Stream<PropertyKeyResult> listPropertyKeys()
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+    @Description("List all property keys in the database.")
+    @Procedure(name = "db.propertyKeys", mode = READ)
+    public Stream<PropertyKeyResult> listPropertyKeys() {
+        if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
 
-        List<PropertyKeyResult> propertyKeys = stream( PROPERTY_KEYS.all( kernelTransaction ) ).map( PropertyKeyResult::new ).collect( Collectors.toList() );
+        List<PropertyKeyResult> propertyKeys = stream(PROPERTY_KEYS.all(kernelTransaction))
+                .map(PropertyKeyResult::new)
+                .collect(Collectors.toList());
         return propertyKeys.stream();
     }
 
     @SystemProcedure
-    @Description( "List all available relationship types in the database." )
-    @Procedure( name = "db.relationshipTypes", mode = READ )
-    public Stream<RelationshipTypeResult> listRelationshipTypes()
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+    @Description("List all available relationship types in the database.")
+    @Procedure(name = "db.relationshipTypes", mode = READ)
+    public Stream<RelationshipTypeResult> listRelationshipTypes() {
+        if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
 
         AccessMode mode = kernelTransaction.securityContext().mode();
         TokenRead tokenRead = kernelTransaction.tokenRead();
         List<RelationshipTypeResult> relTypesInUse;
-        try ( KernelTransaction.Revertable ignore = kernelTransaction.overrideWith( SecurityContext.AUTH_DISABLED ) )
-        {
+        try (KernelTransaction.Revertable ignore = kernelTransaction.overrideWith(SecurityContext.AUTH_DISABLED)) {
             // Get all relTypes that are in use as seen by a super user
-            relTypesInUse = stream( RELATIONSHIP_TYPES.inUse( kernelTransaction ) )
+            relTypesInUse = stream(RELATIONSHIP_TYPES.inUse(kernelTransaction))
                     // filter out relTypes that are denied or aren't explicitly allowed
-                    .filter( type -> mode.allowsTraverseRelType( tokenRead.relationshipType( type.name() ) ) )
-                    .map( RelationshipTypeResult::new )
-                    .collect( Collectors.toList() );
+                    .filter(type -> mode.allowsTraverseRelType(tokenRead.relationshipType(type.name())))
+                    .map(RelationshipTypeResult::new)
+                    .collect(Collectors.toList());
         }
         return relTypesInUse.stream();
     }
 
-    @Deprecated( since = "4.2.0", forRemoval = true )
+    @Deprecated(since = "4.2.0", forRemoval = true)
     @SystemProcedure
-    @Description( "List all indexes in the database." )
-    @Procedure( name = "db.indexes", mode = READ, deprecatedBy = "SHOW INDEXES command" )
-    public Stream<IndexResult> listIndexes()
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+    @Description("List all indexes in the database.")
+    @Procedure(name = "db.indexes", mode = READ, deprecatedBy = "SHOW INDEXES command")
+    public Stream<IndexResult> listIndexes() {
+        if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
 
         TokenRead tokenRead = kernelTransaction.tokenRead();
-        IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
+        IndexingService indexingService = resolver.resolveDependency(IndexingService.class);
 
         SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
-        List<IndexDescriptor> indexes = asList( schemaRead.indexesGetAll() );
+        List<IndexDescriptor> indexes = asList(schemaRead.indexesGetAll());
 
         List<IndexResult> result = new ArrayList<>();
-        for ( IndexDescriptor index : indexes )
-        {
+        for (IndexDescriptor index : indexes) {
             IndexResult indexResult;
-            indexResult = asIndexResult( tokenRead, schemaRead, index );
-            result.add( indexResult );
+            indexResult = asIndexResult(tokenRead, schemaRead, index);
+            result.add(indexResult);
         }
-        result.sort( Comparator.comparing( r -> r.name ) );
+        result.sort(Comparator.comparing(r -> r.name));
         return result.stream();
     }
 
-    private static IndexResult asIndexResult( TokenNameLookup tokenLookup, SchemaReadCore schemaRead, IndexDescriptor index )
-    {
+    private static IndexResult asIndexResult(
+            TokenNameLookup tokenLookup, SchemaReadCore schemaRead, IndexDescriptor index) {
         SchemaDescriptor schema = index.schema();
         long id = index.getId();
         String name = index.getName();
-        IndexStatus status = getIndexStatus( schemaRead, index );
-        String uniqueness = IndexUniqueness.getUniquenessOf( index );
+        IndexStatus status = getIndexStatus(schemaRead, index);
+        String uniqueness = IndexUniqueness.getUniquenessOf(index);
         String type = index.getIndexType().name();
         String entityType = index.schema().entityType().name();
-        List<String> labelsOrTypes = Arrays.asList( tokenLookup.entityTokensGetNames( schema.entityType(), schema.getEntityTokenIds() ) );
-        List<String> properties = propertyNames( tokenLookup, index );
+        List<String> labelsOrTypes =
+                Arrays.asList(tokenLookup.entityTokensGetNames(schema.entityType(), schema.getEntityTokenIds()));
+        List<String> properties = propertyNames(tokenLookup, index);
         String provider = index.getIndexProvider().name();
 
-        return new IndexResult( id, name, status.state, status.populationProgress, uniqueness, type, entityType, labelsOrTypes, properties, provider );
+        return new IndexResult(
+                id,
+                name,
+                status.state,
+                status.populationProgress,
+                uniqueness,
+                type,
+                entityType,
+                labelsOrTypes,
+                properties,
+                provider);
     }
 
-    private static IndexStatus getIndexStatus( SchemaReadCore schemaRead, IndexDescriptor index )
-    {
+    private static IndexStatus getIndexStatus(SchemaReadCore schemaRead, IndexDescriptor index) {
         IndexStatus status = new IndexStatus();
-        try
-        {
-            InternalIndexState internalIndexState = schemaRead.indexGetState( index );
+        try {
+            InternalIndexState internalIndexState = schemaRead.indexGetState(index);
             status.state = internalIndexState.toString();
-            PopulationProgress progress = schemaRead.indexGetPopulationProgress( index );
+            PopulationProgress progress = schemaRead.indexGetPopulationProgress(index);
             status.populationProgress = progress.toIndexPopulationProgress().getCompletedPercentage();
-            status.failureMessage = internalIndexState == InternalIndexState.FAILED ? schemaRead.indexGetFailure( index ) : "";
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
+            status.failureMessage =
+                    internalIndexState == InternalIndexState.FAILED ? schemaRead.indexGetFailure(index) : "";
+        } catch (IndexNotFoundKernelException e) {
             status.state = "NOT FOUND";
             status.populationProgress = 0D;
             status.failureMessage = "Index not found. It might have been concurrently dropped.";
@@ -234,62 +231,53 @@ public class BuiltInProcedures
         return status;
     }
 
-    private static class IndexStatus
-    {
+    private static class IndexStatus {
         String state;
         String failureMessage;
         double populationProgress;
     }
 
     @SystemProcedure
-    @Description( "Wait for an index to come online (for example: CALL db.awaitIndex(\"MyIndex\", 300))." )
-    @Procedure( name = "db.awaitIndex", mode = READ )
-    public void awaitIndex( @Name( "indexName" ) String indexName,
-            @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout )
-            throws ProcedureException
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+    @Description("Wait for an index to come online (for example: CALL db.awaitIndex(\"MyIndex\", 300)).")
+    @Procedure(name = "db.awaitIndex", mode = READ)
+    public void awaitIndex(
+            @Name("indexName") String indexName, @Name(value = "timeOutSeconds", defaultValue = "300") long timeout)
+            throws ProcedureException {
+        if (callContext.isSystemDatabase()) {
             return;
         }
         IndexProcedures indexProcedures = indexProcedures();
-        indexProcedures.awaitIndexByName( indexName, timeout, TimeUnit.SECONDS );
+        indexProcedures.awaitIndexByName(indexName, timeout, TimeUnit.SECONDS);
     }
 
     @SystemProcedure
-    @Description( "Wait for all indexes to come online (for example: CALL db.awaitIndexes(300))." )
-    @Procedure( name = "db.awaitIndexes", mode = READ )
-    public void awaitIndexes( @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout )
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+    @Description("Wait for all indexes to come online (for example: CALL db.awaitIndexes(300)).")
+    @Procedure(name = "db.awaitIndexes", mode = READ)
+    public void awaitIndexes(@Name(value = "timeOutSeconds", defaultValue = "300") long timeout) {
+        if (callContext.isSystemDatabase()) {
             return;
         }
 
-        transaction.schema().awaitIndexesOnline( timeout, TimeUnit.SECONDS );
+        transaction.schema().awaitIndexesOnline(timeout, TimeUnit.SECONDS);
     }
 
     @SystemProcedure
-    @Description( "Schedule resampling of an index (for example: CALL db.resampleIndex(\"MyIndex\"))." )
-    @Procedure( name = "db.resampleIndex", mode = READ )
-    public void resampleIndex( @Name( "indexName" ) String indexName ) throws ProcedureException
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+    @Description("Schedule resampling of an index (for example: CALL db.resampleIndex(\"MyIndex\")).")
+    @Procedure(name = "db.resampleIndex", mode = READ)
+    public void resampleIndex(@Name("indexName") String indexName) throws ProcedureException {
+        if (callContext.isSystemDatabase()) {
             return;
         }
 
         IndexProcedures indexProcedures = indexProcedures();
-        indexProcedures.resampleIndex( indexName );
+        indexProcedures.resampleIndex(indexName);
     }
 
     @SystemProcedure
-    @Description( "Schedule resampling of all outdated indexes." )
-    @Procedure( name = "db.resampleOutdatedIndexes", mode = READ )
-    public void resampleOutdatedIndexes()
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+    @Description("Schedule resampling of all outdated indexes.")
+    @Procedure(name = "db.resampleOutdatedIndexes", mode = READ)
+    public void resampleOutdatedIndexes() {
+        if (callContext.isSystemDatabase()) {
             return;
         }
 
@@ -300,181 +288,163 @@ public class BuiltInProcedures
     @Admin
     @SystemProcedure
     @Description(
-            "Triggers an index resample and waits for it to complete, and after that clears query caches. After this " +
-            "procedure has finished queries will be planned using the latest database statistics." )
-    @Procedure( name = "db.prepareForReplanning", mode = READ )
-    public void prepareForReplanning( @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeOutSeconds )
-            throws ProcedureException
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+            "Triggers an index resample and waits for it to complete, and after that clears query caches. After this "
+                    + "procedure has finished queries will be planned using the latest database statistics.")
+    @Procedure(name = "db.prepareForReplanning", mode = READ)
+    public void prepareForReplanning(@Name(value = "timeOutSeconds", defaultValue = "300") long timeOutSeconds)
+            throws ProcedureException {
+        if (callContext.isSystemDatabase()) {
             return;
         }
 
-        //Resample indexes
+        // Resample indexes
         IndexProcedures indexProcedures = indexProcedures();
-        indexProcedures.resampleOutdatedIndexes( timeOutSeconds );
+        indexProcedures.resampleOutdatedIndexes(timeOutSeconds);
 
-        //now that index-stats are up-to-date, clear caches so that we are ready to re-plan
-        graphDatabaseAPI.getDependencyResolver()
-                .resolveDependency( QueryExecutionEngine.class )
+        // now that index-stats are up-to-date, clear caches so that we are ready to re-plan
+        graphDatabaseAPI
+                .getDependencyResolver()
+                .resolveDependency(QueryExecutionEngine.class)
                 .clearQueryCaches();
     }
 
     @SystemProcedure
-    @Procedure( name = "db.schema.nodeTypeProperties", mode = Mode.READ )
-    @Description( "Show the derived property schema of the nodes in tabular form." )
-    public Stream<NodePropertySchemaInfoResult> nodePropertySchema()
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+    @Procedure(name = "db.schema.nodeTypeProperties", mode = Mode.READ)
+    @Description("Show the derived property schema of the nodes in tabular form.")
+    public Stream<NodePropertySchemaInfoResult> nodePropertySchema() {
+        if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
 
-        return new SchemaCalculator( kernelTransaction ).calculateTabularResultStreamForNodes();
+        return new SchemaCalculator(kernelTransaction).calculateTabularResultStreamForNodes();
     }
 
     @SystemProcedure
-    @Procedure( name = "db.schema.relTypeProperties", mode = Mode.READ )
-    @Description( "Show the derived property schema of the relationships in tabular form." )
-    public Stream<RelationshipPropertySchemaInfoResult> relationshipPropertySchema()
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+    @Procedure(name = "db.schema.relTypeProperties", mode = Mode.READ)
+    @Description("Show the derived property schema of the relationships in tabular form.")
+    public Stream<RelationshipPropertySchemaInfoResult> relationshipPropertySchema() {
+        if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
 
-        return new SchemaCalculator( kernelTransaction ).calculateTabularResultStreamForRels();
+        return new SchemaCalculator(kernelTransaction).calculateTabularResultStreamForRels();
     }
 
     @SystemProcedure
-    @Description( "Visualize the schema of the data." )
-    @Procedure( name = "db.schema.visualization", mode = READ )
-    public Stream<SchemaProcedure.GraphResult> schemaVisualization()
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+    @Description("Visualize the schema of the data.")
+    @Procedure(name = "db.schema.visualization", mode = READ)
+    public Stream<SchemaProcedure.GraphResult> schemaVisualization() {
+        if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
-        return Stream.of( new SchemaProcedure( (InternalTransaction) transaction ).buildSchemaGraph() );
+        return Stream.of(new SchemaProcedure((InternalTransaction) transaction).buildSchemaGraph());
     }
 
-    @Deprecated( since = "4.2.0", forRemoval = true )
+    @Deprecated(since = "4.2.0", forRemoval = true)
     @SystemProcedure
-    @Description( "List all constraints in the database." )
-    @Procedure( name = "db.constraints", mode = READ, deprecatedBy = "SHOW CONSTRAINTS command" )
-    public Stream<ConstraintResult> listConstraints()
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+    @Description("List all constraints in the database.")
+    @Procedure(name = "db.constraints", mode = READ, deprecatedBy = "SHOW CONSTRAINTS command")
+    public Stream<ConstraintResult> listConstraints() {
+        if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
 
         SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
 
         List<ConstraintResult> result = new ArrayList<>();
-        final List<ConstraintDescriptor> constraintDescriptors = asList( schemaRead.constraintsGetAll() );
-        for ( ConstraintDescriptor constraint : constraintDescriptors )
-        {
-            String description = ConstraintsProcedureUtil.prettyPrint( constraint, kernelTransaction.tokenRead() );
-            String details = constraint.userDescription( kernelTransaction.tokenRead() );
-            result.add( new ConstraintResult( constraint.getName(), description, details ) );
+        final List<ConstraintDescriptor> constraintDescriptors = asList(schemaRead.constraintsGetAll());
+        for (ConstraintDescriptor constraint : constraintDescriptors) {
+            String description = ConstraintsProcedureUtil.prettyPrint(constraint, kernelTransaction.tokenRead());
+            String details = constraint.userDescription(kernelTransaction.tokenRead());
+            result.add(new ConstraintResult(constraint.getName(), description, details));
         }
-        result.sort( Comparator.comparing( r -> r.name ) );
+        result.sort(Comparator.comparing(r -> r.name));
         return result.stream();
     }
 
-    @SystemProcedure( allowExpiredCredentials = true )
-    @Procedure( name = "db.ping", mode = READ )
-    @Description( "This procedure can be used by client side tooling to test whether they are correctly connected to a database. " +
-                  "The procedure is available in all databases and always returns true. A faulty connection can be detected by not being able to call this " +
-                  "procedure." )
-    public Stream<BooleanResult> ping()
-    {
-        return Stream.of( new BooleanResult( Boolean.TRUE ) );
+    @SystemProcedure(allowExpiredCredentials = true)
+    @Procedure(name = "db.ping", mode = READ)
+    @Description(
+            "This procedure can be used by client side tooling to test whether they are correctly connected to a database. "
+                    + "The procedure is available in all databases and always returns true. A faulty connection can be detected by not being able to call this "
+                    + "procedure.")
+    public Stream<BooleanResult> ping() {
+        return Stream.of(new BooleanResult(Boolean.TRUE));
     }
 
-    private static List<String> propertyNames( TokenNameLookup tokens, IndexDescriptor index )
-    {
+    private static List<String> propertyNames(TokenNameLookup tokens, IndexDescriptor index) {
         int[] propertyIds = index.schema().getPropertyIds();
-        List<String> propertyNames = new ArrayList<>( propertyIds.length );
-        for ( int propertyId : propertyIds )
-        {
-            propertyNames.add( tokens.propertyKeyGetName( propertyId ) );
+        List<String> propertyNames = new ArrayList<>(propertyIds.length);
+        for (int propertyId : propertyIds) {
+            propertyNames.add(tokens.propertyKeyGetName(propertyId));
         }
         return propertyNames;
     }
 
-    private ZoneId getConfiguredTimeZone()
-    {
-        Config config = resolver.resolveDependency( Config.class );
-        return config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
+    private ZoneId getConfiguredTimeZone() {
+        Config config = resolver.resolveDependency(Config.class);
+        return config.get(GraphDatabaseSettings.db_timezone).getZoneId();
     }
 
-    private IndexProcedures indexProcedures()
-    {
-        return new IndexProcedures( kernelTransaction, resolver.resolveDependency( IndexingService.class ) );
+    private IndexProcedures indexProcedures() {
+        return new IndexProcedures(kernelTransaction, resolver.resolveDependency(IndexingService.class));
     }
 
-    private IndexProviderDescriptor getIndexProviderDescriptor( String providerName )
-    {
-        return resolver.resolveDependency( IndexingService.class ).indexProviderByName( providerName );
+    private IndexProviderDescriptor getIndexProviderDescriptor(String providerName) {
+        return resolver.resolveDependency(IndexingService.class).indexProviderByName(providerName);
     }
 
-    public static class LabelResult
-    {
+    public static class LabelResult {
         public final String label;
 
-        private LabelResult( Label label )
-        {
+        private LabelResult(Label label) {
             this.label = label.name();
         }
     }
 
-    public static class PropertyKeyResult
-    {
+    public static class PropertyKeyResult {
         public final String propertyKey;
 
-        private PropertyKeyResult( String propertyKey )
-        {
+        private PropertyKeyResult(String propertyKey) {
             this.propertyKey = propertyKey;
         }
     }
 
-    public record DatabaseInfo( String id, String name, String creationDate )
-    {
-    }
+    public record DatabaseInfo(String id, String name, String creationDate) {}
 
-    public static class RelationshipTypeResult
-    {
+    public static class RelationshipTypeResult {
         public final String relationshipType;
 
-        private RelationshipTypeResult( RelationshipType relationshipType )
-        {
+        private RelationshipTypeResult(RelationshipType relationshipType) {
             this.relationshipType = relationshipType.name();
         }
     }
 
-    public record BooleanResult( Boolean success )
-    {
-    }
+    public record BooleanResult(Boolean success) {}
 
-    public static class IndexResult
-    {
-        public final long id;                    //1
-        public final String name;                //"myIndex"
-        public final String state;               //"ONLINE", "FAILED", "POPULATING"
-        public final double populationPercent;    // 0.0, 100.0, 75.1
-        public final String uniqueness;          //"UNIQUE", "NONUNIQUE"
-        public final String type;                //"FULLTEXT", "BTREE"
-        public final String entityType;          //"NODE", "RELATIONSHIP"
-        public final List<String> labelsOrTypes; //["Label1", "Label2"], ["RelType1", "RelType2"]
-        public final List<String> properties;    //["propKey", "propKey2"]
-        public final String provider;            //"native-btree-1.0", "lucene+native-3.0"
+    public static class IndexResult {
+        public final long id; // 1
+        public final String name; // "myIndex"
+        public final String state; // "ONLINE", "FAILED", "POPULATING"
+        public final double populationPercent; // 0.0, 100.0, 75.1
+        public final String uniqueness; // "UNIQUE", "NONUNIQUE"
+        public final String type; // "FULLTEXT", "BTREE"
+        public final String entityType; // "NODE", "RELATIONSHIP"
+        public final List<String> labelsOrTypes; // ["Label1", "Label2"], ["RelType1", "RelType2"]
+        public final List<String> properties; // ["propKey", "propKey2"]
+        public final String provider; // "native-btree-1.0", "lucene+native-3.0"
 
-        private IndexResult( long id, String name, String state, double populationPercent, String uniqueness, String type, String entityType,
-                List<String> labelsOrTypes, List<String> properties, String provider )
-        {
+        private IndexResult(
+                long id,
+                String name,
+                String state,
+                double populationPercent,
+                String uniqueness,
+                String type,
+                String entityType,
+                List<String> labelsOrTypes,
+                List<String> properties,
+                String provider) {
             this.id = id;
             this.name = name;
             this.state = state;
@@ -488,15 +458,14 @@ public class BuiltInProcedures
         }
     }
 
-    public static class SchemaStatementResult
-    {
-        public final String name;               // "MY INDEX", "constraint_5837f24"
-        public final String type;               // "INDEX", "CONSTRAINT"
-        public final String createStatement;    // "CREATE ... INDEX ... FOR ...", "CREATE CONSTRAINT ... FOR ... REQUIRE ..."
-        public final String dropStatement;      // "DROP INDEX `My Index`", "DROP CONSTRAINT `My Constraint`"
+    public static class SchemaStatementResult {
+        public final String name; // "MY INDEX", "constraint_5837f24"
+        public final String type; // "INDEX", "CONSTRAINT"
+        public final String
+                createStatement; // "CREATE ... INDEX ... FOR ...", "CREATE CONSTRAINT ... FOR ... REQUIRE ..."
+        public final String dropStatement; // "DROP INDEX `My Index`", "DROP CONSTRAINT `My Constraint`"
 
-        public SchemaStatementResult( String name, String type, String createStatement, String dropStatement )
-        {
+        public SchemaStatementResult(String name, String type, String createStatement, String dropStatement) {
             this.name = name;
             this.type = type;
             this.createStatement = createStatement;
@@ -504,45 +473,32 @@ public class BuiltInProcedures
         }
     }
 
-    public static class ConstraintResult
-    {
+    public static class ConstraintResult {
         public final String name;
         public final String description;
         public final String details;
 
-        private ConstraintResult( String name, String description, String details )
-        {
+        private ConstraintResult(String name, String description, String details) {
             this.name = name;
             this.description = description;
             this.details = details;
         }
     }
 
-    public record NodeResult( Node node )
-    {
-    }
+    public record NodeResult(Node node) {}
 
-    public record WeightedNodeResult( Node node, double weight )
-    {
-    }
+    public record WeightedNodeResult(Node node, double weight) {}
 
-    public record WeightedRelationshipResult( Relationship relationship, double weight )
-    {
-    }
+    public record WeightedRelationshipResult(Relationship relationship, double weight) {}
 
-    public record RelationshipResult( Relationship relationship )
-    {
-    }
+    public record RelationshipResult(Relationship relationship) {}
 
-    private enum IndexUniqueness
-    {
+    private enum IndexUniqueness {
         UNIQUE,
         NONUNIQUE;
 
-        private static String getUniquenessOf( IndexDescriptor index )
-        {
+        private static String getUniquenessOf(IndexDescriptor index) {
             return index.isUnique() ? UNIQUE.name() : NONUNIQUE.name();
-
         }
     }
 }

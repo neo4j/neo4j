@@ -34,28 +34,50 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.LogFilesInitializer;
 
 @ServiceProvider
-public class StandardBatchImporterFactory extends BatchImporterFactory
-{
-    public StandardBatchImporterFactory()
-    {
-        super( 1 );
+public class StandardBatchImporterFactory extends BatchImporterFactory {
+    public StandardBatchImporterFactory() {
+        super(1);
     }
 
     @Override
-    public String getName()
-    {
+    public String getName() {
         return "standard";
     }
 
     @Override
-    public BatchImporter instantiate( DatabaseLayout directoryStructure, FileSystemAbstraction fileSystem, PageCacheTracer cacheTracer, Configuration config,
-            LogService logService, ExecutionMonitor executionMonitor, AdditionalInitialIds additionalInitialIds, LogTailMetadata logTailMetadata,
-            Config dbConfig, Monitor monitor, JobScheduler scheduler, Collector badCollector,
-            LogFilesInitializer logFilesInitializer, IndexImporterFactory indexImporterFactory, MemoryTracker memoryTracker,
-            CursorContextFactory contextFactory )
-    {
-        return new ParallelBatchImporter( directoryStructure, fileSystem, cacheTracer, config, logService, executionMonitor,
-                additionalInitialIds, logTailMetadata, dbConfig, monitor, scheduler, badCollector, logFilesInitializer,
-                indexImporterFactory, memoryTracker, contextFactory );
+    public BatchImporter instantiate(
+            DatabaseLayout directoryStructure,
+            FileSystemAbstraction fileSystem,
+            PageCacheTracer cacheTracer,
+            Configuration config,
+            LogService logService,
+            ExecutionMonitor executionMonitor,
+            AdditionalInitialIds additionalInitialIds,
+            LogTailMetadata logTailMetadata,
+            Config dbConfig,
+            Monitor monitor,
+            JobScheduler scheduler,
+            Collector badCollector,
+            LogFilesInitializer logFilesInitializer,
+            IndexImporterFactory indexImporterFactory,
+            MemoryTracker memoryTracker,
+            CursorContextFactory contextFactory) {
+        return new ParallelBatchImporter(
+                directoryStructure,
+                fileSystem,
+                cacheTracer,
+                config,
+                logService,
+                executionMonitor,
+                additionalInitialIds,
+                logTailMetadata,
+                dbConfig,
+                monitor,
+                scheduler,
+                badCollector,
+                logFilesInitializer,
+                indexImporterFactory,
+                memoryTracker,
+                contextFactory);
     }
 }

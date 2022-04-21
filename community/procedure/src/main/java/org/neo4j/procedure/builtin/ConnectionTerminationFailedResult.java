@@ -19,13 +19,11 @@
  */
 package org.neo4j.procedure.builtin;
 
-public class ConnectionTerminationFailedResult extends ConnectionTerminationResult
-{
+public class ConnectionTerminationFailedResult extends ConnectionTerminationResult {
     private static final String UNKNOWN_USER = "n/a";
     private static final String FAILURE_MESSAGE = "No connection found with this id";
 
-    ConnectionTerminationFailedResult( String connectionId )
-    {
-        super( connectionId, UNKNOWN_USER, FAILURE_MESSAGE );
+    ConnectionTerminationFailedResult(String connectionId) {
+        super(connectionId, UNKNOWN_USER, FAILURE_MESSAGE);
     }
 }

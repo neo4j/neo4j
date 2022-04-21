@@ -37,19 +37,20 @@ import org.neo4j.cypher.internal.util.bottomUp
 /**
  * Normalize equality predicates into IN comparisons.
  */
-case object rewriteEqualityToInPredicate extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
+case object rewriteEqualityToInPredicate extends StatementRewriter with StepSequencer.Step
+    with PlanPipelineTransformerFactory {
 
   override def instance(from: BaseState, ignored: BaseContext): Rewriter = bottomUp(Rewriter.lift {
     // if f is deterministic: f(a) = value => f(a) IN [value]
-    case predicate@Equals(DeterministicFunctionInvocation(invocation), value) =>
+    case predicate @ Equals(DeterministicFunctionInvocation(invocation), value) =>
       In(invocation, ListLiteral(Seq(value))(value.position))(predicate.position)
 
     // Equality between two property lookups should not be rewritten
-    case predicate@Equals(_: Property, _: Property) =>
+    case predicate @ Equals(_: Property, _: Property) =>
       predicate
 
     // a.prop = value => a.prop IN [value]
-    case predicate@Equals(prop@Property(id: Variable, propKeyName), idValueExpr) =>
+    case predicate @ Equals(prop @ Property(id: Variable, propKeyName), idValueExpr) =>
       In(prop, ListLiteral(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
   })
 
@@ -59,6 +60,8 @@ case object rewriteEqualityToInPredicate extends StatementRewriter with StepSequ
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable // Introduces new AST nodes
 
-  override def getTransformer(pushdownPropertyReads: Boolean,
-                              semanticFeatures: Seq[SemanticFeature]): Transformer[BaseContext, BaseState, BaseState] = this
+  override def getTransformer(
+    pushdownPropertyReads: Boolean,
+    semanticFeatures: Seq[SemanticFeature]
+  ): Transformer[BaseContext, BaseState, BaseState] = this
 }

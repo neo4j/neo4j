@@ -40,8 +40,9 @@ import org.neo4j.memory.MemoryTracker
  * This class is used by all [[MemoryTrackerForOperatorProvider]] that are usually bound to a transaction.
  */
 trait QueryMemoryTracker
-  extends TransactionSpanningMemoryTrackerForOperatorProvider
-  with HeapMemoryTracker {
+    extends TransactionSpanningMemoryTrackerForOperatorProvider
+    with HeapMemoryTracker {
+
   /**
    * Return a new [[MemoryTrackerForOperatorProvider]] that wraps the given transactionMemoryTracker,
    * but also reports to this [[QueryMemoryTracker]]. Use this method to obtain memory trackers for operators that
@@ -52,15 +53,15 @@ trait QueryMemoryTracker
 }
 
 object QueryMemoryTracker {
+
   def apply(memoryTracking: MemoryTracking): QueryMemoryTracker = {
     memoryTracking match {
-      case NO_TRACKING => NoOpQueryMemoryTracker
-      case MEMORY_TRACKING => new TrackingQueryMemoryTracker
+      case NO_TRACKING                       => NoOpQueryMemoryTracker
+      case MEMORY_TRACKING                   => new TrackingQueryMemoryTracker
       case CUSTOM_MEMORY_TRACKING(decorator) => new CustomTrackingQueryMemoryTracker(decorator)
     }
   }
 }
-
 
 object TrackingQueryMemoryTracker {
 
@@ -68,14 +69,16 @@ object TrackingQueryMemoryTracker {
    * Tracks memory of one operator.
    * This tracker is not bound to any transaction.
    */
-  class OperatorMemoryTracker(queryMemoryTracker: TrackingQueryMemoryTracker) extends DelegatingScopedHeapMemoryTracker(queryMemoryTracker)
+  class OperatorMemoryTracker(queryMemoryTracker: TrackingQueryMemoryTracker)
+      extends DelegatingScopedHeapMemoryTracker(queryMemoryTracker)
 
   /**
    * Basically an efficient `Map[OperatorId, OperatorMemoryTracker]`.
    *
    * @param memoryTracker a memory tracker used to track the memory of this collection.
    */
-  class MemoryTrackerPerOperator(memoryTracker: HeapMemoryTracker) extends GrowingArray[OperatorMemoryTracker](memoryTracker)
+  class MemoryTrackerPerOperator(memoryTracker: HeapMemoryTracker)
+      extends GrowingArray[OperatorMemoryTracker](memoryTracker)
 
 }
 
@@ -84,6 +87,7 @@ object TrackingQueryMemoryTracker {
  * Provides operator memory trackers that are not bound to any transaction.
  */
 class TrackingQueryMemoryTracker extends QueryMemoryTracker {
+
   /**
    * The memory is also tracked by the transactions executing the query, so using a LocalMemoryTracker
    * that is not bounded and not connected to any memory pool is ok.
@@ -98,7 +102,8 @@ class TrackingQueryMemoryTracker extends QueryMemoryTracker {
 
   override def releaseHeap(bytes: Long): Unit = memoryTracker.releaseHeap(bytes)
 
-  override def newMemoryTrackerForOperatorProvider(transactionMemoryTracker: MemoryTracker): MemoryTrackerForOperatorProvider =
+  override def newMemoryTrackerForOperatorProvider(transactionMemoryTracker: MemoryTracker)
+    : MemoryTrackerForOperatorProvider =
     new TransactionBoundMemoryTrackerForOperatorProvider(transactionMemoryTracker, this)
 
   override def heapHighWaterMarkOfOperator(operatorId: Int): Long = {
@@ -117,9 +122,15 @@ class TrackingQueryMemoryTracker extends QueryMemoryTracker {
 /**
  * Applies a decorator on each transaction memory tracker that gets passed to [[newMemoryTrackerForOperatorProvider]].
  */
-class CustomTrackingQueryMemoryTracker(transactionMemoryTrackerDecorator: MemoryTracker => MemoryTracker) extends TrackingQueryMemoryTracker {
-  override def newMemoryTrackerForOperatorProvider(transactionMemoryTracker: MemoryTracker): MemoryTrackerForOperatorProvider =
-    new TransactionBoundMemoryTrackerForOperatorProvider(transactionMemoryTrackerDecorator(transactionMemoryTracker), this)
+class CustomTrackingQueryMemoryTracker(transactionMemoryTrackerDecorator: MemoryTracker => MemoryTracker)
+    extends TrackingQueryMemoryTracker {
+
+  override def newMemoryTrackerForOperatorProvider(transactionMemoryTracker: MemoryTracker)
+    : MemoryTrackerForOperatorProvider =
+    new TransactionBoundMemoryTrackerForOperatorProvider(
+      transactionMemoryTrackerDecorator(transactionMemoryTracker),
+      this
+    )
 }
 
 /**
@@ -133,9 +144,11 @@ case object NoOpQueryMemoryTracker extends QueryMemoryTracker {
 
   override def releaseHeap(bytes: Long): Unit = ()
 
-  override def newMemoryTrackerForOperatorProvider(transactionMemoryTracker: MemoryTracker): MemoryTrackerForOperatorProvider = NoOpMemoryTrackerForOperatorProvider
+  override def newMemoryTrackerForOperatorProvider(transactionMemoryTracker: MemoryTracker)
+    : MemoryTrackerForOperatorProvider = NoOpMemoryTrackerForOperatorProvider
 
   override def heapHighWaterMarkOfOperator(operatorId: Int): Long = HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED
 
-  override private[memory] def memoryTrackerForOperator(operatorId: Int): HeapMemoryTracker = EmptyMemoryTracker.INSTANCE
+  override private[memory] def memoryTrackerForOperator(operatorId: Int): HeapMemoryTracker =
+    EmptyMemoryTracker.INSTANCE
 }

@@ -19,10 +19,21 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
@@ -52,26 +63,15 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @PageCacheExtension
 @Neo4jLayoutExtension
-class PropertyCreatorTest
-{
+class PropertyCreatorTest {
     @Inject
     private FileSystemAbstraction fileSystem;
+
     @Inject
     private PageCache pageCache;
+
     @Inject
     private DatabaseLayout databaseLayout;
 
@@ -79,328 +79,304 @@ class PropertyCreatorTest
     private NeoStores neoStores;
     private PropertyStore propertyStore;
     private PropertyCreator creator;
-    private DirectRecordAccess<PropertyRecord,PrimitiveRecord> records;
+    private DirectRecordAccess<PropertyRecord, PrimitiveRecord> records;
     private CursorContext cursorContext;
 
     @BeforeEach
-    void startStore()
-    {
-        neoStores = new StoreFactory( databaseLayout, Config.defaults(),
-                new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() ),
-                pageCache, fileSystem, NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
-                writable(), EMPTY_LOG_TAIL ).openNeoStores( true,
-                StoreType.PROPERTY, StoreType.PROPERTY_STRING, StoreType.PROPERTY_ARRAY );
+    void startStore() {
+        neoStores = new StoreFactory(
+                        databaseLayout,
+                        Config.defaults(),
+                        new DefaultIdGeneratorFactory(fileSystem, immediate(), databaseLayout.getDatabaseName()),
+                        pageCache,
+                        fileSystem,
+                        NullLogProvider.getInstance(),
+                        new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                        writable(),
+                        EMPTY_LOG_TAIL)
+                .openNeoStores(true, StoreType.PROPERTY, StoreType.PROPERTY_STRING, StoreType.PROPERTY_ARRAY);
         propertyStore = neoStores.getPropertyStore();
-        StoreCursors storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
-        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
-        cursorContext = contextFactory.create( "propertyStore" );
-        records = new DirectRecordAccess<>( propertyStore, Loaders.propertyLoader( propertyStore, storeCursors ), cursorContext, PROPERTY_CURSOR,
-                storeCursors );
-        creator = new PropertyCreator( propertyStore, new PropertyTraverser(), cursorContext, INSTANCE );
+        StoreCursors storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        cursorContext = contextFactory.create("propertyStore");
+        records = new DirectRecordAccess<>(
+                propertyStore,
+                Loaders.propertyLoader(propertyStore, storeCursors),
+                cursorContext,
+                PROPERTY_CURSOR,
+                storeCursors);
+        creator = new PropertyCreator(propertyStore, new PropertyTraverser(), cursorContext, INSTANCE);
     }
 
     @AfterEach
-    void closeStore()
-    {
+    void closeStore() {
         neoStores.close();
     }
 
     @Test
-    void noPageCacheAccessOnCleanIdGenerator()
-    {
+    void noPageCacheAccessOnCleanIdGenerator() {
         assertZeroCursor();
 
         existingChain(
-                record( property( 0, 0 ), property( 1, 1 ), property( 2, 2 ), property( 3, 3 ) ),
-                record( property( 4, 4 ), property( 5, 5 ), property( 6, 6 ), property( 7, 7 ) ) );
+                record(property(0, 0), property(1, 1), property(2, 2), property(3, 3)),
+                record(property(4, 4), property(5, 5), property(6, 6), property(7, 7)));
 
-        setProperty( 10, 10 );
+        setProperty(10, 10);
 
         assertZeroCursor();
     }
 
     @Test
-    void pageCacheAccessOnPropertyCreation()
-    {
+    void pageCacheAccessOnPropertyCreation() {
         assertZeroCursor();
-        prepareDirtyGenerator( propertyStore );
+        prepareDirtyGenerator(propertyStore);
 
-        setProperty( 10, 10 );
+        setProperty(10, 10);
         assertOneCursor();
     }
 
     @Test
-    void shouldAddPropertyToEmptyChain()
-    {
+    void shouldAddPropertyToEmptyChain() {
         // GIVEN
         existingChain();
 
         // WHEN
-        setProperty( 1, "value" );
+        setProperty(1, "value");
 
         // THEN
-        assertChain( record( property( 1, "value" ) ) );
+        assertChain(record(property(1, "value")));
     }
 
     @Test
-    void shouldAddPropertyToChainContainingOtherFullRecords()
-    {
+    void shouldAddPropertyToChainContainingOtherFullRecords() {
         // GIVEN
         existingChain(
-                record( property( 0, 0 ), property( 1, 1 ), property( 2, 2 ), property( 3, 3 ) ),
-                record( property( 4, 4 ), property( 5, 5 ), property( 6, 6 ), property( 7, 7 ) ) );
+                record(property(0, 0), property(1, 1), property(2, 2), property(3, 3)),
+                record(property(4, 4), property(5, 5), property(6, 6), property(7, 7)));
 
         // WHEN
-        setProperty( 10, 10 );
+        setProperty(10, 10);
 
         // THEN
         assertChain(
-                record( property( 10, 10 ) ),
-                record( property( 0, 0 ), property( 1, 1 ), property( 2, 2 ), property( 3, 3 ) ),
-                record( property( 4, 4 ), property( 5, 5 ), property( 6, 6 ), property( 7, 7 ) ) );
+                record(property(10, 10)),
+                record(property(0, 0), property(1, 1), property(2, 2), property(3, 3)),
+                record(property(4, 4), property(5, 5), property(6, 6), property(7, 7)));
     }
 
     @Test
-    void shouldAddPropertyToChainContainingOtherNonFullRecords()
-    {
+    void shouldAddPropertyToChainContainingOtherNonFullRecords() {
         // GIVEN
         existingChain(
-                record( property( 0, 0 ), property( 1, 1 ), property( 2, 2 ), property( 3, 3 ) ),
-                record( property( 4, 4 ), property( 5, 5 ), property( 6, 6 ) ) );
+                record(property(0, 0), property(1, 1), property(2, 2), property(3, 3)),
+                record(property(4, 4), property(5, 5), property(6, 6)));
 
         // WHEN
-        setProperty( 10, 10 );
+        setProperty(10, 10);
 
         // THEN
         assertChain(
-                record( property( 0, 0 ), property( 1, 1 ), property( 2, 2 ), property( 3, 3 ) ),
-                record( property( 4, 4 ), property( 5, 5 ), property( 6, 6 ), property( 10, 10 ) ) );
+                record(property(0, 0), property(1, 1), property(2, 2), property(3, 3)),
+                record(property(4, 4), property(5, 5), property(6, 6), property(10, 10)));
     }
 
     @Test
-    void shouldAddPropertyToChainContainingOtherNonFullRecordsInMiddle()
-    {
+    void shouldAddPropertyToChainContainingOtherNonFullRecordsInMiddle() {
         // GIVEN
         existingChain(
-                record( property( 0, 0 ), property( 1, 1 ), property( 2, 2 ) ),
-                record( property( 3, 3 ), property( 4, 4 ), property( 5, 5 ), property( 6, 6 ) ) );
+                record(property(0, 0), property(1, 1), property(2, 2)),
+                record(property(3, 3), property(4, 4), property(5, 5), property(6, 6)));
 
         // WHEN
-        setProperty( 10, 10 );
+        setProperty(10, 10);
 
         // THEN
         assertChain(
-                record( property( 0, 0 ), property( 1, 1 ), property( 2, 2 ), property( 10, 10 ) ),
-                record( property( 3, 3 ), property( 4, 4 ), property( 5, 5 ), property( 6, 6 ) ) );
+                record(property(0, 0), property(1, 1), property(2, 2), property(10, 10)),
+                record(property(3, 3), property(4, 4), property(5, 5), property(6, 6)));
     }
 
     @Test
-    void shouldChangeOnlyProperty()
-    {
+    void shouldChangeOnlyProperty() {
         // GIVEN
-        existingChain( record( property( 0, "one" ) ) );
+        existingChain(record(property(0, "one")));
 
         // WHEN
-        setProperty( 0, "two" );
+        setProperty(0, "two");
 
         // THEN
-        assertChain( record( property( 0, "two" ) ) );
+        assertChain(record(property(0, "two")));
     }
 
     @Test
-    void shouldChangePropertyInChainWithOthersBeforeIt()
-    {
+    void shouldChangePropertyInChainWithOthersBeforeIt() {
         // GIVEN
-        existingChain(
-                record( property( 0, "one" ), property( 1, 1 ) ),
-                record( property( 2, "two" ), property( 3, 3 ) ) );
+        existingChain(record(property(0, "one"), property(1, 1)), record(property(2, "two"), property(3, 3)));
 
         // WHEN
-        setProperty( 2, "two*" );
+        setProperty(2, "two*");
 
         // THEN
-        assertChain(
-                record( property( 0, "one" ), property( 1, 1 ) ),
-                record( property( 2, "two*" ), property( 3, 3 ) ) );
+        assertChain(record(property(0, "one"), property(1, 1)), record(property(2, "two*"), property(3, 3)));
     }
 
     @Test
-    void shouldChangePropertyInChainWithOthersAfterIt()
-    {
+    void shouldChangePropertyInChainWithOthersAfterIt() {
         // GIVEN
-        existingChain(
-                record( property( 0, "one" ), property( 1, 1 ) ),
-                record( property( 2, "two" ), property( 3, 3 ) ) );
+        existingChain(record(property(0, "one"), property(1, 1)), record(property(2, "two"), property(3, 3)));
 
         // WHEN
-        setProperty( 0, "one*" );
+        setProperty(0, "one*");
 
         // THEN
-        assertChain(
-                record( property( 0, "one*" ), property( 1, 1 ) ),
-                record( property( 2, "two" ), property( 3, 3 ) ) );
+        assertChain(record(property(0, "one*"), property(1, 1)), record(property(2, "two"), property(3, 3)));
     }
 
     @Test
-    void shouldChangePropertyToBiggerInFullChain()
-    {
+    void shouldChangePropertyToBiggerInFullChain() {
         // GIVEN
-        existingChain( record( property( 0, 0 ), property( 1, 1 ), property( 2, 2 ), property( 3, 3 ) ) );
+        existingChain(record(property(0, 0), property(1, 1), property(2, 2), property(3, 3)));
 
         // WHEN
-        setProperty( 1, Long.MAX_VALUE );
+        setProperty(1, Long.MAX_VALUE);
 
         // THEN
-        assertChain(
-                record( property( 1, Long.MAX_VALUE ) ),
-                record( property( 0, 0 ), property( 2, 2 ), property( 3, 3 ) ) );
+        assertChain(record(property(1, Long.MAX_VALUE)), record(property(0, 0), property(2, 2), property(3, 3)));
     }
 
     @Test
-    void shouldChangePropertyToBiggerInChainWithHoleAfter()
-    {
+    void shouldChangePropertyToBiggerInChainWithHoleAfter() {
         // GIVEN
         existingChain(
-                record( property( 0, 0 ), property( 1, 1 ), property( 2, 2 ), property( 3, 3 ) ),
-                record( property( 4, 4 ), property( 5, 5 ) ) );
+                record(property(0, 0), property(1, 1), property(2, 2), property(3, 3)),
+                record(property(4, 4), property(5, 5)));
 
         // WHEN
-        setProperty( 1, Long.MAX_VALUE );
+        setProperty(1, Long.MAX_VALUE);
 
         // THEN
         assertChain(
-                record( property( 0, 0 ), property( 2, 2 ), property( 3, 3 ) ),
-                record( property( 4, 4 ), property( 5, 5 ), property( 1, Long.MAX_VALUE ) ) );
+                record(property(0, 0), property(2, 2), property(3, 3)),
+                record(property(4, 4), property(5, 5), property(1, Long.MAX_VALUE)));
     }
 
     // change property so that it gets bigger and fits in a record earlier in the chain
     @Test
-    void shouldChangePropertyToBiggerInChainWithHoleBefore()
-    {
+    void shouldChangePropertyToBiggerInChainWithHoleBefore() {
         // GIVEN
         existingChain(
-                record( property( 0, 0 ), property( 1, 1 ) ),
-                record( property( 2, 2 ), property( 3, 3 ), property( 4, 4 ), property( 5, 5 ) ) );
+                record(property(0, 0), property(1, 1)),
+                record(property(2, 2), property(3, 3), property(4, 4), property(5, 5)));
 
         // WHEN
-        setProperty( 2, Long.MAX_VALUE );
+        setProperty(2, Long.MAX_VALUE);
 
         // THEN
         assertChain(
-                record( property( 0, 0 ), property( 1, 1 ), property( 2, Long.MAX_VALUE ) ),
-                record( property( 3, 3 ), property( 4, 4 ), property( 5, 5 ) ) );
+                record(property(0, 0), property(1, 1), property(2, Long.MAX_VALUE)),
+                record(property(3, 3), property(4, 4), property(5, 5)));
     }
 
     @Test
-    void canAddMultipleShortStringsToTheSameNode()
-    {
+    void canAddMultipleShortStringsToTheSameNode() {
         // GIVEN
         existingChain();
 
         // WHEN
-        setProperty( 0, "value" );
-        setProperty( 1, "esrever" );
+        setProperty(0, "value");
+        setProperty(1, "esrever");
 
         // THEN
-        assertChain( record( property( 0, "value", false ), property( 1, "esrever", false ) ) );
+        assertChain(record(property(0, "value", false), property(1, "esrever", false)));
     }
 
     @Test
-    void canUpdateShortStringInplace()
-    {
+    void canUpdateShortStringInplace() {
         // GIVEN
-        existingChain( record( property( 0, "value" ) ) );
+        existingChain(record(property(0, "value")));
 
         // WHEN
         long before = propertyRecordsInUse();
-        setProperty( 0, "other" );
+        setProperty(0, "other");
         long after = propertyRecordsInUse();
 
         // THEN
-        assertChain( record( property( 0, "other" ) ) );
-        assertEquals( before, after );
+        assertChain(record(property(0, "other")));
+        assertEquals(before, after);
     }
 
     @Test
-    void canReplaceLongStringWithShortString()
-    {
+    void canReplaceLongStringWithShortString() {
         // GIVEN
         long recordCount = dynamicStringRecordsInUse();
         long propCount = propertyRecordsInUse();
-        existingChain( record( property( 0, "this is a really long string, believe me!" ) ) );
-        assertEquals( recordCount + 1, dynamicStringRecordsInUse() );
-        assertEquals( propCount + 1, propertyRecordsInUse() );
+        existingChain(record(property(0, "this is a really long string, believe me!")));
+        assertEquals(recordCount + 1, dynamicStringRecordsInUse());
+        assertEquals(propCount + 1, propertyRecordsInUse());
 
         // WHEN
-        setProperty( 0, "value" );
+        setProperty(0, "value");
 
         // THEN
-        assertChain( record( property( 0, "value", false ) ) );
-        assertEquals( recordCount + 1, dynamicStringRecordsInUse() );
-        assertEquals( propCount + 1, propertyRecordsInUse() );
+        assertChain(record(property(0, "value", false)));
+        assertEquals(recordCount + 1, dynamicStringRecordsInUse());
+        assertEquals(propCount + 1, propertyRecordsInUse());
     }
 
     @Test
-    void canReplaceShortStringWithLongString()
-    {
+    void canReplaceShortStringWithLongString() {
         // GIVEN
         long recordCount = dynamicStringRecordsInUse();
         long propCount = propertyRecordsInUse();
-        existingChain( record( property( 0, "value" ) ) );
-        assertEquals( recordCount, dynamicStringRecordsInUse() );
-        assertEquals( propCount + 1, propertyRecordsInUse() );
+        existingChain(record(property(0, "value")));
+        assertEquals(recordCount, dynamicStringRecordsInUse());
+        assertEquals(propCount + 1, propertyRecordsInUse());
 
         // WHEN
         String longString = "this is a really long string, believe me!";
-        setProperty( 0, longString );
+        setProperty(0, longString);
 
         // THEN
-        assertChain( record( property( 0, longString, true ) ) );
-        assertEquals( recordCount + 1, dynamicStringRecordsInUse() );
-        assertEquals( propCount + 1, propertyRecordsInUse() );
+        assertChain(record(property(0, longString, true)));
+        assertEquals(recordCount + 1, dynamicStringRecordsInUse());
+        assertEquals(propCount + 1, propertyRecordsInUse());
     }
 
-    private static void prepareDirtyGenerator( PropertyStore store )
-    {
+    private static void prepareDirtyGenerator(PropertyStore store) {
         var idGenerator = store.getIdGenerator();
-        var marker = idGenerator.marker( NULL_CONTEXT );
-        marker.markDeleted( 1L );
-        idGenerator.clearCache( NULL_CONTEXT );
+        var marker = idGenerator.marker(NULL_CONTEXT);
+        marker.markDeleted(1L);
+        idGenerator.clearCache(NULL_CONTEXT);
     }
 
-    private void assertZeroCursor()
-    {
-        assertThat( cursorContext.getCursorTracer().hits() ).isZero();
-        assertThat( cursorContext.getCursorTracer().pins() ).isZero();
-        assertThat( cursorContext.getCursorTracer().unpins() ).isZero();
+    private void assertZeroCursor() {
+        assertThat(cursorContext.getCursorTracer().hits()).isZero();
+        assertThat(cursorContext.getCursorTracer().pins()).isZero();
+        assertThat(cursorContext.getCursorTracer().unpins()).isZero();
     }
 
-    private void assertOneCursor()
-    {
-        assertThat( cursorContext.getCursorTracer().hits() ).isOne();
-        assertThat( cursorContext.getCursorTracer().pins() ).isOne();
-        assertThat( cursorContext.getCursorTracer().unpins() ).isOne();
+    private void assertOneCursor() {
+        assertThat(cursorContext.getCursorTracer().hits()).isOne();
+        assertThat(cursorContext.getCursorTracer().pins()).isOne();
+        assertThat(cursorContext.getCursorTracer().unpins()).isOne();
     }
 
-    private void existingChain( ExpectedRecord... initialRecords )
-    {
+    private void existingChain(ExpectedRecord... initialRecords) {
         PropertyRecord prev = null;
-        for ( ExpectedRecord initialRecord : initialRecords )
-        {
-            PropertyRecord record = this.records.create( propertyStore.nextId( cursorContext ), primitive.record, NULL_CONTEXT ).forChangingData();
-            record.setInUse( true );
-            existingRecord( record, initialRecord );
+        for (ExpectedRecord initialRecord : initialRecords) {
+            PropertyRecord record = this.records
+                    .create(propertyStore.nextId(cursorContext), primitive.record, NULL_CONTEXT)
+                    .forChangingData();
+            record.setInUse(true);
+            existingRecord(record, initialRecord);
 
-            if ( prev == null )
-            {
+            if (prev == null) {
                 // This is the first one, update primitive to point to this
-                primitive.record.setNextProp( record.getId() );
-            }
-            else
-            {
+                primitive.record.setNextProp(record.getId());
+            } else {
                 // link property records together
-                record.setPrevProp( prev.getId() );
-                prev.setNextProp( record.getId() );
+                record.setPrevProp(prev.getId());
+                prev.setNextProp(record.getId());
             }
 
             prev = record;
@@ -408,168 +384,137 @@ class PropertyCreatorTest
         this.records.commit();
     }
 
-    private void existingRecord( PropertyRecord record, ExpectedRecord initialRecord )
-    {
-        for ( ExpectedProperty initialProperty : initialRecord.properties )
-        {
+    private void existingRecord(PropertyRecord record, ExpectedRecord initialRecord) {
+        for (ExpectedProperty initialProperty : initialRecord.properties) {
             PropertyBlock block = new PropertyBlock();
-            propertyStore.encodeValue( block, initialProperty.key, initialProperty.value, cursorContext, INSTANCE );
-            record.addPropertyBlock( block );
+            propertyStore.encodeValue(block, initialProperty.key, initialProperty.value, cursorContext, INSTANCE);
+            record.addPropertyBlock(block);
         }
-        assertTrue( record.size() <= PropertyType.getPayloadSize() );
+        assertTrue(record.size() <= PropertyType.getPayloadSize());
     }
 
-    private void setProperty( int key, Object value )
-    {
-        creator.primitiveSetProperty( primitive, key, Values.of( value ), records );
+    private void setProperty(int key, Object value) {
+        creator.primitiveSetProperty(primitive, key, Values.of(value), records);
     }
 
-    private void assertChain( ExpectedRecord... expectedRecords )
-    {
+    private void assertChain(ExpectedRecord... expectedRecords) {
         long nextProp = primitive.forReadingLinkage().getNextProp();
         int expectedRecordCursor = 0;
-        while ( !Record.NO_NEXT_PROPERTY.is( nextProp ) )
-        {
-            PropertyRecord record = records.getOrLoad( nextProp, primitive.forReadingLinkage() ).forReadingData();
-            assertRecord( record, expectedRecords[expectedRecordCursor++] );
+        while (!Record.NO_NEXT_PROPERTY.is(nextProp)) {
+            PropertyRecord record =
+                    records.getOrLoad(nextProp, primitive.forReadingLinkage()).forReadingData();
+            assertRecord(record, expectedRecords[expectedRecordCursor++]);
             nextProp = record.getNextProp();
         }
     }
 
-    private void assertRecord( PropertyRecord record, ExpectedRecord expectedRecord )
-    {
-        assertEquals( expectedRecord.properties.length, record.numberOfProperties() );
-        for ( ExpectedProperty expectedProperty : expectedRecord.properties )
-        {
-            PropertyBlock block = record.getPropertyBlock( expectedProperty.key );
-            assertNotNull( block );
-            assertEquals( expectedProperty.value, block.getType().value( block, propertyStore, StoreCursors.NULL ) );
-            if ( expectedProperty.assertHasDynamicRecords != null )
-            {
-                if ( expectedProperty.assertHasDynamicRecords )
-                {
-                    assertThat( block.getValueRecords().size() ).isGreaterThan( 0 );
-                }
-                else
-                {
-                    assertEquals( 0, block.getValueRecords().size() );
+    private void assertRecord(PropertyRecord record, ExpectedRecord expectedRecord) {
+        assertEquals(expectedRecord.properties.length, record.numberOfProperties());
+        for (ExpectedProperty expectedProperty : expectedRecord.properties) {
+            PropertyBlock block = record.getPropertyBlock(expectedProperty.key);
+            assertNotNull(block);
+            assertEquals(expectedProperty.value, block.getType().value(block, propertyStore, StoreCursors.NULL));
+            if (expectedProperty.assertHasDynamicRecords != null) {
+                if (expectedProperty.assertHasDynamicRecords) {
+                    assertThat(block.getValueRecords().size()).isGreaterThan(0);
+                } else {
+                    assertEquals(0, block.getValueRecords().size());
                 }
             }
         }
     }
 
-    private static class ExpectedProperty
-    {
+    private static class ExpectedProperty {
         private final int key;
         private final Value value;
         private final Boolean assertHasDynamicRecords;
 
-        ExpectedProperty( int key, Object value )
-        {
-            this( key, value, null /*don't care*/ );
+        ExpectedProperty(int key, Object value) {
+            this(key, value, null /*don't care*/);
         }
 
-        ExpectedProperty( int key, Object value, Boolean assertHasDynamicRecords )
-        {
+        ExpectedProperty(int key, Object value, Boolean assertHasDynamicRecords) {
             this.key = key;
-            this.value = Values.of( value );
+            this.value = Values.of(value);
             this.assertHasDynamicRecords = assertHasDynamicRecords;
         }
     }
 
-    private record ExpectedRecord(ExpectedProperty... properties)
-    {
+    private record ExpectedRecord(ExpectedProperty... properties) {}
+
+    private static ExpectedProperty property(int key, Object value) {
+        return new ExpectedProperty(key, value);
     }
 
-    private static ExpectedProperty property( int key, Object value )
-    {
-        return new ExpectedProperty( key, value );
+    private static ExpectedProperty property(int key, Object value, boolean hasDynamicRecords) {
+        return new ExpectedProperty(key, value, hasDynamicRecords);
     }
 
-    private static ExpectedProperty property( int key, Object value, boolean hasDynamicRecords )
-    {
-        return new ExpectedProperty( key, value, hasDynamicRecords );
+    private static ExpectedRecord record(ExpectedProperty... properties) {
+        return new ExpectedRecord(properties);
     }
 
-    private static ExpectedRecord record( ExpectedProperty... properties )
-    {
-        return new ExpectedRecord( properties );
-    }
-
-    private static class MyPrimitiveProxy implements RecordProxy<NodeRecord,Void>
-    {
-        private final NodeRecord record = new NodeRecord( 5 );
+    private static class MyPrimitiveProxy implements RecordProxy<NodeRecord, Void> {
+        private final NodeRecord record = new NodeRecord(5);
         private boolean changed;
 
-        MyPrimitiveProxy()
-        {
-            record.setInUse( true );
+        MyPrimitiveProxy() {
+            record.setInUse(true);
         }
 
         @Override
-        public long getKey()
-        {
+        public long getKey() {
             return record.getId();
         }
 
         @Override
-        public NodeRecord forChangingLinkage()
-        {
+        public NodeRecord forChangingLinkage() {
             changed = true;
             return record;
         }
 
         @Override
-        public NodeRecord forChangingData()
-        {
+        public NodeRecord forChangingData() {
             changed = true;
             return record;
         }
 
         @Override
-        public NodeRecord forReadingLinkage()
-        {
+        public NodeRecord forReadingLinkage() {
             return record;
         }
 
         @Override
-        public NodeRecord forReadingData()
-        {
+        public NodeRecord forReadingData() {
             return record;
         }
 
         @Override
-        public Void getAdditionalData()
-        {
+        public Void getAdditionalData() {
             return null;
         }
 
         @Override
-        public NodeRecord getBefore()
-        {
+        public NodeRecord getBefore() {
             return record;
         }
 
         @Override
-        public boolean isChanged()
-        {
+        public boolean isChanged() {
             return changed;
         }
 
         @Override
-        public boolean isCreated()
-        {
+        public boolean isCreated() {
             return false;
         }
     }
 
-    private long propertyRecordsInUse()
-    {
+    private long propertyRecordsInUse() {
         return propertyStore.getHighId();
     }
 
-    private long dynamicStringRecordsInUse()
-    {
+    private long dynamicStringRecordsInUse() {
         return propertyStore.getStringStore().getHighId();
     }
 }

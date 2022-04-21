@@ -20,25 +20,22 @@
 package org.neo4j.token;
 
 import java.util.function.IntPredicate;
-
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 
 /**
  * When the database is marked as read-only, then no tokens can be created.
  */
-public class ReadOnlyTokenCreator implements TokenCreator
-{
+public class ReadOnlyTokenCreator implements TokenCreator {
     public static final TokenCreator READ_ONLY = new ReadOnlyTokenCreator();
 
     @Override
-    public int createToken( String name, boolean internal ) throws ReadOnlyDbException
-    {
+    public int createToken(String name, boolean internal) throws ReadOnlyDbException {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public void createTokens( String[] names, int[] ids, boolean internal, IntPredicate filter ) throws ReadOnlyDbException
-    {
+    public void createTokens(String[] names, int[] ids, boolean internal, IntPredicate filter)
+            throws ReadOnlyDbException {
         throw new ReadOnlyDbException();
     }
 }

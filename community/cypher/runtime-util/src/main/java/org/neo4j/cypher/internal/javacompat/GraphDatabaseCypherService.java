@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.javacompat;
 
 import java.net.URL;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -36,58 +35,54 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
-public class GraphDatabaseCypherService implements GraphDatabaseQueryService
-{
+public class GraphDatabaseCypherService implements GraphDatabaseQueryService {
     private final GraphDatabaseAPI graph;
     private final URLAccessRule urlAccessRule;
     private final Config config;
 
-    public GraphDatabaseCypherService( GraphDatabaseService graph )
-    {
+    public GraphDatabaseCypherService(GraphDatabaseService graph) {
         this.graph = (GraphDatabaseAPI) graph;
         DependencyResolver dependencyResolver = getDependencyResolver();
-        this.urlAccessRule = dependencyResolver.resolveDependency( URLAccessRule.class );
-        this.config = dependencyResolver.resolveDependency( Config.class );
+        this.urlAccessRule = dependencyResolver.resolveDependency(URLAccessRule.class);
+        this.config = dependencyResolver.resolveDependency(Config.class);
     }
 
     @Override
-    public DependencyResolver getDependencyResolver()
-    {
+    public DependencyResolver getDependencyResolver() {
         return graph.getDependencyResolver();
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext )
-    {
-        return graph.beginTransaction( type, loginContext );
+    public InternalTransaction beginTransaction(KernelTransaction.Type type, LoginContext loginContext) {
+        return graph.beginTransaction(type, loginContext);
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo )
-    {
-        return graph.beginTransaction( type, loginContext, connectionInfo );
+    public InternalTransaction beginTransaction(
+            KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo) {
+        return graph.beginTransaction(type, loginContext, connectionInfo);
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
-            long timeout, TimeUnit unit )
-    {
-        return graph.beginTransaction( type, loginContext, connectionInfo, timeout, unit );
+    public InternalTransaction beginTransaction(
+            KernelTransaction.Type type,
+            LoginContext loginContext,
+            ClientConnectionInfo connectionInfo,
+            long timeout,
+            TimeUnit unit) {
+        return graph.beginTransaction(type, loginContext, connectionInfo, timeout, unit);
     }
 
     @Override
-    public URL validateURLAccess( URL url ) throws URLAccessValidationError
-    {
-        return urlAccessRule.validate( config, url );
+    public URL validateURLAccess(URL url) throws URLAccessValidationError {
+        return urlAccessRule.validate(config, url);
     }
 
-    public Transaction beginTx()
-    {
+    public Transaction beginTx() {
         return graph.beginTx();
     }
 
-    public void executeTransactionally( String query ) throws QueryExecutionException
-    {
-        graph.executeTransactionally( query );
+    public void executeTransactionally(String query) throws QueryExecutionException {
+        graph.executeTransactionally(query);
     }
 }

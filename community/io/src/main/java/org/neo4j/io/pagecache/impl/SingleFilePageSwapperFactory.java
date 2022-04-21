@@ -22,7 +22,6 @@ package org.neo4j.io.pagecache.impl;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOController;
@@ -38,37 +37,49 @@ import org.neo4j.memory.MemoryTracker;
  *
  * @see org.neo4j.io.pagecache.impl.SingleFilePageSwapper
  */
-public class SingleFilePageSwapperFactory implements PageSwapperFactory
-{
+public class SingleFilePageSwapperFactory implements PageSwapperFactory {
     private final FileSystemAbstraction fs;
     private final PageCacheTracer pageCacheTracer;
     private final BlockSwapper blockSwapper;
 
-    public SingleFilePageSwapperFactory( FileSystemAbstraction fs, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
-    {
+    public SingleFilePageSwapperFactory(
+            FileSystemAbstraction fs, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker) {
         this.fs = fs;
         this.pageCacheTracer = pageCacheTracer;
-        this.blockSwapper = createBlockSwapper( memoryTracker );
+        this.blockSwapper = createBlockSwapper(memoryTracker);
     }
 
     @Override
-    public PageSwapper createPageSwapper( Path file, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist, boolean useDirectIO,
-                                          boolean preallocateStoreFiles, IOController ioController, SwapperSet swappers ) throws IOException
-    {
-        if ( !createIfNotExist && !fs.fileExists( file ) )
-        {
-            throw new NoSuchFileException( file.toString(), null, "Cannot map non-existing file" );
+    public PageSwapper createPageSwapper(
+            Path file,
+            int filePageSize,
+            PageEvictionCallback onEviction,
+            boolean createIfNotExist,
+            boolean useDirectIO,
+            boolean preallocateStoreFiles,
+            IOController ioController,
+            SwapperSet swappers)
+            throws IOException {
+        if (!createIfNotExist && !fs.fileExists(file)) {
+            throw new NoSuchFileException(file.toString(), null, "Cannot map non-existing file");
         }
-        return new SingleFilePageSwapper( file, fs, filePageSize, onEviction, useDirectIO, preallocateStoreFiles, ioController, swappers,
-                                          pageCacheTracer.createFileSwapperTracer(), blockSwapper );
+        return new SingleFilePageSwapper(
+                file,
+                fs,
+                filePageSize,
+                onEviction,
+                useDirectIO,
+                preallocateStoreFiles,
+                ioController,
+                swappers,
+                pageCacheTracer.createFileSwapperTracer(),
+                blockSwapper);
     }
 
-    private static BlockSwapper createBlockSwapper( MemoryTracker memoryTracker )
-    {
-        if ( UnsafeUtil.unsafeByteBufferAccessAvailable() )
-        {
+    private static BlockSwapper createBlockSwapper(MemoryTracker memoryTracker) {
+        if (UnsafeUtil.unsafeByteBufferAccessAvailable()) {
             return new UnsafeBlockSwapper();
         }
-        return new FallbackBlockSwapper( memoryTracker );
+        return new FallbackBlockSwapper(memoryTracker);
     }
 }

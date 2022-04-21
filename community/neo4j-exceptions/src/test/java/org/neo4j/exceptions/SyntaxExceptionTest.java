@@ -19,295 +19,215 @@
  */
 package org.neo4j.exceptions;
 
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-
 import static java.lang.System.lineSeparator;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class SyntaxExceptionTest
-{
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import org.junit.jupiter.api.Test;
+
+class SyntaxExceptionTest {
 
     @Test
-    void messageWithoutOffset()
-    {
+    void messageWithoutOffset() {
         String message = "Message";
-        SyntaxException e = new SyntaxException( message );
-        assertEquals( message, e.getMessage() );
+        SyntaxException e = new SyntaxException(message);
+        assertEquals(message, e.getMessage());
     }
 
     @Test
-    void messageWithEmptyQuery()
-    {
+    void messageWithEmptyQuery() {
         String message = "Message";
         String query = "";
         int offset = 0;
-        SyntaxException e = new SyntaxException( message, query, offset );
+        SyntaxException e = new SyntaxException(message, query, offset);
 
-        String expected = formatExpectedString(
-                "Message",
-                "",
-                "^"
-        );
+        String expected = formatExpectedString("Message", "", "^");
 
-        assertEquals( expected, e.getMessage() );
+        assertEquals(expected, e.getMessage());
     }
 
     @Test
-    void messageWithJustNewlineQuery()
-    {
+    void messageWithJustNewlineQuery() {
         String message = "Message";
         String query = "\n";
         int offset = 0;
-        SyntaxException e = new SyntaxException( message, query, offset );
+        SyntaxException e = new SyntaxException(message, query, offset);
 
-        String expected = formatExpectedString(
-                "Message",
-                "",
-                "^"
-        );
+        String expected = formatExpectedString("Message", "", "^");
 
-        assertEquals( expected, e.getMessage() );
+        assertEquals(expected, e.getMessage());
     }
 
     @Test
-    void messageWithJustWindowsNewlineQuery()
-    {
+    void messageWithJustWindowsNewlineQuery() {
         String message = "Message";
         String query = "\r\n";
         int offset = 0;
-        SyntaxException e = new SyntaxException( message, query, offset );
+        SyntaxException e = new SyntaxException(message, query, offset);
 
-        String expected = formatExpectedString(
-                "Message",
-                "",
-                "^"
-        );
+        String expected = formatExpectedString("Message", "", "^");
 
-        assertEquals( expected, e.getMessage() );
+        assertEquals(expected, e.getMessage());
     }
 
     @Test
-    void messageWithSingleLineQuery()
-    {
+    void messageWithSingleLineQuery() {
         String message = "Message";
         String query = "The error is here.";
         int offset = 13;
-        SyntaxException e = new SyntaxException( message, query, offset );
+        SyntaxException e = new SyntaxException(message, query, offset);
 
-        String expected = formatExpectedString(
-                "Message",
-                "The error is here.",
-                "             ^"
-        );
+        String expected = formatExpectedString("Message", "The error is here.", "             ^");
 
-        assertEquals( expected, e.getMessage() );
+        assertEquals(expected, e.getMessage());
     }
 
     @Test
-    void messageWithSingleLineQueryAndOffsetTooHigh()
-    {
+    void messageWithSingleLineQueryAndOffsetTooHigh() {
         String message = "Message";
         String query = "The error is here.";
         int offset = 100;
-        SyntaxException e = new SyntaxException( message, query, offset );
+        SyntaxException e = new SyntaxException(message, query, offset);
 
-        String expected = formatExpectedString(
-                "Message",
-                "The error is here.",
-                "                  ^"
-        );
+        String expected = formatExpectedString("Message", "The error is here.", "                  ^");
 
-        assertEquals( expected, e.getMessage() );
+        assertEquals(expected, e.getMessage());
     }
 
     @Test
-    void messageWithMultiLineQueryAndOffsetInFirstLine()
-    {
+    void messageWithMultiLineQueryAndOffsetInFirstLine() {
         String message = "Message";
         String query = "The error is here.\nSome random text.";
         int offset = 13;
-        SyntaxException e = new SyntaxException( message, query, offset );
+        SyntaxException e = new SyntaxException(message, query, offset);
 
-        String expected = formatExpectedString(
-                "Message",
-                "The error is here.",
-                "             ^"
-        );
+        String expected = formatExpectedString("Message", "The error is here.", "             ^");
 
-        assertEquals( expected, e.getMessage() );
+        assertEquals(expected, e.getMessage());
     }
 
     @Test
-    void messageWithWindowsMultiLineQueryAndOffsetInFirstLine()
-    {
+    void messageWithWindowsMultiLineQueryAndOffsetInFirstLine() {
         String message = "Message";
         String query = "The error is here.\r\nSome random text.";
         int offset = 13;
-        SyntaxException e = new SyntaxException( message, query, offset );
+        SyntaxException e = new SyntaxException(message, query, offset);
 
-        String expected = formatExpectedString(
-                "Message",
-                "The error is here.",
-                "             ^"
-        );
+        String expected = formatExpectedString("Message", "The error is here.", "             ^");
 
-        assertEquals( expected, e.getMessage() );
+        assertEquals(expected, e.getMessage());
     }
 
     @Test
-    void messageWithMultiLineQueryAndOffsetAtEndOfFirstLine()
-    {
+    void messageWithMultiLineQueryAndOffsetAtEndOfFirstLine() {
         String message = "Message";
         String query = "The error is here.\nSome random text.";
         int offset = 18;
-        SyntaxException e = new SyntaxException( message, query, offset );
+        SyntaxException e = new SyntaxException(message, query, offset);
 
-        String expected = formatExpectedString(
-                "Message",
-                "The error is here.",
-                "                  ^"
-        );
+        String expected = formatExpectedString("Message", "The error is here.", "                  ^");
 
-        assertEquals( expected, e.getMessage() );
+        assertEquals(expected, e.getMessage());
     }
 
     @Test
-    void messageWithWindowsMultiLineQueryAndOffsetAtEndOfFirstLine()
-    {
+    void messageWithWindowsMultiLineQueryAndOffsetAtEndOfFirstLine() {
         String message = "Message";
         String query = "The error is here.\r\nSome random text.";
         int offset = 18;
-        SyntaxException e = new SyntaxException( message, query, offset );
+        SyntaxException e = new SyntaxException(message, query, offset);
 
-        String expected = formatExpectedString(
-                "Message",
-                "The error is here.",
-                "                  ^"
-        );
+        String expected = formatExpectedString("Message", "The error is here.", "                  ^");
 
-        assertEquals( expected, e.getMessage() );
+        assertEquals(expected, e.getMessage());
     }
 
     @Test
-    void messageWithMultiLineQueryAndOffsetAtBeginningOfSecondLine()
-    {
+    void messageWithMultiLineQueryAndOffsetAtBeginningOfSecondLine() {
         String message = "Message";
         String query = "The error is here.\nSome random text.";
         int offset = 19;
-        SyntaxException e = new SyntaxException( message, query, offset );
+        SyntaxException e = new SyntaxException(message, query, offset);
 
-        String expected = formatExpectedString(
-                "Message",
-                "Some random text.",
-                "^"
-        );
+        String expected = formatExpectedString("Message", "Some random text.", "^");
 
-        assertEquals( expected, e.getMessage() );
+        assertEquals(expected, e.getMessage());
     }
 
     @Test
-    void messageWithWindowsMultiLineQueryAndOffsetAtBeginningOfSecondLine()
-    {
+    void messageWithWindowsMultiLineQueryAndOffsetAtBeginningOfSecondLine() {
         String message = "Message";
         String query = "The error is here.\r\nSome random text.";
         int offset = 19 + 1; // account for \r
-        SyntaxException e = new SyntaxException( message, query, offset );
+        SyntaxException e = new SyntaxException(message, query, offset);
 
-        String expected = formatExpectedString(
-                "Message",
-                "Some random text.",
-                "^"
-        );
+        String expected = formatExpectedString("Message", "Some random text.", "^");
 
-        assertEquals( expected, e.getMessage() );
+        assertEquals(expected, e.getMessage());
     }
 
     @Test
-    void messageWithMultiLineQueryAndOffsetInSecondLine()
-    {
+    void messageWithMultiLineQueryAndOffsetInSecondLine() {
         String message = "Message";
         String query = "Some random text.\nThe error is here.";
         int offset = 31;
-        SyntaxException e = new SyntaxException( message, query, offset );
+        SyntaxException e = new SyntaxException(message, query, offset);
 
-        String expected = formatExpectedString(
-                "Message",
-                "The error is here.",
-                "             ^"
-        );
+        String expected = formatExpectedString("Message", "The error is here.", "             ^");
 
-        assertEquals( expected, e.getMessage() );
+        assertEquals(expected, e.getMessage());
     }
 
     @Test
-    void messageWithWindowsMultiLineQueryAndOffsetInSecondLine()
-    {
+    void messageWithWindowsMultiLineQueryAndOffsetInSecondLine() {
         String message = "Message";
         String query = "Some random text.\r\nThe error is here.";
         int offset = 31 + 1; // account for \r
-        SyntaxException e = new SyntaxException( message, query, offset );
+        SyntaxException e = new SyntaxException(message, query, offset);
 
-        String expected = formatExpectedString(
-                "Message",
-                "The error is here.",
-                "             ^"
-        );
+        String expected = formatExpectedString("Message", "The error is here.", "             ^");
 
-        assertEquals( expected, e.getMessage() );
+        assertEquals(expected, e.getMessage());
     }
 
     @Test
-    void messageWithMultiLineQueryAndOffsetTooHigh()
-    {
+    void messageWithMultiLineQueryAndOffsetTooHigh() {
         String message = "Message";
         String query = "Some random text.\nThe error is here.";
         int offset = 100;
-        SyntaxException e = new SyntaxException( message, query, offset );
+        SyntaxException e = new SyntaxException(message, query, offset);
 
-        String expected = formatExpectedString(
-                "Message",
-                "The error is here.",
-                "                  ^"
-        );
+        String expected = formatExpectedString("Message", "The error is here.", "                  ^");
 
-        assertEquals( expected, e.getMessage() );
+        assertEquals(expected, e.getMessage());
     }
 
     @Test
-    void messageWithWindowsMultiLineQueryAndOffsetTooHigh()
-    {
+    void messageWithWindowsMultiLineQueryAndOffsetTooHigh() {
         String message = "Message";
         String query = "Some random text.\r\nThe error is here.";
         int offset = 100;
-        SyntaxException e = new SyntaxException( message, query, offset );
+        SyntaxException e = new SyntaxException(message, query, offset);
 
-        String expected = formatExpectedString(
-                "Message",
-                "The error is here.",
-                "                  ^"
-        );
+        String expected = formatExpectedString("Message", "The error is here.", "                  ^");
 
-        assertEquals( expected, e.getMessage() );
+        assertEquals(expected, e.getMessage());
     }
 
     @Test
-    void shouldSerialize() throws IOException
-    {
+    void shouldSerialize() throws IOException {
         // Given
-        SyntaxException e = new SyntaxException( "Message" );
-        ObjectOutputStream stream = new ObjectOutputStream( OutputStream.nullOutputStream() );
+        SyntaxException e = new SyntaxException("Message");
+        ObjectOutputStream stream = new ObjectOutputStream(OutputStream.nullOutputStream());
 
         // Then
-        assertDoesNotThrow( () -> stream.writeObject( e ) );
+        assertDoesNotThrow(() -> stream.writeObject(e));
     }
 
-    private static String formatExpectedString( String messageLine, String errorLine, String caretLine )
-    {
-        return String.format( "%s%s\"%s\"%s %s", messageLine, lineSeparator(), errorLine, lineSeparator(), caretLine );
+    private static String formatExpectedString(String messageLine, String errorLine, String caretLine) {
+        return String.format("%s%s\"%s\"%s %s", messageLine, lineSeparator(), errorLine, lineSeparator(), caretLine);
     }
 }

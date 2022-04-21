@@ -27,8 +27,7 @@ import java.util.concurrent.ThreadFactory;
  * Thread factories used by the {@link JobScheduler} need to be able to create both normal threads, and {@link ForkJoinWorkerThread}s.
  * This interface collects the capabilities of both types of thread factories.
  */
-public interface SchedulerThreadFactory extends ThreadFactory, ForkJoinPool.ForkJoinWorkerThreadFactory
-{
+public interface SchedulerThreadFactory extends ThreadFactory, ForkJoinPool.ForkJoinWorkerThreadFactory {
     /**
      * Get the {@link ThreadGroup} instance that all threads from this thread factory are allocated within.
      * @return The {@link ThreadGroup} for this thread factory.
