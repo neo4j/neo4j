@@ -184,7 +184,7 @@ public final class SettingMigrators {
                 "bolt.ssl_policy", SslPolicyScope.BOLT,
                 "https.ssl_policy", SslPolicyScope.HTTPS,
                 "dbms.backup.ssl_policy", SslPolicyScope.BACKUP,
-                "causal_clustering.ssl_policy", SslPolicyScope.CLUSTER);
+                "cluster.ssl_policy", SslPolicyScope.CLUSTER);
 
         private static final List<String> legacySettings = List.of(
                 "dbms.directories.certificates",
@@ -496,143 +496,123 @@ public final class SettingMigrators {
         private static final Collection<Mapping> legacyUnsupportedSettingsMapping = List.of(
                 new Mapping(
                         "causal_clustering.akka_actor_system_restarter.initial_delay",
-                        "internal.causal_clustering.akka_actor_system_restarter.initial_delay"),
+                        "internal.cluster.akka_actor_system_restarter.initial_delay"),
                 new Mapping(
                         "causal_clustering.akka_actor_system_restarter.max_acceptable_failures",
-                        "internal.causal_clustering.akka_actor_system_restarter.max_acceptable_failures"),
+                        "internal.cluster.akka_actor_system_restarter.max_acceptable_failures"),
                 new Mapping(
                         "causal_clustering.akka_actor_system_restarter.max_delay",
-                        "internal.causal_clustering.akka_actor_system_restarter.max_delay"),
+                        "internal.cluster.akka_actor_system_restarter.max_delay"),
                 new Mapping(
                         "causal_clustering.cluster_binding_retry_timeout",
-                        "internal.causal_clustering.cluster_binding_retry_timeout"),
+                        "internal.cluster.cluster_binding_retry_timeout"),
                 new Mapping(
-                        "causal_clustering.cluster_id_publish_timeout",
-                        "internal.causal_clustering.cluster_id_publish_timeout"),
+                        "causal_clustering.cluster_id_publish_timeout", "internal.cluster.cluster_id_publish_timeout"),
                 new Mapping(
                         "causal_clustering.cluster_info_polling_max_wait",
-                        "internal.causal_clustering.cluster_info_polling_max_wait"),
+                        "internal.cluster.cluster_info_polling_max_wait"),
                 new Mapping(
                         "causal_clustering.discovery_resolution_retry_interval",
-                        "internal.causal_clustering.discovery_resolution_retry_interval"),
+                        "internal.cluster.discovery_resolution_retry_interval"),
                 new Mapping(
                         "causal_clustering.discovery_resolution_timeout",
-                        "internal.causal_clustering.discovery_resolution_timeout"),
-                new Mapping(
-                        "causal_clustering.enable_seed_validation",
-                        "internal.causal_clustering.enable_seed_validation"),
-                new Mapping(
-                        "causal_clustering.leader_transfer_interval",
-                        "internal.causal_clustering.leader_transfer_interval"),
+                        "internal.cluster.discovery_resolution_timeout"),
+                new Mapping("causal_clustering.enable_seed_validation", "internal.cluster.enable_seed_validation"),
+                new Mapping("causal_clustering.leader_transfer_interval", "internal.cluster.leader_transfer_interval"),
                 new Mapping(
                         "causal_clustering.leader_transfer_member_backoff",
-                        "internal.causal_clustering.leader_transfer_member_backoff"),
+                        "internal.cluster.leader_transfer_member_backoff"),
+                new Mapping("causal_clustering.leader_transfer_timeout", "internal.cluster.leader_transfer_timeout"),
                 new Mapping(
-                        "causal_clustering.leader_transfer_timeout",
-                        "internal.causal_clustering.leader_transfer_timeout"),
-                new Mapping(
-                        "causal_clustering.max_commits_delay_id_reuse",
-                        "internal.causal_clustering.max_commits_delay_id_reuse"),
-                new Mapping(
-                        "causal_clustering.max_time_delay_id_reuse",
-                        "internal.causal_clustering.max_time_delay_id_reuse"),
+                        "causal_clustering.max_commits_delay_id_reuse", "internal.cluster.max_commits_delay_id_reuse"),
+                new Mapping("causal_clustering.max_time_delay_id_reuse", "internal.cluster.max_time_delay_id_reuse"),
                 new Mapping(
                         "causal_clustering.middleware.akka.allow_any_core_to_bootstrap",
-                        "internal.causal_clustering.middleware.akka.allow_any_core_to_bootstrap"),
+                        "internal.cluster.middleware.akka.allow_any_core_to_bootstrap"),
                 new Mapping(
                         "causal_clustering.middleware.akka.bind_timeout",
-                        "internal.causal_clustering.middleware.akka.bind_timeout"),
+                        "internal.cluster.middleware.akka.bind_timeout"),
                 new Mapping(
                         "causal_clustering.middleware.akka.cluster.min_nr_of_members",
-                        "internal.causal_clustering.middleware.akka.cluster.min_nr_of_members"),
+                        "internal.cluster.middleware.akka.cluster.min_nr_of_members"),
                 new Mapping(
                         "causal_clustering.middleware.akka.cluster.seed_node_timeout",
-                        "internal.causal_clustering.middleware.akka.cluster.seed_node_timeout"),
+                        "internal.cluster.middleware.akka.cluster.seed_node_timeout"),
                 new Mapping(
                         "causal_clustering.middleware.akka.cluster.seed_node_timeout_on_first_start",
-                        "internal.causal_clustering.middleware.akka.cluster.seed_node_timeout_on_first_start"),
+                        "internal.cluster.middleware.akka.cluster.seed_node_timeout_on_first_start"),
                 new Mapping(
                         "causal_clustering.middleware.akka.connection_timeout",
-                        "internal.causal_clustering.middleware.akka.connection_timeout"),
+                        "internal.cluster.middleware.akka.connection_timeout"),
                 new Mapping(
                         "causal_clustering.middleware.akka.default_parallelism",
-                        "internal.causal_clustering.middleware.akka.default_parallelism"),
+                        "internal.cluster.middleware.akka.default_parallelism"),
                 new Mapping(
                         "causal_clustering.middleware.akka.down_unreachable_on_new_joiner",
-                        "internal.causal_clustering.middleware.akka.down_unreachable_on_new_joiner"),
+                        "internal.cluster.middleware.akka.down_unreachable_on_new_joiner"),
                 new Mapping(
                         "causal_clustering.middleware.akka.external_config",
-                        "internal.causal_clustering.middleware.akka.external_config"),
+                        "internal.cluster.middleware.akka.external_config"),
                 new Mapping(
                         "causal_clustering.middleware.akka.failure_detector.acceptable_heartbeat_pause",
-                        "internal.causal_clustering.middleware.akka.failure_detector.acceptable_heartbeat_pause"),
+                        "internal.cluster.middleware.akka.failure_detector.acceptable_heartbeat_pause"),
                 new Mapping(
                         "causal_clustering.middleware.akka.failure_detector.expected_response_after",
-                        "internal.causal_clustering.middleware.akka.failure_detector.expected_response_after"),
+                        "internal.cluster.middleware.akka.failure_detector.expected_response_after"),
                 new Mapping(
                         "causal_clustering.middleware.akka.failure_detector.heartbeat_interval",
-                        "internal.causal_clustering.middleware.akka.failure_detector.heartbeat_interval"),
+                        "internal.cluster.middleware.akka.failure_detector.heartbeat_interval"),
                 new Mapping(
                         "causal_clustering.middleware.akka.failure_detector.max_sample_size",
-                        "internal.causal_clustering.middleware.akka.failure_detector.max_sample_size"),
+                        "internal.cluster.middleware.akka.failure_detector.max_sample_size"),
                 new Mapping(
                         "causal_clustering.middleware.akka.failure_detector.min_std_deviation",
-                        "internal.causal_clustering.middleware.akka.failure_detector.min_std_deviation"),
+                        "internal.cluster.middleware.akka.failure_detector.min_std_deviation"),
                 new Mapping(
                         "causal_clustering.middleware.akka.failure_detector.monitored_by_nr_of_members",
-                        "internal.causal_clustering.middleware.akka.failure_detector.monitored_by_nr_of_members"),
+                        "internal.cluster.middleware.akka.failure_detector.monitored_by_nr_of_members"),
                 new Mapping(
                         "causal_clustering.middleware.akka.failure_detector.threshold",
-                        "internal.causal_clustering.middleware.akka.failure_detector.threshold"),
+                        "internal.cluster.middleware.akka.failure_detector.threshold"),
                 new Mapping(
                         "causal_clustering.middleware.akka.handshake_timeout",
-                        "internal.causal_clustering.middleware.akka.handshake_timeout"),
+                        "internal.cluster.middleware.akka.handshake_timeout"),
                 new Mapping(
                         "causal_clustering.middleware.akka.shutdown_timeout",
-                        "internal.causal_clustering.middleware.akka.shutdown_timeout"),
+                        "internal.cluster.middleware.akka.shutdown_timeout"),
                 new Mapping(
                         "causal_clustering.middleware.akka.sink_parallelism",
-                        "internal.causal_clustering.middleware.akka.sink_parallelism"),
-                new Mapping(
-                        "causal_clustering.min_time_delay_id_reuse",
-                        "internal.causal_clustering.min_time_delay_id_reuse"),
+                        "internal.cluster.middleware.akka.sink_parallelism"),
+                new Mapping("causal_clustering.min_time_delay_id_reuse", "internal.cluster.min_time_delay_id_reuse"),
                 new Mapping(
                         "causal_clustering.raft_group_graveyard_state_size",
-                        "internal.causal_clustering.raft_group_graveyard_state_size"),
-                new Mapping(
-                        "causal_clustering.raft_in_queue_max_batch",
-                        "internal.causal_clustering.raft_in_queue_max_batch"),
-                new Mapping("causal_clustering.raft_in_queue_size", "internal.causal_clustering.raft_in_queue_size"),
-                new Mapping(
-                        "causal_clustering.raft_messages_log_enable",
-                        "internal.causal_clustering.raft_messages_log_enable"),
-                new Mapping(
-                        "causal_clustering.raft_messages_log_path",
-                        "internal.causal_clustering.raft_messages_log_path"),
+                        "internal.cluster.raft_group_graveyard_state_size"),
+                new Mapping("causal_clustering.raft_in_queue_max_batch", "internal.cluster.raft_in_queue_max_batch"),
+                new Mapping("causal_clustering.raft_in_queue_size", "internal.cluster.raft_in_queue_size"),
+                new Mapping("causal_clustering.raft_messages_log_enable", "internal.cluster.raft_messages_log_enable"),
+                new Mapping("causal_clustering.raft_messages_log_path", "internal.cluster.raft_messages_log_path"),
                 new Mapping(
                         "causal_clustering.read_replica_transaction_applier_batch_size",
-                        "internal.causal_clustering.read_replica_transaction_applier_batch_size"),
+                        "internal.cluster.read_replica_transaction_applier_batch_size"),
                 new Mapping(
                         "causal_clustering.read_replica_transaction_applier_max_queue_size",
-                        "internal.causal_clustering.read_replica_transaction_applier_max_queue_size"),
-                new Mapping(
-                        "causal_clustering.seed_validation_timeout",
-                        "internal.causal_clustering.seed_validation_timeout"),
+                        "internal.cluster.read_replica_transaction_applier_max_queue_size"),
+                new Mapping("causal_clustering.seed_validation_timeout", "internal.cluster.seed_validation_timeout"),
                 new Mapping(
                         "causal_clustering.store_copy_backoff_max_wait",
-                        "internal.causal_clustering.store_copy_backoff_max_wait"),
+                        "internal.cluster.store_copy_backoff_max_wait"),
                 new Mapping(
                         "causal_clustering.store_size_service_cache_timeout",
-                        "internal.causal_clustering.store_size_service_cache_timeout"),
+                        "internal.cluster.store_size_service_cache_timeout"),
                 new Mapping(
                         "causal_clustering.temporary_database.extension_package_names",
-                        "internal.causal_clustering.temporary_database.extension_package_names"),
+                        "internal.cluster.temporary_database.extension_package_names"),
                 new Mapping(
                         "causal_clustering.topology_graph.default_num_primaries",
-                        "internal.causal_clustering.topology_graph.default_num_primaries"),
+                        "internal.cluster.topology_graph.default_num_primaries"),
                 new Mapping(
                         "causal_clustering.topology_graph.default_num_secondaries",
-                        "internal.causal_clustering.topology_graph.default_num_secondaries"),
+                        "internal.cluster.topology_graph.default_num_secondaries"),
                 new Mapping("dbms.capabilities.blocked", "internal.dbms.capabilities.blocked"),
                 new Mapping("dbms.connector.bolt.tcp_keep_alive", "internal.dbms.connector.bolt.tcp_keep_alive"),
                 new Mapping(
@@ -707,22 +687,22 @@ public final class SettingMigrators {
                         "internal.bootloader.auto.configuration.tx_limit.min"),
                 new Mapping(
                         "unsupported.causal_clustering.cluster_status_request_maximum_wait",
-                        "internal.causal_clustering.cluster_status_request_maximum_wait"),
+                        "internal.cluster.cluster_status_request_maximum_wait"),
                 new Mapping(
                         "unsupported.causal_clustering.experimental_catchup_protocol_enabled",
-                        "internal.causal_clustering.experimental_catchup_protocol_enabled"),
+                        "internal.cluster.experimental_catchup_protocol_enabled"),
                 new Mapping(
                         "unsupported.causal_clustering.experimental_consensus_protocol_enabled",
-                        "internal.causal_clustering.experimental_consensus_protocol_enabled"),
+                        "internal.cluster.experimental_consensus_protocol_enabled"),
                 new Mapping(
                         "unsupported.causal_clustering.experimental_dbms_protocol_enabled",
-                        "internal.causal_clustering.experimental_dbms_protocol_enabled"),
+                        "internal.cluster.experimental_dbms_protocol_enabled"),
                 new Mapping(
                         "unsupported.causal_clustering.experimental_raft_protocol_enabled",
-                        "internal.causal_clustering.experimental_raft_protocol_enabled"),
+                        "internal.cluster.experimental_raft_protocol_enabled"),
                 new Mapping(
                         "unsupported.causal_clustering.inbound_connection_initialization_logging_enabled",
-                        "internal.causal_clustering.inbound_connection_initialization_logging_enabled"),
+                        "internal.cluster.inbound_connection_initialization_logging_enabled"),
                 new Mapping(
                         "unsupported.consistency_checker.fail_fast_threshold",
                         "internal.consistency_checker.fail_fast_threshold"),

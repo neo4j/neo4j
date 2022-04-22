@@ -90,7 +90,7 @@ class SettingMigratorsTest {
                 "bolt.ssl_policy", SslPolicyScope.BOLT,
                 "https.ssl_policy", SslPolicyScope.HTTPS,
                 "dbms.backup.ssl_policy", SslPolicyScope.BACKUP,
-                "causal_clustering.ssl_policy", SslPolicyScope.CLUSTER);
+                "cluster.ssl_policy", SslPolicyScope.CLUSTER);
         sources.forEach((setting, source) -> {
             tests.add(dynamicTest(
                     String.format("Test migration of SslPolicy for source '%s'.", source.name()),
