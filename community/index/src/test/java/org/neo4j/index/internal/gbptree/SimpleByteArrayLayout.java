@@ -272,4 +272,14 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes, RawBytes> {
         buffer.put(new byte[tail]);
         return buffer.array();
     }
+
+    /**
+     * If using a seed higher than this, the key cannot be found in this layout due to how {@link #initializeAsHighest(RawBytes)}
+     * initializes the key (the first 8 bytes of it).
+     */
+    public long highestUsableSeed() {
+        RawBytes key = newKey();
+        initializeAsHighest(key);
+        return keySeed(key) - 1;
+    }
 }

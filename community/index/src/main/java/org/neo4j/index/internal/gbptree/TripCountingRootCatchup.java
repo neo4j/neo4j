@@ -19,7 +19,6 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import java.util.function.Supplier;
 import org.neo4j.util.FeatureToggles;
 
 /**
@@ -47,11 +46,11 @@ public class TripCountingRootCatchup implements RootCatchup {
     private static final int MAX_TRIP_COUNT_DEFAULT = 10;
     static final int MAX_TRIP_COUNT =
             FeatureToggles.getInteger(TripCountingRootCatchup.class, MAX_TRIP_COUNT_NAME, MAX_TRIP_COUNT_DEFAULT);
-    private final Supplier<Root> rootSupplier;
+    private final RootSupplier rootSupplier;
     private long lastFromId = TreeNode.NO_NODE_FLAG;
     private int tripCount;
 
-    TripCountingRootCatchup(Supplier<Root> rootSupplier) {
+    TripCountingRootCatchup(RootSupplier rootSupplier) {
         this.rootSupplier = rootSupplier;
     }
 
@@ -59,7 +58,7 @@ public class TripCountingRootCatchup implements RootCatchup {
     public Root catchupFrom(long fromId) {
         updateTripCount(fromId);
         assertTripCount();
-        return rootSupplier.get();
+        return rootSupplier.getRoot();
     }
 
     private void updateTripCount(long fromId) {

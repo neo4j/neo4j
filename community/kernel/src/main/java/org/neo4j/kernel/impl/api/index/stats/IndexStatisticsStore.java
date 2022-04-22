@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index.stats;
 
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
@@ -191,8 +193,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
         return consistencyCheck(reporterFactory.getClass(GBPTreeConsistencyCheckVisitor.class), cursorContext);
     }
 
-    private boolean consistencyCheck(
-            GBPTreeConsistencyCheckVisitor<IndexStatisticsKey> visitor, CursorContext cursorContext) {
+    private boolean consistencyCheck(GBPTreeConsistencyCheckVisitor visitor, CursorContext cursorContext) {
         try {
             return tree.consistencyCheck(visitor, cursorContext);
         } catch (IOException e) {
@@ -218,7 +219,8 @@ public class IndexStatisticsStore extends LifecycleAdapter
         scanTree((key, value) -> keys.add(key), cursorContext);
 
         // Remove all those read keys
-        try (Writer<IndexStatisticsKey, IndexStatisticsValue> writer = tree.unsafeWriter(cursorContext)) {
+        try (Writer<IndexStatisticsKey, IndexStatisticsValue> writer =
+                tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext)) {
             for (IndexStatisticsKey key : keys) {
                 // Idempotent operation
                 writer.remove(key);
@@ -227,7 +229,8 @@ public class IndexStatisticsStore extends LifecycleAdapter
     }
 
     private void writeCacheContentsIntoTree(CursorContext cursorContext) throws IOException {
-        try (Writer<IndexStatisticsKey, IndexStatisticsValue> writer = tree.unsafeWriter(cursorContext)) {
+        try (Writer<IndexStatisticsKey, IndexStatisticsValue> writer =
+                tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext)) {
             for (Map.Entry<Long, ImmutableIndexStatistics> entry : cache.entrySet()) {
                 ImmutableIndexStatistics stats = entry.getValue();
                 writer.put(

@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.io.IOException;
@@ -59,7 +60,7 @@ class GBPTreeManySmallEntriesIT {
                 new GBPTreeBuilder<>(pageCache, directory.file("index"), layout).build()) {
             // given
             int count = 10_000;
-            try (Writer<MutableShort, Void> writer = tree.writer(NULL_CONTEXT)) {
+            try (Writer<MutableShort, Void> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 for (int i = 0; i < count; i++) {
                     // Do some deletions too so that the dynamic layout needs some defrag now and then
                     if (random.nextInt(10) == 0 && !expected.isEmpty()) {

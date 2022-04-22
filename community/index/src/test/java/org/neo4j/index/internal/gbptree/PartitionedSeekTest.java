@@ -22,6 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import static java.lang.Math.abs;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.test.Race.throwing;
 
@@ -438,7 +439,7 @@ class PartitionedSeekTest {
     private int insertEntries(GBPTree<MutableLong, MutableLong> tree, int startId, int count, int stride)
             throws IOException {
         int id = startId;
-        try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+        try (Writer<MutableLong, MutableLong> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
             MutableLong value = layout.value(0);
             for (int i = 0; i < count; i++, id += stride) {
                 MutableLong key = layout.key(id);
@@ -451,7 +452,7 @@ class PartitionedSeekTest {
     private void removeEntries(GBPTree<MutableLong, MutableLong> tree, int startId, int count, int stride)
             throws IOException {
         int id = startId;
-        try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+        try (Writer<MutableLong, MutableLong> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
             for (int i = 0; i < count; i++, id += stride) {
                 MutableLong key = layout.key(id);
                 writer.remove(key);
@@ -461,7 +462,7 @@ class PartitionedSeekTest {
 
     private List<MutableLong> getKeysOnLevel(GBPTree<MutableLong, MutableLong> tree, int level) throws IOException {
         List<MutableLong> keysOnLevel = new ArrayList<>();
-        GBPTreeVisitor.Adaptor<MutableLong, MutableLong> visitor = new GBPTreeVisitor.Adaptor<>() {
+        GBPTreeVisitor.Adaptor<SingleRoot, MutableLong, MutableLong> visitor = new GBPTreeVisitor.Adaptor<>() {
             private int currentLevel;
 
             @Override
@@ -488,7 +489,7 @@ class PartitionedSeekTest {
         return visitor;
     }
 
-    private static class DepthAndRootVisitor extends GBPTreeVisitor.Adaptor<MutableLong, MutableLong> {
+    private static class DepthAndRootVisitor extends GBPTreeVisitor.Adaptor<SingleRoot, MutableLong, MutableLong> {
         private int numberOfLevels;
         private int currentLevel;
         private int rootChildCount;

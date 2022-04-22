@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.neo4j.index.internal.gbptree.RootLayerConfiguration.singleRoot;
+
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import org.neo4j.configuration.Config;
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.LayoutBootstrapper;
 import org.neo4j.index.internal.gbptree.Meta;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.internal.id.indexed.IdRangeLayout;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsLayout;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 
@@ -40,11 +39,12 @@ public class SchemaLayouts implements LayoutBootstrapper {
         allSchemaLayout = Arrays.asList(
                 genericLayout(),
                 idRangeLayout(),
-                (indexFile, pageCache, meta) -> new TokenScanLayout(),
-                (indexFile, pageCache, meta) -> new IndexStatisticsLayout(),
+                meta -> new Layouts(new TokenScanLayout(), singleRoot()),
+                meta -> new Layouts(new IndexStatisticsLayout(), singleRoot()),
                 rangeLayout(),
-                (indexFile, pageCache, meta) ->
-                        new PointLayout(IndexSpecificSpaceFillingCurveSettings.fromConfig(Config.defaults())));
+                meta -> new Layouts(
+                        new PointLayout(IndexSpecificSpaceFillingCurveSettings.fromConfig(Config.defaults())),
+                        singleRoot()));
     }
 
     public static String[] layoutDescriptions() {
@@ -59,9 +59,9 @@ public class SchemaLayouts implements LayoutBootstrapper {
     }
 
     @Override
-    public Layout<?, ?> create(Path indexFile, PageCache pageCache, Meta meta) throws IOException {
+    public Layouts bootstrap(Meta meta) throws IOException {
         for (LayoutBootstrapper factory : allSchemaLayout) {
-            final Layout<?, ?> layout = factory.create(indexFile, pageCache, meta);
+            final Layouts layout = factory.bootstrap(meta);
             if (layout != null && matchingLayout(meta, layout)) {
                 return layout;
             }
@@ -69,9 +69,9 @@ public class SchemaLayouts implements LayoutBootstrapper {
         throw new RuntimeException("Could not find any layout matching meta " + meta);
     }
 
-    private static boolean matchingLayout(Meta meta, Layout<?, ?> layout) {
+    private static boolean matchingLayout(Meta meta, Layouts layouts) {
         try {
-            meta.verify(layout);
+            meta.verify(layouts.dataLayout(), layouts.rootLayerConfiguration());
             return true;
         } catch (MetadataMismatchException e) {
             return false;
@@ -79,14 +79,14 @@ public class SchemaLayouts implements LayoutBootstrapper {
     }
 
     private static LayoutBootstrapper genericLayout() {
-        return (indexFile, pageCache, meta) -> {
+        return meta -> {
             final IndexSpecificSpaceFillingCurveSettings settings =
                     IndexSpecificSpaceFillingCurveSettings.fromConfig(Config.defaults());
             int maxNumberOfSlots = 10;
             for (int numberOfSlots = 1; numberOfSlots < maxNumberOfSlots; numberOfSlots++) {
-                final GenericLayout genericLayout = new GenericLayout(numberOfSlots, settings);
-                if (matchingLayout(meta, genericLayout)) {
-                    return genericLayout;
+                var layouts = new Layouts(new GenericLayout(numberOfSlots, settings), singleRoot());
+                if (matchingLayout(meta, layouts)) {
+                    return layouts;
                 }
             }
             return null;
@@ -94,12 +94,12 @@ public class SchemaLayouts implements LayoutBootstrapper {
     }
 
     private static LayoutBootstrapper rangeLayout() {
-        return (indexFile, pageCache, meta) -> {
+        return meta -> {
             int maxNumberOfSlots = 10;
             for (int numberOfSlots = 1; numberOfSlots < maxNumberOfSlots; numberOfSlots++) {
-                final RangeLayout rangeLayout = new RangeLayout(numberOfSlots);
-                if (matchingLayout(meta, rangeLayout)) {
-                    return rangeLayout;
+                var layouts = new Layouts(new RangeLayout(numberOfSlots), singleRoot());
+                if (matchingLayout(meta, layouts)) {
+                    return layouts;
                 }
             }
             return null;
@@ -107,13 +107,13 @@ public class SchemaLayouts implements LayoutBootstrapper {
     }
 
     private static LayoutBootstrapper idRangeLayout() {
-        return (indexFile, pageCache, meta) -> {
+        return meta -> {
             int maxExponent = 10;
             for (int exponent = 0; exponent < maxExponent; exponent++) {
                 final int idsPerEntry = 1 << exponent;
-                final IdRangeLayout idRangeLayout = new IdRangeLayout(idsPerEntry);
-                if (matchingLayout(meta, idRangeLayout)) {
-                    return idRangeLayout;
+                var layouts = new Layouts(new IdRangeLayout(idsPerEntry), singleRoot());
+                if (matchingLayout(meta, layouts)) {
+                    return layouts;
                 }
             }
             return null;

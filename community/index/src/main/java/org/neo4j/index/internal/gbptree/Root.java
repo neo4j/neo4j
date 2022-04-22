@@ -19,7 +19,10 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import static java.lang.String.format;
+
 import java.io.IOException;
+import java.util.Objects;
 import org.neo4j.io.pagecache.PageCursor;
 
 /**
@@ -61,5 +64,27 @@ class Root {
 
     long generation() {
         return rootGeneration;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Root root = (Root) o;
+        return rootId == root.rootId && rootGeneration == root.rootGeneration;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(rootId, rootGeneration);
+    }
+
+    @Override
+    public String toString() {
+        return format("Root[%d, gen:%d]", rootId, rootGeneration);
     }
 }

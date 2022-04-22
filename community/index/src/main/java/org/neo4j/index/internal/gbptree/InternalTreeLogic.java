@@ -99,10 +99,11 @@ class InternalTreeLogic<KEY, VALUE> {
     private final VALUE readValue;
     private final GBPTree.Monitor monitor;
     private final TreeWriterCoordination coordination;
+    final byte layerType;
 
     /**
      * Current path down the tree
-     * - level:-1 is uninitialized (so that a call to {@link #initialize(PageCursor)} is required)
+     * - level:-1 is uninitialized (so that a call to {@link #initialize(PageCursor,double)} is required)
      * - level: 0 is at root
      * - level: 1 is at first level below root
      * ... a.s.o
@@ -164,8 +165,9 @@ class InternalTreeLogic<KEY, VALUE> {
             IdProvider idProvider,
             TreeNode<KEY, VALUE> bTreeNode,
             Layout<KEY, VALUE> layout,
-            GBPTree.Monitor monitor,
-            TreeWriterCoordination coordination) {
+            MultiRootGBPTree.Monitor monitor,
+            TreeWriterCoordination coordination,
+            byte layerType) {
         this.idProvider = idProvider;
         this.bTreeNode = bTreeNode;
         this.layout = layout;
@@ -174,6 +176,7 @@ class InternalTreeLogic<KEY, VALUE> {
         this.readValue = layout.newValue();
         this.monitor = monitor;
         this.coordination = coordination;
+        this.layerType = layerType;
 
         // an arbitrary depth slightly bigger than an unimaginably big tree
         ensureStackCapacity(10);
@@ -187,10 +190,6 @@ class InternalTreeLogic<KEY, VALUE> {
                 levels[i] = new Level<>(layout);
             }
         }
-    }
-
-    protected void initialize(PageCursor cursorAtRoot) {
-        initialize(cursorAtRoot, DEFAULT_SPLIT_RATIO);
     }
 
     /**
@@ -374,7 +373,7 @@ class InternalTreeLogic<KEY, VALUE> {
      * Leaves cursor at the page which was last updated. No guarantees on offset.
      *
      * @param cursor {@link PageCursor} pinned to root of tree (if first insert/remove since
-     * {@link #initialize(PageCursor)}) or at where last insert/remove left it.
+     * {@link #initialize(PageCursor,double)}) or at where last insert/remove left it.
      * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
      * @param key key to be inserted
      * @param value value to be associated with key
@@ -560,7 +559,7 @@ class InternalTreeLogic<KEY, VALUE> {
         try (PageCursor rightCursor = cursor.openLinkedCursor(newRight)) {
             // Initialize new right
             TreeNode.goTo(rightCursor, "new right sibling in split", newRight);
-            bTreeNode.initializeInternal(rightCursor, stableGeneration, unstableGeneration);
+            bTreeNode.initializeInternal(rightCursor, layerType, stableGeneration, unstableGeneration);
             TreeNode.setRightSibling(rightCursor, oldRight, stableGeneration, unstableGeneration);
             TreeNode.setLeftSibling(rightCursor, current, stableGeneration, unstableGeneration);
 
@@ -906,7 +905,7 @@ class InternalTreeLogic<KEY, VALUE> {
         try (PageCursor rightCursor = cursor.openLinkedCursor(newRight)) {
             // Initialize new right
             TreeNode.goTo(rightCursor, "new right sibling in split", newRight);
-            bTreeNode.initializeLeaf(rightCursor, stableGeneration, unstableGeneration);
+            bTreeNode.initializeLeaf(rightCursor, layerType, stableGeneration, unstableGeneration);
             TreeNode.setRightSibling(rightCursor, oldRight, stableGeneration, unstableGeneration);
             TreeNode.setLeftSibling(rightCursor, current, stableGeneration, unstableGeneration);
 
@@ -953,7 +952,7 @@ class InternalTreeLogic<KEY, VALUE> {
      * Leaves cursor at the page which was last updated. No guarantees on offset.
      *
      * @param cursor {@link PageCursor} pinned to root of tree (if first insert/remove since
-     * {@link #initialize(PageCursor)}) or at where last insert/remove left it.
+     * {@link #initialize(PageCursor,double)}) or at where last insert/remove left it.
      * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
      * @param key key to be removed
      * @param into {@code VALUE} instance to write removed value to

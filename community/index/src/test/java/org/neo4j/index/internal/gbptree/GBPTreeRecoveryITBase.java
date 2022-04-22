@@ -23,6 +23,7 @@ import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.io.pagecache.PageCache.RESERVED_BYTES;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.test.utils.PageCacheConfig.config;
@@ -102,7 +103,7 @@ abstract class GBPTreeRecoveryITBase<KEY, VALUE> {
         {
             try (PageCache pageCache = createPageCache();
                     GBPTree<KEY, VALUE> index = createIndex(pageCache, file);
-                    Writer<KEY, VALUE> writer = index.writer(NULL_CONTEXT)) {
+                    Writer<KEY, VALUE> writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 writer.put(key, value);
                 pageCache.flushAndForce();
                 // No checkpoint
@@ -112,7 +113,7 @@ abstract class GBPTreeRecoveryITBase<KEY, VALUE> {
         // WHEN
         try (PageCache pageCache = createPageCache();
                 GBPTree<KEY, VALUE> index = createIndex(pageCache, file)) {
-            try (Writer<KEY, VALUE> writer = index.writer(NULL_CONTEXT)) {
+            try (Writer<KEY, VALUE> writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 writer.put(key, value);
             }
 
@@ -462,7 +463,7 @@ abstract class GBPTreeRecoveryITBase<KEY, VALUE> {
 
         @Override
         public void execute(GBPTree<KEY, VALUE> index) throws IOException {
-            try (Writer<KEY, VALUE> writer = index.writer(NULL_CONTEXT)) {
+            try (Writer<KEY, VALUE> writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 for (int i = 0; i < data.length; ) {
                     writer.put(key(data[i++]), value(data[i++]));
                 }
@@ -482,7 +483,7 @@ abstract class GBPTreeRecoveryITBase<KEY, VALUE> {
 
         @Override
         public void execute(GBPTree<KEY, VALUE> index) throws IOException {
-            try (Writer<KEY, VALUE> writer = index.writer(NULL_CONTEXT)) {
+            try (Writer<KEY, VALUE> writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 for (int i = 0; i < data.length; ) {
                     KEY key = key(data[i++]);
                     i++; // value

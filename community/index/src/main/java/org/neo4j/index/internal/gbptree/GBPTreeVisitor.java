@@ -23,18 +23,24 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.neo4j.util.VisibleForTesting;
 
 @VisibleForTesting
-public interface GBPTreeVisitor<KEY, VALUE> extends IdProvider.IdProviderVisitor {
+public interface GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> extends IdProvider.IdProviderVisitor {
     void meta(Meta meta);
 
     void treeState(Pair<TreeState, TreeState> statePair);
+
+    void beginTree(boolean dataTree);
 
     void beginLevel(int level);
 
     void beginNode(long pageId, boolean isLeaf, long generation, int keyCount);
 
-    void key(KEY key, boolean isLeaf, long offloadId);
+    void rootKey(ROOT_KEY key, boolean isLeaf, long offloadId);
 
-    void value(VALUE value);
+    void rootMapping(long id, long generation);
+
+    void key(DATA_KEY key, boolean isLeaf, long offloadId);
+
+    void value(DATA_VALUE value);
 
     void child(long child);
 
@@ -44,12 +50,17 @@ public interface GBPTreeVisitor<KEY, VALUE> extends IdProvider.IdProviderVisitor
 
     void endLevel(int level);
 
-    class Adaptor<KEY, VALUE> implements GBPTreeVisitor<KEY, VALUE> {
+    void endTree(boolean dataTree);
+
+    class Adaptor<ROOT_KEY, DATA_KEY, DATA_VALUE> implements GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> {
         @Override
         public void meta(Meta meta) {}
 
         @Override
         public void treeState(Pair<TreeState, TreeState> statePair) {}
+
+        @Override
+        public void beginTree(boolean dataTree) {}
 
         @Override
         public void beginLevel(int level) {}
@@ -58,10 +69,16 @@ public interface GBPTreeVisitor<KEY, VALUE> extends IdProvider.IdProviderVisitor
         public void beginNode(long pageId, boolean isLeaf, long generation, int keyCount) {}
 
         @Override
-        public void key(KEY key, boolean isLeaf, long offloadId) {}
+        public void rootKey(ROOT_KEY key, boolean isLeaf, long offloadId) {}
 
         @Override
-        public void value(VALUE value) {}
+        public void rootMapping(long id, long generation) {}
+
+        @Override
+        public void key(DATA_KEY key, boolean isLeaf, long offloadId) {}
+
+        @Override
+        public void value(DATA_VALUE value) {}
 
         @Override
         public void child(long child) {}
@@ -74,6 +91,9 @@ public interface GBPTreeVisitor<KEY, VALUE> extends IdProvider.IdProviderVisitor
 
         @Override
         public void endLevel(int level) {}
+
+        @Override
+        public void endTree(boolean dataTree) {}
 
         @Override
         public void beginFreelistPage(long pageId) {}

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
@@ -61,12 +62,13 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor {
     @Override
     public IndexUpdater newUpdater(IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
         assertTreeOpen();
+        assertWritable();
         try {
             if (parallel) {
                 TokenIndexUpdater parallelUpdater = new TokenIndexUpdater(1_000);
-                return parallelUpdater.initialize(index.parallelWriter(cursorContext));
+                return parallelUpdater.initialize(index.writer(cursorContext));
             } else {
-                return singleUpdater.initialize(index.writer(cursorContext));
+                return singleUpdater.initialize(index.writer(W_BATCHED_SINGLE_THREADED, cursorContext));
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);

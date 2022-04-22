@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
@@ -85,7 +86,7 @@ class TokenIndexUpdaterTest {
         // GIVEN
         long[] expected = new long[NODE_COUNT];
         try (TokenIndexUpdater writer = new TokenIndexUpdater(max(5, NODE_COUNT / 100))) {
-            writer.initialize(tree.writer(NULL_CONTEXT));
+            writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
 
             // WHEN
             for (int i = 0; i < NODE_COUNT * 3; i++) {
@@ -113,7 +114,7 @@ class TokenIndexUpdaterTest {
 
         // When
         try (TokenIndexUpdater writer = new TokenIndexUpdater(nodeCount)) {
-            writer.initialize(tree.writer(cursorContext));
+            writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext));
             for (int i = 0; i < nodeCount; i++) {
                 writer.process(TokenIndexEntryUpdate.change(i, null, EMPTY_LONG_ARRAY, new long[] {1}));
             }
@@ -132,7 +133,7 @@ class TokenIndexUpdaterTest {
         // GIVEN
         assertThatThrownBy(() -> {
                     try (TokenIndexUpdater writer = new TokenIndexUpdater(1)) {
-                        writer.initialize(tree.writer(NULL_CONTEXT));
+                        writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
 
                         // WHEN
                         writer.process(TokenIndexEntryUpdate.change(0, null, EMPTY_LONG_ARRAY, new long[] {2, 1}));
@@ -147,7 +148,7 @@ class TokenIndexUpdaterTest {
         // GIVEN
         assertThatThrownBy(() -> {
                     try (TokenIndexUpdater writer = new TokenIndexUpdater(1)) {
-                        writer.initialize(tree.writer(NULL_CONTEXT));
+                        writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
 
                         // WHEN
                         writer.process(TokenIndexEntryUpdate.change(0, null, EMPTY_LONG_ARRAY, new long[] {2, -1}));
@@ -165,7 +166,7 @@ class TokenIndexUpdaterTest {
         int labelId = 1;
         long[] labels = {labelId};
         try (TokenIndexUpdater writer = new TokenIndexUpdater(max(5, NODE_COUNT / 100))) {
-            writer.initialize(tree.writer(NULL_CONTEXT));
+            writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
 
             // a couple of tree entries with a couple of nodes each
             // concept art: [xxxx          ][xxxx          ][xxxx          ] where x is used node.
@@ -181,7 +182,7 @@ class TokenIndexUpdaterTest {
         // when removing all the nodes from one of the tree nodes
         int treeEntryToRemoveFrom = 1;
         try (TokenIndexUpdater writer = new TokenIndexUpdater(max(5, NODE_COUNT / 100))) {
-            writer.initialize(tree.writer(NULL_CONTEXT));
+            writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
             long baseNodeId = treeEntryToRemoveFrom * RANGE_SIZE;
             for (int i = 0; i < numberOfNodesInEach; i++) {
                 writer.process(TokenIndexEntryUpdate.change(baseNodeId + i, null, labels, EMPTY_LONG_ARRAY));

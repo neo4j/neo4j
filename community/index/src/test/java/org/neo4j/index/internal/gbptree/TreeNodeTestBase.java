@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.contains;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.resultIsFromSlotA;
+import static org.neo4j.index.internal.gbptree.TreeNode.DATA_LAYER_FLAG;
 import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
 import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.NO_NEED_DEFRAG;
 import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.YES;
@@ -95,7 +96,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
     @Test
     void shouldInitializeLeaf() {
         // WHEN
-        node.initializeLeaf(cursor, STABLE_GENERATION, UNSTABLE_GENERATION);
+        initializeLeaf();
 
         // THEN
         assertEquals(TreeNode.NODE_TYPE_TREE_NODE, TreeNode.nodeType(cursor));
@@ -112,7 +113,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
     @Test
     void shouldInitializeInternal() {
         // WHEN
-        node.initializeInternal(cursor, STABLE_GENERATION, UNSTABLE_GENERATION);
+        initializeInternal();
 
         // THEN
         assertEquals(TreeNode.NODE_TYPE_TREE_NODE, TreeNode.nodeType(cursor));
@@ -129,7 +130,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
     @Test
     void shouldWriteAndReadMaxGeneration() {
         // GIVEN
-        node.initializeLeaf(cursor, STABLE_GENERATION, UNSTABLE_GENERATION);
+        initializeLeaf();
 
         // WHEN
         TreeNode.setGeneration(cursor, GenerationSafePointer.MAX_GENERATION);
@@ -141,7 +142,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
 
     @Test
     void shouldThrowIfWriteTooLargeGeneration() {
-        node.initializeLeaf(cursor, STABLE_GENERATION, UNSTABLE_GENERATION);
+        initializeLeaf();
 
         assertThrows(
                 IllegalArgumentException.class,
@@ -150,7 +151,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
 
     @Test
     void shouldThrowIfWriteTooSmallGeneration() {
-        node.initializeLeaf(cursor, STABLE_GENERATION, UNSTABLE_GENERATION);
+        initializeLeaf();
 
         assertThrows(
                 IllegalArgumentException.class,
@@ -160,7 +161,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
     @Test
     void keyValueOperationsInLeaf() throws IOException {
         // GIVEN
-        node.initializeLeaf(cursor, STABLE_GENERATION, UNSTABLE_GENERATION);
+        initializeLeaf();
         KEY readKey = layout.newKey();
         VALUE readValue = layout.newValue();
 
@@ -229,7 +230,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
     @Test
     void keyChildOperationsInInternal() throws IOException {
         // GIVEN
-        node.initializeInternal(cursor, STABLE_GENERATION, UNSTABLE_GENERATION);
+        initializeInternal();
         long stable = 3;
         long unstable = 4;
         long zeroChild = 5;
@@ -292,7 +293,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
 
     @Test
     void shouldFillInternal() throws IOException {
-        node.initializeInternal(cursor, STABLE_GENERATION, UNSTABLE_GENERATION);
+        initializeInternal();
         long stable = 3;
         long unstable = 4;
         int keyCount = 0;
@@ -321,7 +322,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
     @Test
     void shouldSetAndGetKeyCount() {
         // GIVEN
-        node.initializeLeaf(cursor, STABLE_GENERATION, UNSTABLE_GENERATION);
+        initializeLeaf();
         assertEquals(0, TreeNode.keyCount(cursor));
 
         // WHEN
@@ -335,7 +336,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
     @Test
     void shouldSetAndGetSiblings() {
         // GIVEN
-        node.initializeLeaf(cursor, STABLE_GENERATION, UNSTABLE_GENERATION);
+        initializeLeaf();
 
         // WHEN
         TreeNode.setLeftSibling(cursor, 123, STABLE_GENERATION, UNSTABLE_GENERATION);
@@ -349,7 +350,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
     @Test
     void shouldSetAndGetSuccessor() {
         // GIVEN
-        node.initializeLeaf(cursor, STABLE_GENERATION, UNSTABLE_GENERATION);
+        initializeLeaf();
 
         // WHEN
         TreeNode.setSuccessor(cursor, 123, STABLE_GENERATION, UNSTABLE_GENERATION);
@@ -361,7 +362,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
     @Test
     void shouldDefragLeafWithTombstoneOnLast() throws IOException {
         // GIVEN
-        node.initializeLeaf(cursor, STABLE_GENERATION, UNSTABLE_GENERATION);
+        initializeLeaf();
         KEY key = key(1);
         VALUE value = value(1);
         node.insertKeyValueAt(cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
@@ -383,7 +384,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
     @Test
     void shouldDefragLeafWithTombstoneOnFirst() throws IOException {
         // GIVEN
-        node.initializeLeaf(cursor, STABLE_GENERATION, UNSTABLE_GENERATION);
+        initializeLeaf();
         KEY key = key(1);
         VALUE value = value(1);
         node.insertKeyValueAt(cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
@@ -405,7 +406,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
     @Test
     void shouldDefragLeafWithTombstoneInterleaved() throws IOException {
         // GIVEN
-        node.initializeLeaf(cursor, STABLE_GENERATION, UNSTABLE_GENERATION);
+        initializeLeaf();
         KEY key = key(1);
         VALUE value = value(1);
         node.insertKeyValueAt(cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
@@ -431,7 +432,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
     @Test
     void shouldDefragLeafWithMultipleTombstonesInterleavedOdd() throws IOException {
         // GIVEN
-        node.initializeLeaf(cursor, STABLE_GENERATION, UNSTABLE_GENERATION);
+        initializeLeaf();
         KEY key = key(1);
         VALUE value = value(1);
         node.insertKeyValueAt(cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
@@ -465,7 +466,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
     @Test
     void shouldDefragLeafWithMultipleTombstonesInterleavedEven() throws IOException {
         // GIVEN
-        node.initializeLeaf(cursor, STABLE_GENERATION, UNSTABLE_GENERATION);
+        initializeLeaf();
         KEY key = key(1);
         VALUE value = value(1);
         node.insertKeyValueAt(cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
@@ -501,7 +502,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
         // This test doesn't care about sorting, that's an aspect that lies outside of TreeNode, really
 
         // GIVEN
-        node.initializeLeaf(cursor, STABLE_GENERATION, UNSTABLE_GENERATION);
+        initializeLeaf();
         // add +1 to these to simplify some array logic in the test itself
         List<KEY> expectedKeys = new ArrayList<>();
         List<VALUE> expectedValues = new ArrayList<>();
@@ -738,6 +739,14 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
                 assertEquals(0, layout.compare(expectedKey, actualKey));
             }
         }
+    }
+
+    private void initializeLeaf() {
+        node.initializeLeaf(cursor, DATA_LAYER_FLAG, STABLE_GENERATION, UNSTABLE_GENERATION);
+    }
+
+    private void initializeInternal() {
+        node.initializeInternal(cursor, DATA_LAYER_FLAG, STABLE_GENERATION, UNSTABLE_GENERATION);
     }
 
     private static long rightSibling(PageCursor cursor, long stableGeneration, long unstableGeneration) {

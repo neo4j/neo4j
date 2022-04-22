@@ -19,8 +19,6 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import static java.lang.String.format;
-
 /**
  * Able to select implementation of {@link TreeNode} to use in different scenarios, should be used in favor of directly
  * instantiating {@link TreeNode} instances.
@@ -77,27 +75,6 @@ class TreeNodeSelector {
     static Factory selectByLayout(Layout<?, ?> layout) {
         // For now the selection is done in a simple fashion, by looking at layout.fixedSize().
         return layout.fixedSize() ? FIXED : DYNAMIC;
-    }
-
-    /**
-     * Selects a format based on the given format specification.
-     *
-     * @param formatIdentifier format identifier, see {@link Meta#getFormatIdentifier()}
-     * @param formatVersion format version, see {@link Meta#getFormatVersion()}.
-     * @return a {@link Factory} capable of instantiating the selected format.
-     */
-    static Factory selectByFormat(byte formatIdentifier, byte formatVersion) {
-        // For now do a simple selection of the two formats we know. Moving forward this can contain
-        // many more identifiers and different versions of each.
-        if (formatIdentifier == TreeNodeFixedSize.FORMAT_IDENTIFIER
-                && formatVersion == TreeNodeFixedSize.FORMAT_VERSION) {
-            return FIXED;
-        } else if (formatIdentifier == TreeNodeDynamicSize.FORMAT_IDENTIFIER
-                && formatVersion == TreeNodeDynamicSize.FORMAT_VERSION) {
-            return DYNAMIC;
-        }
-        throw new IllegalArgumentException(
-                format("Unknown format identifier:%d and version:%d combination", formatIdentifier, formatVersion));
     }
 
     /**

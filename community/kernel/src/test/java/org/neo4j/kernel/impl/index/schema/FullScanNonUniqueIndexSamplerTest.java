@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -120,7 +121,7 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<RangeKey, N
 
     private void buildTree(Value[] values) throws IOException {
         try (GBPTree<RangeKey, NullValue> gbpTree = getTree()) {
-            try (Writer<RangeKey, NullValue> writer = gbpTree.writer(NULL_CONTEXT)) {
+            try (Writer<RangeKey, NullValue> writer = gbpTree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 RangeKey key = layout.newKey();
                 long nodeId = 0;
                 for (Value number : values) {

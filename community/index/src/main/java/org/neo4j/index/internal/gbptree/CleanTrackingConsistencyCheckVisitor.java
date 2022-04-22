@@ -22,11 +22,11 @@ package org.neo4j.index.internal.gbptree;
 import java.nio.file.Path;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
-class CleanTrackingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyCheckVisitor<KEY> {
+class CleanTrackingConsistencyCheckVisitor implements GBPTreeConsistencyCheckVisitor {
     private final MutableBoolean isConsistent = new MutableBoolean(true);
-    private final GBPTreeConsistencyCheckVisitor<KEY> delegate;
+    private final GBPTreeConsistencyCheckVisitor delegate;
 
-    CleanTrackingConsistencyCheckVisitor(GBPTreeConsistencyCheckVisitor<KEY> delegate) {
+    CleanTrackingConsistencyCheckVisitor(GBPTreeConsistencyCheckVisitor delegate) {
         this.delegate = delegate;
     }
 
@@ -102,7 +102,7 @@ class CleanTrackingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyChe
     }
 
     @Override
-    public void keysLocatedInWrongNode(KeyRange<KEY> range, KEY key, int pos, int keyCount, long pageId, Path file) {
+    public void keysLocatedInWrongNode(KeyRange<?> range, Object key, int pos, int keyCount, long pageId, Path file) {
         isConsistent.setFalse();
         delegate.keysLocatedInWrongNode(range, key, pos, keyCount, pageId, file);
     }
@@ -194,7 +194,7 @@ class CleanTrackingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyChe
     }
 
     @Override
-    public void childNodeFoundAmongParentNodes(KeyRange<KEY> superRange, int level, long pageId, Path file) {
+    public void childNodeFoundAmongParentNodes(KeyRange<?> superRange, int level, long pageId, Path file) {
         isConsistent.setFalse();
         delegate.childNodeFoundAmongParentNodes(superRange, level, pageId, file);
     }

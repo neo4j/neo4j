@@ -19,16 +19,11 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-interface ThrowingRunnable {
-    void run() throws Throwable;
+class SeekDepthMonitor extends SeekCursor.MonitorAdaptor {
+    boolean reachedLeafLevel;
 
-    static Runnable throwing(ThrowingRunnable callable) {
-        return () -> {
-            try {
-                callable.run();
-            } catch (Throwable e) {
-                throw new RuntimeException(e);
-            }
-        };
+    @Override
+    public void leafNode(int depth, int keyCount) {
+        reachedLeafLevel = true;
     }
 }

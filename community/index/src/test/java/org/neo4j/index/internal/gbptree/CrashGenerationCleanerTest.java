@@ -26,7 +26,9 @@ import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
+import static org.neo4j.index.internal.gbptree.TreeNode.DATA_LAYER_FLAG;
 import static org.neo4j.index.internal.gbptree.TreeNode.Overflow;
+import static org.neo4j.index.internal.gbptree.TreeNode.ROOT_LAYER_FLAG;
 import static org.neo4j.index.internal.gbptree.TreeNode.setKeyCount;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.test.utils.PageCacheConfig.config;
@@ -83,8 +85,10 @@ class CrashGenerationCleanerTest {
 
     private PagedFile pagedFile;
     private PageCache pageCache;
-    private final Layout<MutableLong, MutableLong> layout = longLayout().build();
-    private final TreeNode<MutableLong, MutableLong> treeNode = new TreeNodeFixedSize<>(PAGE_SIZE, layout);
+    private final Layout<MutableLong, MutableLong> dataLayout = longLayout().build();
+    private final TreeNode<MutableLong, MutableLong> dataTreeNode = new TreeNodeFixedSize<>(PAGE_SIZE, dataLayout);
+    private final Layout<RawBytes, RawBytes> rootLayout = new SimpleByteArrayLayout();
+    private final TreeNode<RawBytes, RawBytes> rootTreeNode = new TreeNodeDynamicSize<>(PAGE_SIZE, rootLayout, null);
     private static ExecutorService executorService;
     private static CleanupJob.Executor executor;
     private final TreeState checkpointedTreeState = new TreeState(0, 9, 10, 0, 0, 0, 0, 0, 0, 0, true, true);
@@ -149,7 +153,7 @@ class CrashGenerationCleanerTest {
     @Test
     void shouldNotReportErrorsOnCleanPages() throws Exception {
         // GIVEN
-        Page[] pages = with(leafWith(), internalWith());
+        Page[] pages = with(dataLeafWith(), dataInternalWith());
         initializeFile(pagedFile, pages);
 
         // WHEN
@@ -166,20 +170,37 @@ class CrashGenerationCleanerTest {
     void shouldCleanOneCrashPerPage() throws Exception {
         // GIVEN
         Page[] pages = with(
+                // === root ===
                 /* left sibling */
-                leafWith(GBPTreeCorruption.crashed(GBPTreePointerType.leftSibling())),
-                internalWith(GBPTreeCorruption.crashed(GBPTreePointerType.leftSibling())),
+                rootLeafWith(GBPTreeCorruption.crashed(GBPTreePointerType.leftSibling())),
+                rootInternalWith(GBPTreeCorruption.crashed(GBPTreePointerType.leftSibling())),
 
                 /* right sibling */
-                leafWith(GBPTreeCorruption.crashed(GBPTreePointerType.rightSibling())),
-                internalWith(GBPTreeCorruption.crashed(GBPTreePointerType.rightSibling())),
+                rootLeafWith(GBPTreeCorruption.crashed(GBPTreePointerType.rightSibling())),
+                rootInternalWith(GBPTreeCorruption.crashed(GBPTreePointerType.rightSibling())),
 
                 /* successor */
-                leafWith(GBPTreeCorruption.crashed(GBPTreePointerType.successor())),
-                internalWith(GBPTreeCorruption.crashed(GBPTreePointerType.successor())),
+                rootLeafWith(GBPTreeCorruption.crashed(GBPTreePointerType.successor())),
+                rootInternalWith(GBPTreeCorruption.crashed(GBPTreePointerType.successor())),
 
                 /* child */
-                internalWith(GBPTreeCorruption.crashed(GBPTreePointerType.child(0))));
+                rootInternalWith(GBPTreeCorruption.crashed(GBPTreePointerType.child(0))),
+
+                // === data ===
+                /* left sibling */
+                dataLeafWith(GBPTreeCorruption.crashed(GBPTreePointerType.leftSibling())),
+                dataInternalWith(GBPTreeCorruption.crashed(GBPTreePointerType.leftSibling())),
+
+                /* right sibling */
+                dataLeafWith(GBPTreeCorruption.crashed(GBPTreePointerType.rightSibling())),
+                dataInternalWith(GBPTreeCorruption.crashed(GBPTreePointerType.rightSibling())),
+
+                /* successor */
+                dataLeafWith(GBPTreeCorruption.crashed(GBPTreePointerType.successor())),
+                dataInternalWith(GBPTreeCorruption.crashed(GBPTreePointerType.successor())),
+
+                /* child */
+                dataInternalWith(GBPTreeCorruption.crashed(GBPTreePointerType.child(0))));
         initializeFile(pagedFile, pages);
 
         // WHEN
@@ -189,18 +210,18 @@ class CrashGenerationCleanerTest {
         // THEN
         assertPagesVisited(monitor, pages.length);
         assertTreeNodes(monitor, pages.length);
-        assertCleanedCrashPointers(monitor, 7);
+        assertCleanedCrashPointers(monitor, 14);
     }
 
     @Test
     void shouldCleanMultipleCrashPerPage() throws Exception {
         // GIVEN
         Page[] pages = with(
-                leafWith(
+                dataLeafWith(
                         GBPTreeCorruption.crashed(GBPTreePointerType.leftSibling()),
                         GBPTreeCorruption.crashed(GBPTreePointerType.rightSibling()),
                         GBPTreeCorruption.crashed(GBPTreePointerType.successor())),
-                internalWith(
+                dataInternalWith(
                         GBPTreeCorruption.crashed(GBPTreePointerType.leftSibling()),
                         GBPTreeCorruption.crashed(GBPTreePointerType.rightSibling()),
                         GBPTreeCorruption.crashed(GBPTreePointerType.successor()),
@@ -276,7 +297,8 @@ class CrashGenerationCleanerTest {
 
         var cleaner = new CrashGenerationCleaner(
                 pagedFile,
-                treeNode,
+                null,
+                dataTreeNode,
                 0,
                 pages.length,
                 unstableTreeState.stableGeneration(),
@@ -295,7 +317,8 @@ class CrashGenerationCleanerTest {
             PagedFile pagedFile, int lowTreeNodeId, int highTreeNodeId, SimpleCleanupMonitor monitor) {
         return new CrashGenerationCleaner(
                 pagedFile,
-                treeNode,
+                rootTreeNode,
+                dataTreeNode,
                 lowTreeNodeId,
                 highTreeNodeId,
                 unstableTreeState.stableGeneration(),
@@ -309,6 +332,8 @@ class CrashGenerationCleanerTest {
         try (PageCursor cursor = pagedFile.io(0, PagedFile.PF_SHARED_WRITE_LOCK, CursorContext.NULL_CONTEXT)) {
             for (Page page : pages) {
                 cursor.next();
+                TreeNode treeNode = page.type.isData ? dataTreeNode : rootTreeNode;
+                Layout layout = page.type.isData ? dataLayout : rootLayout;
                 page.write(cursor, treeNode, layout, checkpointedTreeState, unstableTreeState);
             }
         }
@@ -358,7 +383,7 @@ class CrashGenerationCleanerTest {
         for (int i = 0; i < numberOfCorruptions; i++) {
             corruptions[i] = possibleCorruptionsInLeaf.get(i);
         }
-        return leafWith(corruptions);
+        return dataLeafWith(corruptions);
     }
 
     private Page randomInternal(int numberOfCorruptions) {
@@ -367,7 +392,7 @@ class CrashGenerationCleanerTest {
         for (int i = 0; i < numberOfCorruptions; i++) {
             corruptions[i] = possibleCorruptionsInInternal.get(i);
         }
-        return internalWith(corruptions);
+        return dataInternalWith(corruptions);
     }
 
     /* Page */
@@ -375,12 +400,22 @@ class CrashGenerationCleanerTest {
         return pages;
     }
 
-    private static Page leafWith(GBPTreeCorruption.PageCorruption<MutableLong, MutableLong>... pageCorruptions) {
-        return new Page(PageType.LEAF, pageCorruptions);
+    private static Page dataLeafWith(GBPTreeCorruption.PageCorruption<MutableLong, MutableLong>... pageCorruptions) {
+        return new Page(PageType.DATA_LEAF, pageCorruptions);
     }
 
-    private static Page internalWith(GBPTreeCorruption.PageCorruption<MutableLong, MutableLong>... pageCorruptions) {
-        return new Page(PageType.INTERNAL, pageCorruptions);
+    private static Page dataInternalWith(
+            GBPTreeCorruption.PageCorruption<MutableLong, MutableLong>... pageCorruptions) {
+        return new Page(PageType.DATA_INTERNAL, pageCorruptions);
+    }
+
+    private static Page rootLeafWith(GBPTreeCorruption.PageCorruption<MutableLong, MutableLong>... pageCorruptions) {
+        return new Page(PageType.ROOT_LEAF, pageCorruptions);
+    }
+
+    private static Page rootInternalWith(
+            GBPTreeCorruption.PageCorruption<MutableLong, MutableLong>... pageCorruptions) {
+        return new Page(PageType.ROOT_INTERNAL, pageCorruptions);
     }
 
     private static Page offload() {
@@ -415,61 +450,72 @@ class CrashGenerationCleanerTest {
     }
 
     enum PageType {
-        LEAF {
+        DATA_LEAF(true) {
             @Override
-            void write(
-                    PageCursor cursor,
-                    TreeNode<MutableLong, MutableLong> treeNode,
-                    Layout<MutableLong, MutableLong> layout,
-                    TreeState treeState) {
-                treeNode.initializeLeaf(cursor, treeState.stableGeneration(), treeState.unstableGeneration());
+            <KEY> void write(PageCursor cursor, TreeNode<KEY, ?> treeNode, Layout<KEY, ?> layout, TreeState treeState) {
+                treeNode.initializeLeaf(
+                        cursor, DATA_LAYER_FLAG, treeState.stableGeneration(), treeState.unstableGeneration());
             }
         },
-        INTERNAL {
+        DATA_INTERNAL(true) {
             @Override
-            void write(
-                    PageCursor cursor,
-                    TreeNode<MutableLong, MutableLong> treeNode,
-                    Layout<MutableLong, MutableLong> layout,
-                    TreeState treeState) {
-                treeNode.initializeInternal(cursor, treeState.stableGeneration(), treeState.unstableGeneration());
-                long base = IdSpace.MIN_TREE_NODE_ID;
-                int keyCount;
-                for (keyCount = 0;
-                        treeNode.internalOverflow(cursor, keyCount, layout.newKey()) == Overflow.NO;
-                        keyCount++) {
-                    long child = base + keyCount;
-                    treeNode.setChildAt(
-                            cursor, child, keyCount, treeState.stableGeneration(), treeState.unstableGeneration());
-                }
-                setKeyCount(cursor, keyCount);
+            <KEY> void write(PageCursor cursor, TreeNode<KEY, ?> treeNode, Layout<KEY, ?> layout, TreeState treeState) {
+                writeInternal(cursor, DATA_LAYER_FLAG, treeNode, layout, treeState);
             }
         },
-        OFFLOAD {
+        ROOT_LEAF(false) {
             @Override
-            void write(
-                    PageCursor cursor,
-                    TreeNode<MutableLong, MutableLong> treeNode,
-                    Layout<MutableLong, MutableLong> layout,
-                    TreeState treeState) {
+            <KEY> void write(PageCursor cursor, TreeNode<KEY, ?> treeNode, Layout<KEY, ?> layout, TreeState treeState) {
+                treeNode.initializeLeaf(
+                        cursor, ROOT_LAYER_FLAG, treeState.stableGeneration(), treeState.unstableGeneration());
+            }
+        },
+        ROOT_INTERNAL(false) {
+            @Override
+            <KEY> void write(PageCursor cursor, TreeNode<KEY, ?> treeNode, Layout<KEY, ?> layout, TreeState treeState) {
+                writeInternal(cursor, ROOT_LAYER_FLAG, treeNode, layout, treeState);
+            }
+        },
+        OFFLOAD(true) {
+            @Override
+            <KEY> void write(PageCursor cursor, TreeNode<KEY, ?> treeNode, Layout<KEY, ?> layout, TreeState treeState) {
                 OffloadStoreImpl.writeHeader(cursor);
             }
         },
-        FREELIST {
+        FREELIST(true) {
             @Override
-            void write(
-                    PageCursor cursor,
-                    TreeNode<MutableLong, MutableLong> treeNode,
-                    Layout<MutableLong, MutableLong> layout,
-                    TreeState treeState) {
+            <KEY> void write(PageCursor cursor, TreeNode<KEY, ?> treeNode, Layout<KEY, ?> layout, TreeState treeState) {
                 FreelistNode.initialize(cursor);
             }
         };
 
-        abstract void write(
+        private final boolean isData;
+
+        PageType(boolean isData) {
+            this.isData = isData;
+        }
+
+        abstract <KEY> void write(
+                PageCursor cursor, TreeNode<KEY, ?> treeNode, Layout<KEY, ?> layout, TreeState treeState);
+
+        <KEY> void writeInternal(
                 PageCursor cursor,
-                TreeNode<MutableLong, MutableLong> treeNode,
-                Layout<MutableLong, MutableLong> layout,
-                TreeState treeState);
+                byte layerType,
+                TreeNode<KEY, ?> treeNode,
+                Layout<KEY, ?> layout,
+                TreeState treeState) {
+            treeNode.initializeInternal(
+                    cursor, layerType, treeState.stableGeneration(), treeState.unstableGeneration());
+            long base = IdSpace.MIN_TREE_NODE_ID;
+            int keyCount;
+            for (keyCount = 0;
+                    treeNode.internalOverflow(cursor, keyCount, layout.newKey()) == Overflow.NO;
+                    keyCount++) {
+                long child = base + keyCount;
+                treeNode.setChildAt(
+                        cursor, child, keyCount, treeState.stableGeneration(), treeState.unstableGeneration());
+            }
+            setKeyCount(cursor, keyCount);
+        }
     }
 }

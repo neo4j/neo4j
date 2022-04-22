@@ -637,10 +637,15 @@ class TreeNodeFixedSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
             long stableGeneration,
             long unstableGeneration,
             CursorContext cursorContext) {
-        PrintingGBPTreeVisitor<KEY, VALUE> visitor = new PrintingGBPTreeVisitor<>(PrintConfig.defaults());
         try {
-            new GBPTreeStructure<>(this, layout, stableGeneration, unstableGeneration)
-                    .visitTreeNode(cursor, visitor, cursorContext);
+            boolean isDataNode = layerType(cursor) == DATA_LAYER_FLAG;
+            if (isDataNode) {
+                new GBPTreeStructure<>(null, null, this, layout, stableGeneration, unstableGeneration)
+                        .visitTreeNode(cursor, new PrintingGBPTreeVisitor<>(PrintConfig.defaults()), cursorContext);
+            } else {
+                new GBPTreeStructure(this, layout, null, null, stableGeneration, unstableGeneration)
+                        .visitTreeNode(cursor, new PrintingGBPTreeVisitor<>(PrintConfig.defaults()), cursorContext);
+            }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -655,8 +660,7 @@ class TreeNodeFixedSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
     }
 
     @Override
-    String checkMetaConsistency(
-            PageCursor cursor, int keyCount, Type type, GBPTreeConsistencyCheckVisitor<KEY> visitor) {
+    String checkMetaConsistency(PageCursor cursor, int keyCount, Type type, GBPTreeConsistencyCheckVisitor visitor) {
         return "";
     }
 

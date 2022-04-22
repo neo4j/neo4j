@@ -96,6 +96,13 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
         afterTreeInstantiation(tree);
     }
 
+    protected void assertWritable() {
+        if (readOnlyChecker.isReadOnly()) {
+            throw new UnsupportedOperationException(
+                    "Database currently is in read only mode and can not perform writes");
+        }
+    }
+
     protected void afterTreeInstantiation(GBPTree<KEY, NullValue> tree) { // no-op per default
     }
 
@@ -125,7 +132,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
         return consistencyCheck(reporterFactory.getClass(GBPTreeConsistencyCheckVisitor.class), cursorContext);
     }
 
-    private boolean consistencyCheck(GBPTreeConsistencyCheckVisitor<KEY> visitor, CursorContext cursorContext) {
+    private boolean consistencyCheck(GBPTreeConsistencyCheckVisitor visitor, CursorContext cursorContext) {
         try {
             return tree.consistencyCheck(visitor, cursorContext);
         } catch (IOException e) {

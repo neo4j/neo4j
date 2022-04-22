@@ -22,6 +22,9 @@ package org.neo4j.index.internal.gbptree;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
+import static org.neo4j.index.internal.gbptree.DataTree.W_SPLIT_KEEP_ALL_LEFT;
+import static org.neo4j.index.internal.gbptree.DataTree.W_SPLIT_KEEP_ALL_RIGHT;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
@@ -55,23 +58,24 @@ class GBPTreeWriterTest {
     @Inject
     private PageCache pageCache;
 
-    private SimpleLongLayout layout =
+    private final SimpleLongLayout layout =
             SimpleLongLayout.longLayout().withFixedSize(true).build();
 
     @Test
     void shouldReInitializeTreeLogicWithSameSplitRatioAsInitiallySet0() throws IOException {
         TreeHeightTracker treeHeightTracker = new TreeHeightTracker();
         try (GBPTree<MutableLong, MutableLong> gbpTree = new GBPTreeBuilder<>(
-                                pageCache, directory.file("index"), layout)
-                        .with(treeHeightTracker)
-                        .build();
-                Writer<MutableLong, MutableLong> writer = gbpTree.writer(0, NULL_CONTEXT)) {
-            MutableLong dontCare = layout.value(0);
+                        pageCache, directory.file("index"), layout)
+                .with(treeHeightTracker)
+                .build()) {
+            try (var writer = gbpTree.writer(W_SPLIT_KEEP_ALL_RIGHT | W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
+                MutableLong dontCare = layout.value(0);
 
-            long keySeed = 10_000;
-            while (treeHeightTracker.treeHeight < 5) {
-                MutableLong key = layout.key(keySeed--);
-                writer.put(key, dontCare);
+                long keySeed = 10_000;
+                while (treeHeightTracker.treeHeight < 5) {
+                    MutableLong key = layout.key(keySeed--);
+                    writer.put(key, dontCare);
+                }
             }
             // We now have a tree with height 6.
             // The leftmost node on all levels should have only a single key.
@@ -87,16 +91,17 @@ class GBPTreeWriterTest {
     void shouldReInitializeTreeLogicWithSameSplitRatioAsInitiallySet1() throws IOException {
         TreeHeightTracker treeHeightTracker = new TreeHeightTracker();
         try (GBPTree<MutableLong, MutableLong> gbpTree = new GBPTreeBuilder<>(
-                                pageCache, directory.file("index"), layout)
-                        .with(treeHeightTracker)
-                        .build();
-                Writer<MutableLong, MutableLong> writer = gbpTree.writer(1, NULL_CONTEXT)) {
-            MutableLong dontCare = layout.value(0);
+                        pageCache, directory.file("index"), layout)
+                .with(treeHeightTracker)
+                .build()) {
+            try (var writer = gbpTree.writer(W_SPLIT_KEEP_ALL_LEFT | W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
+                MutableLong dontCare = layout.value(0);
 
-            long keySeed = 0;
-            while (treeHeightTracker.treeHeight < 5) {
-                MutableLong key = layout.key(keySeed++);
-                writer.put(key, dontCare);
+                long keySeed = 0;
+                while (treeHeightTracker.treeHeight < 5) {
+                    MutableLong key = layout.key(keySeed++);
+                    writer.put(key, dontCare);
+                }
             }
             // We now have a tree with height 6.
             // The rightmost node on all levels should have either one or zero key (zero for internal nodes).
@@ -116,7 +121,7 @@ class GBPTreeWriterTest {
         assertZeroCursor(cursorContext);
 
         try (var gbpTree = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout).build();
-                var treeWriter = gbpTree.writer(0, cursorContext)) {
+                var treeWriter = gbpTree.writer(W_SPLIT_KEEP_ALL_RIGHT, cursorContext)) {
             treeWriter.merge(new MutableLong(0), new MutableLong(1), ValueMergers.overwrite());
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
 
@@ -135,7 +140,7 @@ class GBPTreeWriterTest {
         assertZeroCursor(cursorContext);
 
         try (var gbpTree = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout).build();
-                var treeWriter = gbpTree.writer(0, cursorContext)) {
+                var treeWriter = gbpTree.writer(W_SPLIT_KEEP_ALL_RIGHT, cursorContext)) {
             treeWriter.put(new MutableLong(0), new MutableLong(1));
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
 
@@ -152,7 +157,7 @@ class GBPTreeWriterTest {
         var cursorContext = contextFactory.create("trackPageCacheAccessOnRemove");
 
         try (var gbpTree = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout).build();
-                var treeWriter = gbpTree.writer(0, cursorContext)) {
+                var treeWriter = gbpTree.writer(W_SPLIT_KEEP_ALL_RIGHT, cursorContext)) {
             treeWriter.put(new MutableLong(0), new MutableLong(0));
             var cursorTracer = cursorContext.getCursorTracer();
 
@@ -180,7 +185,7 @@ class GBPTreeWriterTest {
         assertZeroCursor(cursorContext);
 
         try (var gbpTree = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout).build();
-                var treeWriter = gbpTree.writer(0, cursorContext)) {
+                var treeWriter = gbpTree.writer(W_SPLIT_KEEP_ALL_RIGHT, cursorContext)) {
             treeWriter.remove(new MutableLong(0));
             var cursorTracer = cursorContext.getCursorTracer();
             assertThat(cursorTracer.pins()).isEqualTo(1);
@@ -198,7 +203,7 @@ class GBPTreeWriterTest {
         assertZeroCursor(cursorContext);
 
         try (var gbpTree = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout).build();
-                var treeWriter = gbpTree.writer(0, cursorContext)) {
+                var treeWriter = gbpTree.writer(W_SPLIT_KEEP_ALL_RIGHT | W_BATCHED_SINGLE_THREADED, cursorContext)) {
             // empty, we check that closing everything register unpins event
         }
 
@@ -217,7 +222,7 @@ class GBPTreeWriterTest {
         assertThat(cursorTracer.faults()).isZero();
     }
 
-    private static class KeyCountingVisitor extends GBPTreeVisitor.Adaptor<MutableLong, MutableLong> {
+    private static class KeyCountingVisitor extends GBPTreeVisitor.Adaptor<SingleRoot, MutableLong, MutableLong> {
         private boolean newLevel;
         private final List<Integer> keyCountOnLeftmostPerLevel = new ArrayList<>();
         private final List<Integer> keyCountOnRightmostPerLevel = new ArrayList<>();

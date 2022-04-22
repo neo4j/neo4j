@@ -119,7 +119,8 @@ class GBPTreeBootstrapperTest {
 
         ZipUtils.unzipResource(getClass(), zipName, storeFile);
 
-        LayoutBootstrapper layoutBootstrapper = (indexFile, pageCache, meta) -> layout;
+        LayoutBootstrapper layoutBootstrapper =
+                meta -> new LayoutBootstrapper.Layouts(layout, RootLayerConfiguration.singleRoot());
         var contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
         try (JobScheduler scheduler = new ThreadPoolJobScheduler();
                 GBPTreeBootstrapper bootstrapper =
@@ -127,7 +128,7 @@ class GBPTreeBootstrapperTest {
             GBPTreeBootstrapper.Bootstrap bootstrap =
                     bootstrapper.bootstrapTree(storeFile, PageCacheOpenOptions.BIG_ENDIAN);
             assertTrue(bootstrap.isTree());
-            try (GBPTree<?, ?> tree = bootstrap.getTree();
+            try (MultiRootGBPTree<?, ?, ?> tree = bootstrap.tree();
                     var cursorContext = contextFactory.create("shouldBootstrapTreeOfDifferentPageSizes")) {
                 assertTrue(tree.consistencyCheck(cursorContext));
             }

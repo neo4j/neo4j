@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
@@ -81,7 +82,7 @@ class TokenIndexReaderTest {
         int expectedNodes = 5;
         int labelId = 1;
         try (TokenIndexUpdater writer = new TokenIndexUpdater(expectedNodes)) {
-            writer.initialize(tree.writer(NULL_CONTEXT));
+            writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
             for (int i = 0; i < expectedNodes; i++) {
                 writer.process(TokenIndexEntryUpdate.change(i, null, EMPTY_LONG_ARRAY, new long[] {labelId}));
             }
@@ -129,7 +130,7 @@ class TokenIndexReaderTest {
         int highNodeId = 100_000;
         BitSet expected = new BitSet(highNodeId);
         try (TokenIndexUpdater writer = new TokenIndexUpdater(highNodeId)) {
-            writer.initialize(tree.writer(NULL_CONTEXT));
+            writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
             int updates = highNodeId / sparsity;
             for (int i = 0; i < updates; i++) {
                 int nodeId = random.nextInt(highNodeId);

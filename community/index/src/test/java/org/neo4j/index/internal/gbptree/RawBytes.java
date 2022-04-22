@@ -75,4 +75,21 @@ public class RawBytes {
     void copyFrom(RawBytes source) {
         bytes = Arrays.copyOf(source.bytes, source.bytes.length);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        RawBytes rawBytes = (RawBytes) o;
+        return Arrays.equals(bytes, rawBytes.bytes);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(bytes);
+    }
 }

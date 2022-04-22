@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeCapFromPageSize;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
@@ -64,7 +65,7 @@ abstract class GBPTreeLargeDynamicKeysITBase {
             int keySize = Math.min(tree.keyValueSizeCap(), tree.inlineKeyValueSizeCap() + 1);
             RawBytes key = key(keySize);
             RawBytes value = value(0);
-            try (Writer<RawBytes, RawBytes> writer = tree.writer(NULL_CONTEXT)) {
+            try (Writer<RawBytes, RawBytes> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 writer.put(key, value);
             }
             assertFindExact(tree, key, value);
@@ -77,7 +78,7 @@ abstract class GBPTreeLargeDynamicKeysITBase {
             int keySize = Math.min(tree.keyValueSizeCap(), tree.inlineKeyValueSizeCap() + 1);
             RawBytes key = key(keySize);
             RawBytes value = value(0);
-            try (Writer<RawBytes, RawBytes> writer = tree.writer(NULL_CONTEXT)) {
+            try (Writer<RawBytes, RawBytes> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 writer.put(key, value);
                 writer.remove(key);
             }
@@ -91,7 +92,7 @@ abstract class GBPTreeLargeDynamicKeysITBase {
             int keySize = tree.keyValueSizeCap();
             RawBytes key = key(keySize);
             RawBytes value = value(0);
-            try (Writer<RawBytes, RawBytes> writer = tree.writer(NULL_CONTEXT)) {
+            try (Writer<RawBytes, RawBytes> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 writer.put(key, value);
             }
             assertFindExact(tree, key, value);
@@ -104,7 +105,7 @@ abstract class GBPTreeLargeDynamicKeysITBase {
             int keySize = tree.keyValueSizeCap() + 1;
             RawBytes key = key(keySize);
             RawBytes value = value(0);
-            try (Writer<RawBytes, RawBytes> writer = tree.writer(NULL_CONTEXT)) {
+            try (Writer<RawBytes, RawBytes> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 assertThrows(IllegalArgumentException.class, () -> writer.put(key, value));
             }
         }
@@ -241,7 +242,7 @@ abstract class GBPTreeLargeDynamicKeysITBase {
         double checkpointFrequency = 0.005;
         Iterator<Pair<RawBytes, RawBytes>> iterator = entries.iterator();
         while (iterator.hasNext()) {
-            try (Writer<RawBytes, RawBytes> writer = tree.writer(NULL_CONTEXT)) {
+            try (Writer<RawBytes, RawBytes> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 while (iterator.hasNext()) {
                     Pair<RawBytes, RawBytes> entry = iterator.next();
                     writerAction.accept(writer, entry);

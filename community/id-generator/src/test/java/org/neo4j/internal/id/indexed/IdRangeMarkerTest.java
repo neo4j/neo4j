@@ -29,6 +29,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.DELETED;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -226,7 +227,7 @@ class IdRangeMarkerTest {
         try (IdRangeMarker marker = new IdRangeMarker(
                 idsPerEntry,
                 layout,
-                tree.writer(NULL_CONTEXT),
+                tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),
                 mock(Lock.class),
                 IdRangeMerger.DEFAULT,
                 true,
@@ -309,7 +310,7 @@ class IdRangeMarkerTest {
         return new IdRangeMarker(
                 idsPerEntry,
                 layout,
-                tree.writer(NULL_CONTEXT),
+                tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),
                 lock,
                 merger,
                 true,

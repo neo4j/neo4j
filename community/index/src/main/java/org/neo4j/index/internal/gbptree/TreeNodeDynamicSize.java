@@ -1600,8 +1600,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
     }
 
     @Override
-    String checkMetaConsistency(
-            PageCursor cursor, int keyCount, Type type, GBPTreeConsistencyCheckVisitor<KEY> visitor) {
+    String checkMetaConsistency(PageCursor cursor, int keyCount, Type type, GBPTreeConsistencyCheckVisitor visitor) {
         // Reminder: Header layout
         // TotalSpace  |----------------------------------------|
         // ActiveSpace |-----------|   +    |---------|  + |----|

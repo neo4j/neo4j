@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
@@ -69,12 +70,13 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
     @Override
     public NativeIndexUpdater<KEY> newUpdater(IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
         assertOpen();
+        assertWritable();
         try {
             if (parallel) {
                 return new NativeIndexUpdater<>(layout.newKey(), indexUpdateIgnoreStrategy())
-                        .initialize(tree.parallelWriter(cursorContext));
+                        .initialize(tree.writer(cursorContext));
             } else {
-                return singleUpdater.initialize(tree.writer(cursorContext));
+                return singleUpdater.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext));
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);

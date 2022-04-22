@@ -22,6 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import static java.lang.Math.abs;
 import static java.lang.Math.toIntExact;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeCapFromPageSize;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
@@ -67,7 +68,7 @@ class SizeEstimationTest {
         try (GBPTree<KEY, VALUE> tree = new GBPTreeBuilder<>(pageCache, testDirectory.file("tree"), layout).build()) {
             // given
             int count = random.nextInt(500, 2_500);
-            try (Writer<KEY, VALUE> writer = tree.writer(NULL_CONTEXT)) {
+            try (Writer<KEY, VALUE> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 for (int i = 0; i < count; i++) {
                     writer.put(layout.key(i), layout.value(i));
                 }

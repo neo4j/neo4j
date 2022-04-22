@@ -21,6 +21,8 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
 import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
@@ -101,5 +103,21 @@ public interface Seeker<KEY, VALUE> extends Closeable {
          * @throws IOException on error reading from index.
          */
         Seeker<KEY, VALUE> seek(Seeker<KEY, VALUE> seeker, KEY fromInclusive, KEY toExclusive) throws IOException;
+
+        /**
+         * Partitions the provided key range into {@code numberOfPartitions} partitions and instantiates a {@link Seeker} for each.
+         * Caller can seek through the partitions in parallel. Caller is responsible for closing the returned {@link Seeker seekers}.
+         *
+         * @param fromInclusive lower bound of the target range to seek (inclusive).
+         * @param toExclusive higher bound of the target range to seek (exclusive).
+         * @param numberOfPartitions number of partitions desired by the caller. If the tree is small a lower number of partitions may be returned.
+         * The number of partitions will never be higher than the provided {@code numberOfPartitions}.
+         * @return a {@link Collection} of {@link Seeker seekers}, each having their own distinct partition to seek. Collectively they
+         * seek across the whole provided range.
+         * @throws IOException on error reading from index.
+         */
+        List<KEY> partitionedSeek(
+                KEY fromInclusive, KEY toExclusive, int numberOfPartitions, CursorContext cursorContext)
+                throws IOException;
     }
 }

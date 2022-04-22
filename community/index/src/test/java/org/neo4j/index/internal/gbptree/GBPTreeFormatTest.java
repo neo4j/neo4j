@@ -23,6 +23,7 @@ import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
@@ -143,7 +144,7 @@ public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
     protected void createStoreFile(Path storeFile) throws IOException {
         List<Long> initialKeys = initialKeys();
         try (GBPTree<KEY, VALUE> tree = new GBPTreeBuilder<>(pageCache, storeFile, layout).build()) {
-            try (Writer<KEY, VALUE> writer = tree.writer(NULL_CONTEXT)) {
+            try (Writer<KEY, VALUE> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 for (Long key : initialKeys) {
                     put(writer, key);
                 }
@@ -187,7 +188,7 @@ public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
             {
                 // WHEN writing more to the tree
                 // THEN we should not see any format conflicts
-                try (Writer<KEY, VALUE> writer = tree.writer(NULL_CONTEXT)) {
+                try (Writer<KEY, VALUE> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                     while (keysToAdd.size() > 0) {
                         int next = random.nextInt(keysToAdd.size());
                         Long key = keysToAdd.get(next);
@@ -213,7 +214,7 @@ public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
             {
                 // WHEN randomly removing half of tree content
                 // THEN we should not see any format conflicts
-                try (Writer<KEY, VALUE> writer = tree.writer(NULL_CONTEXT)) {
+                try (Writer<KEY, VALUE> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                     int size = allKeys.size();
                     while (allKeys.size() > size / 2) {
                         int next = random.nextInt(allKeys.size());

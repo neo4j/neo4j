@@ -24,6 +24,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 import java.nio.file.OpenOption;
@@ -31,7 +32,7 @@ import java.nio.file.Path;
 import java.util.function.Consumer;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
-import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
+import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -45,70 +46,84 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
  * @param <KEY> type of key in {@link GBPTree}
  * @param <VALUE> type of value in {@link GBPTree}
  */
-public class GBPTreeBuilder<KEY, VALUE> {
+public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
     private PageCache pageCache;
     private Path path;
     private Monitor monitor = NO_MONITOR;
     private Header.Reader headerReader = NO_HEADER_READER;
-    private Layout<KEY, VALUE> layout;
+    private Layout<KEY, VALUE> dataLayout;
+    private KeyLayout<ROOT_KEY> rootLayout;
     private Consumer<PageCursor> headerWriter = NO_HEADER_WRITER;
     private RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
     private DatabaseReadOnlyChecker readOnlyChecker = DatabaseReadOnlyChecker.writable();
     private PageCacheTracer pageCacheTracer = NULL;
     private ImmutableSet<OpenOption> openOptions = immutable.empty();
 
-    public GBPTreeBuilder(PageCache pageCache, Path path, Layout<KEY, VALUE> layout) {
+    public GBPTreeBuilder(PageCache pageCache, Path path, Layout<KEY, VALUE> dataLayout) {
         with(pageCache);
         with(path);
-        with(layout);
+        with(dataLayout);
     }
 
-    public GBPTreeBuilder<KEY, VALUE> with(Layout<KEY, VALUE> layout) {
-        this.layout = layout;
+    public GBPTreeBuilder(
+            PageCache pageCache, Path path, Layout<KEY, VALUE> dataLayout, KeyLayout<ROOT_KEY> rootLayout) {
+        with(pageCache);
+        with(path);
+        with(dataLayout);
+        withRootLayout(rootLayout);
+    }
+
+    public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(Layout<KEY, VALUE> layout) {
+        this.dataLayout = layout;
         return this;
     }
 
-    public GBPTreeBuilder<KEY, VALUE> with(Path file) {
+    public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> withRootLayout(KeyLayout<ROOT_KEY> layout) {
+        this.rootLayout = layout;
+        return this;
+    }
+
+    public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(Path file) {
         this.path = file;
         return this;
     }
 
-    public GBPTreeBuilder<KEY, VALUE> with(PageCache pageCache) {
+    public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(PageCache pageCache) {
         this.pageCache = pageCache;
         return this;
     }
 
-    public GBPTreeBuilder<KEY, VALUE> with(GBPTree.Monitor monitor) {
+    public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(GBPTree.Monitor monitor) {
         this.monitor = monitor;
         return this;
     }
 
-    public GBPTreeBuilder<KEY, VALUE> with(Header.Reader headerReader) {
+    public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(Header.Reader headerReader) {
         this.headerReader = headerReader;
         return this;
     }
 
-    public GBPTreeBuilder<KEY, VALUE> with(Consumer<PageCursor> headerWriter) {
+    public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(Consumer<PageCursor> headerWriter) {
         this.headerWriter = headerWriter;
         return this;
     }
 
-    public GBPTreeBuilder<KEY, VALUE> with(RecoveryCleanupWorkCollector recoveryCleanupWorkCollector) {
+    public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(RecoveryCleanupWorkCollector recoveryCleanupWorkCollector) {
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         return this;
     }
 
-    public GBPTreeBuilder<KEY, VALUE> with(DatabaseReadOnlyChecker readOnlyChecker) {
+    public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(DatabaseReadOnlyChecker readOnlyChecker) {
         this.readOnlyChecker = readOnlyChecker;
         return this;
     }
 
-    public GBPTreeBuilder<KEY, VALUE> with(PageCacheTracer pageCacheTracer) {
+    public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(PageCacheTracer pageCacheTracer) {
         this.pageCacheTracer = pageCacheTracer;
         return this;
     }
 
-    public GBPTreeBuilder<KEY, VALUE> with(ImmutableSet<OpenOption> openOptions) {
+    public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(ImmutableSet<OpenOption> openOptions) {
         this.openOptions = openOptions;
         return this;
     }
@@ -119,7 +134,7 @@ public class GBPTreeBuilder<KEY, VALUE> {
         return new GBPTree<>(
                 pageCache,
                 path,
-                layout,
+                dataLayout,
                 monitor,
                 headerReader,
                 headerWriter,
@@ -129,5 +144,23 @@ public class GBPTreeBuilder<KEY, VALUE> {
                 DEFAULT_DATABASE_NAME,
                 "test tree",
                 cursorContextFactory);
+    }
+
+    public MultiRootGBPTree<ROOT_KEY, KEY, VALUE> buildMultiRoot() {
+        var cursorContextFactory = new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY);
+        return new MultiRootGBPTree<>(
+                pageCache,
+                path,
+                dataLayout,
+                monitor,
+                headerReader,
+                headerWriter,
+                recoveryCleanupWorkCollector,
+                readOnlyChecker,
+                openOptions,
+                DEFAULT_DATABASE_NAME,
+                "test tree",
+                cursorContextFactory,
+                RootLayerConfiguration.multipleRoots(rootLayout, (int) kibiBytes(10)));
     }
 }

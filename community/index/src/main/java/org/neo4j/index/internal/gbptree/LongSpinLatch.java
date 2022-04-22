@@ -45,6 +45,9 @@ class LongSpinLatch {
     private static final long PARK_NANOS = MILLISECONDS.toNanos(1);
     private static final long TEST_FAILED = -1;
     private static final long DEAD = -2;
+    static final int WRITE_LATCH_DEAD = -1;
+    static final int WRITE_LATCH_ACQUIRED = 1;
+    static final int WRITE_LATCH_NOT_ACQUIRED = 0;
 
     private static final long WRITE_LOCK_MASK = 0x8000;
     private static final long READ_LOCK_MASK = 0x7FFF;
@@ -140,6 +143,22 @@ class LongSpinLatch {
         }
         spinTransform(NO_READ_LOCK, NO_TRANSFORM, false);
         return true;
+    }
+
+    /**
+     * Tries to acquire write latch.
+     * @return {@link #WRITE_LATCH_ACQUIRED} on success, {@link #WRITE_LATCH_NOT_ACQUIRED} if someone else has acquired either write or read latch,
+     * or {@link #WRITE_LATCH_DEAD} if this latch is dead meaning that a new latch will have to be created by the caller to retry this operation.
+     */
+    int tryAcquireWrite() {
+        long writeLockResult = spinTransform(NO_WRITE_LOCK, ACQUIRE_WRITE_LOCK, true);
+        if (writeLockResult == DEAD) {
+            return WRITE_LATCH_DEAD;
+        }
+        if (writeLockResult == TEST_FAILED) {
+            return WRITE_LATCH_NOT_ACQUIRED;
+        }
+        return WRITE_LATCH_ACQUIRED;
     }
 
     /**

@@ -30,7 +30,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
-import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
+import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -52,7 +52,8 @@ class CrashGenerationCleaner {
     private static final long MIN_BATCH_SIZE = 10;
     static final long MAX_BATCH_SIZE = 100;
     private final PagedFile pagedFile;
-    private final TreeNode<?, ?> treeNode;
+    private final TreeNode<?, ?> dataTreeNode;
+    private final TreeNode<?, ?> rootTreeNode;
     private final long lowTreeNodeId;
     private final long highTreeNodeId;
     private final long stableGeneration;
@@ -63,7 +64,8 @@ class CrashGenerationCleaner {
 
     CrashGenerationCleaner(
             PagedFile pagedFile,
-            TreeNode<?, ?> treeNode,
+            TreeNode<?, ?> rootTreeNode,
+            TreeNode<?, ?> dataTreeNode,
             long lowTreeNodeId,
             long highTreeNodeId,
             long stableGeneration,
@@ -72,7 +74,8 @@ class CrashGenerationCleaner {
             CursorContextFactory contextFactory,
             String treeName) {
         this.pagedFile = pagedFile;
-        this.treeNode = treeNode;
+        this.dataTreeNode = dataTreeNode;
+        this.rootTreeNode = rootTreeNode;
         this.lowTreeNodeId = lowTreeNodeId;
         this.highTreeNodeId = highTreeNodeId;
         this.stableGeneration = stableGeneration;
@@ -134,9 +137,9 @@ class CrashGenerationCleaner {
                         boolean isTreeNode = isTreeNode(cursor);
                         if (isTreeNode) {
                             localNumberOfTreeNodes++;
-                            if (hasCrashedGSPP(this.treeNode, cursor)) {
+                            if (hasCrashedGSPP(cursor)) {
                                 writeCursor.next(cursor.getCurrentPageId());
-                                cleanTreeNode(this.treeNode, writeCursor, cleanedPointers);
+                                cleanTreeNode(writeCursor, cleanedPointers);
                             }
                         }
                     }
@@ -165,13 +168,16 @@ class CrashGenerationCleaner {
         return isTreeNode;
     }
 
-    private boolean hasCrashedGSPP(TreeNode<?, ?> treeNode, PageCursor cursor) throws IOException {
+    private boolean hasCrashedGSPP(PageCursor cursor) throws IOException {
         int keyCount;
+        byte layerType;
         do {
             keyCount = TreeNode.keyCount(cursor);
+            layerType = TreeNode.layerType(cursor);
         } while (cursor.shouldRetry());
         PageCursorUtil.checkOutOfBounds(cursor);
 
+        TreeNode<?, ?> treeNode = selectTreeNode(layerType);
         boolean hasCrashed;
         do {
             hasCrashed = hasCrashedGSPP(cursor, TreeNode.BYTE_POS_SUCCESSOR)
@@ -188,6 +194,10 @@ class CrashGenerationCleaner {
         return hasCrashed;
     }
 
+    private TreeNode<?, ?> selectTreeNode(byte layerType) {
+        return layerType == TreeNode.DATA_LAYER_FLAG ? dataTreeNode : rootTreeNode;
+    }
+
     private boolean hasCrashedGSPP(PageCursor cursor, int gsppOffset) {
         return hasCrashedGSP(cursor, gsppOffset) || hasCrashedGSP(cursor, gsppOffset + GenerationSafePointer.SIZE);
     }
@@ -200,13 +210,15 @@ class CrashGenerationCleaner {
 
     // === Methods about actually cleaning a discovered crashed tree node ===
 
-    private void cleanTreeNode(TreeNode<?, ?> treeNode, PageCursor cursor, LongAdder cleanedPointers) {
+    private void cleanTreeNode(PageCursor cursor, LongAdder cleanedPointers) {
         cleanCrashedGSPP(cursor, TreeNode.BYTE_POS_SUCCESSOR, cleanedPointers);
         cleanCrashedGSPP(cursor, TreeNode.BYTE_POS_LEFTSIBLING, cleanedPointers);
         cleanCrashedGSPP(cursor, TreeNode.BYTE_POS_RIGHTSIBLING, cleanedPointers);
 
         if (TreeNode.isInternal(cursor)) {
             int keyCount = TreeNode.keyCount(cursor);
+            byte layerType = TreeNode.layerType(cursor);
+            TreeNode<?, ?> treeNode = selectTreeNode(layerType);
             for (int i = 0; i <= keyCount && treeNode.reasonableChildCount(i); i++) {
                 cleanCrashedGSPP(cursor, treeNode.childOffset(i), cleanedPointers);
             }

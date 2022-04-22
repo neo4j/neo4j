@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 
 import java.io.IOException;
@@ -202,7 +203,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>> exte
             ConflictDetectingValueMerger<KEY, Value[]> conflictDetector,
             CursorContext cursorContext)
             throws IndexEntryConflictException {
-        try (Writer<KEY, NullValue> writer = tree.writer(cursorContext)) {
+        try (Writer<KEY, NullValue> writer = tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext)) {
             for (IndexEntryUpdate<?> indexEntryUpdate : indexEntryUpdates) {
                 NativeIndexUpdater.processUpdate(
                         treeKey, (ValueIndexEntryUpdate<?>) indexEntryUpdate, writer, conflictDetector, ignoreStrategy);

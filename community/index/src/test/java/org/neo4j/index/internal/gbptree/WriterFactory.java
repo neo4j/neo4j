@@ -19,7 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import static org.neo4j.index.internal.gbptree.InternalTreeLogic.DEFAULT_SPLIT_RATIO;
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.io.IOException;
@@ -27,23 +27,20 @@ import java.io.IOException;
 public enum WriterFactory {
     SINGLE {
         @Override
-        <KEY, VALUE> Writer<KEY, VALUE> create(GBPTree<KEY, VALUE> index, double ratioToKeepInLeftOnSplit)
-                throws IOException {
-            return index.writer(ratioToKeepInLeftOnSplit, NULL_CONTEXT);
+        <KEY, VALUE> Writer<KEY, VALUE> create(GBPTree<KEY, VALUE> index, int flags) throws IOException {
+            return index.writer(flags | W_BATCHED_SINGLE_THREADED, NULL_CONTEXT);
         }
     },
     PARALLEL {
         @Override
-        <KEY, VALUE> Writer<KEY, VALUE> create(GBPTree<KEY, VALUE> index, double ratioToKeepInLeftOnSplit)
-                throws IOException {
-            return index.parallelWriter(ratioToKeepInLeftOnSplit, NULL_CONTEXT);
+        <KEY, VALUE> Writer<KEY, VALUE> create(GBPTree<KEY, VALUE> index, int flags) throws IOException {
+            return index.writer(flags, NULL_CONTEXT);
         }
     };
 
-    abstract <KEY, VALUE> Writer<KEY, VALUE> create(GBPTree<KEY, VALUE> index, double ratioToKeepInLeftOnSplit)
-            throws IOException;
+    abstract <KEY, VALUE> Writer<KEY, VALUE> create(GBPTree<KEY, VALUE> index, int flags) throws IOException;
 
     <KEY, VALUE> Writer<KEY, VALUE> create(GBPTree<KEY, VALUE> index) throws IOException {
-        return create(index, DEFAULT_SPLIT_RATIO);
+        return create(index, 0);
     }
 }

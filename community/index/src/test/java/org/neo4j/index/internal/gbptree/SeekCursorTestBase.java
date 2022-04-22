@@ -29,6 +29,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.SeekCursor.DEFAULT_MAX_READ_AHEAD;
 import static org.neo4j.index.internal.gbptree.SeekCursor.LEAF_LEVEL;
+import static org.neo4j.index.internal.gbptree.TreeNode.DATA_LAYER_FLAG;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
@@ -95,14 +96,15 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
         OffloadStoreImpl<KEY, VALUE> offloadStore =
                 new OffloadStoreImpl<>(layout, id, pcFactory, idValidator, PAGE_SIZE);
         node = getTreeNode(PAGE_SIZE, layout, offloadStore);
-        treeLogic = new InternalTreeLogic<>(id, node, layout, NO_MONITOR, TreeWriterCoordination.NO_COORDINATION);
+        treeLogic = new InternalTreeLogic<>(
+                id, node, layout, NO_MONITOR, TreeWriterCoordination.NO_COORDINATION, DATA_LAYER_FLAG);
         structurePropagation = new StructurePropagation<>(layout.newKey(), layout.newKey(), layout.newKey());
 
         long firstPage = id.acquireNewId(stableGeneration, unstableGeneration, NULL_CONTEXT);
         goTo(cursor, firstPage);
         goTo(utilCursor, firstPage);
 
-        node.initializeLeaf(cursor, stableGeneration, unstableGeneration);
+        node.initializeLeaf(cursor, DATA_LAYER_FLAG, stableGeneration, unstableGeneration);
         updateRoot();
     }
 
@@ -118,7 +120,7 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
     private void updateRoot() {
         rootId = cursor.getCurrentPageId();
         rootGeneration = unstableGeneration;
-        treeLogic.initialize(cursor);
+        treeLogic.initialize(cursor, InternalTreeLogic.DEFAULT_SPLIT_RATIO);
     }
 
     /* NO CONCURRENT INSERT */
@@ -1162,12 +1164,10 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
                         node,
                         layout,
                         generationSupplier,
-                        rootInitializer(unstableGeneration),
-                        failingRootCatchup,
                         exceptionDecorator,
                         SeekCursor.NO_MONITOR,
                         NULL_CONTEXT)
-                .initialize(from, to, 1, LEAF_LEVEL)) {
+                .initialize(rootInitializer(unstableGeneration), failingRootCatchup, from, to, 1, LEAF_LEVEL)) {
             // reading a couple of keys
             assertTrue(cursor.next());
             assertEqualsKey(key(0), cursor.key());
@@ -1750,12 +1750,10 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
                         node,
                         layout,
                         generationSupplier,
-                        rootInitializer(generation - 1),
-                        rootCatchup,
                         exceptionDecorator,
                         SeekCursor.NO_MONITOR,
                         NULL_CONTEXT)
-                .initialize(key(0), key(1), 1, LEAF_LEVEL)) {
+                .initialize(rootInitializer(generation - 1), rootCatchup, key(0), key(1), 1, LEAF_LEVEL)) {
             // do nothing
         }
 
@@ -1772,12 +1770,12 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
 
         // a newer leaf
         long leftChild = cursor.getCurrentPageId();
-        node.initializeLeaf(cursor, stableGeneration + 1, unstableGeneration + 1); // A newer leaf
+        node.initializeLeaf(cursor, DATA_LAYER_FLAG, stableGeneration + 1, unstableGeneration + 1); // A newer leaf
         cursor.next();
 
         // a root
         long rootId = cursor.getCurrentPageId();
-        node.initializeInternal(cursor, stableGeneration, unstableGeneration);
+        node.initializeInternal(cursor, DATA_LAYER_FLAG, stableGeneration, unstableGeneration);
         long keyInRoot = 10L;
         node.insertKeyAndRightChildAt(
                 cursor, key(keyInRoot), rightChild, 0, 0, stableGeneration, unstableGeneration, NULL_CONTEXT);
@@ -1792,7 +1790,7 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
             // and set child generation to match pointer
             cursor.next(leftChild);
             cursor.zapPage();
-            node.initializeLeaf(cursor, stableGeneration, unstableGeneration);
+            node.initializeLeaf(cursor, DATA_LAYER_FLAG, stableGeneration, unstableGeneration);
 
             cursor.next(rootId);
             return new Root(rootId, generation);
@@ -1807,12 +1805,10 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
                         node,
                         layout,
                         generationSupplier,
-                        rootInitializer(unstableGeneration),
-                        rootCatchup,
                         exceptionDecorator,
                         SeekCursor.NO_MONITOR,
                         NULL_CONTEXT)
-                .initialize(from, to, 1, LEAF_LEVEL)) {
+                .initialize(rootInitializer(unstableGeneration), rootCatchup, from, to, 1, LEAF_LEVEL)) {
             // do nothing
         }
 
@@ -1828,7 +1824,7 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
 
         // a newer right leaf
         long rightChild = cursor.getCurrentPageId();
-        node.initializeLeaf(cursor, stableGeneration, unstableGeneration);
+        node.initializeLeaf(cursor, DATA_LAYER_FLAG, stableGeneration, unstableGeneration);
         cursor.next();
 
         RootCatchup rootCatchup = fromId -> {
@@ -1840,13 +1836,13 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
 
         // a left leaf
         long leftChild = cursor.getCurrentPageId();
-        node.initializeLeaf(cursor, stableGeneration - 1, unstableGeneration - 1);
+        node.initializeLeaf(cursor, DATA_LAYER_FLAG, stableGeneration - 1, unstableGeneration - 1);
         // with an old pointer to right sibling
         TreeNode.setRightSibling(cursor, rightChild, stableGeneration - 1, unstableGeneration - 1);
         cursor.next();
 
         // a root
-        node.initializeInternal(cursor, stableGeneration - 1, unstableGeneration - 1);
+        node.initializeInternal(cursor, DATA_LAYER_FLAG, stableGeneration - 1, unstableGeneration - 1);
         long keyInRoot = 10L;
         node.insertKeyAndRightChildAt(
                 cursor, key(keyInRoot), oldRightChild, 0, 0, stableGeneration, unstableGeneration, NULL_CONTEXT);
@@ -1864,12 +1860,10 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
                         node,
                         layout,
                         firstOlderThenCurrentGenerationSupplier,
-                        rootInitializer(unstableGeneration),
-                        rootCatchup,
                         exceptionDecorator,
                         SeekCursor.NO_MONITOR,
                         NULL_CONTEXT)
-                .initialize(from, to, 1, LEAF_LEVEL)) {
+                .initialize(rootInitializer(unstableGeneration), rootCatchup, from, to, 1, LEAF_LEVEL)) {
             while (seek.next()) {
                 seek.key();
             }
@@ -2162,7 +2156,7 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
         assertTrue(split.hasRightKeyInsert);
         long rootId = id.acquireNewId(stableGeneration, unstableGeneration, NULL_CONTEXT);
         cursor.next(rootId);
-        node.initializeInternal(cursor, stableGeneration, unstableGeneration);
+        node.initializeInternal(cursor, DATA_LAYER_FLAG, stableGeneration, unstableGeneration);
         node.setChildAt(cursor, split.midChild, 0, stableGeneration, unstableGeneration);
         node.insertKeyAndRightChildAt(
                 cursor, split.rightKey, split.rightChild, 0, 0, stableGeneration, unstableGeneration, NULL_CONTEXT);
@@ -2230,12 +2224,16 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
                         node,
                         layout,
                         generationSupplier,
-                        rootInitializer(unstableGeneration),
-                        failingRootCatchup,
                         exceptionDecorator,
                         SeekCursor.NO_MONITOR,
                         NULL_CONTEXT)
-                .initialize(key(fromInclusive), key(toExclusive), random.nextInt(1, DEFAULT_MAX_READ_AHEAD), level);
+                .initialize(
+                        rootInitializer(unstableGeneration),
+                        failingRootCatchup,
+                        key(fromInclusive),
+                        key(toExclusive),
+                        random.nextInt(1, DEFAULT_MAX_READ_AHEAD),
+                        level);
     }
 
     private SeekCursor<KEY, VALUE> seekCursor(long fromInclusive, long toExclusive) throws IOException {
@@ -2269,13 +2267,16 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
                         node,
                         layout,
                         generationSupplier,
-                        rootInitializer(unstableGeneration),
-                        rootCatchup,
                         exceptionDecorator,
                         SeekCursor.NO_MONITOR,
                         NULL_CONTEXT)
                 .initialize(
-                        key(fromInclusive), key(toExclusive), random.nextInt(1, DEFAULT_MAX_READ_AHEAD), LEAF_LEVEL);
+                        rootInitializer(unstableGeneration),
+                        rootCatchup,
+                        key(fromInclusive),
+                        key(toExclusive),
+                        random.nextInt(1, DEFAULT_MAX_READ_AHEAD),
+                        LEAF_LEVEL);
     }
 
     /**
@@ -2289,7 +2290,7 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
         TreeNode.setRightSibling(pageCursor, right, stableGeneration, unstableGeneration);
 
         pageCursor.next(right);
-        node.initializeLeaf(pageCursor, stableGeneration, unstableGeneration);
+        node.initializeLeaf(pageCursor, DATA_LAYER_FLAG, stableGeneration, unstableGeneration);
         TreeNode.setLeftSibling(pageCursor, left, stableGeneration, unstableGeneration);
         return left;
     }
@@ -2406,9 +2407,8 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
     private void printTree() throws IOException {
         long currentPageId = cursor.getCurrentPageId();
         cursor.next(rootId);
-        PrintingGBPTreeVisitor<KEY, VALUE> printingVisitor = new PrintingGBPTreeVisitor<>(PrintConfig.defaults());
-        new GBPTreeStructure<>(node, layout, stableGeneration, unstableGeneration)
-                .visitTree(cursor, cursor, printingVisitor, NULL_CONTEXT);
+        new GBPTreeStructure<>(null, null, node, layout, stableGeneration, unstableGeneration)
+                .visitTree(cursor, new PrintingGBPTreeVisitor<>(PrintConfig.defaults()), NULL_CONTEXT);
         cursor.next(currentPageId);
     }
 

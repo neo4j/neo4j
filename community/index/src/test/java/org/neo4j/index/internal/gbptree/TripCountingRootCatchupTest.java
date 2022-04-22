@@ -22,7 +22,6 @@ package org.neo4j.index.internal.gbptree;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 
 class TripCountingRootCatchupTest {
@@ -55,7 +54,7 @@ class TripCountingRootCatchupTest {
     void mustReturnRootUsingProvidedSupplier() {
         // given
         Root expectedRoot = new Root(1, 2);
-        Supplier<Root> rootSupplier = () -> expectedRoot;
+        RootSupplier rootSupplier = () -> expectedRoot;
         TripCountingRootCatchup tripCountingRootCatchup = new TripCountingRootCatchup(rootSupplier);
 
         // when

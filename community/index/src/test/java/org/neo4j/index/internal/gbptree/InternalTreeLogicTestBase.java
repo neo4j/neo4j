@@ -29,6 +29,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
+import static org.neo4j.index.internal.gbptree.TreeNode.DATA_LAYER_FLAG;
 import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.NO;
 import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.YES;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
@@ -50,6 +51,7 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.ConsistencyCheckState;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -108,7 +110,8 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
                 new OffloadStoreImpl<>(layout, id, pcFactory, idValidator, PAGE_SIZE);
         node = getTreeNode(PAGE_SIZE, layout, offloadStore);
         adder = getAdder();
-        treeLogic = new InternalTreeLogic<>(id, node, layout, NO_MONITOR, TreeWriterCoordination.NO_COORDINATION);
+        treeLogic = new InternalTreeLogic<>(
+                id, node, layout, NO_MONITOR, TreeWriterCoordination.NO_COORDINATION, DATA_LAYER_FLAG);
         dontCare = layout.newValue();
         structurePropagation = new StructurePropagation<>(layout.newKey(), layout.newKey(), layout.newKey());
     }
@@ -1556,7 +1559,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         generationManager.recovery();
         // start up on stable root
         goTo(cursor, originalNodeId);
-        treeLogic.initialize(cursor);
+        treeLogic.initialize(cursor, InternalTreeLogic.DEFAULT_SPLIT_RATIO);
         // replay transaction TX1 will create a new successor
         insert(key(1L), value(10L));
         assertEquals(2, numberOfRootSuccessors);
@@ -1711,10 +1714,12 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
     private void consistencyCheck() throws IOException {
         long currentPageId = readCursor.getCurrentPageId();
         root.goTo(readCursor);
-        GBPTreeConsistencyChecker<KEY> consistencyChecker =
-                new GBPTreeConsistencyChecker<>(node, layout, id, stableGeneration, unstableGeneration, true);
-        ThrowingConsistencyCheckVisitor<KEY> visitor = new ThrowingConsistencyCheckVisitor<>();
-        consistencyChecker.check(null, readCursor, root, visitor, NULL_CONTEXT);
+        ThrowingConsistencyCheckVisitor visitor = new ThrowingConsistencyCheckVisitor();
+        try (ConsistencyCheckState state = new ConsistencyCheckState(null, id, visitor, NULL_CONTEXT)) {
+            GBPTreeConsistencyChecker<KEY> consistencyChecker =
+                    new GBPTreeConsistencyChecker<>(node, layout, state, stableGeneration, unstableGeneration, true);
+            consistencyChecker.check(null, readCursor, root, visitor, NULL_CONTEXT);
+        }
         goTo(readCursor, currentPageId);
     }
 
@@ -1836,7 +1841,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
     }
 
     void initialize() {
-        node.initializeLeaf(cursor, stableGeneration, unstableGeneration);
+        node.initializeLeaf(cursor, DATA_LAYER_FLAG, stableGeneration, unstableGeneration);
         updateRoot();
     }
 
@@ -1853,7 +1858,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
                 unstableGeneration,
                 GBPTreePointerType.successor(),
                 TreeNode.BYTE_POS_SUCCESSOR,
-                new ThrowingConsistencyCheckVisitor<>(),
+                new ThrowingConsistencyCheckVisitor(),
                 false);
     }
 
@@ -1899,9 +1904,8 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
     private void printTree() throws IOException {
         long currentPageId = cursor.getCurrentPageId();
         cursor.next(root.id());
-        PrintingGBPTreeVisitor<KEY, VALUE> printingVisitor = new PrintingGBPTreeVisitor<>(PrintConfig.defaults());
-        new GBPTreeStructure<>(node, layout, stableGeneration, unstableGeneration)
-                .visitTree(cursor, cursor, printingVisitor, NULL_CONTEXT);
+        new GBPTreeStructure<>(null, null, node, layout, stableGeneration, unstableGeneration)
+                .visitTree(cursor, new PrintingGBPTreeVisitor<>(PrintConfig.defaults()), NULL_CONTEXT);
         cursor.next(currentPageId);
     }
 
@@ -1921,7 +1925,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         assertThat(split.hasRightKeyInsert).isTrue();
         long rootId = id.acquireNewId(stableGeneration, unstableGeneration, NULL_CONTEXT);
         goTo(cursor, rootId);
-        node.initializeInternal(cursor, stableGeneration, unstableGeneration);
+        node.initializeInternal(cursor, DATA_LAYER_FLAG, stableGeneration, unstableGeneration);
         node.setChildAt(cursor, split.midChild, 0, stableGeneration, unstableGeneration);
         node.insertKeyAndRightChildAt(
                 cursor, split.rightKey, split.rightChild, 0, 0, stableGeneration, unstableGeneration, NULL_CONTEXT);

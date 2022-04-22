@@ -30,27 +30,39 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.neo4j.index.internal.gbptree.RootMappingLayout.RootMappingValue;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.util.Preconditions;
 
 /**
  * Utility class for printing a {@link GBPTree}, either whole or sub-tree.
  *
- * @param <KEY> type of keys in the tree.
- * @param <VALUE> type of values in the tree.
+ * @param <ROOT_KEY> type of root mapping key.
+ * @param <DATA_KEY>> type of keys in the data trees.
+ * @param <DATA_VALUE>> type of values in the data trees.
  */
-public class GBPTreeStructure<KEY, VALUE> {
-    private final TreeNode<KEY, VALUE> node;
-    private final Layout<KEY, VALUE> layout;
+public class GBPTreeStructure<ROOT_KEY, DATA_KEY, DATA_VALUE> {
+    private final TreeNode<ROOT_KEY, RootMappingValue> rootTreeNode;
+    private final Layout<ROOT_KEY, RootMappingValue> rootLayout;
+    private final TreeNode<DATA_KEY, DATA_VALUE> dataTreeNode;
+    private final Layout<DATA_KEY, DATA_VALUE> dataLayout;
     private final long stableGeneration;
     private final long unstableGeneration;
 
     GBPTreeStructure(
-            TreeNode<KEY, VALUE> node, Layout<KEY, VALUE> layout, long stableGeneration, long unstableGeneration) {
-        this.node = node;
-        this.layout = layout;
+            TreeNode<ROOT_KEY, RootMappingValue> rootTreeNode,
+            Layout<ROOT_KEY, RootMappingValue> rootLayout,
+            TreeNode<DATA_KEY, DATA_VALUE> dataTreeNode,
+            Layout<DATA_KEY, DATA_VALUE> dataLayout,
+            long stableGeneration,
+            long unstableGeneration) {
+        this.rootTreeNode = rootTreeNode;
+        this.rootLayout = rootLayout;
+        this.dataTreeNode = dataTreeNode;
+        this.dataLayout = dataLayout;
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
     }
@@ -125,13 +137,12 @@ public class GBPTreeStructure<KEY, VALUE> {
      * Let the passed in {@code cursor} point to the root or sub-tree (internal node) of what to visit.
      *
      * @param cursor {@link PageCursor} placed at root of tree or sub-tree.
-     * @param writeCursor Currently active {@link PageCursor write cursor} in tree.
      * @param visitor {@link GBPTreeVisitor} that should visit the tree.
      * @param cursorContext underlying page cursor context.
      * @throws IOException on page cache access error.
      */
     void visitTree(
-            PageCursor cursor, PageCursor writeCursor, GBPTreeVisitor<KEY, VALUE> visitor, CursorContext cursorContext)
+            PageCursor cursor, GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> visitor, CursorContext cursorContext)
             throws IOException {
         // TreeState
         long currentPage = cursor.getCurrentPageId();
@@ -140,7 +151,13 @@ public class GBPTreeStructure<KEY, VALUE> {
         visitor.treeState(statePair);
         TreeNode.goTo(cursor, "back to tree node from reading state", currentPage);
 
-        assertOnTreeNode(select(cursor, writeCursor));
+        assertOnTreeNode(cursor);
+
+        boolean isDataTree;
+        do {
+            isDataTree = TreeNode.layerType(cursor) == TreeNode.DATA_LAYER_FLAG;
+        } while (cursor.shouldRetry());
+        visitor.beginTree(isDataTree);
 
         // Traverse the tree
         int level = 0;
@@ -150,7 +167,7 @@ public class GBPTreeStructure<KEY, VALUE> {
             long leftmostSibling = cursor.getCurrentPageId();
 
             // Go right through all siblings
-            visitLevel(cursor, writeCursor, visitor, cursorContext);
+            visitLevel(cursor, visitor, cursorContext);
 
             visitor.endLevel(level);
             level++;
@@ -159,7 +176,9 @@ public class GBPTreeStructure<KEY, VALUE> {
             TreeNode.goTo(cursor, "back", leftmostSibling);
         }
         // And continue down to next level if this level was an internal level
-        while (goToLeftmostChild(cursor, writeCursor));
+        while (goToLeftmostChild(cursor));
+
+        visitor.endTree(isDataTree);
     }
 
     private static void assertOnTreeNode(PageCursor cursor) throws IOException {
@@ -182,51 +201,34 @@ public class GBPTreeStructure<KEY, VALUE> {
         }
     }
 
-    void visitTreeNode(PageCursor cursor, GBPTreeVisitor<KEY, VALUE> visitor, CursorContext cursorContext)
+    void visitTreeNode(
+            PageCursor cursor, GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> visitor, CursorContext cursorContext)
             throws IOException {
         // [TYPE][GEN][KEYCOUNT] ([RIGHTSIBLING][LEFTSIBLING][SUCCESSOR]))
         boolean isLeaf;
         int keyCount;
         long generation = -1;
+        boolean isDataNode;
         do {
             isLeaf = TreeNode.isLeaf(cursor);
             keyCount = TreeNode.keyCount(cursor);
-            if (!node.reasonableKeyCount(keyCount)) {
-                cursor.setCursorException("Unexpected keyCount " + keyCount);
-            }
+            isDataNode = TreeNode.layerType(cursor) == TreeNode.DATA_LAYER_FLAG;
             generation = TreeNode.generation(cursor);
         } while (cursor.shouldRetry());
+        Preconditions.checkState(treeNode(isDataNode).reasonableKeyCount(keyCount), "Unexpected keyCount %d", keyCount);
         visitor.beginNode(cursor.getCurrentPageId(), isLeaf, generation, keyCount);
 
-        long offloadId;
-        KEY key = layout.newKey();
-        VALUE value = layout.newValue();
         for (int i = 0; i < keyCount; i++) {
-            long child = -1;
-            do {
-                TreeNode.Type type = isLeaf ? LEAF : INTERNAL;
-                offloadId = node.offloadIdAt(cursor, i, type);
-                node.keyAt(cursor, key, i, type, cursorContext);
-                if (isLeaf) {
-                    node.valueAt(cursor, value, i, cursorContext);
-                } else {
-                    child = pointer(node.childAt(cursor, i, stableGeneration, unstableGeneration));
-                }
-            } while (cursor.shouldRetry());
-
-            visitor.position(i);
-            if (isLeaf) {
-                visitor.key(key, isLeaf, offloadId);
-                visitor.value(value);
+            if (isDataNode) {
+                visitDataEntry(cursor, visitor, cursorContext, isLeaf, i);
             } else {
-                visitor.child(child);
-                visitor.key(key, isLeaf, offloadId);
+                visitRootEntry(cursor, visitor, cursorContext, isLeaf, i);
             }
         }
         if (!isLeaf) {
             long child;
             do {
-                child = pointer(node.childAt(cursor, keyCount, stableGeneration, unstableGeneration));
+                child = pointer(treeNode(isDataNode).childAt(cursor, keyCount, stableGeneration, unstableGeneration));
             } while (cursor.shouldRetry());
             visitor.position(keyCount);
             visitor.child(child);
@@ -234,32 +236,97 @@ public class GBPTreeStructure<KEY, VALUE> {
         visitor.endNode(cursor.getCurrentPageId());
     }
 
-    private boolean goToLeftmostChild(PageCursor readCursor, PageCursor writeCursor) throws IOException {
-        boolean isInternal;
-        long leftmostSibling = -1;
-        PageCursor cursor = select(readCursor, writeCursor);
+    private TreeNode<?, ?> treeNode(boolean isDataNode) {
+        return isDataNode ? dataTreeNode : rootTreeNode;
+    }
+
+    private void visitDataEntry(
+            PageCursor cursor,
+            GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> visitor,
+            CursorContext cursorContext,
+            boolean isLeaf,
+            int i)
+            throws IOException {
+        DATA_KEY key = dataLayout.newKey();
+        DATA_VALUE value = dataLayout.newValue();
+        long offloadId;
+        long child = -1;
         do {
-            isInternal = TreeNode.isInternal(cursor);
-            if (isInternal) {
-                leftmostSibling = node.childAt(cursor, 0, stableGeneration, unstableGeneration);
+            TreeNode.Type type = isLeaf ? LEAF : INTERNAL;
+            offloadId = dataTreeNode.offloadIdAt(cursor, i, type);
+            dataTreeNode.keyAt(cursor, key, i, type, cursorContext);
+            if (isLeaf) {
+                dataTreeNode.valueAt(cursor, value, i, cursorContext);
+            } else {
+                child = pointer(dataTreeNode.childAt(cursor, i, stableGeneration, unstableGeneration));
             }
         } while (cursor.shouldRetry());
 
+        visitor.position(i);
+        if (isLeaf) {
+            visitor.key(key, isLeaf, offloadId);
+            visitor.value(value);
+        } else {
+            visitor.child(child);
+            visitor.key(key, isLeaf, offloadId);
+        }
+    }
+
+    private void visitRootEntry(
+            PageCursor cursor,
+            GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> visitor,
+            CursorContext cursorContext,
+            boolean isLeaf,
+            int i)
+            throws IOException {
+        ROOT_KEY key = rootLayout.newKey();
+        RootMappingValue value = rootLayout.newValue();
+        long offloadId;
+        long child = -1;
+        do {
+            TreeNode.Type type = isLeaf ? LEAF : INTERNAL;
+            offloadId = rootTreeNode.offloadIdAt(cursor, i, type);
+            if (isLeaf) {
+                rootTreeNode.keyValueAt(cursor, key, value, i, cursorContext);
+            } else {
+                rootTreeNode.keyAt(cursor, key, i, type, cursorContext);
+                child = pointer(rootTreeNode.childAt(cursor, i, stableGeneration, unstableGeneration));
+            }
+        } while (cursor.shouldRetry());
+
+        visitor.position(i);
+        if (isLeaf) {
+            visitor.rootKey(key, isLeaf, offloadId);
+            visitor.rootMapping(value.rootId, value.rootGeneration);
+        } else {
+            visitor.child(child);
+            visitor.rootKey(key, isLeaf, offloadId);
+        }
+    }
+
+    private boolean goToLeftmostChild(PageCursor cursor) throws IOException {
+        boolean isInternal;
+        long leftmostSibling = -1;
+        boolean isDataNode;
+        do {
+            isInternal = TreeNode.isInternal(cursor);
+            isDataNode = TreeNode.layerType(cursor) == TreeNode.DATA_LAYER_FLAG;
+        } while (cursor.shouldRetry());
+
         if (isInternal) {
-            TreeNode.goTo(readCursor, "child", leftmostSibling);
+            do {
+                leftmostSibling = treeNode(isDataNode).childAt(cursor, 0, stableGeneration, unstableGeneration);
+            } while (cursor.shouldRetry());
+            TreeNode.goTo(cursor, "child", leftmostSibling);
         }
         return isInternal;
     }
 
     private void visitLevel(
-            PageCursor readCursor,
-            PageCursor writeCursor,
-            GBPTreeVisitor<KEY, VALUE> visitor,
-            CursorContext cursorContext)
+            PageCursor cursor, GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> visitor, CursorContext cursorContext)
             throws IOException {
         long rightSibling;
         do {
-            PageCursor cursor = select(readCursor, writeCursor);
             visitTreeNode(cursor, visitor, cursorContext);
 
             do {
@@ -267,14 +334,8 @@ public class GBPTreeStructure<KEY, VALUE> {
             } while (cursor.shouldRetry());
 
             if (TreeNode.isNode(rightSibling)) {
-                TreeNode.goTo(readCursor, "right sibling", rightSibling);
+                TreeNode.goTo(cursor, "right sibling", rightSibling);
             }
         } while (TreeNode.isNode(rightSibling));
-    }
-
-    private static PageCursor select(PageCursor readCursor, PageCursor writeCursor) {
-        return writeCursor == null
-                ? readCursor
-                : readCursor.getCurrentPageId() == writeCursor.getCurrentPageId() ? writeCursor : readCursor;
     }
 }

@@ -199,12 +199,18 @@ public class TokenIndex implements ConsistencyCheckable {
         return consistencyCheck(reporterFactory.getClass(GBPTreeConsistencyCheckVisitor.class), cursorContext);
     }
 
-    private boolean consistencyCheck(
-            GBPTreeConsistencyCheckVisitor<TokenScanKey> visitor, CursorContext cursorContext) {
+    private boolean consistencyCheck(GBPTreeConsistencyCheckVisitor visitor, CursorContext cursorContext) {
         try {
             return index.consistencyCheck(visitor, cursorContext);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        }
+    }
+
+    protected void assertWritable() {
+        if (readOnlyChecker.isReadOnly()) {
+            throw new UnsupportedOperationException(
+                    "Database currently is in read only mode and can not perform writes");
         }
     }
 }

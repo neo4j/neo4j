@@ -26,7 +26,7 @@ import org.neo4j.annotations.documented.Warning;
 /**
  * The @Documented annotations are used for error messages in consistency checker.
  */
-public interface GBPTreeConsistencyCheckVisitor<KEY> {
+public interface GBPTreeConsistencyCheckVisitor {
     String indexFile = "Index file: %s.";
     String indexInconsistent = "Index will be excluded from further consistency checks. " + indexFile;
 
@@ -77,7 +77,7 @@ public interface GBPTreeConsistencyCheckVisitor<KEY> {
     @Documented("Index inconsistency: "
             + "Expected range for this tree node is %n%s%n but found %s in position %d, with keyCount %d on page %d.%n"
             + indexInconsistent)
-    void keysLocatedInWrongNode(KeyRange<KEY> range, KEY key, int pos, int keyCount, long pageId, Path file);
+    void keysLocatedInWrongNode(KeyRange<?> range, Object key, int pos, int keyCount, long pageId, Path file);
 
     @Documented("Index inconsistency: " + "Index has a leaked page that will never be reclaimed, pageId=%d.%n"
             + indexInconsistent)
@@ -136,7 +136,7 @@ public interface GBPTreeConsistencyCheckVisitor<KEY> {
             + "%s,%n"
             + "level: %d, pageId: %d.%n"
             + indexInconsistent)
-    void childNodeFoundAmongParentNodes(KeyRange<KEY> superRange, int level, long pageId, Path file);
+    void childNodeFoundAmongParentNodes(KeyRange<?> superRange, int level, long pageId, Path file);
 
     @Documented("Index inconsistency: " + "Caught exception during consistency check: %s")
     void exception(Exception e);
@@ -147,7 +147,7 @@ public interface GBPTreeConsistencyCheckVisitor<KEY> {
                     + indexFile)
     void dirtyOnStartup(Path file);
 
-    class Adaptor<KEY> implements GBPTreeConsistencyCheckVisitor<KEY> {
+    class Adaptor implements GBPTreeConsistencyCheckVisitor {
         @Override
         public void notATreeNode(long pageId, Path file) {}
 
@@ -186,7 +186,7 @@ public interface GBPTreeConsistencyCheckVisitor<KEY> {
 
         @Override
         public void keysLocatedInWrongNode(
-                KeyRange<KEY> range, KEY key, int pos, int keyCount, long pageId, Path file) {}
+                KeyRange<?> range, Object key, int pos, int keyCount, long pageId, Path file) {}
 
         @Override
         public void unusedPage(long pageId, Path file) {}
@@ -232,7 +232,7 @@ public interface GBPTreeConsistencyCheckVisitor<KEY> {
         public void unreasonableKeyCount(long pageId, int keyCount, Path file) {}
 
         @Override
-        public void childNodeFoundAmongParentNodes(KeyRange<KEY> superRange, int level, long pageId, Path file) {}
+        public void childNodeFoundAmongParentNodes(KeyRange<?> superRange, int level, long pageId, Path file) {}
 
         @Override
         public void exception(Exception e) {}

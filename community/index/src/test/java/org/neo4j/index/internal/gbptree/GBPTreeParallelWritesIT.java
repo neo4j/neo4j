@@ -99,7 +99,7 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
                             throwing(() -> {
                                 var random = new Random(threadSeed);
                                 var data = dataPerThread[id];
-                                try (var writer = index.parallelWriter(NULL_CONTEXT)) {
+                                try (var writer = index.writer(NULL_CONTEXT)) {
                                     for (int j = 0; j < 2_000; j++) {
                                         var v = random.nextFloat();
                                         var entrySeed = random.nextLong(1_000) * threads + id;
@@ -176,7 +176,7 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
                             }
                         }
                     }
-                    try (var writer = tree.parallelWriter(NULL_CONTEXT)) {
+                    try (var writer = tree.writer(NULL_CONTEXT)) {
                         for (var id : ids) {
                             writer.put(layout.key(id), layout.value(id));
                         }
@@ -192,7 +192,7 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
                             ids[i] = committedIds.created.removeAtIndex(random.nextInt(committedIds.created.size()));
                         }
                     }
-                    try (var writer = tree.parallelWriter(NULL_CONTEXT)) {
+                    try (var writer = tree.writer(NULL_CONTEXT)) {
                         for (long id : ids) {
                             writer.remove(layout.key(id));
                         }

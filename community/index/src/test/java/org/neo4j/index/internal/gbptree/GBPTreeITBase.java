@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.index.internal.gbptree.DataTree.W_SPLIT_KEEP_ALL_LEFT;
+import static org.neo4j.index.internal.gbptree.DataTree.W_SPLIT_KEEP_ALL_RIGHT;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
@@ -65,14 +67,14 @@ abstract class GBPTreeITBase<KEY, VALUE> {
     @Inject
     private RandomSupport random;
 
-    private double ratioToKeepInLeftOnSplit;
+    private int flags;
     private TestLayout<KEY, VALUE> layout;
     private GBPTree<KEY, VALUE> index;
     private PageCache pageCache;
 
     @BeforeEach
     void setUp() {
-        ratioToKeepInLeftOnSplit = random.nextBoolean() ? InternalTreeLogic.DEFAULT_SPLIT_RATIO : random.nextDouble();
+        flags = random.nextBoolean() ? 0 : random.nextBoolean() ? W_SPLIT_KEEP_ALL_LEFT : W_SPLIT_KEEP_ALL_RIGHT;
         int pageSize = 512;
         pageCache = PageCacheSupportExtension.getPageCache(
                 fileSystem, config().withPageSize(pageSize).withAccessChecks(true));
@@ -87,7 +89,7 @@ abstract class GBPTreeITBase<KEY, VALUE> {
     }
 
     private Writer<KEY, VALUE> createWriter(GBPTree<KEY, VALUE> index, WriterFactory factory) throws IOException {
-        return factory.create(index, ratioToKeepInLeftOnSplit);
+        return factory.create(index, flags);
     }
 
     abstract TestLayout<KEY, VALUE> getLayout(RandomSupport random, int pageSize);

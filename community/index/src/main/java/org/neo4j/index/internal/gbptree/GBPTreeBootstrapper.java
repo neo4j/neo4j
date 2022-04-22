@@ -36,6 +36,7 @@ import java.nio.file.Path;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.index.internal.gbptree.LayoutBootstrapper.Layouts;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -73,7 +74,7 @@ public class GBPTreeBootstrapper implements Closeable {
             instantiatePageCache(fs, jobScheduler, PageCache.PAGE_SIZE);
             var openOptions = immutable.of(additionalOptions);
             // Get meta information about the tree
-            MetaVisitor<?, ?> metaVisitor = visitMeta(file, openOptions);
+            MetaVisitor<?, ?, ?> metaVisitor = visitMeta(file, openOptions);
             Meta meta = metaVisitor.meta;
             if (!isReasonablePageSize(meta.getPayloadSize())) {
                 throw new MetadataMismatchException("Unexpected page size " + meta.getPayloadSize());
@@ -84,16 +85,16 @@ public class GBPTreeBootstrapper implements Closeable {
                 metaVisitor = visitMeta(file, openOptions);
                 meta = metaVisitor.meta;
             }
-            StateVisitor<?, ?> stateVisitor = visitState(file, openOptions);
+            StateVisitor<?, ?, ?> stateVisitor = visitState(file, openOptions);
             Pair<TreeState, TreeState> statePair = stateVisitor.statePair;
             TreeState state = TreeStatePair.selectNewestValidState(statePair);
 
             // Create layout and treeNode from meta
-            Layout<?, ?> layout = layoutBootstrapper.create(file, pageCache, meta);
-            GBPTree<?, ?> tree = new GBPTree<>(
+            Layouts layouts = layoutBootstrapper.bootstrap(meta);
+            MultiRootGBPTree<?, ?, ?> tree = new MultiRootGBPTree<>(
                     pageCache,
                     file,
-                    layout,
+                    layouts.dataLayout(),
                     NO_MONITOR,
                     NO_HEADER_READER,
                     NO_HEADER_WRITER,
@@ -102,8 +103,9 @@ public class GBPTreeBootstrapper implements Closeable {
                     openOptions,
                     DEFAULT_DATABASE_NAME,
                     file.getFileName().toString(),
-                    contextFactory);
-            return new SuccessfulBootstrap(tree, layout, state, meta);
+                    contextFactory,
+                    layouts.rootLayerConfiguration());
+            return new SuccessfulBootstrap(tree, layouts, state, meta);
         } catch (Exception e) {
             return new FailedBootstrap(e);
         }
@@ -118,8 +120,8 @@ public class GBPTreeBootstrapper implements Closeable {
         closePageCache();
     }
 
-    private MetaVisitor<?, ?> visitMeta(Path file, ImmutableSet<OpenOption> openOptions) throws IOException {
-        MetaVisitor<?, ?> metaVisitor = new MetaVisitor();
+    private MetaVisitor<?, ?, ?> visitMeta(Path file, ImmutableSet<OpenOption> openOptions) throws IOException {
+        MetaVisitor<?, ?, ?> metaVisitor = new MetaVisitor<>();
         try (var cursorContext = contextFactory.create("TreeBootstrap")) {
             GBPTreeStructure.visitMeta(
                     pageCache, file, metaVisitor, file.getFileName().toString(), cursorContext, openOptions);
@@ -127,8 +129,8 @@ public class GBPTreeBootstrapper implements Closeable {
         return metaVisitor;
     }
 
-    private StateVisitor<?, ?> visitState(Path file, ImmutableSet<OpenOption> openOptions) throws IOException {
-        StateVisitor<?, ?> stateVisitor = new StateVisitor();
+    private StateVisitor<?, ?, ?> visitState(Path file, ImmutableSet<OpenOption> openOptions) throws IOException {
+        StateVisitor<?, ?, ?> stateVisitor = new StateVisitor<>();
         try (var cursorContext = contextFactory.create("TreeBootstrap")) {
             GBPTreeStructure.visitState(
                     pageCache, file, stateVisitor, file.getFileName().toString(), cursorContext, openOptions);
@@ -169,13 +171,13 @@ public class GBPTreeBootstrapper implements Closeable {
     public interface Bootstrap {
         boolean isTree();
 
-        GBPTree<?, ?> getTree();
+        MultiRootGBPTree<?, ?, ?> tree();
 
-        Layout<?, ?> getLayout();
+        Layouts layouts();
 
-        TreeState getState();
+        TreeState state();
 
-        Meta getMeta();
+        Meta meta();
     }
 
     private static class FailedBootstrap implements Bootstrap {
@@ -191,66 +193,35 @@ public class GBPTreeBootstrapper implements Closeable {
         }
 
         @Override
-        public GBPTree<?, ?> getTree() {
+        public MultiRootGBPTree<?, ?, ?> tree() {
             throw new IllegalStateException("Bootstrap failed", cause);
         }
 
         @Override
-        public Layout<?, ?> getLayout() {
+        public Layouts layouts() {
             throw new IllegalStateException("Bootstrap failed", cause);
         }
 
         @Override
-        public TreeState getState() {
+        public TreeState state() {
             throw new IllegalStateException("Bootstrap failed", cause);
         }
 
         @Override
-        public Meta getMeta() {
+        public Meta meta() {
             throw new IllegalStateException("Bootstrap failed", cause);
         }
     }
 
-    private static class SuccessfulBootstrap implements Bootstrap {
-        private final GBPTree<?, ?> tree;
-        private final Layout<?, ?> layout;
-        private final TreeState state;
-        private final Meta meta;
-
-        SuccessfulBootstrap(GBPTree<?, ?> tree, Layout<?, ?> layout, TreeState state, Meta meta) {
-            this.tree = tree;
-            this.layout = layout;
-            this.state = state;
-            this.meta = meta;
-        }
-
+    private record SuccessfulBootstrap(MultiRootGBPTree<?, ?, ?> tree, Layouts layouts, TreeState state, Meta meta)
+            implements Bootstrap {
         @Override
         public boolean isTree() {
             return true;
         }
-
-        @Override
-        public GBPTree<?, ?> getTree() {
-            return tree;
-        }
-
-        @Override
-        public Layout<?, ?> getLayout() {
-            return layout;
-        }
-
-        @Override
-        public TreeState getState() {
-            return state;
-        }
-
-        @Override
-        public Meta getMeta() {
-            return meta;
-        }
     }
 
-    private static class MetaVisitor<KEY, VALUE> extends GBPTreeVisitor.Adaptor<KEY, VALUE> {
+    private static class MetaVisitor<ROOT_KEY, KEY, VALUE> extends GBPTreeVisitor.Adaptor<ROOT_KEY, KEY, VALUE> {
         private Meta meta;
 
         @Override
@@ -259,7 +230,7 @@ public class GBPTreeBootstrapper implements Closeable {
         }
     }
 
-    private static class StateVisitor<KEY, VALUE> extends GBPTreeVisitor.Adaptor<KEY, VALUE> {
+    private static class StateVisitor<ROOT_KEY, KEY, VALUE> extends GBPTreeVisitor.Adaptor<ROOT_KEY, KEY, VALUE> {
         private Pair<TreeState, TreeState> statePair;
 
         @Override

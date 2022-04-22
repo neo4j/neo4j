@@ -32,18 +32,20 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
-import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.fs.FileUtils.blockSize;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.test.Race.throwing;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
@@ -54,10 +56,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -84,14 +84,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.mockito.Mockito;
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
-import org.neo4j.configuration.database.readonly.ConfigReadOnlyDatabaseListener;
-import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
+import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -110,10 +104,9 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
-import org.neo4j.kernel.database.DatabaseIdFactory;
-import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.Barrier;
+import org.neo4j.test.Race.ThrowingRunnable;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
@@ -269,9 +262,7 @@ class GBPTreeTest {
                     PageCursor cursor = pagedFile.io(IdSpace.META_PAGE_ID, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                 assertTrue(cursor.next());
 
-                Meta meta = Meta.read(cursor);
-                Meta newMeta =
-                        new Meta(meta.getFormatIdentifier(), meta.getFormatVersion(), unreasonablePageSize, layout);
+                Meta newMeta = Meta.from(unreasonablePageSize, layout, null);
 
                 cursor.setOffset(0);
                 newMeta.write(cursor);
@@ -290,7 +281,7 @@ class GBPTreeTest {
     void shouldFailWhenTryingToOpenWithDifferentFormatIdentifier() throws Exception {
         // GIVEN
         try (PageCache pageCache = createPageCache(defaultPageSize)) {
-            GBPTreeBuilder<MutableLong, MutableLong> builder = index(pageCache);
+            var builder = index(pageCache);
             builder.build().close();
 
             assertThatThrownBy(
@@ -334,17 +325,17 @@ class GBPTreeTest {
         // GIVEN
         try (PageCache pageCache = createPageCache(defaultPageSize);
                 GBPTree<MutableLong, MutableLong> index = index(pageCache).build()) {
-            Writer<MutableLong, MutableLong> writer = index.writer(NULL_CONTEXT);
+            Writer<MutableLong, MutableLong> writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT);
 
             // WHEN
-            assertThatThrownBy(() ->
-                            executor.submit(() -> index.writer(NULL_CONTEXT)).get())
+            assertThatThrownBy(() -> executor.submit(() -> index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT))
+                            .get())
                     .hasCauseInstanceOf(IllegalStateException.class);
 
             // Should be able to close old writer
             writer.close();
             // And open and closing a new one
-            index.writer(NULL_CONTEXT).close();
+            index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT).close();
         }
     }
 
@@ -434,7 +425,7 @@ class GBPTreeTest {
             assertThat(index.sizeInBytes()).isEqualTo(defaultPageSize * 5L);
 
             // WHEN
-            try (var writer = index.writer(NULL_CONTEXT)) {
+            try (var writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 writer.put(new MutableLong(4), new MutableLong(8));
             }
 
@@ -450,7 +441,7 @@ class GBPTreeTest {
         BiConsumer<GBPTree<MutableLong, MutableLong>, byte[]> beforeClose = (index, expected) -> {
             ThrowingRunnable throwingRunnable =
                     () -> index.checkpoint(cursor -> cursor.putBytes(expected), NULL_CONTEXT);
-            ThrowingRunnable.throwing(throwingRunnable).run();
+            throwing(throwingRunnable).run();
         };
         verifyHeaderDataAfterClose(beforeClose);
     }
@@ -466,7 +457,7 @@ class GBPTreeTest {
                 // Should carry over header data
                 index.checkpoint(NULL_CONTEXT);
             };
-            ThrowingRunnable.throwing(throwingRunnable).run();
+            throwing(throwingRunnable).run();
         };
         verifyHeaderDataAfterClose(beforeClose);
     }
@@ -480,7 +471,7 @@ class GBPTreeTest {
 
                 // No checkpoint
             };
-            ThrowingRunnable.throwing(throwingRunnable).run();
+            throwing(throwingRunnable).run();
         };
         verifyHeaderDataAfterClose(beforeClose);
     }
@@ -493,7 +484,7 @@ class GBPTreeTest {
                 random.nextBytes(expected);
                 index.checkpoint(cursor -> cursor.putBytes(expected), NULL_CONTEXT);
             };
-            ThrowingRunnable.throwing(throwingRunnable).run();
+            throwing(throwingRunnable).run();
         };
 
         verifyHeaderDataAfterClose(beforeClose);
@@ -814,8 +805,12 @@ class GBPTreeTest {
             AtomicReference<Exception> writerError = new AtomicReference<>();
             Future<?> write = executor.submit(() -> {
                 try {
-                    writerFactory.create(index).close();
-                } catch (Exception e) {
+                    try (var writer = writerFactory.create(index)) {
+                        writer.put(new MutableLong(99), new MutableLong(99));
+                    }
+                } catch (UncheckedIOException e) {
+                    writerError.set(e.getCause());
+                } catch (IOException e) {
                     writerError.set(e);
                 }
             });
@@ -897,7 +892,7 @@ class GBPTreeTest {
     void correctlyShutdownIndexIsClean() throws IOException {
         try (PageCache pageCache = createPageCache(defaultPageSize);
                 GBPTree<MutableLong, MutableLong> index = index(pageCache).build()) {
-            try (Writer<MutableLong, MutableLong> writer = index.writer(NULL_CONTEXT)) {
+            try (Writer<MutableLong, MutableLong> writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 writer.put(new MutableLong(1L), new MutableLong(2L));
             }
             index.checkpoint(NULL_CONTEXT);
@@ -912,7 +907,7 @@ class GBPTreeTest {
                         .with(RecoveryCleanupWorkCollector.ignore())
                         .build()) {
             index.consistencyCheck(
-                    new GBPTreeConsistencyCheckVisitor.Adaptor<>() {
+                    new GBPTreeConsistencyCheckVisitor.Adaptor() {
                         @Override
                         public void dirtyOnStartup(Path file) {
                             cleanOnStartup.setFalse();
@@ -1028,12 +1023,13 @@ class GBPTreeTest {
     void shouldFailToCreateParallelWriterWhenWriterActive() throws IOException {
         try (PageCache pageCache = createPageCache(defaultPageSize);
                 GBPTree<MutableLong, MutableLong> index = index(pageCache).build()) {
-            try (Writer<MutableLong, MutableLong> singleWriter = index.writer(NULL_CONTEXT)) {
-                assertThatThrownBy(() -> executor.submit(() -> index.parallelWriter(NULL_CONTEXT))
+            try (Writer<MutableLong, MutableLong> singleWriter =
+                    index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
+                assertThatThrownBy(() -> executor.submit(() -> index.writer(NULL_CONTEXT))
                                 .get())
                         .hasCauseInstanceOf(IllegalStateException.class);
             }
-            index.parallelWriter(NULL_CONTEXT).close();
+            index.writer(NULL_CONTEXT).close();
         }
     }
 
@@ -1041,12 +1037,12 @@ class GBPTreeTest {
     void shouldFailToGetWriterWhenParallelWritersActive() throws IOException {
         try (PageCache pageCache = createPageCache(defaultPageSize);
                 GBPTree<MutableLong, MutableLong> index = index(pageCache).build()) {
-            try (Writer<MutableLong, MutableLong> parallelWriter = index.parallelWriter(NULL_CONTEXT)) {
-                assertThatThrownBy(() -> executor.submit(() -> index.writer(NULL_CONTEXT))
+            try (Writer<MutableLong, MutableLong> parallelWriter = index.writer(NULL_CONTEXT)) {
+                assertThatThrownBy(() -> executor.submit(() -> index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT))
                                 .get())
                         .hasCauseInstanceOf(IllegalStateException.class);
             }
-            index.parallelWriter(NULL_CONTEXT).close();
+            index.writer(NULL_CONTEXT).close();
         }
     }
 
@@ -1059,7 +1055,7 @@ class GBPTreeTest {
             List<Callable<Void>> writers = new ArrayList<>();
             for (int i = 0; i < count; i++) {
                 writers.add(() -> {
-                    try (var writer = index.parallelWriter(NULL_CONTEXT)) {
+                    try (var writer = index.writer(NULL_CONTEXT)) {
                         goal.countDown();
                         goal.await();
                     }
@@ -1145,7 +1141,7 @@ class GBPTreeTest {
 
     @Test
     void writerMustRecognizeFailedCleaning() throws Exception {
-        mustRecognizeFailedCleaning(tree -> tree.writer(NULL_CONTEXT));
+        mustRecognizeFailedCleaning(tree -> tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
     }
 
     @Test
@@ -1221,7 +1217,7 @@ class GBPTreeTest {
                 GBPTree<MutableLong, MutableLong> index =
                         index(pageCache).with(checkpointCounter).build()) {
             checkpointCounter.reset();
-            try (Writer<MutableLong, MutableLong> writer = index.writer(NULL_CONTEXT)) {
+            try (Writer<MutableLong, MutableLong> writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 writer.put(new MutableLong(0), new MutableLong(1));
             }
             index.checkpoint(NULL_CONTEXT);
@@ -1492,7 +1488,7 @@ class GBPTreeTest {
             try (GBPTree<MutableLong, MutableLong> index =
                     index(specificPageCache).build()) {
                 assertThatThrownBy(
-                                () -> index.writer(NULL_CONTEXT),
+                                () -> index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),
                                 "Expected to throw because root pointed to by tree state should have a valid successor.")
                         .isInstanceOf(TreeInconsistencyException.class)
                         .hasMessageContaining(PointerChecking.WRITER_TRAVERSE_OLD_STATE_MESSAGE);
@@ -1519,7 +1515,7 @@ class GBPTreeTest {
         // given
         try (PageCache pageCache = createPageCache(defaultPageSize);
                 GBPTree<MutableLong, MutableLong> tree = index(pageCache).build()) {
-            try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+            try (Writer<MutableLong, MutableLong> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 MutableLong value = new MutableLong();
                 for (int i = 0; i < 10; i++) {
                     value.setValue(i);
@@ -1545,7 +1541,7 @@ class GBPTreeTest {
         // given
         try (PageCache pageCache = createPageCache(defaultPageSize);
                 GBPTree<MutableLong, MutableLong> tree = index(pageCache).build()) {
-            try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+            try (Writer<MutableLong, MutableLong> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 MutableLong value = new MutableLong();
                 for (int i = 0; i < amount; i++) {
                     value.setValue(i);
@@ -1558,7 +1554,7 @@ class GBPTreeTest {
             //noinspection StatementWithEmptyBody
             while (seek.next()) {}
 
-            try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+            try (Writer<MutableLong, MutableLong> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 MutableLong value = new MutableLong();
                 value.setValue(amount + 1);
                 writer.put(value, value);
@@ -1576,7 +1572,7 @@ class GBPTreeTest {
         // given
         try (PageCache pageCache = createPageCache(defaultPageSize);
                 GBPTree<MutableLong, MutableLong> tree = index(pageCache).build()) {
-            try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+            try (Writer<MutableLong, MutableLong> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 MutableLong value = new MutableLong();
                 for (int i = 0; i < amount; i++) {
                     value.setValue(i);
@@ -1590,7 +1586,7 @@ class GBPTreeTest {
             while (seek.next()) {}
             seek.close();
 
-            try (Writer<MutableLong, MutableLong> writer = tree.writer(NULL_CONTEXT)) {
+            try (Writer<MutableLong, MutableLong> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 MutableLong value = new MutableLong();
                 value.setValue(amount + 1);
                 writer.put(value, value);
@@ -1751,10 +1747,6 @@ class GBPTreeTest {
 
             try (GBPTree<MutableLong, MutableLong> tree =
                     index(pageCache).with(readOnly()).build()) {
-                assertThatThrownBy(() -> tree.writer(NULL_CONTEXT))
-                        .isInstanceOf(UnsupportedOperationException.class)
-                        .hasMessageContaining("GBPTree currently is in read only mode and can not finish operation: ");
-
                 tree.checkpoint(NULL_CONTEXT);
             }
             byte[] after = fileContent(indexFile);
@@ -1840,45 +1832,6 @@ class GBPTreeTest {
     }
 
     @Test
-    void readOnlyTreeStillFlushesStateWhenReadOnly() throws IOException {
-        var config = Config.defaults();
-        var defaultDatabaseId = DatabaseIdFactory.from(
-                DEFAULT_DATABASE_NAME, UUID.randomUUID()); // UUID required, but ignored by config lookup
-        DatabaseIdRepository databaseIdRepository = Mockito.mock(DatabaseIdRepository.class);
-        Mockito.when(databaseIdRepository.getByName(DEFAULT_DATABASE_NAME)).thenReturn(Optional.of(defaultDatabaseId));
-        var readOnlyLookup = new ConfigBasedLookupFactory(config, databaseIdRepository);
-        var globalChecker = new ReadOnlyDatabases(readOnlyLookup);
-
-        var checker = globalChecker.forDatabase(defaultDatabaseId);
-        var listener = new ConfigReadOnlyDatabaseListener(globalChecker, config);
-        lifeSupport.add(listener);
-        var cursorContext = NULL_CONTEXT;
-        try (PageCache pageCache = createPageCache(defaultPageSize);
-                var tree = index(pageCache).with(checker).build()) {
-            try (var writer = tree.writer(cursorContext)) {
-                writer.put(new MutableLong(1), new MutableLong(42));
-            }
-            config.set(GraphDatabaseSettings.read_only_databases, Set.of(DEFAULT_DATABASE_NAME));
-
-            assertThatThrownBy(() -> tree.writer(cursorContext)).isInstanceOf(Exception.class);
-
-            tree.checkpoint(cursorContext);
-        }
-
-        try (PageCache pageCache = createPageCache(defaultPageSize);
-                var reopenedTree = index(pageCache).with(checker).build()) {
-            assertThatThrownBy(() -> reopenedTree.writer(cursorContext)).isInstanceOf(Exception.class);
-
-            try (Seeker<MutableLong, MutableLong> seeker =
-                    reopenedTree.seek(new MutableLong(0), new MutableLong(77), cursorContext)) {
-                assertTrue(seeker.next());
-                assertEquals(1, seeker.key().longValue());
-                assertEquals(42, seeker.value().longValue());
-            }
-        }
-    }
-
-    @Test
     void shouldReuseSeekCursorInstancesForMultipleSeeks() throws IOException {
         try (PageCache pageCache = createPageCache(defaultPageSize);
                 var tree = index(pageCache).build()) {
@@ -1958,7 +1911,7 @@ class GBPTreeTest {
             List<Long> trace, GBPTree<MutableLong, MutableLong> tree, CursorContext cursorContext) throws IOException {
         long count = 0;
         do {
-            try (Writer<MutableLong, MutableLong> writer = tree.writer(cursorContext)) {
+            try (Writer<MutableLong, MutableLong> writer = tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext)) {
                 writer.put(new MutableLong(count), new MutableLong(count));
                 count++;
             }
@@ -1984,9 +1937,9 @@ class GBPTreeTest {
         // given
         try (PageCache pageCache = createPageCache(defaultPageSize);
                 GBPTree<MutableLong, MutableLong> index = index(pageCache).build()) {
-            try (Writer<MutableLong, MutableLong> writer = index.writer(NULL_CONTEXT)) {
+            try (Writer<MutableLong, MutableLong> writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 // when/then
-                assertThatThrownBy(() -> executor.submit(() -> index.parallelWriter(NULL_CONTEXT))
+                assertThatThrownBy(() -> executor.submit(() -> index.writer(NULL_CONTEXT))
                                 .get())
                         .hasCauseInstanceOf(IllegalStateException.class);
             }
@@ -2001,18 +1954,20 @@ class GBPTreeTest {
             // Acquire them
             List<Writer<MutableLong, MutableLong>> parallelWriters = new ArrayList<>();
             for (int i = 0; i < 4; i++) {
-                parallelWriters.add(index.parallelWriter(NULL_CONTEXT));
-                assertThatThrownBy(() -> index.writer(NULL_CONTEXT)).isInstanceOf(IllegalStateException.class);
+                parallelWriters.add(index.writer(NULL_CONTEXT));
+                assertThatThrownBy(() -> index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT))
+                        .isInstanceOf(IllegalStateException.class);
             }
 
             // Close them
             for (Writer<MutableLong, MutableLong> parallelWriter : parallelWriters) {
-                assertThatThrownBy(() -> index.writer(NULL_CONTEXT)).isInstanceOf(IllegalStateException.class);
+                assertThatThrownBy(() -> index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT))
+                        .isInstanceOf(IllegalStateException.class);
                 parallelWriter.close();
             }
 
             // then now it's OK
-            try (Writer<MutableLong, MutableLong> writer = index.writer(NULL_CONTEXT)) {}
+            try (Writer<MutableLong, MutableLong> writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {}
         }
     }
 
@@ -2025,7 +1980,7 @@ class GBPTreeTest {
             int count = 4;
             List<Writer<MutableLong, MutableLong>> parallelWriters = new ArrayList<>();
             for (int i = 0; i < count; i++) {
-                Writer<MutableLong, MutableLong> writer = index.parallelWriter(NULL_CONTEXT);
+                Writer<MutableLong, MutableLong> writer = index.writer(NULL_CONTEXT);
                 parallelWriters.add(writer);
                 writer.put(new MutableLong(i), new MutableLong(i));
             }
@@ -2170,12 +2125,12 @@ class GBPTreeTest {
     private void makeDirty(PageCache pageCache) throws IOException {
         try (GBPTree<MutableLong, MutableLong> index = index(pageCache).build()) {
             // Make dirty
-            index.writer(NULL_CONTEXT).close();
+            index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT).close();
         }
     }
 
     private static void insert(GBPTree<MutableLong, MutableLong> index, long key, long value) throws IOException {
-        try (Writer<MutableLong, MutableLong> writer = index.writer(NULL_CONTEXT)) {
+        try (Writer<MutableLong, MutableLong> writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
             writer.put(new MutableLong(key), new MutableLong(value));
         }
     }
@@ -2202,7 +2157,7 @@ class GBPTreeTest {
         }
     }
 
-    private GBPTreeBuilder<MutableLong, MutableLong> index(PageCache pageCache) {
+    private GBPTreeBuilder<SingleRoot, MutableLong, MutableLong> index(PageCache pageCache) {
         return new GBPTreeBuilder<>(pageCache, indexFile, layout);
     }
 

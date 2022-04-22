@@ -28,6 +28,7 @@ import java.util.Random;
 import java.util.function.Consumer;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
+import org.eclipse.collections.api.list.primitive.LongList;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -227,6 +228,10 @@ public class RandomSupport {
 
     public <T> void among(List<T> among, Consumer<T> action) {
         randoms.among(among, action);
+    }
+
+    public long among(LongList among) {
+        return randoms.among(among);
     }
 
     public Object nextValueAsObject() {

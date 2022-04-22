@@ -34,12 +34,12 @@ class GBPTreeMetaTest {
     @Test
     void mustReadWhatIsWritten() throws IOException {
         // given
-        Layout layout = SimpleLongLayout.longLayout()
+        var layout = SimpleLongLayout.longLayout()
                 .withIdentifier(666)
                 .withMajorVersion(10)
                 .withMinorVersion(100)
                 .build();
-        Meta written = new Meta((byte) 1, (byte) 2, PAGE_SIZE, layout);
+        Meta written = Meta.from(PAGE_SIZE, layout, null);
         int offset = cursor.getOffset();
         written.write(cursor);
 
@@ -48,13 +48,64 @@ class GBPTreeMetaTest {
         Meta read = Meta.read(cursor);
 
         // then
-        assertEquals(written.getFormatIdentifier(), read.getFormatIdentifier());
-        assertEquals(written.getFormatVersion(), read.getFormatVersion());
-        assertEquals(written.getUnusedVersionSlot3(), read.getUnusedVersionSlot3());
-        assertEquals(written.getUnusedVersionSlot4(), read.getUnusedVersionSlot4());
-        assertEquals(written.getLayoutIdentifier(), read.getLayoutIdentifier());
-        assertEquals(written.getLayoutMajorVersion(), read.getLayoutMajorVersion());
-        assertEquals(written.getLayoutMinorVersion(), read.getLayoutMinorVersion());
+        assertEquals(written.getDataFormatIdentifier(), read.getDataFormatIdentifier());
+        assertEquals(written.getDataFormatVersion(), read.getDataFormatVersion());
+        assertEquals(written.getRootFormatIdentifier(), read.getRootFormatIdentifier());
+        assertEquals(written.getRootFormatVersion(), read.getRootFormatVersion());
+        assertEquals(written.getDataLayoutIdentifier(), read.getDataLayoutIdentifier());
+        assertEquals(written.getDataLayoutMajorVersion(), read.getDataLayoutMajorVersion());
+        assertEquals(written.getDataLayoutMinorVersion(), read.getDataLayoutMinorVersion());
+        assertEquals(written.getRootLayoutIdentifier(), read.getRootLayoutIdentifier());
+        assertEquals(written.getRootLayoutMajorVersion(), read.getRootLayoutMajorVersion());
+        assertEquals(written.getRootLayoutMinorVersion(), read.getRootLayoutMinorVersion());
         assertEquals(written.getPayloadSize(), read.getPayloadSize());
+        assertEquals(0, read.getRootFormatIdentifier());
+        assertEquals(0, read.getRootFormatVersion());
+
+        assertEquals(layout.identifier(), read.getDataLayoutIdentifier());
+        assertEquals(layout.majorVersion(), read.getDataLayoutMajorVersion());
+        assertEquals(layout.minorVersion(), read.getDataLayoutMinorVersion());
+        assertEquals(0, written.getRootLayoutIdentifier());
+        assertEquals(0, written.getRootLayoutMajorVersion());
+        assertEquals(0, written.getRootLayoutMinorVersion());
+    }
+
+    @Test
+    void shouldWriteAndReadRootAndDataLayouts() throws IOException {
+        // given
+        var rootLayout = SimpleLongLayout.longLayout()
+                .withIdentifier(666)
+                .withMajorVersion(10)
+                .withMinorVersion(100)
+                .build();
+        var dataLayout = SimpleLongLayout.longLayout()
+                .withIdentifier(777)
+                .withMajorVersion(11)
+                .withMinorVersion(101)
+                .build();
+        Meta written = Meta.from(PAGE_SIZE, dataLayout, rootLayout);
+        int offset = cursor.getOffset();
+        written.write(cursor);
+
+        // when
+        cursor.setOffset(offset);
+        Meta read = Meta.read(cursor);
+
+        // then
+        assertEquals(written.getDataFormatIdentifier(), read.getDataFormatIdentifier());
+        assertEquals(written.getDataFormatVersion(), read.getDataFormatVersion());
+        assertEquals(written.getRootFormatIdentifier(), read.getRootFormatIdentifier());
+        assertEquals(written.getRootFormatVersion(), read.getRootFormatVersion());
+        assertEquals(written.getDataLayoutIdentifier(), read.getDataLayoutIdentifier());
+        assertEquals(written.getDataLayoutMajorVersion(), read.getDataLayoutMajorVersion());
+        assertEquals(written.getDataLayoutMinorVersion(), read.getDataLayoutMinorVersion());
+        assertEquals(written.getPayloadSize(), read.getPayloadSize());
+
+        assertEquals(dataLayout.identifier(), read.getDataLayoutIdentifier());
+        assertEquals(dataLayout.majorVersion(), read.getDataLayoutMajorVersion());
+        assertEquals(dataLayout.minorVersion(), read.getDataLayoutMinorVersion());
+        assertEquals(rootLayout.identifier(), written.getRootLayoutIdentifier());
+        assertEquals(rootLayout.majorVersion(), written.getRootLayoutMajorVersion());
+        assertEquals(rootLayout.minorVersion(), written.getRootLayoutMinorVersion());
     }
 }

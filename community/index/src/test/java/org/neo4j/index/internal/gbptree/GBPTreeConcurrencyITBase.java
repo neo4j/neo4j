@@ -24,6 +24,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
@@ -273,7 +274,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY, VALUE> {
                 throws IOException {
             List<Long> fullRange = LongStream.range(minRange, maxRange).boxed().collect(Collectors.toList());
             List<Long> rangeOutOfOrder = shuffleToNewList(fullRange, random);
-            try (Writer<KEY, VALUE> writer = index.writer(NULL_CONTEXT)) {
+            try (Writer<KEY, VALUE> writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 for (Long key : rangeOutOfOrder) {
                     boolean addForRemoval = random.nextDouble() > writePercentage;
                     if (addForRemoval) {
@@ -439,7 +440,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY, VALUE> {
         Iterable<UpdateOperation> toWrite = testCoordinator.nextToWrite();
         Iterator<UpdateOperation> toWriteIterator = toWrite.iterator();
         while (toWriteIterator.hasNext()) {
-            try (Writer<KEY, VALUE> writer = index.writer(NULL_CONTEXT)) {
+            try (Writer<KEY, VALUE> writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 int inBatch = 0;
                 while (toWriteIterator.hasNext() && inBatch < batchSize) {
                     UpdateOperation operation = toWriteIterator.next();

@@ -22,6 +22,7 @@ package org.neo4j.internal.id.indexed;
 import static org.eclipse.collections.impl.block.factory.Comparators.naturalOrder;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -498,7 +499,7 @@ public class IndexedIdGenerator implements IdGenerator {
             return new IdRangeMarker(
                     idsPerEntry,
                     layout,
-                    tree.unsafeWriter(cursorContext),
+                    tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext),
                     commitAndReuseLock,
                     started ? defaultMerger : recoveryMerger,
                     started,
@@ -761,7 +762,7 @@ public class IndexedIdGenerator implements IdGenerator {
         return consistencyCheck(reporterFactory.getClass(GBPTreeConsistencyCheckVisitor.class), cursorContext);
     }
 
-    private boolean consistencyCheck(GBPTreeConsistencyCheckVisitor<IdRangeKey> visitor, CursorContext cursorContext) {
+    private boolean consistencyCheck(GBPTreeConsistencyCheckVisitor visitor, CursorContext cursorContext) {
         try {
             return tree.consistencyCheck(visitor, cursorContext);
         } catch (IOException e) {

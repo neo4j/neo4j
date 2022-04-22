@@ -21,6 +21,7 @@ package org.neo4j.internal.counts;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.internal.counts.CountsChanges.ABSENT;
 import static org.neo4j.internal.counts.CountsKey.MAX_STRAY_TX_ID;
 import static org.neo4j.internal.counts.CountsKey.MIN_STRAY_TX_ID;
@@ -278,12 +279,12 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
         try {
             CountUpdater.CountWriter writer = applyDeltas
                     ? new DeltaTreeWriter(
-                            () -> tree.writer(cursorContext),
+                            () -> tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext),
                             key -> readCountFromTree(key, cursorContext),
                             layout,
                             maxCacheSize,
                             userLogProvider)
-                    : new TreeWriter(tree.writer(cursorContext), userLogProvider);
+                    : new TreeWriter(tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext), userLogProvider);
             CountUpdater updater = new CountUpdater(writer, lock);
             success = true;
             return updater;
@@ -355,7 +356,8 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
     }
 
     private void writeCountsChanges(CountsChanges changes, CursorContext cursorContext) throws IOException {
-        try (TreeWriter writer = new TreeWriter(tree.unsafeWriter(cursorContext), userLogProvider)) {
+        try (TreeWriter writer =
+                new TreeWriter(tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext), userLogProvider)) {
             // Sort the entries in the natural tree order to get more performance in the writer
             changes.sortedChanges(layout)
                     .forEach(entry ->
@@ -368,7 +370,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
         PrimitiveLongArrayQueue strayIds = new PrimitiveLongArrayQueue();
         visitStrayTxIdsInTree(strayIds::enqueue, cursorContext);
 
-        try (Writer<CountsKey, CountsValue> writer = tree.unsafeWriter(cursorContext)) {
+        try (Writer<CountsKey, CountsValue> writer = tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext)) {
             // First clear all the stray ids from the previous checkpoint
             CountsValue value = new CountsValue();
             while (!strayIds.isEmpty()) {
@@ -469,7 +471,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
         return consistencyCheck(reporterFactory.getClass(GBPTreeConsistencyCheckVisitor.class), cursorContext);
     }
 
-    private boolean consistencyCheck(GBPTreeConsistencyCheckVisitor<CountsKey> visitor, CursorContext cursorContext) {
+    private boolean consistencyCheck(GBPTreeConsistencyCheckVisitor visitor, CursorContext cursorContext) {
         try {
             return tree.consistencyCheck(visitor, cursorContext);
         } catch (IOException e) {

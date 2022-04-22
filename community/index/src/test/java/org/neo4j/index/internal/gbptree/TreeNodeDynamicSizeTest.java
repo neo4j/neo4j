@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.index.internal.gbptree.TreeNode.DATA_LAYER_FLAG;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.io.IOException;
@@ -73,7 +74,7 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes, RawBytes
             TreeNodeDynamicSize<RawBytes, RawBytes> node, int keySize, int valueSize, int expectedOverhead)
             throws IOException {
         cursor.zapPage();
-        node.initializeLeaf(cursor, STABLE_GENERATION, UNSTABLE_GENERATION);
+        node.initializeLeaf(cursor, DATA_LAYER_FLAG, STABLE_GENERATION, UNSTABLE_GENERATION);
 
         RawBytes key = layout.newKey();
         RawBytes value = layout.newValue();

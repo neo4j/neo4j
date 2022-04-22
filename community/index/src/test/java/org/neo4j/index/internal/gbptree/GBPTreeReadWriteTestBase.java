@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.nio.file.Path;
@@ -83,7 +84,7 @@ abstract class GBPTreeReadWriteTestBase<KEY, VALUE> {
         setupTest(pageSize);
         try (GBPTree<KEY, VALUE> index = index()) {
             int count = 1000;
-            try (Writer<KEY, VALUE> writer = index.writer(NULL_CONTEXT)) {
+            try (Writer<KEY, VALUE> writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 for (int i = 0; i < count; i++) {
                     writer.put(key(i), value(i));
                 }
@@ -105,7 +106,7 @@ abstract class GBPTreeReadWriteTestBase<KEY, VALUE> {
         setupTest(pageSize);
         try (GBPTree<KEY, VALUE> index = index()) {
             int count = 1000;
-            try (Writer<KEY, VALUE> writer = index.writer(NULL_CONTEXT)) {
+            try (Writer<KEY, VALUE> writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 for (int i = 0; i < count; i++) {
                     writer.put(key(i), value(i));
                 }
@@ -132,7 +133,7 @@ abstract class GBPTreeReadWriteTestBase<KEY, VALUE> {
             // WHEN
             int count = 1_000;
             List<KEY> seen = new ArrayList<>(count);
-            try (Writer<KEY, VALUE> writer = index.writer(NULL_CONTEXT)) {
+            try (Writer<KEY, VALUE> writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 for (int i = 0; i < count; i++) {
                     KEY key;
                     do {

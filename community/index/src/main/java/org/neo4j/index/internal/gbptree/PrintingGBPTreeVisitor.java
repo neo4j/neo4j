@@ -25,7 +25,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.NO_OFFLOAD_ID;
 import java.io.PrintStream;
 import org.apache.commons.lang3.tuple.Pair;
 
-public class PrintingGBPTreeVisitor<KEY, VALUE> extends GBPTreeVisitor.Adaptor<KEY, VALUE> {
+public class PrintingGBPTreeVisitor<ROOT_KEY, KEY, VALUE> extends GBPTreeVisitor.Adaptor<ROOT_KEY, KEY, VALUE> {
     private final PrintStream out;
     private final boolean printValues;
     private final boolean printPosition;

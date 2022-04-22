@@ -55,8 +55,7 @@ class GBPTreeConsistencyChecker<KEY> {
     private final Comparator<KEY> comparator;
     private final Layout<KEY, ?> layout;
     private final List<RightmostInChain> rightmostPerLevel = new ArrayList<>();
-    private final IdProvider idProvider;
-    private final long lastId;
+    private final ConsistencyCheckState state;
     private final long stableGeneration;
     private final long unstableGeneration;
     private final boolean reportDirty;
@@ -66,15 +65,14 @@ class GBPTreeConsistencyChecker<KEY> {
     GBPTreeConsistencyChecker(
             TreeNode<KEY, ?> node,
             Layout<KEY, ?> layout,
-            IdProvider idProvider,
+            ConsistencyCheckState state,
             long stableGeneration,
             long unstableGeneration,
             boolean reportDirty) {
         this.node = node;
         this.comparator = node.keyComparator();
         this.layout = layout;
-        this.idProvider = idProvider;
-        this.lastId = idProvider.lastId();
+        this.state = state;
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
         this.reportDirty = reportDirty;
@@ -91,23 +89,14 @@ class GBPTreeConsistencyChecker<KEY> {
      * @param cursorContext underlying page cursor context
      * @throws IOException on {@link PageCursor} error.
      */
-    public void check(
+    void check(
             Path file,
             PageCursor cursor,
             Root root,
-            GBPTreeConsistencyCheckVisitor<KEY> visitor,
+            GBPTreeConsistencyCheckVisitor visitor,
             CursorContext cursorContext)
             throws IOException {
-        // TODO: limitation, can't run on an index larger than Integer.MAX_VALUE pages (which is fairly large)
-        long highId = lastId + 1;
-        BitSet seenIds = new BitSet(toIntExact(highId));
-
-        // Log ids in freelist together with ids occupied by freelist pages.
-        IdProvider.IdProviderVisitor freelistSeenIdsVisitor =
-                new FreelistSeenIdsVisitor<>(file, seenIds, lastId, visitor);
-        idProvider.visitFreelist(freelistSeenIdsVisitor, cursorContext);
-
-        // Check structure of GBPTree
+        // Check structure of this root in the GBPTree
         long rootGeneration = root.goTo(cursor);
         KeyRange<KEY> openRange = new KeyRange<>(-1, -1, comparator, null, null, layout, null);
         checkSubtree(
@@ -119,34 +108,16 @@ class GBPTreeConsistencyChecker<KEY> {
                 GBPTreePointerType.noPointer(),
                 0,
                 visitor,
-                seenIds,
+                state.seenIds,
                 cursorContext);
 
         // Assert that rightmost node on each level has empty right sibling.
         rightmostPerLevel.forEach(rightmost -> rightmost.assertLast(visitor));
-
-        // Assert that all pages in file are either present as an active tree node or in freelist.
-        assertAllIdsOccupied(file, highId, seenIds, visitor);
         root.goTo(cursor);
     }
 
-    private static <KEY> void assertAllIdsOccupied(
-            Path file, long highId, BitSet seenIds, GBPTreeConsistencyCheckVisitor<KEY> visitor) {
-        long expectedNumberOfPages = highId - IdSpace.MIN_TREE_NODE_ID;
-        if (seenIds.cardinality() != expectedNumberOfPages) {
-            int index = (int) IdSpace.MIN_TREE_NODE_ID;
-            while (index >= 0 && index < highId) {
-                index = seenIds.nextClearBit(index);
-                if (index != -1 && index < highId) {
-                    visitor.unusedPage(index, file);
-                }
-                index++;
-            }
-        }
-    }
-
-    private static <KEY> void addToSeenList(
-            Path file, BitSet target, long id, long lastId, GBPTreeConsistencyCheckVisitor<KEY> visitor) {
+    private static void addToSeenList(
+            Path file, BitSet target, long id, long lastId, GBPTreeConsistencyCheckVisitor visitor) {
         int index = toIntExact(id);
         if (target.get(index)) {
             visitor.pageIdSeenMultipleTimes(id, file);
@@ -165,12 +136,12 @@ class GBPTreeConsistencyChecker<KEY> {
             long pointerGeneration,
             GBPTreePointerType parentPointerType,
             int level,
-            GBPTreeConsistencyCheckVisitor<KEY> visitor,
+            GBPTreeConsistencyCheckVisitor visitor,
             BitSet seenIds,
             CursorContext cursorContext)
             throws IOException {
         long pageId = cursor.getCurrentPageId();
-        addToSeenList(file, seenIds, pageId, lastId, visitor);
+        addToSeenList(file, seenIds, pageId, state.lastId, visitor);
         if (range.hasPageIdInStack(pageId)) {
             visitor.childNodeFoundAmongParentNodes(range, level, pageId, file);
             return;
@@ -251,7 +222,7 @@ class GBPTreeConsistencyChecker<KEY> {
         } else {
             assertKeyOrder(file, cursor, range, keyCount, isLeaf ? LEAF : INTERNAL, offloadIds, visitor, cursorContext);
         }
-        offloadIds.forEach(id -> addToSeenList(file, seenIds, id, lastId, visitor));
+        offloadIds.forEach(id -> addToSeenList(file, seenIds, id, state.lastId, visitor));
 
         String nodeMetaReport;
         boolean consistentNodeMeta;
@@ -283,14 +254,14 @@ class GBPTreeConsistencyChecker<KEY> {
         }
     }
 
-    private static <KEY> void assertPointerGenerationMatchesGeneration(
+    private static void assertPointerGenerationMatchesGeneration(
             Path file,
             GBPTreePointerType pointerType,
             long sourceNode,
             long pointer,
             long pointerGeneration,
             long targetNodeGeneration,
-            GBPTreeConsistencyCheckVisitor<KEY> visitor) {
+            GBPTreeConsistencyCheckVisitor visitor) {
         if (targetNodeGeneration > pointerGeneration) {
             visitor.pointerHasLowerGenerationThanNode(
                     pointerType, sourceNode, pointerGeneration, pointer, targetNodeGeneration, file);
@@ -298,7 +269,7 @@ class GBPTreeConsistencyChecker<KEY> {
     }
 
     private void checkSuccessorPointerGeneration(
-            Path file, PageCursor cursor, long successor, GBPTreeConsistencyCheckVisitor<KEY> visitor) {
+            Path file, PageCursor cursor, long successor, GBPTreeConsistencyCheckVisitor visitor) {
         if (TreeNode.isNode(successor)) {
             visitor.pointerToOldVersionOfTreeNode(cursor.getCurrentPageId(), pointer(successor), file);
         }
@@ -314,7 +285,7 @@ class GBPTreeConsistencyChecker<KEY> {
             long rightSiblingPointer,
             long rightSiblingPointerGeneration,
             int level,
-            GBPTreeConsistencyCheckVisitor<KEY> visitor) {
+            GBPTreeConsistencyCheckVisitor visitor) {
         // If this is the first time on this level, we will add a new entry
         for (int i = rightmostPerLevel.size(); i <= level; i++) {
             rightmostPerLevel.add(i, new RightmostInChain(file));
@@ -337,7 +308,7 @@ class GBPTreeConsistencyChecker<KEY> {
             KeyRange<KEY> range,
             int keyCount,
             int level,
-            GBPTreeConsistencyCheckVisitor<KEY> visitor,
+            GBPTreeConsistencyCheckVisitor visitor,
             BitSet seenIds,
             CursorContext cursorContext)
             throws IOException {
@@ -444,10 +415,10 @@ class GBPTreeConsistencyChecker<KEY> {
             int keyCount,
             TreeNode.Type type,
             MutableLongList offloadIds,
-            GBPTreeConsistencyCheckVisitor<KEY> visitor,
+            GBPTreeConsistencyCheckVisitor visitor,
             CursorContext cursorContext)
             throws IOException {
-        DelayedVisitor<KEY> delayedVisitor = new DelayedVisitor<>(file);
+        DelayedVisitor delayedVisitor = new DelayedVisitor(file);
         do {
             delayedVisitor.clear();
             offloadIds.clear();
@@ -480,14 +451,14 @@ class GBPTreeConsistencyChecker<KEY> {
         delayedVisitor.report(visitor);
     }
 
-    static <KEY> void assertNoCrashOrBrokenPointerInGSPP(
+    static void assertNoCrashOrBrokenPointerInGSPP(
             Path file,
             PageCursor cursor,
             long stableGeneration,
             long unstableGeneration,
             GBPTreePointerType pointerType,
             int offset,
-            GBPTreeConsistencyCheckVisitor<KEY> visitor,
+            GBPTreeConsistencyCheckVisitor visitor,
             boolean reportDirty)
             throws IOException {
         long currentNodeId = cursor.getCurrentPageId();
@@ -558,10 +529,10 @@ class GBPTreeConsistencyChecker<KEY> {
         }
     }
 
-    private static class DelayedVisitor<KEY> extends GBPTreeConsistencyCheckVisitor.Adaptor<KEY> {
+    private static class DelayedVisitor extends GBPTreeConsistencyCheckVisitor.Adaptor {
         private final Path path;
         MutableLongList keysOutOfOrder = LongLists.mutable.empty();
-        MutableList<KeyInWrongNode<KEY>> keysLocatedInWrongNode = Lists.mutable.empty();
+        MutableList<KeyInWrongNode> keysLocatedInWrongNode = Lists.mutable.empty();
 
         DelayedVisitor(Path path) {
             this.path = path;
@@ -574,8 +545,8 @@ class GBPTreeConsistencyChecker<KEY> {
 
         @Override
         public void keysLocatedInWrongNode(
-                KeyRange<KEY> range, KEY key, int pos, int keyCount, long pageId, Path file) {
-            keysLocatedInWrongNode.add(new KeyInWrongNode<>(pageId, range, key, pos, keyCount));
+                KeyRange<?> range, Object key, int pos, int keyCount, long pageId, Path file) {
+            keysLocatedInWrongNode.add(new KeyInWrongNode(pageId, range, key, pos, keyCount));
         }
 
         void clear() {
@@ -583,7 +554,7 @@ class GBPTreeConsistencyChecker<KEY> {
             keysLocatedInWrongNode.clear();
         }
 
-        void report(GBPTreeConsistencyCheckVisitor<KEY> visitor) {
+        void report(GBPTreeConsistencyCheckVisitor visitor) {
             if (keysOutOfOrder.notEmpty()) {
                 keysOutOfOrder.forEach(pageId -> visitor.keysOutOfOrderInNode(pageId, path));
             }
@@ -598,17 +569,16 @@ class GBPTreeConsistencyChecker<KEY> {
             }
         }
 
-        private record KeyInWrongNode<KEY>(long pageId, KeyRange<KEY> range, KEY key, int pos, int keyCount) {}
+        private record KeyInWrongNode(long pageId, KeyRange<?> range, Object key, int pos, int keyCount) {}
     }
 
-    private static class FreelistSeenIdsVisitor<KEY> implements IdProvider.IdProviderVisitor {
+    private static class FreelistSeenIdsVisitor implements IdProvider.IdProviderVisitor {
         private final Path path;
         private final BitSet seenIds;
         private final long lastId;
-        private final GBPTreeConsistencyCheckVisitor<KEY> visitor;
+        private final GBPTreeConsistencyCheckVisitor visitor;
 
-        private FreelistSeenIdsVisitor(
-                Path path, BitSet seenIds, long lastId, GBPTreeConsistencyCheckVisitor<KEY> visitor) {
+        private FreelistSeenIdsVisitor(Path path, BitSet seenIds, long lastId, GBPTreeConsistencyCheckVisitor visitor) {
             this.path = path;
             this.seenIds = seenIds;
             this.lastId = lastId;
@@ -631,6 +601,51 @@ class GBPTreeConsistencyChecker<KEY> {
         @Override
         public void freelistEntryFromReleaseCache(long pageId) {
             addToSeenList(path, seenIds, pageId, lastId, visitor);
+        }
+    }
+
+    /**
+     * Global state for a consistency check. This is useful for e.g. verifying that all IDs are accounted for, even when running consistency check
+     * on a multi-root tree. All separate roots are checked with its own checker, but with the shared {@link ConsistencyCheckState} instance.
+     */
+    static class ConsistencyCheckState implements AutoCloseable {
+        private final Path file;
+        private final long lastId;
+        private final BitSet seenIds;
+        private final GBPTreeConsistencyCheckVisitor visitor;
+
+        ConsistencyCheckState(
+                Path file, IdProvider idProvider, GBPTreeConsistencyCheckVisitor visitor, CursorContext cursorContext)
+                throws IOException {
+            this.file = file;
+            this.lastId = idProvider.lastId();
+            // TODO: limitation, can't run on an index larger than Integer.MAX_VALUE pages (which is fairly large)
+            this.seenIds = new BitSet(toIntExact(highId()));
+            this.visitor = visitor;
+
+            IdProvider.IdProviderVisitor freelistSeenIdsVisitor =
+                    new FreelistSeenIdsVisitor(file, seenIds, lastId, visitor);
+            idProvider.visitFreelist(freelistSeenIdsVisitor, cursorContext);
+        }
+
+        private long highId() {
+            return lastId + 1;
+        }
+
+        @Override
+        public void close() {
+            long highId = highId();
+            long expectedNumberOfPages = highId - IdSpace.MIN_TREE_NODE_ID;
+            if (seenIds.cardinality() != expectedNumberOfPages) {
+                int index = (int) IdSpace.MIN_TREE_NODE_ID;
+                while (index >= 0 && index < highId) {
+                    index = seenIds.nextClearBit(index);
+                    if (index != -1 && index < highId) {
+                        visitor.unusedPage(index, file);
+                    }
+                    index++;
+                }
+            }
         }
     }
 }

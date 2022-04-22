@@ -21,17 +21,34 @@ package org.neo4j.index.internal.gbptree;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.eclipse.collections.api.list.primitive.ImmutableLongList;
 
 public record GBPTreeInspection(
-        ImmutableLongList internalNodes,
-        ImmutableLongList leafNodes,
-        ImmutableLongList allNodes,
-        ImmutableLongList offloadNodes,
-        Map<Long, Integer> keyCounts,
-        List<ImmutableLongList> nodesPerLevel,
+        List<Tree> trees,
         List<FreelistEntry> allFreelistEntries,
         ImmutableLongList unreleasedFreelistEntries,
-        long rootNode,
-        int lastLevel,
-        TreeState treeState) {}
+        TreeState treeState) {
+    public Tree single() {
+        return trees.get(0);
+    }
+
+    public Tree rootTree() {
+        return trees.stream().filter(t -> !t.isDataTree).findAny().orElseThrow();
+    }
+
+    public Stream<Tree> dataTrees() {
+        return trees.stream().filter(t -> t.isDataTree);
+    }
+
+    public record Tree(
+            ImmutableLongList internalNodes,
+            ImmutableLongList leafNodes,
+            ImmutableLongList allNodes,
+            ImmutableLongList offloadNodes,
+            Map<Long, Integer> keyCounts,
+            List<ImmutableLongList> nodesPerLevel,
+            long rootNode,
+            int lastLevel,
+            boolean isDataTree) {}
+}

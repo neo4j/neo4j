@@ -244,16 +244,11 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
     private final LongSupplier generationSupplier;
 
     /**
-     * Capable to initialize a cursor at the root of the tree.
-     */
-    private final RootInitializer rootInitializer;
-
-    /**
      * Retrieves latest root id and generation, moving the {@link PageCursor} to the root id and returning
      * the root generation. This is used when a query is re-traversing from the root, due to e.g. ending up
      * on a reused tree node and not knowing how to proceed from there.
      */
-    private final RootCatchup rootCatchup;
+    private RootCatchup rootCatchup;
 
     /**
      * What level of the tree to search, {@link #LEAF_LEVEL} indicate always seek the leaves.
@@ -413,7 +408,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
 
     /**
      * Whether or not this seeker has come to the end of its result set and will not attempt to continue.
-     * This will be reset to {@code false} in each {@link #initialize(Object, Object, int, int)}.
+     * This will be reset to {@code false} in each {@link #initialize(RootInitializer, RootCatchup, Object, Object, int, int)}.
      */
     private boolean ended;
 
@@ -450,29 +445,32 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
             TreeNode<KEY, VALUE> bTreeNode,
             Layout<KEY, VALUE> layout,
             LongSupplier generationSupplier,
-            RootInitializer rootInitializer,
-            RootCatchup rootCatchup,
             Consumer<Throwable> exceptionDecorator,
             Monitor monitor,
             CursorContext cursorContext) {
         this.cursor = cursor;
-        this.rootInitializer = rootInitializer;
         this.cursorContext = cursorContext;
         this.layout = layout;
         this.exceptionDecorator = exceptionDecorator;
         this.monitor = monitor;
         this.generationSupplier = generationSupplier;
         this.bTreeNode = bTreeNode;
-        this.rootCatchup = rootCatchup;
         this.prevKey = layout.newKey();
         this.expectedFirstAfterGoToNext = layout.newKey();
         this.firstKeyInNode = layout.newKey();
     }
 
     @SuppressWarnings("unchecked")
-    SeekCursor<KEY, VALUE> initialize(KEY fromInclusive, KEY toExclusive, int maxReadAhead, int searchLevel)
+    SeekCursor<KEY, VALUE> initialize(
+            RootInitializer rootInitializer,
+            RootCatchup rootCatchup,
+            KEY fromInclusive,
+            KEY toExclusive,
+            int maxReadAhead,
+            int searchLevel)
             throws IOException {
         Preconditions.checkState(!closed, "Seeker already closed");
+        this.rootCatchup = rootCatchup;
         this.lastFollowedPointerGeneration = rootInitializer.goToRoot(cursor);
         long generation = generationSupplier.getAsLong();
         this.stableGeneration = Generation.stableGeneration(generation);

@@ -33,13 +33,14 @@ import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 
-public class InspectingVisitor<KEY, VALUE> extends GBPTreeVisitor.Adaptor<KEY, VALUE> {
+public class InspectingVisitor<ROOT_KEY, KEY, VALUE> extends GBPTreeVisitor.Adaptor<ROOT_KEY, KEY, VALUE> {
     private final MutableLongList internalNodes = LongLists.mutable.empty();
     private final MutableLongList leafNodes = LongLists.mutable.empty();
     private final MutableLongList allNodes = LongLists.mutable.empty();
     private final MutableLongList offloadNodes = LongLists.mutable.empty();
     private final Map<Long, Integer> allKeyCounts = new HashMap<>();
     private final List<LongList> nodesPerLevel = new ArrayList<>();
+    private final List<GBPTreeInspection.Tree> trees = new ArrayList<>();
     private final List<FreelistEntry> allFreelistEntries = new ArrayList<>();
     private final MutableLongList unreleasedFreelistEntries = LongLists.mutable.empty();
     private long rootNode;
@@ -53,25 +54,27 @@ public class InspectingVisitor<KEY, VALUE> extends GBPTreeVisitor.Adaptor<KEY, V
     }
 
     public GBPTreeInspection get() {
-        final List<ImmutableLongList> immutableNodesPerLevel =
-                nodesPerLevel.stream().map(LongLists.immutable::ofAll).collect(Collectors.toList());
         return new GBPTreeInspection(
-                internalNodes.toImmutable(),
-                leafNodes.toImmutable(),
-                allNodes.toImmutable(),
-                offloadNodes.toImmutable(),
-                unmodifiableMap(allKeyCounts),
-                immutableNodesPerLevel,
+                List.copyOf(trees),
                 unmodifiableList(allFreelistEntries),
                 unreleasedFreelistEntries.toImmutable(),
-                rootNode,
-                lastLevel,
                 treeState);
     }
 
     @Override
     public void treeState(Pair<TreeState, TreeState> statePair) {
         this.treeState = TreeStatePair.selectNewestValidState(statePair);
+    }
+
+    @Override
+    public void beginTree(boolean dataTree) {
+        internalNodes.clear();
+        leafNodes.clear();
+        allNodes.clear();
+        offloadNodes.clear();
+        allKeyCounts.clear();
+        nodesPerLevel.clear();
+        clear();
     }
 
     @Override
@@ -98,6 +101,22 @@ public class InspectingVisitor<KEY, VALUE> extends GBPTreeVisitor.Adaptor<KEY, V
         } else {
             internalNodes.add(pageId);
         }
+    }
+
+    @Override
+    public void endTree(boolean dataTree) {
+        final List<ImmutableLongList> immutableNodesPerLevel =
+                nodesPerLevel.stream().map(LongLists.immutable::ofAll).collect(Collectors.toList());
+        trees.add(new GBPTreeInspection.Tree(
+                internalNodes.toImmutable(),
+                leafNodes.toImmutable(),
+                allNodes.toImmutable(),
+                offloadNodes.toImmutable(),
+                unmodifiableMap(allKeyCounts),
+                immutableNodesPerLevel,
+                rootNode,
+                lastLevel,
+                dataTree));
     }
 
     @Override

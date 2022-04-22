@@ -95,6 +95,7 @@ class CrashGenerationCleanerCrashTest {
         };
         return new CrashGenerationCleaner(
                 pagedFile,
+                null,
                 new TreeNodeFixedSize<>(pageSize, SimpleLongLayout.longLayout().build()),
                 0,
                 MAX_BATCH_SIZE * 1_000_000_000,

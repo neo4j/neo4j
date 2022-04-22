@@ -58,6 +58,17 @@ public class TreeNodeLatchService {
         }
     }
 
+    LongSpinLatch tryAcquireWrite(long treeNodeId) {
+        while (true) {
+            LongSpinLatch latch = latches.computeIfAbsent(treeNodeId, id -> new LongSpinLatch(id, latches::remove));
+            int result = latch.tryAcquireWrite();
+            if (result == LongSpinLatch.WRITE_LATCH_DEAD) {
+                continue;
+            }
+            return result == LongSpinLatch.WRITE_LATCH_ACQUIRED ? latch : null;
+        }
+    }
+
     @VisibleForTesting
     int size() {
         return latches.size();

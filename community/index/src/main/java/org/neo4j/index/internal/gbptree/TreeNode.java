@@ -43,6 +43,10 @@ abstract class TreeNode<KEY, VALUE> {
         NO_NEED_DEFRAG
     }
 
+    private static final int LAYER_TYPE_SHIFT = 4;
+    private static final int LAYER_TYPE_MASK = (1 << LAYER_TYPE_SHIFT) - 1;
+    private static final int TREE_NODE_MASK = (1 << (Byte.SIZE - LAYER_TYPE_SHIFT)) - 1;
+
     // Shared between all node types: TreeNode and FreelistNode
     static final int BYTE_POS_NODE_TYPE = 0;
     static final byte NODE_TYPE_TREE_NODE = 1;
@@ -50,6 +54,9 @@ abstract class TreeNode<KEY, VALUE> {
     static final byte NODE_TYPE_OFFLOAD = 3;
 
     static final int SIZE_PAGE_REFERENCE = GenerationSafePointerPair.SIZE;
+    // [___r,___t]
+    // t: leaf/internal
+    // r: data node/root node
     static final int BYTE_POS_TYPE = BYTE_POS_NODE_TYPE + Byte.BYTES;
     static final int BYTE_POS_GENERATION = BYTE_POS_TYPE + Byte.BYTES;
     static final int BYTE_POS_KEYCOUNT = BYTE_POS_GENERATION + Integer.BYTES;
@@ -60,6 +67,8 @@ abstract class TreeNode<KEY, VALUE> {
 
     static final byte LEAF_FLAG = 1;
     static final byte INTERNAL_FLAG = 0;
+    static final byte DATA_LAYER_FLAG = 0;
+    static final byte ROOT_LAYER_FLAG = 1;
     static final long NO_NODE_FLAG = 0;
     static final long NO_OFFLOAD_ID = -1;
 
@@ -77,9 +86,10 @@ abstract class TreeNode<KEY, VALUE> {
         return cursor.getByte(BYTE_POS_NODE_TYPE);
     }
 
-    private static void writeBaseHeader(PageCursor cursor, byte type, long stableGeneration, long unstableGeneration) {
+    private static void writeBaseHeader(
+            PageCursor cursor, byte type, byte layerType, long stableGeneration, long unstableGeneration) {
         cursor.putByte(BYTE_POS_NODE_TYPE, NODE_TYPE_TREE_NODE);
-        cursor.putByte(BYTE_POS_TYPE, type);
+        cursor.putByte(BYTE_POS_TYPE, buildTypeByte(type, layerType));
         setGeneration(cursor, unstableGeneration);
         setKeyCount(cursor, 0);
         setRightSibling(cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration);
@@ -87,13 +97,17 @@ abstract class TreeNode<KEY, VALUE> {
         setSuccessor(cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration);
     }
 
-    void initializeLeaf(PageCursor cursor, long stableGeneration, long unstableGeneration) {
-        writeBaseHeader(cursor, LEAF_FLAG, stableGeneration, unstableGeneration);
+    private static byte buildTypeByte(byte type, byte layerType) {
+        return (byte) (type | (layerType << LAYER_TYPE_SHIFT));
+    }
+
+    void initializeLeaf(PageCursor cursor, byte layerType, long stableGeneration, long unstableGeneration) {
+        writeBaseHeader(cursor, LEAF_FLAG, layerType, stableGeneration, unstableGeneration);
         writeAdditionalHeader(cursor);
     }
 
-    void initializeInternal(PageCursor cursor, long stableGeneration, long unstableGeneration) {
-        writeBaseHeader(cursor, INTERNAL_FLAG, stableGeneration, unstableGeneration);
+    void initializeInternal(PageCursor cursor, byte layerType, long stableGeneration, long unstableGeneration) {
+        writeBaseHeader(cursor, INTERNAL_FLAG, layerType, stableGeneration, unstableGeneration);
         writeAdditionalHeader(cursor);
     }
 
@@ -106,7 +120,11 @@ abstract class TreeNode<KEY, VALUE> {
     // HEADER METHODS
 
     static byte treeNodeType(PageCursor cursor) {
-        return cursor.getByte(BYTE_POS_TYPE);
+        return (byte) (cursor.getByte(BYTE_POS_TYPE) & TREE_NODE_MASK);
+    }
+
+    static byte layerType(PageCursor cursor) {
+        return (byte) ((cursor.getByte(BYTE_POS_TYPE) >>> LAYER_TYPE_SHIFT) & LAYER_TYPE_MASK);
     }
 
     static boolean isLeaf(PageCursor cursor) {
@@ -516,5 +534,5 @@ abstract class TreeNode<KEY, VALUE> {
      * @return {@link String} describing inconsistency of empty string "" if no inconsistencies.
      */
     abstract String checkMetaConsistency(
-            PageCursor cursor, int keyCount, Type type, GBPTreeConsistencyCheckVisitor<KEY> visitor);
+            PageCursor cursor, int keyCount, Type type, GBPTreeConsistencyCheckVisitor visitor);
 }

@@ -22,6 +22,7 @@ package org.neo4j.internal.id.indexed;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.internal.id.IdSlotDistribution.evenSlotDistribution;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_ID;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
@@ -753,7 +754,7 @@ class FreeIdScannerTest {
         return new IdRangeMarker(
                 IDS_PER_ENTRY,
                 layout,
-                tree.writer(NULL_CONTEXT),
+                tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),
                 mock(Lock.class),
                 IdRangeMerger.DEFAULT,
                 true,
@@ -833,7 +834,7 @@ class FreeIdScannerTest {
                 return new IdRangeMarker(
                         IDS_PER_ENTRY,
                         layout,
-                        tree.writer(NULL_CONTEXT),
+                        tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),
                         lock,
                         new IdRangeMerger(false, NO_MONITOR),
                         true,

@@ -25,7 +25,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
 import java.nio.file.Path;
 import org.neo4j.internal.helpers.Exceptions;
 
-public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyCheckVisitor<KEY> {
+public class ThrowingConsistencyCheckVisitor implements GBPTreeConsistencyCheckVisitor {
     private static final String treeStructureInconsistency = "Tree structure inconsistency: ";
     private static final String keyOrderInconsistency = "Key order inconsistency: ";
     private static final String nodeMetaInconsistency = "Node meta inconsistency: ";
@@ -92,7 +92,7 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
     }
 
     @Override
-    public void keysLocatedInWrongNode(KeyRange<KEY> range, KEY key, int pos, int keyCount, long pageId, Path file) {
+    public void keysLocatedInWrongNode(KeyRange<?> range, Object key, int pos, int keyCount, long pageId, Path file) {
         throwKeyOrderInconsistency(
                 "Expected range for this tree node is %n%s%n but found %s in position %d, with keyCount %d on page %d.",
                 range, key, pos, keyCount, pageId);
@@ -169,7 +169,7 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
     }
 
     @Override
-    public void childNodeFoundAmongParentNodes(KeyRange<KEY> parentRange, int level, long pageId, Path file) {
+    public void childNodeFoundAmongParentNodes(KeyRange<?> parentRange, int level, long pageId, Path file) {
         throwTreeStructureInconsistency(
                 "Circular reference, child tree node found among parent nodes. Parents:%n%s%nlevel: %d, pageId: %d",
                 parentRange, level, pageId);

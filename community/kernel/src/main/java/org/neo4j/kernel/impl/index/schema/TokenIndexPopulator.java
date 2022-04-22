@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 
 import java.io.IOException;
@@ -77,7 +78,8 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator {
     @Override
     public void add(Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext)
             throws IndexEntryConflictException {
-        try (TokenIndexUpdater updater = singleUpdater.initialize(index.writer(cursorContext))) {
+        try (TokenIndexUpdater updater =
+                singleUpdater.initialize(index.writer(W_BATCHED_SINGLE_THREADED, cursorContext))) {
             for (IndexEntryUpdate<?> update : updates) {
                 updater.process(update);
             }
@@ -89,7 +91,7 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator {
     @Override
     public IndexUpdater newPopulatingUpdater(CursorContext cursorContext) {
         try {
-            return singleUpdater.initialize(index.writer(cursorContext));
+            return singleUpdater.initialize(index.writer(W_BATCHED_SINGLE_THREADED, cursorContext));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

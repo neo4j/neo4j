@@ -59,6 +59,7 @@ import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import org.apache.commons.lang3.ArrayUtils;
+import org.eclipse.collections.api.list.primitive.LongList;
 
 /**
  * Helper class that generates generator values of all supported types.
@@ -1463,6 +1464,10 @@ public class RandomValues {
             T item = among(among);
             action.accept(item);
         }
+    }
+
+    public long among(LongList among) {
+        return among.get(nextInt(among.size()));
     }
 
     /**

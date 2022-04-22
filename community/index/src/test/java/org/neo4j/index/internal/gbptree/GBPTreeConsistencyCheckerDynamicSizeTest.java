@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.index.internal.gbptree.GBPTreeCorruption.notAnOffloadNode;
 import static org.neo4j.index.internal.gbptree.GBPTreeCorruption.pageSpecificCorruption;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -41,12 +42,12 @@ public class GBPTreeConsistencyCheckerDynamicSizeTest extends GBPTreeConsistency
             int keySize = index.inlineKeyValueSizeCap();
             RawBytes key = key(keySize + 1);
             RawBytes value = value(0);
-            try (Writer<RawBytes, RawBytes> writer = index.writer(NULL_CONTEXT)) {
+            try (Writer<RawBytes, RawBytes> writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 writer.put(key, value);
             }
 
             GBPTreeInspection inspection = inspect(index);
-            ImmutableLongList offloadNodes = inspection.offloadNodes();
+            ImmutableLongList offloadNodes = inspection.single().offloadNodes();
             long offloadNode = offloadNodes.get(random.nextInt(offloadNodes.size()));
 
             index.unsafe(pageSpecificCorruption(offloadNode, notAnOffloadNode()), NULL_CONTEXT);
@@ -74,7 +75,7 @@ public class GBPTreeConsistencyCheckerDynamicSizeTest extends GBPTreeConsistency
             throws IOException {
         MutableBoolean called = new MutableBoolean();
         index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor<>() {
+                new GBPTreeConsistencyCheckVisitor.Adaptor() {
                     @Override
                     public void exception(Exception e) {
                         called.setTrue();

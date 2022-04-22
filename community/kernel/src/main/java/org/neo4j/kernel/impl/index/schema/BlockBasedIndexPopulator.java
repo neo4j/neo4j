@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
+import static org.neo4j.index.internal.gbptree.DataTree.W_SPLIT_KEEP_ALL_LEFT;
 import static org.neo4j.internal.helpers.collection.Iterables.first;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
@@ -341,7 +343,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
     private void writeExternalUpdatesToTree(
             RecordingConflictDetector<KEY> recordingConflictDetector, CursorContext cursorContext)
             throws IOException, IndexEntryConflictException {
-        try (Writer<KEY, NullValue> writer = tree.writer(cursorContext);
+        try (Writer<KEY, NullValue> writer = tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext);
                 IndexUpdateCursor<KEY, NullValue> updates = externalUpdates.reader()) {
             while (updates.next() && !cancellation.cancelled()) {
                 switch (updates.updateMode()) {
@@ -427,7 +429,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
                             cancellation,
                             PartMerger.DEFAULT_BATCH_SIZE);
                     var allEntries = merger.startMerge();
-                    var writer = tree.writer(1, cursorContext)) {
+                    var writer = tree.writer(W_BATCHED_SINGLE_THREADED | W_SPLIT_KEEP_ALL_LEFT, cursorContext)) {
                 while (allEntries.next() && !cancellation.cancelled()) {
                     writeToTree(writer, recordingConflictDetector, allEntries.key());
                     numberOfAppliedScanUpdates.incrementAndGet();

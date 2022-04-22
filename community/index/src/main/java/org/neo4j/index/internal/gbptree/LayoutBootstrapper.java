@@ -20,9 +20,9 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import org.neo4j.io.pagecache.PageCache;
 
 public interface LayoutBootstrapper {
-    Layout<?, ?> create(Path indexFile, PageCache pageCache, Meta meta) throws IOException;
+    Layouts bootstrap(Meta meta) throws IOException;
+
+    record Layouts(Layout<?, ?> dataLayout, RootLayerConfiguration<?> rootLayerConfiguration) {}
 }
