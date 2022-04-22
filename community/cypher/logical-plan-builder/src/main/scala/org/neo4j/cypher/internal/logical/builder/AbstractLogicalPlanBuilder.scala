@@ -1668,18 +1668,21 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def transactionApply(batchSize: Long = TransactionForeach.defaultBatchSize): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => TransactionApply(lhs, rhs, literalInt(batchSize))(_)))
 
-  def trail(min: Int,
-            max: UpperBound,
-            start: String,
-            end: Option[String],
-            innerStart: String,
-            innerEnd: String,
-            groupNodes: Set[(String, String)],
-            groupRelationships: Set[(String, String)],
-            allRelationships: Set[String],
-            allRelationshipGroups: Set[String]): IMPL =
+  def trail(
+    min: Int,
+    max: UpperBound,
+    start: String,
+    end: Option[String],
+    innerStart: String,
+    innerEnd: String,
+    groupNodes: Set[(String, String)],
+    groupRelationships: Set[(String, String)],
+    allRelationships: Set[String],
+    allRelationshipGroups: Set[String]
+  ): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
-      Trail(lhs,
+      Trail(
+        lhs,
         rhs,
         Repetitions(min, max),
         start,
@@ -1689,7 +1692,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         groupNodes.map { case (inner, outer) => GroupEntity(inner, outer) },
         groupRelationships.map { case (inner, outer) => GroupEntity(inner, outer) },
         allRelationships,
-        allRelationshipGroups)(_)))
+        allRelationshipGroups
+      )(_)
+    ))
 
   // SHIP IP
 

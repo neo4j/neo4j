@@ -4753,10 +4753,27 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "ArgumentTracker", SingleChild(lhsPD), Seq(), Set("a"))
     )
   }
+
   test("Trail") {
-    assertGood(attach(Trail(lhsLP, rhsLP, Repetitions(0, Unlimited), "start", Some("end"), "  UNNAMED111", "  UNNAMED112",
-      Set(GroupEntity("  UNNAMED111", "a"), GroupEntity("  UNNAMED112", "b" )), Set(GroupEntity("  UNNAMED113", "r")), Set("r"), Set.empty), 2345.0),
-      planDescription(id, "Trail", TwoChildren(lhsPD, rhsPD), List(details("{0, *}")), Set("a", "b", "start", "end")))
+    assertGood(
+      attach(
+        Trail(
+          lhsLP,
+          rhsLP,
+          Repetitions(0, Unlimited),
+          "start",
+          Some("end"),
+          "  UNNAMED111",
+          "  UNNAMED112",
+          Set(GroupEntity("  UNNAMED111", "a"), GroupEntity("  UNNAMED112", "b")),
+          Set(GroupEntity("  UNNAMED113", "r")),
+          Set("r"),
+          Set.empty
+        ),
+        2345.0
+      ),
+      planDescription(id, "Trail", TwoChildren(lhsPD, rhsPD), List(details("{0, *}")), Set("a", "b", "start", "end"))
+    )
   }
 
   def assertGood(

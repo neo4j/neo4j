@@ -1774,10 +1774,12 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .build()
   )
 
-  testPlan("trail",
+  testPlan(
+    "trail",
     new TestPlanBuilder()
       .produceResults("me", "you", "a", "b", "r")
-      .trail(min = 0,
+      .trail(
+        min = 0,
         max = Limited(2),
         start = "me",
         end = Some("you"),
@@ -1786,11 +1788,13 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
         groupNodes = Set(("a_inner", "a"), ("b_inner", "b")),
         groupRelationships = Set(("r_inner", "r")),
         allRelationships = Set("r_inner"),
-        allRelationshipGroups = Set())
+        allRelationshipGroups = Set()
+      )
       .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
       .|.argument("me", "a_inner")
       .nodeByLabelScan("me", "START", IndexOrderNone)
-      .build())
+      .build()
+  )
 
   private def interpretPlanBuilder(code: String): LogicalPlan = {
     val completeCode =

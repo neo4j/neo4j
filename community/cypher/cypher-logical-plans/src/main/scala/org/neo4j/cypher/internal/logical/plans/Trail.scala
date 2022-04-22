@@ -40,18 +40,20 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * @param allRelationshipGroups relationship group variables originating from previous [[Trail]] operators.
  *                              relationship uniqueness must be enforced between these relationships and those in [[allRelationships]].
  */
-case class Trail(override val left: LogicalPlan,
-                 override val right: LogicalPlan,
-                 repetitions: Repetitions,
-                 start: String,
-                 end: Option[String],
-                 innerStart: String,
-                 innerEnd: String,
-                 groupNodes: Set[GroupEntity],
-                 groupRelationships: Set[GroupEntity],
-                 allRelationships: Set[String],
-                 allRelationshipGroups: Set[String])(implicit idGen: IdGen)
-  extends LogicalBinaryPlan(idGen) with ApplyPlan {
+case class Trail(
+  override val left: LogicalPlan,
+  override val right: LogicalPlan,
+  repetitions: Repetitions,
+  start: String,
+  end: Option[String],
+  innerStart: String,
+  innerEnd: String,
+  groupNodes: Set[GroupEntity],
+  groupRelationships: Set[GroupEntity],
+  allRelationships: Set[String],
+  allRelationshipGroups: Set[String]
+)(implicit idGen: IdGen)
+    extends LogicalBinaryPlan(idGen) with ApplyPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
   override val availableSymbols: Set[String] = (left.availableSymbols ++ right.availableSymbols ++ end) + start

@@ -485,7 +485,19 @@ object LogicalPlanToPlanBuilderString {
       case SelectOrAntiSemiApply(_, _, predicate) => wrapInQuotations(expressionStringifier(predicate))
       case LetSelectOrAntiSemiApply(_, _, idName, predicate) =>
         wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(predicate)))
-      case Trail(_, _, repetitions, start, end, innerStart, innerEnd, groupNodes, groupRelationships, allRelationships, allRelationshipGroups) =>
+      case Trail(
+          _,
+          _,
+          repetitions,
+          start,
+          end,
+          innerStart,
+          innerEnd,
+          groupNodes,
+          groupRelationships,
+          allRelationships,
+          allRelationshipGroups
+        ) =>
         def groupEntitiesString(groupEntities: Set[GroupEntity]): String =
           groupEntities.map(g => s"(${wrapInQuotations(g.innerName)},${wrapInQuotations(g.outerName)})").mkString(",")
         s"""${repetitions.min}, ${repetitions.max}, "$start", ${end.map(wrapInQuotations)}, "$innerStart", "$innerEnd",

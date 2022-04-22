@@ -1915,9 +1915,16 @@ case class LogicalPlan2PlanDescription(
       case Trail(_, _, repetitions, _, _, _, _, _, _, _, _) =>
         val repString = repetitions match {
           case Repetitions(min, Limited(n)) => s"{$min, $n}"
-          case Repetitions(min, Unlimited) => s"{$min, *}"
+          case Repetitions(min, Unlimited)  => s"{$min, *}"
         }
-        PlanDescriptionImpl(id = plan.id, plan.productPrefix, children, Seq(Details(PrettyString(repString))), variables, withRawCardinalities)
+        PlanDescriptionImpl(
+          id = plan.id,
+          plan.productPrefix,
+          children,
+          Seq(Details(PrettyString(repString))),
+          variables,
+          withRawCardinalities
+        )
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }

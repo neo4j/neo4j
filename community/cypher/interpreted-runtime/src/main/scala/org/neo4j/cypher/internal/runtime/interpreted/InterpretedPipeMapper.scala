@@ -1388,8 +1388,32 @@ case class InterpretedPipeMapper(
       case TransactionApply(_, _, batchSize) =>
         TransactionApplyPipe(lhs, rhs, buildExpression(batchSize))(id = id)
 
-      case Trail(_, _, repetitions, start, end, innerStart, innerEnd, groupNodes, groupRelationships, allRelationships, allRelationshipGroups) =>
-        TrailPipe(lhs, rhs, repetitions, start, end, innerStart, innerEnd, groupNodes, groupRelationships, allRelationships, allRelationshipGroups)(id = id)
+      case Trail(
+          _,
+          _,
+          repetitions,
+          start,
+          end,
+          innerStart,
+          innerEnd,
+          groupNodes,
+          groupRelationships,
+          allRelationships,
+          allRelationshipGroups
+        ) =>
+        TrailPipe(
+          lhs,
+          rhs,
+          repetitions,
+          start,
+          end,
+          innerStart,
+          innerEnd,
+          groupNodes,
+          groupRelationships,
+          allRelationships,
+          allRelationshipGroups
+        )(id = id)
 
       case x =>
         throw new InternalException(s"Received a logical plan that has no physical operator $x")

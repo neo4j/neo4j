@@ -2265,14 +2265,15 @@ trait TrailProfileRowsTestBase[CONTEXT <: RuntimeContext] {
   self: ProfileRowsTestBase[CONTEXT] =>
 
   test("should profile rows of operations in trail operator") {
-    givenWithTransactionType (
+    givenWithTransactionType(
       circleGraph(sizeHint),
       KernelTransaction.Type.IMPLICIT
     )
 
     val query = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "a", "b", "r")
-      .trail(min = 0,
+      .trail(
+        min = 0,
         max = Limited(2),
         start = "me",
         end = Some("you"),
@@ -2281,7 +2282,8 @@ trait TrailProfileRowsTestBase[CONTEXT <: RuntimeContext] {
         groupNodes = Set(("a_inner", "a"), ("b_inner", "b")),
         groupRelationships = Set(("r_inner", "r")),
         allRelationships = Set("r_inner"),
-        allRelationshipGroups = Set())
+        allRelationshipGroups = Set()
+      )
       .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
       .|.argument("me", "a_inner")
       .allNodeScan("me")
@@ -2294,10 +2296,10 @@ trait TrailProfileRowsTestBase[CONTEXT <: RuntimeContext] {
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
 
-    queryProfile.operatorProfile(0).rows() shouldBe  3 * sizeHint// produce results
-    queryProfile.operatorProfile(1).rows() shouldBe  3 * sizeHint // trail
-    queryProfile.operatorProfile(2).rows() shouldBe  2 * sizeHint// expand
-    queryProfile.operatorProfile(3).rows() shouldBe  2 * sizeHint// argument
-    queryProfile.operatorProfile(4).rows() shouldBe  1 * sizeHint// nodeByLabelScan
+    queryProfile.operatorProfile(0).rows() shouldBe 3 * sizeHint // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe 3 * sizeHint // trail
+    queryProfile.operatorProfile(2).rows() shouldBe 2 * sizeHint // expand
+    queryProfile.operatorProfile(3).rows() shouldBe 2 * sizeHint // argument
+    queryProfile.operatorProfile(4).rows() shouldBe 1 * sizeHint // nodeByLabelScan
   }
 }
