@@ -18,8 +18,6 @@ package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 
-import scala.IterableOnce
-
 object SemanticCheckResult {
   val success: SemanticCheck = SemanticCheckResult(_, Vector())
 

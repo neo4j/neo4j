@@ -36,7 +36,6 @@ import org.neo4j.exceptions.StatusWrapCypherException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.RelationshipType
-import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.graphdb.traversal.Paths
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.kernel.api.KernelTransaction.Type

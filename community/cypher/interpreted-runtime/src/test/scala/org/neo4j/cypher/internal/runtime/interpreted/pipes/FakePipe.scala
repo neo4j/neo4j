@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.storageengine.api.RelationshipVisitor
 
-import scala.Iterable
 import scala.collection.Map
 
 case class FakePipe(data: Iterable[Map[String, Any]]) extends Pipe {

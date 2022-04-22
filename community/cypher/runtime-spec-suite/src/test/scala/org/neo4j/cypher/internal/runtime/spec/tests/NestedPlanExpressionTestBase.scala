@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
-import org.neo4j.graphdb.schema.IndexType
 
 import java.util.Collections
 

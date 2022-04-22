@@ -52,7 +52,6 @@ import org.neo4j.values.storable.NumberValue
 import org.neo4j.values.storable.StringValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
-import org.neo4j.values.virtual.VirtualValues
 
 import java.time.Duration
 import java.time.temporal.ChronoUnit

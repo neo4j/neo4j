@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
-import scala.IterableOnce
 import scala.language.implicitConversions
 
 package object semantics {

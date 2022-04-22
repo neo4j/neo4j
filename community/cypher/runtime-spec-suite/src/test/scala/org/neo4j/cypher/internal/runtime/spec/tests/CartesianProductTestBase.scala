@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Direction
-import org.neo4j.graphdb.schema.IndexType
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 

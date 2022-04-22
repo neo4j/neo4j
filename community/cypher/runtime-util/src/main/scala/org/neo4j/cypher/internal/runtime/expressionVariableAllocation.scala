@@ -37,7 +37,6 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Attribute
 import org.neo4j.cypher.internal.util.topDown
 
-import scala.Iterable
 import scala.collection.mutable
 
 /**

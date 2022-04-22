@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.exceptions.SyntaxException
 
 import scala.jdk.CollectionConverters.ListHasAsScala
-import scala.util.matching.Regex
 
 /**
  * Preparses Cypher queries.

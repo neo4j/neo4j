@@ -22,8 +22,6 @@ package org.neo4j.cypher.testing.impl.http
 import org.neo4j.cypher.testing.api.CypherExecutor
 import org.neo4j.cypher.testing.api.CypherExecutorTransaction
 import org.neo4j.cypher.testing.api.StatementResult
-import org.neo4j.driver.Session
-import org.neo4j.driver.TransactionConfig
 import org.neo4j.test.server.HTTP
 
 case class HttpCypherExecutor(private val dbHttp: HTTP.Builder) extends CypherExecutor with HttpExceptionConverter {

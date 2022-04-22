@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.util.Eagerly.immutableMapValues
 
 import java.util
 
-import scala.IterableOnce
 import scala.collection.Map
 import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.jdk.CollectionConverters.SeqHasAsJava

@@ -39,7 +39,6 @@ import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.RelationshipType
-import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.internal.helpers.collection.Iterators
 

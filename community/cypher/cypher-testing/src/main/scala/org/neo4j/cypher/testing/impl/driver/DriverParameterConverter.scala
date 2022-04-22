@@ -26,8 +26,6 @@ import org.neo4j.graphdb.spatial.Point
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAmount
 
-import scala.IterableOnce
-
 object DriverParameterConverter extends ParameterConverter {
 
   def convertParameterValue(value: Any): AnyRef = value match {

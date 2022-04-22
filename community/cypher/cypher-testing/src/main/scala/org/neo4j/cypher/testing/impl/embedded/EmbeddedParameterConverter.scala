@@ -21,8 +21,6 @@ package org.neo4j.cypher.testing.impl.embedded
 
 import org.neo4j.cypher.testing.api.ParameterConverter
 
-import scala.IterableOnce
-
 object EmbeddedParameterConverter extends ParameterConverter {
 
   def convertParameterValue(value: Any): AnyRef = value match {

@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.tests.PartialSortTestBase.firstTwoColumns
-import org.neo4j.graphdb.schema.IndexType
 
 import scala.util.Random
 

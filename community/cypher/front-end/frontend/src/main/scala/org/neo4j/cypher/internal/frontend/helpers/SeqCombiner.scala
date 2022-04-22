@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.frontend.helpers
 
-import scala.Iterable
 import scala.reflect.ClassTag
 
 object SeqCombiner {

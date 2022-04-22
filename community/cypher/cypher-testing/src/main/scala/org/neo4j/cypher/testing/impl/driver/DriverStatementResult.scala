@@ -24,7 +24,6 @@ import org.neo4j.cypher.testing.impl.shared.NotificationImpl
 import org.neo4j.driver.Result
 import org.neo4j.graphdb.InputPosition
 import org.neo4j.graphdb.Notification
-import org.neo4j.graphdb.SeverityLevel
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsScala
