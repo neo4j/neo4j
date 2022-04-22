@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PartitionedScan;
@@ -33,6 +34,8 @@ final class PartitionedNodeCursorScan implements PartitionedScan<NodeCursor> {
     private final int numberOfPartitions;
     private final long batchSize;
 
+    private final AtomicInteger emittedPartitions;
+
     PartitionedNodeCursorScan(AllNodeScan storageScan, Read read, int desiredNumberOfPartitions, long totalCount) {
         Preconditions.requirePositive(desiredNumberOfPartitions);
         this.storageScan = storageScan;
@@ -43,6 +46,7 @@ final class PartitionedNodeCursorScan implements PartitionedScan<NodeCursor> {
             this.numberOfPartitions = (int) totalCount;
         }
         this.batchSize = (int) Math.ceil((double) totalCount / numberOfPartitions);
+        this.emittedPartitions = new AtomicInteger(0);
     }
 
     @Override
@@ -52,7 +56,12 @@ final class PartitionedNodeCursorScan implements PartitionedScan<NodeCursor> {
 
     @Override
     public boolean reservePartition(NodeCursor cursor, CursorContext cursorContext, AccessMode accessMode) {
+        // We make the last batch infinitely big in order to not miss any nodes that has been committed while the scan
+        // is in progress.
+        // This means that the last partition can potentially be bigger than the preceding partitions.
+        long batchSizeToUse =
+                emittedPartitions.getAndIncrement() == numberOfPartitions - 1 ? Long.MAX_VALUE : batchSize;
         return ((DefaultNodeCursor) cursor)
-                .scanBatch(read, storageScan, batchSize, ImmutableEmptyLongIterator.INSTANCE, false, accessMode);
+                .scanBatch(read, storageScan, batchSizeToUse, ImmutableEmptyLongIterator.INSTANCE, false, accessMode);
     }
 }

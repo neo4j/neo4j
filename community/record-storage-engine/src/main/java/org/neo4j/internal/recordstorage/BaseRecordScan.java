@@ -31,10 +31,20 @@ abstract class BaseRecordScan<C extends PrimitiveRecord> {
     private final AtomicLong nextStart = new AtomicLong(0);
 
     boolean scanBatch(long sizeHint, C cursor) {
-        long start = nextStart.getAndAdd(sizeHint);
-        long stopInclusive = start + sizeHint - 1;
-        return scanRange(cursor, start, stopInclusive);
+        if (sizeHint > 0) {
+            long start = nextStart.getAndUpdate(operand -> overflowSafeAdd(operand, sizeHint));
+            long stopInclusive = overflowSafeAdd(start, sizeHint - 1);
+            return scanRange(cursor, start, stopInclusive);
+        } else {
+            long start = nextStart.get();
+            return scanRange(cursor, start, start - 1);
+        }
     }
 
     abstract boolean scanRange(C cursor, long start, long stopInclusive);
+
+    private long overflowSafeAdd(long a, long b) {
+        long result = a + b;
+        return result >= 0 ? result : Long.MAX_VALUE;
+    }
 }

@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.kernel.impl.newapi.KernelAPIWriteTestBase.graphDb;
 import static org.neo4j.kernel.impl.newapi.TestUtils.assertDistinct;
 import static org.neo4j.kernel.impl.newapi.TestUtils.closeWorkContexts;
 import static org.neo4j.kernel.impl.newapi.TestUtils.concat;
@@ -32,22 +33,30 @@ import static org.neo4j.kernel.impl.newapi.TestUtils.createWorkers;
 import static org.neo4j.util.concurrent.Futures.getAllResults;
 
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.ToLongFunction;
+import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PartitionedScan;
+import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.WorkerContext;
 
 public abstract class ParallelPartitionedNodeCursorTestBase<G extends KernelAPIReadTestSupport>
@@ -223,5 +232,57 @@ public abstract class ParallelPartitionedNodeCursorTestBase<G extends KernelAPIR
             service.shutdown();
             assertTrue(service.awaitTermination(1, TimeUnit.MINUTES), errorMessage);
         }
+    }
+
+    @Test
+    void shouldBeReadCommitted() throws ExecutionException, InterruptedException, TimeoutException {
+        // given
+        MutableLongSet ids = new LongHashSet();
+        PartitionedScan<NodeCursor> scan = read.allNodesScan(10, NULL_CONTEXT);
+
+        // and some new nodes added after initialization
+        LongList newNodes = createNodesInSeparateTransaction(5);
+        for (int i = 0; i < scan.getNumberOfPartitions(); i++) {
+            // when
+            try (NodeCursor nodes = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+                scan.reservePartition(nodes, NULL_CONTEXT, tx.securityContext().mode());
+                {
+                    while (nodes.next()) {
+                        ids.add(nodes.nodeReference());
+                    }
+                }
+            }
+        }
+
+        // then
+        newNodes.forEach((LongProcedure) newNode -> assertTrue(ids.contains(newNode)));
+        // and clean up
+        newNodes.forEach((LongProcedure) newNode -> {
+            try {
+                tx.dataWrite().nodeDelete(newNode);
+            } catch (InvalidTransactionTypeKernelException e) {
+                throw new AssertionError(e);
+            }
+        });
+    }
+
+    private LongList createNodesInSeparateTransaction(int numberOfNodesToCreate)
+            throws ExecutionException, InterruptedException, TimeoutException {
+        ExecutorService service = Executors.newSingleThreadExecutor();
+        var futureList = service.submit((Callable<LongList>) () -> {
+            var newNodes = new LongArrayList(numberOfNodesToCreate);
+
+            try (var tx = testSupport
+                    .kernelToTest()
+                    .beginTransaction(KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED)) {
+                for (int i = 0; i < numberOfNodesToCreate; i++) {
+                    newNodes.add(tx.dataWrite().nodeCreate());
+                }
+                tx.commit();
+            }
+            return newNodes;
+        });
+
+        return futureList.get(1, TimeUnit.MINUTES);
     }
 }
