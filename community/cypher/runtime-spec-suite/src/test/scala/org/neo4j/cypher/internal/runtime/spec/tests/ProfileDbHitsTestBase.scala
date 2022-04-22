@@ -187,6 +187,29 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     )) // label scan
   }
 
+  test("should profile dbHits of union label scan") {
+    given {
+      nodeGraph(3, "Dud")
+      nodeGraph(sizeHint, "It")
+      nodeGraph(3, "Decoy")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .unionNodeByLabelsScan("x", Seq("Dud", "Decoy"), IndexOrderNone)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(1).dbHits() should (be(6 + 2 /*label scan*/ + 2 * costOfLabelLookup) or be(
+      10
+    )) // union label scan
+  }
+
   test("should profile dbHits of node index seek with range predicate") {
     given {
       nodeIndex("Language", "difficulty")

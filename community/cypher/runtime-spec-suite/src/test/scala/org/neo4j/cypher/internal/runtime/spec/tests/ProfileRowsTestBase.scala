@@ -1876,6 +1876,29 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
     queryProfile.operatorProfile(1).rows() shouldBe 2 * aRels.size // project endpoints
     queryProfile.operatorProfile(2).rows() shouldBe aRels.size // input
   }
+
+  test("should profile rows with union label scan") {
+    // given
+    given {
+      nodeGraph(sizeHint, "A")
+      nodeGraph(sizeHint, "B")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .unionNodeByLabelsScan("x", Seq("A", "B"), IndexOrderNone)
+      .build()
+
+    // then
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe 2 * sizeHint // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe 2 * sizeHint // unionLabelScan
+  }
 }
 
 trait EagerLimitProfileRowsTestBase[CONTEXT <: RuntimeContext] {

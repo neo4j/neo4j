@@ -144,10 +144,10 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
   )
 
   testPlan(
-    "unionNodeByLabelScan",
+    "unionNodeByLabelsScan",
     new TestPlanBuilder()
       .produceResults("x")
-      .unionNodeByLabelsScan("x", Seq("X", "Y", "Z"))
+      .unionNodeByLabelsScan("x", Seq("X", "Y", "Z"), IndexOrderNone)
       .build()
   )
 
