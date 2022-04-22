@@ -255,27 +255,24 @@ trait UpdateGraph {
 
     val relevantNodes = qgWithInfo.nonArgumentPatternNodes(semanticTable) intersect qgWithInfo.leafPatternNodes
     updatesNodes && relevantNodes.exists { currentNode =>
-      val labelsOnCurrentNode = qgWithInfo.allKnownUnstableNodeLabelsFor(currentNode)
-      val propertiesOnCurrentNode = qgWithInfo.allKnownUnstablePropertiesFor(currentNode)
-      val labelsToRemove = labelsToRemoveFromOtherNodes(currentNode.name)
-
-      val noLabelOrPropOverlap = currentNode match {
-        case _:UnstableIdentifier => labelsOnCurrentNode.isEmpty && propertiesOnCurrentNode.isEmpty && tailCreatesNodes
+      currentNode match {
         case _:StableIdentifier => false
-      }
+        case _:UnstableIdentifier =>
+          val labelsOnCurrentNode = qgWithInfo.allKnownUnstableNodeLabelsFor(currentNode)
+          val propertiesOnCurrentNode = qgWithInfo.allKnownUnstablePropertiesFor(currentNode)
+          lazy val labelsToRemove = labelsToRemoveFromOtherNodes(currentNode.name)
 
-      noLabelOrPropOverlap || //MATCH () CREATE/MERGE (...)?
-          (!currentNode.isStable &&
-            labelsOnCurrentNode.nonEmpty &&
-            ((labelsOnCurrentNode subsetOf labelsToCreate.flatten) ||
-            // MATCH (:!(A|B)&A) CREATE (:A)
-            labelExpressionsOverlap(qgWithInfo, labelsToCreate, currentNode.name))) || //MATCH (:A:B) CREATE (:A:B:C)?
-          (!currentNode.isStable &&
-            labelsOnCurrentNode.isEmpty &&
-            propertiesOnCurrentNode.exists(propertiesToCreate.overlaps)) || //MATCH ({prop:42}) CREATE ({prop:...})
+          val noLabelOrPropOverlap = labelsOnCurrentNode.isEmpty && propertiesOnCurrentNode.isEmpty && tailCreatesNodes
+
+          //MATCH () CREATE/MERGE (...)?
+          noLabelOrPropOverlap ||
+            //MATCH (A&B|!C) CREATE (:A:B)
+            (labelsOnCurrentNode.nonEmpty && labelExpressionsOverlap(qgWithInfo, labelsToCreate, Set(currentNode.name))) || //MATCH ({prop:42}) CREATE ({prop:...})
+            (labelsOnCurrentNode.isEmpty &&
+            propertiesOnCurrentNode.exists(propertiesToCreate.overlaps)) ||
           //MATCH (n:A), (m:B) REMOVE n:B
           //MATCH (n:A), (m:A) REMOVE m:A
-          (labelsToRemove intersect labelsOnCurrentNode).nonEmpty
+          (labelsToRemove intersect labelsOnCurrentNode).nonEmpty}
     }
   }
 
@@ -287,15 +284,18 @@ trait UpdateGraph {
    * If we have multiple predicates, we will only have an overlap if all predicates are evaluated to true.
    * For example, if we have `MATCH (n) WHERE n:A AND n:B CREATE (:A)` we don't need to insert an eager since the predicate `(n:B)` will be evaluated to false.
    */
-  private def labelExpressionsOverlap(qgWithInfo: QgWithLeafInfo, labelsToCreate: Set[Set[LabelName]], currentNode: String): Boolean = {
-    qgWithInfo.queryGraph.selections.predicates.map(_.expr).forall { expression =>
+  private def labelExpressionsOverlap(qgWithInfo: QgWithLeafInfo, labelsToCreate: Set[Set[LabelName]], currentNode: Set[String]): Boolean = {
+    val predicates = qgWithInfo.queryGraph.selections.predicates.map(_.expr) ++
+      qgWithInfo.queryGraph.optionalMatches.map(_.selections).flatMap(_.predicates).map(_.expr)
+
+    predicates.forall { expression =>
       labelsToCreate.exists(labelToCreate => labelExpressionOverlaps(currentNode, expression, labelToCreate.map(_.name)).getOrElse(true))
     }
   }
 
-  private def labelExpressionOverlaps(currentNode: String, expression: Expression, createdLabels: Set[String]): Option[Boolean] = {
+  private def labelExpressionOverlaps(currentNode: Set[String], expression: Expression, createdLabels: Set[String]): Option[Boolean] = {
     expression match {
-      case HasLabels(Variable(node), labels) if node == currentNode => Some(createdLabels.exists(labels.map(_.name).contains))
+      case HasLabels(Variable(node), labels) if currentNode.contains(node) => Some(createdLabels.exists(labels.map(_.name).contains))
       case And(lhs, rhs) => evalBinFunc(currentNode, lhs, rhs, createdLabels, (lhs, rhs) => lhs && rhs)
       case Or(lhs, rhs) => evalBinFunc(currentNode, lhs, rhs, createdLabels, (lhs, rhs) => lhs || rhs)
       case Not(expr) => labelExpressionOverlaps(currentNode, expr, createdLabels).map(!_)
@@ -317,10 +317,10 @@ trait UpdateGraph {
     }
   }
 
-  private def evalBinFunc(name: String, a: Expression, b: Expression, labels: Set[String], op: (Boolean, Boolean) => Boolean): Option[Boolean] =
-    labelExpressionOverlaps(name, a, labels)
+  private def evalBinFunc(currentNode: Set[String], a: Expression, b: Expression, labels: Set[String], op: (Boolean, Boolean) => Boolean): Option[Boolean] =
+    labelExpressionOverlaps(currentNode, a, labels)
       .flatMap(lhs =>
-        labelExpressionOverlaps(name, b, labels)
+        labelExpressionOverlaps(currentNode, b, labels)
           .map(rhs => op(lhs, rhs))
       )
 
