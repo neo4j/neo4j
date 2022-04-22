@@ -744,10 +744,17 @@
           </java>
           <scala>
             <scalafmt>
-              <file>public/build-resources/src/main/resources/scalafmt/scalafmt.conf</file>
+              <file>scalafmt/scalafmt.conf</file>
             </scalafmt>
           </scala>
         </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.neo4j.build</groupId>
+            <artifactId>build-resources</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+        </dependencies>
       </plugin>
 
       <!-- Creates source jar if source exits -->
