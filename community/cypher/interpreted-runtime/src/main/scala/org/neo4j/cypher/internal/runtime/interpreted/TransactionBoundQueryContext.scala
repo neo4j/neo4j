@@ -84,6 +84,7 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints.ordered
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.InternalIndexState
 import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.PropertyIndexQuery
@@ -607,6 +608,9 @@ private[internal] class TransactionBoundReadQueryContext(
 
   override def nodeCursor(): NodeCursor =
     transactionalContext.cursors.allocateNodeCursor(transactionalContext.cursorContext)
+
+  override def nodeLabelIndexCursor(): NodeLabelIndexCursor =
+    transactionalContext.cursors.allocateNodeLabelIndexCursor(transactionalContext.cursorContext)
 
   override def traversalCursor(): RelationshipTraversalCursor =
     transactionalContext.cursors.allocateRelationshipTraversalCursor(transactionalContext.cursorContext)

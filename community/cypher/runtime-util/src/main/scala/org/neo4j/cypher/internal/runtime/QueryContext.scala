@@ -38,6 +38,7 @@ import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.KernelReadTracer
 import org.neo4j.internal.kernel.api.Locks
 import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.Procedures
 import org.neo4j.internal.kernel.api.PropertyCursor
@@ -125,6 +126,8 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
   ): ClosingLongIterator with RelationshipIterator
 
   def nodeCursor(): NodeCursor
+
+  def nodeLabelIndexCursor(): NodeLabelIndexCursor
 
   def traversalCursor(): RelationshipTraversalCursor
 

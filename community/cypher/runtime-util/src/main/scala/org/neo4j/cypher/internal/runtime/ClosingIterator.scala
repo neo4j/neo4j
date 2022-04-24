@@ -382,6 +382,12 @@ abstract class ClosingLongIterator extends LongIterator {
 
 object ClosingLongIterator {
 
+  def empty: ClosingLongIterator = new ClosingLongIterator {
+    override def close(): Unit = {}
+    override protected[this] def innerHasNext: Boolean = false
+    override def next(): Long = throw new NoSuchElementException("next on empty iterator")
+  }
+
   def emptyClosingRelationshipIterator: ClosingLongIterator with RelationshipIterator =
     new ClosingLongIterator with RelationshipIterator {
       override def close(): Unit = ()

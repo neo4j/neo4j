@@ -55,6 +55,7 @@ import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.Locks
 import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.Procedures
 import org.neo4j.internal.kernel.api.PropertyCursor
@@ -113,6 +114,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   protected def manyDbHits(value: NodeValueIndexCursor): NodeValueIndexCursor = value
   protected def manyDbHits(value: RelationshipValueIndexCursor): RelationshipValueIndexCursor = value
   protected def manyDbHits(value: NodeCursor): NodeCursor = value
+  protected def manyDbHits(value: NodeLabelIndexCursor): NodeLabelIndexCursor = value
   protected def manyDbHits(value: RelationshipScanCursor): RelationshipScanCursor = value
   protected def manyDbHits(value: PropertyCursor): PropertyCursor = value
   protected def manyDbHits(count: Int): Int = count
@@ -162,6 +164,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
     manyDbHitsCliRi(inner.getRelationshipsByType(tokenReadSession, relType, indexOrder))
 
   override def nodeCursor(): NodeCursor = manyDbHits(inner.nodeCursor())
+
+  override def nodeLabelIndexCursor(): NodeLabelIndexCursor = manyDbHits(inner.nodeLabelIndexCursor())
 
   override def traversalCursor(): RelationshipTraversalCursor = manyDbHits(inner.traversalCursor())
 

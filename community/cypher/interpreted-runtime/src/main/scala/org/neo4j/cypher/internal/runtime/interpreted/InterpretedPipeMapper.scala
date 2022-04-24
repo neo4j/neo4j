@@ -152,6 +152,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
@@ -289,6 +290,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshi
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipIndexScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipIndexSeekPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipTypeScanPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.UnionNodeByLabelsScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UnionPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UnwindPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ValueHashJoinPipe
@@ -346,6 +348,10 @@ case class InterpretedPipeMapper(
       case NodeByLabelScan(ident, label, _, indexOrder) =>
         indexRegistrator.registerLabelScan()
         NodeByLabelScanPipe(ident, LazyLabel(label), indexOrder)(id = id)
+
+      case UnionNodeByLabelsScan(ident, labels, _, indexOrder) =>
+        indexRegistrator.registerLabelScan()
+        UnionNodeByLabelsScanPipe(ident, labels.map(l => LazyLabel(l)), indexOrder)(id = id)
 
       case NodeByIdSeek(ident, nodeIdExpr, _) =>
         NodeByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(id, nodeIdExpr))(id = id)

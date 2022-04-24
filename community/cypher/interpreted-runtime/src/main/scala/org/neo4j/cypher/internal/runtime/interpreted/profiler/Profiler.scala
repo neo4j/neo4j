@@ -46,6 +46,7 @@ import org.neo4j.internal.kernel.api.Cursor
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.internal.kernel.api.KernelReadTracer
 import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
@@ -278,6 +279,12 @@ final class ProfilingPipeQueryContext(inner: QueryContext, counter: Counter)
 
   override protected def manyDbHits(nodeCursor: NodeCursor): NodeCursor = {
 
+    val tracer = new PipeTracer
+    nodeCursor.setTracer(tracer)
+    nodeCursor
+  }
+
+  override protected def manyDbHits(nodeCursor: NodeLabelIndexCursor): NodeLabelIndexCursor = {
     val tracer = new PipeTracer
     nodeCursor.setTracer(tracer)
     nodeCursor

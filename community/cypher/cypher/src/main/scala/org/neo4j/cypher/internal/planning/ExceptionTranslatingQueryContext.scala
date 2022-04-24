@@ -54,6 +54,7 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Path
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.PropertyIndexQuery
@@ -347,6 +348,9 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
     translateException(tokenNameLookup, inner.getRelationshipsByType(tokenReadSession, relType, indexOrder))
 
   override def nodeCursor(): NodeCursor = translateException(tokenNameLookup, inner.nodeCursor())
+
+  override def nodeLabelIndexCursor(): NodeLabelIndexCursor =
+    translateException(tokenNameLookup, inner.nodeLabelIndexCursor())
 
   override def traversalCursor(): RelationshipTraversalCursor =
     translateException(tokenNameLookup, inner.traversalCursor())

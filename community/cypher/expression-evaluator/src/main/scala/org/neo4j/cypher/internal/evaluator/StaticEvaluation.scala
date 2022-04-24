@@ -52,6 +52,7 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Path
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.PropertyIndexQuery
@@ -195,6 +196,8 @@ object StaticEvaluation {
     override def getOrCreateRelTypeId(relTypeName: String): Int = notAvailable()
 
     override def nodeCursor(): NodeCursor = notAvailable()
+
+    override def nodeLabelIndexCursor(): NodeLabelIndexCursor = notAvailable()
 
     override def traversalCursor(): RelationshipTraversalCursor = notAvailable()
 

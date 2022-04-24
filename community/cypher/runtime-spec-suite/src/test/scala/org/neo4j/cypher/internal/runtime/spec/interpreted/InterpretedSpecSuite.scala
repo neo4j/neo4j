@@ -160,6 +160,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachProfileRow
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TriadicSelectionTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UndirectedRelationshipByIdSeekTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.UnionLabelScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UnionTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UnwindTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UserDefinedAggregationSupport
@@ -225,6 +226,7 @@ class InterpretedBFSPruningVarExpandTest
     extends BFSPruningVarLengthExpandTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedProjectEndpointsTest extends ProjectEndpointsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedLabelScanTest extends LabelScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedUnionLabelScanTest extends UnionLabelScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNodeIndexScanTest extends NodeIndexScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
 class InterpretedNodeIndexContainsScanTest
