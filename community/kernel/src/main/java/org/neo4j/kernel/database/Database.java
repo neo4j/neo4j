@@ -486,20 +486,10 @@ public class Database extends LifecycleAdapter {
             life.add(logFiles);
 
             // Token indexes
-            FullScanStoreView fullScanStoreView = new FullScanStoreView(
-                    lockService,
-                    storageEngine::newReader,
-                    storageEngine::createStorageCursors,
-                    databaseConfig,
-                    scheduler);
+            FullScanStoreView fullScanStoreView =
+                    new FullScanStoreView(lockService, storageEngine, databaseConfig, scheduler);
             IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory(
-                    databaseConfig,
-                    storageEngine::createStorageCursors,
-                    storageEngine::newReader,
-                    locks,
-                    fullScanStoreView,
-                    lockService,
-                    internalLogProvider);
+                    databaseConfig, storageEngine, locks, fullScanStoreView, lockService, internalLogProvider);
 
             // Schema indexes
             IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore(
@@ -821,6 +811,7 @@ public class Database extends LifecycleAdapter {
             String databaseName,
             DatabaseReadOnlyChecker readOnlyChecker) {
         IndexingService indexingService = IndexingServiceFactory.createIndexingService(
+                storageEngine,
                 config,
                 jobScheduler,
                 indexProviderMap,
@@ -834,8 +825,7 @@ public class Database extends LifecycleAdapter {
                 contextFactory,
                 memoryTracker,
                 databaseName,
-                readOnlyChecker,
-                storageEngine.getOpenOptions());
+                readOnlyChecker);
         storageEngine.addIndexUpdateListener(indexingService);
         return indexingService;
     }

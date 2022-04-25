@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService.IndexProxyProvider;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.InternalLogProvider;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.api.StorageEngine;
 
 class IndexStoreViewFactoryTest {
     FullScanStoreView fullScanStoreView = mock(FullScanStoreView.class);
@@ -41,13 +41,7 @@ class IndexStoreViewFactoryTest {
     void shouldCreateIndexStoreView() {
         // Given
         var factory = new IndexStoreViewFactory(
-                Config.defaults(),
-                any -> StoreCursors.NULL,
-                () -> null,
-                locks,
-                fullScanStoreView,
-                lockService,
-                logProvider);
+                Config.defaults(), mock(StorageEngine.class), locks, fullScanStoreView, lockService, logProvider);
 
         // When
         var indexStoreView = factory.createTokenIndexStoreView(indexProxies);

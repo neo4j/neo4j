@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.TokenPredicate;
-import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.EntityRange;
@@ -34,6 +33,7 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.index.schema.PartitionedTokenScan;
 import org.neo4j.kernel.impl.index.schema.TokenScan;
+import org.neo4j.token.api.TokenConstants;
 
 public class StubTokenIndexReader implements TokenIndexReader {
     private final Map<Long, Set<Long>> index = new HashMap<>();
@@ -94,7 +94,7 @@ public class StubTokenIndexReader implements TokenIndexReader {
         @Override
         public boolean next() {
             if (entities.hasNext()) {
-                client.acceptEntity(entities.next(), TokenSet.NONE);
+                client.acceptEntity(entities.next(), TokenConstants.NO_TOKEN);
                 return true;
             }
             return false;

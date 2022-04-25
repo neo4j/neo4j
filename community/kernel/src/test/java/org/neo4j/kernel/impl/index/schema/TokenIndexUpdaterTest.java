@@ -25,16 +25,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.collection.PrimitiveLongCollections.asArray;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
-import static org.neo4j.kernel.impl.index.schema.TokenScanValueIterator.NO_ID;
 
 import java.io.IOException;
 import java.util.Random;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,11 +43,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
+import org.neo4j.storageengine.api.schema.SimpleEntityTokenClient;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -98,9 +101,17 @@ class TokenIndexUpdaterTest {
         // THEN
         for (int i = 0; i < LABEL_COUNT; i++) {
             long[] expectedNodeIds = nodesWithLabel(expected, i);
-            long[] actualNodeIds = asArray(new TokenScanValueIterator(
-                    tree.seek(new TokenScanKey(i, 0), new TokenScanKey(i, Long.MAX_VALUE), NULL_CONTEXT), NO_ID));
-            assertArrayEquals(expectedNodeIds, actualNodeIds, "For label " + i);
+            SimpleEntityTokenClient client = new SimpleEntityTokenClient();
+            TokenScanValueIndexProgressor progressor = new TokenScanValueIndexProgressor(
+                    tree.seek(new TokenScanKey(i, 0), new TokenScanKey(i, Long.MAX_VALUE), NULL_CONTEXT),
+                    client,
+                    IndexOrder.ASCENDING,
+                    EntityRange.FULL);
+            MutableLongList actualNodeIds = LongLists.mutable.empty();
+            while (progressor.next()) {
+                actualNodeIds.add(client.reference);
+            }
+            assertArrayEquals(expectedNodeIds, actualNodeIds.toArray(), "For label " + i);
         }
     }
 

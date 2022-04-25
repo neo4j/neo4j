@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.StorageEngineIndexingBehaviour;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
@@ -37,6 +38,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 public class DefaultPooledCursors extends DefaultCursors implements CursorFactory {
     private final StorageReader storageReader;
     private final StoreCursors storeCursors;
+    private final StorageEngineIndexingBehaviour indexingBehaviour;
     private DefaultNodeCursor nodeCursor;
     private FullAccessNodeCursor fullAccessNodeCursor;
     private DefaultRelationshipScanCursor relationshipScanCursor;
@@ -53,10 +55,15 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     private DefaultRelationshipTypeIndexCursor relationshipTypeIndexCursor;
     private DefaultRelationshipTypeIndexCursor fullAccessRelationshipTypeIndexCursor;
 
-    public DefaultPooledCursors(StorageReader storageReader, StoreCursors storeCursors, Config config) {
+    public DefaultPooledCursors(
+            StorageReader storageReader,
+            StoreCursors storeCursors,
+            Config config,
+            StorageEngineIndexingBehaviour indexingBehaviour) {
         super(new ArrayList<>(), config);
         this.storageReader = storageReader;
         this.storeCursors = storeCursors;
+        this.indexingBehaviour = indexingBehaviour;
     }
 
     @Override
@@ -402,11 +409,21 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
                     storageReader.allocateNodeCursor(cursorContext, storeCursors),
                     storageReader.allocateNodeCursor(cursorContext, storeCursors),
                     storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors));
-            var relationshipScanCursor = new DefaultRelationshipScanCursor(
-                    this::accept,
-                    storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors),
-                    nodeCursor);
-            return trace(new DefaultRelationshipTypeIndexCursor(this::accept, relationshipScanCursor));
+            if (indexingBehaviour.useNodeIdsInRelationshipTypeScanIndex()) {
+                var relationshipTraversalCursor = new DefaultRelationshipTraversalCursor(
+                        this::accept,
+                        storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors),
+                        nodeCursor);
+                return trace(new DefaultNodeBasedRelationshipTypeIndexCursor(
+                        this::accept, nodeCursor, relationshipTraversalCursor));
+            } else {
+                var relationshipScanCursor = new DefaultRelationshipScanCursor(
+                        this::accept,
+                        storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors),
+                        nodeCursor);
+                return trace(
+                        new DefaultRelationshipBasedRelationshipTypeIndexCursor(this::accept, relationshipScanCursor));
+            }
         }
 
         try {
@@ -425,9 +442,22 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     }
 
     @Override
-    public RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor() {
+    public RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor(CursorContext cursorContext) {
         if (fullAccessRelationshipTypeIndexCursor == null) {
-            return trace(new FullAccessRelationshipTypeIndexCursor(this::acceptFullAccess));
+            if (indexingBehaviour.useNodeIdsInRelationshipTypeScanIndex()) {
+                var nodeCursor = new FullAccessNodeCursor(
+                        this::acceptFullAccess, storageReader.allocateNodeCursor(cursorContext, storeCursors));
+                var relationshipTraversalCursor = new FullAccessRelationshipTraversalCursor(
+                        this::acceptFullAccess,
+                        storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors));
+                return trace(new DefaultNodeBasedRelationshipTypeIndexCursor(
+                        this::acceptFullAccess, nodeCursor, relationshipTraversalCursor));
+            } else {
+                var relationshipScanCursor = new FullAccessRelationshipScanCursor(
+                        this::acceptFullAccess,
+                        storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors));
+                return trace(new FullAccessRelationshipTypeIndexCursor(this::acceptFullAccess, relationshipScanCursor));
+            }
         }
 
         try {

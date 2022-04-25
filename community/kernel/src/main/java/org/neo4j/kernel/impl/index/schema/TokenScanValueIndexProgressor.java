@@ -36,6 +36,7 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
     private final EntityTokenClient client;
     private final IndexOrder indexOrder;
     private final EntityRange range;
+    private int tokenId;
 
     TokenScanValueIndexProgressor(
             Seeker<TokenScanKey, TokenScanValue> cursor,
@@ -81,7 +82,7 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
                     idForClient = (baseEntityId + Long.SIZE) - 1 - delta;
                 }
 
-                if (isInRange(idForClient) && client.acceptEntity(idForClient, null)) {
+                if (isInRange(idForClient) && client.acceptEntity(idForClient, tokenId)) {
                     return true;
                 }
             }
@@ -96,6 +97,7 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
 
             TokenScanKey key = cursor.key();
             baseEntityId = key.idRange * TokenScanValue.RANGE_SIZE;
+            tokenId = key.tokenId;
             bits = cursor.value().bits;
 
             //noinspection AssertWithSideEffects

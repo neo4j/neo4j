@@ -24,7 +24,6 @@ import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
-import org.neo4j.internal.kernel.api.TokenSet;
 
 public class StubNodeLabelIndexCursor extends DefaultCloseListenable implements NodeLabelIndexCursor {
     private int offset = -1;
@@ -56,11 +55,6 @@ public class StubNodeLabelIndexCursor extends DefaultCloseListenable implements 
     @Override
     public float score() {
         return Float.NaN;
-    }
-
-    @Override
-    public TokenSet labels() {
-        return null;
     }
 
     @Override

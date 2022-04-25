@@ -300,7 +300,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.constraintSemantics = constraintSemantics;
         this.transactionalCursors = storageEngine.createStorageCursors(CursorContext.NULL_CONTEXT);
         StorageLocks storageLocks = storageEngine.createStorageLocks(lockClient);
-        DefaultPooledCursors cursors = new DefaultPooledCursors(storageReader, transactionalCursors, config);
+        DefaultPooledCursors cursors = new DefaultPooledCursors(
+                storageReader, transactionalCursors, config, storageEngine.indexingBehaviour());
         this.securityAuthorizationHandler = new SecurityAuthorizationHandler(securityLog);
         this.allStoreHolder = new AllStoreHolder(
                 storageReader,

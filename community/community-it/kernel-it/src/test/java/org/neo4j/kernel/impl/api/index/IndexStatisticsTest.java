@@ -723,7 +723,7 @@ class IndexStatisticsTest {
         }
 
         @Override
-        public void indexPopulationScanStarting() {
+        public void indexPopulationScanStarting(IndexDescriptor[] indexDescriptors) {
             startSignal.countDown();
         }
 

@@ -27,18 +27,26 @@ import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.index.schema.TokenIndexProvider.DESCRIPTOR;
 import static org.neo4j.kernel.impl.locking.Locks.NO_LOCKS;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.IntPredicate;
-import java.util.function.Supplier;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -51,15 +59,23 @@ import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageEngineIndexingBehaviour;
 import org.neo4j.storageengine.api.StubStorageCursors;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+@ExtendWith(RandomExtension.class)
 class DynamicIndexStoreViewTest {
     private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
     private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+
+    @Inject
+    private RandomSupport random;
 
     @AfterEach
     void tearDown() throws Exception {
@@ -71,6 +87,7 @@ class DynamicIndexStoreViewTest {
         long[] nodeIds = {1, 2, 3, 4, 5, 6, 7, 8};
         int[] indexedLabels = {2, 6};
         StubStorageCursors cursors = new StubStorageCursors().withTokenIndexes();
+        StorageEngine storageEngine = mockedStorageEngine(cursors, false);
         IndexProxy indexProxy = mock(IndexProxy.class);
         IndexProxyProvider indexProxies = mock(IndexProxyProvider.class);
         StubTokenIndexReader tokenReader = new StubTokenIndexReader();
@@ -91,7 +108,7 @@ class DynamicIndexStoreViewTest {
         cursors.withNode(9).labels(5);
         cursors.withNode(10).labels(6);
 
-        DynamicIndexStoreView storeView = dynamicIndexStoreView(cursors, indexProxies);
+        DynamicIndexStoreView storeView = dynamicIndexStoreView(storageEngine, indexProxies);
         TestTokenScanConsumer consumer = new TestTokenScanConsumer();
         StoreScan storeScan = storeView.visitNodes(
                 indexedLabels,
@@ -113,6 +130,7 @@ class DynamicIndexStoreViewTest {
         // Given
         StubTokenIndexReader tokenReader = new StubTokenIndexReader();
         StubStorageCursors cursors = new StubStorageCursors().withTokenIndexes();
+        StorageEngine storageEngine = mockedStorageEngine(cursors, false);
         IndexProxy indexProxy = mock(IndexProxy.class);
         IndexProxyProvider indexProxies = mock(IndexProxyProvider.class);
         IndexDescriptor descriptor = forSchema(forAnyEntityTokens(RELATIONSHIP), DESCRIPTOR)
@@ -146,7 +164,7 @@ class DynamicIndexStoreViewTest {
         }
 
         // When
-        DynamicIndexStoreView storeView = dynamicIndexStoreView(cursors, indexProxies);
+        DynamicIndexStoreView storeView = dynamicIndexStoreView(storageEngine, indexProxies);
         TestTokenScanConsumer tokenConsumer = new TestTokenScanConsumer();
         TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
         StoreScan storeScan = storeView.visitRelationships(
@@ -173,6 +191,7 @@ class DynamicIndexStoreViewTest {
         long[] nodeIds = {1, 2, 3, 4, 5, 6, 7, 8};
         int[] indexedLabels = {2, 6};
         StubStorageCursors cursors = new StubStorageCursors().withoutTokenIndexes();
+        StorageEngine storageEngine = mockedStorageEngine(cursors, false);
         IndexProxyProvider indexProxies = mock(IndexProxyProvider.class);
         // Nodes indexed by label
         for (long nodeId : nodeIds) {
@@ -183,7 +202,7 @@ class DynamicIndexStoreViewTest {
         cursors.withNode(9).labels(5);
         cursors.withNode(10).labels(6);
 
-        DynamicIndexStoreView storeView = dynamicIndexStoreView(cursors, indexProxies);
+        DynamicIndexStoreView storeView = dynamicIndexStoreView(storageEngine, indexProxies);
         TestTokenScanConsumer consumer = new TestTokenScanConsumer();
         StoreScan storeScan = storeView.visitNodes(
                 indexedLabels,
@@ -203,6 +222,7 @@ class DynamicIndexStoreViewTest {
     @Test
     void shouldVisitAllRelationshipsWithoutTokenIndexes() {
         StubStorageCursors cursors = new StubStorageCursors().withoutTokenIndexes();
+        StorageEngine storageEngine = mockedStorageEngine(cursors, false);
         IndexProxyProvider indexProxies = mock(IndexProxyProvider.class);
 
         int targetType = 1;
@@ -225,7 +245,7 @@ class DynamicIndexStoreViewTest {
         int targetPropertyKeyId = cursors.propertyKeyTokenHolder().getIdByName(targetPropertyKey);
         IntPredicate propertyKeyIdFilter = value -> value == targetPropertyKeyId;
 
-        DynamicIndexStoreView storeView = dynamicIndexStoreView(cursors, indexProxies);
+        DynamicIndexStoreView storeView = dynamicIndexStoreView(storageEngine, indexProxies);
         TestTokenScanConsumer tokenConsumer = new TestTokenScanConsumer();
         TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
         StoreScan storeScan = storeView.visitRelationships(
@@ -243,30 +263,108 @@ class DynamicIndexStoreViewTest {
         assertThat(tokenConsumer.batches.get(0).size()).isEqualTo(relationshipsWithTargetType.size());
     }
 
-    private DynamicIndexStoreView dynamicIndexStoreView(StorageReader cursors, IndexProxyProvider indexingService) {
-        Supplier<StorageReader> storageReaderSupplier = () -> cursors;
+    @Test
+    void shouldVisitAllRelationshipsFromNodeBasedRelationshipTypeLookupIndex() throws Exception {
+        // Given
+        StubTokenIndexReader tokenReader = new StubTokenIndexReader();
+        StubStorageCursors cursors = new StubStorageCursors().withTokenIndexes();
+        StorageEngine storageEngine = mockedStorageEngine(cursors, true);
+        IndexProxy indexProxy = mock(IndexProxy.class);
+        IndexProxyProvider indexProxies = mock(IndexProxyProvider.class);
+        IndexDescriptor descriptor = forSchema(forAnyEntityTokens(RELATIONSHIP), DESCRIPTOR)
+                .withName("index")
+                .materialise(0);
+        when(indexProxy.getState()).thenReturn(InternalIndexState.ONLINE);
+        when(indexProxy.getDescriptor()).thenReturn(descriptor);
+        when(indexProxy.newTokenReader()).thenReturn(tokenReader);
+        when(indexProxies.getIndexProxy(any())).thenReturn(indexProxy);
+
+        int targetType = 1;
+        int notTargetType = 2;
+        int[] indexedTypes = {targetType};
+        String targetPropertyKey = "key";
+        String notTargetPropertyKey = "not-key";
+        Value propertyValue = Values.stringValue("value");
+        long id = -1;
+        int numWantedPropertyUpdates = 5;
+        Set<TestPropertyScanConsumer.Record> wantedPropertyUpdates = new HashSet<>();
+
+        int numNodes = 10;
+        List<StubStorageCursors.NodeData> nodes = new ArrayList<>();
+        for (int i = 0; i < numNodes; i++) {
+            nodes.add(cursors.withNode(i));
+        }
+
+        MutableLongSet indexedNodes = LongSets.mutable.empty();
+        for (int i = 0; i < numWantedPropertyUpdates; i++) {
+            // Relationships that are indexed
+            var startNode = random.among(nodes);
+            var endNode = random.among(nodes);
+            cursors.withRelationship(++id, startNode.getId(), targetType, endNode.getId())
+                    .properties(targetPropertyKey, propertyValue);
+            wantedPropertyUpdates.add(new TestPropertyScanConsumer.Record(
+                    id,
+                    new long[] {targetType},
+                    Map.of(cursors.propertyKeyTokenHolder().getIdByName(targetPropertyKey), propertyValue)));
+            indexedNodes.add(startNode.getId());
+
+            // Relationship with wrong property
+            cursors.withRelationship(++id, startNode.getId(), targetType, endNode.getId())
+                    .properties(notTargetPropertyKey, propertyValue);
+
+            // Relationship with wrong type
+            cursors.withRelationship(++id, startNode.getId(), notTargetType, endNode.getId())
+                    .properties(targetPropertyKey, propertyValue);
+        }
+        indexedNodes.forEach(nodeId -> tokenReader.index(indexedTypes, nodeId));
+        int targetPropertyKeyId = cursors.propertyKeyTokenHolder().getIdByName(targetPropertyKey);
+
+        // When
+        DynamicIndexStoreView storeView = dynamicIndexStoreView(storageEngine, indexProxies);
+        TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
+        StoreScan storeScan = storeView.visitRelationships(
+                indexedTypes,
+                key -> key == targetPropertyKeyId,
+                propertyScanConsumer,
+                null,
+                false,
+                true,
+                NULL_CONTEXT_FACTORY,
+                INSTANCE);
+        storeScan.run(StoreScan.NO_EXTERNAL_UPDATES);
+
+        // Then make sure all the fitting relationships where included
+        assertThat(propertyScanConsumer.batches.size()).isEqualTo(1);
+        assertThat(new HashSet<>(propertyScanConsumer.batches.get(0))).isEqualTo(wantedPropertyUpdates);
+    }
+
+    private DynamicIndexStoreView dynamicIndexStoreView(
+            StorageEngine storageEngine, IndexProxyProvider indexingService) {
         return dynamicIndexStoreView(
-                cursors,
+                storageEngine,
                 indexingService,
-                new FullScanStoreView(
-                        NO_LOCK_SERVICE,
-                        storageReaderSupplier,
-                        any -> StoreCursors.NULL,
-                        Config.defaults(),
-                        jobScheduler));
+                new FullScanStoreView(NO_LOCK_SERVICE, storageEngine, Config.defaults(), jobScheduler));
     }
 
     private static DynamicIndexStoreView dynamicIndexStoreView(
-            StorageReader cursors, IndexProxyProvider indexingService, FullScanStoreView fullScanStoreView) {
-        Supplier<StorageReader> storageReaderSupplier = () -> cursors;
+            StorageEngine storageEngine, IndexProxyProvider indexingService, FullScanStoreView fullScanStoreView) {
         return new DynamicIndexStoreView(
                 fullScanStoreView,
                 NO_LOCKS,
                 NO_LOCK_SERVICE,
                 Config.defaults(),
                 indexingService,
-                storageReaderSupplier,
-                any -> StoreCursors.NULL,
+                storageEngine,
                 NullLogProvider.getInstance());
+    }
+
+    private StorageEngine mockedStorageEngine(StubStorageCursors cursors, boolean nodeBased) {
+        var storageEngine = mock(StorageEngine.class);
+        when(storageEngine.newReader()).thenReturn(cursors);
+        var indexingBehaviour = mock(StorageEngineIndexingBehaviour.class);
+        when(indexingBehaviour.useNodeIdsInRelationshipTypeScanIndex()).thenReturn(nodeBased);
+        when(storageEngine.indexingBehaviour()).thenReturn(indexingBehaviour);
+        when(storageEngine.createStorageCursors(any())).thenReturn(StoreCursors.NULL);
+        return storageEngine;
     }
 }

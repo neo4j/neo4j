@@ -285,7 +285,7 @@ class GenerateIndexUpdatesStepTest {
         GeneratedIndexUpdates updates = sender.batches.get(0);
         updates.completeBatch();
         for (TestPropertyScanConsumer.Record update : scanConsumer.batches.get(0)) {
-            assertThat(relevantNodeIds.remove(update.getEntityId())).isTrue();
+            assertThat(relevantNodeIds.remove(update.entityId())).isTrue();
         }
         assertThat(relevantNodeIds.isEmpty()).isTrue();
     }
@@ -333,13 +333,13 @@ class GenerateIndexUpdatesStepTest {
         // then
         if (alsoWrite) {
             for (TestPropertyScanConsumer.Record update : scanConsumer.batches.get(0)) {
-                assertThat(relevantNodeIds.remove(update.getEntityId())).isTrue();
+                assertThat(relevantNodeIds.remove(update.entityId())).isTrue();
             }
         } else {
             GeneratedIndexUpdates updates = sender.batches.get(0);
             updates.completeBatch();
             for (TestPropertyScanConsumer.Record update : scanConsumer.batches.get(0)) {
-                assertThat(relevantNodeIds.remove(update.getEntityId())).isTrue();
+                assertThat(relevantNodeIds.remove(update.entityId())).isTrue();
             }
         }
         assertThat(relevantNodeIds.isEmpty()).isTrue();

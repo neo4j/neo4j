@@ -24,6 +24,7 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -49,7 +50,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
+import static org.neo4j.common.Subject.SYSTEM;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
@@ -83,9 +86,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntPredicate;
 import org.junit.jupiter.api.AfterEach;
@@ -111,6 +117,8 @@ import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -134,9 +142,11 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
@@ -173,6 +183,7 @@ class IndexingServiceTest {
     private final AssertableLogProvider internalLogProvider = new AssertableLogProvider();
     private final IndexStatisticsStore indexStatisticsStore = mock(IndexStatisticsStore.class);
     private final JobScheduler scheduler = JobSchedulerFactory.createScheduler();
+    private final StorageEngine storageEngine = mock(StorageEngine.class);
 
     @BeforeEach
     void setUp() throws IndexNotFoundKernelException {
@@ -184,6 +195,7 @@ class IndexingServiceTest {
         when(indexSampler.sampleIndex(any())).thenReturn(new IndexSample());
         when(indexReader.createSampler()).thenReturn(indexSampler);
         when(accessor.newValueReader()).thenReturn(indexReader);
+        when(storageEngine.getOpenOptions()).thenReturn(immutable.empty());
     }
 
     @AfterEach
@@ -260,7 +272,7 @@ class IndexingServiceTest {
         Barrier.Control populationStartBarrier = new Barrier.Control();
         IndexMonitor monitor = new IndexMonitor.MonitorAdapter() {
             @Override
-            public void indexPopulationScanStarting() {
+            public void indexPopulationScanStarting(IndexDescriptor[] indexDescriptors) {
                 populationStartBarrier.reached();
             }
 
@@ -387,6 +399,7 @@ class IndexingServiceTest {
         IndexDescriptor failedIndex = storeIndex(3, 2, 2, PROVIDER_DESCRIPTOR);
 
         life.add(IndexingServiceFactory.createIndexingService(
+                storageEngine,
                 Config.defaults(),
                 mock(JobScheduler.class),
                 providerMap,
@@ -400,8 +413,7 @@ class IndexingServiceTest {
                 CONTEXT_FACTORY,
                 INSTANCE,
                 "",
-                writable(),
-                immutable.empty()));
+                writable()));
 
         when(provider.getInitialState(eq(onlineIndex), any(), any())).thenReturn(ONLINE);
         when(provider.getInitialState(eq(populatingIndex), any(), any())).thenReturn(POPULATING);
@@ -436,6 +448,7 @@ class IndexingServiceTest {
         IndexDescriptor failedIndex = storeIndex(3, 2, 2, PROVIDER_DESCRIPTOR);
 
         var indexingService = IndexingServiceFactory.createIndexingService(
+                storageEngine,
                 Config.defaults(),
                 mock(JobScheduler.class),
                 providerMap,
@@ -449,8 +462,7 @@ class IndexingServiceTest {
                 CONTEXT_FACTORY,
                 INSTANCE,
                 "",
-                writable(),
-                immutable.empty());
+                writable());
 
         when(provider.getInitialState(eq(onlineIndex), any(), any())).thenReturn(ONLINE);
         when(provider.getInitialState(eq(populatingIndex), any(), any())).thenReturn(POPULATING);
@@ -1075,6 +1087,7 @@ class IndexingServiceTest {
         }
 
         life.add(IndexingServiceFactory.createIndexingService(
+                storageEngine,
                 Config.defaults(),
                 mock(JobScheduler.class),
                 providerMap,
@@ -1088,8 +1101,7 @@ class IndexingServiceTest {
                 CONTEXT_FACTORY,
                 INSTANCE,
                 "",
-                writable(),
-                immutable.empty()));
+                writable()));
 
         nameLookup.propertyKey(1, "prop");
 
@@ -1131,6 +1143,7 @@ class IndexingServiceTest {
         }
 
         IndexingService indexingService = IndexingServiceFactory.createIndexingService(
+                storageEngine,
                 Config.defaults(),
                 mock(JobScheduler.class),
                 providerMap,
@@ -1144,8 +1157,7 @@ class IndexingServiceTest {
                 CONTEXT_FACTORY,
                 INSTANCE,
                 "",
-                writable(),
-                immutable.empty());
+                writable());
         when(indexStatisticsStore.indexSample(anyLong())).thenReturn(new IndexSample(100, 32, 32));
         nameLookup.propertyKey(1, "prop");
 
@@ -1277,6 +1289,7 @@ class IndexingServiceTest {
         IndexStoreViewFactory storeViewFactory = mock(IndexStoreViewFactory.class);
         when(storeViewFactory.createTokenIndexStoreView(any())).thenReturn(storeView);
         IndexingService indexingService = new IndexingService(
+                storageEngine,
                 indexProxyCreator,
                 indexProviderMap,
                 indexMapReference,
@@ -1293,8 +1306,7 @@ class IndexingServiceTest {
                 INSTANCE,
                 "",
                 writable(),
-                Config.defaults(),
-                any());
+                Config.defaults());
         // and where index population starts
         indexingService.init();
 
@@ -1307,7 +1319,7 @@ class IndexingServiceTest {
     }
 
     @Test
-    public void shouldIncrementIndexUpdatesAfterStartingExistingOnlineIndexProxy() throws Exception {
+    void shouldIncrementIndexUpdatesAfterStartingExistingOnlineIndexProxy() throws Exception {
         // given
         long indexId = 10;
         IndexDescriptor indexDescriptor = uniqueIndex.materialise(indexId);
@@ -1326,7 +1338,7 @@ class IndexingServiceTest {
     }
 
     @Test
-    public void shouldDropAndCreateIndexWithSameIdDuringRecovery() throws IOException {
+    void shouldDropAndCreateIndexWithSameIdDuringRecovery() throws IOException {
         // given
         long indexId = 10;
         IndexDescriptor indexDescriptor = uniqueIndex.materialise(indexId);
@@ -1341,6 +1353,43 @@ class IndexingServiceTest {
 
         // then
         verify(accessor).drop();
+    }
+
+    @Test
+    void shouldHandleCreatingBothNodeBasedRelationshipLookupAndValueIndexesInSameCall()
+            throws IOException, IndexNotFoundKernelException {
+        // given
+        when(accessor.newUpdater(any(IndexUpdateMode.class), any(CursorContext.class), anyBoolean()))
+                .thenReturn(updater);
+        when(storageEngine.indexingBehaviour()).thenReturn(() -> true);
+        var numJobs = new AtomicInteger();
+        Set<IndexDescriptor> populationJobDescriptors = new CopyOnWriteArraySet<>();
+        var indexingMonitor = new IndexMonitor.MonitorAdapter() {
+            @Override
+            public void indexPopulationScanStarting(IndexDescriptor[] descriptors) {
+                assertThat(descriptors.length).isEqualTo(1);
+                populationJobDescriptors.add(descriptors[0]);
+            }
+        };
+        var indexingService =
+                newIndexingServiceWithMockedDependencies(populator, accessor, withData(), indexingMonitor);
+        life.start();
+
+        // when
+        var valueIndex = IndexPrototype.forSchema(SchemaDescriptors.forRelType(0, 0))
+                .withName("rel value")
+                .withIndexProvider(PROVIDER_DESCRIPTOR)
+                .materialise(1);
+        var lookupIndex = IndexPrototype.forSchema(SchemaDescriptors.forAnyEntityTokens(RELATIONSHIP))
+                .withName("rli")
+                .withIndexProvider(PROVIDER_DESCRIPTOR)
+                .withIndexType(IndexType.LOOKUP)
+                .materialise(2);
+        indexingService.createIndexes(SYSTEM, valueIndex, lookupIndex);
+
+        // then
+        await().atMost(10, SECONDS).until(() -> populationJobDescriptors.size() == 2);
+        assertThat(populationJobDescriptors).isEqualTo(Set.of(valueIndex, lookupIndex));
     }
 
     private AtomicReference<BinaryLatch> latchedIndexPopulation() {
@@ -1451,6 +1500,7 @@ class IndexingServiceTest {
 
         MockIndexProviderMap providerMap = life.add(new MockIndexProviderMap(indexProvider));
         return life.add(IndexingServiceFactory.createIndexingService(
+                storageEngine,
                 Config.defaults(),
                 life.add(scheduler),
                 providerMap,
@@ -1464,8 +1514,7 @@ class IndexingServiceTest {
                 CONTEXT_FACTORY,
                 INSTANCE,
                 "",
-                writable(),
-                immutable.empty()));
+                writable()));
     }
 
     private static DataUpdates withData(Update... updates) {
@@ -1493,6 +1542,16 @@ class IndexingServiceTest {
                             anyBoolean(),
                             any(CursorContextFactory.class),
                             any()))
+                    .thenAnswer(this);
+            when(mock.visitRelationships(
+                            any(int[].class),
+                            any(IntPredicate.class),
+                            any(PropertyScanConsumer.class),
+                            any(TokenScanConsumer.class),
+                            anyBoolean(),
+                            anyBoolean(),
+                            any(CursorContextFactory.class),
+                            any(MemoryTracker.class)))
                     .thenAnswer(this);
         }
 
@@ -1591,6 +1650,7 @@ class IndexingServiceTest {
 
     private IndexingService createIndexServiceWithCustomIndexMap(IndexMapReference indexMapReference) {
         return new IndexingService(
+                storageEngine,
                 mock(IndexProxyCreator.class),
                 mock(IndexProviderMap.class),
                 indexMapReference,
@@ -1607,8 +1667,7 @@ class IndexingServiceTest {
                 INSTANCE,
                 "",
                 writable(),
-                Config.defaults(),
-                immutable.empty());
+                Config.defaults());
     }
 
     private static IndexProvider mockIndexProviderWithAccessor(IndexProviderDescriptor descriptor) throws IOException {

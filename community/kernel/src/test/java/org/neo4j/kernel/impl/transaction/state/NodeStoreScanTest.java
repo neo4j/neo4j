@@ -190,7 +190,7 @@ class NodeStoreScanTest {
                 .isEqualTo(expectedTokenUpdatesNodes);
         assertThat(LongSets.mutable.of(propertyConsumer.batches.stream()
                         .flatMap(Collection::stream)
-                        .mapToLong(TestPropertyScanConsumer.Record::getEntityId)
+                        .mapToLong(TestPropertyScanConsumer.Record::entityId)
                         .toArray()))
                 .isEqualTo(expectedPropertyUpdatesNodes);
     }

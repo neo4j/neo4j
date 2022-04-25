@@ -493,16 +493,9 @@ public final class Recovery {
                 cursorContextFactory);
 
         // Schema indexes
-        FullScanStoreView fullScanStoreView = new FullScanStoreView(
-                NO_LOCK_SERVICE, storageEngine::newReader, storageEngine::createStorageCursors, config, scheduler);
+        FullScanStoreView fullScanStoreView = new FullScanStoreView(NO_LOCK_SERVICE, storageEngine, config, scheduler);
         IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory(
-                config,
-                storageEngine::createStorageCursors,
-                storageEngine::newReader,
-                NO_LOCKS,
-                fullScanStoreView,
-                NO_LOCK_SERVICE,
-                logProvider);
+                config, storageEngine, NO_LOCKS, fullScanStoreView, NO_LOCK_SERVICE, logProvider);
 
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore(
                 databasePageCache,

@@ -52,8 +52,13 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
         this.context = contextFactory.create(cursorTracer);
         this.accessMode = ktx.securityContext().mode();
         this.storageCursors = storageEngine.createStorageCursors(context);
-        this.contextRead =
-                new ThreadExecutionContextRead(this, ktx.dataRead(), ktx.newStorageReader(), storageCursors, config);
+        this.contextRead = new ThreadExecutionContextRead(
+                this,
+                ktx.dataRead(),
+                ktx.newStorageReader(),
+                storageCursors,
+                config,
+                storageEngine.indexingBehaviour());
     }
 
     @Override

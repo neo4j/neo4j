@@ -98,7 +98,6 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
     @Override
     public void validateRelationshipPropertyExistenceConstraint(
             RelationshipTypeIndexCursor allRelationships,
-            RelationshipScanCursor relationshipCursor,
             PropertyCursor propertyCursor,
             RelationTypeSchemaDescriptor descriptor,
             TokenNameLookup tokenNameLookup)

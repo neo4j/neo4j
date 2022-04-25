@@ -47,6 +47,7 @@ import org.neo4j.lock.LockService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StubStorageCursors;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.token.api.TokenConstants;
 
 class RelationshipIndexedRelationshipStoreScanTest {
     private final StubStorageCursors cursors = new StubStorageCursors();
@@ -105,7 +106,7 @@ class RelationshipIndexedRelationshipStoreScanTest {
                                     }
 
                                     if (relationshipsWithType.hasNext()) {
-                                        client.acceptEntity(relationshipsWithType.nextLong(), null);
+                                        client.acceptEntity(relationshipsWithType.nextLong(), TokenConstants.NO_TOKEN);
                                         return true;
                                     }
                                     return false;

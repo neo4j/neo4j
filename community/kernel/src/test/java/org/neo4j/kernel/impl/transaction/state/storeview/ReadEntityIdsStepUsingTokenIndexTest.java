@@ -111,7 +111,8 @@ class ReadEntityIdsStepUsingTokenIndexTest {
                             any -> StoreCursors.NULL,
                             new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
                             new ControlledUpdatesCheck(indexAccessor, expectedEntityIds),
-                            new AtomicBoolean(true)));
+                            new AtomicBoolean(true),
+                            true));
                     add(new CollectEntityIdsStep(control(), configuration, seenEntityIds));
                 }
             };

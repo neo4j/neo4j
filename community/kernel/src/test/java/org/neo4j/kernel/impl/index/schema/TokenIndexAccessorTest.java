@@ -63,7 +63,6 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.TokenPredicate;
-import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
@@ -515,7 +514,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
         }
 
         @Override
-        public boolean acceptEntity(long reference, TokenSet tokens) {
+        public boolean acceptEntity(long reference, int tokenId) {
             actualIds.add(reference);
             return true;
         }

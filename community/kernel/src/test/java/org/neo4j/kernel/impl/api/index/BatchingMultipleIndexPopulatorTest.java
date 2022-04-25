@@ -64,6 +64,8 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobSchedulerExtension;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageEngineIndexingBehaviour;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -119,12 +121,14 @@ public class BatchingMultipleIndexPopulatorTest {
 
     @Test
     void populateFromQueuePopulatesWhenThresholdReached() throws Exception {
-        FullScanStoreView storeView = new FullScanStoreView(
-                LockService.NO_LOCK_SERVICE,
-                () -> mock(StorageReader.class),
-                any -> StoreCursors.NULL,
-                Config.defaults(),
-                jobScheduler);
+        var storageEngine = mock(StorageEngine.class);
+        var reader = mock(StorageReader.class);
+        when(storageEngine.newReader()).thenReturn(reader);
+        var indexingBehaviour = mock(StorageEngineIndexingBehaviour.class);
+        when(storageEngine.indexingBehaviour()).thenReturn(indexingBehaviour);
+        when(storageEngine.createStorageCursors(any())).thenReturn(StoreCursors.NULL);
+        FullScanStoreView storeView =
+                new FullScanStoreView(LockService.NO_LOCK_SERVICE, storageEngine, Config.defaults(), jobScheduler);
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator(
                 storeView,
                 NullLogProvider.getInstance(),

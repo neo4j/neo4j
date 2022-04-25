@@ -117,8 +117,7 @@ class FullScanStoreViewTest {
             Long nodeId = invocation.getArgument(0);
             return lockMocks.computeIfAbsent(nodeId, k -> mock(Lock.class));
         });
-        storeView = new FullScanStoreView(
-                locks, storageEngine::newReader, storageEngine::createStorageCursors, Config.defaults(), jobScheduler);
+        storeView = new FullScanStoreView(locks, storageEngine, Config.defaults(), jobScheduler);
         reader = storageEngine.newReader();
     }
 

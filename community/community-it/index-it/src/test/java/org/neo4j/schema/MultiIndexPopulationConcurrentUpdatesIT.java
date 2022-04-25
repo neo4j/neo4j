@@ -43,9 +43,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.function.IntPredicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -355,11 +353,12 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
             IndexStoreViewFactory indexStoreViewFactory = mock(IndexStoreViewFactory.class);
             when(indexStoreViewFactory.createTokenIndexStoreView(any()))
                     .thenAnswer(invocation -> dynamicIndexStoreViewWrapper(
-                            customAction, storageEngine::newReader, invocation.getArgument(0), config, scheduler));
+                            customAction, storageEngine, invocation.getArgument(0), config, scheduler));
 
             IndexProviderMap providerMap = getIndexProviderMap();
 
             indexService = IndexingServiceFactory.createIndexingService(
+                    storageEngine,
                     config,
                     scheduler,
                     providerMap,
@@ -373,8 +372,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
                     new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
                     INSTANCE,
                     "",
-                    writable(),
-                    storageEngine.getOpenOptions());
+                    writable());
             indexService.start();
 
             rules = createIndexRules(provider, indexType, labelNameIdMap, propertyId);
@@ -388,24 +386,16 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
 
     private DynamicIndexStoreView dynamicIndexStoreViewWrapper(
             Runnable customAction,
-            Supplier<StorageReader> readerSupplier,
+            StorageEngine storageEngine,
             IndexingService.IndexProxyProvider indexProxies,
             Config config,
             JobScheduler scheduler) {
         LockService lockService = LockService.NO_LOCK_SERVICE;
         Locks locks = org.neo4j.kernel.impl.locking.Locks.NO_LOCKS;
-        FullScanStoreView fullScanStoreView = new FullScanStoreView(
-                lockService, readerSupplier, any -> StoreCursors.NULL, Config.defaults(), scheduler);
+        FullScanStoreView fullScanStoreView =
+                new FullScanStoreView(lockService, storageEngine, Config.defaults(), scheduler);
         return new DynamicIndexStoreViewWrapper(
-                fullScanStoreView,
-                indexProxies,
-                lockService,
-                locks,
-                readerSupplier,
-                ant -> StoreCursors.NULL,
-                customAction,
-                config,
-                scheduler);
+                fullScanStoreView, indexProxies, lockService, locks, storageEngine, customAction, config, scheduler);
     }
 
     private void waitAndActivateIndexes(Map<String, Integer> labelsIds, int propertyId)
@@ -533,8 +523,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
                 IndexingService.IndexProxyProvider indexProxies,
                 LockService lockService,
                 Locks locks,
-                Supplier<StorageReader> storageReader,
-                Function<CursorContext, StoreCursors> cursorFactory,
+                StorageEngine storageEngine,
                 Runnable customAction,
                 Config config,
                 JobScheduler jobScheduler) {
@@ -544,8 +533,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
                     lockService,
                     config,
                     indexProxies,
-                    storageReader,
-                    cursorFactory,
+                    storageEngine,
                     NullLogProvider.getInstance());
             this.customAction = customAction;
             this.jobScheduler = jobScheduler;
@@ -571,7 +559,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
                     contextFactory,
                     memoryTracker);
             return new LabelViewNodeStoreWrapper(
-                    storageReader.get(),
+                    storageEngine.newReader(),
                     lockService,
                     null,
                     propertyScanConsumer,

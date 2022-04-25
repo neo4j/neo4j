@@ -63,8 +63,8 @@ import org.neo4j.values.storable.ValueTuple;
 
 abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexProgressor, CURSOR>
         implements ValueIndexCursor, IndexResultScore, EntityIndexSeekClient, SortedMergeJoin.Sink {
-    private Read read;
-    private long entity;
+    protected Read read;
+    protected long entity;
     private float score;
     private PropertyIndexQuery[] query;
     private Value[] values;
@@ -211,7 +211,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     }
 
     @Override
-    public final boolean next() {
+    public boolean next() {
         if (indexOrder == IndexOrder.NONE) {
             return nextWithoutOrder();
         } else {

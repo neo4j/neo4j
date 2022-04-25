@@ -22,12 +22,4 @@ package org.neo4j.internal.kernel.api;
 /**
  * Cursor for scanning the nodes of a label index.
  */
-public interface NodeLabelIndexCursor extends NodeIndexCursor {
-    /**
-     * Labels that we know, based on the index, are present on the current node under the cursor.
-     * The node under the current cursor position might have other labels present.
-     *
-     * @return a set of labels that are known to be present on the current node under the cursor.
-     */
-    TokenSet labels();
-}
+public interface NodeLabelIndexCursor extends NodeIndexCursor {}

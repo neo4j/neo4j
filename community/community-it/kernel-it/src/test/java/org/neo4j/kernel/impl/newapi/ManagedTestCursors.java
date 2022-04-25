@@ -156,8 +156,8 @@ public class ManagedTestCursors implements CursorFactory {
     }
 
     @Override
-    public RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor() {
-        RelationshipTypeIndexCursor n = cursors.allocateFullAccessRelationshipTypeIndexCursor();
+    public RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor(CursorContext cursorContext) {
+        RelationshipTypeIndexCursor n = cursors.allocateFullAccessRelationshipTypeIndexCursor(cursorContext);
         allCursors.add(n);
         return n;
     }

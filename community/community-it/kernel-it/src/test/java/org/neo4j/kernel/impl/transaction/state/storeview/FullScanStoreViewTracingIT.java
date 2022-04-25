@@ -67,12 +67,7 @@ class FullScanStoreViewTracingIT {
 
         var pageCacheTracer = new DefaultPageCacheTracer();
         CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
-        var indexStoreView = new FullScanStoreView(
-                lockService,
-                storageEngine::newReader,
-                storageEngine::createStorageCursors,
-                Config.defaults(),
-                jobScheduler);
+        var indexStoreView = new FullScanStoreView(lockService, storageEngine, Config.defaults(), jobScheduler);
         var storeScan = indexStoreView.visitNodes(
                 EMPTY_INT_ARRAY,
                 ALWAYS_TRUE_INT,

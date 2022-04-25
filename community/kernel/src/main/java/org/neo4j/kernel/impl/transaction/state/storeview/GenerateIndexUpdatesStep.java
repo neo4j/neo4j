@@ -97,14 +97,14 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
     protected void process(long[] entityIds, BatchSender sender, CursorContext cursorContext) throws Exception {
         GeneratedIndexUpdates updates = new GeneratedIndexUpdates(gatherPropertyUpdates, gatherTokenUpdates);
         try (var storeCursors = storeCursorsFactory.apply(cursorContext);
-                CURSOR nodeCursor = entityCursorBehaviour.allocateEntityScanCursor(cursorContext, storeCursors);
+                CURSOR entityCursor = entityCursorBehaviour.allocateEntityScanCursor(cursorContext, storeCursors);
                 StoragePropertyCursor propertyCursor =
                         reader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker)) {
             for (long entityId : entityIds) {
                 try (Lock ignored = lockFunction.apply(entityId)) {
-                    nodeCursor.single(entityId);
-                    if (nodeCursor.next()) {
-                        generateUpdates(updates, nodeCursor, propertyCursor);
+                    entityCursor.single(entityId);
+                    while (entityCursor.next()) {
+                        generateUpdates(updates, entityCursor, propertyCursor);
                         if (updates.propertiesByteSize > maxBatchSizeBytes) {
                             batchDone(updates, sender);
                             updates = new GeneratedIndexUpdates(gatherPropertyUpdates, gatherTokenUpdates);

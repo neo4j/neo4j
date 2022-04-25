@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.runtime
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.internal.kernel.api.KernelReadTracer
 import org.neo4j.internal.kernel.api.NodeCursor
-import org.neo4j.internal.kernel.api.RelationshipScanCursor
+import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
+import org.neo4j.storageengine.api.PropertySelection
+import org.neo4j.storageengine.api.Reference
 import org.neo4j.values.storable.Value
 
 class ValuedRelationshipIndexCursor(val inner: RelationshipValueIndexCursor, values: Array[Value])
@@ -47,11 +49,9 @@ class ValuedRelationshipIndexCursor(val inner: RelationshipValueIndexCursor, val
 
   override def removeTracer(): Unit = inner.removeTracer()
 
-  override def relationship(cursor: RelationshipScanCursor): Unit = inner.relationship(cursor)
+  override def source(cursor: NodeCursor): Unit = inner.source(cursor)
 
-  override def sourceNode(cursor: NodeCursor): Unit = inner.sourceNode(cursor)
-
-  override def targetNode(cursor: NodeCursor): Unit = inner.targetNode(cursor)
+  override def target(cursor: NodeCursor): Unit = inner.target(cursor)
 
   override def `type`(): Int = inner.`type`()
 
@@ -60,4 +60,9 @@ class ValuedRelationshipIndexCursor(val inner: RelationshipValueIndexCursor, val
   override def targetNodeReference(): Long = inner.targetNodeReference()
 
   override def relationshipReference(): Long = inner.relationshipReference()
+
+  override def properties(cursor: PropertyCursor, selection: PropertySelection): Unit =
+    inner.properties(cursor, selection)
+
+  override def propertiesReference(): Reference = inner.propertiesReference()
 }

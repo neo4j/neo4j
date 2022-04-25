@@ -60,6 +60,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     private final AtomicBoolean continueScanning = new AtomicBoolean();
     private final long totalCount;
     private final MemoryTracker memoryTracker;
+    private final boolean canDetermineExternalUpdatesCutOffPoint;
     protected final int[] entityTokenIdFilter;
     private final IntPredicate propertyKeyIdFilter;
     private final LongFunction<Lock> lockFunction;
@@ -83,7 +84,8 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
             boolean parallelWrite,
             JobScheduler scheduler,
             CursorContextFactory contextFactory,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            boolean canDetermineExternalUpdatesCutOffPoint) {
         this.storageReader = storageReader;
         this.storeCursorsFactory = storeCursorsFactory;
         this.cursorBehaviour = cursorBehaviour;
@@ -95,6 +97,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
         this.lockFunction = lockFunction;
         this.totalCount = totalEntityCount;
         this.memoryTracker = memoryTracker;
+        this.canDetermineExternalUpdatesCutOffPoint = canDetermineExternalUpdatesCutOffPoint;
         this.phaseTracker = PhaseTracker.nullInstance;
         this.tokenScanConsumer = tokenScanConsumer;
         this.propertyScanConsumer = propertyScanConsumer;
@@ -122,7 +125,8 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
                     parallelWrite,
                     scheduler,
                     contextFactory,
-                    memoryTracker);
+                    memoryTracker,
+                    canDetermineExternalUpdatesCutOffPoint);
             superviseDynamicExecution(INVISIBLE, stage);
             stage.reportTo(phaseTracker);
         } finally {

@@ -70,6 +70,7 @@ import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.lock.LockTracer
 import org.neo4j.resources.CpuClock
+import org.neo4j.storageengine.api.StorageEngineIndexingBehaviour
 import org.neo4j.storageengine.api.cursor.StoreCursors
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
@@ -124,7 +125,13 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(outerTx.clientInfo()).thenReturn(ClientConnectionInfo.EMBEDDED_CONNECTION)
 
     val transaction = mock[KernelTransaction]
-    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null, StoreCursors.NULL, Config.defaults()))
+    val indexingBehaviour = mock[StorageEngineIndexingBehaviour];
+    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(
+      null,
+      StoreCursors.NULL,
+      Config.defaults(),
+      indexingBehaviour
+    ))
     val tc = new Neo4jTransactionalContext(graph, outerTx, statement, mock[ExecutingQuery], transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
@@ -148,7 +155,13 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(outerTx.clientInfo()).thenReturn(ClientConnectionInfo.EMBEDDED_CONNECTION)
     val transaction = mock[KernelTransaction]
     when(transaction.acquireStatement()).thenReturn(statement)
-    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null, StoreCursors.NULL, Config.defaults()))
+    val indexingBehaviour = mock[StorageEngineIndexingBehaviour];
+    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(
+      null,
+      StoreCursors.NULL,
+      Config.defaults(),
+      indexingBehaviour
+    ))
     val tc = new Neo4jTransactionalContext(graph, outerTx, statement, mock[ExecutingQuery], transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
@@ -370,7 +383,13 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     // GIVEN
     val transaction = mock[KernelTransaction]
     when(transaction.acquireStatement()).thenReturn(statement)
-    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null, StoreCursors.NULL, Config.defaults()))
+    val indexingBehaviour = mock[StorageEngineIndexingBehaviour];
+    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(
+      null,
+      StoreCursors.NULL,
+      Config.defaults(),
+      indexingBehaviour
+    ))
     val tc = new Neo4jTransactionalContext(graph, outerTx, statement, mock[ExecutingQuery], transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)

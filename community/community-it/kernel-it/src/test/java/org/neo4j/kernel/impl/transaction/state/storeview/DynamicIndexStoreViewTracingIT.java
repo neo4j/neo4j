@@ -75,20 +75,14 @@ class DynamicIndexStoreViewTracingIT {
 
         var pageCacheTracer = new DefaultPageCacheTracer();
         var contextFactory = new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY);
-        var neoStoreStoreView = new FullScanStoreView(
-                lockService,
-                storageEngine::newReader,
-                storageEngine::createStorageCursors,
-                Config.defaults(),
-                jobScheduler);
+        var neoStoreStoreView = new FullScanStoreView(lockService, storageEngine, Config.defaults(), jobScheduler);
         var indexStoreView = new DynamicIndexStoreView(
                 neoStoreStoreView,
                 locks,
                 lockService,
                 Config.defaults(),
                 indexDescriptor -> indexingService.getIndexProxy(indexDescriptor),
-                storageEngine::newReader,
-                storageEngine::createStorageCursors,
+                storageEngine,
                 NullLogProvider.getInstance());
         var storeScan = indexStoreView.visitNodes(
                 new int[] {0, 1, 2},

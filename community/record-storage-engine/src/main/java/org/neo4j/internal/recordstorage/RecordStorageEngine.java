@@ -105,6 +105,7 @@ import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageEngineIndexingBehaviour;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
@@ -153,6 +154,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     private final Map<TransactionApplicationMode, TransactionApplierFactoryChain> applierChains =
             new EnumMap<>(TransactionApplicationMode.class);
     private final RecordDatabaseEntityCounters storeEntityCounters;
+    private final RecordStorageIndexingBehaviour indexingBehaviour = new RecordStorageIndexingBehaviour();
 
     // installed later
     private IndexUpdateListener indexUpdateListener;
@@ -705,5 +707,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     @Override
     public ImmutableSet<OpenOption> getOpenOptions() {
         return neoStores.getOpenOptions();
+    }
+
+    @Override
+    public StorageEngineIndexingBehaviour indexingBehaviour() {
+        return indexingBehaviour;
     }
 }

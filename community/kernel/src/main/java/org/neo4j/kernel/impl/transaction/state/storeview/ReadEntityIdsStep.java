@@ -42,6 +42,7 @@ public class ReadEntityIdsStep extends PullingProducerStep<ReadEntityIdsStep.Rea
 
     private final StoreScan.ExternalUpdatesCheck externalUpdatesCheck;
     private final AtomicBoolean continueScanning;
+    private final boolean canDetermineExternalUpdatesCutOffPoint;
     private final BiFunction<CursorContext, StoreCursors, EntityIdIterator> entityIdIteratorSupplier;
     private final Function<CursorContext, StoreCursors> storeCursorsFactory;
     private final CursorContextFactory contextFactory;
@@ -55,13 +56,15 @@ public class ReadEntityIdsStep extends PullingProducerStep<ReadEntityIdsStep.Rea
             Function<CursorContext, StoreCursors> storeCursorsFactory,
             CursorContextFactory contextFactory,
             StoreScan.ExternalUpdatesCheck externalUpdatesCheck,
-            AtomicBoolean continueScanning) {
+            AtomicBoolean continueScanning,
+            boolean canDetermineExternalUpdatesCutOffPoint) {
         super(control, configuration);
         this.entityIdIteratorSupplier = entityIdIteratorSupplier;
         this.storeCursorsFactory = storeCursorsFactory;
         this.contextFactory = contextFactory;
         this.externalUpdatesCheck = externalUpdatesCheck;
         this.continueScanning = continueScanning;
+        this.canDetermineExternalUpdatesCutOffPoint = canDetermineExternalUpdatesCutOffPoint;
     }
 
     @Override
@@ -96,7 +99,16 @@ public class ReadEntityIdsStep extends PullingProducerStep<ReadEntityIdsStep.Rea
             for (long i = 0; !control.isIdle(); i++) {
                 incrementalBackoff(i);
             }
-            externalUpdatesCheck.applyExternalUpdates(lastEntityId);
+            // The scenario where the external updates cut-off point cannot be determined is that the scan isn't
+            // strictly sequential,
+            // for example for node-based relationship scan where the scan progresses through nodes sequentially, but
+            // for each node
+            // visits its relationship and it's the relationships that are "seen" by the relationship scan. The only
+            // effect this has is
+            // that all external updates will be applied to the population, instead of only the external updates
+            // "behind" the current scan point.
+            externalUpdatesCheck.applyExternalUpdates(
+                    canDetermineExternalUpdatesCutOffPoint ? lastEntityId : Long.MAX_VALUE);
             entityIdIterator.invalidateCache();
         }
     }

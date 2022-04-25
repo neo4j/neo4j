@@ -115,7 +115,8 @@ class StoreScanStageTest {
                 parallelWrite,
                 jobScheduler,
                 CONTEXT_FACTORY,
-                EmptyMemoryTracker.INSTANCE);
+                EmptyMemoryTracker.INSTANCE,
+                true);
 
         // when
         runScan(scan);
@@ -158,7 +159,8 @@ class StoreScanStageTest {
                 true,
                 jobScheduler,
                 CONTEXT_FACTORY,
-                EmptyMemoryTracker.INSTANCE);
+                EmptyMemoryTracker.INSTANCE,
+                true);
 
         // when/then
         assertThatThrownBy(() -> runScan(scan))
@@ -174,7 +176,7 @@ class StoreScanStageTest {
                 new CursorEntityIdIterator<>(data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL));
         AtomicInteger numBatchesProcessed = new AtomicInteger();
         ControlledExternalUpdatesCheck externalUpdatesCheck =
-                new ControlledExternalUpdatesCheck(config.batchSize(), 2, numBatchesProcessed);
+                new ControlledExternalUpdatesCheck(config.batchSize(), 2, numBatchesProcessed, true);
         var writer = new PropertyConsumer(numBatchesProcessed::incrementAndGet);
 
         StoreScanStage<StorageNodeCursor> scan = new StoreScanStage(
@@ -194,7 +196,8 @@ class StoreScanStageTest {
                 true,
                 jobScheduler,
                 CONTEXT_FACTORY,
-                EmptyMemoryTracker.INSTANCE);
+                EmptyMemoryTracker.INSTANCE,
+                true);
 
         // when
         runScan(scan);
@@ -230,7 +233,8 @@ class StoreScanStageTest {
                 true,
                 jobScheduler,
                 CONTEXT_FACTORY,
-                EmptyMemoryTracker.INSTANCE);
+                EmptyMemoryTracker.INSTANCE,
+                true);
 
         // when
         runScan(scan);
@@ -273,7 +277,8 @@ class StoreScanStageTest {
                 true,
                 jobScheduler,
                 CONTEXT_FACTORY,
-                EmptyMemoryTracker.INSTANCE);
+                EmptyMemoryTracker.INSTANCE,
+                true);
         stage.set(scan);
 
         // when
@@ -281,6 +286,44 @@ class StoreScanStageTest {
 
         // then
         assertThat(scan.numberOfIteratedEntities()).isEqualTo((long) config.batchSize() * NUMBER_OF_BATCHES);
+    }
+
+    @Test
+    void shouldProvideMaxIdIfCannotDetermineCutOffPoint() {
+        // given
+        StubStorageCursors data = someData();
+        EntityIdIterator entityIdIterator =
+                new CursorEntityIdIterator<>(data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL));
+        AtomicInteger numBatchesProcessed = new AtomicInteger();
+        ControlledExternalUpdatesCheck externalUpdatesCheck =
+                new ControlledExternalUpdatesCheck(config.batchSize(), 2, numBatchesProcessed, false);
+        var writer = new PropertyConsumer(numBatchesProcessed::incrementAndGet);
+
+        StoreScanStage<StorageNodeCursor> scan = new StoreScanStage<>(
+                dbConfig,
+                config,
+                (ct, sc) -> entityIdIterator,
+                externalUpdatesCheck,
+                new AtomicBoolean(true),
+                data,
+                any -> StoreCursors.NULL,
+                new int[] {LABEL},
+                alwaysTrue(),
+                writer,
+                null,
+                new NodeCursorBehaviour(data),
+                id -> null,
+                true,
+                jobScheduler,
+                CONTEXT_FACTORY,
+                EmptyMemoryTracker.INSTANCE,
+                false);
+
+        // when
+        runScan(scan);
+
+        // then
+        assertThat(externalUpdatesCheck.applyCallCount).isEqualTo(1);
     }
 
     private static void runScan(StoreScanStage<StorageNodeCursor> scan) {
@@ -312,16 +355,20 @@ class StoreScanStageTest {
     }
 
     private static class ControlledExternalUpdatesCheck implements ExternalUpdatesCheck {
-        private final int expectedNodeId;
+        private final long expectedNodeId;
         private final int applyOnBatchIndex;
         private final AtomicInteger numBatchesProcessed;
         private int checkCallCount;
         private volatile int applyCallCount;
 
-        ControlledExternalUpdatesCheck(int batchSize, int applyOnBatchIndex, AtomicInteger numBatchesProcessed) {
+        ControlledExternalUpdatesCheck(
+                int batchSize,
+                int applyOnBatchIndex,
+                AtomicInteger numBatchesProcessed,
+                boolean canDetermineCutOffPoint) {
             this.applyOnBatchIndex = applyOnBatchIndex;
             this.numBatchesProcessed = numBatchesProcessed;
-            this.expectedNodeId = batchSize * applyOnBatchIndex - 1;
+            this.expectedNodeId = canDetermineCutOffPoint ? batchSize * applyOnBatchIndex - 1 : Long.MAX_VALUE;
         }
 
         @Override

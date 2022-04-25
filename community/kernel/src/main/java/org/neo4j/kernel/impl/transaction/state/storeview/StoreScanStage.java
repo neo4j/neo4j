@@ -70,7 +70,8 @@ public class StoreScanStage<CURSOR extends StorageEntityScanCursor<?>> extends S
             boolean parallelWrite,
             JobScheduler scheduler,
             CursorContextFactory contextFactory,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            boolean canDetermineExternalUpdatesCutOffPoint) {
         super(
                 "IndexPopulation store scan",
                 null,
@@ -89,7 +90,8 @@ public class StoreScanStage<CURSOR extends StorageEntityScanCursor<?>> extends S
                         storeCursorsFactory,
                         contextFactory,
                         externalUpdatesCheck,
-                        continueScanning));
+                        continueScanning,
+                        canDetermineExternalUpdatesCutOffPoint));
         // Read entities --> List<EntityUpdates>
         add(
                 generatorStep = new GenerateIndexUpdatesStep<>(

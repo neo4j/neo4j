@@ -19,14 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.internal.kernel.api.DefaultCloseListenable
-import org.neo4j.internal.kernel.api.KernelReadTracer
-import org.neo4j.internal.kernel.api.NodeCursor
-import org.neo4j.internal.kernel.api.NodeValueIndexCursor
-import org.neo4j.internal.kernel.api.RelationshipScanCursor
-import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
-import org.neo4j.internal.kernel.api.ValueIndexCursor
+import org.neo4j.internal.kernel.api._
 import org.neo4j.io.IOUtils
+import org.neo4j.storageengine.api.PropertySelection
+import org.neo4j.storageengine.api.Reference
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values.COMPARATOR
 
@@ -157,11 +153,9 @@ private class UnorderedRelationshipCursor(cursors: Array[RelationshipValueIndexC
 
   override protected def innerNext(cursor: RelationshipValueIndexCursor): Boolean = cursor.next()
 
-  override def relationship(cursor: RelationshipScanCursor): Unit = current.relationship(cursor)
+  override def source(cursor: NodeCursor): Unit = current.source(cursor)
 
-  override def sourceNode(cursor: NodeCursor): Unit = current.sourceNode(cursor)
-
-  override def targetNode(cursor: NodeCursor): Unit = current.targetNode(cursor)
+  override def target(cursor: NodeCursor): Unit = current.target(cursor)
 
   override def `type`(): Int = current.`type`()
 
@@ -170,6 +164,11 @@ private class UnorderedRelationshipCursor(cursors: Array[RelationshipValueIndexC
   override def targetNodeReference(): Long = current.targetNodeReference()
 
   override def relationshipReference(): Long = current.relationshipReference()
+
+  override def properties(cursor: PropertyCursor, selection: PropertySelection): Unit =
+    current.properties(cursor, selection)
+
+  override def propertiesReference(): Reference = current.propertiesReference()
 }
 
 /**
@@ -243,11 +242,9 @@ private class MergeSortRelationshipCursor(
     IOUtils.closeAll(cursors: _*)
   }
 
-  override def relationship(cursor: RelationshipScanCursor): Unit = current.relationship(cursor)
+  override def source(cursor: NodeCursor): Unit = current.source(cursor)
 
-  override def sourceNode(cursor: NodeCursor): Unit = current.sourceNode(cursor)
-
-  override def targetNode(cursor: NodeCursor): Unit = current.targetNode(cursor)
+  override def target(cursor: NodeCursor): Unit = current.target(cursor)
 
   override def `type`(): Int = current.`type`()
 
@@ -258,4 +255,9 @@ private class MergeSortRelationshipCursor(
   override def relationshipReference(): Long = current.relationshipReference()
 
   override protected def innerNext(cursor: RelationshipValueIndexCursor): Boolean = cursor.next()
+
+  override def properties(cursor: PropertyCursor, selection: PropertySelection): Unit =
+    current.properties(cursor, selection)
+
+  override def propertiesReference(): Reference = current.propertiesReference()
 }

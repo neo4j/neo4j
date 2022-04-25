@@ -20,11 +20,8 @@
 package org.neo4j.storageengine.api;
 
 import java.io.IOException;
-import java.nio.file.OpenOption;
 import java.util.Collection;
 import java.util.List;
-import org.eclipse.collections.api.factory.Sets;
-import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
@@ -46,7 +43,7 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 /**
  * A StorageEngine provides the functionality to durably store data, and read it back.
  */
-public interface StorageEngine extends Lifecycle {
+public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
     /**
      * @return a new {@link CommandCreationContext} meant to be kept for multiple calls to
      * {@link #createCommands(Collection, ReadableTransactionState, StorageReader, CommandCreationContext, ResourceLocker, LockTracer, long,
@@ -54,12 +51,6 @@ public interface StorageEngine extends Lifecycle {
      * Must be {@link CommandCreationContext#close() closed} after used, before being discarded.
      */
     CommandCreationContext newCommandCreationContext(MemoryTracker memoryTracker);
-
-    /**
-     * Provide access level for underlying store cursors
-     * @param initialContext cursor context to use for store cursors before reset call
-     */
-    StoreCursors createStorageCursors(CursorContext initialContext);
 
     StorageLocks createStorageLocks(ResourceLocker locker);
 
@@ -190,15 +181,6 @@ public interface StorageEngine extends Lifecycle {
     CountsAccessor countsAccessor();
 
     /**
-     * Creates a new {@link StorageReader} for reading committed data from the underlying storage.
-     * The returned instance is intended to be used by one transaction at a time, although can and should be reused
-     * for multiple transactions.
-     *
-     * @return an interface for accessing data in the storage.
-     */
-    StorageReader newReader();
-
-    /**
      * @return a {@link StoreEntityCounters}, providing access to underlying store entity counters.
      */
     StoreEntityCounters storeEntityCounters();
@@ -239,12 +221,4 @@ public interface StorageEngine extends Lifecycle {
      * @return the relationship ID from the decoded element ID.
      */
     long decodeRelationshipId(byte[] from, int offset);
-
-    /**
-     * Open options used for related store files and to be used for other files managed outside of StorageEngine but related to the same database
-     * @return set of open options
-     */
-    default ImmutableSet<OpenOption> getOpenOptions() {
-        return Sets.immutable.empty();
-    }
 }

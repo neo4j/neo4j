@@ -134,7 +134,7 @@ public class StubCursorFactory implements CursorFactory {
     }
 
     @Override
-    public RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor() {
+    public RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor(CursorContext cursorContext) {
         return poll(fullRelationshipTypeIndexCursors);
     }
 

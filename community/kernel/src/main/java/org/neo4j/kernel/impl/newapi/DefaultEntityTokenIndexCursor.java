@@ -28,7 +28,6 @@ import java.util.function.Consumer;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
-import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -40,9 +39,9 @@ import org.neo4j.kernel.api.txstate.TransactionState;
  */
 abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenIndexCursor<SELF>>
         extends IndexCursor<IndexProgressor, SELF> implements EntityTokenClient {
-    private Read read;
-    private long entity;
-    private TokenSet tokens;
+    protected Read read;
+    protected long entity;
+    protected int tokenId;
     private LongIterator added;
     private LongSet removed;
     private boolean useMergeSort;
@@ -69,7 +68,7 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
 
     abstract boolean allowedToSeeAllEntitiesWithToken(AccessMode accessMode, int token);
 
-    abstract boolean allowedToSeeEntity(AccessMode accessMode, long entityReference, TokenSet tokens);
+    abstract boolean allowedToSeeEntity(AccessMode accessMode, long entityReference);
 
     @Override
     public void initialize(IndexProgressor progressor, int token, IndexOrder order) {
@@ -115,12 +114,12 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
     }
 
     @Override
-    public boolean acceptEntity(long reference, TokenSet tokens) {
-        if (isRemoved(reference) || !allowed(reference, tokens)) {
+    public boolean acceptEntity(long reference, int tokenId) {
+        if (isRemoved(reference) || !allowed(reference)) {
             return false;
         }
         this.entity = reference;
-        this.tokens = tokens;
+        this.tokenId = tokenId;
 
         return true;
     }
@@ -129,8 +128,8 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
         shortcutSecurity = allowedToSeeAllEntitiesWithToken(accessMode, token);
     }
 
-    boolean allowed(long reference, TokenSet tokens) {
-        return shortcutSecurity || allowedToSeeEntity(accessMode, reference, tokens);
+    boolean allowed(long reference) {
+        return shortcutSecurity || allowedToSeeEntity(accessMode, reference);
     }
 
     @Override
@@ -188,16 +187,12 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
         entityReader.accept(read);
     }
 
-    public TokenSet tokens() {
-        return tokens;
-    }
-
     @Override
     public void closeInternal() {
         if (!isClosed()) {
             closeProgressor();
             entity = NO_ID;
-            tokens = null;
+            tokenId = (int) NO_ID;
             read = null;
             added = null;
             removed = null;

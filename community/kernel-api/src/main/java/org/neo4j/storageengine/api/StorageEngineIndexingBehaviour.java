@@ -17,19 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema;
+package org.neo4j.storageengine.api;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.index.internal.gbptree.Seeker;
-
-/**
- * {@link LongIterator} which iterate over multiple {@link TokenScanValue} and for each
- * iterate over each set bit, returning actual entity ids, i.e. {@code entityIdRange+bitOffset}.
- *
- * The provided {@link Seeker} is managed externally,
- * this because implemented interface lacks close-method.
- */
-public interface TokenScanValueIterator extends PrimitiveLongResourceIterator {
-    int tokenId();
+public interface StorageEngineIndexingBehaviour {
+    /**
+     * @return {@code true} if this storage engine wants to let any relationship type lookup index be based around node ids
+     * instead of relationship ids so that generated updates from this storage engine for that index will contain which nodes
+     * contain at least one outgoing relationship of a given relationship type.
+     */
+    boolean useNodeIdsInRelationshipTypeScanIndex();
 }

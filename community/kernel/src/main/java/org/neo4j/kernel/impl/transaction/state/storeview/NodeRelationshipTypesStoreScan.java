@@ -19,68 +19,54 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import static org.neo4j.kernel.impl.transaction.state.storeview.NodeStoreScan.getNodeCount;
 import static org.neo4j.lock.LockType.SHARED;
 
 import java.util.function.Function;
-import java.util.function.IntPredicate;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.EntityUpdates;
+import org.neo4j.storageengine.api.StorageEngineIndexingBehaviour;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
- * Scan the node store and produce {@link EntityUpdates updates for indexes} and/or {@link TokenIndexEntryUpdate updates for label index}
- * depending on which scan consumer ({@link TokenScanConsumer}, {@link PropertyScanConsumer} or both) is used.
- * <p>
- * {@code labelIds} and {@code propertyKeyIdFilter} are relevant only for {@link PropertyScanConsumer} and don't influence
- * {@link TokenScanConsumer}.
+ * Used as store scan for building a relationship type lookup index if
+ * {@link StorageEngineIndexingBehaviour#useNodeIdsInRelationshipTypeScanIndex() storage engine uses node-based relationship type lookup index}.
+ * It visits nodes consecutively and yields its relationship types.
  */
-public class NodeStoreScan extends PropertyAwareEntityStoreScan<StorageNodeCursor> {
-    private static final String TRACER_TAG = "NodeStoreScan_getNodeCount";
-
-    public NodeStoreScan(
+public class NodeRelationshipTypesStoreScan extends PropertyAwareEntityStoreScan<StorageNodeCursor> {
+    public NodeRelationshipTypesStoreScan(
             Config config,
-            StorageReader storageReader,
+            StorageReader reader,
             Function<CursorContext, StoreCursors> storeCursorsFactory,
             LockService locks,
-            TokenScanConsumer labelScanConsumer,
-            PropertyScanConsumer propertyScanConsumer,
-            int[] labelIds,
-            IntPredicate propertyKeyIdFilter,
+            TokenScanConsumer relationshipTypeScanConsumer,
+            int[] relationshipTypeIds,
             boolean parallelWrite,
             JobScheduler scheduler,
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker) {
         super(
                 config,
-                storageReader,
+                reader,
                 storeCursorsFactory,
-                getNodeCount(storageReader, contextFactory),
-                labelIds,
-                propertyKeyIdFilter,
-                propertyScanConsumer,
-                labelScanConsumer,
+                getNodeCount(reader, contextFactory),
+                relationshipTypeIds,
+                null,
+                null,
+                relationshipTypeScanConsumer,
                 id -> locks.acquireNodeLock(id, SHARED),
-                new NodeCursorBehaviour(storageReader),
+                new NodeRelationshipTypesCursorBehaviour(reader),
                 parallelWrite,
                 scheduler,
                 contextFactory,
                 memoryTracker,
-                true);
-    }
-
-    static long getNodeCount(StorageReader storageReader, CursorContextFactory contextFactory) {
-        try (CursorContext cursorContext = contextFactory.create(TRACER_TAG)) {
-            return storageReader.nodesGetCount(cursorContext);
-        }
+                false);
     }
 }

@@ -87,18 +87,12 @@ public class DynamicIndexStoreViewIT {
     void setUp() {
         assertOnlyDefaultTokenIndexesExists(database);
         storeView = new DynamicIndexStoreView(
-                new FullScanStoreView(
-                        lockService,
-                        storageEngine::newReader,
-                        storageEngine::createStorageCursors,
-                        Config.defaults(),
-                        scheduler),
+                new FullScanStoreView(lockService, storageEngine, Config.defaults(), scheduler),
                 locks,
                 lockService,
                 Config.defaults(),
                 indexDescriptor -> indexingService.getIndexProxy(indexDescriptor),
-                storageEngine::newReader,
-                storageEngine::createStorageCursors,
+                storageEngine,
                 NullLogProvider.getInstance());
     }
 

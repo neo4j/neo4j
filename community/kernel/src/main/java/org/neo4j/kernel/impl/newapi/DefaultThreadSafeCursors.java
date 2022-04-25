@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.StorageEngineIndexingBehaviour;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
@@ -39,12 +40,17 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFactory {
     private final StorageReader storageReader;
     private final Function<CursorContext, StoreCursors> storeCursorsFactory;
+    private final StorageEngineIndexingBehaviour indexingBehaviour;
 
     public DefaultThreadSafeCursors(
-            StorageReader storageReader, Config config, Function<CursorContext, StoreCursors> storeCursorsFactory) {
+            StorageReader storageReader,
+            Config config,
+            Function<CursorContext, StoreCursors> storeCursorsFactory,
+            StorageEngineIndexingBehaviour indexingBehaviour) {
         super(new ConcurrentLinkedQueue<>(), config);
         this.storageReader = storageReader;
         this.storeCursorsFactory = storeCursorsFactory;
+        this.indexingBehaviour = indexingBehaviour;
     }
 
     @Override
@@ -176,13 +182,29 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
 
     @Override
     public RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor(CursorContext cursorContext) {
-        return trace(new DefaultRelationshipTypeIndexCursor(
-                DefaultRelationshipTypeIndexCursor::release, allocateRelationshipScanCursor(cursorContext)));
+        if (indexingBehaviour.useNodeIdsInRelationshipTypeScanIndex()) {
+            return trace(new DefaultNodeBasedRelationshipTypeIndexCursor(
+                    DefaultRelationshipTypeIndexCursor::release,
+                    allocateNodeCursor(cursorContext),
+                    allocateRelationshipTraversalCursor(cursorContext)));
+        } else {
+            return trace(new DefaultRelationshipBasedRelationshipTypeIndexCursor(
+                    DefaultRelationshipTypeIndexCursor::release, allocateRelationshipScanCursor(cursorContext)));
+        }
     }
 
     @Override
-    public RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor() {
-        return trace(new FullAccessRelationshipTypeIndexCursor(DefaultRelationshipTypeIndexCursor::release));
+    public RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor(CursorContext cursorContext) {
+        if (indexingBehaviour.useNodeIdsInRelationshipTypeScanIndex()) {
+            return trace(new DefaultNodeBasedRelationshipTypeIndexCursor(
+                    DefaultRelationshipTypeIndexCursor::release,
+                    allocateFullAccessNodeCursor(cursorContext),
+                    allocateFullAccessRelationshipTraversalCursor(cursorContext)));
+        } else {
+            return trace(new FullAccessRelationshipTypeIndexCursor(
+                    DefaultRelationshipTypeIndexCursor::release,
+                    allocateFullAccessRelationshipScanCursor(cursorContext)));
+        }
     }
 
     public void close() {

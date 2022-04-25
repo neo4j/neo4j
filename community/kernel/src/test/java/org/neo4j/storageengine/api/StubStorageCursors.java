@@ -20,6 +20,7 @@
 package org.neo4j.storageengine.api;
 
 import static java.lang.Math.toIntExact;
+import static java.lang.String.format;
 import static java.util.Collections.emptyIterator;
 import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
@@ -323,7 +324,7 @@ public class StubStorageCursors implements StorageReader {
     @Override
     public StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor(
             CursorContext cursorContext, StoreCursors storeCursors) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return new StubStorageRelationshipTraversalCursor();
     }
 
     @Override
@@ -386,6 +387,10 @@ public class StubStorageCursors implements StorageReader {
             this.firstRelationship = firstRelationship;
             return this;
         }
+
+        public long getId() {
+            return id;
+        }
     }
 
     public class RelationshipData extends EntityData<RelationshipData> {
@@ -399,6 +404,17 @@ public class StubStorageCursors implements StorageReader {
             this.startNode = startNode;
             this.type = type;
             this.endNode = endNode;
+        }
+
+        RelationshipDirection direction(long nodeReference) {
+            if (nodeReference == startNode) {
+                return nodeReference == endNode ? RelationshipDirection.LOOP : RelationshipDirection.OUTGOING;
+            } else if (nodeReference == endNode) {
+                return RelationshipDirection.INCOMING;
+            }
+            throw new IllegalArgumentException(format(
+                    "Relationship (%d)--[%d]->(%d): is not connected to node:%d",
+                    startNode, type, endNode, nodeReference));
         }
     }
 
@@ -462,17 +478,22 @@ public class StubStorageCursors implements StorageReader {
                 StorageRelationshipTraversalCursor traversalCursor,
                 RelationshipSelection selection,
                 long neighbourNodeReference) {
-            throw new UnsupportedOperationException();
+            traversalCursor.init(current.id, NO_ID, selection);
         }
 
         @Override
         public void relationships(StorageRelationshipTraversalCursor traversalCursor, RelationshipSelection selection) {
-            throw new UnsupportedOperationException("Not implemented yet");
+            traversalCursor.init(current.id, NO_ID, selection);
         }
 
         @Override
         public int[] relationshipTypes() {
-            throw new UnsupportedOperationException("Not implemented yet");
+            return relationshipData.values().stream()
+                    .filter(rel -> rel.startNode == current.id || rel.endNode == current.id)
+                    .mapToInt(rel -> rel.type)
+                    .distinct()
+                    .sorted()
+                    .toArray();
         }
 
         @Override
@@ -683,6 +704,88 @@ public class StubStorageCursors implements StorageReader {
                 return true;
             }
             return false;
+        }
+    }
+
+    private class StubStorageRelationshipTraversalCursor implements StorageRelationshipTraversalCursor {
+        private Iterator<RelationshipData> iterator;
+        private RelationshipData current;
+        private long originNodeReference;
+
+        @Override
+        public boolean next() {
+            if (!iterator.hasNext()) {
+                return false;
+            }
+            current = iterator.next();
+            return true;
+        }
+
+        @Override
+        public void reset() {
+            iterator = null;
+            current = null;
+        }
+
+        @Override
+        public void setForceLoad() {}
+
+        @Override
+        public void close() {}
+
+        @Override
+        public boolean hasProperties() {
+            return current.propertyId != NO_ID;
+        }
+
+        @Override
+        public Reference propertiesReference() {
+            return longReference(current.propertyId);
+        }
+
+        @Override
+        public void properties(StoragePropertyCursor propertyCursor, PropertySelection selection) {
+            propertyCursor.initRelationshipProperties(propertiesReference(), selection);
+        }
+
+        @Override
+        public long entityReference() {
+            return current.id;
+        }
+
+        @Override
+        public int type() {
+            return current.type;
+        }
+
+        @Override
+        public long sourceNodeReference() {
+            return current.startNode;
+        }
+
+        @Override
+        public long targetNodeReference() {
+            return current.endNode;
+        }
+
+        @Override
+        public long neighbourNodeReference() {
+            return originNodeReference == current.startNode ? current.endNode : current.startNode;
+        }
+
+        @Override
+        public long originNodeReference() {
+            return originNodeReference;
+        }
+
+        @Override
+        public void init(long nodeReference, long reference, RelationshipSelection selection) {
+            originNodeReference = nodeReference;
+            iterator = relationshipData.values().stream()
+                    .filter(relationship ->
+                            relationship.startNode == nodeReference || relationship.endNode == nodeReference)
+                    .filter(relationship -> selection.test(relationship.type, relationship.direction(nodeReference)))
+                    .iterator();
         }
     }
 }

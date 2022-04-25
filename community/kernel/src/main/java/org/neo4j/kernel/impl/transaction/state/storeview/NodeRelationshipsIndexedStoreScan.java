@@ -19,42 +19,47 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import static org.neo4j.kernel.impl.transaction.state.storeview.NodeStoreScan.getNodeCount;
 import static org.neo4j.lock.LockType.SHARED;
 
 import java.util.function.Function;
 import java.util.function.IntPredicate;
 import org.neo4j.configuration.Config;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.EntityUpdates;
-import org.neo4j.storageengine.api.StorageNodeCursor;
+import org.neo4j.storageengine.api.RelationshipSelection;
+import org.neo4j.storageengine.api.StorageEngineIndexingBehaviour;
 import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.util.StorageRelationshipByNodeScanCursor;
 
 /**
- * Scan the node store and produce {@link EntityUpdates updates for indexes} and/or {@link TokenIndexEntryUpdate updates for label index}
- * depending on which scan consumer ({@link TokenScanConsumer}, {@link PropertyScanConsumer} or both) is used.
- * <p>
- * {@code labelIds} and {@code propertyKeyIdFilter} are relevant only for {@link PropertyScanConsumer} and don't influence
- * {@link TokenScanConsumer}.
+ * Used for driving an index population scan for relationship index backed by a node-based relationship type lookup index,
+ * i.e. for storage engines that uses {@link StorageEngineIndexingBehaviour#useNodeIdsInRelationshipTypeScanIndex() node-based relationship type lookup index}.
+ *
+ * Since visited relationship IDs aren't strictly sequential then the optimization that index population has, where external updates "ahead of"
+ * the current position are skipped cannot be used.
  */
-public class NodeStoreScan extends PropertyAwareEntityStoreScan<StorageNodeCursor> {
-    private static final String TRACER_TAG = "NodeStoreScan_getNodeCount";
+public class NodeRelationshipsIndexedStoreScan
+        extends PropertyAwareEntityStoreScan<StorageRelationshipByNodeScanCursor> {
+    private final TokenIndexReader tokenIndexReader;
 
-    public NodeStoreScan(
+    public NodeRelationshipsIndexedStoreScan(
             Config config,
-            StorageReader storageReader,
+            StorageReader reader,
             Function<CursorContext, StoreCursors> storeCursorsFactory,
             LockService locks,
-            TokenScanConsumer labelScanConsumer,
+            TokenIndexReader tokenIndexReader,
+            TokenScanConsumer relationshipTypeScanConsumer,
             PropertyScanConsumer propertyScanConsumer,
-            int[] labelIds,
+            int[] relationshipTypeIds,
             IntPredicate propertyKeyIdFilter,
             boolean parallelWrite,
             JobScheduler scheduler,
@@ -62,25 +67,26 @@ public class NodeStoreScan extends PropertyAwareEntityStoreScan<StorageNodeCurso
             MemoryTracker memoryTracker) {
         super(
                 config,
-                storageReader,
+                reader,
                 storeCursorsFactory,
-                getNodeCount(storageReader, contextFactory),
-                labelIds,
+                getNodeCount(reader, contextFactory),
+                relationshipTypeIds,
                 propertyKeyIdFilter,
                 propertyScanConsumer,
-                labelScanConsumer,
+                relationshipTypeScanConsumer,
                 id -> locks.acquireNodeLock(id, SHARED),
-                new NodeCursorBehaviour(storageReader),
+                new NodeRelationshipsCursorBehaviour(
+                        reader, RelationshipSelection.selection(relationshipTypeIds, Direction.OUTGOING)),
                 parallelWrite,
                 scheduler,
                 contextFactory,
                 memoryTracker,
-                true);
+                false);
+        this.tokenIndexReader = tokenIndexReader;
     }
 
-    static long getNodeCount(StorageReader storageReader, CursorContextFactory contextFactory) {
-        try (CursorContext cursorContext = contextFactory.create(TRACER_TAG)) {
-            return storageReader.nodesGetCount(cursorContext);
-        }
+    @Override
+    public EntityIdIterator getEntityIdIterator(CursorContext cursorContext, StoreCursors storeCursors) {
+        return new TokenIndexScanIdIterator(tokenIndexReader, entityTokenIdFilter, cursorContext);
     }
 }

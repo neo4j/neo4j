@@ -25,7 +25,6 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
-import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.TransactionState;
 
@@ -66,12 +65,12 @@ class DefaultNodeLabelIndexCursor extends DefaultEntityTokenIndexCursor<DefaultN
     }
 
     @Override
-    boolean allowedToSeeEntity(AccessMode accessMode, long entityReference, TokenSet tokens) {
-        if (tokens == null) {
-            readEntity(read -> read.singleNode(entityReference, securityNodeCursor));
-            return securityNodeCursor.next();
+    boolean allowedToSeeEntity(AccessMode accessMode, long entityReference) {
+        if (accessMode.allowsTraverseAllLabels()) {
+            return true;
         }
-        return accessMode.allowsTraverseNode(tokens.all());
+        readEntity(read -> read.singleNode(entityReference, securityNodeCursor));
+        return securityNodeCursor.next();
     }
 
     @Override
@@ -90,16 +89,11 @@ class DefaultNodeLabelIndexCursor extends DefaultEntityTokenIndexCursor<DefaultN
     }
 
     @Override
-    public TokenSet labels() {
-        return tokens();
-    }
-
-    @Override
     public String toString() {
         if (isClosed()) {
             return "NodeLabelIndexCursor[closed state]";
         } else {
-            return "NodeLabelIndexCursor[node=" + entityReference() + ", labels= " + tokens() + "]";
+            return "NodeLabelIndexCursor[node=" + entityReference() + ", label= " + tokenId + "]";
         }
     }
 

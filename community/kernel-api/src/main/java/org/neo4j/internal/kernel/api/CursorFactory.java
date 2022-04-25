@@ -65,5 +65,5 @@ public interface CursorFactory {
 
     RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor(CursorContext cursorContext);
 
-    RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor();
+    RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor(CursorContext cursorContext);
 }

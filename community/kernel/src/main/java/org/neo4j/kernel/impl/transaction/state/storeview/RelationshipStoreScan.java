@@ -74,7 +74,8 @@ public class RelationshipStoreScan extends PropertyAwareEntityStoreScan<StorageR
                 parallelWrite,
                 scheduler,
                 contextFactory,
-                memoryTracker);
+                memoryTracker,
+                true);
     }
 
     private static long getRelationshipCount(StorageReader storageReader, CursorContextFactory contextFactory) {

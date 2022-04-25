@@ -22,8 +22,11 @@ package org.neo4j.internal.kernel.api;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
+import static org.neo4j.storageengine.api.LongReference.NULL_REFERENCE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
+import org.neo4j.storageengine.api.PropertySelection;
+import org.neo4j.storageengine.api.Reference;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -55,13 +58,10 @@ import org.neo4j.values.storable.Value;
 public interface RelationshipValueIndexCursor extends RelationshipIndexCursor, ValueIndexCursor {
     class Empty extends DoNothingCloseListenable implements RelationshipValueIndexCursor {
         @Override
-        public void relationship(RelationshipScanCursor cursor) {}
+        public void source(NodeCursor cursor) {}
 
         @Override
-        public void sourceNode(NodeCursor cursor) {}
-
-        @Override
-        public void targetNode(NodeCursor cursor) {}
+        public void target(NodeCursor cursor) {}
 
         @Override
         public int type() {
@@ -120,6 +120,14 @@ public interface RelationshipValueIndexCursor extends RelationshipIndexCursor, V
         @Override
         public Value propertyValue(int offset) {
             return NO_VALUE;
+        }
+
+        @Override
+        public void properties(PropertyCursor cursor, PropertySelection selection) {}
+
+        @Override
+        public Reference propertiesReference() {
+            return NULL_REFERENCE;
         }
     }
 

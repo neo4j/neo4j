@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.nio.file.OpenOption;
-import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
@@ -35,6 +33,7 @@ import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.ReadableStorageEngine;
 
 /**
  * Factory to create {@link IndexingService}
@@ -43,6 +42,7 @@ public final class IndexingServiceFactory {
     private IndexingServiceFactory() {}
 
     public static IndexingService createIndexingService(
+            ReadableStorageEngine storageEngine,
             Config config,
             JobScheduler scheduler,
             IndexProviderMap providerMap,
@@ -56,8 +56,7 @@ public final class IndexingServiceFactory {
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker,
             String databaseName,
-            DatabaseReadOnlyChecker readOnlyChecker,
-            ImmutableSet<OpenOption> openOptions) {
+            DatabaseReadOnlyChecker readOnlyChecker) {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig(config);
         IndexMapReference indexMapRef = new IndexMapReference();
         IndexSamplingControllerFactory factory = new IndexSamplingControllerFactory(
@@ -71,9 +70,15 @@ public final class IndexingServiceFactory {
                 databaseName);
         IndexSamplingController indexSamplingController = factory.create(indexMapRef);
         IndexProxyCreator proxySetup = new IndexProxyCreator(
-                samplingConfig, indexStatisticsStore, providerMap, tokenNameLookup, internalLogProvider, openOptions);
+                samplingConfig,
+                indexStatisticsStore,
+                providerMap,
+                tokenNameLookup,
+                internalLogProvider,
+                storageEngine.getOpenOptions());
 
         return new IndexingService(
+                storageEngine,
                 proxySetup,
                 providerMap,
                 indexMapRef,
@@ -90,7 +95,6 @@ public final class IndexingServiceFactory {
                 memoryTracker,
                 databaseName,
                 readOnlyChecker,
-                config,
-                openOptions);
+                config);
     }
 }

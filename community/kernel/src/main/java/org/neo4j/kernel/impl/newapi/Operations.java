@@ -1697,8 +1697,8 @@ public class Operations implements Write, SchemaWrite {
             throws KernelException {
         var index = allStoreHolder.findUsableTokenIndex(RELATIONSHIP);
         if (index != IndexDescriptor.NO_INDEX) {
-            try (var fullAccessIndexCursor = cursors.allocateFullAccessRelationshipTypeIndexCursor();
-                    var fullAccessCursor = cursors.allocateFullAccessRelationshipScanCursor(ktx.cursorContext())) {
+            try (var fullAccessIndexCursor =
+                    cursors.allocateFullAccessRelationshipTypeIndexCursor(ktx.cursorContext())) {
                 var session = allStoreHolder.tokenReadSession(index);
                 allStoreHolder.relationshipTypeScan(
                         session,
@@ -1707,7 +1707,7 @@ public class Operations implements Write, SchemaWrite {
                         new TokenPredicate(schema.getRelTypeId()),
                         ktx.cursorContext());
                 constraintSemantics.validateRelationshipPropertyExistenceConstraint(
-                        fullAccessIndexCursor, fullAccessCursor, propertyCursor, schema, token);
+                        fullAccessIndexCursor, propertyCursor, schema, token);
             }
         } else {
             // fallback to all relationship scan

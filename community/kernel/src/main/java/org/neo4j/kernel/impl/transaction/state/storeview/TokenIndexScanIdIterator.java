@@ -26,9 +26,7 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import java.util.NoSuchElementException;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
-import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.TokenPredicate;
-import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -36,12 +34,13 @@ import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.index.schema.CompositeTokenScanValueIterator;
+import org.neo4j.kernel.impl.index.schema.TokenScanValueIterator;
 
 public class TokenIndexScanIdIterator implements EntityIdIterator {
     private final TokenIndexReader tokenIndexReader;
     private final CursorContext cursorContext;
-    private PrimitiveLongResourceIterator idIterator;
-    private long lastReturnedId = -1;
+    protected CompositeTokenScanValueIterator idIterator;
+    protected long lastReturnedId = -1;
     private final int[] tokenIds;
 
     TokenIndexScanIdIterator(TokenIndexReader tokenIndexReader, int[] tokenIds, CursorContext cursorContext) {
@@ -82,10 +81,12 @@ public class TokenIndexScanIdIterator implements EntityIdIterator {
                 false);
     }
 
-    private class QueryResultIterator implements PrimitiveLongResourceIterator {
+    private class QueryResultIterator implements TokenScanValueIterator {
         private final SimpleProgressorClient client;
+        private final int tokenId;
 
         QueryResultIterator(EntityRange entityRange, int tokenId) {
+            this.tokenId = tokenId;
             this.client = new SimpleProgressorClient();
             tokenIndexReader.query(client, unconstrained(), new TokenPredicate(tokenId), entityRange, cursorContext);
         }
@@ -98,6 +99,11 @@ public class TokenIndexScanIdIterator implements EntityIdIterator {
         @Override
         public boolean hasNext() {
             return client.hasNext();
+        }
+
+        @Override
+        public int tokenId() {
+            return tokenId;
         }
 
         @Override
@@ -145,7 +151,7 @@ public class TokenIndexScanIdIterator implements EntityIdIterator {
         }
 
         @Override
-        public boolean acceptEntity(long reference, TokenSet tokens) {
+        public boolean acceptEntity(long reference, int tokenId) {
             this.entityId = reference;
             return true;
         }

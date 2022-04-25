@@ -63,6 +63,7 @@ import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageEngineIndexingBehaviour;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
@@ -418,6 +419,11 @@ class ParallelRecoveryVisitorTest {
         @Override
         public long decodeRelationshipId(byte[] from, int offset) {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public StorageEngineIndexingBehaviour indexingBehaviour() {
+            return () -> false;
         }
     }
 }

@@ -49,41 +49,23 @@ public class TestPropertyScanConsumer implements PropertyScanConsumer {
         };
     }
 
-    public static class Record {
-        private final long entityId;
-        private final long[] tokens;
-        private final Map<Integer, Value> properties;
-
-        public Record(long entityId, long[] tokens, Map<Integer, Value> properties) {
-            this.entityId = entityId;
-            this.tokens = tokens;
-            this.properties = properties;
-        }
-
-        public long getEntityId() {
-            return entityId;
-        }
-
-        public long[] getTokens() {
-            return tokens;
-        }
-
-        public Map<Integer, Value> getProperties() {
-            return properties;
+    public record Record(long entityId, long[] tokens, Map<Integer, Value> properties) {
+        @Override
+        public String toString() {
+            return "Record{" + "entityId="
+                    + entityId + ", tokens="
+                    + Arrays.toString(tokens) + ", properties="
+                    + properties + '}';
         }
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
             Record record = (Record) o;
             return entityId == record.entityId
                     && Arrays.equals(tokens, record.tokens)
-                    && properties.equals(record.properties);
+                    && Objects.equals(properties, record.properties);
         }
 
         @Override

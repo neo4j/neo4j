@@ -38,6 +38,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -87,6 +88,8 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.ReadableStorageEngine;
+import org.neo4j.storageengine.api.StorageEngineIndexingBehaviour;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 
@@ -110,6 +113,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private static final String START_TAG = "Start index population";
 
     private final IndexSamplingController samplingController;
+    private final ReadableStorageEngine storageEngine;
     private final IndexProxyCreator indexProxyCreator;
     private final IndexProviderMap providerMap;
     private final IndexMapReference indexMapRef;
@@ -140,6 +144,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private volatile State state = State.NOT_STARTED;
 
     IndexingService(
+            ReadableStorageEngine storageEngine,
             IndexProxyCreator indexProxyCreator,
             IndexProviderMap providerMap,
             IndexMapReference indexMapRef,
@@ -156,8 +161,8 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             MemoryTracker memoryTracker,
             String databaseName,
             DatabaseReadOnlyChecker readOnlyChecker,
-            Config config,
-            ImmutableSet<OpenOption> openOptions) {
+            Config config) {
+        this.storageEngine = storageEngine;
         this.indexProxyCreator = indexProxyCreator;
         this.providerMap = providerMap;
         this.indexMapRef = indexMapRef;
@@ -176,7 +181,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.databaseName = databaseName;
         this.readOnlyChecker = readOnlyChecker;
         this.config = config;
-        this.openOptions = openOptions;
+        this.openOptions = storageEngine.getOpenOptions();
         this.storeView = indexStoreViewFactory.createTokenIndexStoreView(
                 descriptor -> indexMapRef.getIndexProxy(descriptor.getId()));
     }
@@ -324,17 +329,18 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     private void populateIndexesOfAllTypes(
             MutableLongObjectMap<IndexDescriptor> rebuildingDescriptors, IndexMap indexMap) {
-        Map<EntityType, MutableLongObjectMap<IndexDescriptor>> rebuildingDescriptorsByType =
-                new EnumMap<>(EntityType.class);
-        for (IndexDescriptor descriptor : rebuildingDescriptors) {
+        Map<IndexPopulationCategory, MutableLongObjectMap<IndexDescriptor>> rebuildingDescriptorsByType =
+                new HashMap<>();
+        for (var descriptor : rebuildingDescriptors) {
+            var category = new IndexPopulationCategory(descriptor, storageEngine.indexingBehaviour());
             rebuildingDescriptorsByType
-                    .computeIfAbsent(descriptor.schema().entityType(), type -> new LongObjectHashMap<>())
+                    .computeIfAbsent(category, type -> new LongObjectHashMap<>())
                     .put(descriptor.getId(), descriptor);
         }
 
-        for (Map.Entry<EntityType, MutableLongObjectMap<IndexDescriptor>> descriptorToPopulate :
-                rebuildingDescriptorsByType.entrySet()) {
-            IndexPopulationJob populationJob = newIndexPopulationJob(descriptorToPopulate.getKey(), SYSTEM);
+        for (var descriptorToPopulate : rebuildingDescriptorsByType.entrySet()) {
+            var populationJob =
+                    newIndexPopulationJob(descriptorToPopulate.getKey().entityType(), SYSTEM);
             populate(descriptorToPopulate.getValue(), indexMap, populationJob);
         }
     }
@@ -730,8 +736,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final class IndexPopulationStarter implements UnaryOperator<IndexMap> {
         private final Subject subject;
         private final IndexDescriptor[] descriptors;
-        private IndexPopulationJob nodePopulationJob;
-        private IndexPopulationJob relationshipPopulationJob;
+        private final Map<IndexPopulationCategory, IndexPopulationJob> populationJobs = new HashMap<>();
 
         IndexPopulationStarter(Subject subject, IndexDescriptor[] descriptors) {
             this.subject = subject;
@@ -748,20 +753,13 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 }
                 boolean flipToTentative = descriptor.isUnique();
                 if (state == State.RUNNING) {
-                    if (descriptor.schema().entityType() == NODE) {
-                        nodePopulationJob =
-                                nodePopulationJob == null ? newIndexPopulationJob(NODE, subject) : nodePopulationJob;
-                        index = indexProxyCreator.createPopulatingIndexProxy(
-                                descriptor, flipToTentative, monitor, nodePopulationJob);
-                        index.start();
-                    } else {
-                        relationshipPopulationJob = relationshipPopulationJob == null
-                                ? newIndexPopulationJob(RELATIONSHIP, subject)
-                                : relationshipPopulationJob;
-                        index = indexProxyCreator.createPopulatingIndexProxy(
-                                descriptor, flipToTentative, monitor, relationshipPopulationJob);
-                        index.start();
-                    }
+                    var populationJob = populationJobs.computeIfAbsent(
+                            new IndexPopulationCategory(descriptor, storageEngine.indexingBehaviour()),
+                            category ->
+                                    newIndexPopulationJob(descriptor.schema().entityType(), subject));
+                    index = indexProxyCreator.createPopulatingIndexProxy(
+                            descriptor, flipToTentative, monitor, populationJob);
+                    index.start();
                 } else {
                     index = indexProxyCreator.createRecoveringIndexProxy(descriptor);
                 }
@@ -773,12 +771,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
         void startPopulation() {
             try (var cursorContext = contextFactory.create(START_TAG)) {
-                if (nodePopulationJob != null) {
-                    startIndexPopulation(nodePopulationJob, cursorContext);
-                }
-                if (relationshipPopulationJob != null) {
-                    startIndexPopulation(relationshipPopulationJob, cursorContext);
-                }
+                populationJobs.values().forEach(populationJob -> startIndexPopulation(populationJob, cursorContext));
             }
         }
     }
@@ -802,5 +795,19 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     @FunctionalInterface
     public interface IndexProxyProvider {
         IndexProxy getIndexProxy(IndexDescriptor indexDescriptor) throws IndexNotFoundKernelException;
+    }
+
+    /**
+     * Category key to use when splitting up indexes to be populated, so that multiple indexes of a particular category can be
+     * populated using the same scan.
+     */
+    private record IndexPopulationCategory(EntityType entityType, boolean lookupIndexDifferentiator) {
+        IndexPopulationCategory(IndexDescriptor descriptor, StorageEngineIndexingBehaviour indexingBehaviour) {
+            this(
+                    descriptor.schema().entityType(),
+                    descriptor.schema().entityType() == RELATIONSHIP
+                            && indexingBehaviour.useNodeIdsInRelationshipTypeScanIndex()
+                            && descriptor.isTokenIndex());
+        }
     }
 }

@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.newapi.ReadSupport;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
+import org.neo4j.storageengine.api.StorageEngineIndexingBehaviour;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
@@ -60,11 +61,16 @@ public class ThreadExecutionContextRead implements Read, Closeable {
     private final DefaultPooledCursors pooledCursors;
 
     ThreadExecutionContextRead(
-            ThreadExecutionContext context, Read read, StorageReader reader, StoreCursors storeCursors, Config config) {
+            ThreadExecutionContext context,
+            Read read,
+            StorageReader reader,
+            StoreCursors storeCursors,
+            Config config,
+            StorageEngineIndexingBehaviour indexingBehaviour) {
         this.context = context;
         this.read = read;
         this.reader = reader;
-        this.pooledCursors = new DefaultPooledCursors(reader, storeCursors, config);
+        this.pooledCursors = new DefaultPooledCursors(reader, storeCursors, config, indexingBehaviour);
         this.readSupport = new ReadSupport(reader, pooledCursors, this);
     }
 

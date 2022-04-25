@@ -42,6 +42,7 @@ import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenPredicate;
@@ -272,11 +273,8 @@ public class AllStoreHolder extends Read {
                                 unconstrained(),
                                 new TokenPredicate(typeId),
                                 ktx.cursorContext());
-                        while (relationshipsWithType.next()) {
-                            relationshipsWithType.relationship(relationship);
-                            count += countRelationshipsWithEndLabels(
-                                    relationship, sourceNode, targetNode, startLabelId, endLabelId);
-                        }
+                        count += countRelationshipsWithEndLabels(
+                                relationshipsWithType, sourceNode, targetNode, startLabelId, endLabelId);
                     }
                     return count - countsForRelationshipInTxState(startLabelId, typeId, endLabelId);
                 }
@@ -299,7 +297,7 @@ public class AllStoreHolder extends Read {
     }
 
     private static long countRelationshipsWithEndLabels(
-            RelationshipScanCursor relationship,
+            RelationshipDataAccessor relationship,
             DefaultNodeCursor sourceNode,
             DefaultNodeCursor targetNode,
             int startLabelId,

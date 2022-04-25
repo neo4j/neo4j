@@ -62,7 +62,6 @@ public interface ConstraintValidator {
 
     void validateRelationshipPropertyExistenceConstraint(
             RelationshipTypeIndexCursor allRelationships,
-            RelationshipScanCursor relationshipCursor,
             PropertyCursor propertyCursor,
             RelationTypeSchemaDescriptor descriptor,
             TokenNameLookup tokenNameLookup)

@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import java.util.function.Function;
 import java.util.function.IntPredicate;
-import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -32,28 +30,23 @@ import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.ReadableStorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.util.Preconditions;
 
 /**
  * Node store view that will always visit all nodes during store scan.
  */
 public class FullScanStoreView implements IndexStoreView {
     protected final LockService locks;
-    protected final Supplier<StorageReader> storageReaderSupplier;
-    private final Function<CursorContext, StoreCursors> storeCursorsFactory;
+    protected final ReadableStorageEngine storageEngine;
     protected final Config config;
     protected final JobScheduler scheduler;
 
     public FullScanStoreView(
-            LockService locks,
-            Supplier<StorageReader> storageReaderSupplier,
-            Function<CursorContext, StoreCursors> storeCursorsFactory,
-            Config config,
-            JobScheduler scheduler) {
+            LockService locks, ReadableStorageEngine storageEngine, Config config, JobScheduler scheduler) {
         this.locks = locks;
-        this.storageReaderSupplier = storageReaderSupplier;
-        this.storeCursorsFactory = storeCursorsFactory;
+        this.storageEngine = storageEngine;
         this.config = config;
         this.scheduler = scheduler;
     }
@@ -70,8 +63,8 @@ public class FullScanStoreView implements IndexStoreView {
             MemoryTracker memoryTracker) {
         return new NodeStoreScan(
                 config,
-                storageReaderSupplier.get(),
-                storeCursorsFactory,
+                storageEngine.newReader(),
+                storageEngine::createStorageCursors,
                 locks,
                 labelScanConsumer,
                 propertyScanConsumer,
@@ -93,10 +86,34 @@ public class FullScanStoreView implements IndexStoreView {
             boolean parallelWrite,
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker) {
+        if (relationshipTypeScanConsumer != null
+                && storageEngine.indexingBehaviour().useNodeIdsInRelationshipTypeScanIndex()) {
+            // This scan will visit data to populate relationship type lookup index. The storage engine can have an
+            // indexing behaviour where each ID in it represents a node and the storage cursors will yield all types
+            // of relationships that the node has. This strategy doesn't work in combination with populating
+            // relationship property indexes because they are always relationship-based.
+            // This scenario is avoided in IndexingService where it will make sure that a single population won't
+            // be configured to populate both of these types of indexes in the same scan.
+            Preconditions.checkArgument(
+                    propertyScanConsumer == null,
+                    "Cannot run a node-based relationship type lookup index population together with a relationship property index population");
+            return new NodeRelationshipTypesStoreScan(
+                    config,
+                    storageEngine.newReader(),
+                    storageEngine::createStorageCursors,
+                    locks,
+                    relationshipTypeScanConsumer,
+                    relationshipTypeIds,
+                    parallelWrite,
+                    scheduler,
+                    contextFactory,
+                    memoryTracker);
+        }
+
         return new RelationshipStoreScan(
                 config,
-                storageReaderSupplier.get(),
-                storeCursorsFactory,
+                storageEngine.newReader(),
+                storageEngine::createStorageCursors,
                 locks,
                 relationshipTypeScanConsumer,
                 propertyScanConsumer,
@@ -110,7 +127,7 @@ public class FullScanStoreView implements IndexStoreView {
 
     @Override
     public boolean isEmpty(CursorContext cursorContext) {
-        try (StorageReader reader = storageReaderSupplier.get()) {
+        try (StorageReader reader = storageEngine.newReader()) {
             return reader.nodesGetCount(cursorContext) == 0 && reader.relationshipsGetCount(cursorContext) == 0;
         }
     }

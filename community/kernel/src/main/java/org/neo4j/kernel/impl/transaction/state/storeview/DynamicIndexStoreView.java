@@ -23,9 +23,7 @@ import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.function.IntPredicate;
-import java.util.function.Supplier;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -47,8 +45,8 @@ import org.neo4j.lock.LockService;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.ReadableStorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 public class DynamicIndexStoreView implements IndexStoreView {
     private final FullScanStoreView fullScanStoreView;
@@ -56,8 +54,7 @@ public class DynamicIndexStoreView implements IndexStoreView {
     protected final LockService lockService;
     private final Config config;
     private final IndexProxyProvider indexProxies;
-    protected final Supplier<StorageReader> storageReader;
-    private final Function<CursorContext, StoreCursors> cursorFactory;
+    protected final ReadableStorageEngine storageEngine;
     private final InternalLog log;
 
     public DynamicIndexStoreView(
@@ -66,16 +63,14 @@ public class DynamicIndexStoreView implements IndexStoreView {
             LockService lockService,
             Config config,
             IndexProxyProvider indexProxies,
-            Supplier<StorageReader> storageReader,
-            Function<CursorContext, StoreCursors> cursorFactory,
+            ReadableStorageEngine storageEngine,
             InternalLogProvider logProvider) {
         this.fullScanStoreView = fullScanStoreView;
         this.locks = locks;
         this.lockService = lockService;
         this.config = config;
         this.indexProxies = indexProxies;
-        this.storageReader = storageReader;
-        this.cursorFactory = cursorFactory;
+        this.storageEngine = storageEngine;
         this.log = logProvider.getLog(getClass());
     }
 
@@ -89,12 +84,12 @@ public class DynamicIndexStoreView implements IndexStoreView {
             boolean parallelWrite,
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker) {
-        var tokenIndex = findTokenIndex(storageReader, NODE);
+        var tokenIndex = findTokenIndex(NODE);
         if (tokenIndex.isPresent()) {
             var nodeStoreScan = new LabelIndexedNodeStoreScan(
                     config,
-                    storageReader.get(),
-                    cursorFactory,
+                    storageEngine.newReader(),
+                    storageEngine::createStorageCursors,
                     lockService,
                     tokenIndex.get().reader,
                     labelScanConsumer,
@@ -130,23 +125,42 @@ public class DynamicIndexStoreView implements IndexStoreView {
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker) {
 
-        var tokenIndex = findTokenIndex(storageReader, RELATIONSHIP);
+        var tokenIndex = findTokenIndex(RELATIONSHIP);
         if (tokenIndex.isPresent()) {
-            var relationshipStoreScan = new RelationshipIndexedRelationshipStoreScan(
-                    config,
-                    storageReader.get(),
-                    cursorFactory,
-                    lockService,
-                    tokenIndex.get().reader,
-                    relationshipTypeScanConsumer,
-                    propertyScanConsumer,
-                    relationshipTypeIds,
-                    propertyKeyIdFilter,
-                    parallelWrite,
-                    fullScanStoreView.scheduler,
-                    contextFactory,
-                    memoryTracker);
-            return new IndexedStoreScan(locks, tokenIndex.get().descriptor, config, relationshipStoreScan);
+            StoreScan storeScan;
+            if (fullScanStoreView.storageEngine.indexingBehaviour().useNodeIdsInRelationshipTypeScanIndex()) {
+                // This index-type-lookup-index-backed relationship scan is node-based
+                storeScan = new NodeRelationshipsIndexedStoreScan(
+                        config,
+                        storageEngine.newReader(),
+                        storageEngine::createStorageCursors,
+                        lockService,
+                        tokenIndex.get().reader,
+                        relationshipTypeScanConsumer,
+                        propertyScanConsumer,
+                        relationshipTypeIds,
+                        propertyKeyIdFilter,
+                        parallelWrite,
+                        fullScanStoreView.scheduler,
+                        contextFactory,
+                        memoryTracker);
+            } else {
+                storeScan = new RelationshipIndexedRelationshipStoreScan(
+                        config,
+                        storageEngine.newReader(),
+                        storageEngine::createStorageCursors,
+                        lockService,
+                        tokenIndex.get().reader,
+                        relationshipTypeScanConsumer,
+                        propertyScanConsumer,
+                        relationshipTypeIds,
+                        propertyKeyIdFilter,
+                        parallelWrite,
+                        fullScanStoreView.scheduler,
+                        contextFactory,
+                        memoryTracker);
+            }
+            return new IndexedStoreScan(locks, tokenIndex.get().descriptor, config, storeScan);
         }
 
         return fullScanStoreView.visitRelationships(
@@ -165,10 +179,13 @@ public class DynamicIndexStoreView implements IndexStoreView {
         return fullScanStoreView.isEmpty(cursorContext);
     }
 
-    private Optional<TokenIndexData> findTokenIndex(Supplier<StorageReader> storageReader, EntityType entityType) {
-        var descriptor = storageReader
-                .get()
-                .indexGetForSchemaAndType(SchemaDescriptors.forAnyEntityTokens(entityType), IndexType.LOOKUP);
+    private Optional<TokenIndexData> findTokenIndex(EntityType entityType) {
+        IndexDescriptor descriptor;
+        try (StorageReader reader = storageEngine.newReader()) {
+            descriptor =
+                    reader.indexGetForSchemaAndType(SchemaDescriptors.forAnyEntityTokens(entityType), IndexType.LOOKUP);
+        }
+
         if (descriptor == null) {
             return Optional.empty();
         }

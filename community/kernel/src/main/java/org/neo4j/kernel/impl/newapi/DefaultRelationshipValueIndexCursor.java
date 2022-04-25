@@ -25,47 +25,45 @@ import org.eclipse.collections.api.set.primitive.ImmutableLongSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.PropertySelection;
+import org.neo4j.storageengine.api.Reference;
 
 class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultRelationshipValueIndexCursor>
         implements RelationshipValueIndexCursor {
-    private final DefaultRelationshipScanCursor securityRelationshipCursor;
+    private final DefaultRelationshipScanCursor relationshipScanCursor;
     private int[] propertyIds;
+    private boolean cursorIsInPosition;
 
     DefaultRelationshipValueIndexCursor(
             CursorPool<DefaultRelationshipValueIndexCursor> pool,
-            DefaultRelationshipScanCursor securityRelationshipCursor,
+            DefaultRelationshipScanCursor relationshipScanCursor,
             MemoryTracker memoryTracker) {
         super(pool, memoryTracker);
-        this.securityRelationshipCursor = securityRelationshipCursor;
+        this.relationshipScanCursor = relationshipScanCursor;
     }
 
     @Override
-    public void relationship(RelationshipScanCursor cursor) {
-        readEntity(read -> read.singleRelationship(entityReference(), cursor));
+    public void source(NodeCursor cursor) {
+        positionInnerCursor();
+        read.singleNode(relationshipScanCursor.sourceNodeReference(), cursor);
     }
 
     @Override
-    public void sourceNode(NodeCursor cursor) {
-        throw new UnsupportedOperationException(
-                "We have not yet implemented tracking of the relationship end nodes in the relationship index cursor.");
-    }
-
-    @Override
-    public void targetNode(NodeCursor cursor) {
-        throw new UnsupportedOperationException(
-                "We have not yet implemented tracking of the relationship end nodes in the relationship index cursor.");
+    public void target(NodeCursor cursor) {
+        positionInnerCursor();
+        read.singleNode(relationshipScanCursor.targetNodeReference(), cursor);
     }
 
     @Override
     public int type() {
-        throw new UnsupportedOperationException(
-                "We have not yet implemented tracking of the relationship type in the relationship index cursor.");
+        positionInnerCursor();
+        return relationshipScanCursor.type();
     }
 
     @Override
@@ -75,14 +73,40 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
 
     @Override
     public long sourceNodeReference() {
-        throw new UnsupportedOperationException(
-                "We have not yet implemented tracking of the relationship end nodes in the relationship index cursor.");
+        positionInnerCursor();
+        return relationshipScanCursor.sourceNodeReference();
     }
 
     @Override
     public long targetNodeReference() {
-        throw new UnsupportedOperationException(
-                "We have not yet implemented tracking of the relationship end nodes in the relationship index cursor.");
+        positionInnerCursor();
+        return relationshipScanCursor.targetNodeReference();
+    }
+
+    @Override
+    public void properties(PropertyCursor cursor, PropertySelection selection) {
+        positionInnerCursor();
+        relationshipScanCursor.properties(cursor, selection);
+    }
+
+    @Override
+    public Reference propertiesReference() {
+        positionInnerCursor();
+        return relationshipScanCursor.propertiesReference();
+    }
+
+    @Override
+    public boolean next() {
+        cursorIsInPosition = false;
+        return super.next();
+    }
+
+    private void positionInnerCursor() {
+        if (!cursorIsInPosition) {
+            cursorIsInPosition = true;
+            relationshipScanCursor.single(entity, read);
+            relationshipScanCursor.next();
+        }
     }
 
     /**
@@ -125,13 +149,13 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
 
     @Override
     protected boolean allowed(long reference, AccessMode accessMode) {
-        readEntity(read -> read.singleRelationship(reference, securityRelationshipCursor));
-        if (!securityRelationshipCursor.next()) {
+        readEntity(read -> read.singleRelationship(reference, relationshipScanCursor));
+        if (!relationshipScanCursor.next()) {
             // This relationship is not visible to this security context
             return false;
         }
 
-        int relType = securityRelationshipCursor.type();
+        int relType = relationshipScanCursor.type();
         for (int prop : propertyIds) {
             if (!accessMode.allowsReadRelationshipProperty(() -> relType, prop)) {
                 return false;
@@ -151,9 +175,7 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
     }
 
     public void release() {
-        if (securityRelationshipCursor != null) {
-            securityRelationshipCursor.close();
-            securityRelationshipCursor.release();
-        }
+        relationshipScanCursor.close();
+        relationshipScanCursor.release();
     }
 }

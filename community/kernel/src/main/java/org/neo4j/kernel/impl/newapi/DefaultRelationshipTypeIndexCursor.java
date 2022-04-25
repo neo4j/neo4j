@@ -21,24 +21,15 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
-import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
-import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.TransactionState;
 
-public class DefaultRelationshipTypeIndexCursor
+public abstract class DefaultRelationshipTypeIndexCursor
         extends DefaultEntityTokenIndexCursor<DefaultRelationshipTypeIndexCursor>
         implements RelationshipTypeIndexCursor {
-
-    private final DefaultRelationshipScanCursor relationshipSecurityCursor;
-
-    DefaultRelationshipTypeIndexCursor(
-            CursorPool<DefaultRelationshipTypeIndexCursor> pool,
-            DefaultRelationshipScanCursor relationshipSecurityCursor) {
+    DefaultRelationshipTypeIndexCursor(CursorPool<DefaultRelationshipTypeIndexCursor> pool) {
         super(pool);
-        this.relationshipSecurityCursor = relationshipSecurityCursor;
     }
 
     @Override
@@ -67,44 +58,8 @@ public class DefaultRelationshipTypeIndexCursor
     }
 
     @Override
-    boolean allowedToSeeEntity(AccessMode accessMode, long entityReference, TokenSet tokens) {
-        readEntity(read -> read.singleRelationship(entityReference, relationshipSecurityCursor));
-        return relationshipSecurityCursor.next();
-    }
-
-    @Override
-    public void relationship(RelationshipScanCursor cursor) {
-        readEntity(read -> read.singleRelationship(entityReference(), cursor));
-    }
-
-    @Override
-    public void sourceNode(NodeCursor cursor) {
-        throw new UnsupportedOperationException(
-                "We have not yet implemented tracking of the relationship end nodes in the relationship type index cursor.");
-    }
-
-    @Override
-    public void targetNode(NodeCursor cursor) {
-        throw new UnsupportedOperationException(
-                "We have not yet implemented tracking of the relationship end nodes in the relationship type index cursor.");
-    }
-
-    @Override
     public int type() {
-        throw new UnsupportedOperationException(
-                "We have not yet implemented tracking of the type in the relationship type index cursor.");
-    }
-
-    @Override
-    public long sourceNodeReference() {
-        throw new UnsupportedOperationException(
-                "We have not yet implemented tracking of the relationship end nodes in the relationship type index cursor.");
-    }
-
-    @Override
-    public long targetNodeReference() {
-        throw new UnsupportedOperationException(
-                "We have not yet implemented tracking of the relationship end nodes in the relationship type index cursor.");
+        return tokenId;
     }
 
     @Override
@@ -117,13 +72,6 @@ public class DefaultRelationshipTypeIndexCursor
         return Float.NaN;
     }
 
-    public void release() {
-        if (relationshipSecurityCursor != null) {
-            relationshipSecurityCursor.close();
-            relationshipSecurityCursor.release();
-        }
-    }
-
     @Override
     public String toString() {
         if (isClosed()) {
@@ -132,4 +80,6 @@ public class DefaultRelationshipTypeIndexCursor
             return "RelationshipTypeIndexCursor[relationship=" + entityReference() + "]";
         }
     }
+
+    public abstract void release();
 }

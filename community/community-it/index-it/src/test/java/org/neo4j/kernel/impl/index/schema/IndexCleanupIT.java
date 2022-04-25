@@ -42,6 +42,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.index.SetInitialStateInNativeIndex;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -138,7 +139,7 @@ public class IndexCleanupIT {
         Barrier.Control midPopulation = new Barrier.Control();
         IndexMonitor.MonitorAdapter trappingMonitor = new IndexMonitor.MonitorAdapter() {
             @Override
-            public void indexPopulationScanStarting() {
+            public void indexPopulationScanStarting(IndexDescriptor[] indexDescriptors) {
                 midPopulation.reached();
             }
         };
