@@ -29,12 +29,15 @@ public class TokenIndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier> e
     private final long[] before;
     private final long[] values;
     private final long txId;
+    private final boolean logical;
 
-    TokenIndexEntryUpdate(long entityId, INDEX_KEY index_key, long[] before, long[] values, long txId) {
+    TokenIndexEntryUpdate(
+            long entityId, INDEX_KEY index_key, long[] before, long[] values, long txId, boolean logical) {
         super(entityId, index_key, UpdateMode.CHANGED);
         this.before = before;
         this.values = values;
         this.txId = txId;
+        this.logical = logical;
     }
 
     public long[] values() {
@@ -50,6 +53,10 @@ public class TokenIndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier> e
 
     public long txId() {
         return txId;
+    }
+
+    public boolean isLogical() {
+        return logical;
     }
 
     @Override

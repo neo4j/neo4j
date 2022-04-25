@@ -37,6 +37,11 @@ class PhysicalToLogicalTokenChanges {
         int beforeLength = update.beforeValues().length;
         int afterLength = update.values().length;
 
+        if (update.isLogical()) {
+            // These changes are already logical
+            return new LogicalTokenUpdates(update.txId(), update.getEntityId(), update.beforeValues(), update.values());
+        }
+
         int rc = 0;
         int ac = 0;
         long[] removals = update.beforeValues().clone();

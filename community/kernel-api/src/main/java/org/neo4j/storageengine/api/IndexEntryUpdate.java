@@ -149,7 +149,22 @@ public abstract class IndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplie
     }
 
     public static <INDEX_KEY extends SchemaDescriptorSupplier> TokenIndexEntryUpdate<INDEX_KEY> change(
+            long entityId, INDEX_KEY indexKey, long[] before, long[] after, boolean logical) {
+        return change(entityId, indexKey, before, after, NO_TX_ID, logical);
+    }
+
+    public static <INDEX_KEY extends SchemaDescriptorSupplier> TokenIndexEntryUpdate<INDEX_KEY> change(
             long entityId, INDEX_KEY indexKey, long[] before, long[] after, long txId) {
-        return new TokenIndexEntryUpdate<>(entityId, indexKey, before, after, txId);
+        return change(entityId, indexKey, before, after, txId, false);
+    }
+
+    /**
+     * @param logical if {@code true} then {@code before} means tokens to remove and {@code after}
+     *     means tokens to add, otherwise if {@code false} {@code before} means tokens before the
+     *     change and {@code after} means tokens after the change.
+     */
+    public static <INDEX_KEY extends SchemaDescriptorSupplier> TokenIndexEntryUpdate<INDEX_KEY> change(
+            long entityId, INDEX_KEY indexKey, long[] before, long[] after, long txId, boolean logical) {
+        return new TokenIndexEntryUpdate<>(entityId, indexKey, before, after, txId, logical);
     }
 }
