@@ -25,5 +25,5 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
  * Functional factory for building relationship object for the relationship selection iterators.
  */
 public interface RelationshipFactory<R> {
-    R relationship(long id, long startNodeId, int typeId, long endNodeId, RelationshipTraversalCursor cursor);
+    R relationship(RelationshipTraversalCursor cursor);
 }

@@ -667,8 +667,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship> {
     }
 
     @Override
-    public Relationship relationship(
-            long id, long startNodeId, int typeId, long endNodeId, RelationshipTraversalCursor cursor) {
-        return internalTransaction.newRelationshipEntity(id, startNodeId, typeId, endNodeId, cursor);
+    public Relationship relationship(RelationshipTraversalCursor cursor) {
+        return internalTransaction.newRelationshipEntity(cursor);
     }
 }

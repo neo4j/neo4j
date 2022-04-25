@@ -200,12 +200,7 @@ public final class RelationshipSelections {
         @Override
         protected T fetchNextOrNull() {
             if (relationshipTraversalCursor.next()) {
-                return factory.relationship(
-                        relationshipTraversalCursor.relationshipReference(),
-                        relationshipTraversalCursor.sourceNodeReference(),
-                        relationshipTraversalCursor.type(),
-                        relationshipTraversalCursor.targetNodeReference(),
-                        relationshipTraversalCursor);
+                return factory.relationship(relationshipTraversalCursor);
             }
             close();
             return null;

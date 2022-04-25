@@ -749,9 +749,8 @@ public class TransactionImpl extends EntityValidationTransactionImpl {
     }
 
     @Override
-    public Relationship newRelationshipEntity(
-            long id, long startNodeId, int typeId, long endNodeId, RelationshipDataAccessor cursor) {
-        return new RelationshipEntity(this, id, startNodeId, typeId, endNodeId, cursor);
+    public Relationship newRelationshipEntity(RelationshipDataAccessor cursor) {
+        return new RelationshipEntity(this, cursor);
     }
 
     @Override
@@ -1134,14 +1133,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl {
             RelationshipScanCursor cursor = ktx.cursors().allocateRelationshipScanCursor(ktx.cursorContext());
             ktx.dataRead().allRelationshipsScan(cursor);
             return new CursorIterator<>(
-                    cursor,
-                    RelationshipScanCursor::relationshipReference,
-                    c -> tx.newRelationshipEntity(
-                            c.relationshipReference(),
-                            c.sourceNodeReference(),
-                            c.type(),
-                            c.targetNodeReference(),
-                            cursor));
+                    cursor, RelationshipScanCursor::relationshipReference, c -> tx.newRelationshipEntity(cursor));
         }
     }
 

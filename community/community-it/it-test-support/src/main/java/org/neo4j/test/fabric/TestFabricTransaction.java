@@ -401,9 +401,8 @@ public class TestFabricTransaction implements InternalTransaction {
     }
 
     @Override
-    public Relationship newRelationshipEntity(
-            long id, long startNodeId, int typeId, long endNodeId, RelationshipDataAccessor cursor) {
-        return kernelInternalTransaction.newRelationshipEntity(id, startNodeId, typeId, endNodeId, cursor);
+    public Relationship newRelationshipEntity(RelationshipDataAccessor cursor) {
+        return kernelInternalTransaction.newRelationshipEntity(cursor);
     }
 
     @Override

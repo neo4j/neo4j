@@ -330,7 +330,8 @@ class TxStateTransactionDataViewTest {
         when(internalTransaction.newNodeEntity(anyLong()))
                 .thenAnswer(invocation -> new NodeEntity(internalTransaction, invocation.getArgument(0)));
         when(internalTransaction.newRelationshipEntity(anyLong()))
-                .thenAnswer(invocation -> new RelationshipEntity(internalTransaction, invocation.getArgument(0)));
+                .thenAnswer(invocation ->
+                        new RelationshipEntity(internalTransaction, invocation.getArgument(0, Long.class)));
         when(internalTransaction.newRelationshipEntity(anyLong(), anyLong(), anyInt(), anyLong()))
                 .thenAnswer(invocation -> new RelationshipEntity(
                         internalTransaction,

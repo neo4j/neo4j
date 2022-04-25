@@ -44,9 +44,10 @@ class RelationshipEntityTest {
         RelationshipTraversalCursor relationshipTraversalCursor = mock(RelationshipTraversalCursor.class);
         when(relationshipTraversalCursor.isClosed()).thenReturn(false);
         when(relationshipTraversalCursor.relationshipReference()).thenReturn(id);
-        RelationshipEntity relationship =
-                new RelationshipEntity(internalTransaction, id, 2, 3, 4, relationshipTraversalCursor);
-
+        when(relationshipTraversalCursor.sourceNodeReference()).thenReturn(2L);
+        when(relationshipTraversalCursor.type()).thenReturn(3);
+        when(relationshipTraversalCursor.targetNodeReference()).thenReturn(4L);
+        RelationshipEntity relationship = new RelationshipEntity(internalTransaction, relationshipTraversalCursor);
         // when
         relationship.getAllProperties(mock(PropertyCursor.class));
 
@@ -63,11 +64,14 @@ class RelationshipEntityTest {
         long id = 1;
         RelationshipTraversalCursor relationshipTraversalCursor = mock(RelationshipTraversalCursor.class);
         when(relationshipTraversalCursor.isClosed()).thenReturn(false);
-        when(relationshipTraversalCursor.relationshipReference()).thenReturn(id + 1);
-        RelationshipEntity relationship =
-                new RelationshipEntity(internalTransaction, id, 2, 3, 4, relationshipTraversalCursor);
+        when(relationshipTraversalCursor.relationshipReference()).thenReturn(id);
+        when(relationshipTraversalCursor.sourceNodeReference()).thenReturn(2L);
+        when(relationshipTraversalCursor.type()).thenReturn(3);
+        when(relationshipTraversalCursor.targetNodeReference()).thenReturn(4L);
+        RelationshipEntity relationship = new RelationshipEntity(internalTransaction, relationshipTraversalCursor);
 
         // when
+        when(relationshipTraversalCursor.relationshipReference()).thenReturn(id + 1);
         relationship.getAllProperties(mock(PropertyCursor.class));
 
         // then
@@ -84,9 +88,10 @@ class RelationshipEntityTest {
         RelationshipTraversalCursor relationshipTraversalCursor = mock(RelationshipTraversalCursor.class);
         when(relationshipTraversalCursor.isClosed()).thenReturn(true);
         when(relationshipTraversalCursor.relationshipReference()).thenReturn(id);
-        RelationshipEntity relationship =
-                new RelationshipEntity(internalTransaction, id, 2, 3, 4, relationshipTraversalCursor);
-
+        when(relationshipTraversalCursor.sourceNodeReference()).thenReturn(2L);
+        when(relationshipTraversalCursor.type()).thenReturn(3);
+        when(relationshipTraversalCursor.targetNodeReference()).thenReturn(4L);
+        RelationshipEntity relationship = new RelationshipEntity(internalTransaction, relationshipTraversalCursor);
         // when
         relationship.getAllProperties(mock(PropertyCursor.class));
 

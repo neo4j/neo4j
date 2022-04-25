@@ -357,9 +357,8 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context, T
         }
 
         @Override
-        public Relationship newRelationshipEntity(
-                long id, long startNodeId, int typeId, long endNodeId, RelationshipDataAccessor cursor) {
-            return transaction.newRelationshipEntity(id, startNodeId, typeId, endNodeId, cursor);
+        public Relationship newRelationshipEntity(RelationshipDataAccessor cursor) {
+            return transaction.newRelationshipEntity(cursor);
         }
 
         @Override

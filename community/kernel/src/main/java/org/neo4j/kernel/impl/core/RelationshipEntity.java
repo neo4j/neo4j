@@ -66,21 +66,21 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
     private long endNode = NO_ID;
     private int type;
 
-    public RelationshipEntity(
-            InternalTransaction internalTransaction,
-            long id,
-            long startNode,
-            int type,
-            long endNode,
-            RelationshipDataAccessor cursor) {
+    public RelationshipEntity(InternalTransaction internalTransaction, RelationshipDataAccessor cursor) {
         this.internalTransaction = internalTransaction;
         this.cursor = cursor;
-        visit(id, type, startNode, endNode);
+        visit(
+                cursor.relationshipReference(),
+                cursor.type(),
+                cursor.sourceNodeReference(),
+                cursor.targetNodeReference());
     }
 
     public RelationshipEntity(
             InternalTransaction internalTransaction, long id, long startNode, int type, long endNode) {
-        this(internalTransaction, id, startNode, type, endNode, null);
+        this.internalTransaction = internalTransaction;
+        this.cursor = null;
+        visit(id, type, startNode, endNode);
     }
 
     public RelationshipEntity(InternalTransaction internalTransaction, long id) {

@@ -131,7 +131,7 @@ public class RelationshipSelectionsIT {
                         cursors,
                         nodeCursor,
                         new int[] {typeId},
-                        (id, startNodeId, typeId1, endNodeId, cursor) -> id,
+                        RelationshipDataAccessor::relationshipReference,
                         cursorContext)) {
                     assertEquals(2, count(iterator));
                 }
@@ -158,7 +158,7 @@ public class RelationshipSelectionsIT {
                         cursors,
                         nodeCursor,
                         new int[] {typeId},
-                        (id, startNodeId, typeId1, endNodeId, cursor) -> id,
+                        RelationshipDataAccessor::relationshipReference,
                         cursorContext)) {
                     assertEquals(2, count(iterator));
                 }
@@ -185,7 +185,7 @@ public class RelationshipSelectionsIT {
                         cursors,
                         nodeCursor,
                         new int[] {typeId},
-                        (id, startNodeId, typeId1, endNodeId, cursor) -> id,
+                        RelationshipDataAccessor::relationshipReference,
                         cursorContext)) {
                     assertEquals(4, count(iterator));
                 }
@@ -276,7 +276,7 @@ public class RelationshipSelectionsIT {
                         cursors,
                         nodeCursor,
                         new int[] {typeId},
-                        (id, startNodeId, typeId1, endNodeId, cursor) -> id,
+                        RelationshipDataAccessor::relationshipReference,
                         cursorContext)) {
                     assertEquals(2, count(iterator));
                 }
@@ -303,7 +303,7 @@ public class RelationshipSelectionsIT {
                         cursors,
                         nodeCursor,
                         new int[] {typeId},
-                        (id, startNodeId, typeId1, endNodeId, cursor) -> id,
+                        RelationshipDataAccessor::relationshipReference,
                         cursorContext)) {
                     assertEquals(2, count(iterator));
                 }
@@ -330,7 +330,7 @@ public class RelationshipSelectionsIT {
                         cursors,
                         nodeCursor,
                         new int[] {typeId},
-                        (id, startNodeId, typeId1, endNodeId, cursor) -> id,
+                        RelationshipDataAccessor::relationshipReference,
                         cursorContext)) {
                     assertEquals(4, count(iterator));
                 }
