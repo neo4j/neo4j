@@ -173,6 +173,9 @@ case class QgWithLeafInfo(
     }.toSet
   }
 
+  def allPossibleLabelsOnNode(node: String): Set[LabelName] =
+    solvedQg.allPossibleLabelsOnNode(node)
+
   /**
    * Checks whether the given expression could be of type `CTNode` or `CTRelationship`.
    */
