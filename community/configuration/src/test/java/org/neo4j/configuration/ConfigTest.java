@@ -30,6 +30,7 @@ import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -864,12 +865,13 @@ class ConfigTest {
                         BootloaderSettings.max_heap_size.name() + "=10g",
                         BootloaderSettings.max_heap_size.name() + "=11g"));
 
-        Config config = Config.newBuilder()
+        Config.Builder builder = Config.newBuilder()
+                .set(GraphDatabaseSettings.strict_config_validation, false)
                 .fromFile(confFile)
                 .setDefault(BootloaderSettings.initial_heap_size, ByteUnit.gibiBytes(1))
-                .setDefault(BootloaderSettings.initial_heap_size, ByteUnit.gibiBytes(2))
-                .build();
+                .setDefault(BootloaderSettings.initial_heap_size, ByteUnit.gibiBytes(2));
 
+        Config config = builder.build();
         config.setLogger(log);
 
         // We should only log the warning once for each.
@@ -885,6 +887,9 @@ class ConfigTest {
                 .warn(
                         "The '%s' setting is overridden. Setting value changed from '%s' to '%s'.",
                         BootloaderSettings.max_heap_size.name(), "10g", "11g");
+
+        builder.set(GraphDatabaseSettings.strict_config_validation, true);
+        assertThatThrownBy(builder::build).hasMessageContaining("declared multiple times");
     }
 
     @Test
@@ -934,10 +939,26 @@ class ConfigTest {
     }
 
     @Test
-    void testStrictValidation() throws IOException {
+    void testStrictValidationForGarbage() throws IOException {
         Path confFile = testDirectory.createFile("test.conf");
         Files.write(confFile, Collections.singletonList("some_unrecognized_garbage=true"));
 
+        Config.Builder builder = Config.newBuilder().fromFile(confFile);
+        builder.set(GraphDatabaseSettings.strict_config_validation, true);
+        assertThrows(IllegalArgumentException.class, builder::build);
+
+        builder.set(GraphDatabaseSettings.strict_config_validation, false);
+        assertDoesNotThrow(builder::build);
+    }
+
+    @Test
+    void testStrictValidationForDuplicates() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(
+                confFile,
+                List.of(
+                        GraphDatabaseSettings.default_database.name() + "=foo",
+                        GraphDatabaseSettings.default_database.name() + "=bar"));
         Config.Builder builder = Config.newBuilder().fromFile(confFile);
         builder.set(GraphDatabaseSettings.strict_config_validation, true);
         assertThrows(IllegalArgumentException.class, builder::build);

@@ -61,6 +61,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.commons.text.StringTokenizer;
@@ -89,9 +90,10 @@ public class Config implements Configuration {
         private Config fromConfig;
         private final InternalLog log = new BufferingLog();
         private boolean expandCommands;
+        private String strictWarningMessage;
 
         private static <T> boolean allowedToOverrideValues(String setting, T value, Map<String, T> settingValues) {
-            if (Objects.equals(setting, additional_jvm.name())) {
+            if (allowedMultipleDeclarations(setting)) {
                 T oldValue = settingValues.get(setting);
                 if (oldValue != null) {
                     if (value instanceof String && oldValue instanceof String) {
@@ -99,13 +101,17 @@ public class Config implements Configuration {
                         //noinspection unchecked
                         settingValues.put(setting, (T) newValue); // need to keep all jvm additionals
                     } else {
-                        throw new IllegalArgumentException(additional_jvm.name()
-                                + " can only be provided as raw Strings if provided multiple times");
+                        throw new IllegalArgumentException(
+                                setting + " can only be provided as raw Strings if provided multiple times");
                     }
                 }
                 return false;
             }
             return true;
+        }
+
+        public static boolean allowedMultipleDeclarations(String setting) {
+            return Objects.equals(setting, additional_jvm.name());
         }
 
         private <T> void overrideSettingValue(String setting, T value, Map<String, T> settingValues) {
@@ -231,10 +237,17 @@ public class Config implements Configuration {
                 } else {
                     try (InputStream stream = Files.newInputStream(file)) {
                         new Properties() {
+                            private Set<String> duplicateDetection = new HashSet<>();
+
                             @Override
                             public synchronized Object put(Object key, Object value) {
                                 String setting = key.toString();
                                 if (filter.test(setting)) {
+                                    // We do the duplicate detection here (instead of in setRaw), as we still allow
+                                    // override using multiple files or in embedded
+                                    if (!duplicateDetection.add(setting) && !allowedMultipleDeclarations(setting)) {
+                                        strictWarningMessage = setting + " declared multiple times.";
+                                    }
                                     setRaw(setting, value.toString());
                                 }
                                 return null;
@@ -278,7 +291,8 @@ public class Config implements Configuration {
                     overriddenDefaults,
                     fromConfig,
                     log,
-                    expandCommands);
+                    expandCommands,
+                    strictWarningMessage);
         }
 
         private static void validateFilePermissionForCommandExpansion(List<Path> files) {
@@ -495,7 +509,8 @@ public class Config implements Configuration {
             Map<String, Object> overriddenDefaultObjects,
             Config fromConfig,
             InternalLog log,
-            boolean expandCommands) {
+            boolean expandCommands,
+            String strictWarningMessage) {
         this.log = log;
         this.expandCommands = expandCommands;
 
@@ -542,6 +557,10 @@ public class Config implements Configuration {
                     overriddenDefaultStrings,
                     overriddenDefaultObjects);
             strict = get(strict_config_validation);
+        }
+
+        if (strict && StringUtils.isNotEmpty(strictWarningMessage)) {
+            throw new IllegalArgumentException(strictWarningMessage);
         }
 
         if (keys.remove(config_command_evaluation_timeout.name())) {

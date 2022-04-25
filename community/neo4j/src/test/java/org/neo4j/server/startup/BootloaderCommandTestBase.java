@@ -45,6 +45,7 @@ import java.nio.file.attribute.AclEntryPermission;
 import java.nio.file.attribute.AclEntryType;
 import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -67,7 +68,6 @@ import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -192,7 +192,11 @@ abstract class BootloaderCommandTestBase {
                     Files.createFile(confFile, PosixFilePermissions.asFileAttribute(Set.of(OWNER_READ, OWNER_WRITE)));
                 }
             }
-            FileUtils.writeToFile(confFile, String.format("%s=%s%n", setting.name(), value), true);
+            List<String> allSettings = new ArrayList<>(Files.readAllLines(confFile));
+            allSettings.removeIf(
+                    s -> s.startsWith(setting.name()) && !Config.Builder.allowedMultipleDeclarations(setting.name()));
+            allSettings.add(String.format("%s=%s%n", setting.name(), value));
+            Files.write(confFile, allSettings);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

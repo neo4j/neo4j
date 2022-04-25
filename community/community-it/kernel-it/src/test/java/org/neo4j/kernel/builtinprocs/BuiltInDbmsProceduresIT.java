@@ -88,8 +88,8 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest {
                     stringValue("server.config.strict_validation.enabled"),
                     stringValue(
                             "A strict configuration validation will prevent the database from starting up if unknown "
-                                    + "configuration options are specified in the neo4j settings namespace (such as dbms., "
-                                    + "cypher., etc)."),
+                                    + "configuration options are specified in the neo4j settings namespace (such as dbms., cypher., etc) "
+                                    + "or if settings are declared multiple times."),
                     stringValue(TRUE),
                     Values.FALSE
                 },

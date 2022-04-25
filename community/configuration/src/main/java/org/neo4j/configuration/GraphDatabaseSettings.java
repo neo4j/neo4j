@@ -169,7 +169,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .build();
 
     @Description("A strict configuration validation will prevent the database from starting up if unknown "
-            + "configuration options are specified in the neo4j settings namespace (such as dbms., cypher., etc).")
+            + "configuration options are specified in the neo4j settings namespace (such as dbms., cypher., etc) "
+            + "or if settings are declared multiple times.")
     public static final Setting<Boolean> strict_config_validation =
             newBuilder("server.config.strict_validation.enabled", BOOL, true).build();
 
