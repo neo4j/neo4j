@@ -22,6 +22,7 @@ package org.neo4j.internal.id.indexed;
 import static java.lang.Long.toBinaryString;
 import static java.lang.String.format;
 import static java.util.Arrays.fill;
+import static org.neo4j.internal.helpers.Numbers.log2floor;
 
 import java.util.Arrays;
 import org.apache.commons.lang3.StringUtils;
@@ -50,6 +51,9 @@ class IdRange {
      */
     static final int BITSET_SIZE = Long.SIZE;
 
+    static final int BITSET_AND_MASK = BITSET_SIZE - 1;
+    static final int BITSET_SHIFT = log2floor(BITSET_SIZE);
+
     private long generation;
     private boolean addition;
     private final long[][] bitSets;
@@ -61,8 +65,8 @@ class IdRange {
     }
 
     IdState getState(int n) {
-        int longIndex = n / BITSET_SIZE;
-        int bitIndex = n % BITSET_SIZE;
+        int longIndex = n >> BITSET_SHIFT;
+        int bitIndex = n & BITSET_AND_MASK;
         boolean commitBit = (bitSets[BITSET_COMMIT][longIndex] & bitMask(bitIndex)) != 0;
         if (commitBit) {
             boolean reuseBit = (bitSets[BITSET_REUSE][longIndex] & bitMask(bitIndex)) != 0;
@@ -79,8 +83,8 @@ class IdRange {
     void setBits(int type, int n, int numIds) {
         for (int i = 0; i < numIds; i++) {
             int bit = n + i;
-            int longIndex = bit / BITSET_SIZE;
-            int bitIndex = bit % BITSET_SIZE;
+            int longIndex = bit >> BITSET_SHIFT;
+            int bitIndex = bit & BITSET_AND_MASK;
             bitSets[type][longIndex] |= bitMask(bitIndex);
         }
     }
@@ -88,8 +92,8 @@ class IdRange {
     void setBitsForAllTypes(int n, int numIds) {
         for (int i = 0; i < numIds; i++) {
             int bit = n + i;
-            int longIndex = bit / BITSET_SIZE;
-            int bitIndex = bit % BITSET_SIZE;
+            int longIndex = bit >> BITSET_SHIFT;
+            int bitIndex = bit & BITSET_AND_MASK;
             long mask = bitMask(bitIndex);
             bitSets[BITSET_COMMIT][longIndex] |= mask;
             bitSets[BITSET_REUSE][longIndex] |= mask;
