@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.capabilities.Type.BOOLEAN;
 import static org.neo4j.capabilities.Type.DOUBLE;
 import static org.neo4j.capabilities.Type.INTEGER;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
+import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
@@ -85,12 +85,12 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest {
         assertEquals(1, config.size());
         assertArrayEquals(
                 new AnyValue[] {
-                    stringValue("dbms.config.strict_validation"),
+                    stringValue("server.config.strict_validation.enabled"),
                     stringValue(
                             "A strict configuration validation will prevent the database from starting up if unknown "
                                     + "configuration options are specified in the neo4j settings namespace (such as dbms., "
                                     + "cypher., etc)."),
-                    stringValue(FALSE),
+                    stringValue(TRUE),
                     Values.FALSE
                 },
                 config.get(0));

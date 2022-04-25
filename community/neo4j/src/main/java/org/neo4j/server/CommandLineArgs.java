@@ -26,6 +26,8 @@ import static org.neo4j.internal.helpers.collection.Pair.pair;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
+import org.apache.commons.lang3.StringUtils;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.Args;
 import org.neo4j.internal.helpers.collection.Pair;
@@ -75,10 +77,11 @@ public class CommandLineArgs {
                 return pair(keyVal[0], keyVal[1]);
             }
             // Shortcut to specify boolean flags ("-c dbms.enableTheFeature")
-            return pair(s, "true");
+            return StringUtils.isNotBlank(s) ? pair(s, "true") : null;
         });
 
         Map<String, String> ret = stringMap();
+        options.removeIf(Objects::isNull);
         options.forEach(pair -> ret.put(pair.first(), pair.other()));
 
         return ret;

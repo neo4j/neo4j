@@ -135,6 +135,18 @@ public class CommandLineArgsTest {
         assertFalse(parsed.expandCommands());
     }
 
+    @Test
+    void shouldIgnoreEmptyConfigArgs() {
+        // GIVEN
+        String[] args = array("-c", "foo", "-c", "", "-c", "bar=baz");
+
+        // WHEN
+        CommandLineArgs parsed = CommandLineArgs.parse(args);
+
+        // THEN
+        assertEquals(stringMap("foo", "true", "bar", "baz"), parsed.configOverrides());
+    }
+
     private static CommandLineArgs parse(String... args) {
         return CommandLineArgs.parse(args);
     }

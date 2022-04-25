@@ -664,7 +664,8 @@ public final class SettingMigrators {
                         "internal.vm_pause_monitor.stall_alert_threshold"),
                 new Mapping(
                         "dbms.connector.bolt.unsupported_thread_pool_shutdown_wait_time",
-                        "internal.dbms.connector.bolt.thread_pool_shutdown_wait_time"));
+                        "internal.dbms.connector.bolt.thread_pool_shutdown_wait_time"),
+                new Mapping("dbms.config.strict_validation", GraphDatabaseSettings.strict_config_validation.name()));
 
         @Override
         public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
