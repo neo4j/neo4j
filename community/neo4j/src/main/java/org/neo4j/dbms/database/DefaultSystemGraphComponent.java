@@ -83,9 +83,21 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent {
 
     @Override
     public Status detect(Transaction tx) {
-        return hasDatabaseNode(tx)
-                ? (hasSystemDatabaseNode(tx) ? Status.CURRENT : Status.UNSUPPORTED)
-                : Status.UNINITIALIZED;
+        boolean hasDatabaseNode = hasDatabaseNode(tx);
+        if (!hasDatabaseNode) {
+            return Status.UNINITIALIZED;
+        }
+
+        if (hasDatabaseNode && !hasSystemDatabaseNode(tx)) {
+            return Status.UNSUPPORTED;
+        }
+
+        if (hasUniqueConstraint(tx, DATABASE_NAME_LABEL, NAME_PROPERTY)
+                && hasUniqueConstraint(tx, DATABASE_LABEL, DATABASE_NAME_PROPERTY)) {
+            return Status.CURRENT;
+        } else {
+            return Status.REQUIRES_UPGRADE;
+        }
     }
 
     @Override
@@ -129,7 +141,9 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent {
     }
 
     @Override
-    public void upgradeToCurrent(GraphDatabaseService system) {}
+    public void upgradeToCurrent(GraphDatabaseService system) throws Exception {
+        SystemGraphComponent.executeWithFullAccess(system, this::initializeSystemGraphConstraints);
+    }
 
     private static boolean hasDatabaseNode(Transaction tx) {
         try (ResourceIterator<Node> nodes = tx.findNodes(DATABASE_LABEL)) {

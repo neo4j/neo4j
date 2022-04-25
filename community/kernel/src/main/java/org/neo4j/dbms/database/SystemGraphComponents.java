@@ -81,6 +81,13 @@ public class SystemGraphComponents {
                 .orElse(SystemGraphComponent.Status.CURRENT);
     }
 
+    public SystemGraphComponent.Status detect(GraphDatabaseService system) {
+        return components.stream()
+                .map(c -> c.detect(system))
+                .reduce(SystemGraphComponent.Status::with)
+                .orElse(SystemGraphComponent.Status.CURRENT);
+    }
+
     public void initializeSystemGraph(GraphDatabaseService system) {
         Preconditions.checkState(
                 system.databaseName().equals(SYSTEM_DATABASE_NAME),

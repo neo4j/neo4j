@@ -60,6 +60,14 @@ public interface SystemGraphComponent {
      */
     Status detect(Transaction tx);
 
+    default Status detect(GraphDatabaseService system) {
+        try (Transaction tx = system.beginTx()) {
+            SystemGraphComponent.Status status = detect(tx);
+            tx.commit();
+            return status;
+        }
+    }
+
     /**
      * If the component-specific sub-graph of the system database is not initialized yet (empty), this method should populate it with the default contents for
      * the current version of the component.
