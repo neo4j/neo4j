@@ -98,10 +98,6 @@ object IndexDescriptor {
       override def toPublicApi: graphdb.schema.IndexType = graphdb.schema.IndexType.RANGE
     }
 
-    case object Btree extends IndexType {
-      override def toPublicApi: graphdb.schema.IndexType = graphdb.schema.IndexType.BTREE
-    }
-
     case object Text extends IndexType {
       override def toPublicApi: graphdb.schema.IndexType = graphdb.schema.IndexType.TEXT
     }
@@ -112,7 +108,6 @@ object IndexDescriptor {
 
     def fromPublicApi(indexType: graphdb.schema.IndexType): Option[IndexType] = indexType match {
       case graphdb.schema.IndexType.RANGE => Some(IndexType.Range)
-      case graphdb.schema.IndexType.BTREE => Some(IndexType.Btree)
       case graphdb.schema.IndexType.TEXT  => Some(IndexType.Text)
       case graphdb.schema.IndexType.POINT => Some(IndexType.Point)
       case _                              => None

@@ -87,7 +87,7 @@ class IntegrityValidator {
         KernelVersion currentVersion = neoStores.getMetaDataStore().kernelVersion();
         if (currentVersion.isLessThan(VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED)) {
             if (schemaRule instanceof IndexDescriptor index) {
-                if (index.isTokenIndex() || isBtreeRelationshipPropertyIndex(index)) {
+                if (index.isTokenIndex()) {
                     throw new TransactionFailureException(
                             Status.General.UpgradeRequired,
                             "Index operation on index '%s' not allowed. "
@@ -148,10 +148,6 @@ class IntegrityValidator {
                 }
             }
         }
-    }
-
-    private boolean isBtreeRelationshipPropertyIndex(IndexDescriptor index) {
-        return index.getIndexType() == IndexType.BTREE && index.schema().isRelationshipTypeSchemaDescriptor();
     }
 
     private boolean isRangePointOrTextIndex(IndexType indexType) {

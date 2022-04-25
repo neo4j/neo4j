@@ -124,30 +124,6 @@ class IntegrityValidatorTest {
                         "Required kernel version for this transaction is V4_3_D4, but actual version was V4_2.");
     }
 
-    @Test
-    void relationshipPropertyIndexesNotAllowedForOldKernelVersions() {
-        // Given
-        NeoStores store = mock(NeoStores.class);
-        MetaDataStore metaDataStore = mock(MetaDataStore.class);
-        when(store.getMetaDataStore()).thenReturn(metaDataStore);
-        when(metaDataStore.kernelVersion()).thenReturn(KernelVersion.V4_2);
-
-        IndexUpdateListener indexes = mock(IndexUpdateListener.class);
-        IntegrityValidator validator = new IntegrityValidator(store);
-        validator.setIndexValidator(indexes);
-
-        var index = IndexPrototype.forSchema(SchemaDescriptors.forRelType(3, 14))
-                .withIndexType(IndexType.BTREE)
-                .withName("any name")
-                .materialise(4);
-
-        // When
-        assertThatThrownBy(() -> validator.validateSchemaRule(index))
-                .isInstanceOf(TransactionFailureException.class)
-                .hasMessageContaining(
-                        "Required kernel version for this transaction is V4_3_D4, but actual version was V4_2.");
-    }
-
     @ParameterizedTest
     @EnumSource(
             value = IndexType.class,

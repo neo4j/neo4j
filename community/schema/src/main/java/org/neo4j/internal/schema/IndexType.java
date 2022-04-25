@@ -22,41 +22,41 @@ package org.neo4j.internal.schema;
 /**
  * This is the internal equivalent of {@link org.neo4j.graphdb.schema.IndexType}.
  * <p>
- * NOTE: The ordinal is used in the hash function for the auto-generated SchemaRule names, so avoid changing the ordinals when modifying this enum.
+ * NOTE: The typeNumber is used in the hash function for the auto-generated SchemaRule names, so avoid changing them when modifying this enum.
  */
 public enum IndexType {
     /**
-     * @see org.neo4j.graphdb.schema.IndexType#BTREE
-     */
-    BTREE,
-    /**
      * @see org.neo4j.graphdb.schema.IndexType#FULLTEXT
      */
-    FULLTEXT,
+    FULLTEXT(1),
     /**
      * @see org.neo4j.graphdb.schema.IndexType#LOOKUP
      */
-    LOOKUP,
+    LOOKUP(2),
     /**
      * @see org.neo4j.graphdb.schema.IndexType#TEXT
      */
-    TEXT,
+    TEXT(3),
     /**
      * @see org.neo4j.graphdb.schema.IndexType#RANGE
      */
-    RANGE,
+    RANGE(4),
     /**
      * @see org.neo4j.graphdb.schema.IndexType#POINT
      */
-    POINT;
+    POINT(5);
+
+    private final int typeNumber;
+
+    IndexType(int typeNumber) {
+        this.typeNumber = typeNumber;
+    }
 
     public static IndexType fromPublicApi(org.neo4j.graphdb.schema.IndexType type) {
         if (type == null) {
             return null;
         }
         switch (type) {
-            case BTREE:
-                return BTREE;
             case FULLTEXT:
                 return FULLTEXT;
             case LOOKUP:
@@ -74,8 +74,6 @@ public enum IndexType {
 
     public org.neo4j.graphdb.schema.IndexType toPublicApi() {
         switch (this) {
-            case BTREE:
-                return org.neo4j.graphdb.schema.IndexType.BTREE;
             case FULLTEXT:
                 return org.neo4j.graphdb.schema.IndexType.FULLTEXT;
             case LOOKUP:
@@ -93,5 +91,12 @@ public enum IndexType {
 
     public boolean isLookup() {
         return this == LOOKUP;
+    }
+
+    /**
+     * To be used in schema name generation to make sure that doesn't change when types are added/removed from the enum.
+     */
+    public int getTypeNumber() {
+        return typeNumber;
     }
 }

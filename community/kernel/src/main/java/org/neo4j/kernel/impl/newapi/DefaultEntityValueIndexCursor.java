@@ -37,20 +37,13 @@ import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithV
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.ImmutableLongSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.api.tuple.primitive.LongObjectPair;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
-import org.eclipse.collections.impl.tuple.primitive.PrimitiveTuples;
-import org.neo4j.collection.trackable.HeapTrackingArrayList;
-import org.neo4j.graphdb.Resource;
-import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.internal.helpers.collection.ResourceClosingIterator;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexResultScore;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
@@ -60,35 +53,21 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
-import org.neo4j.internal.schema.IndexType;
-import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedAndRemoved;
 import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedWithValuesAndRemoved;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
-import org.neo4j.values.storable.Values;
 
 abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexProgressor, CURSOR>
         implements ValueIndexCursor, IndexResultScore, EntityIndexSeekClient, SortedMergeJoin.Sink {
-    private static final Comparator<LongObjectPair<Value[]>> ASCENDING_COMPARATOR =
-            computeComparator(Values.COMPARATOR);
-    private static final Comparator<LongObjectPair<Value[]>> DESCENDING_COMPARATOR =
-            computeComparator((o1, o2) -> -Values.COMPARATOR.compare(o1, o2));
-
     private Read read;
     private long entity;
     private float score;
     private PropertyIndexQuery[] query;
     private Value[] values;
-    // TODO: The following three fields are related to b-tree index type only
-    // and should be removed together with all related code when b-tree is gone
-    private IndexType indexType;
-    private LongObjectPair<Value[]> cachedValues;
-    private ResourceIterator<LongObjectPair<Value[]>> eagerPointIterator;
 
     private LongIterator added = ImmutableEmptyLongIterator.INSTANCE;
     private Iterator<EntityWithPropertyValues> addedWithValues = Collections.emptyIterator();
@@ -120,7 +99,6 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
         super.initialize(progressor);
         this.indexOrder = constraints.order();
         this.needsValues = constraints.needsValues();
-        this.indexType = descriptor.getIndexType();
         sortedMergeJoin.initialize(indexOrder);
 
         this.query = query;
@@ -275,7 +253,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
             sortedMergeJoin.setA(entityWithPropertyValues.getEntityId(), entityWithPropertyValues.getValues());
         }
 
-        if (sortedMergeJoin.needsB() && innerNextFromBuffer()) {
+        if (sortedMergeJoin.needsB() && innerNext()) {
             sortedMergeJoin.setB(entity, values);
         }
 
@@ -284,106 +262,6 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
             traceOnEntity(tracer, entity);
         }
         return next;
-    }
-
-    private boolean innerNextFromBuffer() {
-        if (eagerPointIterator != null) {
-            return streamPointsFromIterator();
-        }
-
-        boolean innerNext = innerNext();
-        // b-tree index is the only index type for which geometric points need to be sorted in memory, because it both
-        // supports ordering
-        // and stores geometric points in the order based on a space-filling curve, which is different ordering than the
-        // one used
-        // by Cypher for this type
-        if (values != null && innerNext && indexOrder != IndexOrder.NONE && indexType == IndexType.BTREE) {
-            return eagerizingPoints();
-        } else {
-            return innerNext;
-        }
-    }
-
-    private boolean containsPoints() {
-        for (final var value : values) {
-            final var valueGroup = value.valueGroup();
-            if (valueGroup == ValueGroup.GEOMETRY || valueGroup == ValueGroup.GEOMETRY_ARRAY) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean eagerizingPoints() {
-        HeapTrackingArrayList<LongObjectPair<Value[]>> eagerPointBuffer = null;
-        boolean shouldContinue = true;
-
-        while (shouldContinue && containsPoints()) {
-            if (eagerPointBuffer == null) {
-                eagerPointBuffer = HeapTrackingArrayList.newArrayList(256, memoryTracker);
-            }
-            eagerPointBuffer.add(PrimitiveTuples.pair(entity, Arrays.copyOf(values, values.length)));
-            shouldContinue = innerNext();
-        }
-        if (eagerPointBuffer != null) {
-            if (shouldContinue) {
-                this.cachedValues = PrimitiveTuples.pair(entity, Arrays.copyOf(values, values.length));
-            }
-
-            eagerPointBuffer.sort(comparator());
-            eagerPointIterator = ResourceClosingIterator.newResourceIterator(
-                    eagerPointBuffer.autoClosingIterator(), asResource(eagerPointBuffer));
-            return streamPointsFromIterator();
-        } else {
-            return true;
-        }
-    }
-
-    private static Resource asResource(AutoCloseable resource) {
-        return () -> IOUtils.closeAllUnchecked(resource);
-    }
-
-    private static Comparator<LongObjectPair<Value[]>> computeComparator(Comparator<Value> comparator) {
-        return (o1, o2) -> {
-            Value[] v1 = o1.getTwo();
-            Value[] v2 = o2.getTwo();
-            for (int i = 0; i < v1.length; i++) {
-                int compare = comparator.compare(v1[i], v2[i]);
-                if (compare != 0) {
-                    return compare;
-                }
-            }
-
-            return 0;
-        };
-    }
-
-    private Comparator<LongObjectPair<Value[]>> comparator() {
-        switch (indexOrder) {
-            case ASCENDING:
-                return ASCENDING_COMPARATOR;
-            case DESCENDING:
-                return DESCENDING_COMPARATOR;
-            default:
-                throw new IllegalStateException("can't sort if no indexOrder defined");
-        }
-    }
-
-    private boolean streamPointsFromIterator() {
-        if (eagerPointIterator.hasNext()) {
-            LongObjectPair<Value[]> nextPair = eagerPointIterator.next();
-            entity = nextPair.getOne();
-            values = nextPair.getTwo();
-            return true;
-        } else if (cachedValues != null) {
-            values = cachedValues.getTwo();
-            entity = cachedValues.getOne();
-            eagerPointIterator = null;
-            cachedValues = null;
-            return true;
-        } else {
-            return false;
-        }
     }
 
     @Override
@@ -430,10 +308,6 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
             this.added = ImmutableEmptyLongIterator.INSTANCE;
             this.addedWithValues = Collections.emptyIterator();
             this.removed = LongSets.immutable.empty();
-
-            if (eagerPointIterator != null) {
-                eagerPointIterator.close();
-            }
         }
         super.closeInternal();
     }

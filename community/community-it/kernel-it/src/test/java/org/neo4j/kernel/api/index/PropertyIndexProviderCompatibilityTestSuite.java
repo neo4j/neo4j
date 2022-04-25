@@ -61,7 +61,7 @@ abstract class PropertyIndexProviderCompatibilityTestSuite extends IndexProvider
     /**
      * Granular composite queries means queries against composite index that is made up of a mix of exact, range and exists queries.
      * For example: exact match on first column and range scan on seconds column.
-     * See {@link org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider} for further details on supported combinations.
+     * See {@link org.neo4j.kernel.impl.index.schema.RangeIndexProvider} for further details on supported combinations.
      * @return true if index provider have support granular composite queries.
      */
     boolean supportsGranularCompositeQueries() {

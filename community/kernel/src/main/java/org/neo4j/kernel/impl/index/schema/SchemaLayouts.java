@@ -37,7 +37,6 @@ public class SchemaLayouts implements LayoutBootstrapper {
 
     public SchemaLayouts() {
         allSchemaLayout = Arrays.asList(
-                genericLayout(),
                 idRangeLayout(),
                 meta -> new Layouts(new TokenScanLayout(), singleRoot()),
                 meta -> new Layouts(new IndexStatisticsLayout(), singleRoot()),
@@ -49,7 +48,6 @@ public class SchemaLayouts implements LayoutBootstrapper {
 
     public static String[] layoutDescriptions() {
         return new String[] {
-            "Generic layout",
             "Id range layout",
             "Token scan layout",
             "Index statistics layout",
@@ -76,21 +74,6 @@ public class SchemaLayouts implements LayoutBootstrapper {
         } catch (MetadataMismatchException e) {
             return false;
         }
-    }
-
-    private static LayoutBootstrapper genericLayout() {
-        return meta -> {
-            final IndexSpecificSpaceFillingCurveSettings settings =
-                    IndexSpecificSpaceFillingCurveSettings.fromConfig(Config.defaults());
-            int maxNumberOfSlots = 10;
-            for (int numberOfSlots = 1; numberOfSlots < maxNumberOfSlots; numberOfSlots++) {
-                var layouts = new Layouts(new GenericLayout(numberOfSlots, settings), singleRoot());
-                if (matchingLayout(meta, layouts)) {
-                    return layouts;
-                }
-            }
-            return null;
-        };
     }
 
     private static LayoutBootstrapper rangeLayout() {

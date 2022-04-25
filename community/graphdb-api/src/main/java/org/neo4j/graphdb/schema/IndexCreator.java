@@ -60,7 +60,7 @@ public interface IndexCreator {
     /**
      * Specify the type of index to be created.
      * <p>
-     * By default, the {@link IndexType#BTREE} will be used.
+     * By default, the {@link IndexType#RANGE} will be used.
      * See the documentation on {@link IndexType} for more information about the different index types.
      *
      * @param type the desired index type.

@@ -44,7 +44,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
   private val propertyId = 1337
 
   private val index =
-    IndexDescriptor.forLabel(IndexDescriptor.IndexType.Btree, LabelId(labelId), Seq(PropertyKeyId(propertyId)))
+    IndexDescriptor.forLabel(IndexDescriptor.IndexType.Range, LabelId(labelId), Seq(PropertyKeyId(propertyId)))
 
   private val descriptor: schema.IndexDescriptor =
     IndexPrototype.forSchema(SchemaDescriptors.forLabel(labelId, propertyId)).withName("wut!").materialise(11L)

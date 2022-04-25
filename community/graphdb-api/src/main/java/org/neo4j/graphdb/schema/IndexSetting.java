@@ -71,7 +71,7 @@ public interface IndexSetting {
     }
 
     /**
-     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * Fine tune behaviour for spatial values in point index, indexes of type {@link IndexType#POINT}.
      * <p>
      * Configuration for cartesian coordinate reference system.
      * <p>
@@ -82,7 +82,7 @@ public interface IndexSetting {
     }
 
     /**
-     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * Fine tune behaviour for spatial values in point index, indexes of type {@link IndexType#POINT}.
      * <p>
      * Configuration for cartesian coordinate reference system.
      * <p>
@@ -93,7 +93,7 @@ public interface IndexSetting {
     }
 
     /**
-     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * Fine tune behaviour for spatial values in point index, indexes of type {@link IndexType#POINT}.
      * <p>
      * Configuration for cartesian coordinate reference system.
      * <p>
@@ -104,7 +104,7 @@ public interface IndexSetting {
     }
 
     /**
-     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * Fine tune behaviour for spatial values in point index, indexes of type {@link IndexType#POINT}.
      * <p>
      * Configuration for cartesian coordinate reference system.
      * <p>
@@ -115,7 +115,7 @@ public interface IndexSetting {
     }
 
     /**
-     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * Fine tune behaviour for spatial values in point index, indexes of type {@link IndexType#POINT}.
      * <p>
      * Configuration for cartesian coordinate reference system.
      * <p>
@@ -126,7 +126,7 @@ public interface IndexSetting {
     }
 
     /**
-     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * Fine tune behaviour for spatial values in point index, indexes of type {@link IndexType#POINT}.
      * <p>
      * Configuration for cartesian coordinate reference system.
      * <p>
@@ -137,7 +137,7 @@ public interface IndexSetting {
     }
 
     /**
-     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * Fine tune behaviour for spatial values in point index, indexes of type {@link IndexType#POINT}.
      * <p>
      * Configuration for cartesian coordinate reference system.
      * <p>
@@ -148,7 +148,7 @@ public interface IndexSetting {
     }
 
     /**
-     * Fine tune behaviour for spatial values in btree index, indexes of type {@link IndexType#BTREE}.
+     * Fine tune behaviour for spatial values in point index, indexes of type {@link IndexType#POINT}.
      * <p>
      * Configuration for cartesian coordinate reference system.
      * <p>

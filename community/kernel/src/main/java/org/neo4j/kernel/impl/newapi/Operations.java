@@ -1346,9 +1346,6 @@ public class Operations implements Write, SchemaWrite {
         if (prototype.isTokenIndex()) {
             assertTokenAndRelationshipPropertyIndexesSupported("Failed to create Token lookup index.");
         }
-        if (prototype.schema().entityType() == RELATIONSHIP && prototype.getIndexType() == IndexType.BTREE) {
-            assertTokenAndRelationshipPropertyIndexesSupported("Failed to create btree relationship property index.");
-        }
         IndexType indexType = prototype.getIndexType();
         if (indexType == IndexType.TEXT) {
             assertTextIndexSupport(prototype);
@@ -1466,7 +1463,6 @@ public class Operations implements Write, SchemaWrite {
                         case FULLTEXT -> indexProviders.getFulltextProvider();
                         case LOOKUP -> indexProviders.getTokenIndexProvider();
                         case TEXT -> indexProviders.getTextIndexProvider();
-                        case BTREE -> indexProviders.getBtreeIndexProvider();
                         case POINT -> indexProviders.getPointIndexProvider();
                         default -> indexProviders.getDefaultProvider();
                     };
@@ -1975,7 +1971,7 @@ public class Operations implements Write, SchemaWrite {
                 throw new AlreadyConstrainedException(constraint, CONSTRAINT_CREATION, token);
             }
             IndexType indexType = prototype.getIndexType();
-            if (!(indexType == IndexType.BTREE || indexType == IndexType.RANGE)) {
+            if (indexType != IndexType.RANGE) {
                 throw new CreateConstraintFailureException(
                         constraint, "Cannot create backing constraint index with index type " + indexType + ".");
             }

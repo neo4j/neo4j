@@ -408,7 +408,6 @@ org.neo4j.graphdb.schema.IndexSetting::spatial_Wgs84_3D_Min() org.neo4j.graphdb.
 org.neo4j.graphdb.schema.IndexSetting::spatial_Wgs84_Max() org.neo4j.graphdb.schema.IndexSetting public static
 org.neo4j.graphdb.schema.IndexSetting::spatial_Wgs84_Min() org.neo4j.graphdb.schema.IndexSetting public static
 org.neo4j.graphdb.schema.IndexType public final enum extends java.lang.Enum<org.neo4j.graphdb.schema.IndexType>
-org.neo4j.graphdb.schema.IndexType::BTREE org.neo4j.graphdb.schema.IndexType public static final
 org.neo4j.graphdb.schema.IndexType::FULLTEXT org.neo4j.graphdb.schema.IndexType public static final
 org.neo4j.graphdb.schema.IndexType::LOOKUP org.neo4j.graphdb.schema.IndexType public static final
 org.neo4j.graphdb.schema.IndexType::POINT org.neo4j.graphdb.schema.IndexType public static final

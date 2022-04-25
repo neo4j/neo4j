@@ -45,20 +45,16 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
 /**
- * Testing utility which takes a fully functional {@link GenericNativeIndexProviderFactory} and turns it into a provider which
+ * Testing utility which takes a fully functional {@link RangeIndexProviderFactory} and turns it into a provider which
  * is guaranteed to fail for various reasons, e.g. failing index population with the goal of creating an index which is in a
  * {@link InternalIndexState#FAILED} state. To get to this state in high-level testing is surprisingly hard,
  * so this test utility helps a lot to accomplish this.
  *
  * To be sure to use this provider in your test please do something like:
- * <pre>
- * db = new TestGraphDatabaseFactory()
- *     .removeExtensions( TestGraphDatabaseFactory.INDEX_PROVIDERS_FILTER )
- *     .addExtension( new FailingGenericNativeIndexProviderFactory( FailureType.INITIAL_STATE ) )
- *     .newEmbeddedDatabase( dir );
- * </pre>
+ * - add as extension
+ * - create the index with specified indexProvider (possible on kernelLevel)
  */
-public class FailingGenericNativeIndexProviderFactory extends BuiltInDelegatingIndexProviderFactory {
+public class FailingNativeIndexProviderFactory extends BuiltInDelegatingIndexProviderFactory {
     public static final String INITIAL_STATE_FAILURE_MESSAGE = "Override initial state as failed";
     public static final String POPULATION_FAILURE_MESSAGE = "Fail on update during population";
 
@@ -72,11 +68,11 @@ public class FailingGenericNativeIndexProviderFactory extends BuiltInDelegatingI
 
     private final EnumSet<FailureType> failureTypes;
 
-    public FailingGenericNativeIndexProviderFactory(FailureType... failureTypes) {
-        this(new GenericNativeIndexProviderFactory(), failureTypes);
+    public FailingNativeIndexProviderFactory(FailureType... failureTypes) {
+        this(new RangeIndexProviderFactory(), failureTypes);
     }
 
-    public FailingGenericNativeIndexProviderFactory(
+    public FailingNativeIndexProviderFactory(
             AbstractIndexProviderFactory<?> indexProviderFactory, FailureType... failureTypes) {
         super(indexProviderFactory, DESCRIPTOR);
         if (failureTypes.length == 0) {

@@ -32,7 +32,6 @@ import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.PointIndexProvider;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
@@ -42,7 +41,6 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
     private final Map<IndexProviderDescriptor, IndexProvider> indexProvidersByDescriptor = new HashMap<>();
     private final Map<String, IndexProvider> indexProvidersByName = new HashMap<>();
     private final IndexProvider tokenIndexProvider;
-    private final IndexProvider btreeIndexProvider;
     private final IndexProvider textIndexProvider;
     private final IndexProvider fulltextIndexProvider;
     private final IndexProvider rangeIndexProvider;
@@ -51,14 +49,12 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
 
     public StaticIndexProviderMap(
             TokenIndexProvider tokenIndexProvider,
-            GenericNativeIndexProvider btreeIndexProvider,
             TextIndexProvider textIndexProvider,
             FulltextIndexProvider fulltextIndexProvider,
             RangeIndexProvider rangeIndexProvider,
             PointIndexProvider pointIndexProvider,
             DependencyResolver dependencies) {
         this.tokenIndexProvider = tokenIndexProvider;
-        this.btreeIndexProvider = btreeIndexProvider;
         this.textIndexProvider = textIndexProvider;
         this.fulltextIndexProvider = fulltextIndexProvider;
         this.rangeIndexProvider = rangeIndexProvider;
@@ -69,7 +65,6 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
     @Override
     public void init() throws Exception {
         add(tokenIndexProvider);
-        add(btreeIndexProvider);
         add(textIndexProvider);
         add(fulltextIndexProvider);
         add(rangeIndexProvider);
@@ -95,11 +90,6 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
     @Override
     public IndexProvider getTextIndexProvider() {
         return textIndexProvider;
-    }
-
-    @Override
-    public IndexProvider getBtreeIndexProvider() {
-        return btreeIndexProvider;
     }
 
     @Override

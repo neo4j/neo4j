@@ -25,9 +25,9 @@ import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
-import static org.neo4j.internal.schema.IndexType.BTREE;
 import static org.neo4j.internal.schema.IndexType.FULLTEXT;
 import static org.neo4j.internal.schema.IndexType.RANGE;
+import static org.neo4j.internal.schema.IndexType.TEXT;
 import static org.neo4j.internal.schema.SchemaRuleMapifier.mapifySchemaRule;
 import static org.neo4j.internal.schema.SchemaRuleMapifier.unmapifySchemaRule;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForSchema;
@@ -77,9 +77,12 @@ class SchemaStoreMapificationTest {
             .withIndexType(FULLTEXT)
             .withName("relFtsIndex")
             .materialise(1);
-    private ConstraintDescriptor uniqueLabelConstraint = ConstraintDescriptorFactory.uniqueForSchema(labelSchema, BTREE)
+    // Text is not an index type we support for constraints but let's see that we can actually store/read it correctly
+    private ConstraintDescriptor uniqueLabelConstraint = ConstraintDescriptorFactory.uniqueForSchema(labelSchema, TEXT)
             .withName("uniqueLabelConstraint")
             .withId(1);
+    private ConstraintDescriptor nodeKeyConstraint =
+            nodeKeyForSchema(labelSchema, TEXT).withName("nodeKeyConstraint").withId(1);
     private ConstraintDescriptor uniqueLabelConstraintWithType = ConstraintDescriptorFactory.uniqueForSchema(
                     labelSchema, RANGE)
             .withName("uniqueLabelConstraintWithType")
@@ -87,8 +90,6 @@ class SchemaStoreMapificationTest {
             .withId(1);
     private ConstraintDescriptor existsLabelConstraint =
             existsForSchema(labelSchema).withName("existsLabelConstraint").withId(1);
-    private ConstraintDescriptor nodeKeyConstraint =
-            nodeKeyForSchema(labelSchema, BTREE).withName("nodeKeyConstraint").withId(1);
     private ConstraintDescriptor nodeKeyConstraintWithType = nodeKeyForSchema(labelSchema, RANGE)
             .withName("nodeKeyConstraintWithType")
             .withOwnedIndexId(7)
@@ -213,22 +214,7 @@ class SchemaStoreMapificationTest {
     }
 
     @Test
-    void uniqueLabelConstraintDeterministicUnmapification() throws Exception {
-        // org.neo4j.internal.schema.constraints.ConstraintDescriptorImplementation@402007
-        Map<String, Value> mapified = Map.of(
-                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"),
-                "__org.neo4j.SchemaRule.name", Values.stringValue("uniqueLabelConstraint"),
-                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
-                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
-                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
-                "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE"),
-                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
-        // A uniqueness constraint without specified index type should have gotten the BTREE type.
-        assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(uniqueLabelConstraint);
-    }
-
-    @Test
-    void setUniqueLabelConstraintWithBtreeTypeDeterministicUnmapification() throws Exception {
+    void setUniqueLabelConstraintWithOtherTypeDeterministicUnmapification() throws Exception {
         Map<String, Value> mapified = Map.of(
                 "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"),
                 "__org.neo4j.SchemaRule.name", Values.stringValue("uniqueLabelConstraint"),
@@ -237,7 +223,7 @@ class SchemaStoreMapificationTest {
                 "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
                 "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE"),
                 "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}),
-                "__org.neo4j.SchemaRule.indexType", Values.stringValue("BTREE"));
+                "__org.neo4j.SchemaRule.indexType", Values.stringValue("TEXT"));
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(uniqueLabelConstraint);
     }
 
@@ -271,22 +257,7 @@ class SchemaStoreMapificationTest {
     }
 
     @Test
-    void nodeKeyConstraintDeterministicUnmapification() throws Exception {
-        // org.neo4j.internal.schema.constraints.ConstraintDescriptorImplementation@40142211
-        Map<String, Value> mapified = Map.of(
-                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"),
-                "__org.neo4j.SchemaRule.name", Values.stringValue("nodeKeyConstraint"),
-                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
-                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
-                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
-                "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE_EXISTS"),
-                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
-        // A uniqueness constraint without specified index type should have gotten the BTREE type.
-        assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(nodeKeyConstraint);
-    }
-
-    @Test
-    void nodeKeyConstraintWithBtreeTypeDeterministicUnmapification() throws Exception {
+    void nodeKeyConstraintWithOtherTypeDeterministicUnmapification() throws Exception {
         Map<String, Value> mapified = Map.of(
                 "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"),
                 "__org.neo4j.SchemaRule.name", Values.stringValue("nodeKeyConstraint"),
@@ -295,7 +266,7 @@ class SchemaStoreMapificationTest {
                 "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
                 "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE_EXISTS"),
                 "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}),
-                "__org.neo4j.SchemaRule.indexType", Values.stringValue("BTREE"));
+                "__org.neo4j.SchemaRule.indexType", Values.stringValue("TEXT"));
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(nodeKeyConstraint);
     }
 

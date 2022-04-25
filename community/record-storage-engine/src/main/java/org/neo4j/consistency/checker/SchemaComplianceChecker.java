@@ -179,15 +179,6 @@ class SchemaComplianceChecker implements AutoCloseable {
         }
     }
 
-    static boolean valuesQualifiesForFulltextIndex(Value[] values) {
-        for (Value value : values) {
-            if (value.valueGroup() == ValueGroup.TEXT || value.valueGroup() == ValueGroup.TEXT_ARRAY) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private <ENTITY extends PrimitiveRecord> void checkMandatoryProperties(
             ENTITY entity,
             IntObjectMap<Value> seenProperties,
@@ -217,7 +208,7 @@ class SchemaComplianceChecker implements AutoCloseable {
         }
 
         return switch (indexType) {
-            case BTREE, RANGE -> true;
+            case RANGE -> true;
             case FULLTEXT -> Arrays.stream(values).anyMatch(value -> isValueSupportedByIndex(indexType, value));
             case POINT, TEXT ->
             // Neither point nor text index can be composite,
@@ -231,7 +222,7 @@ class SchemaComplianceChecker implements AutoCloseable {
 
     static boolean isValueSupportedByIndex(IndexType indexType, Value value) {
         return switch (indexType) {
-            case BTREE, RANGE -> true;
+            case RANGE -> true;
             case TEXT -> value.valueGroup() == ValueGroup.TEXT;
             case FULLTEXT -> value.valueGroup() == ValueGroup.TEXT || value.valueGroup() == ValueGroup.TEXT_ARRAY;
             case POINT -> value.valueGroup() == ValueGroup.GEOMETRY;

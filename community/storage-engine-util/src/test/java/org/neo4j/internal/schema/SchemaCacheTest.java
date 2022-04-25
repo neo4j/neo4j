@@ -261,7 +261,7 @@ class SchemaCacheTest {
         ConstraintDescriptor expected;
         ConstraintDescriptor expected2;
         cache.addSchemaRule(uniquenessConstraint(1L, 1, 2, 3));
-        cache.addSchemaRule(expected = uniquenessConstraint(2L, 1, 3, 4, IndexType.BTREE));
+        cache.addSchemaRule(expected = uniquenessConstraint(2L, 1, 3, 4, IndexType.TEXT));
         cache.addSchemaRule(expected2 = uniquenessConstraint(3L, 1, 3, 5, IndexType.RANGE));
         cache.addSchemaRule(uniquenessConstraint(4L, 1, 2, 6));
 
@@ -718,7 +718,7 @@ class SchemaCacheTest {
 
     @Test
     void hasConstraintRuleShouldNotMatchOnDifferentIndexType() {
-        ConstraintDescriptor existing = uniquenessConstraint(1, 2, 3, 4, IndexType.BTREE);
+        ConstraintDescriptor existing = uniquenessConstraint(1, 2, 3, 4, IndexType.TEXT);
         // Different index type.
         ConstraintDescriptor checked = uniquenessConstraint(0, 2, 3, 4, IndexType.RANGE);
         SchemaCache cache = newSchemaCache(existing);

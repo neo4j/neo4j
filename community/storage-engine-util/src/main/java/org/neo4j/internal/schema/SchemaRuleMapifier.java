@@ -290,13 +290,11 @@ public class SchemaRuleMapifier {
         String constraintRuleType = getString(PROP_CONSTRAINT_RULE_TYPE, props);
         String name = getString(PROP_SCHEMA_RULE_NAME, props);
         OptionalLong ownedIndex = getOptionalLong(PROP_OWNED_INDEX, props);
-        Optional<String> indexTypeString = getOptionalString(PROP_INDEX_TYPE, props);
         ConstraintDescriptor constraint;
         switch (constraintRuleType) {
             case "UNIQUE":
-                constraint = indexTypeString.isPresent()
-                        ? ConstraintDescriptorFactory.uniqueForSchema(schema, getIndexType(indexTypeString.get()))
-                        : ConstraintDescriptorFactory.uniqueForSchema(schema, IndexType.BTREE);
+                constraint = ConstraintDescriptorFactory.uniqueForSchema(
+                        schema, getIndexType(getString(PROP_INDEX_TYPE, props)));
 
                 if (ownedIndex.isPresent()) {
                     constraint = constraint.withOwnedIndexId(ownedIndex.getAsLong());
@@ -306,9 +304,8 @@ public class SchemaRuleMapifier {
                 constraint = ConstraintDescriptorFactory.existsForSchema(schema);
                 return constraint.withId(id).withName(name);
             case "UNIQUE_EXISTS":
-                constraint = indexTypeString.isPresent()
-                        ? ConstraintDescriptorFactory.nodeKeyForSchema(schema, getIndexType(indexTypeString.get()))
-                        : ConstraintDescriptorFactory.nodeKeyForSchema(schema, IndexType.BTREE);
+                constraint = ConstraintDescriptorFactory.nodeKeyForSchema(
+                        schema, getIndexType(getString(PROP_INDEX_TYPE, props)));
 
                 if (ownedIndex.isPresent()) {
                     constraint = constraint.withOwnedIndexId(ownedIndex.getAsLong());

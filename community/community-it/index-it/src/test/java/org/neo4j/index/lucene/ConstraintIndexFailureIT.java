@@ -23,9 +23,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.DESCRIPTOR;
-import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.INITIAL_STATE;
-import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.INITIAL_STATE_FAILURE_MESSAGE;
+import static org.neo4j.kernel.impl.index.schema.FailingNativeIndexProviderFactory.DESCRIPTOR;
+import static org.neo4j.kernel.impl.index.schema.FailingNativeIndexProviderFactory.FailureType.INITIAL_STATE;
+import static org.neo4j.kernel.impl.index.schema.FailingNativeIndexProviderFactory.INITIAL_STATE_FAILURE_MESSAGE;
 
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintExceptio
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.index.schema.BuiltInDelegatingIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.FailingNativeIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProviderFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -73,8 +73,7 @@ class ConstraintIndexFailureIT {
         // ordeal, I know right...
         FileUtils.deleteDirectory(IndexDirectoryStructure.baseSchemaIndexFolder(dir));
         managementService = new TestDatabaseManagementServiceBuilder(dir)
-                .addExtension(
-                        new FailingGenericNativeIndexProviderFactory(new RangeIndexProviderFactory(), INITIAL_STATE))
+                .addExtension(new FailingNativeIndexProviderFactory(INITIAL_STATE))
                 .noOpSystemGraphInitializer()
                 .build();
         db = managementService.database(DEFAULT_DATABASE_NAME);

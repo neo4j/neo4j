@@ -33,14 +33,7 @@ import org.neo4j.values.storable.ValueWriter;
  */
 class Types {
     // A list of all supported types
-
-    // Geometry type cannot be replaced directly, because we need to support
-    // sorting of points both in BTREE and RANGE index types.
-    // Since only one geometry type will be used in each index type,
-    // we keep the same typeId to more easily fit it into how the type arrays are handled in this file.
-    // GeometryType will be removed in 5.0.
     static final GeometryType GEOMETRY = new GeometryType((byte) 0);
-    static final GeometryType2 GEOMETRY_2 = new GeometryType2((byte) 0);
     static final ZonedDateTimeType ZONED_DATE_TIME = new ZonedDateTimeType((byte) 1);
     static final LocalDateTimeType LOCAL_DATE_TIME = new LocalDateTimeType((byte) 2);
     static final DateType DATE = new DateType((byte) 3);
@@ -50,9 +43,7 @@ class Types {
     static final TextType TEXT = new TextType((byte) 7);
     static final BooleanType BOOLEAN = new BooleanType((byte) 8);
     static final NumberType NUMBER = new NumberType((byte) 9);
-    // See the comment about geometry type for explanation about the two geometry array types
     static final GeometryArrayType GEOMETRY_ARRAY = new GeometryArrayType((byte) 10);
-    static final GeometryArrayType2 GEOMETRY_ARRAY_2 = new GeometryArrayType2((byte) 10);
     static final ZonedDateTimeArrayType ZONED_DATE_TIME_ARRAY = new ZonedDateTimeArrayType((byte) 11);
     static final LocalDateTimeArrayType LOCAL_DATE_TIME_ARRAY = new LocalDateTimeArrayType((byte) 12);
     static final DateArrayType DATE_ARRAY = new DateArrayType((byte) 13);
@@ -88,42 +79,24 @@ class Types {
 
     private static AbstractArrayType<?> typeOf(
             ValueWriter.ArrayType arrayType, AbstractArrayType<?> geometryArrayType) {
-        switch (arrayType) {
-            case BOOLEAN:
-                return BOOLEAN_ARRAY;
-            case BYTE:
-            case SHORT:
-            case INT:
-            case LONG:
-            case FLOAT:
-            case DOUBLE:
-                return NUMBER_ARRAY;
-            case STRING:
-            case CHAR:
-                return TEXT_ARRAY;
-            case LOCAL_DATE_TIME:
-                return LOCAL_DATE_TIME_ARRAY;
-            case DATE:
-                return DATE_ARRAY;
-            case DURATION:
-                return DURATION_ARRAY;
-            case POINT:
-                return geometryArrayType;
-            case LOCAL_TIME:
-                return LOCAL_TIME_ARRAY;
-            case ZONED_DATE_TIME:
-                return ZONED_DATE_TIME_ARRAY;
-            case ZONED_TIME:
-                return ZONED_TIME_ARRAY;
-            default:
-                throw new UnsupportedOperationException(arrayType.name());
-        }
+        return switch (arrayType) {
+            case BOOLEAN -> BOOLEAN_ARRAY;
+            case BYTE, SHORT, INT, LONG, FLOAT, DOUBLE -> NUMBER_ARRAY;
+            case STRING, CHAR -> TEXT_ARRAY;
+            case LOCAL_DATE_TIME -> LOCAL_DATE_TIME_ARRAY;
+            case DATE -> DATE_ARRAY;
+            case DURATION -> DURATION_ARRAY;
+            case POINT -> geometryArrayType;
+            case LOCAL_TIME -> LOCAL_TIME_ARRAY;
+            case ZONED_DATE_TIME -> ZONED_DATE_TIME_ARRAY;
+            case ZONED_TIME -> ZONED_TIME_ARRAY;
+        };
     }
 
-    private static Type[] instantiateTypes(Type geometryType, Type geometryArrayType) {
+    private static Type[] instantiateTypes() {
         List<Type> types = new ArrayList<>();
 
-        types.add(geometryType);
+        types.add(GEOMETRY);
         types.add(ZONED_DATE_TIME);
         types.add(LOCAL_DATE_TIME);
         types.add(DATE);
@@ -134,7 +107,7 @@ class Types {
         types.add(BOOLEAN);
         types.add(NUMBER);
 
-        types.add(geometryArrayType);
+        types.add(GEOMETRY_ARRAY);
         types.add(ZONED_DATE_TIME_ARRAY);
         types.add(LOCAL_DATE_TIME_ARRAY);
         types.add(DATE_ARRAY);
@@ -156,11 +129,11 @@ class Types {
         return types.toArray(new Type[0]);
     }
 
-    static class Btree {
+    static class Range {
         /**
          * Holds typeId --> {@link Type} mapping.
          */
-        static final Type[] BY_ID = instantiateTypes(GEOMETRY, GEOMETRY_ARRAY);
+        static final Type[] BY_ID = instantiateTypes();
 
         /**
          * Holds {@link ValueGroup#ordinal()} --> {@link Type} mapping.
@@ -191,45 +164,6 @@ class Types {
             // Build BY_ARRAY_TYPE mapping.
             for (ValueWriter.ArrayType arrayType : ValueWriter.ArrayType.values()) {
                 BY_ARRAY_TYPE[arrayType.ordinal()] = typeOf(arrayType, GEOMETRY_ARRAY);
-            }
-        }
-    }
-
-    static class Range {
-        /**
-         * Holds typeId --> {@link Type} mapping.
-         */
-        static final Type[] BY_ID = instantiateTypes(GEOMETRY_2, GEOMETRY_ARRAY_2);
-
-        /**
-         * Holds {@link ValueGroup#ordinal()} --> {@link Type} mapping.
-         */
-        static final Type[] BY_GROUP = new Type[ValueGroup.values().length];
-
-        /**
-         * Holds {@link ValueWriter.ArrayType} --> {@link Type} mapping.
-         */
-        static final AbstractArrayType[] BY_ARRAY_TYPE = new AbstractArrayType[ValueWriter.ArrayType.values().length];
-
-        /**
-         * Lowest {@link Type} according to {@link Type#COMPARATOR}.
-         */
-        static final Type LOWEST_BY_VALUE_GROUP = Collections.min(Arrays.asList(BY_ID), Type.COMPARATOR);
-
-        /**
-         * Highest {@link Type} according to {@link Type#COMPARATOR}.
-         */
-        static final Type HIGHEST_BY_VALUE_GROUP = Collections.max(Arrays.asList(BY_ID), Type.COMPARATOR);
-
-        static {
-            // Build BY_GROUP mapping.
-            for (Type type : BY_ID) {
-                BY_GROUP[type.valueGroup.ordinal()] = type;
-            }
-
-            // Build BY_ARRAY_TYPE mapping.
-            for (ValueWriter.ArrayType arrayType : ValueWriter.ArrayType.values()) {
-                BY_ARRAY_TYPE[arrayType.ordinal()] = typeOf(arrayType, GEOMETRY_ARRAY_2);
             }
         }
     }

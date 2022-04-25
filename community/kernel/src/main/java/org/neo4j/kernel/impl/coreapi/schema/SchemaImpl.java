@@ -714,7 +714,7 @@ public class SchemaImpl implements Schema {
         }
 
         private static void assertConstraintableIndexType(String constraintType, IndexType indexType) {
-            if (indexType != null && !(indexType == IndexType.BTREE || indexType == IndexType.RANGE)) {
+            if (indexType != null && indexType != IndexType.RANGE) {
                 throw new IllegalArgumentException(
                         constraintType + " constraints cannot be created with index type " + indexType + ".");
             }

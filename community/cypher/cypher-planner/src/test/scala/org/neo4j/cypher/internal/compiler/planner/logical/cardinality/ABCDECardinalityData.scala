@@ -238,8 +238,8 @@ trait ABCDECardinalityData extends CardinalityModelIntegrationTest {
       // make sure that we can cope with duplicate indexes
       .addNodeIndex("R1", Seq("prop"), R1propExists, R1propUnique, indexType = IndexType.RANGE)
       .addNodeIndex("R2", Seq("foo", "bar"), R2fooBarExists, R2fooBarUnique, indexType = IndexType.RANGE)
-      .addNodeIndex("R1", Seq("prop"), R1propExists, R1propUnique, indexType = IndexType.BTREE)
-      .addNodeIndex("R2", Seq("foo", "bar"), R2fooBarExists, R2fooBarUnique, indexType = IndexType.BTREE)
+      .addNodeIndex("R1", Seq("prop"), R1propExists, R1propUnique, indexType = IndexType.TEXT)
+      .addNodeIndex("R2", Seq("foo", "bar"), R2fooBarExists, R2fooBarUnique, indexType = IndexType.TEXT)
 
       .addNodeExistenceConstraint("C", "bar")
 

@@ -78,7 +78,7 @@ public class SchemaNameUtil {
         key = hf.updateWithArray(key, propertyNames, String::hashCode);
 
         if (rule instanceof IndexRef<?> indexRef) {
-            key = hf.update(key, indexRef.getIndexType().ordinal());
+            key = hf.update(key, indexRef.getIndexType().getTypeNumber());
             key = hf.update(key, Boolean.hashCode(indexRef.isUnique()));
             return String.format("index_%x", hf.toInt(hf.finalise(key)));
         }
@@ -86,7 +86,7 @@ public class SchemaNameUtil {
             key = hf.update(key, constraint.type().ordinal());
             if (constraint.isIndexBackedConstraint()) {
                 key = hf.update(
-                        key, constraint.asIndexBackedConstraint().indexType().ordinal());
+                        key, constraint.asIndexBackedConstraint().indexType().getTypeNumber());
             }
             return String.format("constraint_%x", hf.toInt(hf.finalise(key)));
         }

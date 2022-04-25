@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.POPULATION;
+import static org.neo4j.kernel.impl.index.schema.FailingNativeIndexProviderFactory.FailureType.POPULATION;
 
 import java.nio.file.Path;
 import java.util.Map;
@@ -38,8 +38,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.RangeIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.FailingNativeIndexProviderFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -61,7 +60,7 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest {
         String indexName = "fail foo index";
         IndexDescriptor index = transaction
                 .schemaWrite()
-                .indexCreate(IndexPrototype.forSchema(schema, FailingGenericNativeIndexProviderFactory.DESCRIPTOR)
+                .indexCreate(IndexPrototype.forSchema(schema, FailingNativeIndexProviderFactory.DESCRIPTOR)
                         .withName(indexName));
         long indexId = index.getId();
         String indexProvider = index.getIndexProvider().name();
@@ -118,7 +117,6 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest {
     protected TestDatabaseManagementServiceBuilder createGraphDatabaseFactory(Path databaseRootDir) {
         return super.createGraphDatabaseFactory(databaseRootDir)
                 .noOpSystemGraphInitializer()
-                .addExtension(
-                        new FailingGenericNativeIndexProviderFactory(new RangeIndexProviderFactory(), POPULATION));
+                .addExtension(new FailingNativeIndexProviderFactory(POPULATION));
     }
 }

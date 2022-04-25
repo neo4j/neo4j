@@ -56,11 +56,6 @@ public class MockIndexProviderMap extends LifecycleAdapter implements IndexProvi
     }
 
     @Override
-    public IndexProvider getBtreeIndexProvider() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public IndexProvider getPointIndexProvider() {
         throw new UnsupportedOperationException();
     }

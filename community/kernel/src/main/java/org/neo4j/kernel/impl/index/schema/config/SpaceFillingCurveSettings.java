@@ -53,7 +53,7 @@ public class SpaceFillingCurveSettings {
     /**
      * Number of bits to use for the space filling curve value in 1D.
      * This number affects the physical structure of indexed spatial values
-     * and thus changing it is a format change for btree indexes.
+     * and thus changing it is a format change for point indexes.
      * 60 because it needs to be divisible by both 2 and 3 to be usable by both
      * 2D and 3D mapping.
      */

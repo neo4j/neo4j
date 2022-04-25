@@ -30,7 +30,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.PointIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.TextIndexProviderFactory;
@@ -90,21 +89,6 @@ public class StaticIndexProviderMapFactory {
             CursorContextFactory contextFactory,
             DependencyResolver dependencies) {
         var tokenIndexProvider = life.add(new TokenIndexProviderFactory()
-                .create(
-                        pageCache,
-                        fs,
-                        logService,
-                        monitors,
-                        databaseConfig,
-                        readOnlyChecker,
-                        dbmsInfo,
-                        recoveryCleanupWorkCollector,
-                        databaseLayout,
-                        tokenHolders,
-                        scheduler,
-                        contextFactory));
-
-        var nativeIndexProvider = life.add(new GenericNativeIndexProviderFactory()
                 .create(
                         pageCache,
                         fs,
@@ -181,7 +165,6 @@ public class StaticIndexProviderMapFactory {
 
         return new StaticIndexProviderMap(
                 tokenIndexProvider,
-                nativeIndexProvider,
                 textIndexProvider,
                 fulltextIndexProvider,
                 rangeIndexProvider,

@@ -89,11 +89,11 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |    ],
         |    "totalSize": 2,
         |    "updatesSinceEstimation": 0,
-        |    "indexType": "BTREE"
+        |    "indexType": "RANGE"
         |}
       """.stripMargin
     )).extract[Index] should be(
-      Index(Some(Seq("Person")), None, IndexType.BTREE, Seq("uuid"), 2, 2, 0)
+      Index(Some(Seq("Person")), None, IndexType.RANGE, Seq("uuid"), 2, 2, 0)
     )
   }
 
@@ -111,11 +111,11 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |    ],
         |    "totalSize": 2,
         |    "updatesSinceEstimation": 0,
-        |    "indexType": "BTREE"
+        |    "indexType": "RANGE"
         |}
       """.stripMargin
     )).extract[Index] should be(
-      Index(None, Some(Seq("REL")), IndexType.BTREE, Seq("prop"), 2, 2, 0)
+      Index(None, Some(Seq("REL")), IndexType.RANGE, Seq("prop"), 2, 2, 0)
     )
   }
 
@@ -252,7 +252,7 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |    ],
         |    "totalSize": 4,
         |    "updatesSinceEstimation": 0,
-        |    "indexType": "BTREE"
+        |    "indexType": "RANGE"
         |}],
         |"nodes": [{
         |    "count": 1,
@@ -267,7 +267,7 @@ class GraphCountsJsonTest extends CypherFunSuite {
     )).extract[GraphCountData] should be(
       GraphCountData(
         Seq(Constraint(Some("SSLCertificate"), None, Seq("serialNumber"), ConstraintType.UNIQUE)),
-        Seq(Index(Some(Seq("SSLCertificate")), None, IndexType.BTREE, Seq("serialNumber"), 4, 4, 0)),
+        Seq(Index(Some(Seq("SSLCertificate")), None, IndexType.RANGE, Seq("serialNumber"), 4, 4, 0)),
         Seq(NodeCount(1, Some("VettingProvider"))),
         Seq(RelationshipCount(1, Some("HAS_GEOLOCATION"), Some("Address"), None))
       )

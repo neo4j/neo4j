@@ -1473,7 +1473,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     }
 
     @Test
-    void mustThrowWhenCreatingBtreeIndexWithZeroLabels() {
+    void mustThrowWhenCreatingRangeIndexWithZeroLabels() {
         try (Transaction tx = db.beginTx()) {
             assertThrows(
                     IllegalArgumentException.class,
@@ -1483,7 +1483,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     }
 
     @Test
-    void mustThrowWhenCreatingBtreeIndexWithMoreThanOneLabel() {
+    void mustThrowWhenCreatingRangeIndexWithMoreThanOneLabel() {
         try (Transaction tx = db.beginTx()) {
             assertThrows(IllegalArgumentException.class, () -> tx.schema()
                     .indexFor(label, otherLabel)

@@ -31,11 +31,6 @@ import org.neo4j.cypher.internal.runtime.spec.tests.index.PropertyIndexTestSuppo
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.helpers.collection.Iterables
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider
-import org.neo4j.lock.LockType.EXCLUSIVE
-import org.neo4j.lock.LockType.SHARED
-import org.neo4j.lock.ResourceTypes.INDEX_ENTRY
-import org.neo4j.lock.ResourceTypes.LABEL
 
 import scala.collection.mutable.ArrayBuffer
 

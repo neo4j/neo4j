@@ -24,7 +24,7 @@
       "totalSize": 304838,
       "estimatedUniqueSize": 3,
       "updatesSinceEstimation": 0,
-      "indexType": "BTREE"
+      "indexType": "RANGE"
     }
   ],
   "nodes": [
