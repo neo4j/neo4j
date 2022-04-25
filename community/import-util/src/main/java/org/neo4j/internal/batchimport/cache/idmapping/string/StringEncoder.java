@@ -21,8 +21,6 @@ package org.neo4j.internal.batchimport.cache.idmapping.string;
 
 import static java.lang.Math.max;
 
-import java.util.Arrays;
-
 /**
  * Encodes String into a long with very small chance of collision, i.e. two different Strings encoded into
  * the same long value.
@@ -32,56 +30,29 @@ import java.util.Arrays;
 public class StringEncoder implements Encoder {
     private static final long UPPER_INT_MASK = 0x00000000_FFFFFFFFL;
     private static final int FOURTH_BYTE = 0x000000FF;
-
-    // fixed values
-    private final int numCodes;
-    private static final int encodingThreshold = 7;
-
-    // data changing over time, potentially with each encoding
-    private final byte[] reMap = new byte[256];
-    private int numChars;
-
-    public StringEncoder() {
-        this(2);
-    }
-
-    public StringEncoder(int codingStrength) {
-        numCodes = Math.max(codingStrength, 2);
-        Arrays.fill(reMap, (byte) -1);
-    }
+    private static final int ENCODING_THRESHOLD = 7;
 
     @Override
-    public long encode(Object s) {
-        int[] val = encodeInt((String) s);
-        return (long) val[0] << 32 | val[1] & UPPER_INT_MASK;
-    }
-
-    private int[] encodeInt(String s) {
+    public long encode(Object any) {
+        String s = (String) any;
         // construct bytes from string
         int inputLength = s.length();
         byte[] bytes = new byte[inputLength];
         for (int i = 0; i < inputLength; i++) {
-            bytes[i] = (byte) ((s.charAt(i)) % 127);
+            bytes[i] = (byte) ((s.charAt(i)) % 256);
         }
-        reMap(bytes, inputLength);
-        // encode
-        if (inputLength <= encodingThreshold) {
+        if (inputLength <= ENCODING_THRESHOLD) {
             return simplestCode(bytes, inputLength);
         }
-        int[] codes = new int[numCodes];
-        for (int i = 0; i < numCodes; ) {
-            codes[i] = getCode(bytes, inputLength, 1);
-            codes[i + 1] = getCode(bytes, inputLength, inputLength - 1);
-            i += 2;
-        }
+        int low = getCode(bytes, inputLength, 1);
+        int high = getCode(bytes, inputLength, inputLength - 1);
         int carryOver = lengthEncoder(inputLength) << 1;
         int temp;
-        for (int i = 0; i < numCodes; i++) {
-            temp = codes[i] & FOURTH_BYTE;
-            codes[i] = codes[i] >>> 8 | carryOver << 24;
-            carryOver = temp;
-        }
-        return codes;
+        temp = low & FOURTH_BYTE;
+        low = low >>> 8 | carryOver << 24;
+        carryOver = temp;
+        high = high >>> 8 | carryOver << 24;
+        return (long) low << 32 | high & UPPER_INT_MASK;
     }
 
     private static int lengthEncoder(int length) {
@@ -100,30 +71,16 @@ public class StringEncoder implements Encoder {
         }
     }
 
-    private void reMap(byte[] bytes, int inputLength) {
-        for (int i = 0; i < inputLength; i++) {
-            if (reMap[bytes[i]] == -1) {
-                synchronized (this) {
-                    if (reMap[bytes[i]] == -1) {
-                        reMap[bytes[i]] = (byte) (numChars++ % 256);
-                    }
-                }
-            }
-            bytes[i] = reMap[bytes[i]];
-        }
-    }
-
-    private static int[] simplestCode(byte[] bytes, int inputLength) {
-        int[] codes = new int[] {0, 0};
-        codes[0] = max(inputLength, 1) << 25;
-        codes[1] = 0;
+    private static long simplestCode(byte[] bytes, int inputLength) {
+        int low = max(inputLength, 1) << 25;
+        int high = 0;
         for (int i = 0; i < 3 && i < inputLength; i++) {
-            codes[0] = codes[0] | bytes[i] << ((2 - i) * 8);
+            low = low | bytes[i] << ((2 - i) * 8);
         }
         for (int i = 3; i < 7 && i < inputLength; i++) {
-            codes[1] = codes[1] | (bytes[i]) << ((6 - i) * 8);
+            high = high | (bytes[i]) << ((6 - i) * 8);
         }
-        return codes;
+        return (long) low << 32 | high & UPPER_INT_MASK;
     }
 
     private static int getCode(byte[] bytes, int inputLength, int order) {
@@ -143,6 +100,6 @@ public class StringEncoder implements Encoder {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "[" + numCodes + "]";
+        return getClass().getSimpleName();
     }
 }
