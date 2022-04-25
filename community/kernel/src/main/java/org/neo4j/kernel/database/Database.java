@@ -751,8 +751,7 @@ public class Database extends LifecycleAdapter {
      * and <em>before</em> it is {@link #start() started}.
      */
     private void upgradeStore(
-            DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker)
-            throws IOException {
+            DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker) {
         IndexProviderMap indexProviderMap = databaseDependencies.resolveDependency(IndexProviderMap.class);
         var logTailSupplier = Suppliers.lazySingleton(() -> {
             try {
@@ -767,7 +766,7 @@ public class Database extends LifecycleAdapter {
                 databaseConfig,
                 databaseLogService,
                 databasePageCache,
-                tracers.getPageCacheTracer(),
+                tracers,
                 scheduler,
                 databaseLayout,
                 storageEngineFactory,

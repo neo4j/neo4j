@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.function.Suppliers;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -40,9 +41,11 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
@@ -99,6 +102,7 @@ public class StoreMigrator {
     private static final String MIGRATION_STATUS_FILE = "_status";
 
     private final CursorContextFactory contextFactory;
+    private final DatabaseTracers databaseTracers;
     private final DatabaseLayout databaseLayout;
     private final FileSystemAbstraction fs;
     private final Config config;
@@ -110,14 +114,14 @@ public class StoreMigrator {
     private final IndexProviderMap indexProviderMap;
     private final StorageEngineFactory storageEngineFactory;
     private final InternalLog internalLog;
-    private final Supplier<LogTailMetadata> logTailSupplier;
+    private Supplier<LogTailMetadata> logTailSupplier;
 
     public StoreMigrator(
             FileSystemAbstraction fs,
             Config config,
             LogService logService,
             PageCache pageCache,
-            PageCacheTracer pageCacheTracer,
+            DatabaseTracers databaseTracers,
             JobScheduler jobScheduler,
             DatabaseLayout databaseLayout,
             StorageEngineFactory storageEngineFactory,
@@ -133,7 +137,8 @@ public class StoreMigrator {
         this.storageEngineFactory = storageEngineFactory;
         this.contextFactory = contextFactory;
         this.jobScheduler = jobScheduler;
-        this.pageCacheTracer = pageCacheTracer;
+        this.databaseTracers = databaseTracers;
+        this.pageCacheTracer = databaseTracers.getPageCacheTracer();
         this.memoryTracker = memoryTracker;
         this.indexProviderMap = indexProviderMap;
 
@@ -146,25 +151,28 @@ public class StoreMigrator {
 
         try (var cursorContext = contextFactory.create(STORE_UPGRADE_TAG)) {
             MigrationStructures migrationStructures = getMigrationStructures();
-            var checkResult = doMigrationCheck(formatFamily, migrationStructures, cursorContext);
+
+            finishInterruptedMigration(migrationStructures);
+
+            var checkResult = doMigrationCheck(formatFamily, cursorContext);
 
             internalLog.info("'" + checkResult.versionToMigrateFrom()
                     + "' has been identified as the current version of the store");
             internalLog.info("'" + checkResult.versionToMigrateTo()
                     + "' has been identified as the target version of the store migration");
 
-            if (checkResult.upToDate()) {
+            if (checkResult.onRequestedVersion()) {
                 internalLog.info(
                         "The current store version and the migration target version are the same, so there is nothing to do.");
                 return;
             }
 
-            var progressMonitor = VisibleMigrationProgressMonitorFactory.forMigration(internalLog);
             doMigrate(
                     migrationStructures,
+                    MigrationStatus.MigrationState.migrating,
                     checkResult.versionToMigrateFrom(),
                     checkResult.versionToMigrateTo(),
-                    progressMonitor,
+                    VisibleMigrationProgressMonitorFactory.forMigration(internalLog),
                     LogsMigrator.CheckResult::migrate);
         }
     }
@@ -179,9 +187,10 @@ public class StoreMigrator {
         try (var cursorContext = contextFactory.create(STORE_UPGRADE_TAG)) {
             MigrationStructures migrationStructures = getMigrationStructures();
 
-            var checkResult = doUpgradeCheck(migrationStructures, cursorContext);
+            finishInterruptedUpgrade(cursorContext, migrationStructures);
 
-            if (checkResult.upToDate()) {
+            var checkResult = doUpgradeCheck(cursorContext);
+            if (checkResult.onRequestedVersion()) {
                 // Unlike in the case migration which is an explicit action and the store being up to date is a
                 // situation worth notifying the user about,
                 // this is the most common outcome of the upgrade process as it is an implicit process invoked every
@@ -194,12 +203,12 @@ public class StoreMigrator {
             internalLog.info("'" + checkResult.versionToMigrateTo()
                     + "' has been identified as the target version of the store upgrade");
 
-            var progressMonitor = VisibleMigrationProgressMonitorFactory.forUpgrade(internalLog);
             doMigrate(
                     migrationStructures,
+                    MigrationStatus.MigrationState.migrating,
                     checkResult.versionToMigrateFrom(),
                     checkResult.versionToMigrateTo(),
-                    progressMonitor,
+                    VisibleMigrationProgressMonitorFactory.forUpgrade(internalLog),
                     LogsMigrator.CheckResult::upgrade);
         }
     }
@@ -211,6 +220,7 @@ public class StoreMigrator {
 
     private void doMigrate(
             MigrationStructures migrationStructures,
+            MigrationStatus.MigrationState migrationState,
             String versionToMigrateFrom,
             String versionToMigrateTo,
             MigrationProgressMonitor progressMonitor,
@@ -223,17 +233,14 @@ public class StoreMigrator {
                 fs, storageEngineFactory, databaseLayout, pageCache, config, contextFactory, logTailSupplier);
         var logsCheckResult = logsMigrator.assertCleanlyShutDown();
 
-        MigrationStatus migrationStatus =
-                MigrationStatus.readMigrationStatus(fs, migrationStructures.migrationStateFile);
         // We don't need to migrate if we're at the phase where we have migrated successfully
         // and it's just a matter of moving over the files to the storeDir.
-        // TODO: we need to make sure that the the migration that happens to be in progress is to 'versionToMigrateTo'
-        if (MigrationStatus.migrating.isNeededFor(migrationStatus)) {
+        if (MigrationStatus.MigrationState.migrating.isNeededFor(migrationState)) {
             StoreVersion fromVersion = storageEngineFactory.versionInformation(versionToMigrateFrom);
             StoreVersion toVersion = storageEngineFactory.versionInformation(versionToMigrateTo);
             cleanMigrationDirectory(migrationStructures.migrationLayout.databaseDirectory());
-            MigrationStatus.migrating.setMigrationStatus(
-                    fs, migrationStructures.migrationStateFile, versionToMigrateFrom);
+            MigrationStatus.MigrationState.migrating.setMigrationStatus(
+                    fs, migrationStructures.migrationStateFile, versionToMigrateFrom, versionToMigrateTo);
             migrateToIsolatedDirectory(
                     participants,
                     databaseLayout,
@@ -241,10 +248,11 @@ public class StoreMigrator {
                     fromVersion,
                     toVersion,
                     progressMonitor);
-            MigrationStatus.moving.setMigrationStatus(fs, migrationStructures.migrationStateFile, versionToMigrateFrom);
+            MigrationStatus.MigrationState.moving.setMigrationStatus(
+                    fs, migrationStructures.migrationStateFile, versionToMigrateFrom, versionToMigrateTo);
         }
 
-        if (MigrationStatus.moving.isNeededFor(migrationStatus)) {
+        if (MigrationStatus.MigrationState.moving.isNeededFor(migrationState)) {
             moveMigratedFilesToStoreDirectory(
                     participants,
                     migrationStructures.migrationLayout,
@@ -262,21 +270,14 @@ public class StoreMigrator {
         progressMonitor.completed();
     }
 
-    private CheckResult doMigrationCheck(
-            String formatFamily, MigrationStructures migrationStructures, CursorContext cursorContext) {
+    private CheckResult doMigrationCheck(String formatFamily, CursorContext cursorContext) {
         StoreVersionCheck storeVersionCheck =
                 storageEngineFactory.versionCheck(fs, databaseLayout, config, pageCache, logService, contextFactory);
         var checkResult = storeVersionCheck.getAndCheckMigrationTargetVersion(formatFamily, cursorContext);
         return switch (checkResult.outcome()) {
             case MIGRATION_POSSIBLE -> new CheckResult(
                     false, checkResult.versionToMigrateFrom(), checkResult.versionToMigrateTo());
-            case NO_OP -> {
-                if (!fs.fileExists(migrationStructures.migrationStateFile())) {
-                    yield new CheckResult(true, checkResult.versionToMigrateFrom(), checkResult.versionToMigrateTo());
-                } else {
-                    yield new CheckResult(false, checkResult.versionToMigrateFrom(), checkResult.versionToMigrateTo());
-                }
-            }
+            case NO_OP -> new CheckResult(true, checkResult.versionToMigrateFrom(), checkResult.versionToMigrateTo());
             case STORE_VERSION_RETRIEVAL_FAILURE -> throw new UnableToMigrateException(
                     "Failed to read current store version. This usually indicate a store corruption",
                     checkResult.cause());
@@ -288,20 +289,14 @@ public class StoreMigrator {
         };
     }
 
-    private CheckResult doUpgradeCheck(MigrationStructures migrationStructures, CursorContext cursorContext) {
+    private CheckResult doUpgradeCheck(CursorContext cursorContext) {
         StoreVersionCheck storeVersionCheck =
                 storageEngineFactory.versionCheck(fs, databaseLayout, config, pageCache, logService, contextFactory);
         var checkResult = storeVersionCheck.getAndCheckUpgradeTargetVersion(cursorContext);
         return switch (checkResult.outcome()) {
             case UPGRADE_POSSIBLE -> new CheckResult(
                     false, checkResult.versionToUpgradeFrom(), checkResult.versionToUpgradeTo());
-            case NO_OP -> {
-                if (!fs.fileExists(migrationStructures.migrationStateFile())) {
-                    yield new CheckResult(true, checkResult.versionToUpgradeFrom(), checkResult.versionToUpgradeTo());
-                } else {
-                    yield new CheckResult(false, checkResult.versionToUpgradeFrom(), checkResult.versionToUpgradeTo());
-                }
-            }
+            case NO_OP -> new CheckResult(true, checkResult.versionToUpgradeFrom(), checkResult.versionToUpgradeTo());
                 // since an upgrade is an implicit action we need to be a bit careful about the error given
                 // when the retrieval of the current store version fails
             case STORE_VERSION_RETRIEVAL_FAILURE -> throw new IllegalStateException(
@@ -311,12 +306,69 @@ public class StoreMigrator {
         };
     }
 
+    private void finishInterruptedMigration(MigrationStructures migrationStructures) {
+        MigrationStatus migrationStatus =
+                MigrationStatus.readMigrationStatus(fs, migrationStructures.migrationStateFile);
+        if (migrationStatus.migrationInProgress()) {
+            MigrationStatus.MigrationState state = migrationStatus.state();
+            if (state == MigrationStatus.MigrationState.moving) {
+                // If a previous migration was interrupted in the moving phase that move must be completed to have a
+                // consistent store again.
+                internalLog.info("Resuming migration in progress to '" + migrationStatus.versionToMigrateTo() + "'");
+                doMigrate(
+                        migrationStructures,
+                        MigrationStatus.MigrationState.moving,
+                        migrationStatus.versionToMigrateFrom(),
+                        migrationStatus.versionToMigrateTo(),
+                        VisibleMigrationProgressMonitorFactory.forMigration(internalLog),
+                        LogsMigrator.CheckResult
+                                ::migrate); // Since we are doing a migration it should be safe to use the
+                // LogsMigrator#migrate
+
+                // Have new logTail now, use that one instead
+                logTailSupplier = getLogTailSupplier();
+            } else {
+                removeOldMigrationDir(migrationStructures.migrationLayout.databaseDirectory());
+            }
+        }
+    }
+
+    private void finishInterruptedUpgrade(CursorContext cursorContext, MigrationStructures migrationStructures) {
+        MigrationStatus migrationStatus =
+                MigrationStatus.readMigrationStatus(fs, migrationStructures.migrationStateFile);
+        if (migrationStatus.migrationInProgress()) {
+            MigrationStatus.MigrationState state = migrationStatus.state();
+            if (state == MigrationStatus.MigrationState.moving) {
+                var checkResult = doUpgradeCheck(cursorContext);
+                if (!migrationStatus.expectedMigration(checkResult.versionToMigrateTo)) {
+                    throw new UnableToMigrateException("A partially complete migration to "
+                            + migrationStatus.versionToMigrateTo() + " found when trying to " + "migrate to "
+                            + checkResult.versionToMigrateTo + ". Complete that migration before continuing. "
+                            + "This can be done by running the migration tool");
+                }
+
+                internalLog.info("Resuming upgrade in progress to '" + checkResult.versionToMigrateTo + "'");
+                doMigrate(
+                        migrationStructures,
+                        MigrationStatus.MigrationState.moving,
+                        migrationStatus.versionToMigrateFrom(),
+                        migrationStatus.versionToMigrateTo(),
+                        VisibleMigrationProgressMonitorFactory.forUpgrade(internalLog),
+                        LogsMigrator.CheckResult::upgrade);
+
+                // Could have new logTail now, use that one instead
+                logTailSupplier = getLogTailSupplier();
+            } else {
+                removeOldMigrationDir(migrationStructures.migrationLayout.databaseDirectory());
+            }
+        }
+    }
+
     private List<StoreMigrationParticipant> getStoreMigrationParticipants() {
-        List<StoreMigrationParticipant> participants = new ArrayList<>();
         // Get all the participants from the storage engine and add them where they want to be
         var storeParticipants = storageEngineFactory.migrationParticipants(
                 fs, config, pageCache, jobScheduler, logService, memoryTracker, pageCacheTracer, contextFactory);
-        participants.addAll(storeParticipants);
+        List<StoreMigrationParticipant> participants = new ArrayList<>(storeParticipants);
 
         // Do individual index provider migration last because they may delete files that we need in earlier steps.
         indexProviderMap.accept(provider -> participants.add(
@@ -383,11 +435,11 @@ public class StoreMigrator {
     private void checkStoreExists() {
         if (!storageEngineFactory.storageExists(fs, databaseLayout, pageCache)) {
             throw new UnableToMigrateException("Database '" + databaseLayout.getDatabaseName()
-                    + "' ether does not exists or it has not been initialised");
+                    + "' either does not exists or it has not been initialised");
         }
     }
 
-    private static void cleanup(Iterable<StoreMigrationParticipant> participants, DatabaseLayout migrationStructure) {
+    private void cleanup(Iterable<StoreMigrationParticipant> participants, DatabaseLayout migrationStructure) {
         try {
             for (StoreMigrationParticipant participant : participants) {
                 participant.cleanup(migrationStructure);
@@ -396,19 +448,11 @@ public class StoreMigrator {
             throw new UnableToMigrateException(
                     "A critical failure during store migration has occurred. Failed to clean up after migration", e);
         }
+        removeOldMigrationDir(migrationStructure.databaseDirectory());
     }
 
     private void cleanMigrationDirectory(Path migrationDirectory) {
-        try {
-            if (fs.fileExists(migrationDirectory)) {
-                fs.deleteRecursively(migrationDirectory);
-            }
-        } catch (IOException | UncheckedIOException e) {
-            throw new UnableToMigrateException(
-                    "A critical failure during migration has occurred. Failed to delete a migration directory "
-                            + migrationDirectory,
-                    e);
-        }
+        removeOldMigrationDir(migrationDirectory);
         try {
             fs.mkdir(migrationDirectory);
         } catch (IOException e) {
@@ -419,9 +463,33 @@ public class StoreMigrator {
         }
     }
 
+    private void removeOldMigrationDir(Path migrationDirectory) {
+        try {
+            if (fs.fileExists(migrationDirectory)) {
+                fs.deleteRecursively(migrationDirectory);
+            }
+        } catch (IOException | UncheckedIOException e) {
+            throw new UnableToMigrateException(
+                    "A critical failure during migration has occurred. Failed to delete a migration directory "
+                            + migrationDirectory,
+                    e);
+        }
+    }
+
+    private Suppliers.Lazy<LogTailMetadata> getLogTailSupplier() {
+        return Suppliers.lazySingleton(() -> {
+            try {
+                return new LogTailExtractor(fs, pageCache, config, storageEngineFactory, databaseTracers)
+                        .getTailMetadata(databaseLayout, memoryTracker);
+            } catch (Exception e) {
+                throw new UnableToMigrateException("Fail to load log tail during migration.", e);
+            }
+        });
+    }
+
     private record MigrationStructures(DatabaseLayout migrationLayout, Path migrationStateFile) {}
 
-    private record CheckResult(boolean upToDate, String versionToMigrateFrom, String versionToMigrateTo) {}
+    private record CheckResult(boolean onRequestedVersion, String versionToMigrateFrom, String versionToMigrateTo) {}
 
     private interface LogsAction {
 

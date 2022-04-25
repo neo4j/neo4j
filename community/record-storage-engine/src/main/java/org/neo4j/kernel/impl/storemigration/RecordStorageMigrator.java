@@ -713,9 +713,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
     }
 
     @Override
-    public void cleanup(DatabaseLayout migrationLayout) throws IOException {
-        fileSystem.deleteRecursively(migrationLayout.databaseDirectory());
-    }
+    public void cleanup(DatabaseLayout migrationLayout) throws IOException {}
 
     @Override
     public String toString() {

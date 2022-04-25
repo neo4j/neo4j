@@ -122,6 +122,7 @@ public class MigrateStoreCommand extends AbstractCommand {
 
     @Override
     protected void execute() throws Exception {
+        var databaseTracers = DatabaseTracers.EMPTY;
         var pageCacheTracer = PageCacheTracer.NULL;
         var memoryTracker = EmptyMemoryTracker.INSTANCE;
         var contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
@@ -166,7 +167,7 @@ public class MigrateStoreCommand extends AbstractCommand {
                         config,
                         logService,
                         pageCache,
-                        pageCacheTracer,
+                        databaseTracers,
                         jobScheduler,
                         databaseLayout,
                         currentStorageEngineFactory,
