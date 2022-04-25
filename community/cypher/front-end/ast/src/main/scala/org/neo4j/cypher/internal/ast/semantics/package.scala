@@ -24,31 +24,36 @@ package object semantics {
 
   type TypeGenerator = SemanticState => TypeSpec
 
-  implicit def `Convert function to SemanticCheck`(f: SemanticState => SemanticCheckResult): SemanticCheck = SemanticCheck.fromFunction(f)
+  implicit def `Convert function to SemanticCheck`(f: SemanticState => SemanticCheckResult): SemanticCheck =
+    SemanticCheck.fromFunction(f)
 
   // Allows using a (SemanticState => Either[SemanticErrorDef, SemanticState]) func, where a (SemanticState => SemanticCheckResult) func is expected
   implicit def liftSemanticEitherFunc(func: SemanticState => Either[SemanticErrorDef, SemanticState]): SemanticCheck = {
     state: SemanticState =>
       func(state).fold(
         error => SemanticCheckResult.error(state, error),
-        s     => SemanticCheckResult.success(s))
+        s => SemanticCheckResult.success(s)
+      )
   }
 
   // Allows using a (SemanticState => Seq[SemanticErrorDef]) func, where a (SemanticState => SemanticCheckResult) func is expected
-  implicit def liftSemanticErrorDefsFunc(func: SemanticState => Seq[SemanticErrorDef]): SemanticCheck = (state: SemanticState) => {
-    SemanticCheckResult(state, func(state))
-  }
+  implicit def liftSemanticErrorDefsFunc(func: SemanticState => Seq[SemanticErrorDef]): SemanticCheck =
+    (state: SemanticState) => {
+      SemanticCheckResult(state, func(state))
+    }
 
   // Allows using a (SemanticState => Option[SemanticErrorDef]) func, where a (SemanticState => SemanticCheckResult) func is expected
-  implicit def liftSemanticErrorDefFunc(func: SemanticState => Option[SemanticErrorDef]): SemanticCheck = (state: SemanticState) => {
-    SemanticCheckResult.error(state, func(state))
-  }
+  implicit def liftSemanticErrorDefFunc(func: SemanticState => Option[SemanticErrorDef]): SemanticCheck =
+    (state: SemanticState) => {
+      SemanticCheckResult.error(state, func(state))
+    }
 
   // Allows using a sequence of SemanticErrorDef, where a (SemanticState => SemanticCheckResult) func is expected
   implicit def liftSemanticErrorDefs(errors: Seq[SemanticErrorDef]): SemanticCheck = SemanticCheckResult(_, errors)
 
   // Allows using a single SemanticErrorDef, where a (SemanticState => SemanticCheckResult) func is expected
-  implicit def liftSemanticErrorDef(error: SemanticErrorDef): SemanticCheck = SemanticCheck.fromFunction(SemanticCheckResult.error(_, error))
+  implicit def liftSemanticErrorDef(error: SemanticErrorDef): SemanticCheck =
+    SemanticCheck.fromFunction(SemanticCheckResult.error(_, error))
 
   // Allows using an optional SemanticErrorDef, where a (SemanticState => SemanticCheckResult) func is expected
   implicit def liftSemanticErrorDefOption(error: Option[SemanticErrorDef]): SemanticCheck =
@@ -66,5 +71,6 @@ package object semantics {
     new SemanticCheckableOption(option)
 
   // Allows calling semanticCheck on a traversable sequence of SemanticCheckable objects
-  implicit def semanticCheckableTraversableOnce[A <: SemanticCheckable](traversable: IterableOnce[A]): SemanticCheckableTraversableOnce[A] = new SemanticCheckableTraversableOnce(traversable)
+  implicit def semanticCheckableTraversableOnce[A <: SemanticCheckable](traversable: IterableOnce[A])
+    : SemanticCheckableTraversableOnce[A] = new SemanticCheckableTraversableOnce(traversable)
 }

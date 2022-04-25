@@ -20,17 +20,19 @@ import scala.annotation.tailrec
 
 object SemanticCheckInterpreter {
 
-  def runCheck(check: SemanticCheck, initialState: SemanticState, context: SemanticCheckContext): SemanticCheckResult = {
+  def runCheck(
+    check: SemanticCheck,
+    initialState: SemanticState,
+    context: SemanticCheckContext
+  ): SemanticCheckResult = {
     run(SemanticCheckResult.success(initialState), List(ExecutableCheck(check)))(context, Vector.empty)
   }
 
   @tailrec
-  private def run(result: SemanticCheckResult,
-                  checkStack: List[ExecutableCheck],
-                 )(implicit
-                   context: SemanticCheckContext,
-                   debugAnnotations: Vector[String]
-  ): SemanticCheckResult = {
+  private def run(
+    result: SemanticCheckResult,
+    checkStack: List[ExecutableCheck]
+  )(implicit context: SemanticCheckContext, debugAnnotations: Vector[String]): SemanticCheckResult = {
 
     checkStack match {
       case Nil =>
@@ -85,7 +87,8 @@ object SemanticCheckInterpreter {
     println()
   }
 
-  private sealed trait ExecutableCheck
+  sealed private trait ExecutableCheck
+
   private object ExecutableCheck {
     def apply(check: SemanticCheck): ExecutableCheck = Wrapper(check)
 

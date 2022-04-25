@@ -36,9 +36,9 @@ import org.neo4j.cypher.internal.util.symbols.TypeSpec
 trait SemanticAnalysisTooling {
 
   def semanticCheckFold[A](
-                     traversable: Iterable[A]
-                   )(
-                     f:A => SemanticCheck
+    traversable: Iterable[A]
+  )(
+    f: A => SemanticCheck
   ): SemanticCheck = {
     traversable.foldLeft(SemanticCheck.success) {
       (accCheck, o: A) => accCheck chain f(o)
@@ -55,8 +55,8 @@ trait SemanticAnalysisTooling {
   def withState(state: SemanticState)(check: SemanticCheck): SemanticCheck = {
     for {
       original <- SemanticCheck.getState
-      _        <- SemanticCheck.setState(state)
-      checked  <- check
+      _ <- SemanticCheck.setState(state)
+      checked <- check
     } yield SemanticCheckResult(original.state, checked.errors)
   }
 
@@ -104,25 +104,25 @@ trait SemanticAnalysisTooling {
 
   def expectType(
     possibleTypes: => TypeSpec,
-                  expression: Expression,
-                ): SemanticCheck = (s: SemanticState) => {
+    expression: Expression
+  ): SemanticCheck = (s: SemanticState) => {
     expectType(s, possibleTypes, expression)
   }
 
   def expectType(
-                  possibleTypes: => TypeSpec,
-                  expression: Expression,
-                  messageGen: (String, String) => String
-                ): SemanticCheck = (s: SemanticState) => {
+    possibleTypes: => TypeSpec,
+    expression: Expression,
+    messageGen: (String, String) => String
+  ): SemanticCheck = (s: SemanticState) => {
     expectType(s, possibleTypes, expression, messageGen)
   }
 
   def expectType(
-                  s: SemanticState,
-                  possibleTypes: => TypeSpec,
-                  expression: Expression,
-                  messageGen: (String, String) => String = DefaultTypeMismatchMessageGenerator
-                ): SemanticCheckResult = {
+    s: SemanticState,
+    possibleTypes: => TypeSpec,
+    expression: Expression,
+    messageGen: (String, String) => String = DefaultTypeMismatchMessageGenerator
+  ): SemanticCheckResult = {
     s.expectType(expression, possibleTypes) match {
       case (ss, TypeSpec.none) =>
         val existingTypesString = ss.expressionType(expression).specified.mkString(", ", " or ")
@@ -195,6 +195,7 @@ trait SemanticAnalysisTooling {
         elseBranch
     }
   }
+
   def unless(condition: Boolean)(check: => SemanticCheck): SemanticCheck =
     if (condition)
       SemanticCheck.success

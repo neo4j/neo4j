@@ -339,7 +339,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   private def checkHorizon(clause: HorizonClause, outerScope: Option[Scope]): SemanticCheck = {
     for {
-      closingResult      <- clause.semanticCheck
+      closingResult <- clause.semanticCheck
       continuationResult <- clause.semanticCheckContinuation(closingResult.state.currentScope.scope, outerScope)
     } yield {
       semantics.SemanticCheckResult(continuationResult.state, closingResult.errors ++ continuationResult.errors)

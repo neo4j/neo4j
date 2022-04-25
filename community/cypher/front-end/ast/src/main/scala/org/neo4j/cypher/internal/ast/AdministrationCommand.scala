@@ -87,7 +87,9 @@ sealed trait ReadAdministrationCommand extends AdministrationCommand {
 
     def checkForExistsSubquery(where: Where): SemanticCheck = (state: SemanticState) => {
       val invalid: Option[Expression] = where.expression.folder.treeFind[Expression] { case _: ExistsSubClause => true }
-      invalid.map(exp => SemanticCheckResult.error(state, "The EXISTS clause is not valid on SHOW commands.", exp.position))
+      invalid.map(exp =>
+        SemanticCheckResult.error(state, "The EXISTS clause is not valid on SHOW commands.", exp.position)
+      )
         .getOrElse(SemanticCheckResult.success(state))
     }
 
@@ -102,10 +104,16 @@ sealed trait ReadAdministrationCommand extends AdministrationCommand {
       (maybePatternExpression, maybePatternComprehension) match {
         case (Some(patternExpression), _) =>
           SemanticCheckResult.error(
-            state, "You cannot include a pattern expression in the RETURN of administration SHOW commands", patternExpression.node.position)
+            state,
+            "You cannot include a pattern expression in the RETURN of administration SHOW commands",
+            patternExpression.node.position
+          )
         case (_, Some(patternComprehension)) =>
           SemanticCheckResult.error(
-            state, "You cannot include a pattern comprehension in the RETURN of administration SHOW commands", patternComprehension.node.position)
+            state,
+            "You cannot include a pattern comprehension in the RETURN of administration SHOW commands",
+            patternComprehension.node.position
+          )
         case _ =>
           SemanticCheckResult.success(state)
       }
@@ -115,7 +123,7 @@ sealed trait ReadAdministrationCommand extends AdministrationCommand {
       val check =
         r.semanticCheck chain r.where.foldSemanticCheck(checkForExistsSubquery) chain checkForReturnPattern
       for {
-        closingResult      <- check
+        closingResult <- check
         continuationResult <- r.semanticCheckContinuation(closingResult.state.currentScope.scope)
       } yield {
         semantics.SemanticCheckResult(continuationResult.state, closingResult.errors ++ continuationResult.errors)
@@ -130,8 +138,10 @@ sealed trait ReadAdministrationCommand extends AdministrationCommand {
       )
 
     val projectionChecks = Seq(yields, returns).foldSemanticCheck {
-      maybeClause => maybeClause.foldSemanticCheck(r =>
-          checkProjection(r).chain(recordCurrentScope(r)))
+      maybeClause =>
+        maybeClause.foldSemanticCheck(r =>
+          checkProjection(r).chain(recordCurrentScope(r))
+        )
     }
 
     initialChecks chain projectionChecks

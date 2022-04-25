@@ -151,7 +151,11 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
   /**
    * Build a semantic check for the given expression and context.
    */
-  def check(ctx: SemanticContext, expression: Expression, parents: Seq[Expression] = Seq()): SemanticCheck = SemanticCheck.nestedCheck {
+  def check(
+    ctx: SemanticContext,
+    expression: Expression,
+    parents: Seq[Expression] = Seq()
+  ): SemanticCheck = SemanticCheck.nestedCheck {
     expression match {
 
       // ARITHMETICS

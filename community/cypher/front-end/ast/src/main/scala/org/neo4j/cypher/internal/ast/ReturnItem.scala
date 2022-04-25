@@ -85,7 +85,7 @@ final case class ReturnItems(
     items.groupBy(_.name).foldSemanticCheck {
       case (_, groupedItems) if groupedItems.size > 1 =>
         SemanticError("Multiple result columns with the same name are not supported", groupedItems.head.position)
-       case _ =>
+      case _ =>
         SemanticCheck.success
     }
   }

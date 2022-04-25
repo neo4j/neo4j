@@ -1039,7 +1039,6 @@ case class UnresolvedCall(
     val invalidExpressionsCheck = declaredArguments.map(_.map {
       case arg if arg.containsAggregate =>
         SemanticCheck.error(
-
           SemanticError(
             """Procedure call cannot take an aggregating function as argument, please add a 'WITH' to your statement.
               |For example:
@@ -1126,111 +1125,115 @@ sealed trait ProjectionClause extends HorizonClause {
   override def semanticCheck: SemanticCheck =
     returnItems.semanticCheck
 
-  override def semanticCheckContinuation(previousScope: Scope, outerScope: Option[Scope] = None): SemanticCheck = SemanticCheck.fromState {
-    state: SemanticState =>
-
-      def runChecks(scopeInUse: Scope): SemanticCheck = {
-        returnItems.declareVariables(scopeInUse) chain
-          orderBy.foldSemanticCheck(_.checkAmbiguousOrdering(returnItems, if (isReturn) "RETURN" else "WITH")) chain
-          orderBy.semanticCheck chain
-          checkSkip chain
-          checkLimit chain
-          where.semanticCheck
-      }
-
-      // The two clauses ORDER BY and WHERE, following a WITH clause where there is no DISTINCT nor aggregation, have a special scope such that they
-      // can see both variables from before the WITH and variables introduced by the WITH
-      // (SKIP and LIMIT clauses are not allowed to access variables anyway, so they do not need to be included in this condition even when they are standalone)
-      val specialScopeForSubClausesNeeded = orderBy.isDefined || where.isDefined
-      val canSeePreviousScope =
-        (!(returnItems.containsAggregate || distinct || isInstanceOf[Yield])) || returnItems.includeExisting
-
-      val check: SemanticCheck =
-        if (specialScopeForSubClausesNeeded && canSeePreviousScope) {
-          /*
-           * We have `WITH ... WHERE` or `WITH ... ORDER BY` with no aggregation nor distinct meaning we can
-           *  see things from previous scopes when we are done here
-           *  (incoming-scope)
-           *        |      \
-           *        |     (child scope) <-  semantic checking of `ORDER BY` and `WHERE` discarded, only used for errors
-           *        |
-           *  (outgoing-scope)
-           *        |
-           *       ...
-           */
-
-          for {
-          // Special scope for ORDER BY and WHERE (SKIP and LIMIT are also checked in isolated scopes)
-          _            <- SemanticCheck.setState(state.newChildScope)
-          checksResult <- runChecks(previousScope)
-          // New sibling scope for the WITH/RETURN clause itself and onwards.
-          // Re-declare projected variables in the new scope since the sub-scope is discarded
-          // (We do not need to check warnOnAccessToRestrictedVariableInOrderByOrWhere here since that only applies when we have distinct or aggregation)
-          returnState  <- SemanticCheck.setState(checksResult.state.popScope.newSiblingScope)
-          finalResult  <- returnItems.declareVariables(state.currentScope.scope)
-        } yield {
-          SemanticCheckResult(finalResult.state, checksResult.errors ++ finalResult.errors)
+  override def semanticCheckContinuation(previousScope: Scope, outerScope: Option[Scope] = None): SemanticCheck =
+    SemanticCheck.fromState {
+      state: SemanticState =>
+        def runChecks(scopeInUse: Scope): SemanticCheck = {
+          returnItems.declareVariables(scopeInUse) chain
+            orderBy.foldSemanticCheck(_.checkAmbiguousOrdering(returnItems, if (isReturn) "RETURN" else "WITH")) chain
+            orderBy.semanticCheck chain
+            checkSkip chain
+            checkLimit chain
+            where.semanticCheck
         }
-        } else if (specialScopeForSubClausesNeeded) {
-          /*
-           *  We have `WITH ... WHERE` or `WITH ... ORDER BY` with an aggregation or a distinct meaning we cannot
-           *  see things from previous scopes after the aggregation (or distinct).
-           *
-           *  (incoming-scope)
-           *         |
-           *  (outgoing-scope)
-           *         |      \
-           *         |      (child-scope) <- semantic checking of `ORDER BY` and `WHERE` discarded only used for errors
-           *        ...
-           */
 
-        //Introduce a new sibling scope first, and then a new child scope from that one
-        //this child scope is used for errors only and will later be discarded.
-        val siblingState = state.newSiblingScope
-        val stateForSubClauses = siblingState.newChildScope
+        // The two clauses ORDER BY and WHERE, following a WITH clause where there is no DISTINCT nor aggregation, have a special scope such that they
+        // can see both variables from before the WITH and variables introduced by the WITH
+        // (SKIP and LIMIT clauses are not allowed to access variables anyway, so they do not need to be included in this condition even when they are standalone)
+        val specialScopeForSubClausesNeeded = orderBy.isDefined || where.isDefined
+        val canSeePreviousScope =
+          (!(returnItems.containsAggregate || distinct || isInstanceOf[Yield])) || returnItems.includeExisting
 
-          for {
-          _            <- SemanticCheck.setState(stateForSubClauses)
-          checksResult <- runChecks(siblingState.currentScope.scope)
-          //By popping the scope we will discard the special scope used for subclauses
-          returnResult <- SemanticCheck.setState(checksResult.state.popScope)
-          // Re-declare projected variables in the new scope since the sub-scope is discarded
-          finalResult  <-
-            returnItems.declareVariables(returnResult.state.currentScope.scope)
-        } yield {
-          // Re-declare projected variables in the new scope since the sub-scope is discarded
-          val niceErrors = (checksResult.errors ++ finalResult.errors).map(warnOnAccessToRestrictedVariableInOrderByOrWhere(state.currentScope.symbolNames))
-          SemanticCheckResult(finalResult.state, niceErrors)
-        }
-      } else {
-          for {
-          _ <- SemanticCheck.setState(state.newSiblingScope)
-          checksResult <- runChecks(previousScope)
-        } yield {
-          val niceErrors = checksResult.errors.map(warnOnAccessToRestrictedVariableInOrderByOrWhere(state.currentScope.symbolNames))
-          SemanticCheckResult(checksResult.state, niceErrors)
+        val check: SemanticCheck =
+          if (specialScopeForSubClausesNeeded && canSeePreviousScope) {
+            /*
+             * We have `WITH ... WHERE` or `WITH ... ORDER BY` with no aggregation nor distinct meaning we can
+             *  see things from previous scopes when we are done here
+             *  (incoming-scope)
+             *        |      \
+             *        |     (child scope) <-  semantic checking of `ORDER BY` and `WHERE` discarded, only used for errors
+             *        |
+             *  (outgoing-scope)
+             *        |
+             *       ...
+             */
 
-        }
-      }
+            for {
+              // Special scope for ORDER BY and WHERE (SKIP and LIMIT are also checked in isolated scopes)
+              _ <- SemanticCheck.setState(state.newChildScope)
+              checksResult <- runChecks(previousScope)
+              // New sibling scope for the WITH/RETURN clause itself and onwards.
+              // Re-declare projected variables in the new scope since the sub-scope is discarded
+              // (We do not need to check warnOnAccessToRestrictedVariableInOrderByOrWhere here since that only applies when we have distinct or aggregation)
+              returnState <- SemanticCheck.setState(checksResult.state.popScope.newSiblingScope)
+              finalResult <- returnItems.declareVariables(state.currentScope.scope)
+            } yield {
+              SemanticCheckResult(finalResult.state, checksResult.errors ++ finalResult.errors)
+            }
+          } else if (specialScopeForSubClausesNeeded) {
+            /*
+             *  We have `WITH ... WHERE` or `WITH ... ORDER BY` with an aggregation or a distinct meaning we cannot
+             *  see things from previous scopes after the aggregation (or distinct).
+             *
+             *  (incoming-scope)
+             *         |
+             *  (outgoing-scope)
+             *         |      \
+             *         |      (child-scope) <- semantic checking of `ORDER BY` and `WHERE` discarded only used for errors
+             *        ...
+             */
 
-      (isReturn, outerScope) match {
-        case (true, Some(outer)) => check.map { result =>
-          val outerScopeSymbolNames = outer.symbolNames
-          val outputSymbolNames = result.state.currentScope.scope.symbolNames
-          val alreadyDeclaredNames = outputSymbolNames.intersect(outerScopeSymbolNames)
-          val explicitReturnVariablesByName = returnItems.explicitReturnVariables.map(v => v.name -> v).toMap
-          val errors = alreadyDeclaredNames.map { name =>
-            val position = explicitReturnVariablesByName.getOrElse(name, returnItems).position
-            SemanticError(s"Variable `$name` already declared in outer scope", position)
+            // Introduce a new sibling scope first, and then a new child scope from that one
+            // this child scope is used for errors only and will later be discarded.
+            val siblingState = state.newSiblingScope
+            val stateForSubClauses = siblingState.newChildScope
+
+            for {
+              _ <- SemanticCheck.setState(stateForSubClauses)
+              checksResult <- runChecks(siblingState.currentScope.scope)
+              // By popping the scope we will discard the special scope used for subclauses
+              returnResult <- SemanticCheck.setState(checksResult.state.popScope)
+              // Re-declare projected variables in the new scope since the sub-scope is discarded
+              finalResult <-
+                returnItems.declareVariables(returnResult.state.currentScope.scope)
+            } yield {
+              // Re-declare projected variables in the new scope since the sub-scope is discarded
+              val niceErrors = (checksResult.errors ++ finalResult.errors).map(
+                warnOnAccessToRestrictedVariableInOrderByOrWhere(state.currentScope.symbolNames)
+              )
+              SemanticCheckResult(finalResult.state, niceErrors)
+            }
+          } else {
+            for {
+              _ <- SemanticCheck.setState(state.newSiblingScope)
+              checksResult <- runChecks(previousScope)
+            } yield {
+              val niceErrors = checksResult.errors.map(
+                warnOnAccessToRestrictedVariableInOrderByOrWhere(state.currentScope.symbolNames)
+              )
+              SemanticCheckResult(checksResult.state, niceErrors)
+
+            }
           }
 
-          SemanticCheckResult(result.state, result.errors ++ errors)
-        }
+        (isReturn, outerScope) match {
+          case (true, Some(outer)) => check.map { result =>
+              val outerScopeSymbolNames = outer.symbolNames
+              val outputSymbolNames = result.state.currentScope.scope.symbolNames
+              val alreadyDeclaredNames = outputSymbolNames.intersect(outerScopeSymbolNames)
+              val explicitReturnVariablesByName = returnItems.explicitReturnVariables.map(v => v.name -> v).toMap
+              val errors = alreadyDeclaredNames.map { name =>
+                val position = explicitReturnVariablesByName.getOrElse(name, returnItems).position
+                SemanticError(s"Variable `$name` already declared in outer scope", position)
+              }
 
-        case _ =>
-          check
-      }
-  }
+              SemanticCheckResult(result.state, result.errors ++ errors)
+            }
+
+          case _ =>
+            check
+        }
+    }
 
   /**
    * If you access a previously defined variable in a WITH/RETURN with DISTINCT or aggregation, that is not OK. Example:
@@ -1254,7 +1257,7 @@ sealed trait ProjectionClause extends HorizonClause {
   }
 
   // use an empty state when checking skip & limit, as these have entirely isolated context
-  private def checkSkip: SemanticCheck  = withState(SemanticState.clean)(skip.semanticCheck)
+  private def checkSkip: SemanticCheck = withState(SemanticState.clean)(skip.semanticCheck)
   private def checkLimit: SemanticCheck = withState(SemanticState.clean)(limit.semanticCheck)
 
   def verifyOrderByAggregationUse(fail: (String, InputPosition) => Nothing): Unit = {
@@ -1393,10 +1396,13 @@ case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[Subque
   def checkSubquery: SemanticCheck = {
     for {
       outerStateWithImports <- part.checkImportingWith
-      _                     <- SemanticCheck.setState(outerStateWithImports.state.newBaseScope) // Create empty scope under root
-      innerChecked          <- part.semanticCheckInSubqueryContext(outerStateWithImports.state) // Check inner query. Allow it to import from outer scope
-      _                     <- returnToOuterScope(outerStateWithImports.state.currentScope)
-      merged                <- declareOutputVariablesInOuterScope(innerChecked.state.currentScope.scope) // Declare variables that are in output from subquery
+      // Create empty scope under root
+      _ <- SemanticCheck.setState(outerStateWithImports.state.newBaseScope)
+      // Check inner query. Allow it to import from outer scope
+      innerChecked <- part.semanticCheckInSubqueryContext(outerStateWithImports.state)
+      _ <- returnToOuterScope(outerStateWithImports.state.currentScope)
+      // Declare variables that are in output from subquery
+      merged <- declareOutputVariablesInOuterScope(innerChecked.state.currentScope.scope)
     } yield {
       val importingWithErrors = outerStateWithImports.errors
 
@@ -1427,8 +1433,9 @@ case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[Subque
     }
   }
 
-  override def semanticCheckContinuation(previousScope: Scope, outerScope: Option[Scope] = None): SemanticCheck = { s: SemanticState =>
-    SemanticCheckResult(s.importValuesFromScope(previousScope), Vector())
+  override def semanticCheckContinuation(previousScope: Scope, outerScope: Option[Scope] = None): SemanticCheck = {
+    s: SemanticState =>
+      SemanticCheckResult(s.importValuesFromScope(previousScope), Vector())
   }
 
   private def declareOutputVariablesInOuterScope(rootScope: Scope): SemanticCheck = {

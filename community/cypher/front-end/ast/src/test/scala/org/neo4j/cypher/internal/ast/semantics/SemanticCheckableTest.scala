@@ -290,7 +290,8 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
       SemanticCheck.error(error)
     }
 
-    check.run(SemanticState.clean, SemanticCheckContext.default) shouldBe SemanticCheckResult(SemanticState.clean, Vector(error))
+    check.run(SemanticState.clean, SemanticCheckContext.default) shouldBe
+      SemanticCheckResult(SemanticState.clean, Vector(error))
   }
 
   test("SemanticCheck.nestedCheck should not evaluate nested check during construction") {
@@ -304,7 +305,8 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
 
     val check = failingCheck ifOkChain nested
 
-    check.run(SemanticState.clean, SemanticCheckContext.default) shouldBe SemanticCheckResult(SemanticState.clean, Vector(error))
+    check.run(SemanticState.clean, SemanticCheckContext.default) shouldBe
+      SemanticCheckResult(SemanticState.clean, Vector(error))
   }
 
   test("SemanticCheck.fromState should work") {
@@ -328,7 +330,10 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
 
   test("SemanticCheck.setState should work") {
     val Right(state) = SemanticState.clean.declareVariable(varFor("x"), CTNode.invariant)
-    SemanticCheck.setState(state).run(SemanticState.clean, SemanticCheckContext.default) shouldBe SemanticCheckResult.success(state)
+    SemanticCheck.setState(state).run(
+      SemanticState.clean,
+      SemanticCheckContext.default
+    ) shouldBe SemanticCheckResult.success(state)
   }
 
   test("SemanticCheck.fromContext should use the correct context") {
@@ -336,7 +341,8 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
     val selfReferenceMsg = "self reference"
 
     val check1 = SemanticCheck.fromContext { context =>
-      val msg = context.errorMessageProvider.createMissingPropertyLabelHintError(null, null, null, null, null, null, null)
+      val msg =
+        context.errorMessageProvider.createMissingPropertyLabelHintError(null, null, null, null, null, null, null)
       SemanticCheck.error(SemanticError(msg, pos))
     }
 
@@ -349,13 +355,15 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
 
     val context = new SemanticCheckContext {
       override def errorMessageProvider: ErrorMessageProvider = new ErrorMessageProvider {
-        override def createMissingPropertyLabelHintError(operatorDescription: String,
-                                                         hintStringification: String,
-                                                         missingThingDescription: String,
-                                                         foundThingsDescription: String,
-                                                         entityDescription: String,
-                                                         entityName: String,
-                                                         additionalInfo: String): String = {
+        override def createMissingPropertyLabelHintError(
+          operatorDescription: String,
+          hintStringification: String,
+          missingThingDescription: String,
+          foundThingsDescription: String,
+          entityDescription: String,
+          entityName: String,
+          additionalInfo: String
+        ): String = {
           missingMsg
         }
 
@@ -370,6 +378,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
 
   test("long chain should not cause stack overflow") {
     val check = Vector.fill(10000)(SemanticCheck.success).reduce(_ chain _)
-    check.run(SemanticState.clean, SemanticCheckContext.default) shouldBe SemanticCheckResult.success(SemanticState.clean)
+    check.run(SemanticState.clean, SemanticCheckContext.default) shouldBe
+      SemanticCheckResult.success(SemanticState.clean)
   }
 }

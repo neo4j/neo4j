@@ -95,6 +95,7 @@ object SemanticCheck {
 
   final private[semantics] case class FlatMap(check: SemanticCheck, f: SemanticCheckResult => SemanticCheck)
       extends SemanticCheck
+
   final private[semantics] case class CheckFromContext(f: SemanticCheckContext => SemanticCheck) extends SemanticCheck
   final private[semantics] case class Annotated(check: SemanticCheck, annotation: String) extends SemanticCheck
 }

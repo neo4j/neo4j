@@ -256,12 +256,14 @@ object SemanticState {
     (s: SemanticState) => SemanticCheckResult.success(s.recordCurrentScope(node))
 }
 
-case class SemanticState(currentScope: ScopeLocation,
-                         typeTable: ASTAnnotationMap[Expression, ExpressionTypeInfo],
-                         recordedScopes: ASTAnnotationMap[ASTNode, ScopeLocation],
-                         notifications: Set[InternalNotification] = Set.empty,
-                         features: Set[SemanticFeature] = Set.empty,
-                         declareVariablesToSuppressDuplicateErrors: Boolean = true) {
+case class SemanticState(
+  currentScope: ScopeLocation,
+  typeTable: ASTAnnotationMap[Expression, ExpressionTypeInfo],
+  recordedScopes: ASTAnnotationMap[ASTNode, ScopeLocation],
+  notifications: Set[InternalNotification] = Set.empty,
+  features: Set[SemanticFeature] = Set.empty,
+  declareVariablesToSuppressDuplicateErrors: Boolean = true
+) {
 
   def scopeTree: Scope = currentScope.rootScope
 
