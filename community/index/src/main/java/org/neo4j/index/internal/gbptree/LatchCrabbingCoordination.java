@@ -97,9 +97,6 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
     LatchCrabbingCoordination(TreeNodeLatchService latchService, int leafUnderflowThreshold) {
         this.latchService = latchService;
         this.leafUnderflowThreshold = leafUnderflowThreshold;
-        for (int i = 0; i < dataByDepth.length; i++) {
-            dataByDepth[i] = new DepthData();
-        }
     }
 
     @Override
@@ -126,19 +123,15 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
         // Remember information about the latch
         depth++;
         if (depth >= dataByDepth.length) {
-            growDepthDataArray();
+            dataByDepth = Arrays.copyOf(dataByDepth, dataByDepth.length * 2);
         }
         DepthData depthData = dataByDepth[depth];
+        if (depthData == null) {
+            depthData = dataByDepth[depth] = new DepthData();
+        }
         depthData.latch = latch;
         depthData.latchTypeIsWrite = pessimistic;
         depthData.childPos = childPos;
-    }
-
-    private void growDepthDataArray() {
-        dataByDepth = Arrays.copyOf(dataByDepth, dataByDepth.length * 2);
-        for (int i = depth; i < dataByDepth.length; i++) {
-            dataByDepth[i] = new DepthData();
-        }
     }
 
     @Override

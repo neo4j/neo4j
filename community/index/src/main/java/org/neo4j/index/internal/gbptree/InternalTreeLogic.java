@@ -114,8 +114,7 @@ class InternalTreeLogic<KEY, VALUE> {
      * Further inserts/removals will move the cursor from its current position to where the next change will
      * take place using as few page pins as possible.
      */
-    @SuppressWarnings("unchecked")
-    private Level<KEY>[] levels = new Level[0]; // grows on demand
+    private Level<KEY>[] levels;
 
     private int currentLevel = -1;
     private double ratioToKeepInLeftOnSplit;
@@ -179,17 +178,8 @@ class InternalTreeLogic<KEY, VALUE> {
         this.layerType = layerType;
 
         // an arbitrary depth slightly bigger than an unimaginably big tree
-        ensureStackCapacity(10);
-    }
-
-    private void ensureStackCapacity(int depth) {
-        if (depth > levels.length) {
-            int oldStackLength = levels.length;
-            levels = Arrays.copyOf(levels, depth);
-            for (int i = oldStackLength; i < depth; i++) {
-                levels[i] = new Level<>(layout);
-            }
-        }
+        levels = new Level[10];
+        levels[0] = new Level<>(layout);
     }
 
     /**
@@ -204,6 +194,17 @@ class InternalTreeLogic<KEY, VALUE> {
         level.lowerIsOpenEnded = true;
         level.upperIsOpenEnded = true;
         this.ratioToKeepInLeftOnSplit = ratioToKeepInLeftOnSplit;
+    }
+
+    private Level<KEY> descendToLevel(int currentLevel) {
+        if (currentLevel >= levels.length) {
+            levels = Arrays.copyOf(levels, currentLevel + 1);
+        }
+        var level = levels[currentLevel];
+        if (level == null) {
+            level = levels[currentLevel] = new Level<>(layout);
+        }
+        return level;
     }
 
     private boolean popLevel(PageCursor cursor) throws IOException {
@@ -284,8 +285,7 @@ class InternalTreeLogic<KEY, VALUE> {
 
             Level<KEY> parentLevel = levels[currentLevel];
             currentLevel++;
-            ensureStackCapacity(currentLevel + 1);
-            Level<KEY> level = levels[currentLevel];
+            Level<KEY> level = descendToLevel(currentLevel);
 
             // Restrict the key range as the cursor moves down to the next level
             level.childPos = childPos;
