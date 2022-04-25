@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -38,9 +37,7 @@ import org.neo4j.util.Preconditions;
 class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
     private final RootLayerSupport support;
     private final Layout<KEY, VALUE> layout;
-    private final TreeNode<KEY, VALUE> singleTreeNode;
-    private final Supplier<TreeNode<KEY, VALUE>> treeNodeFactory;
-    private final OffloadStoreImpl<KEY, VALUE> offloadStore;
+    private final TreeNode<KEY, VALUE> treeNode;
     private final SingleDataTree singleRootAccess;
     private volatile Root root;
 
@@ -55,9 +52,8 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
             support.readMeta(cursorContext).verify(layout, (Layout<?, ?>) null);
         }
         TreeNodeSelector.Factory format = TreeNodeSelector.selectByLayout(layout);
-        this.offloadStore = support.buildOffload(layout);
-        this.treeNodeFactory = () -> format.create(support.payloadSize(), layout, offloadStore);
-        this.singleTreeNode = treeNodeFactory.get();
+        OffloadStoreImpl<KEY, VALUE> offloadStore = support.buildOffload(layout);
+        this.treeNode = format.create(support.payloadSize(), layout, offloadStore);
         this.singleRootAccess = new SingleDataTree();
     }
 
@@ -73,7 +69,7 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
 
     @Override
     public void initializeAfterCreation(CursorContext cursorContext) throws IOException {
-        support.initializeNewRoot(root, singleTreeNode, DATA_LAYER_FLAG, cursorContext);
+        support.initializeNewRoot(root, treeNode, DATA_LAYER_FLAG, cursorContext);
     }
 
     @Override
@@ -101,7 +97,7 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
         try (PageCursor cursor = support.openRootCursor(root, PF_SHARED_READ_LOCK, cursorContext)) {
             long generation = support.generation();
             GBPTreeStructure<SingleRoot, KEY, VALUE> structure = new GBPTreeStructure<>(
-                    null, null, singleTreeNode, layout, stableGeneration(generation), unstableGeneration(generation));
+                    null, null, treeNode, layout, stableGeneration(generation), unstableGeneration(generation));
             structure.visitTree(cursor, visitor, cursorContext);
             support.idProvider().visitFreelist(visitor, cursorContext);
         }
@@ -118,7 +114,7 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
             throws IOException {
         long generation = support.generation();
         new GBPTreeConsistencyChecker<>(
-                        singleTreeNode,
+                        treeNode,
                         layout,
                         state,
                         stableGeneration(generation),
@@ -129,12 +125,12 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
 
     @Override
     public int keyValueSizeCap() {
-        return singleTreeNode.keyValueSizeCap();
+        return treeNode.keyValueSizeCap();
     }
 
     @Override
     public int inlineKeyValueSizeCap() {
-        return singleTreeNode.inlineKeyValueSizeCap();
+        return treeNode.inlineKeyValueSizeCap();
     }
 
     @Override
@@ -145,18 +141,18 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
     @Override
     void unsafe(GBPTreeUnsafe unsafe, boolean dataTree, CursorContext cursorContext) throws IOException {
         Preconditions.checkState(dataTree, "Can only operate on data tree");
-        support.unsafe(unsafe, layout, singleTreeNode, cursorContext);
+        support.unsafe(unsafe, layout, treeNode, cursorContext);
     }
 
     @Override
     CrashGenerationCleaner createCrashGenerationCleaner(CursorContextFactory contextFactory) {
-        return support.createCrashGenerationCleaner(null, singleTreeNode, contextFactory);
+        return support.createCrashGenerationCleaner(null, treeNode, contextFactory);
     }
 
     @Override
     void printNode(PageCursor cursor, CursorContext cursorContext) {
         long generation = support.generation();
-        singleTreeNode.printNode(
+        treeNode.printNode(
                 cursor, false, true, stableGeneration(generation), unstableGeneration(generation), cursorContext);
     }
 
@@ -167,7 +163,7 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
             this.batchedWriter = support.newWriter(
                     layout,
                     SingleRootLayer.this,
-                    singleTreeNode,
+                    treeNode,
                     TreeWriterCoordination.NO_COORDINATION,
                     false,
                     DATA_LAYER_FLAG);
@@ -175,7 +171,7 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
 
         @Override
         public Seeker<KEY, VALUE> allocateSeeker(CursorContext cursorContext) throws IOException {
-            return support.internalAllocateSeeker(layout, singleTreeNode, cursorContext, SeekCursor.NO_MONITOR);
+            return support.internalAllocateSeeker(layout, treeNode, cursorContext, SeekCursor.NO_MONITOR);
         }
 
         @Override
@@ -196,7 +192,7 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
                 throws IOException {
             return support.internalPartitionedSeek(
                     layout,
-                    singleTreeNode,
+                    treeNode,
                     fromInclusive,
                     toExclusive,
                     numberOfPartitions,
@@ -211,13 +207,13 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
                 return support.initializeWriter(batchedWriter, splitRatio, cursorContext);
             } else {
                 return support.internalParallelWriter(
-                        layout, treeNodeFactory, splitRatio, cursorContext, SingleRootLayer.this, DATA_LAYER_FLAG);
+                        layout, treeNode, splitRatio, cursorContext, SingleRootLayer.this, DATA_LAYER_FLAG);
             }
         }
 
         @Override
         public long estimateNumberOfEntriesInTree(CursorContext cursorContext) throws IOException {
-            return support.estimateNumberOfEntriesInTree(layout, singleTreeNode, SingleRootLayer.this, cursorContext);
+            return support.estimateNumberOfEntriesInTree(layout, treeNode, SingleRootLayer.this, cursorContext);
         }
     }
 }

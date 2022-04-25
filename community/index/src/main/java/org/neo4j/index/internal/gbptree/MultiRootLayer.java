@@ -38,7 +38,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.neo4j.index.internal.gbptree.RootMappingLayout.RootMappingValue;
 import org.neo4j.io.pagecache.PageCursor;
@@ -62,9 +61,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
     private final RootLayerSupport support;
     private final CursorContextFactory contextFactory;
     private final Layout<ROOT_KEY, RootMappingValue> rootLayout;
-    private final TreeNode<ROOT_KEY, RootMappingValue> singleRootTreeNode;
-    private final OffloadStoreImpl<ROOT_KEY, RootMappingValue> rootOffloadStore;
-    private final Supplier<TreeNode<ROOT_KEY, RootMappingValue>> rootTreeNodeFactory;
+    private final TreeNode<ROOT_KEY, RootMappingValue> rootTreeNode;
     private final AtomicReferenceArray<DataTreeRoot<ROOT_KEY>> rootMappingCache;
     private final TreeNodeLatchService rootMappingCacheLatches = new TreeNodeLatchService();
     private final ValueMerger<ROOT_KEY, RootMappingValue> DONT_ALLOW_CREATE_EXISTING_ROOT =
@@ -73,9 +70,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             };
 
     private final Layout<DATA_KEY, DATA_VALUE> dataLayout;
-    private final TreeNode<DATA_KEY, DATA_VALUE> singleDataTreeNode;
-    private final OffloadStoreImpl<DATA_KEY, DATA_VALUE> dataOffloadStore;
-    private final Supplier<TreeNode<DATA_KEY, DATA_VALUE>> dataTreeNodeFactory;
+    private final TreeNode<DATA_KEY, DATA_VALUE> dataTreeNode;
 
     private volatile Root root;
 
@@ -106,13 +101,10 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
 
         TreeNodeSelector.Factory rootMappingFormat = TreeNodeSelector.selectByLayout(this.rootLayout);
         TreeNodeSelector.Factory format = TreeNodeSelector.selectByLayout(dataLayout);
-        this.rootOffloadStore = support.buildOffload(this.rootLayout);
-        this.dataOffloadStore = support.buildOffload(dataLayout);
-        this.rootTreeNodeFactory =
-                () -> rootMappingFormat.create(support.payloadSize(), this.rootLayout, rootOffloadStore);
-        this.dataTreeNodeFactory = () -> format.create(support.payloadSize(), dataLayout, dataOffloadStore);
-        this.singleRootTreeNode = rootTreeNodeFactory.get();
-        this.singleDataTreeNode = dataTreeNodeFactory.get();
+        OffloadStoreImpl<ROOT_KEY, RootMappingValue> rootOffloadStore = support.buildOffload(this.rootLayout);
+        OffloadStoreImpl<DATA_KEY, DATA_VALUE> dataOffloadStore = support.buildOffload(dataLayout);
+        this.rootTreeNode = rootMappingFormat.create(support.payloadSize(), this.rootLayout, rootOffloadStore);
+        this.dataTreeNode = format.create(support.payloadSize(), dataLayout, dataOffloadStore);
     }
 
     private boolean hashCodeSeemsImplemented(Layout<ROOT_KEY, RootMappingValue> rootLayout) {
@@ -135,20 +127,20 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
 
     @Override
     void initializeAfterCreation(CursorContext cursorContext) throws IOException {
-        support.initializeNewRoot(root, singleRootTreeNode, ROOT_LAYER_FLAG, cursorContext);
+        support.initializeNewRoot(root, rootTreeNode, ROOT_LAYER_FLAG, cursorContext);
     }
 
     @Override
     void create(ROOT_KEY dataRootKey, CursorContext cursorContext) throws IOException {
         dataRootKey = rootLayout.copyKey(dataRootKey);
         try (Writer<ROOT_KEY, RootMappingValue> rootMappingWriter = support.internalParallelWriter(
-                rootLayout, rootTreeNodeFactory, DEFAULT_SPLIT_RATIO, cursorContext, this, ROOT_LAYER_FLAG)) {
+                rootLayout, rootTreeNode, DEFAULT_SPLIT_RATIO, cursorContext, this, ROOT_LAYER_FLAG)) {
             long generation = support.generation();
             long stableGeneration = stableGeneration(generation);
             long unstableGeneration = unstableGeneration(generation);
             long rootId = support.idProvider().acquireNewId(stableGeneration, unstableGeneration, cursorContext);
             Root dataRoot = new Root(rootId, unstableGeneration);
-            support.initializeNewRoot(dataRoot, singleDataTreeNode, DATA_LAYER_FLAG, cursorContext);
+            support.initializeNewRoot(dataRoot, dataTreeNode, DATA_LAYER_FLAG, cursorContext);
             try {
                 // Write it to the root mapping tree
                 rootMappingWriter.merge(
@@ -166,7 +158,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
     void delete(ROOT_KEY dataRootKey, CursorContext cursorContext) throws IOException {
         int cacheIndex = cacheIndex(dataRootKey);
         try (Writer<ROOT_KEY, RootMappingValue> rootMappingWriter = support.internalParallelWriter(
-                rootLayout, rootTreeNodeFactory, DEFAULT_SPLIT_RATIO, cursorContext, this, ROOT_LAYER_FLAG)) {
+                rootLayout, rootTreeNode, DEFAULT_SPLIT_RATIO, cursorContext, this, ROOT_LAYER_FLAG)) {
             while (true) {
                 MutableLong rootIdToRelease = new MutableLong();
                 ValueMerger<ROOT_KEY, RootMappingValue> rootMappingMerger =
@@ -238,9 +230,9 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         // Root mappings
         long generation = support.generation();
         var structure = new GBPTreeStructure<>(
-                singleRootTreeNode,
+                rootTreeNode,
                 rootLayout,
-                singleDataTreeNode,
+                dataTreeNode,
                 dataLayout,
                 stableGeneration(generation),
                 unstableGeneration(generation));
@@ -275,7 +267,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         long stableGeneration = stableGeneration(generation);
         long unstableGeneration = unstableGeneration(generation);
         new GBPTreeConsistencyChecker<>(
-                        singleRootTreeNode, rootLayout, state, stableGeneration, unstableGeneration, reportDirty)
+                        rootTreeNode, rootLayout, state, stableGeneration, unstableGeneration, reportDirty)
                 .check(file, cursor, root, visitor, cursorContext);
 
         // Check each root
@@ -283,12 +275,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             while (seek.next()) {
                 Root dataRoot = seek.value().asRoot();
                 new GBPTreeConsistencyChecker<>(
-                                singleDataTreeNode,
-                                dataLayout,
-                                state,
-                                stableGeneration,
-                                unstableGeneration,
-                                reportDirty)
+                                dataTreeNode, dataLayout, state, stableGeneration, unstableGeneration, reportDirty)
                         .check(file, cursor, dataRoot, visitor, cursorContext);
             }
         }
@@ -300,7 +287,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         rootLayout.initializeAsLowest(low);
         rootLayout.initializeAsHighest(high);
         return support.initializeSeeker(
-                support.internalAllocateSeeker(rootLayout, singleRootTreeNode, cursorContext, SeekCursor.NO_MONITOR),
+                support.internalAllocateSeeker(rootLayout, rootTreeNode, cursorContext, SeekCursor.NO_MONITOR),
                 this,
                 low,
                 high,
@@ -310,32 +297,32 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
 
     @Override
     int keyValueSizeCap() {
-        return singleDataTreeNode.keyValueSizeCap();
+        return dataTreeNode.keyValueSizeCap();
     }
 
     @Override
     int inlineKeyValueSizeCap() {
-        return singleDataTreeNode.inlineKeyValueSizeCap();
+        return dataTreeNode.inlineKeyValueSizeCap();
     }
 
     @Override
     void unsafe(GBPTreeUnsafe unsafe, boolean dataTree, CursorContext cursorContext) throws IOException {
         if (dataTree) {
-            support.unsafe(unsafe, dataLayout, singleDataTreeNode, cursorContext);
+            support.unsafe(unsafe, dataLayout, dataTreeNode, cursorContext);
         } else {
-            support.unsafe(unsafe, rootLayout, singleRootTreeNode, cursorContext);
+            support.unsafe(unsafe, rootLayout, rootTreeNode, cursorContext);
         }
     }
 
     @Override
     CrashGenerationCleaner createCrashGenerationCleaner(CursorContextFactory contextFactory) {
-        return support.createCrashGenerationCleaner(singleRootTreeNode, singleDataTreeNode, contextFactory);
+        return support.createCrashGenerationCleaner(rootTreeNode, dataTreeNode, contextFactory);
     }
 
     @Override
     void printNode(PageCursor cursor, CursorContext cursorContext) {
         byte layerType = TreeNode.layerType(cursor);
-        var treeNode = layerType == DATA_LAYER_FLAG ? singleDataTreeNode : singleRootTreeNode;
+        var treeNode = layerType == DATA_LAYER_FLAG ? dataTreeNode : rootTreeNode;
         long generation = support.generation();
         treeNode.printNode(
                 cursor, false, true, stableGeneration(generation), unstableGeneration(generation), cursorContext);
@@ -383,7 +370,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             try (CursorContext cursorContext = contextFactory.create("Update root mapping");
                     Seeker<ROOT_KEY, RootMappingValue> seek = support.initializeSeeker(
                             support.internalAllocateSeeker(
-                                    rootLayout, singleRootTreeNode, cursorContext, SeekCursor.NO_MONITOR),
+                                    rootLayout, rootTreeNode, cursorContext, SeekCursor.NO_MONITOR),
                             () -> root,
                             dataRootKey,
                             dataRootKey,
@@ -424,7 +411,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             try (CursorContext cursorContext = contextFactory.create("Update root mapping");
                     Writer<ROOT_KEY, RootMappingValue> rootMappingWriter = support.internalParallelWriter(
                             rootLayout,
-                            rootTreeNodeFactory,
+                            rootTreeNode,
                             DEFAULT_SPLIT_RATIO,
                             cursorContext,
                             MultiRootLayer.this,
@@ -452,7 +439,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         public Writer<DATA_KEY, DATA_VALUE> writer(int flags, CursorContext cursorContext) throws IOException {
             return support.internalParallelWriter(
                     dataLayout,
-                    dataTreeNodeFactory,
+                    dataTreeNode,
                     splitRatio(flags),
                     cursorContext,
                     rootMappingInteraction,
@@ -461,7 +448,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
 
         @Override
         public Seeker<DATA_KEY, DATA_VALUE> allocateSeeker(CursorContext cursorContext) throws IOException {
-            return support.internalAllocateSeeker(dataLayout, singleDataTreeNode, cursorContext, SeekCursor.NO_MONITOR);
+            return support.internalAllocateSeeker(dataLayout, dataTreeNode, cursorContext, SeekCursor.NO_MONITOR);
         }
 
         @Override
@@ -477,7 +464,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                 throws IOException {
             return support.internalPartitionedSeek(
                     dataLayout,
-                    singleDataTreeNode,
+                    dataTreeNode,
                     fromInclusive,
                     toExclusive,
                     numberOfPartitions,
@@ -488,7 +475,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         @Override
         public long estimateNumberOfEntriesInTree(CursorContext cursorContext) throws IOException {
             return support.estimateNumberOfEntriesInTree(
-                    dataLayout, singleDataTreeNode, rootMappingInteraction, cursorContext);
+                    dataLayout, dataTreeNode, rootMappingInteraction, cursorContext);
         }
     }
 

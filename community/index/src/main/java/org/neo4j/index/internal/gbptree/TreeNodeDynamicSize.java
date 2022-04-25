@@ -108,14 +108,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
     private final boolean msbIsOffload;
     private final int totalSpace;
     private final int halfSpace;
-
-    // Temporary tree state while making changes
-    private final MutableIntStack deadKeysOffset = new IntArrayStack();
-    private final MutableIntStack aliveKeysOffset = new IntArrayStack();
-    private final int[] oldOffset;
-    private final int[] newOffset;
-    private final KEY tmpKeyLeft;
-    private final KEY tmpKeyRight;
     private final OffloadStore<KEY, VALUE> offloadStore;
     private final int maxKeyCount;
 
@@ -125,8 +117,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
         this.offsetFormat = selectOffsetFormat(pageSize);
         this.totalSpace = pageSize - offsetFormat.getHeaderLength();
         this.maxKeyCount = totalSpace / getTotalEntryOverheadMin(offsetFormat);
-        this.oldOffset = new int[maxKeyCount];
-        this.newOffset = new int[maxKeyCount];
         this.offloadStore = offloadStore;
         this.halfSpace = totalSpace >> 1;
 
@@ -198,9 +188,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
                             + "with current page size of %dB. We require this cap to be at least %dB.",
                     LEAST_NUMBER_OF_ENTRIES_PER_PAGE, inlineKeyValueSizeCap, pageSize, Long.BYTES));
         }
-
-        tmpKeyLeft = layout.newKey();
-        tmpKeyRight = layout.newKey();
     }
 
     private static DynamicSizeOffsetFormat selectOffsetFormat(int pageSize) {
@@ -703,8 +690,10 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
         */
 
         // Mark all offsets
-        deadKeysOffset.clear();
-        aliveKeysOffset.clear();
+        MutableIntStack deadKeysOffset = new IntArrayStack();
+        MutableIntStack aliveKeysOffset = new IntArrayStack();
+        int[] oldOffset = new int[maxKeyCount];
+        int[] newOffset = new int[maxKeyCount];
         if (type == INTERNAL) {
             recordDeadAndAliveInternal(cursor, deadKeysOffset, aliveKeysOffset);
         } else {
@@ -866,17 +855,17 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
         KEY leftInSplit;
         KEY rightInSplit;
         if (splitPos == insertPos) {
-            leftInSplit = keyAt(cursor, tmpKeyLeft, splitPos - 1, LEAF, cursorContext);
+            leftInSplit = keyAt(cursor, layout.newKey(), splitPos - 1, LEAF, cursorContext);
             rightInSplit = newKey;
         } else {
             int rightPos = insertPos < splitPos ? splitPos - 1 : splitPos;
-            rightInSplit = keyAt(cursor, tmpKeyRight, rightPos, LEAF, cursorContext);
+            rightInSplit = keyAt(cursor, layout.newKey(), rightPos, LEAF, cursorContext);
 
             if (rightPos == insertPos) {
                 leftInSplit = newKey;
             } else {
                 int leftPos = rightPos - 1;
-                leftInSplit = keyAt(cursor, tmpKeyLeft, leftPos, LEAF, cursorContext);
+                leftInSplit = keyAt(cursor, layout.newKey(), leftPos, LEAF, cursorContext);
             }
         }
         layout.minimalSplitter(leftInSplit, rightInSplit, newSplitter);

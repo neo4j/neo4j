@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
-import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.io.pagecache.PageCursor;
@@ -200,13 +199,12 @@ class RootLayerSupport {
 
     <K, V> Writer<K, V> internalParallelWriter(
             Layout<K, V> layout,
-            Supplier<TreeNode<K, V>> treeNodeFactory,
+            TreeNode<K, V> treeNode,
             double ratioToKeepInLeftOnSplit,
             CursorContext cursorContext,
             TreeRootExchange rootChangeMonitor,
             byte layerType)
             throws IOException {
-        TreeNode<K, V> treeNode = treeNodeFactory.get();
         TreeWriterCoordination traversalMonitor =
                 new LatchCrabbingCoordination(latchService, treeNode.leafUnderflowThreshold());
         GBPTreeWriter<K, V> writer = newWriter(layout, rootChangeMonitor, treeNode, traversalMonitor, true, layerType);
