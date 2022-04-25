@@ -157,9 +157,14 @@ class IdRange {
             long from = fromBitSet[i];
             if (addition) {
                 if ((into & from) != 0) {
+                    int idsPerRange = numOfLongs * Long.SIZE;
                     throw new IllegalStateException(format(
-                            "Illegal addition ID state for range: %s transition longIdx: %d%ninto: %s%nfrom: %s",
-                            key.getIdRangeIdx(), i, toPaddedBinaryString(into), toPaddedBinaryString(from)));
+                            "Illegal addition ID state for range: %d (IDs %d-%d) transition%ninto: %s%nfrom: %s",
+                            key.getIdRangeIdx(),
+                            key.getIdRangeIdx() * idsPerRange,
+                            (key.getIdRangeIdx() + 1) * idsPerRange - 1,
+                            toPaddedBinaryString(into),
+                            toPaddedBinaryString(from)));
                 }
             }
             // don't verify removal since we can't quite verify transitioning to USED since 0 is the default bit value
