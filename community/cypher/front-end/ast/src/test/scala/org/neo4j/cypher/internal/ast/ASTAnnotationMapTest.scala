@@ -100,4 +100,9 @@ class ASTAnnotationMapTest extends CypherFunSuite {
     val p2 = PositionedNode(Exp("1")(InputPosition(0, 0, 0)))
     assert(p1.hashCode === p2.hashCode())
   }
+
+  test("PositionedNode.hashCode() works with null position") {
+    val p = PositionedNode(Exp("1")(null))
+    noException should be thrownBy p.hashCode
+  }
 }

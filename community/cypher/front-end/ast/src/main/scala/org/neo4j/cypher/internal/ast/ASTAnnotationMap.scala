@@ -61,9 +61,7 @@ object ASTAnnotationMap {
       }
     }
 
-    override def hashCode(): Int = {
-      val state = Seq(node, node.position)
-      state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
-    }
+    override def hashCode(): Int =
+      (node, node.position).hashCode
   }
 }
