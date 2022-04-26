@@ -63,6 +63,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -72,6 +73,7 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -156,7 +158,7 @@ class StoreMigratorTest {
         verify(observingParticipant).moveMigratedFiles(any(), any(), any(), any());
         verify(observingParticipant).cleanup(any(DatabaseLayout.class));
 
-        verifyDbStartAndFormat(PageAligned.LATEST_RECORD_FORMATS.storeVersion());
+        verifyDbStartAndFormat(PageAligned.LATEST_RECORD_FORMATS);
 
         assertFalse(migrationDirPresent());
     }
@@ -188,7 +190,7 @@ class StoreMigratorTest {
         verify(observingParticipant).moveMigratedFiles(any(), any(), any(), any());
         verify(observingParticipant).cleanup(any(DatabaseLayout.class));
 
-        verifyDbStartAndFormat(PageAligned.LATEST_RECORD_FORMATS.storeVersion());
+        verifyDbStartAndFormat(PageAligned.LATEST_RECORD_FORMATS);
 
         assertFalse(migrationDirPresent());
     }
@@ -229,7 +231,7 @@ class StoreMigratorTest {
         verify(observingParticipant).moveMigratedFiles(any(), any(), any(), any());
         verify(observingParticipant).cleanup(any(DatabaseLayout.class));
 
-        verifyDbStartAndFormat(PageAlignedTestFormat.WithMajorVersionBump.VERSION_STRING);
+        verifyDbStartAndFormat(new PageAlignedTestFormat.WithMajorVersionBump());
 
         assertFalse(migrationDirPresent());
     }
@@ -282,7 +284,7 @@ class StoreMigratorTest {
                         eq(PageAlignedTestFormat.WithMajorVersionBump.VERSION_STRING));
         verify(observingParticipant, times(2)).cleanup(any(DatabaseLayout.class));
 
-        verifyDbStartAndFormat(PageAlignedTestFormat.WithMajorVersionBump.VERSION_STRING);
+        verifyDbStartAndFormat(new PageAlignedTestFormat.WithMajorVersionBump());
 
         assertFalse(migrationDirPresent());
     }
@@ -324,7 +326,7 @@ class StoreMigratorTest {
         verify(observingParticipant).moveMigratedFiles(any(), any(), any(), any());
         verify(observingParticipant).cleanup(any(DatabaseLayout.class));
 
-        verifyDbStartAndFormat(StandardFormatWithMinorVersionBump.VERSION_STRING);
+        verifyDbStartAndFormat(new StandardFormatWithMinorVersionBump());
 
         assertFalse(migrationDirPresent());
     }
@@ -399,7 +401,7 @@ class StoreMigratorTest {
         return Files.exists(path);
     }
 
-    private void verifyDbStartAndFormat(String expectedStoreVersion) {
+    private void verifyDbStartAndFormat(RecordFormats expectedStoreFormat) throws IOException {
         var dbms = new TestDatabaseManagementServiceBuilder(neo4jLayout.homeDirectory()).build();
         try {
             var db = dbms.database(DEFAULT_DATABASE_NAME);
@@ -409,16 +411,16 @@ class StoreMigratorTest {
             var dependencyResolver = ((GraphDatabaseAPI) db).getDependencyResolver();
             var storageEngineFactory = dependencyResolver.resolveDependency(StorageEngineFactory.class);
             var cursorContextFactory = dependencyResolver.resolveDependency(CursorContextFactory.class);
-            var storeVersionCheck = storageEngineFactory.versionCheck(
-                    dependencyResolver.resolveDependency(FileSystemAbstraction.class),
-                    dependencyResolver.resolveDependency(DatabaseLayout.class),
-                    dependencyResolver.resolveDependency(Config.class),
-                    dependencyResolver.resolveDependency(PageCache.class),
-                    dependencyResolver.resolveDependency(LogService.class),
-                    cursorContextFactory);
             try (var cursorContext = cursorContextFactory.create("Test")) {
-                var storeVersion = storeVersionCheck.storeVersion(cursorContext).orElseThrow();
-                assertEquals(expectedStoreVersion, storeVersion);
+                StoreId storeId = storageEngineFactory.retrieveStoreId(
+                        dependencyResolver.resolveDependency(FileSystemAbstraction.class),
+                        dependencyResolver.resolveDependency(DatabaseLayout.class),
+                        dependencyResolver.resolveDependency(PageCache.class),
+                        cursorContext);
+
+                assertEquals(expectedStoreFormat.getFormatFamily().name(), storeId.getFormatFamilyName());
+                assertEquals(expectedStoreFormat.majorVersion(), storeId.getMajorVersion());
+                assertEquals(expectedStoreFormat.minorVersion(), storeId.getMinorVersion());
             }
         } finally {
             dbms.shutdown();

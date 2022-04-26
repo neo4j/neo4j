@@ -21,9 +21,11 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.util.Optional;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.storageengine.api.StoreVersion;
+import org.neo4j.storageengine.api.StoreVersionUserStringProvider;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
@@ -46,8 +48,11 @@ public class RecordStoreVersion implements StoreVersion {
 
     @Override
     public boolean hasCompatibleCapabilities(StoreVersion otherVersion, CapabilityType type) {
-        return format.hasCompatibleCapabilities(
-                RecordFormatSelector.selectForVersion(otherVersion.storeVersion()), type);
+        if (otherVersion instanceof RecordStoreVersion) {
+            return format.hasCompatibleCapabilities(((RecordStoreVersion) otherVersion).format, type);
+        }
+
+        return false;
     }
 
     @Override
@@ -56,8 +61,13 @@ public class RecordStoreVersion implements StoreVersion {
     }
 
     @Override
-    public Optional<String> successorStoreVersion() {
-        return RecordFormatSelector.findSupportedSuccessor(format).map(RecordFormats::storeVersion);
+    public Optional<StoreVersion> successorStoreVersion() {
+        RecordFormats latestFormatInFamily = RecordFormatSelector.findLatestFormatInFamily(
+                format.getFormatFamily().name());
+        if (!latestFormatInFamily.name().equals(format.name())) {
+            return Optional.of(new RecordStoreVersion(latestFormatInFamily));
+        }
+        return Optional.empty();
     }
 
     @Override
@@ -86,8 +96,18 @@ public class RecordStoreVersion implements StoreVersion {
         return format.onlyForMigration();
     }
 
+    public RecordFormats getFormat() {
+        return format;
+    }
+
     @Override
     public String toString() {
         return "RecordStoreVersion{" + "format=" + format + '}';
+    }
+
+    @Override
+    public String getStoreVersionUserString() {
+        return StoreVersionUserStringProvider.formatVersion(
+                RecordStorageEngineFactory.NAME, formatFamilyName(), format.majorVersion(), format.minorVersion());
     }
 }

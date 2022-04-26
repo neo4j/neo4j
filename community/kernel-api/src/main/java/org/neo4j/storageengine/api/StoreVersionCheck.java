@@ -29,14 +29,16 @@ public interface StoreVersionCheck {
      * @param cursorContext underlying page cursor context.
      * @return store version of the existing store.
      */
+    @Deprecated
     Optional<String> storeVersion(CursorContext cursorContext);
 
     /**
-     * Convert the a store version to String form.
+     * Convert a store version to String form.
      *
      * @param storeVersion the store version to convert
      * @return store version of the existing store.
      */
+    @Deprecated
     String storeVersionToString(long storeVersion);
 
     /**

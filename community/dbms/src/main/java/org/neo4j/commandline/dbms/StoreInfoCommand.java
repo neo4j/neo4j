@@ -47,10 +47,11 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.kernel.recovery.LogTailExtractor;
-import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.StoreVersion;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
@@ -145,19 +146,17 @@ public class StoreInfoCommand extends AbstractCommand {
             boolean structured,
             boolean failSilently) {
         var memoryTracker = EmptyMemoryTracker.INSTANCE;
-        var contextFactory = NULL_CONTEXT_FACTORY;
         try (var ignored = LockChecker.checkDatabaseLock(databaseLayout);
-                var cursorContext = contextFactory.create("printInfo")) {
+                var cursorContext = NULL_CONTEXT_FACTORY.create("printInfo")) {
             var storageEngineFactory = storageEngineSelector
                     .selectStorageEngine(fs, databaseLayout, pageCache)
                     .orElseThrow();
-            var storeVersionCheck = storageEngineFactory.versionCheck(
-                    fs, databaseLayout, Config.defaults(), pageCache, NullLogService.getInstance(), contextFactory);
-            var storeVersion = storeVersionCheck
-                    .storeVersion(cursorContext)
-                    .orElseThrow(() -> new CommandFailedException(format(
-                            "Could not find version metadata in store '%s'", databaseLayout.databaseDirectory())));
-            var versionInformation = storageEngineFactory.versionInformation(storeVersion);
+            StoreId storeId = storageEngineFactory.retrieveStoreId(fs, databaseLayout, pageCache, cursorContext);
+            if (storeId == null) {
+                throw new CommandFailedException(
+                        format("Could not find version metadata in store '%s'", databaseLayout.databaseDirectory()));
+            }
+            var versionInformation = storageEngineFactory.versionInformation(storeId);
             var logTail = getLogTail(fs, databaseLayout, pageCache, config, memoryTracker, storageEngineFactory);
             var recoveryRequired =
                     checkRecoveryState(fs, pageCache, databaseLayout, config, memoryTracker, storageEngineFactory);
@@ -166,18 +165,9 @@ public class StoreInfoCommand extends AbstractCommand {
                     txIdStore.getLastCommittedTransactionId(); // Latest committed tx id found in metadata store. May be
             // behind
             // if recovery is required.
-            var successorString = versionInformation
-                    .successorStoreVersion()
-                    .map(successor ->
-                            storageEngineFactory.versionInformation(successor).introductionNeo4jVersion())
-                    .orElse(null);
+            var successorVersion = versionInformation.successorStoreVersion().orElse(null);
             var storeInfo = StoreInfo.notInUseResult(
-                    databaseLayout.getDatabaseName(),
-                    storeVersion,
-                    versionInformation.introductionNeo4jVersion(),
-                    successorString,
-                    lastTxId,
-                    recoveryRequired);
+                    databaseLayout.getDatabaseName(), versionInformation, successorVersion, lastTxId, recoveryRequired);
 
             return storeInfo.print(structured);
         } catch (FileLockException e) {
@@ -234,28 +224,25 @@ public class StoreInfoCommand extends AbstractCommand {
 
     private record StoreInfo(
             String databaseName,
-            String storeFormat,
-            String storeFormatIntroduced,
-            String storeFormatSuperseded,
+            StoreVersion currentStoreVersion,
+            StoreVersion successorStoreVersion,
             long lastCommittedTransaction,
             boolean recoveryRequired,
             boolean inUse) {
         static StoreInfo inUseResult(String databaseName) {
-            return new StoreInfo(databaseName, null, null, null, -1, true, true);
+            return new StoreInfo(databaseName, null, null, -1, true, true);
         }
 
         static StoreInfo notInUseResult(
                 String databaseName,
-                String storeFormat,
-                String storeFormatIntroduced,
-                String storeFormatSuperseded,
+                StoreVersion currentStoreVersion,
+                StoreVersion successorStoreVersion,
                 long lastCommittedTransaction,
                 boolean recoveryRequired) {
             return new StoreInfo(
                     databaseName,
-                    storeFormat,
-                    storeFormatIntroduced,
-                    storeFormatSuperseded,
+                    currentStoreVersion,
+                    successorStoreVersion,
                     lastCommittedTransaction,
                     recoveryRequired,
                     false);
@@ -265,9 +252,15 @@ public class StoreInfoCommand extends AbstractCommand {
             return List.of(
                     new StoreInfoField(InfoType.DatabaseName, databaseName),
                     new StoreInfoField(InfoType.InUse, Boolean.toString(inUse)),
-                    new StoreInfoField(InfoType.StoreFormat, storeFormat),
-                    new StoreInfoField(InfoType.StoreFormatIntroduced, storeFormatIntroduced),
-                    new StoreInfoField(InfoType.StoreFormatSuperseded, storeFormatSuperseded),
+                    new StoreInfoField(
+                            InfoType.StoreFormat,
+                            currentStoreVersion != null ? currentStoreVersion.getStoreVersionUserString() : null),
+                    new StoreInfoField(
+                            InfoType.StoreFormatIntroduced,
+                            currentStoreVersion != null ? currentStoreVersion.introductionNeo4jVersion() : null),
+                    new StoreInfoField(
+                            InfoType.StoreFormatSuperseded,
+                            successorStoreVersion != null ? successorStoreVersion.introductionNeo4jVersion() : null),
                     new StoreInfoField(InfoType.LastCommittedTransaction, Long.toString(lastCommittedTransaction)),
                     new StoreInfoField(InfoType.RecoveryRequired, Boolean.toString(recoveryRequired)));
         }

@@ -41,6 +41,7 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.string.UTF8;
@@ -230,8 +231,16 @@ class RecordStoreVersionCheckTest {
         var cursorContext = contextFactory.create("tracePageCacheAccessOnStoreVersionAccessConstruction");
 
         Path neoStore = emptyFile(fileSystem);
-        String storeVersion = "V1";
-        long v1 = StoreVersion.versionStringToLong(storeVersion);
+        long v1 = StoreVersion.versionStringToLong(PageAligned.LATEST_NAME);
+        MetaDataStore.setRecord(
+                pageCache,
+                neoStore,
+                MetaDataStore.Position.RANDOM_NUMBER,
+                1234,
+                databaseLayout.getDatabaseName(),
+                NULL_CONTEXT);
+        MetaDataStore.setRecord(
+                pageCache, neoStore, MetaDataStore.Position.TIME, 1234, databaseLayout.getDatabaseName(), NULL_CONTEXT);
         MetaDataStore.setRecord(
                 pageCache,
                 neoStore,
@@ -240,13 +249,14 @@ class RecordStoreVersionCheckTest {
                 databaseLayout.getDatabaseName(),
                 NULL_CONTEXT);
 
-        var versionCheck = newStoreVersionCheck();
-        assertEquals(storeVersion, versionCheck.storeVersion(cursorContext).get());
+        StoreId storeId = StoreId.retrieveFromStore(fileSystem, databaseLayout, pageCache, cursorContext);
+        assertNotNull(storeId);
+        assertEquals("record-aligned-1-1", storeId.getStoreVersionUserString());
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat(cursorTracer.pins()).isOne();
-        assertThat(cursorTracer.unpins()).isOne();
-        assertThat(cursorTracer.faults()).isOne();
+        assertThat(cursorTracer.pins()).isEqualTo(3);
+        assertThat(cursorTracer.unpins()).isEqualTo(3);
+        assertThat(cursorTracer.faults()).isEqualTo(3);
     }
 
     private Path emptyFile(FileSystemAbstraction fs) throws IOException {

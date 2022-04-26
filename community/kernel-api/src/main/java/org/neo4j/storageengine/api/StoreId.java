@@ -19,6 +19,8 @@
  */
 package org.neo4j.storageengine.api;
 
+import static org.neo4j.storageengine.api.StoreVersionUserStringProvider.formatVersion;
+
 import java.io.IOException;
 import java.util.Objects;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -34,7 +36,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
  * TODO: The aim is to have this as the only representation of store ID and store version
  * and get rid of the 'String' and 'long' representation of store version and {@link LegacyStoreId}.
  */
-public class StoreId {
+public class StoreId implements StoreVersionUserStringProvider {
     private final long creationTime;
     private final long random;
     private final String storageEngineName;
@@ -65,19 +67,19 @@ public class StoreId {
         return random;
     }
 
-    String getStorageEngineName() {
+    public String getStorageEngineName() {
         return storageEngineName;
     }
 
-    String getFormatFamilyName() {
+    public String getFormatFamilyName() {
         return formatFamilyName;
     }
 
-    int getMajorVersion() {
+    public int getMajorVersion() {
         return majorVersion;
     }
 
-    int getMinorVersion() {
+    public int getMinorVersion() {
         return minorVersion;
     }
 
@@ -87,8 +89,9 @@ public class StoreId {
      * The result of this method should be used in logging, error messages and similar cases,
      * when the store version needs to be represented to the end user.
      */
-    public String versionToUserString() {
-        return storageEngineName + "-" + formatFamilyName + "-" + majorVersion + "-" + minorVersion;
+    @Override
+    public String getStoreVersionUserString() {
+        return formatVersion(storageEngineName, formatFamilyName, majorVersion, minorVersion);
     }
 
     public void serialize(WritableChannel channel) throws IOException {

@@ -28,7 +28,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_PROPERT
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 import static org.neo4j.io.layout.recordstorage.RecordDatabaseLayout.convert;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.*;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStore;
@@ -171,24 +171,20 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 STORE_VERSION,
                 databaseLayout.getDatabaseName(),
                 cursorContext);
-        assertMetaDataFieldPresent(version, databaseLayout);
+        assertMetaDataFieldPresent(version, STORE_VERSION, databaseLayout);
         String versionString = StoreVersion.versionLongToString(version);
         RecordFormats recordFormat = RecordFormatSelector.selectForVersion(versionString);
 
         long creationTime = MetaDataStore.getRecord(
-                pageCache,
-                databaseLayout.metadataStore(),
-                MetaDataStore.Position.TIME,
-                databaseLayout.getDatabaseName(),
-                cursorContext);
-        assertMetaDataFieldPresent(creationTime, databaseLayout);
+                pageCache, databaseLayout.metadataStore(), TIME, databaseLayout.getDatabaseName(), cursorContext);
+        assertMetaDataFieldPresent(creationTime, TIME, databaseLayout);
         long random = MetaDataStore.getRecord(
                 pageCache,
                 databaseLayout.metadataStore(),
-                MetaDataStore.Position.RANDOM_NUMBER,
+                RANDOM_NUMBER,
                 databaseLayout.getDatabaseName(),
                 cursorContext);
-        assertMetaDataFieldPresent(random, databaseLayout);
+        assertMetaDataFieldPresent(random, RANDOM_NUMBER, databaseLayout);
 
         return new StoreId(
                 creationTime,
@@ -199,9 +195,10 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 recordFormat.minorVersion());
     }
 
-    private void assertMetaDataFieldPresent(long value, DatabaseLayout databaseLayout) {
+    private void assertMetaDataFieldPresent(long value, MetaDataStore.Position field, DatabaseLayout databaseLayout) {
         if (value == MetaDataRecordFormat.FIELD_NOT_PRESENT) {
-            throw new IllegalStateException("Uninitialized version field in " + databaseLayout.metadataStore());
+            throw new IllegalStateException(
+                    "Uninitialized '" + field.name() + "' field in " + databaseLayout.metadataStore());
         }
     }
 
@@ -214,6 +211,11 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             LogService logService,
             CursorContextFactory contextFactory) {
         return new RecordStoreVersionCheck(pageCache, convert(databaseLayout), config);
+    }
+
+    @Override
+    public StoreVersion versionInformation(StoreId storeId) {
+        return new RecordStoreVersion(RecordFormatSelector.selectForStoreId(storeId));
     }
 
     @Override

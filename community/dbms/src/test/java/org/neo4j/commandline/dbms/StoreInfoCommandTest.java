@@ -47,8 +47,8 @@ import org.neo4j.kernel.internal.locker.DatabaseLocker;
 import org.neo4j.kernel.internal.locker.Locker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageFilesState;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
-import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -134,7 +134,7 @@ class StoreInfoCommandTest {
     }
 
     @Test
-    void readsLatestStoreVersionCorrectly() {
+    void readsLatestStoreVersionCorrectly() throws IOException {
         prepareStore(fooDbLayout, "A", "v1", null, null, 5);
         CommandLine.populateCommand(command, fooDbDirectory.toAbsolutePath().toString());
         command.execute();
@@ -146,7 +146,7 @@ class StoreInfoCommandTest {
     }
 
     @Test
-    void readsOlderStoreVersionCorrectly() {
+    void readsOlderStoreVersionCorrectly() throws IOException {
         prepareStore(fooDbLayout, "A", "v1", "B", "v2", 5);
         CommandLine.populateCommand(command, fooDbDirectory.toAbsolutePath().toString());
         command.execute();
@@ -158,9 +158,9 @@ class StoreInfoCommandTest {
     }
 
     @Test
-    void throwsOnUnknownVersion() {
+    void throwsOnUnknownVersion() throws IOException {
         prepareStore(fooDbLayout, "unknown", "v1", null, null, 3);
-        when(storageEngineFactory.versionInformation("unknown")).thenThrow(IllegalArgumentException.class);
+        when(storageEngineFactory.versionInformation(any(StoreId.class))).thenThrow(IllegalArgumentException.class);
         CommandLine.populateCommand(command, fooDbDirectory.toAbsolutePath().toString());
         var exception = assertThrows(Exception.class, () -> command.execute());
         assertThat(exception).hasRootCauseInstanceOf(IllegalArgumentException.class);
@@ -234,7 +234,7 @@ class StoreInfoCommandTest {
     }
 
     @Test
-    void returnsInfoStructuredAsJson() {
+    void returnsInfoStructuredAsJson() throws IOException {
         // given
         prepareStore(fooDbLayout, "A", "v1", null, null, 13);
         var expectedFoo = expectedStructuredResult("foo", false, "A", "v1", null, 13);
@@ -272,7 +272,7 @@ class StoreInfoCommandTest {
     }
 
     @Test
-    void prettySingleStoreInfoResultHasTrailingLineSeparator() {
+    void prettySingleStoreInfoResultHasTrailingLineSeparator() throws IOException {
         // given
         prepareStore(fooDbLayout, "B", "v2", null, null, 8);
         var expectedFoo = expectedPrettyResult("foo", false, "B", "v2", null, 8);
@@ -330,7 +330,8 @@ class StoreInfoCommandTest {
             String introducedInVersion,
             String successorStoreVersion,
             String successorNeo4jVersion,
-            long lastCommittedTxId) {
+            long lastCommittedTxId)
+            throws IOException {
         doReturn(Optional.of(storageEngineFactory))
                 .when(storageEngineSelector)
                 .selectStorageEngine(
@@ -350,30 +351,23 @@ class StoreInfoCommandTest {
                         argThat(dbLayout -> dbLayout.databaseDirectory().equals(databaseLayout.databaseDirectory())),
                         any());
 
-        StoreVersionCheck storeVersionCheck = mock(StoreVersionCheck.class);
-        when(storeVersionCheck.storeVersion(any())).thenReturn(Optional.of(storeVersion));
-        StoreVersion version1 = mockedStoreVersion(storeVersion, introducedInVersion, successorStoreVersion);
-        when(storageEngineFactory.versionInformation(storeVersion)).thenReturn(version1);
+        StoreVersion storeVersion2 = null;
         if (successorStoreVersion != null) {
-            StoreVersion version2 = mockedStoreVersion(successorStoreVersion, successorNeo4jVersion, null);
-            when(storageEngineFactory.versionInformation(successorStoreVersion)).thenReturn(version2);
+            storeVersion2 = mockedStoreVersion(successorStoreVersion, successorNeo4jVersion, null);
         }
+
+        StoreId storeId = mock(StoreId.class);
+        when(storageEngineFactory.retrieveStoreId(any(), any(), any(), any())).thenReturn(storeId);
+        StoreVersion storeVersion1 = mockedStoreVersion(storeVersion, introducedInVersion, storeVersion2);
+
+        when(storageEngineFactory.versionInformation(storeId)).thenReturn(storeVersion1);
         when(transactionIdStore.getLastCommittedTransactionId()).thenReturn(lastCommittedTxId);
-        doReturn(storeVersionCheck)
-                .when(storageEngineFactory)
-                .versionCheck(
-                        any(),
-                        argThat(dbLayout -> dbLayout.databaseDirectory().equals(databaseLayout.databaseDirectory())),
-                        any(),
-                        any(),
-                        any(),
-                        any());
     }
 
     private StoreVersion mockedStoreVersion(
-            String storeVersion, String introducedInVersion, String supersededByStoreVersion) {
+            String storeVersion, String introducedInVersion, StoreVersion supersededByStoreVersion) {
         StoreVersion version = mock(StoreVersion.class);
-        when(version.storeVersion()).thenReturn(storeVersion);
+        when(version.getStoreVersionUserString()).thenReturn(storeVersion);
         when(version.introductionNeo4jVersion()).thenReturn(introducedInVersion);
         when(version.successorStoreVersion()).thenReturn(Optional.ofNullable(supersededByStoreVersion));
         return version;

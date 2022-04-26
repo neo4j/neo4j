@@ -109,8 +109,12 @@ public interface StorageEngineFactory {
             LogService logService,
             CursorContextFactory contextFactory);
 
+    StoreVersion versionInformation(StoreId storeId);
+
+    @Deprecated
     StoreVersion versionInformation(String storeVersion);
 
+    @Deprecated
     StoreVersion versionInformation(LegacyStoreId storeId);
 
     StoreVersion defaultStoreVersion();

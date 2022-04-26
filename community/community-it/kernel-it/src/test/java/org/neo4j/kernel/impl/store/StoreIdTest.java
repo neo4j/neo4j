@@ -62,6 +62,6 @@ class StoreIdTest {
 
         StoreId storeId = StoreId.retrieveFromStore(fileSystem, databaseLayout, pageCache, NULL_CONTEXT);
         assertNotNull(storeId);
-        assertEquals(expectedStoreVersion, storeId.versionToUserString());
+        assertEquals(expectedStoreVersion, storeId.getStoreVersionUserString());
     }
 }

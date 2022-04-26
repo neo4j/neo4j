@@ -180,8 +180,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             throws IOException, KernelException {
         RecordDatabaseLayout directoryLayout = RecordDatabaseLayout.convert(directoryLayoutArg);
         RecordDatabaseLayout migrationLayout = RecordDatabaseLayout.convert(migrationLayoutArg);
-        RecordFormats oldFormat = selectForVersion(fromVersion.storeVersion());
-        RecordFormats newFormat = selectForVersion(toVersion.storeVersion());
+        RecordFormats oldFormat = ((RecordStoreVersion) fromVersion).getFormat();
+        RecordFormats newFormat = ((RecordStoreVersion) toVersion).getFormat();
 
         boolean requiresDynamicStoreMigration = !newFormat.dynamic().equals(oldFormat.dynamic());
         boolean requiresPropertyMigration =
@@ -307,7 +307,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                     pageCache,
                     migrationLayout.metadataStore(),
                     STORE_VERSION,
-                    StoreVersion.versionStringToLong(toVersion.storeVersion()),
+                    StoreVersion.versionStringToLong(newFormat.storeVersion()),
                     migrationLayout.getDatabaseName(),
                     cursorContext);
 

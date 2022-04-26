@@ -27,12 +27,13 @@ import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 import org.neo4j.util.Bits;
 
-public interface StoreVersion {
+public interface StoreVersion extends StoreVersionUserStringProvider {
     String UNKNOWN_VERSION = "Unknown";
 
     /**
      * @return store version, e.g. as in format version.
      */
+    @Deprecated
     String storeVersion();
 
     boolean hasCapability(Capability capability);
@@ -46,9 +47,9 @@ public interface StoreVersion {
     String introductionNeo4jVersion();
 
     /**
-     * @return if this version isn't the latest version the returned optional will contain the store version of the store version superseding this version.
+     * @return if this version isn't the latest version, the returned optional will contain the store version superseding this version.
      */
-    Optional<String> successorStoreVersion();
+    Optional<StoreVersion> successorStoreVersion();
 
     /**
      * @return the latest store version within the same version history line as this store version.

@@ -53,6 +53,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV5_0;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.service.Services;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 
 /**
@@ -101,6 +102,7 @@ public class RecordFormatSelector {
      * @return record formats
      * @throws IllegalArgumentException if format for specified store version not found
      */
+    @Deprecated
     public static RecordFormats selectForVersion(String storeVersion) {
         // Format can be supplied in two ways:
         // - The high-level/user-friendly name of the format (potentially also having a version)
@@ -120,6 +122,20 @@ public class RecordFormatSelector {
             }
         }
         throw new IllegalArgumentException("Unknown store version '" + storeVersion + "'");
+    }
+
+    /**
+     * Select record formats for provided store ID.
+     * @throws IllegalArgumentException if format for specified store version not found
+     */
+    public static RecordFormats selectForStoreId(StoreId storeId) {
+        return Iterables.stream(allFormats())
+                .filter(format -> format.majorVersion() == storeId.getMajorVersion()
+                        && format.minorVersion() == storeId.getMinorVersion()
+                        && format.getFormatFamily().name().equals(storeId.getFormatFamilyName()))
+                .findAny()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Unknown store version '" + storeId.getStoreVersionUserString() + "'"));
     }
 
     /**
@@ -374,13 +390,7 @@ public class RecordFormatSelector {
      * Formats under development can be included in the search depending on the corresponding setting in the supplied config.
      */
     public static RecordFormats findLatestFormatInFamily(String formatFamily, Config config) {
-        if (Arrays.stream(FormatFamily.values())
-                .map(Enum::name)
-                .noneMatch(familyName -> familyName.equals(formatFamily))) {
-            throw new IllegalArgumentException("Unknown format family: '" + formatFamily + "'");
-        }
-
-        RecordFormats formats = loadRecordFormat(formatFamily, false);
+        RecordFormats formats = findLatestFormatInFamily(formatFamily);
 
         boolean includeDevFormats = config.get(GraphDatabaseInternalSettings.include_versions_under_development);
         if (includeDevFormats && formats != null) {
@@ -388,6 +398,22 @@ public class RecordFormatSelector {
             formats = newestFormatInFamily.orElse(formats);
         }
         return formats;
+    }
+
+    /**
+     * Finds the latest store version (both latest major and minor) for the submitted format family.
+     * <p>
+     * The returned format is not guaranteed to be supported to run a database on ({@link RecordFormats#onlyForMigration()}).
+     * Formats under development are not included in the search.
+     */
+    public static RecordFormats findLatestFormatInFamily(String formatFamily) {
+        if (Arrays.stream(FormatFamily.values())
+                .map(Enum::name)
+                .noneMatch(familyName -> familyName.equals(formatFamily))) {
+            throw new IllegalArgumentException("Unknown format family: '" + formatFamily + "'");
+        }
+
+        return loadRecordFormat(formatFamily, false);
     }
 
     /**
