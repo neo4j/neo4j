@@ -29,7 +29,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.neo4j.cli.ExecutionContext;
@@ -38,13 +37,12 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.monitoring.Monitors;
+import org.neo4j.storemigration.InitialIndexStateMonitor;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.Unzip;
 import org.neo4j.test.extension.Inject;
@@ -65,19 +63,19 @@ public class SystemDbCommunityMigrationIT {
 
         runStoreMigrationCommandFromSameJvm(databaseLayout, "--database", SYSTEM_DATABASE_NAME);
 
-        var allIndexMonitor = new AllIndexMonitor();
+        var initialIndexStateMonitor = new InitialIndexStateMonitor(SYSTEM_DATABASE_NAME);
         var dbms = createDbmsBuilder(homeDirectory)
                 // Make sure system db is not automatically upgraded, because it will hide malfunction in migration
                 // command
                 .setConfig(GraphDatabaseSettings.allow_single_automatic_upgrade, false)
-                .setMonitors(allIndexMonitor.monitors())
+                .setMonitors(initialIndexStateMonitor.monitors())
                 .build();
         try {
             var system = dbms.database(SYSTEM_DATABASE_NAME);
 
-            assertThat(allIndexMonitor.allIndexStates).isNotEmpty();
+            assertThat(initialIndexStateMonitor.allIndexStates).isNotEmpty();
             for (Map.Entry<IndexDescriptor, InternalIndexState> internalIndexStateEntry :
-                    allIndexMonitor.allIndexStates.entrySet()) {
+                    initialIndexStateMonitor.allIndexStates.entrySet()) {
                 assertThat(internalIndexStateEntry.getKey().getIndexType()).isIn(LOOKUP, RANGE);
                 assertThat(internalIndexStateEntry.getValue())
                         .withFailMessage(internalIndexStateEntry.getKey() + " was not ONLINE as expected: "
@@ -107,53 +105,5 @@ public class SystemDbCommunityMigrationIT {
                 .withFailMessage(
                         "SystemGraphComponent " + component.componentName() + " was not upgraded, state=" + status)
                 .isEqualTo(SystemGraphComponent.Status.CURRENT);
-    }
-
-    public static void runStoreMigrationCommandFromSameJvm(Neo4jLayout neo4jLayout, String... args) {
-        var homeDir = neo4jLayout.homeDirectory().toAbsolutePath();
-        var configDir = homeDir.resolve("conf");
-        var out = new Output();
-        var err = new Output();
-
-        var ctx = new ExecutionContext(
-                homeDir, configDir, out.printStream, err.printStream, new DefaultFileSystemAbstraction());
-
-        var command = CommandLine.populateCommand(new MigrateStoreCommand(ctx), args);
-
-        try {
-            int exitCode = command.call();
-            new Result(exitCode, out.toString(), err.toString());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static class Output {
-        private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        private final PrintStream printStream = new PrintStream(buffer);
-
-        @Override
-        public String toString() {
-            return buffer.toString(StandardCharsets.UTF_8);
-        }
-    }
-
-    private record Result(int exitCode, String out, String err) {}
-
-    private static class AllIndexMonitor extends IndexMonitor.MonitorAdapter {
-        HashMap<IndexDescriptor, InternalIndexState> allIndexStates = new HashMap<>();
-
-        @Override
-        public void initialState(String databaseName, IndexDescriptor descriptor, InternalIndexState state) {
-            if (databaseName.equals(SYSTEM_DATABASE_NAME)) {
-                allIndexStates.put(descriptor, state);
-            }
-        }
-
-        public Monitors monitors() {
-            var monitors = new Monitors();
-            monitors.addMonitorListener(this);
-            return monitors;
-        }
     }
 }
