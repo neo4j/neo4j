@@ -503,9 +503,10 @@ trait UpdateGraph {
    */
   def deleteOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Seq[EagernessReason.Reason] = {
     // TODO:H FIXME qg.argumentIds here is not correct, but there is a unit test that depends on it
-    val identifiersToRead = qgWithInfo.unstablePatternNodes ++ qgWithInfo.queryGraph.allPatternRelationshipsRead.map(
-      _.name
-    ) ++ qgWithInfo.queryGraph.argumentIds
+    val identifiersToRead =
+      qgWithInfo.unstablePatternNodes ++ qgWithInfo.queryGraph.allPatternRelationshipsRead.map(
+        _.name
+      ) ++ qgWithInfo.queryGraph.argumentIds
     val overlaps = (identifiersToRead intersect identifiersToDelete).toSeq
     if (overlaps.nonEmpty) {
       overlaps.map(EagernessReason.ReadDeleteConflict)
