@@ -224,7 +224,7 @@ class TestAStar extends Neo4jAlgoTestCase {
             final Map<Node, Double> seenBranchStates = new HashMap<>();
             PathExpander<Double> expander = new PathExpander<Double>() {
                 @Override
-                public Iterable<Relationship> expand(Path path, BranchState<Double> state) {
+                public ResourceIterable<Relationship> expand(Path path, BranchState<Double> state) {
                     double newState = state.getState();
                     if (path.length() > 0) {
                         newState += (Double) path.lastRelationship().getProperty("length");

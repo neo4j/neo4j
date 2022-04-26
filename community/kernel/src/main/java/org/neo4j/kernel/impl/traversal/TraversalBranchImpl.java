@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
-
 import java.util.Iterator;
 import java.util.LinkedList;
 import org.neo4j.graphdb.Entity;
@@ -35,6 +33,7 @@ import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
+import org.neo4j.internal.helpers.collection.ResourceClosingIterator;
 
 class TraversalBranchImpl implements TraversalBranch {
     final TraversalBranch parent;
@@ -83,7 +82,7 @@ class TraversalBranchImpl implements TraversalBranch {
     }
 
     protected ResourceIterator expandRelationshipsWithoutChecks(PathExpander expander) {
-        return asResourceIterator(expander.expand(this, BranchState.NO_STATE).iterator());
+        return ResourceClosingIterator.fromResourceIterable(expander.expand(this, BranchState.NO_STATE));
     }
 
     protected boolean hasExpandedRelationships() {

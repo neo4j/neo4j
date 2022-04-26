@@ -41,7 +41,7 @@ public interface PathExpander<STATE> {
      * of this path will see the state of the parent.
      * @return the relationships to return for the {@code path}.
      */
-    Iterable<Relationship> expand(Path path, BranchState<STATE> state);
+    ResourceIterable<Relationship> expand(Path path, BranchState<STATE> state);
 
     /**
      * Returns a new instance with the exact expansion logic, but reversed.

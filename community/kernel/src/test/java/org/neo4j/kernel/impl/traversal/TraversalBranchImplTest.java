@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -27,7 +28,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.traversal.Evaluation.INCLUDE_AND_CONTINUE;
+import static org.neo4j.internal.helpers.collection.Iterables.resourceIterable;
+import static org.neo4j.internal.helpers.collection.Iterators.resourceIterator;
 
+import java.util.Collections;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -35,20 +40,23 @@ import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
-import org.neo4j.internal.helpers.collection.Iterables;
 
 class TraversalBranchImplTest {
     @SuppressWarnings("unchecked")
     @Test
     void shouldExpandOnFirstAccess() {
         // GIVEN
-        TraversalBranch parent = mock(TraversalBranch.class);
-        Node source = mock(Node.class);
-        TraversalBranchImpl branch = new TraversalBranchImpl(parent, source);
-        @SuppressWarnings("rawtypes")
-        PathExpander expander = mock(PathExpander.class);
-        when(expander.expand(eq(branch), any(BranchState.class))).thenReturn(Iterables.emptyResourceIterable());
-        TraversalContext context = mock(TraversalContext.class);
+        final var parent = mock(TraversalBranch.class);
+        final var source = mock(Node.class);
+        final var branch = new TraversalBranchImpl(parent, source);
+
+        final var expander = mock(PathExpander.class);
+
+        final var closed = new MutableBoolean();
+        final var iterable = resourceIterable(() -> resourceIterator(Collections.emptyIterator(), closed::setTrue));
+
+        when(expander.expand(eq(branch), any(BranchState.class))).thenReturn(iterable);
+        final var context = mock(TraversalContext.class);
         when(context.evaluate(eq(branch), isNull())).thenReturn(INCLUDE_AND_CONTINUE);
 
         // WHEN initializing
@@ -62,5 +70,7 @@ class TraversalBranchImplTest {
 
         // THEN we should expand it
         verify(expander).expand(any(Path.class), any(BranchState.class));
+        // and the resources closed when the expansion is reset
+        assertThat(closed.getValue()).isTrue();
     }
 }

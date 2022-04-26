@@ -54,6 +54,7 @@ import org.neo4j.graphdb.PathExpanderBuilder;
 import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.impl.StandardExpander;
@@ -631,7 +632,7 @@ class TestShortestPath extends Neo4jAlgoTestCase {
 
         @Override
         @SuppressWarnings("unchecked")
-        public Iterable<Relationship> expand(Path path, BranchState<Object> state) {
+        public ResourceIterable<Relationship> expand(Path path, BranchState<Object> state) {
             if (path.startNode().equals(path.endNode())) {
                 assertEquals(0, path.length(), "Path length must be zero");
             } else {
@@ -662,7 +663,7 @@ class TestShortestPath extends Neo4jAlgoTestCase {
         }
 
         @Override
-        public Iterable expand(Path path, BranchState state) {
+        public ResourceIterable<Relationship> expand(Path path, BranchState state) {
             nodesVisited.increment();
             return delegate.expand(path, state);
         }

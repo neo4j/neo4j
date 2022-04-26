@@ -266,14 +266,11 @@ public abstract class StandardExpander implements PathExpander {
         }
 
         static Exclusion include(Direction direction) {
-            switch (direction) {
-                case INCOMING:
-                    return OUTGOING;
-                case OUTGOING:
-                    return INCOMING;
-                default:
-                    return NONE;
-            }
+            return switch (direction) {
+                case INCOMING -> OUTGOING;
+                case OUTGOING -> INCOMING;
+                default -> NONE;
+            };
         }
     }
 
@@ -571,16 +568,11 @@ public abstract class StandardExpander implements PathExpander {
     }
 
     private static boolean matchDirection(Direction dir, Node start, Relationship rel) {
-        switch (dir) {
-            case INCOMING:
-                return rel.getEndNode().equals(start);
-            case OUTGOING:
-                return rel.getStartNode().equals(start);
-            case BOTH:
-                return true;
-            default:
-                throw new IllegalArgumentException("Unknown direction: " + dir);
-        }
+        return switch (dir) {
+            case INCOMING -> rel.getEndNode().equals(start);
+            case OUTGOING -> rel.getStartNode().equals(start);
+            case BOTH -> true;
+        };
     }
 
     abstract ResourceIterator<Relationship> doExpand(Path path, BranchState state);

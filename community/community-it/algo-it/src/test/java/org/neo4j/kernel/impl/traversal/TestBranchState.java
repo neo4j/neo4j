@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.Evaluation;
@@ -106,7 +107,7 @@ class TestBranchState extends TraversalTestBase {
 
     private static class DepthStateExpander implements PathExpander<Integer> {
         @Override
-        public Iterable<Relationship> expand(Path path, BranchState<Integer> state) {
+        public ResourceIterable<Relationship> expand(Path path, BranchState<Integer> state) {
             assertEquals(path.length(), state.getState().intValue());
             state.setState(state.getState() + 1);
             return path.endNode().getRelationships(OUTGOING);
@@ -120,7 +121,7 @@ class TestBranchState extends TraversalTestBase {
 
     private static class IncrementEveryOtherDepthCountingExpander implements PathExpander<Integer> {
         @Override
-        public Iterable<Relationship> expand(Path path, BranchState<Integer> state) {
+        public ResourceIterable<Relationship> expand(Path path, BranchState<Integer> state) {
             assertEquals(path.length() / 2, state.getState().intValue());
             if (path.length() % 2 != 0) {
                 state.setState(state.getState() + 1);
@@ -136,7 +137,7 @@ class TestBranchState extends TraversalTestBase {
 
     private static class RelationshipWeightExpander implements PathExpander<Integer> {
         @Override
-        public Iterable<Relationship> expand(Path path, BranchState<Integer> state) {
+        public ResourceIterable<Relationship> expand(Path path, BranchState<Integer> state) {
             state.setState(state.getState() + 1);
             return path.endNode().getRelationships(OUTGOING);
         }

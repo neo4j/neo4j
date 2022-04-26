@@ -22,10 +22,10 @@ package org.neo4j.graphdb.traversal;
 import static org.neo4j.graphdb.traversal.Paths.singleNodePath;
 
 import java.util.Comparator;
-import java.util.Iterator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
+import org.neo4j.internal.helpers.collection.Iterables;
 
 /**
  * Provides some common traversal sorting, used by
@@ -73,19 +73,13 @@ public abstract class Sorting {
         return new EndNodeComparator() {
             @Override
             protected int compareNodes(Node endNode1, Node endNode2) {
-                Integer count1 = count(endNode1, expander);
-                Integer count2 = count(endNode2, expander);
-                return count1.compareTo(count2);
+                final var count1 = count(endNode1, expander);
+                final var count2 = count(endNode2, expander);
+                return Long.compare(count1, count2);
             }
 
-            private Integer count(Node node, PathExpander expander) {
-                Iterator<?> expand = expander.expand(singleNodePath(node), BranchState.NO_STATE)
-                        .iterator();
-                int count = 0;
-                while (expand.hasNext()) {
-                    count++;
-                }
-                return count;
+            private long count(Node node, PathExpander expander) {
+                return Iterables.count(expander.expand(singleNodePath(node), BranchState.NO_STATE));
             }
         };
     }

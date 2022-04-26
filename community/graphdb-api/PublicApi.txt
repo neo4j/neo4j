@@ -158,7 +158,7 @@ org.neo4j.graphdb.Path::reverseRelationships() java.lang.Iterable<org.neo4j.grap
 org.neo4j.graphdb.Path::startNode() org.neo4j.graphdb.Node public abstract
 org.neo4j.graphdb.Path::toString() java.lang.String public abstract
 org.neo4j.graphdb.PathExpander<STATE extends java.lang.Object> public abstract interface
-org.neo4j.graphdb.PathExpander<STATE>::expand(org.neo4j.graphdb.Path, org.neo4j.graphdb.traversal.BranchState<STATE>) java.lang.Iterable<org.neo4j.graphdb.Relationship> public abstract
+org.neo4j.graphdb.PathExpander<STATE>::expand(org.neo4j.graphdb.Path, org.neo4j.graphdb.traversal.BranchState<STATE>) org.neo4j.graphdb.ResourceIterable<org.neo4j.graphdb.Relationship> public abstract
 org.neo4j.graphdb.PathExpander<STATE>::reverse() org.neo4j.graphdb.PathExpander<STATE> public abstract
 org.neo4j.graphdb.QueryExecutionException public class extends java.lang.RuntimeException
 org.neo4j.graphdb.QueryExecutionException::QueryExecutionException(java.lang.String, java.lang.Throwable, java.lang.String) void public

@@ -27,7 +27,7 @@ import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
-import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.helpers.collection.ResourceClosingIterator;
 
 public class TraversalBranchWithState extends TraversalBranchImpl implements BranchState {
     protected final Object stateForMe;
@@ -61,8 +61,7 @@ public class TraversalBranchWithState extends TraversalBranchImpl implements Bra
 
     @Override
     protected ResourceIterator<Relationship> expandRelationshipsWithoutChecks(PathExpander expander) {
-        Iterable expandIterable = expander.expand(this, this);
-        return Iterators.asResourceIterator(expandIterable);
+        return ResourceClosingIterator.fromResourceIterable(expander.expand(this, this));
     }
 
     @Override

@@ -41,9 +41,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
-import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 
 public class AStar implements PathFinder<WeightedPath> {
@@ -183,9 +183,8 @@ public class AStar implements PathFinder<WeightedPath> {
 
         @SuppressWarnings("unchecked")
         private void expand() {
-            Iterable<Relationship> expand = expander.expand(this, BranchState.NO_STATE);
-            try {
-                for (Relationship rel : expand) {
+            try (ResourceIterable<Relationship> relationships = expander.expand(this, BranchState.NO_STATE)) {
+                for (Relationship rel : relationships) {
                     lastMetadata.rels++;
                     Node node = rel.getOtherNode(lastNode);
                     Visit visit = visitData.get(node.getId());
@@ -207,8 +206,6 @@ public class AStar implements PathFinder<WeightedPath> {
                         addNext(node, estimate + tentativeGScore, visit);
                     }
                 }
-            } finally {
-                Iterables.tryCloseResource(expand);
             }
         }
 

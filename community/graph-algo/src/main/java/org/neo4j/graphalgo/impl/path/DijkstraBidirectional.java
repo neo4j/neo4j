@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.Evaluation;
@@ -157,7 +158,7 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath> {
         }
 
         @Override
-        public Iterable<Relationship> expand(Path path, BranchState<Double> state) {
+        public ResourceIterable<Relationship> expand(Path path, BranchState<Double> state) {
             double thisState = state.getState();
             thisSideShortest.setValue(thisState);
             if (MathUtil.compare(thisState + otherSideShortest.doubleValue(), shortestSoFar.doubleValue(), epsilon) > 0

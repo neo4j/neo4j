@@ -110,7 +110,7 @@ public abstract class PathExpanders {
     public static <STATE> PathExpander<STATE> forConstantDirectionWithTypes(final RelationshipType... types) {
         return new PathExpander<>() {
             @Override
-            public Iterable<Relationship> expand(Path path, BranchState<STATE> state) {
+            public ResourceIterable<Relationship> expand(Path path, BranchState<STATE> state) {
                 if (path.length() == 0) {
                     return path.endNode().getRelationships(types);
                 } else {
@@ -213,7 +213,7 @@ public abstract class PathExpanders {
             final PrintStream out) {
         return new PathExpander<>() {
             @Override
-            public Iterable<Relationship> expand(Path path, BranchState state) {
+            public ResourceIterable<Relationship> expand(Path path, BranchState state) {
                 if (pred.apply(path, state)) {
                     out.println(Paths.pathToString(path, descriptor));
                 }

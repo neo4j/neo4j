@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
-import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import java.util.ArrayList;
@@ -52,7 +51,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
@@ -408,15 +406,11 @@ public class ShortestPath implements PathFinder<Path> {
             closeRelationshipsIterator();
             this.nextRelationships = new NestingResourceIterator<>(nodesToIterate.autoClosingIterator()) {
                 @Override
+                @SuppressWarnings("unchecked")
                 protected ResourceIterator<Relationship> createNestedIterator(Node node) {
                     lastPath.setEndNode(node);
-                    @SuppressWarnings("unchecked")
-                    Iterable<Relationship> expanded = expander.expand(lastPath, BranchState.NO_STATE);
-                    if (expanded instanceof ResourceIterable<Relationship> relationships) {
-                        return ResourceClosingIterator.fromResourceIterable(relationships);
-                    } else {
-                        return asResourceIterator(expanded);
-                    }
+                    return ResourceClosingIterator.fromResourceIterable(
+                            expander.expand(lastPath, BranchState.NO_STATE));
                 }
             };
             this.currentDepth++;
