@@ -47,7 +47,7 @@ class StoreIdSerialization {
         channel.put((byte) storageEngine.length);
         channel.put(storageEngine, storageEngine.length);
         channel.put((byte) formatFamily.length);
-        channel.put(formatFamily, storageEngine.length);
+        channel.put(formatFamily, formatFamily.length);
         channel.put((byte) storeId.getMajorVersion());
         channel.put((byte) storeId.getMinorVersion());
     }

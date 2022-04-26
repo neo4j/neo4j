@@ -30,25 +30,30 @@ import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
 
 class StoreIdTest {
+    private final String ENGINE_1 = "storage-engine-1";
+    private final String FORMAT_FAMILY_1 = "format-family-1";
+    private final String ENGINE_2 = "storage-engine-2";
+    private final String FORMAT_FAMILY_2 = "format-family-2";
+
     @Test
     void testCompatibilityCheck() {
-        var storeId = new StoreId(1234, 789, "engine-1", "family-1", 3, 7);
-        assertTrue(storeId.isSameOrUpgradeSuccessor(new StoreId(1234, 789, "engine-1", "family-1", 3, 7)));
-        assertTrue(storeId.isSameOrUpgradeSuccessor(new StoreId(1234, 789, "engine-1", "family-1", 3, 8)));
-        assertTrue(storeId.isSameOrUpgradeSuccessor(new StoreId(1234, 789, "engine-1", "family-1", 3, 15)));
-        assertFalse(storeId.isSameOrUpgradeSuccessor(new StoreId(666, 789, "engine-1", "family-1", 3, 7)));
-        assertFalse(storeId.isSameOrUpgradeSuccessor(new StoreId(1234, 666, "engine-1", "family-1", 3, 7)));
-        assertFalse(storeId.isSameOrUpgradeSuccessor(new StoreId(1234, 789, "engine-1", "family-1", 3, 6)));
-        assertFalse(storeId.isSameOrUpgradeSuccessor(new StoreId(1234, 789, "engine-1", "family-1", 4, 7)));
-        assertFalse(storeId.isSameOrUpgradeSuccessor(new StoreId(1234, 789, "engine-1", "family-1", 2, 7)));
-        assertFalse(storeId.isSameOrUpgradeSuccessor(new StoreId(1234, 789, "engine-2", "family-1", 3, 7)));
-        assertFalse(storeId.isSameOrUpgradeSuccessor(new StoreId(1234, 789, "engine-1", "family-2", 3, 7)));
+        var storeId = new StoreId(1234, 789, ENGINE_1, FORMAT_FAMILY_1, 3, 7);
+        assertTrue(storeId.isSameOrUpgradeSuccessor(new StoreId(1234, 789, ENGINE_1, FORMAT_FAMILY_1, 3, 7)));
+        assertTrue(storeId.isSameOrUpgradeSuccessor(new StoreId(1234, 789, ENGINE_1, FORMAT_FAMILY_1, 3, 8)));
+        assertTrue(storeId.isSameOrUpgradeSuccessor(new StoreId(1234, 789, ENGINE_1, FORMAT_FAMILY_1, 3, 15)));
+        assertFalse(storeId.isSameOrUpgradeSuccessor(new StoreId(666, 789, ENGINE_1, FORMAT_FAMILY_1, 3, 7)));
+        assertFalse(storeId.isSameOrUpgradeSuccessor(new StoreId(1234, 666, ENGINE_1, FORMAT_FAMILY_1, 3, 7)));
+        assertFalse(storeId.isSameOrUpgradeSuccessor(new StoreId(1234, 789, ENGINE_1, FORMAT_FAMILY_1, 3, 6)));
+        assertFalse(storeId.isSameOrUpgradeSuccessor(new StoreId(1234, 789, ENGINE_1, FORMAT_FAMILY_1, 4, 7)));
+        assertFalse(storeId.isSameOrUpgradeSuccessor(new StoreId(1234, 789, ENGINE_1, FORMAT_FAMILY_1, 2, 7)));
+        assertFalse(storeId.isSameOrUpgradeSuccessor(new StoreId(1234, 789, ENGINE_2, FORMAT_FAMILY_1, 3, 7)));
+        assertFalse(storeId.isSameOrUpgradeSuccessor(new StoreId(1234, 789, ENGINE_1, FORMAT_FAMILY_2, 3, 7)));
     }
 
     @Test
     void testSerialization() throws IOException {
         var buffer = new ChannelBuffer(100);
-        var storeId = new StoreId(1234, 789, "engine-1", "family-1", 3, 7);
+        var storeId = new StoreId(1234, 789, ENGINE_1, FORMAT_FAMILY_1, 3, 7);
         storeId.serialize(buffer);
         buffer.flip();
         var deserializedStoreId = StoreId.deserialize(buffer);
