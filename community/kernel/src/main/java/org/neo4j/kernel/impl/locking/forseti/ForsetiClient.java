@@ -56,6 +56,7 @@ import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.memory.ScopedMemoryTracker;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.VisibleForTesting;
 
@@ -136,7 +137,7 @@ public class ForsetiClient implements Locks.Client
     private volatile ForsetiLockManager.Lock waitingForLock;
     private volatile long transactionId;
     private final long clientId;
-    private volatile MemoryTracker memoryTracker;
+    private volatile DeferredScopedMemoryTracker memoryTracker;
     private static final long CONCURRENT_NODE_SIZE = HeapEstimator.LONG_SIZE + HeapEstimator.HASH_MAP_NODE_SHALLOW_SIZE;
 
     public ForsetiClient( ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps, SystemNanoClock clock, boolean verboseDeadlocks, long clientId )
@@ -154,7 +155,7 @@ public class ForsetiClient implements Locks.Client
     {
         stateHolder.reset();
         this.transactionId = transactionId;
-        this.memoryTracker = requireNonNull( memoryTracker );
+        this.memoryTracker = new DeferredScopedMemoryTracker( requireNonNull( memoryTracker ) );
         this.lockAcquisitionTimeoutNano = config.get( GraphDatabaseSettings.lock_acquisition_timeout ).toNanos();
         this.myExclusiveLock = new ExclusiveLock( this );
     }
@@ -642,6 +643,7 @@ public class ForsetiClient implements Locks.Client
             {
                 // waiting for all operations to be completed
                 waitForStopBeOnlyClient();
+                memoryTracker.stop(); // Stopping tracker to defer all released memory until we close the client, to ensure thread safety
                 releaseAllLocks();
             }
         }
@@ -674,7 +676,7 @@ public class ForsetiClient implements Locks.Client
         waitForAllClientsToLeave();
         releaseAllLocks();
         transactionId = INVALID_TRANSACTION_ID;
-        memoryTracker = null;
+        memoryTracker.close();
         // This exclusive lock instance has been used for all exclusive locks held by this client for this transaction.
         // Close it to mark it not participate in deadlock detection anymore
         myExclusiveLock.close();
@@ -1179,6 +1181,44 @@ public class ForsetiClient implements Locks.Client
             {
                 sharedLockCounts.remove( resourceId );
             }
+        }
+    }
+
+    /**
+     * A memory tracker with possibly deferred release. It will delegate all operations until stopped, where releases will be deferred until closed. Releasing
+     * memory after stopped will be done by closing the tracker. The forseti client can be stopped by different threads (e.g on transaction termination),
+     * causing race condition with the passed in memory tracker. This object is intended to be owned by the client, where we have control over the allocations.
+     */
+    private static class DeferredScopedMemoryTracker extends ScopedMemoryTracker
+    {
+        private boolean stopped;
+
+        DeferredScopedMemoryTracker( MemoryTracker delegate )
+        {
+            super( delegate );
+        }
+
+        @Override
+        public void releaseHeap( long bytes )
+        {
+            if ( !stopped )
+            {
+                super.releaseHeap( bytes );
+            }
+        }
+
+        @Override
+        public void releaseNative( long bytes )
+        {
+            if ( !stopped )
+            {
+                super.releaseNative( bytes );
+            }
+        }
+
+        void stop()
+        {
+            stopped = true;
         }
     }
 }

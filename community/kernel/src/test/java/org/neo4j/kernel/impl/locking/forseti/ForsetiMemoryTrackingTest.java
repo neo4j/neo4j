@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.locking.forseti;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.lock.ResourceTypes.NODE;
@@ -456,23 +455,6 @@ class ForsetiMemoryTrackingTest
                 this.nodeId = nodeId;
             }
         }
-    }
-
-    @Test
-    void shouldReleaseMemoryInCaseOfDeadlock()
-    {
-        assertThatThrownBy( () ->
-                            {
-                                try ( var client1 = getClient();
-                                      var client2 = getClient() )
-                                {
-                                    client1.acquireExclusive( LockTracer.NONE, NODE, 10 );
-                                    client1.prepareForCommit();
-
-                                    client2.acquireExclusive( LockTracer.NONE, NODE, 10 );
-                                }
-                            } )
-                .isInstanceOf( DeadlockDetectedException.class );
     }
 
     @RepeatedTest( 20 )
