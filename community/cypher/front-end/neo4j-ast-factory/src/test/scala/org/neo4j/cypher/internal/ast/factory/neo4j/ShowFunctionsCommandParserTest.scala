@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.ReturnItems
 
 /* Tests for listing functions */
 class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -86,8 +85,10 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
 
   test("SHOW FUNCTIONS YIELD description") {
     assertAst(query(
-      ast.ShowFunctionsClause(ast.AllFunctions, None, None, hasYield = true)((defaultPos)),
-      yieldClause(ReturnItems(includeExisting = false, Seq(variableReturnItem("description", (1, 22, 21))))(1, 22, 21))
+      ast.ShowFunctionsClause(ast.AllFunctions, None, None, hasYield = true)(defaultPos),
+      yieldClause(
+        ast.ReturnItems(includeExisting = false, Seq(variableReturnItem("description", (1, 22, 21))))(1, 22, 21)
+      )
     ))
   }
 

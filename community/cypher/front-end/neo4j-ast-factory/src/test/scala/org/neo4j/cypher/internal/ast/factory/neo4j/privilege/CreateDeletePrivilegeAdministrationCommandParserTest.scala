@@ -20,8 +20,6 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.CreateElementAction
-import org.neo4j.cypher.internal.ast.DeleteElementAction
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 
 class CreateDeletePrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -35,8 +33,8 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
   ).foreach {
     case (verb: String, preposition: String, func: noResourcePrivilegeFunc) =>
       Seq(
-        ("CREATE", CreateElementAction),
-        ("DELETE", DeleteElementAction)
+        ("CREATE", ast.CreateElementAction),
+        ("DELETE", ast.DeleteElementAction)
       ).foreach {
         case (createOrDelete, action) =>
           test(s"$verb $createOrDelete ON GRAPH foo $preposition role") {

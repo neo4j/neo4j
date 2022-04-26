@@ -20,8 +20,6 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.AllPropertyResource
-import org.neo4j.cypher.internal.ast.SetPropertyAction
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 
 class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -36,7 +34,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
     case (verb: String, preposition: String, func: resourcePrivilegeFunc) =>
       test(s"$verb SET PROPERTY { prop } ON GRAPH foo $preposition role") {
         yields(func(
-          ast.GraphPrivilege(SetPropertyAction, List(graphScopeFoo))(_),
+          ast.GraphPrivilege(ast.SetPropertyAction, List(graphScopeFoo))(_),
           ast.PropertiesResource(propSeq)(_),
           List(ast.ElementsAllQualifier()(_)),
           Seq(literalRole)
@@ -47,8 +45,8 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
       test(s"$verb SET PROPERTY { * } ON GRAPH foo $preposition role") {
         yields(func(
-          ast.GraphPrivilege(SetPropertyAction, List(graphScopeFoo))(_),
-          AllPropertyResource()(_),
+          ast.GraphPrivilege(ast.SetPropertyAction, List(graphScopeFoo))(_),
+          ast.AllPropertyResource()(_),
           List(ast.ElementsAllQualifier()(_)),
           Seq(literalRole)
         ))
@@ -56,7 +54,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
       test(s"$verb SET PROPERTY { prop1, prop2 } ON GRAPH foo $preposition role") {
         yields(func(
-          ast.GraphPrivilege(SetPropertyAction, List(graphScopeFoo))(_),
+          ast.GraphPrivilege(ast.SetPropertyAction, List(graphScopeFoo))(_),
           ast.PropertiesResource(Seq("prop1", "prop2"))(_),
           List(ast.ElementsAllQualifier()(_)),
           Seq(literalRole)
@@ -67,8 +65,8 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
       test(s"$verb SET PROPERTY { * } ON HOME GRAPH $preposition role") {
         yields(func(
-          ast.GraphPrivilege(SetPropertyAction, List(ast.HomeGraphScope()(_)))(_),
-          AllPropertyResource()(_),
+          ast.GraphPrivilege(ast.SetPropertyAction, List(ast.HomeGraphScope()(_)))(_),
+          ast.AllPropertyResource()(_),
           List(ast.ElementsAllQualifier()(_)),
           Seq(literalRole)
         ))
@@ -76,7 +74,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
       test(s"$verb SET PROPERTY { prop } ON HOME GRAPH $preposition role") {
         yields(func(
-          ast.GraphPrivilege(SetPropertyAction, List(ast.HomeGraphScope()(_)))(_),
+          ast.GraphPrivilege(ast.SetPropertyAction, List(ast.HomeGraphScope()(_)))(_),
           ast.PropertiesResource(propSeq)(_),
           List(ast.ElementsAllQualifier()(_)),
           Seq(literalRole)
@@ -85,7 +83,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
       test(s"$verb SET PROPERTY { prop } ON HOME GRAPH NODES A,B $preposition role") {
         yields(func(
-          ast.GraphPrivilege(SetPropertyAction, List(ast.HomeGraphScope()(_)))(_),
+          ast.GraphPrivilege(ast.SetPropertyAction, List(ast.HomeGraphScope()(_)))(_),
           ast.PropertiesResource(propSeq)(_),
           List(labelQualifierA, labelQualifierB),
           Seq(literalRole)
@@ -96,8 +94,8 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
       test(s"$verb SET PROPERTY { * } ON DEFAULT GRAPH $preposition role") {
         yields(func(
-          ast.GraphPrivilege(SetPropertyAction, List(ast.DefaultGraphScope()(_)))(_),
-          AllPropertyResource()(_),
+          ast.GraphPrivilege(ast.SetPropertyAction, List(ast.DefaultGraphScope()(_)))(_),
+          ast.AllPropertyResource()(_),
           List(ast.ElementsAllQualifier()(_)),
           Seq(literalRole)
         ))
@@ -105,7 +103,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
       test(s"$verb SET PROPERTY { prop } ON DEFAULT GRAPH $preposition role") {
         yields(func(
-          ast.GraphPrivilege(SetPropertyAction, List(ast.DefaultGraphScope()(_)))(_),
+          ast.GraphPrivilege(ast.SetPropertyAction, List(ast.DefaultGraphScope()(_)))(_),
           ast.PropertiesResource(propSeq)(_),
           List(ast.ElementsAllQualifier()(_)),
           Seq(literalRole)
@@ -114,7 +112,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
       test(s"$verb SET PROPERTY { prop } ON DEFAULT GRAPH NODES A,B $preposition role") {
         yields(func(
-          ast.GraphPrivilege(SetPropertyAction, List(ast.DefaultGraphScope()(_)))(_),
+          ast.GraphPrivilege(ast.SetPropertyAction, List(ast.DefaultGraphScope()(_)))(_),
           ast.PropertiesResource(propSeq)(_),
           List(labelQualifierA, labelQualifierB),
           Seq(literalRole)
@@ -125,7 +123,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
       test(s"$verb SET PROPERTY { prop } ON GRAPHS * $preposition role") {
         yields(func(
-          ast.GraphPrivilege(SetPropertyAction, List(ast.AllGraphsScope()(_)))(_),
+          ast.GraphPrivilege(ast.SetPropertyAction, List(ast.AllGraphsScope()(_)))(_),
           ast.PropertiesResource(propSeq)(_),
           List(ast.ElementsAllQualifier()(_)),
           Seq(literalRole)
@@ -134,7 +132,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
       test(s"$verb SET PROPERTY { prop } ON GRAPHS foo,baz $preposition role") {
         yields(func(
-          ast.GraphPrivilege(SetPropertyAction, List(graphScopeFoo, graphScopeBaz))(_),
+          ast.GraphPrivilege(ast.SetPropertyAction, List(graphScopeFoo, graphScopeBaz))(_),
           ast.PropertiesResource(propSeq)(_),
           List(ast.ElementsAllQualifier()(_)),
           Seq(literalRole)
@@ -145,7 +143,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
       test(s"$verb SET PROPERTY { prop } ON GRAPHS foo ELEMENTS A,B $preposition role") {
         yields(func(
-          ast.GraphPrivilege(SetPropertyAction, List(graphScopeFoo))(_),
+          ast.GraphPrivilege(ast.SetPropertyAction, List(graphScopeFoo))(_),
           ast.PropertiesResource(propSeq)(_),
           List(elemQualifierA, elemQualifierB),
           Seq(literalRole)
@@ -154,7 +152,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
       test(s"$verb SET PROPERTY { prop } ON GRAPHS foo NODES A,B $preposition role") {
         yields(func(
-          ast.GraphPrivilege(SetPropertyAction, List(graphScopeFoo))(_),
+          ast.GraphPrivilege(ast.SetPropertyAction, List(graphScopeFoo))(_),
           ast.PropertiesResource(propSeq)(_),
           List(labelQualifierA, labelQualifierB),
           Seq(literalRole)
@@ -163,7 +161,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
       test(s"$verb SET PROPERTY { prop } ON GRAPHS foo NODES * $preposition role") {
         yields(func(
-          ast.GraphPrivilege(SetPropertyAction, List(graphScopeFoo))(_),
+          ast.GraphPrivilege(ast.SetPropertyAction, List(graphScopeFoo))(_),
           ast.PropertiesResource(propSeq)(_),
           List(ast.LabelAllQualifier()(_)),
           Seq(literalRole)
@@ -172,7 +170,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
       test(s"$verb SET PROPERTY { prop } ON GRAPHS foo RELATIONSHIPS A,B $preposition role") {
         yields(func(
-          ast.GraphPrivilege(SetPropertyAction, List(graphScopeFoo))(_),
+          ast.GraphPrivilege(ast.SetPropertyAction, List(graphScopeFoo))(_),
           ast.PropertiesResource(propSeq)(_),
           List(relQualifierA, relQualifierB),
           Seq(literalRole)
@@ -181,7 +179,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
       test(s"$verb SET PROPERTY { prop } ON GRAPHS foo RELATIONSHIPS * $preposition role") {
         yields(func(
-          ast.GraphPrivilege(SetPropertyAction, List(graphScopeFoo))(_),
+          ast.GraphPrivilege(ast.SetPropertyAction, List(graphScopeFoo))(_),
           ast.PropertiesResource(propSeq)(_),
           List(ast.RelationshipAllQualifier()(_)),
           Seq(literalRole)
@@ -192,7 +190,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
       test(s"$verb SET PROPERTY { prop } ON GRAPHS foo $preposition role1, role2") {
         yields(func(
-          ast.GraphPrivilege(SetPropertyAction, List(graphScopeFoo))(_),
+          ast.GraphPrivilege(ast.SetPropertyAction, List(graphScopeFoo))(_),
           ast.PropertiesResource(propSeq)(_),
           List(ast.ElementsAllQualifier()(_)),
           Seq(literalRole1, literalRole2)
@@ -203,7 +201,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
       test(s"$verb SET PROPERTY { prop } ON GRAPH $$foo $preposition role") {
         yields(func(
-          ast.GraphPrivilege(SetPropertyAction, List(graphScopeParamFoo))(_),
+          ast.GraphPrivilege(ast.SetPropertyAction, List(graphScopeParamFoo))(_),
           ast.PropertiesResource(propSeq)(_),
           List(ast.ElementsAllQualifier()(_)),
           Seq(literalRole)
@@ -212,7 +210,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
       test(s"$verb SET PROPERTY { prop } ON GRAPH foo $preposition $$role") {
         yields(func(
-          ast.GraphPrivilege(SetPropertyAction, List(graphScopeFoo))(_),
+          ast.GraphPrivilege(ast.SetPropertyAction, List(graphScopeFoo))(_),
           ast.PropertiesResource(propSeq)(_),
           List(ast.ElementsAllQualifier()(_)),
           Seq(paramRole)

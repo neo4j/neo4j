@@ -20,25 +20,6 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.AllDatabasesScope
-import org.neo4j.cypher.internal.ast.AlterDatabase
-import org.neo4j.cypher.internal.ast.CreateDatabase
-import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
-import org.neo4j.cypher.internal.ast.DestroyData
-import org.neo4j.cypher.internal.ast.DumpData
-import org.neo4j.cypher.internal.ast.HomeDatabaseScope
-import org.neo4j.cypher.internal.ast.IfExistsThrowError
-import org.neo4j.cypher.internal.ast.IndefiniteWait
-import org.neo4j.cypher.internal.ast.NamedDatabaseScope
-import org.neo4j.cypher.internal.ast.NoOptions
-import org.neo4j.cypher.internal.ast.NoWait
-import org.neo4j.cypher.internal.ast.OptionsMap
-import org.neo4j.cypher.internal.ast.OptionsParam
-import org.neo4j.cypher.internal.ast.ReadOnlyAccess
-import org.neo4j.cypher.internal.ast.ReadWriteAccess
-import org.neo4j.cypher.internal.ast.TimeoutAfter
-import org.neo4j.cypher.internal.ast.YieldOrWhere
-import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.symbols.CTMap
@@ -50,11 +31,11 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   // SHOW DATABASE
 
   Seq(
-    ("DATABASES", ast.ShowDatabase.apply(AllDatabasesScope()(pos), _: YieldOrWhere) _),
-    ("DEFAULT DATABASE", ast.ShowDatabase.apply(DefaultDatabaseScope()(pos), _: YieldOrWhere) _),
-    ("HOME DATABASE", ast.ShowDatabase.apply(HomeDatabaseScope()(pos), _: YieldOrWhere) _),
-    ("DATABASE $db", ast.ShowDatabase.apply(NamedDatabaseScope(param("db"))(pos), _: YieldOrWhere) _),
-    ("DATABASE neo4j", ast.ShowDatabase.apply(NamedDatabaseScope(literal("neo4j"))(pos), _: YieldOrWhere) _)
+    ("DATABASES", ast.ShowDatabase.apply(ast.AllDatabasesScope()(pos), _: ast.YieldOrWhere) _),
+    ("DEFAULT DATABASE", ast.ShowDatabase.apply(ast.DefaultDatabaseScope()(pos), _: ast.YieldOrWhere) _),
+    ("HOME DATABASE", ast.ShowDatabase.apply(ast.HomeDatabaseScope()(pos), _: ast.YieldOrWhere) _),
+    ("DATABASE $db", ast.ShowDatabase.apply(ast.NamedDatabaseScope(param("db"))(pos), _: ast.YieldOrWhere) _),
+    ("DATABASE neo4j", ast.ShowDatabase.apply(ast.NamedDatabaseScope(literal("neo4j"))(pos), _: ast.YieldOrWhere) _)
   ).foreach { case (dbType, privilege) =>
     test(s"SHOW $dbType") {
       yields(privilege(None))
@@ -125,11 +106,11 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("SHOW DATABASE `foo.bar`") {
-    yields(ast.ShowDatabase(NamedDatabaseScope(literalFooBar)(pos), None))
+    yields(ast.ShowDatabase(ast.NamedDatabaseScope(literalFooBar)(pos), None))
   }
 
   test("SHOW DATABASE foo.bar") {
-    yields(ast.ShowDatabase(NamedDatabaseScope(literalFooBar)(pos), None))
+    yields(ast.ShowDatabase(ast.NamedDatabaseScope(literalFooBar)(pos), None))
   }
 
   test("SHOW DATABASE") {
@@ -154,116 +135,116 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   // CREATE DATABASE
 
   test("CREATE DATABASE foo") {
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsThrowError, NoOptions, NoWait))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsThrowError, ast.NoOptions, ast.NoWait))
   }
 
   test("USE system CREATE DATABASE foo") {
     // can parse USE clause, but is not included in AST
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsThrowError, NoOptions, NoWait))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsThrowError, ast.NoOptions, ast.NoWait))
   }
 
   test("CREATE DATABASE $foo") {
-    yields(ast.CreateDatabase(paramFoo, ast.IfExistsThrowError, NoOptions, NoWait))
+    yields(ast.CreateDatabase(paramFoo, ast.IfExistsThrowError, ast.NoOptions, ast.NoWait))
   }
 
   test("CREATE DATABASE $wait") {
-    yields(ast.CreateDatabase(param("wait"), ast.IfExistsThrowError, NoOptions, NoWait))
+    yields(ast.CreateDatabase(param("wait"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait))
   }
 
   test("CREATE DATABASE `nowait.sec`") {
-    yields(ast.CreateDatabase(literal("nowait.sec"), ast.IfExistsThrowError, NoOptions, NoWait))
+    yields(ast.CreateDatabase(literal("nowait.sec"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait))
   }
 
   test("CREATE DATABASE second WAIT") {
-    yields(ast.CreateDatabase(literal("second"), ast.IfExistsThrowError, NoOptions, IndefiniteWait))
+    yields(ast.CreateDatabase(literal("second"), ast.IfExistsThrowError, ast.NoOptions, ast.IndefiniteWait))
   }
 
   test("CREATE DATABASE seconds WAIT 12") {
-    yields(ast.CreateDatabase(literal("seconds"), ast.IfExistsThrowError, NoOptions, TimeoutAfter(12)))
+    yields(ast.CreateDatabase(literal("seconds"), ast.IfExistsThrowError, ast.NoOptions, ast.TimeoutAfter(12)))
   }
 
   test("CREATE DATABASE dump WAIT 12 SEC") {
-    yields(ast.CreateDatabase(literal("dump"), ast.IfExistsThrowError, NoOptions, TimeoutAfter(12)))
+    yields(ast.CreateDatabase(literal("dump"), ast.IfExistsThrowError, ast.NoOptions, ast.TimeoutAfter(12)))
   }
 
   test("CREATE DATABASE destroy WAIT 12 SECOND") {
-    yields(ast.CreateDatabase(literal("destroy"), ast.IfExistsThrowError, NoOptions, TimeoutAfter(12)))
+    yields(ast.CreateDatabase(literal("destroy"), ast.IfExistsThrowError, ast.NoOptions, ast.TimeoutAfter(12)))
   }
 
   test("CREATE DATABASE data WAIT 12 SECONDS") {
-    yields(ast.CreateDatabase(literal("data"), ast.IfExistsThrowError, NoOptions, TimeoutAfter(12)))
+    yields(ast.CreateDatabase(literal("data"), ast.IfExistsThrowError, ast.NoOptions, ast.TimeoutAfter(12)))
   }
 
   test("CREATE DATABASE foo NOWAIT") {
-    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsThrowError, NoOptions, NoWait))
+    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait))
   }
 
   test("CREATE DATABASE `foo.bar`") {
-    yields(ast.CreateDatabase(literalFooBar, ast.IfExistsThrowError, NoOptions, NoWait))
+    yields(ast.CreateDatabase(literalFooBar, ast.IfExistsThrowError, ast.NoOptions, ast.NoWait))
   }
 
   test("CREATE DATABASE foo.bar") {
-    yields(ast.CreateDatabase(literalFooBar, ast.IfExistsThrowError, NoOptions, NoWait))
+    yields(ast.CreateDatabase(literalFooBar, ast.IfExistsThrowError, ast.NoOptions, ast.NoWait))
   }
 
   test("CREATE DATABASE `graph.db`.`db.db`") {
-    yields(_ => ast.CreateDatabase(literal("graph.db.db.db"), ast.IfExistsThrowError, NoOptions, NoWait)(pos))
+    yields(_ => ast.CreateDatabase(literal("graph.db.db.db"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait)(pos))
   }
 
   test("CREATE DATABASE `foo-bar42`") {
-    yields(_ => ast.CreateDatabase(literal("foo-bar42"), ast.IfExistsThrowError, NoOptions, NoWait)(pos))
+    yields(_ => ast.CreateDatabase(literal("foo-bar42"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait)(pos))
   }
 
   test("CREATE DATABASE `_foo-bar42`") {
-    yields(_ => ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsThrowError, NoOptions, NoWait)(pos))
+    yields(_ => ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait)(pos))
   }
 
   test("CREATE DATABASE ``") {
-    yields(_ => ast.CreateDatabase(literalEmpty, ast.IfExistsThrowError, NoOptions, NoWait)(pos))
+    yields(_ => ast.CreateDatabase(literalEmpty, ast.IfExistsThrowError, ast.NoOptions, ast.NoWait)(pos))
   }
 
   test("CREATE DATABASE foo IF NOT EXISTS") {
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, NoOptions, NoWait))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, ast.NoOptions, ast.NoWait))
   }
 
   test("CREATE DATABASE foo IF NOT EXISTS WAIT 10 SECONDS") {
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, NoOptions, TimeoutAfter(10)))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, ast.NoOptions, ast.TimeoutAfter(10)))
   }
 
   test("CREATE DATABASE foo IF NOT EXISTS WAIT") {
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, NoOptions, IndefiniteWait))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, ast.NoOptions, ast.IndefiniteWait))
   }
 
   test("CREATE  DATABASE foo IF NOT EXISTS NOWAIT") {
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, NoOptions, NoWait))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, ast.NoOptions, ast.NoWait))
   }
 
   test("CREATE DATABASE `_foo-bar42` IF NOT EXISTS") {
-    yields(_ => ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsDoNothing, NoOptions, NoWait)(pos))
+    yields(_ => ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsDoNothing, ast.NoOptions, ast.NoWait)(pos))
   }
 
   test("CREATE OR REPLACE DATABASE foo") {
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsReplace, NoOptions, NoWait))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsReplace, ast.NoOptions, ast.NoWait))
   }
 
   test("CREATE OR REPLACE DATABASE foo WAIT 10 SECONDS") {
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsReplace, NoOptions, TimeoutAfter(10)))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsReplace, ast.NoOptions, ast.TimeoutAfter(10)))
   }
 
   test("CREATE OR REPLACE DATABASE foo WAIT") {
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsReplace, NoOptions, IndefiniteWait))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsReplace, ast.NoOptions, ast.IndefiniteWait))
   }
 
   test("CREATE OR REPLACE DATABASE foo NOWAIT") {
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsReplace, NoOptions, NoWait))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsReplace, ast.NoOptions, ast.NoWait))
   }
 
   test("CREATE OR REPLACE DATABASE `_foo-bar42`") {
-    yields(_ => ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsReplace, NoOptions, NoWait)(pos))
+    yields(_ => ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsReplace, ast.NoOptions, ast.NoWait)(pos))
   }
 
   test("CREATE OR REPLACE DATABASE foo IF NOT EXISTS") {
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsInvalidSyntax, NoOptions, NoWait))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsInvalidSyntax, ast.NoOptions, ast.NoWait))
   }
 
   test("CREATE DATABASE") {
@@ -341,14 +322,14 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     "CREATE DATABASE foo OPTIONS {existingData: 'use', existingDataSeedInstance: '84c3ee6f-260e-47db-a4b6-589c807f2c2e'}"
   ) {
     assertAst(
-      CreateDatabase(
+      ast.CreateDatabase(
         Left("foo"),
-        IfExistsThrowError,
-        OptionsMap(Map(
+        ast.IfExistsThrowError,
+        ast.OptionsMap(Map(
           "existingData" -> StringLiteral("use")(1, 44, 43),
           "existingDataSeedInstance" -> StringLiteral("84c3ee6f-260e-47db-a4b6-589c807f2c2e")(1, 77, 76)
         )),
-        NoWait
+        ast.NoWait
       )(defaultPos)
     )
   }
@@ -357,118 +338,121 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     "CREATE DATABASE foo OPTIONS {existingData: 'use', existingDataSeedInstance: '84c3ee6f-260e-47db-a4b6-589c807f2c2e'} WAIT"
   ) {
     assertAst(
-      CreateDatabase(
+      ast.CreateDatabase(
         Left("foo"),
-        IfExistsThrowError,
-        OptionsMap(Map(
+        ast.IfExistsThrowError,
+        ast.OptionsMap(Map(
           "existingData" -> StringLiteral("use")(1, 44, 43),
           "existingDataSeedInstance" -> StringLiteral("84c3ee6f-260e-47db-a4b6-589c807f2c2e")(1, 77, 76)
         )),
-        IndefiniteWait
+        ast.IndefiniteWait
       )(defaultPos)
     )
   }
 
   test("CREATE DATABASE foo OPTIONS $param") {
     assertAst(
-      CreateDatabase(Left("foo"), IfExistsThrowError, OptionsParam(Parameter("param", CTMap)(1, 29, 28)), NoWait)(
-        defaultPos
-      )
+      ast.CreateDatabase(
+        Left("foo"),
+        ast.IfExistsThrowError,
+        ast.OptionsParam(Parameter("param", CTMap)(1, 29, 28)),
+        ast.NoWait
+      )(defaultPos)
     )
   }
 
   test("CREATE DATABASE alias") {
-    yields(_ => ast.CreateDatabase(literal("alias"), ast.IfExistsThrowError, NoOptions, NoWait)(pos))
+    yields(_ => ast.CreateDatabase(literal("alias"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait)(pos))
   }
 
   test("CREATE DATABASE alias IF NOT EXISTS") {
-    yields(_ => ast.CreateDatabase(literal("alias"), ast.IfExistsDoNothing, NoOptions, NoWait)(pos))
+    yields(_ => ast.CreateDatabase(literal("alias"), ast.IfExistsDoNothing, ast.NoOptions, ast.NoWait)(pos))
   }
 
   // DROP DATABASE
 
   test("DROP DATABASE foo") {
-    yields(ast.DropDatabase(literalFoo, ifExists = false, DestroyData, NoWait))
+    yields(ast.DropDatabase(literalFoo, ifExists = false, ast.DestroyData, ast.NoWait))
   }
 
   test("DROP DATABASE alias") {
-    yields(ast.DropDatabase(literal("alias"), ifExists = false, DestroyData, NoWait))
+    yields(ast.DropDatabase(literal("alias"), ifExists = false, ast.DestroyData, ast.NoWait))
   }
 
   test("DROP DATABASE alias WAIT") {
-    yields(ast.DropDatabase(literal("alias"), ifExists = false, DestroyData, IndefiniteWait))
+    yields(ast.DropDatabase(literal("alias"), ifExists = false, ast.DestroyData, ast.IndefiniteWait))
   }
 
   test("DROP DATABASE alias NOWAIT") {
-    yields(ast.DropDatabase(literal("alias"), ifExists = false, DestroyData, NoWait))
+    yields(ast.DropDatabase(literal("alias"), ifExists = false, ast.DestroyData, ast.NoWait))
   }
 
   test("DROP DATABASE $foo") {
-    yields(ast.DropDatabase(paramFoo, ifExists = false, DestroyData, NoWait))
+    yields(ast.DropDatabase(paramFoo, ifExists = false, ast.DestroyData, ast.NoWait))
   }
 
   test("DROP DATABASE foo WAIT") {
-    yields(ast.DropDatabase(literalFoo, ifExists = false, DestroyData, IndefiniteWait))
+    yields(ast.DropDatabase(literalFoo, ifExists = false, ast.DestroyData, ast.IndefiniteWait))
   }
 
   test("DROP DATABASE foo WAIT 10") {
-    yields(ast.DropDatabase(literal("foo"), ifExists = false, DestroyData, TimeoutAfter(10)))
+    yields(ast.DropDatabase(literal("foo"), ifExists = false, ast.DestroyData, ast.TimeoutAfter(10)))
   }
 
   test("DROP DATABASE foo WAIT 10 SEC") {
-    yields(ast.DropDatabase(literal("foo"), ifExists = false, DestroyData, TimeoutAfter(10)))
+    yields(ast.DropDatabase(literal("foo"), ifExists = false, ast.DestroyData, ast.TimeoutAfter(10)))
   }
 
   test("DROP DATABASE foo WAIT 10 SECOND") {
-    yields(ast.DropDatabase(literal("foo"), ifExists = false, DestroyData, TimeoutAfter(10)))
+    yields(ast.DropDatabase(literal("foo"), ifExists = false, ast.DestroyData, ast.TimeoutAfter(10)))
   }
 
   test("DROP DATABASE foo WAIT 10 SECONDS") {
-    yields(ast.DropDatabase(literal("foo"), ifExists = false, DestroyData, TimeoutAfter(10)))
+    yields(ast.DropDatabase(literal("foo"), ifExists = false, ast.DestroyData, ast.TimeoutAfter(10)))
   }
 
   test("DROP DATABASE foo NOWAIT") {
-    yields(ast.DropDatabase(literalFoo, ifExists = false, DestroyData, NoWait))
+    yields(ast.DropDatabase(literalFoo, ifExists = false, ast.DestroyData, ast.NoWait))
   }
 
   test("DROP DATABASE `foo.bar`") {
-    yields(_ => ast.DropDatabase(literalFooBar, ifExists = false, DestroyData, NoWait)(pos))
+    yields(_ => ast.DropDatabase(literalFooBar, ifExists = false, ast.DestroyData, ast.NoWait)(pos))
   }
 
   test("DROP DATABASE foo.bar") {
-    yields(_ => ast.DropDatabase(literalFooBar, ifExists = false, DestroyData, NoWait)(pos))
+    yields(_ => ast.DropDatabase(literalFooBar, ifExists = false, ast.DestroyData, ast.NoWait)(pos))
   }
 
   test("DROP DATABASE foo IF EXISTS") {
-    yields(ast.DropDatabase(literalFoo, ifExists = true, DestroyData, NoWait))
+    yields(ast.DropDatabase(literalFoo, ifExists = true, ast.DestroyData, ast.NoWait))
   }
 
   test("DROP DATABASE foo IF EXISTS WAIT") {
-    yields(ast.DropDatabase(literalFoo, ifExists = true, DestroyData, IndefiniteWait))
+    yields(ast.DropDatabase(literalFoo, ifExists = true, ast.DestroyData, ast.IndefiniteWait))
   }
 
   test("DROP DATABASE foo IF EXISTS NOWAIT") {
-    yields(ast.DropDatabase(literalFoo, ifExists = true, DestroyData, NoWait))
+    yields(ast.DropDatabase(literalFoo, ifExists = true, ast.DestroyData, ast.NoWait))
   }
 
   test("DROP DATABASE foo DUMP DATA") {
-    yields(ast.DropDatabase(literalFoo, ifExists = false, DumpData, NoWait))
+    yields(ast.DropDatabase(literalFoo, ifExists = false, ast.DumpData, ast.NoWait))
   }
 
   test("DROP DATABASE foo DESTROY DATA") {
-    yields(ast.DropDatabase(literalFoo, ifExists = false, DestroyData, NoWait))
+    yields(ast.DropDatabase(literalFoo, ifExists = false, ast.DestroyData, ast.NoWait))
   }
 
   test("DROP DATABASE foo IF EXISTS DUMP DATA") {
-    yields(ast.DropDatabase(literalFoo, ifExists = true, DumpData, NoWait))
+    yields(ast.DropDatabase(literalFoo, ifExists = true, ast.DumpData, ast.NoWait))
   }
 
   test("DROP DATABASE foo IF EXISTS DESTROY DATA") {
-    yields(ast.DropDatabase(literalFoo, ifExists = true, DestroyData, NoWait))
+    yields(ast.DropDatabase(literalFoo, ifExists = true, ast.DestroyData, ast.NoWait))
   }
 
   test("DROP DATABASE foo IF EXISTS DESTROY DATA WAIT") {
-    yields(ast.DropDatabase(literal("foo"), ifExists = true, DestroyData, IndefiniteWait))
+    yields(ast.DropDatabase(literal("foo"), ifExists = true, ast.DestroyData, ast.IndefiniteWait))
   }
 
   test("DROP DATABASE") {
@@ -502,31 +486,31 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   // ALTER DATABASE
   Seq(
-    ("READ ONLY", ReadOnlyAccess),
-    ("READ WRITE", ReadWriteAccess)
+    ("READ ONLY", ast.ReadOnlyAccess),
+    ("READ WRITE", ast.ReadWriteAccess)
   ).foreach {
     case (accessKeyword, accessType) =>
       test(s"ALTER DATABASE foo SET ACCESS $accessKeyword") {
-        assertAst(AlterDatabase(literalFoo, ifExists = false, accessType)(defaultPos))
+        assertAst(ast.AlterDatabase(literalFoo, ifExists = false, accessType)(defaultPos))
       }
 
       test(s"ALTER DATABASE $$foo SET ACCESS $accessKeyword") {
-        assertAst(AlterDatabase(Right(expressions.Parameter("foo", CTString)(1, 16, 15)), ifExists = false, accessType)(
+        assertAst(ast.AlterDatabase(Right(Parameter("foo", CTString)(1, 16, 15)), ifExists = false, accessType)(
           defaultPos
         ))
       }
 
       test(s"ALTER DATABASE `foo.bar` SET ACCESS $accessKeyword") {
-        assertAst(AlterDatabase(literalFooBar, ifExists = false, accessType)(defaultPos))
+        assertAst(ast.AlterDatabase(literalFooBar, ifExists = false, accessType)(defaultPos))
       }
 
       test(s"USE system ALTER DATABASE foo SET ACCESS $accessKeyword") {
         // can parse USE clause, but is not included in AST
-        assertAst(AlterDatabase(literalFoo, ifExists = false, accessType)(1, 12, 11))
+        assertAst(ast.AlterDatabase(literalFoo, ifExists = false, accessType)(1, 12, 11))
       }
 
       test(s"ALTER DATABASE foo IF EXISTS SET ACCESS $accessKeyword") {
-        assertAst(AlterDatabase(literalFoo, ifExists = true, accessType)(defaultPos))
+        assertAst(ast.AlterDatabase(literalFoo, ifExists = true, accessType)(defaultPos))
       }
   }
 
@@ -605,43 +589,43 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   // START DATABASE
 
   test("START DATABASE foo") {
-    yields(ast.StartDatabase(literalFoo, NoWait))
+    yields(ast.StartDatabase(literalFoo, ast.NoWait))
   }
 
   test("START DATABASE $foo") {
-    yields(ast.StartDatabase(paramFoo, NoWait))
+    yields(ast.StartDatabase(paramFoo, ast.NoWait))
   }
 
   test("START DATABASE foo WAIT") {
-    yields(ast.StartDatabase(literalFoo, IndefiniteWait))
+    yields(ast.StartDatabase(literalFoo, ast.IndefiniteWait))
   }
 
   test("START DATABASE foo WAIT 5") {
-    yields(ast.StartDatabase(literal("foo"), TimeoutAfter(5)))
+    yields(ast.StartDatabase(literal("foo"), ast.TimeoutAfter(5)))
   }
 
   test("START DATABASE foo WAIT 5 SEC") {
-    yields(ast.StartDatabase(literal("foo"), TimeoutAfter(5)))
+    yields(ast.StartDatabase(literal("foo"), ast.TimeoutAfter(5)))
   }
 
   test("START DATABASE foo WAIT 5 SECOND") {
-    yields(ast.StartDatabase(literal("foo"), TimeoutAfter(5)))
+    yields(ast.StartDatabase(literal("foo"), ast.TimeoutAfter(5)))
   }
 
   test("START DATABASE foo WAIT 5 SECONDS") {
-    yields(ast.StartDatabase(literal("foo"), TimeoutAfter(5)))
+    yields(ast.StartDatabase(literal("foo"), ast.TimeoutAfter(5)))
   }
 
   test("START DATABASE foo NOWAIT") {
-    yields(ast.StartDatabase(literalFoo, NoWait))
+    yields(ast.StartDatabase(literalFoo, ast.NoWait))
   }
 
   test("START DATABASE `foo.bar`") {
-    yields(_ => ast.StartDatabase(literalFooBar, NoWait)(pos))
+    yields(_ => ast.StartDatabase(literalFooBar, ast.NoWait)(pos))
   }
 
   test("START DATABASE foo.bar") {
-    yields(_ => ast.StartDatabase(literalFooBar, NoWait)(pos))
+    yields(_ => ast.StartDatabase(literalFooBar, ast.NoWait)(pos))
   }
 
   test("START DATABASE") {
@@ -654,43 +638,43 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   // STOP DATABASE
 
   test("STOP DATABASE foo") {
-    yields(ast.StopDatabase(literalFoo, NoWait))
+    yields(ast.StopDatabase(literalFoo, ast.NoWait))
   }
 
   test("STOP DATABASE $foo") {
-    yields(ast.StopDatabase(paramFoo, NoWait))
+    yields(ast.StopDatabase(paramFoo, ast.NoWait))
   }
 
   test("STOP DATABASE foo WAIT") {
-    yields(ast.StopDatabase(literalFoo, IndefiniteWait))
+    yields(ast.StopDatabase(literalFoo, ast.IndefiniteWait))
   }
 
   test("STOP DATABASE foo WAIT 99") {
-    yields(ast.StopDatabase(literal("foo"), TimeoutAfter(99)))
+    yields(ast.StopDatabase(literal("foo"), ast.TimeoutAfter(99)))
   }
 
   test("STOP DATABASE foo WAIT 99 SEC") {
-    yields(ast.StopDatabase(literal("foo"), TimeoutAfter(99)))
+    yields(ast.StopDatabase(literal("foo"), ast.TimeoutAfter(99)))
   }
 
   test("STOP DATABASE foo WAIT 99 SECOND") {
-    yields(ast.StopDatabase(literal("foo"), TimeoutAfter(99)))
+    yields(ast.StopDatabase(literal("foo"), ast.TimeoutAfter(99)))
   }
 
   test("STOP DATABASE foo WAIT 99 SECONDS") {
-    yields(ast.StopDatabase(literal("foo"), TimeoutAfter(99)))
+    yields(ast.StopDatabase(literal("foo"), ast.TimeoutAfter(99)))
   }
 
   test("STOP DATABASE foo NOWAIT") {
-    yields(ast.StopDatabase(literalFoo, NoWait))
+    yields(ast.StopDatabase(literalFoo, ast.NoWait))
   }
 
   test("STOP DATABASE `foo.bar`") {
-    yields(_ => ast.StopDatabase(literalFooBar, NoWait)(pos))
+    yields(_ => ast.StopDatabase(literalFooBar, ast.NoWait)(pos))
   }
 
   test("STOP DATABASE foo.bar") {
-    yields(_ => ast.StopDatabase(literalFooBar, NoWait)(pos))
+    yields(_ => ast.StopDatabase(literalFooBar, ast.NoWait)(pos))
   }
 
   test("STOP DATABASE") {

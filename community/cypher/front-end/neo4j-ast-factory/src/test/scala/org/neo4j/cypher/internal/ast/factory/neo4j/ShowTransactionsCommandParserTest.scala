@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.StringLiteral
@@ -96,7 +95,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAst(query(
       ast.ShowTransactionsClause(
         Left(List.empty),
-        Some(Where(
+        Some(ast.Where(
           Equals(Variable("transactionId")(1, 24, 23), StringLiteral("db1-transaction-123")(1, 40, 39))(1, 38, 37)
         )(1, 18, 17)),
         hasYield = false

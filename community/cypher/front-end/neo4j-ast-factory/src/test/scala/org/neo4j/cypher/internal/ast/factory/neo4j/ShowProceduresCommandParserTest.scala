@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AscSortItem
+import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.User
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.StringLiteral
@@ -36,23 +37,23 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
 
   Seq("PROCEDURE", "PROCEDURES").foreach { procKeyword =>
     test(s"SHOW $procKeyword") {
-      assertAst(query(ast.ShowProceduresClause(None, None, hasYield = false)(defaultPos)))
+      assertAst(query(ShowProceduresClause(None, None, hasYield = false)(defaultPos)))
     }
 
     test(s"SHOW $procKeyword EXECUTABLE") {
-      assertAst(query(ast.ShowProceduresClause(Some(ast.CurrentUser), None, hasYield = false)(defaultPos)))
+      assertAst(query(ShowProceduresClause(Some(CurrentUser), None, hasYield = false)(defaultPos)))
     }
 
     test(s"SHOW $procKeyword EXECUTABLE BY CURRENT USER") {
-      assertAst(query(ast.ShowProceduresClause(Some(ast.CurrentUser), None, hasYield = false)(defaultPos)))
+      assertAst(query(ShowProceduresClause(Some(CurrentUser), None, hasYield = false)(defaultPos)))
     }
 
     test(s"SHOW $procKeyword EXECUTABLE BY user") {
-      assertAst(query(ast.ShowProceduresClause(Some(ast.User("user")), None, hasYield = false)(defaultPos)))
+      assertAst(query(ShowProceduresClause(Some(User("user")), None, hasYield = false)(defaultPos)))
     }
 
     test(s"SHOW $procKeyword EXECUTABLE BY CURRENT") {
-      assertAst(query(ast.ShowProceduresClause(Some(ast.User("CURRENT")), None, hasYield = false)(defaultPos)))
+      assertAst(query(ShowProceduresClause(Some(User("CURRENT")), None, hasYield = false)(defaultPos)))
     }
 
     test(s"USE db SHOW $procKeyword") {
@@ -89,7 +90,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
 
   test("SHOW PROCEDURES EXECUTABLE BY user YIELD *") {
     assertAst(query(
-      ast.ShowProceduresClause(Some(ast.User("user")), None, hasYield = true)(defaultPos),
+      ShowProceduresClause(Some(User("user")), None, hasYield = true)(defaultPos),
       yieldClause(returnAllItems)
     ))
   }
@@ -112,7 +113,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
     assertAst(
       query(
         use(varFor("db")),
-        ast.ShowProceduresClause(None, None, hasYield = true)(pos),
+        ShowProceduresClause(None, None, hasYield = true)(pos),
         yieldClause(
           returnItems(variableReturnItem("name"), aliasedReturnItem("description", "pp")),
           where = Some(where(lessThan(varFor("pp"), literalFloat(50.0))))
@@ -129,7 +130,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
     assertAst(
       query(
         use(varFor("db")),
-        ast.ShowProceduresClause(Some(ast.CurrentUser), None, hasYield = true)(pos),
+        ShowProceduresClause(Some(CurrentUser), None, hasYield = true)(pos),
         yieldClause(
           returnItems(variableReturnItem("name"), aliasedReturnItem("description", "pp")),
           Some(orderBy(sortItem(varFor("pp")))),
@@ -146,7 +147,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   test("SHOW PROCEDURES YIELD name AS PROCEDURE, mode AS OUTPUT") {
     assertAst(
       query(
-        ast.ShowProceduresClause(None, None, hasYield = true)(pos),
+        ShowProceduresClause(None, None, hasYield = true)(pos),
         yieldClause(returnItems(aliasedReturnItem("name", "PROCEDURE"), aliasedReturnItem("mode", "OUTPUT")))
       ),
       comparePosition = false

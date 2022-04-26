@@ -20,9 +20,6 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.AllLabelResource
-import org.neo4j.cypher.internal.ast.RemoveLabelAction
-import org.neo4j.cypher.internal.ast.SetLabelAction
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 
 class LabelPrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -37,8 +34,8 @@ class LabelPrivilegeAdministrationCommandParserTest extends AdministrationAndSch
   ).foreach {
     case (verb: String, preposition: String, func: resourcePrivilegeFunc) =>
       Seq(
-        ("SET", SetLabelAction),
-        ("REMOVE", RemoveLabelAction)
+        ("SET", ast.SetLabelAction),
+        ("REMOVE", ast.RemoveLabelAction)
       ).foreach {
         case (setOrRemove, action) =>
           test(s"$verb $setOrRemove LABEL label ON GRAPH foo $preposition role") {
@@ -55,7 +52,7 @@ class LabelPrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           test(s"$verb $setOrRemove LABEL * ON GRAPH foo $preposition role") {
             yields(func(
               ast.GraphPrivilege(action, List(graphScopeFoo))(_),
-              AllLabelResource()(_),
+              ast.AllLabelResource()(_),
               List(ast.LabelAllQualifier()(_)),
               Seq(literalRole)
             ))

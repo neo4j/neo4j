@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 
 class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -35,7 +34,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
     case (verb: String, preposition: String, func: noResourcePrivilegeFunc) =>
       test(s"$verb WRITE ON GRAPH foo $preposition role") {
         yields(func(
-          ast.GraphPrivilege(WriteAction, List(graphScopeFoo))(pos),
+          ast.GraphPrivilege(ast.WriteAction, List(graphScopeFoo))(pos),
           List(ast.ElementsAllQualifier() _),
           Seq(literalRole)
         ))
@@ -43,7 +42,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
       test(s"$verb WRITE ON GRAPHS foo $preposition role") {
         yields(func(
-          ast.GraphPrivilege(WriteAction, List(graphScopeFoo))(pos),
+          ast.GraphPrivilege(ast.WriteAction, List(graphScopeFoo))(pos),
           List(ast.ElementsAllQualifier() _),
           Seq(literalRole)
         ))
@@ -53,7 +52,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
       test(s"$verb WRITE ON GRAPH * $preposition role") {
         yields(func(
-          ast.GraphPrivilege(WriteAction, List(ast.AllGraphsScope()(_)))(pos),
+          ast.GraphPrivilege(ast.WriteAction, List(ast.AllGraphsScope()(_)))(pos),
           List(ast.ElementsAllQualifier() _),
           Seq(literalRole)
         ))
@@ -61,7 +60,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
       test(s"$verb WRITE ON GRAPHS * $preposition role") {
         yields(func(
-          ast.GraphPrivilege(WriteAction, List(ast.AllGraphsScope()(_)))(pos),
+          ast.GraphPrivilege(ast.WriteAction, List(ast.AllGraphsScope()(_)))(pos),
           List(ast.ElementsAllQualifier() _),
           Seq(literalRole)
         ))
@@ -69,7 +68,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
       test(s"$verb WRITE ON GRAPH foo, baz $preposition role") {
         yields(func(
-          ast.GraphPrivilege(WriteAction, List(graphScopeFoo, graphScopeBaz))(pos),
+          ast.GraphPrivilege(ast.WriteAction, List(graphScopeFoo, graphScopeBaz))(pos),
           List(ast.ElementsAllQualifier() _),
           List(literalRole)
         ))
@@ -77,7 +76,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
       test(s"$verb WRITE ON GRAPHS foo, baz $preposition role") {
         yields(func(
-          ast.GraphPrivilege(WriteAction, List(graphScopeFoo, graphScopeBaz))(pos),
+          ast.GraphPrivilege(ast.WriteAction, List(graphScopeFoo, graphScopeBaz))(pos),
           List(ast.ElementsAllQualifier() _),
           List(literalRole)
         ))
@@ -87,7 +86,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
       test(s"$verb WRITE ON HOME GRAPH $preposition role") {
         yields(func(
-          ast.GraphPrivilege(WriteAction, List(ast.HomeGraphScope()(_)))(pos),
+          ast.GraphPrivilege(ast.WriteAction, List(ast.HomeGraphScope()(_)))(pos),
           List(ast.ElementsAllQualifier() _),
           Seq(literalRole)
         ))
@@ -95,7 +94,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
       test(s"$verb WRITE ON DEFAULT GRAPH $preposition role") {
         yields(func(
-          ast.GraphPrivilege(WriteAction, List(ast.DefaultGraphScope()(_)))(pos),
+          ast.GraphPrivilege(ast.WriteAction, List(ast.DefaultGraphScope()(_)))(pos),
           List(ast.ElementsAllQualifier() _),
           Seq(literalRole)
         ))
@@ -105,7 +104,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
       test(s"$verb WRITE ON GRAPH foo $preposition role1, role2") {
         yields(func(
-          ast.GraphPrivilege(WriteAction, List(graphScopeFoo))(_),
+          ast.GraphPrivilege(ast.WriteAction, List(graphScopeFoo))(_),
           List(ast.ElementsAllQualifier() _),
           Seq(literalRole1, literalRole2)
         ))
@@ -115,7 +114,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
       test(s"$verb WRITE ON GRAPH $$foo $preposition role") {
         yields(func(
-          ast.GraphPrivilege(WriteAction, List(graphScopeParamFoo))(pos),
+          ast.GraphPrivilege(ast.WriteAction, List(graphScopeParamFoo))(pos),
           List(ast.ElementsAllQualifier() _),
           Seq(literalRole)
         ))
@@ -123,7 +122,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
       test(s"$verb WRITE ON GRAPH `f:oo` $preposition role") {
         yields(func(
-          ast.GraphPrivilege(WriteAction, List(ast.NamedGraphScope(literalFColonOo)(_)))(pos),
+          ast.GraphPrivilege(ast.WriteAction, List(ast.NamedGraphScope(literalFColonOo)(_)))(pos),
           List(ast.ElementsAllQualifier() _),
           Seq(literalRole)
         ))
@@ -131,7 +130,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
       test(s"$verb WRITE ON GRAPH foo $preposition $$role") {
         yields(func(
-          ast.GraphPrivilege(WriteAction, List(graphScopeFoo))(pos),
+          ast.GraphPrivilege(ast.WriteAction, List(graphScopeFoo))(pos),
           List(ast.ElementsAllQualifier() _),
           Seq(paramRole)
         ))
@@ -139,7 +138,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
       test(s"$verb WRITE ON GRAPH foo $preposition `r:ole`") {
         yields(func(
-          ast.GraphPrivilege(WriteAction, List(graphScopeFoo))(pos),
+          ast.GraphPrivilege(ast.WriteAction, List(graphScopeFoo))(pos),
           List(ast.ElementsAllQualifier() _),
           Seq(literalRColonOle)
         ))
