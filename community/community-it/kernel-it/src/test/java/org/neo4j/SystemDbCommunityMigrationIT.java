@@ -60,7 +60,6 @@ public class SystemDbCommunityMigrationIT {
     void shouldUpgradeSystemDbComponentsAndPopulateIndexes() throws Exception {
         // todo:
         //  1. Make community db to test properly
-        //  2. Move the migration test util thing to community so that we can reach it from here
         var homeDirectory = databaseLayout.homeDirectory();
         Unzip.unzip(SystemDbCommunityMigrationIT.class, "AF4.3.0_V4.4_empty.zip", homeDirectory);
 
