@@ -251,50 +251,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("y").withRows(expected)
   }
 
-  test("var-length-expand with length 0..1") {
-    // given
-    val (Seq(n1, n2, _), _) = given { lollipopGraph() }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*0..1]->(y)")
-      .nodeByLabelScan("x", "START", IndexOrderNone)
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = Array(
-      Array(n1),
-      Array(n2)
-    )
-    runtimeResult should beColumns("y").withRows(expected)
-  }
-
-  test("undirected var-length-expand with length 0..1") {
-    // given
-    val (Seq(n1, n2, _), _) = given { lollipopGraph() }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*0..1]-(y)")
-      .nodeByLabelScan("x", "START", IndexOrderNone)
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = Array(
-      Array(n1),
-      Array(n2)
-    )
-    runtimeResult should beColumns("y").withRows(expected)
-  }
-
   test("var-length-expand with length 0..2") {
     // given
     val (Seq(n1, n2, n3), _) = given { lollipopGraph() }
@@ -844,6 +800,54 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .distinct("y AS y")
       .bfsPruningVarExpand("(x)-[:B*1..2]->(y)")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("y").withRows(Array(
+      Array(g.sb1),
+      Array(g.sb2)
+    ))
+  }
+
+  test("should filter on relationship type A, undirected") {
+    // given
+    val g = given { sineGraph() }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .distinct("y AS y")
+      .bfsPruningVarExpand("(x)-[:A*1..2]-(y)")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("y").withRows(Array(
+      Array(g.sa1),
+      Array(g.sc1),
+      Array(g.middle),
+      Array(g.end),
+      Array(g.sc2),
+      Array(g.sc3),
+      Array(g.ea1),
+      Array(g.ec1)
+    ))
+  }
+
+  test("should filter on relationship type B, undirected") {
+    // given
+    val g = given { sineGraph() }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .distinct("y AS y")
+      .bfsPruningVarExpand("(x)-[:B*1..2]-(y)")
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 

@@ -577,16 +577,33 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         }
     }
 
+    /**
+     * Used for undirected pruning expands where we are not including the start node.
+     *
+     * The main algorithm uses two frontiers making use sure we never back-tracks in the graph.
+     * However, the fact that the start node is not included adds an extra complexity if there
+     * are loops in the graph in which case we need to include the start node at the correct
+     * depth in the BFS search. For loop detection we keep track of the parent of each seen node,
+     * if we encounter a node, and we are coming from a node that is not the same as the seen parent
+     * means we have detected a loop.
+     */
     private static class AllBFSPruningVarExpandCursor extends BFSPruningVarExpandCursor {
+        // These constants define a small state machine where we start in state NO_LOOP, and if we find a loop we set
+        // the counter to the depth from the loop back to the start node. At each call to next we decrease the counter
+        // until we hit 0 at which point we set the counter to EMIT_START_NODE to indicate that we should emit the start
+        // node. On the next call to next we then set the counter to START_NODE_EMITTED.
         private static final int START_NODE_EMITTED = -1;
         private static final int EMIT_START_NODE = -2;
         private static final int NO_LOOP = -3;
-
+        // used to keep track if a loop has been encountered. If we find a loop we set this counter to the depth at
+        // which it was discovered so that we can emit the start-node at the correct depth.
         private int loopCounter = NO_LOOP;
         private int currentDepth;
         private HeapTrackingLongHashSet prevFrontier;
         private HeapTrackingLongHashSet currFrontier;
+        // Keeps track of all seen nodes and their parent nodes. The parent is used for loop detection.
         private final HeapTrackingLongLongHashMap seenNodesWithParent;
+        //Used to filter out the case where there are multiple relationships between nodes.
         private final HeapTrackingLongHashSet checkUniqueEndNodes;
 
         private LongIterator currentExpand;
@@ -646,9 +663,9 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                                 // we are in the very fist layer and have a loop to the start node
                                 loopCounter = 1;
                             } else if (parentOfOrigin != other && parentOfOrigin != NO_SUCH_NODE) {
-                                // By already checking, shouldCheckForLoop we now that we either have no loop
+                                // By already checking, shouldCheckForLoop we know that we either have no loop
                                 // or we have found a loop into a different BFS layer (not in prevFrontier)
-                                // so overwriting value is always safe and we don't need a Math.min(old, new)
+                                // so overwriting loopCounter is always safe, and we don't need a Math.min(old, new)
                                 loopCounter = prevFrontier.contains(other) ? currentDepth : currentDepth + 1;
                             }
                         }
