@@ -214,6 +214,14 @@ public interface Read {
 
     Scan<NodeCursor> allNodesScan();
 
+    /**
+     * Scan all nodes in partitions.
+     * NOTE! This is not thread-safe for transaction state.
+     *
+     * @param desiredNumberOfPartitions the desired number of partitions for this scan
+     * @param cursorContext the underlying page cursor context for the thread doing the partitioning.
+     * @return {@link PartitionedScan} over the query
+     */
     PartitionedScan<NodeCursor> allNodesScan(int desiredNumberOfPartitions, CursorContext cursorContext);
 
     /**

@@ -45,7 +45,7 @@ final class PartitionedNodeCursorScan implements PartitionedScan<NodeCursor> {
         } else {
             this.numberOfPartitions = (int) totalCount;
         }
-        this.batchSize = (int) Math.ceil((double) totalCount / numberOfPartitions);
+        this.batchSize = (long) Math.ceil((double) totalCount / numberOfPartitions);
         this.emittedPartitions = new AtomicInteger(0);
     }
 
