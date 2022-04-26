@@ -652,10 +652,11 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     val tx2 = ThreadedTransaction(latch)
     tx2.execute(username2, password, threading, matchQuery)
     latch.startAndWaitForAllToStart()
-
-    // WHEN
     val unwindId = getTransactionIdExecutingQuery(unwindQuery)
     val matchId = getTransactionIdExecutingQuery(matchQuery)
+    val expected = List(unwindId, matchId).max // Order by and then skip the first should give the max of the two ids
+
+    // WHEN
     val result = execute(
       "SHOW TRANSACTIONS YIELD transactionId AS txId, runtime, username ORDER BY txId SKIP 1 LIMIT 5 WHERE runtime = 'interpreted' AND username <> '' RETURN txId"
     ).toList
@@ -663,7 +664,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // THEN
     result should have size 1
-    result.head("txId") should (be(unwindId) or be(matchId)) // we don't know which query will get skipped
+    result.head("txId") should be(expected)
   }
 
   test("Should show transactions with multiple ORDER BY") {
@@ -1206,12 +1207,20 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     latch.startAndWaitForAllToStart()
 
     try {
-      // WHEN
       selectDatabase(DEFAULT_DATABASE_NAME)
       val unwindTransactionId = getTransactionIdExecutingQuery(unwindQuery)
       val matchTransactionId = getTransactionIdExecutingQuery(matchQuery)
       val createTransactionId = getTransactionIdExecutingQuery(createQuery)
 
+      // create the expected result (should be fault tolerant if matchQuery is the one skipped)
+      // Order by and then skip the first
+      val orderByAndSkip = List(unwindTransactionId, matchTransactionId, createTransactionId).sorted.reverse.tail
+      // then filter out matchQuery if still there
+      val filtered = orderByAndSkip.filterNot(_.equals(matchTransactionId))
+      // and make the result maps
+      val expected = filtered.map(id => Map("txId" -> id))
+
+      // WHEN
       // By ordering DESC we should skip the createQuery, then filtering out the matchQuery in the WHERE clause
       val result = execute(
         s"""TERMINATE TRANSACTIONS '$matchTransactionId', '$unwindTransactionId', '$createTransactionId'
@@ -1222,8 +1231,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       ).toList
 
       // THEN
-      result should have size 1
-      result.head("txId") should be(unwindTransactionId)
+      result should be(expected)
       // Check that either the transactions are gone or at least marked as terminated,
       // Terminated with reason: Status.Code[Neo.TransientError.Transaction.Terminated]
       execute(
