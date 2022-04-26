@@ -580,10 +580,10 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
     /**
      * Used for undirected pruning expands where we are not including the start node.
      *
-     * The main algorithm uses two frontiers making use sure we never back-tracks in the graph.
+     * The main algorithm uses two frontiers making sure we never back-track in the graph.
      * However, the fact that the start node is not included adds an extra complexity if there
-     * are loops in the graph in which case we need to include the start node at the correct
-     * depth in the BFS search. For loop detection we keep track of the parent of each seen node,
+     * are loops in the graph, in which case we need to include the start node at the correct
+     * depth in the BFS search (this is not required for correctness, but for future optimizations that make use of depth order). For loop detection we keep track of the parent of each seen node,
      * if we encounter a node, and we are coming from a node that is not the same as the seen parent
      * means we have detected a loop.
      */
@@ -603,7 +603,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         private HeapTrackingLongHashSet currFrontier;
         // Keeps track of all seen nodes and their parent nodes. The parent is used for loop detection.
         private final HeapTrackingLongLongHashMap seenNodesWithParent;
-        //Used to filter out the case where there are multiple relationships between nodes.
+        // Used to filter out the case where there are multiple relationships between nodes.
         private final HeapTrackingLongHashSet checkUniqueEndNodes;
 
         private LongIterator currentExpand;
