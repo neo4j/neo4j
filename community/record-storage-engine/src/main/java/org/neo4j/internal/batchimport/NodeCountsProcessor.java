@@ -38,6 +38,7 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord> {
     private final long[] labelCounts;
     private final ProgressReporter progressReporter;
     private final NodeLabelsCache cache;
+    private final long fromNodeId;
     private final CountsAccessor.Updater counts;
     private final int anyLabel;
     private final NodeLabelsCache.Client cacheClient;
@@ -46,11 +47,13 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord> {
             NodeStore nodeStore,
             NodeLabelsCache cache,
             int highLabelId,
+            long fromNodeId,
             CountsAccessor.Updater counts,
             ProgressReporter progressReporter) {
         this.nodeStore = nodeStore;
         this.cache = cache;
         this.anyLabel = highLabelId;
+        this.fromNodeId = fromNodeId;
         this.counts = counts;
         // Instantiate with high id + 1 since we need that extra slot for the ANY count
         this.labelCounts = new long[highLabelId + 1];
@@ -63,11 +66,15 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord> {
         long[] labels = NodeLabelsField.get(node, nodeStore, storeCursors);
         if (labels.length > 0) {
             for (long labelId : labels) {
-                labelCounts[(int) labelId]++;
+                if (node.getId() >= fromNodeId) {
+                    labelCounts[(int) labelId]++;
+                }
             }
             cache.put(cacheClient, node.getId(), labels);
         }
-        labelCounts[anyLabel]++;
+        if (node.getId() >= fromNodeId) {
+            labelCounts[anyLabel]++;
+        }
         progressReporter.progress(1);
 
         // No need to update the store, we're just reading things here

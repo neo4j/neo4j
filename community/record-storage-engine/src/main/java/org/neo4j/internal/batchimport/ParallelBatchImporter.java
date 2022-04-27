@@ -136,7 +136,7 @@ public class ParallelBatchImporter implements BatchImporter {
             logic.defragmentRelationshipGroups();
             logFilesInitializer.initializeLogFiles(
                     databaseLayout, store.getNeoStores().getMetaDataStore(), fileSystem, BATCH_IMPORTER_CHECKPOINT);
-            logic.buildCountsStore();
+            logic.buildAuxiliaryStores();
             logic.success();
         }
     }

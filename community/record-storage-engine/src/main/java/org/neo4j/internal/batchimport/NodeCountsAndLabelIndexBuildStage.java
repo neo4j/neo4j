@@ -51,6 +51,7 @@ public class NodeCountsAndLabelIndexBuildStage extends Stage {
             CountsAccessor.Updater countsUpdater,
             ProgressReporter progressReporter,
             IndexImporterFactory indexImporterFactory,
+            long fromNodeId,
             CursorContextFactory contextFactory,
             Function<CursorContext, StoreCursors> storeCursorsCreator,
             MemoryTracker memoryTracker,
@@ -64,6 +65,7 @@ public class NodeCountsAndLabelIndexBuildStage extends Stage {
                     config,
                     neoStores,
                     indexImporterFactory,
+                    fromNodeId,
                     memoryTracker,
                     contextFactory,
                     storeCursorsCreator));
@@ -72,7 +74,8 @@ public class NodeCountsAndLabelIndexBuildStage extends Stage {
                 control(),
                 "COUNT",
                 config,
-                () -> new NodeCountsProcessor(nodeStore, cache, highLabelId, countsUpdater, progressReporter),
+                () -> new NodeCountsProcessor(
+                        nodeStore, cache, highLabelId, fromNodeId, countsUpdater, progressReporter),
                 true,
                 0,
                 contextFactory,

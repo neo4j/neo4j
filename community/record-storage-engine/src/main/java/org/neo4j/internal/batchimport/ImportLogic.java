@@ -528,10 +528,14 @@ public class ImportLogic implements Closeable {
                         neoStore.getNodeStore().getHighId());
     }
 
+    public void buildAuxiliaryStores() {
+        buildAuxiliaryStores(0);
+    }
+
     /**
-     * Builds the counts store. Requires that {@link #importNodes()} and {@link #importRelationships()} has run.
+     * Builds the counts store and lookup indexes. Requires that {@link #importNodes()} and {@link #importRelationships()} has run.
      */
-    public void buildCountsStore() {
+    public void buildAuxiliaryStores(long fromNodeId) {
         try (var cursorContext = contextFactory.create(IMPORT_COUNT_STORE_REBUILD_TAG);
                 var storeCursors = new CachedStoreCursors(neoStore.getNeoStores(), cursorContext)) {
             neoStore.buildCountsStore(
@@ -565,6 +569,7 @@ public class ImportLogic implements Closeable {
                                     updater,
                                     progressMonitor.startSection("Nodes"),
                                     indexImporterFactory,
+                                    fromNodeId,
                                     contextFactory,
                                     storeCursorsFactory,
                                     memoryTracker,

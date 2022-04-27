@@ -59,7 +59,7 @@ public class NodeCountsStage extends Stage {
                 control(),
                 "COUNT",
                 config,
-                () -> new NodeCountsProcessor(nodeStore, cache, highLabelId, countsUpdater, progressReporter),
+                () -> new NodeCountsProcessor(nodeStore, cache, highLabelId, 0, countsUpdater, progressReporter),
                 true,
                 0,
                 contextFactory,

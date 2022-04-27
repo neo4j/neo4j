@@ -36,6 +36,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 public class LabelIndexWriterStep extends IndexWriterStep<NodeRecord[]> {
     private static final String LABEL_INDEX_WRITE_STEP_TAG = "labelIndexWriteStep";
+    private final long fromNodeId;
     private final CursorContext cursorContext;
     private final IndexImporter importer;
     private final NodeStore nodeStore;
@@ -46,10 +47,12 @@ public class LabelIndexWriterStep extends IndexWriterStep<NodeRecord[]> {
             Configuration config,
             BatchingNeoStores neoStores,
             IndexImporterFactory indexImporterFactory,
+            long fromNodeId,
             MemoryTracker memoryTracker,
             CursorContextFactory contextFactory,
             Function<CursorContext, StoreCursors> storeCursorsCreator) {
         super(control, "LABEL INDEX", config, 1, contextFactory);
+        this.fromNodeId = fromNodeId;
         this.cursorContext = contextFactory.create(LABEL_INDEX_WRITE_STEP_TAG);
         this.importer = indexImporter(
                 config.indexConfig(),
@@ -67,7 +70,7 @@ public class LabelIndexWriterStep extends IndexWriterStep<NodeRecord[]> {
     protected void process(NodeRecord[] batch, BatchSender sender, CursorContext cursorContext) throws Throwable {
         cachedStoreCursors.reset(cursorContext);
         for (NodeRecord node : batch) {
-            if (node.inUse()) {
+            if (node.inUse() && node.getId() >= fromNodeId) {
                 importer.add(node.getId(), get(node, nodeStore, cachedStoreCursors));
             }
         }
