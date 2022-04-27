@@ -22,8 +22,11 @@ package org.neo4j.internal.batchimport.input;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.neo4j.internal.id.IdSequence;
+import org.neo4j.util.Preconditions;
 
 /**
  * Simple utility for gathering all information about an {@link InputEntityVisitor} and exposing getters
@@ -198,6 +201,16 @@ public class InputEntity implements InputEntityVisitor {
 
     public Object[] properties() {
         return properties.toArray();
+    }
+
+    public Map<String, Object> propertiesAsMap() {
+        Preconditions.checkState(!hasIntPropertyKeyIds, "This instance doesn't have String keys");
+        Map<String, Object> map = new HashMap<>();
+        var propertyCount = propertyCount();
+        for (int i = 0; i < propertyCount; i++) {
+            map.put((String) propertyKey(i), propertyValue(i));
+        }
+        return map;
     }
 
     public Object id() {
