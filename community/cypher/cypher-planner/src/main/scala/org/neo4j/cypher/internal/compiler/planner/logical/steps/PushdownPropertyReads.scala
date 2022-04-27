@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.CaseExpression
+import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
@@ -60,6 +61,7 @@ import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.util.EffectiveCardinality
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
@@ -69,7 +71,6 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
-import org.neo4j.exceptions.InternalException
 
 import scala.collection.mutable
 
@@ -97,38 +98,55 @@ case object PushdownPropertyReads {
     case class CardinalityOptimum(cardinality: EffectiveCardinality, logicalPlanId: Id, variableName: String)
     case class Acc(
       variableOptima: Map[String, CardinalityOptimum],
-      propertyReadOptima: Seq[(CardinalityOptimum, Property)],
-      availableProperties: Set[Property],
+      propertyReadOptima: Seq[(CardinalityOptimum, PushDownProperty)],
+      availableProperties: Set[PushDownProperty],
       availableWholeEntities: Set[String],
       incomingCardinality: EffectiveCardinality
     )
 
+    def shouldCoRead(optimumProperties: List[(CardinalityOptimum, PushDownProperty)], plan: LogicalPlan): Boolean = {
+      optimumProperties.size > 1 &&
+      plan.rhs.isEmpty &&
+      plan.lhs.nonEmpty &&
+      !plan.isInstanceOf[Selection] &&
+      optimumProperties.exists { case (_, p) => !p.inMapProjection } // Map projection is faster than cached properties
+    }
+
+    def findProperties(expression: Any): Seq[PushDownProperty] =
+      expression.folder.treeFold(Seq.empty[PushDownProperty]) {
+        case PushableProperty(p) if isNodeOrRel(p.variable) =>
+          acc => TraverseChildren(acc :+ p)
+      }
+
     def foldSingleChildPlan(acc: Acc, plan: LogicalPlan): Acc = {
       val newPropertyExpressions =
-        plan.folder.treeFold(List.empty[Property]) {
+        plan.folder.treeFold(List.empty[PushDownProperty]) {
           case lp: LogicalPlan if lp.id != plan.id =>
             acc2 => SkipChildren(acc2) // do not traverse further
           case _: CaseExpression => // we don't want to pushdown properties inside case expressions since it's not sure we will ever need to read them
             acc2 => SkipChildren(acc2)
-          case p @ Property(v: LogicalVariable, _) if isNodeOrRel(v) =>
+          case PushableProperty(p) if isNodeOrRel(p.variable) =>
             acc2 => TraverseChildren(p :: acc2)
+          case mp: DesugaredMapProjection =>
+            val mapProperties =
+              findProperties(mp).map(p => PushDownProperty(p.property)(p.variable, inMapProjection = true))
+            acc2 => SkipChildren(acc2 ++ mapProperties)
         }
 
-      val newPushableProperties: Map[LogicalVariable, List[(CardinalityOptimum, Property)]] =
-        newPropertyExpressions.flatMap {
-          case p @ Property(v: LogicalVariable, _) =>
-            acc.variableOptima.get(v.name) match {
+      val newPushableProperties: Map[LogicalVariable, List[(CardinalityOptimum, PushDownProperty)]] =
+        newPropertyExpressions
+          .flatMap { p =>
+            acc.variableOptima.get(p.variable.name) match {
               case Some(optimum: CardinalityOptimum) =>
-                if (!acc.availableProperties.contains(p) && !acc.availableWholeEntities.contains(v.name))
+                if (!acc.availableProperties.contains(p) && !acc.availableWholeEntities.contains(p.variable.name))
                   Some((optimum, p))
                 else
                   None
               // this happens for variables introduced in expressions, we ignore those for now
               case None => None
             }
-
-          case e => throw new IllegalStateException(s"$e is not a valid property expression")
-        }.groupBy { case (_, Property(v: LogicalVariable, _)) => v }
+          }
+          .groupBy { case (_, p) => p.variable }
 
       val newPropertyReadOptima =
         newPushableProperties.toSeq.flatMap {
@@ -136,13 +154,11 @@ case object PushdownPropertyReads {
             val (optimum, _) = optimumProperties.head
             if (optimum.cardinality < acc.incomingCardinality) {
               optimumProperties
-            } else if (
-              optimumProperties.size > 1 && plan.rhs.isEmpty && plan.lhs.nonEmpty && !plan.isInstanceOf[Selection]
-            ) {
+            } else if (shouldCoRead(optimumProperties, plan)) {
               val uniqueProps = optimumProperties.map(_._2).toSet
               if (uniqueProps.size > 1) {
                 val beforeThisPlanOptimum = CardinalityOptimum(acc.incomingCardinality, plan.lhs.get.id, v.name)
-                uniqueProps.toSeq.map(prop => (beforeThisPlanOptimum, prop))
+                uniqueProps.toSeq.map(p => (beforeThisPlanOptimum, p))
               } else {
                 Nil
               }
@@ -184,8 +200,7 @@ case object PushdownPropertyReads {
 
           val renamedAvailableProperties =
             (acc.availableProperties ++ newPropertyExpressions).map(prop => {
-              val propVariable = prop.map.asInstanceOf[LogicalVariable].name
-              renamings.get(propVariable) match {
+              renamings.get(prop.variable.name) match {
                 case Some(newName) => propertyWithName(newName, prop)
                 case None          => prop
               }
@@ -214,7 +229,7 @@ case object PushdownPropertyReads {
           val newVariableCardinalities = newVariables.map(v => (v, CardinalityOptimum(outgoingCardinality, plan.id, v)))
           val outgoingVariableOptima = newLowestCardinalities ++ newVariableCardinalities
 
-          val propertiesFromPlan: Seq[Property] =
+          val propertiesFromPlan: Seq[PushDownProperty] =
             plan match {
               case indexPlan: NodeIndexLeafPlan =>
                 indexPlan.properties
@@ -232,28 +247,22 @@ case object PushdownPropertyReads {
                   .map(asProperty(indexPlan.idName))
 
               case SetProperty(_, variable: LogicalVariable, propertyKey, _) =>
-                Seq(Property(variable, propertyKey)(InputPosition.NONE))
+                Seq(PushableProperty(variable, propertyKey))
 
               case SetProperties(_, variable: LogicalVariable, items) =>
-                items.map {
-                  case (p, _) => Property(variable, p)(InputPosition.NONE)
-                }
+                items.map { case (p, _) => PushableProperty(variable, p) }
 
               case SetNodeProperty(_, idName, propertyKey, _) =>
-                Seq(Property(Variable(idName)(InputPosition.NONE), propertyKey)(InputPosition.NONE))
+                Seq(PushableProperty(idName, propertyKey))
 
               case SetNodeProperties(_, idName, items) =>
-                items.map {
-                  case (p, _) => Property(Variable(idName)(InputPosition.NONE), p)(InputPosition.NONE)
-                }
+                items.map { case (p, _) => PushableProperty(idName, p) }
 
               case SetRelationshipProperty(_, idName, propertyKey, _) =>
-                Seq(Property(Variable(idName)(InputPosition.NONE), propertyKey)(InputPosition.NONE))
+                Seq(PushableProperty(idName, propertyKey))
 
               case SetRelationshipProperties(_, idName, items) =>
-                items.map {
-                  case (p, _) => Property(Variable(idName)(InputPosition.NONE), p)(InputPosition.NONE)
-                }
+                items.map { case (p, _) => PushableProperty(idName, p) }
 
               case SetNodePropertiesFromMap(_, idName, map: MapExpression, false) =>
                 propertiesFromMap(idName, map)
@@ -378,7 +387,7 @@ case object PushdownPropertyReads {
         mapArguments
       )
 
-    val propertyMap = new mutable.HashMap[Id, Set[Property]].withDefaultValue(Set.empty)
+    val propertyMap = new mutable.HashMap[Id, Set[PushDownProperty]].withDefaultValue(Set.empty)
     propertyReadOptima foreach {
       case (CardinalityOptimum(_, id, variableNameAtOptimum), property) =>
         propertyMap(id) += propertyWithName(variableNameAtOptimum, property)
@@ -388,7 +397,7 @@ case object PushdownPropertyReads {
       case lp: LogicalPlan if propertyMap.contains(lp.id) =>
         val copiedProperties = propertyMap(lp.id).map {
           p =>
-            p.copy()(p.position): LogicalProperty
+            p.property.copy()(p.property.position): LogicalProperty
         }
         CacheProperties(lp, copiedProperties)(attributes.copy(lp.id))
     })
@@ -396,26 +405,38 @@ case object PushdownPropertyReads {
     propertyReadInsertRewriter(logicalPlan).asInstanceOf[LogicalPlan]
   }
 
-  private def asProperty(idName: String)(indexedProperty: IndexedProperty): Property =
-    Property(
-      Variable(idName)(InputPosition.NONE),
-      PropertyKeyName(indexedProperty.propertyKeyToken.name)(InputPosition.NONE)
-    )(InputPosition.NONE)
+  private def asProperty(idName: String)(indexedProperty: IndexedProperty): PushDownProperty = {
+    PushableProperty(idName, PropertyKeyName(indexedProperty.propertyKeyToken.name)(InputPosition.NONE))
+  }
 
-  private def propertyWithName(idName: String, p: Property): Property =
-    p match {
-      case Property(v: LogicalVariable, propertyKey) =>
-        if (v.name == idName)
-          p
-        else
-          Property(Variable(idName)(InputPosition.NONE), propertyKey)(InputPosition.NONE)
-      case _ => throw new InternalException(s"Unexpected property read of non-variable `${p.map}`")
+  private def propertyWithName(idName: String, p: PushDownProperty): PushDownProperty = {
+    if (p.variable.name == idName) {
+      p
+    } else {
+      val variable = Variable(idName)(InputPosition.NONE)
+      PushDownProperty(Property(variable, p.property.propertyKey)(InputPosition.NONE))(variable)
     }
+  }
 
-  private def propertiesFromMap(idName: String, map: MapExpression): Seq[Property] = {
+  private def propertiesFromMap(idName: String, map: MapExpression): Seq[PushDownProperty] = {
     map.items.map {
-      case (prop, _) =>
-        Property(Variable(idName)(InputPosition.NONE), prop)(InputPosition.NONE)
+      case (prop, _) => PushableProperty(idName, prop)
     }
+  }
+}
+
+case class PushDownProperty(property: Property)(val variable: LogicalVariable, val inMapProjection: Boolean = false)
+
+object PushableProperty {
+
+  def apply(variable: LogicalVariable, propertyKey: PropertyKeyName): PushDownProperty =
+    PushDownProperty(Property(variable, propertyKey)(InputPosition.NONE))(variable)
+
+  def apply(variable: String, propertyKey: PropertyKeyName): PushDownProperty =
+    apply(Variable(variable)(InputPosition.NONE), propertyKey)
+
+  def unapply(property: Property): Option[PushDownProperty] = property match {
+    case Property(v: LogicalVariable, _) => Some(PushDownProperty(property)(v))
+    case _                               => None
   }
 }

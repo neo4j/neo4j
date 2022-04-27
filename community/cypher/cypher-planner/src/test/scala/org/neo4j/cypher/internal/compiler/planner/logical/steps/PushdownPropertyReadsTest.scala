@@ -24,6 +24,9 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSup
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.expressions.CaseExpression
+import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
+import org.neo4j.cypher.internal.expressions.LiteralEntry
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
@@ -1872,6 +1875,60 @@ class PushdownPropertyReadsTest
       planBuilder.getSemanticTable
     )
     rewritten shouldBe plan
+  }
+
+  test("should co-read map projection to get lower cardinality") {
+    val mapProjection = DesugaredMapProjection(
+      varFor("n"),
+      Seq("p1", "p2", "p3").map { key =>
+        LiteralEntry(PropertyKeyName(key)(pos), prop(varFor("n"), key))(pos)
+      },
+      includeAllProps = false
+    )(pos)
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection(Map("result" -> mapProjection)).withEffectiveCardinality(100)
+      .expandAll("(n)-[:LIKES]->(kindSoul)").withEffectiveCardinality(100)
+      .allNodeScan("n").withEffectiveCardinality(10)
+
+    val rewritten = PushdownPropertyReads.pushdown(
+      planBuilder.build(),
+      planBuilder.effectiveCardinalities,
+      Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
+      planBuilder.getSemanticTable
+    )
+    rewritten shouldBe
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection(Map("result" -> mapProjection))
+        .expandAll("(n)-[:LIKES]->(kindSoul)")
+        .cacheProperties("n.p1", "n.p2", "n.p3")
+        .allNodeScan("n")
+        .build()
+  }
+
+  // Runtime implementation of map projection is faster without cached properties
+  test("should not co-read map projection at same cardinality") {
+    val mapProjection = DesugaredMapProjection(
+      varFor("n"),
+      Seq("p1", "p2", "p3").map { key =>
+        LiteralEntry(PropertyKeyName(key)(pos), prop(varFor("n"), key))(pos)
+      },
+      includeAllProps = false
+    )(pos)
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection(Map("result" -> mapProjection)).withEffectiveCardinality(10)
+      .expandAll("(n)-[:LIKES]->(kindSoul)").withEffectiveCardinality(10)
+      .allNodeScan("n").withEffectiveCardinality(10)
+
+    val rewritten = PushdownPropertyReads.pushdown(
+      planBuilder.build(),
+      planBuilder.effectiveCardinalities,
+      Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
+      planBuilder.getSemanticTable
+    )
+    rewritten shouldBe planBuilder.build()
   }
 
   test("should not cache when already cached") {
