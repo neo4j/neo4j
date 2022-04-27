@@ -76,8 +76,9 @@ public class RelationshipImporter extends EntityImporter {
             boolean validateRelationshipData,
             boolean doubleRecordUnits,
             CursorContextFactory contextFactory,
-            MemoryTracker memoryTracker) {
-        super(stores, monitor, contextFactory, memoryTracker);
+            MemoryTracker memoryTracker,
+            SchemaMonitor schemaMonitor) {
+        super(stores, monitor, contextFactory, memoryTracker, schemaMonitor);
         this.doubleRecordUnits = doubleRecordUnits;
         this.relationshipTypeTokenRepository = stores.getTokenHolders().relationshipTypeTokens();
         this.idMapper = idMapper;
@@ -142,6 +143,7 @@ public class RelationshipImporter extends EntityImporter {
     @Override
     public boolean type(int typeId) {
         relationshipRecord.setType(typeId);
+        schemaMonitor.entityToken(typeId);
         return true;
     }
 

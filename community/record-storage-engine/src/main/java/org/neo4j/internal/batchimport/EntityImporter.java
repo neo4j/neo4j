@@ -64,6 +64,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter {
     private final BatchingIdGetter arrayPropertyIds;
     protected final Monitor monitor;
     protected final MemoryTracker memoryTracker;
+    protected final SchemaMonitor schemaMonitor;
     private long propertyCount;
     protected int entityPropertyCount; // just for the current entity
     private boolean hasPropertyId;
@@ -76,7 +77,8 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter {
             BatchingNeoStores stores,
             Monitor monitor,
             CursorContextFactory contextFactory,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            SchemaMonitor schemaMonitor) {
         this.cursorContext = contextFactory.create(ENTITY_IMPORTER_TAG);
         this.storeCursors = new CachedStoreCursors(stores.getNeoStores(), cursorContext);
         this.tempStoreCursors = new CachedStoreCursors(stores.getTemporaryNeoStores(), cursorContext);
@@ -84,6 +86,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter {
         this.propertyKeyTokenRepository = stores.getTokenHolders().propertyKeyTokens();
         this.monitor = monitor;
         this.memoryTracker = memoryTracker;
+        this.schemaMonitor = schemaMonitor;
         for (int i = 0; i < propertyBlocks.length; i++) {
             propertyBlocks[i] = new PropertyBlock();
         }
@@ -113,6 +116,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter {
         assert !hasPropertyId;
         encodeProperty(nextPropertyBlock(), propertyKeyId, value);
         entityPropertyCount++;
+        schemaMonitor.propertyToken(propertyKeyId);
         return true;
     }
 
@@ -130,6 +134,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter {
         hasPropertyId = false;
         propertyCount += entityPropertyCount;
         entityPropertyCount = 0;
+        schemaMonitor.endOfEntity();
     }
 
     private PropertyBlock nextPropertyBlock() {

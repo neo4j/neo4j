@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.neo4j.collection.Dependencies;
@@ -90,6 +91,7 @@ import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 public class ImportLogic implements Closeable {
     private static final String IMPORT_COUNT_STORE_REBUILD_TAG = "importCountStoreRebuild";
     private static final String ID_MAPPER_PREPARATION_TAG = "Id mapper preparation.";
+    public static final Supplier<SchemaMonitor> NO_SCHEMA_MONITORING = () -> SchemaMonitor.NO_MONITOR;
 
     private final Path databaseDirectory;
     private final String databaseName;
@@ -234,6 +236,10 @@ public class ImportLogic implements Closeable {
         dependencies.satisfyDependency(state);
     }
 
+    public void importNodes() throws IOException {
+        importNodes(NO_SCHEMA_MONITORING);
+    }
+
     /**
      * Imports nodes w/ their properties and labels from {@link Input#nodes(Collector)}. This will as a side-effect populate the {@link IdMapper},
      * to later be used for looking up ID --> nodeId in {@link #importRelationships()}. After a completed node import,
@@ -241,7 +247,7 @@ public class ImportLogic implements Closeable {
      *
      * @throws IOException on I/O error.
      */
-    public void importNodes() throws IOException {
+    public void importNodes(Supplier<SchemaMonitor> schemaMonitors) throws IOException {
         // Import nodes, properties, labels
         neoStore.startFlushingPageCache();
         DataImporter.importNodes(
@@ -253,7 +259,8 @@ public class ImportLogic implements Closeable {
                 executionMonitor,
                 storeUpdateMonitor,
                 contextFactory,
-                memoryTracker);
+                memoryTracker,
+                schemaMonitors);
         neoStore.stopFlushingPageCache();
         updatePeakMemoryUsage();
     }
@@ -280,6 +287,10 @@ public class ImportLogic implements Closeable {
         }
     }
 
+    public void importRelationships() throws IOException {
+        importRelationships(NO_SCHEMA_MONITORING);
+    }
+
     /**
      * Uses {@link IdMapper} as lookup for ID --> nodeId and imports all relationships from {@link Input#relationships(Collector)}
      * and writes them into the {@link RelationshipStore}. No linking between relationships is done in this method,
@@ -287,7 +298,7 @@ public class ImportLogic implements Closeable {
      *
      * @throws IOException on I/O error.
      */
-    public void importRelationships() throws IOException {
+    public void importRelationships(Supplier<SchemaMonitor> schemaMonitors) throws IOException {
         // Import relationships (unlinked), properties
         neoStore.startFlushingPageCache();
         DataStatistics typeDistribution = DataImporter.importRelationships(
@@ -300,7 +311,8 @@ public class ImportLogic implements Closeable {
                 storeUpdateMonitor,
                 !badCollector.isCollectingBadRelationships(),
                 contextFactory,
-                memoryTracker);
+                memoryTracker,
+                schemaMonitors);
         neoStore.stopFlushingPageCache();
         updatePeakMemoryUsage();
         idMapper.close();

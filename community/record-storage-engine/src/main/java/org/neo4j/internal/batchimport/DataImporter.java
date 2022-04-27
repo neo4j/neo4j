@@ -172,10 +172,11 @@ public class DataImporter {
             ExecutionMonitor executionMonitor,
             Monitor monitor,
             CursorContextFactory contextFactory,
-            MemoryTracker memoryTracker)
+            MemoryTracker memoryTracker,
+            Supplier<SchemaMonitor> schemaMonitors)
             throws IOException {
         Supplier<EntityImporter> importers =
-                () -> new NodeImporter(stores, idMapper, monitor, contextFactory, memoryTracker);
+                () -> new NodeImporter(stores, idMapper, monitor, contextFactory, memoryTracker, schemaMonitors.get());
         importData(
                 NODE_IMPORT_NAME,
                 configuration,
@@ -196,7 +197,8 @@ public class DataImporter {
             Monitor monitor,
             boolean validateRelationshipData,
             CursorContextFactory contextFactory,
-            MemoryTracker memoryTracker)
+            MemoryTracker memoryTracker,
+            Supplier<SchemaMonitor> schemaMonitors)
             throws IOException {
         DataStatistics typeDistribution = new DataStatistics(monitor, new DataStatistics.RelationshipTypeCount[0]);
         Supplier<EntityImporter> importers = () -> new RelationshipImporter(
@@ -208,7 +210,8 @@ public class DataImporter {
                 validateRelationshipData,
                 stores.usesDoubleRelationshipRecordUnits(),
                 contextFactory,
-                memoryTracker);
+                memoryTracker,
+                schemaMonitors.get());
         importData(
                 RELATIONSHIP_IMPORT_NAME,
                 configuration,

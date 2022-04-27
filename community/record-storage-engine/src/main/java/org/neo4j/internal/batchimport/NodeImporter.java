@@ -73,8 +73,9 @@ public class NodeImporter extends EntityImporter {
             IdMapper idMapper,
             Monitor monitor,
             CursorContextFactory contextFactory,
-            MemoryTracker memoryTracker) {
-        super(stores, monitor, contextFactory, memoryTracker);
+            MemoryTracker memoryTracker,
+            SchemaMonitor schemaMonitor) {
+        super(stores, monitor, contextFactory, memoryTracker, schemaMonitor);
         this.labelTokenRepository = stores.getTokenHolders().labelTokens();
         this.idMapper = idMapper;
         this.nodeStore = stores.getNodeStore();
@@ -148,6 +149,7 @@ public class NodeImporter extends EntityImporter {
                 try {
                     labelTokenRepository.getOrCreateIds(labelsArray, labelIdsInts);
                     Arrays.sort(labelIdsInts);
+                    schemaMonitor.entityTokens(labelIdsInts);
                 } catch (KernelException e) {
                     throw new RuntimeException(e);
                 }
