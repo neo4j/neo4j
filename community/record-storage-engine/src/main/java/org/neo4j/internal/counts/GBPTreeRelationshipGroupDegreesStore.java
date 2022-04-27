@@ -84,8 +84,8 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
         return updater != null ? new DegreeUpdater(updater) : NO_OP_UPDATER;
     }
 
-    public Updater directApply(CursorContext cursorContext) throws IOException {
-        return new DegreeUpdater(directUpdater(true, cursorContext));
+    public Updater directApply(boolean applyDeltas, CursorContext cursorContext) throws IOException {
+        return new DegreeUpdater(directUpdater(applyDeltas, cursorContext));
     }
 
     @Override
