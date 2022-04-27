@@ -25,6 +25,7 @@ import static org.neo4j.internal.helpers.Exceptions.stringify;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.Predicate;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.AbstractThrowableAssert;
 import org.neo4j.logging.AssertableLogProvider.LogCall;
@@ -111,6 +112,17 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider> 
                     "Expected log to contain messages: `%s` with arguments containing: `%s`. "
                             + "But no matches found in:%n%s",
                     message, Arrays.toString(arguments), actual.serialize());
+        }
+        return this;
+    }
+
+    public LogAssert containsMessageWithArgumentsMatching(String message, Predicate<Object[]> argumentMatcher) {
+        isNotNull();
+        if (!haveMessageWithArgumentsMatching(message, argumentMatcher)) {
+            failWithMessage(
+                    "Expected log to contain messages: `%s` with arguments matching predicate. "
+                            + "But no matches found in:%n%s",
+                    message, actual.serialize());
         }
         return this;
     }
@@ -217,6 +229,15 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider> 
                         && matchedLevel(call)
                         && matchedArgumentsContains(call, arguments)
                         && matchedMessage(message, call));
+    }
+
+    private boolean haveMessageWithArgumentsMatching(String message, Predicate<Object[]> argumentMatcher) {
+        var logCalls = actual.getLogCalls();
+        return logCalls.stream()
+                .anyMatch(call -> matchedLogger(call)
+                        && matchedLevel(call)
+                        && matchedMessage(message, call)
+                        && argumentMatcher.test(call.getArguments()));
     }
 
     private boolean haveMessage(String message) {
