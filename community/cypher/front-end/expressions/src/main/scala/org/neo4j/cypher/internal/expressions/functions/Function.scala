@@ -66,6 +66,7 @@ object Function {
     Head,
     Id,
     IsEmpty,
+    IsNaN,
     Labels,
     Last,
     Left,

@@ -1310,6 +1310,56 @@
     "rolesBoostedExecution": []
   },
   {
+    "name": "isNaN",
+    "category": "Numeric",
+    "description": "Returns whether the given integer is NaN.",
+    "signature": "isNaN(input :: INTEGER?) :: (BOOLEAN?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: INTEGER?",
+        "type": "INTEGER?"
+      }
+    ],
+    "returnDescription": "BOOLEAN?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "isNaN",
+    "category": "Numeric",
+    "description": "Returns whether the given floating point number is NaN.",
+    "signature": "isNaN(input :: FLOAT?) :: (BOOLEAN?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "BOOLEAN?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
     "name": "keys",
     "category": "List",
     "description": "Returns a list containing the string representations for all the property names of a node.",

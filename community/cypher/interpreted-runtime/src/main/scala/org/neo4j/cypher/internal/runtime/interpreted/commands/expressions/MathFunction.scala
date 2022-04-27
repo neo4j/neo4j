@@ -247,6 +247,18 @@ case class FloorFunction(argument: Expression) extends MathFunction(argument) {
   override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
+case class IsNaNFunction(argument: Expression) extends MathFunction(argument) {
+
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = argument(row, state) match {
+    case x if x eq NO_VALUE => NO_VALUE
+    case v                  => CypherFunctions.isNaN(v)
+  }
+
+  override def rewrite(f: Expression => Expression): Expression = f(IsNaNFunction(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
+}
+
 case class LogFunction(argument: Expression) extends MathFunction(argument) {
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = argument(row, state) match {

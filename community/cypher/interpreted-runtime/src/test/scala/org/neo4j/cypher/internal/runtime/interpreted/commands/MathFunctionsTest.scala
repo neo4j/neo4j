@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.EFunct
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ExpFunction
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.FloorFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.IsNaNFunction
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Log10Function
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.LogFunction
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper.asDouble
@@ -48,6 +49,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SqrtFu
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.TanFunction
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
+import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.LongValue
 import org.neo4j.values.storable.Values.doubleValue
 import org.neo4j.values.storable.Values.longValue
@@ -129,6 +131,16 @@ class MathFunctionsTest extends CypherFunSuite {
     asDouble(calc(FloorFunction(literal(0.9)))).doubleValue() should equal(0.0 +- 0.00001)
     asDouble(calc(FloorFunction(literal(-0.9)))).doubleValue() should equal(-1.0 +- 0.00001)
     intercept[CypherTypeException](calc(FloorFunction(literal("wut"))))
+  }
+
+  test("isNaNTests") {
+    calc(IsNaNFunction(literal(1.0f))).asInstanceOf[BooleanValue].booleanValue() should equal(false)
+    calc(IsNaNFunction(literal(Double.PositiveInfinity))).asInstanceOf[BooleanValue].booleanValue() should equal(false)
+    calc(IsNaNFunction(literal(Double.NaN))).asInstanceOf[BooleanValue].booleanValue() should equal(true)
+
+    the[CypherTypeException] thrownBy {
+      calc(IsNaNFunction(literal("foo")))
+    } should have message "isNaN() requires numbers"
   }
 
   test("logTests") {

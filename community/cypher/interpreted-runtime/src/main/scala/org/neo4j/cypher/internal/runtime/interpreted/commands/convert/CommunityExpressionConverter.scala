@@ -55,6 +55,7 @@ import org.neo4j.cypher.internal.expressions.functions.Function
 import org.neo4j.cypher.internal.expressions.functions.Haversin
 import org.neo4j.cypher.internal.expressions.functions.Head
 import org.neo4j.cypher.internal.expressions.functions.IsEmpty
+import org.neo4j.cypher.internal.expressions.functions.IsNaN
 import org.neo4j.cypher.internal.expressions.functions.Keys
 import org.neo4j.cypher.internal.expressions.functions.LTrim
 import org.neo4j.cypher.internal.expressions.functions.Labels
@@ -473,6 +474,7 @@ case class CommunityExpressionConverter(
           commands.expressions.Literal(intValue(0))
         )
       case functions.Id => commands.expressions.IdFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case IsNaN        => commands.expressions.IsNaNFunction(self.toCommandExpression(id, invocation.arguments.head))
       case functions.ElementId =>
         commands.expressions.ElementIdFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Keys   => commands.expressions.KeysFunction(self.toCommandExpression(id, invocation.arguments.head))

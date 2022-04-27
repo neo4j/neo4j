@@ -28,6 +28,7 @@ import static org.neo4j.values.storable.Values.EMPTY_STRING;
 import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.TRUE;
+import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -59,6 +60,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.FloatingPointArray;
+import org.neo4j.values.storable.FloatingPointValue;
 import org.neo4j.values.storable.IntegralArray;
 import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.LongValue;
@@ -248,6 +250,17 @@ public final class CypherFunctions {
             }
         } else {
             throw needsNumbers("abs()");
+        }
+    }
+
+    public static BooleanValue isNaN(AnyValue in) {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if (in instanceof FloatingPointValue f) {
+            return booleanValue(f.isNaN());
+        } else if (in instanceof NumberValue) {
+            return BooleanValue.FALSE;
+        } else {
+            throw needsNumbers("isNaN()");
         }
     }
 
