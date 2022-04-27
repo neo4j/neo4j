@@ -19,13 +19,14 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.goTo;
+import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
+import static org.neo4j.io.pagecache.PageCursorUtil.goTo;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageCursorUtil;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 

@@ -17,20 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.internal.gbptree;
+package org.neo4j.io.pagecache;
 
 import java.io.IOException;
-import org.neo4j.io.pagecache.PageCursor;
 
 /**
- * {@link PageCursor} functionality commonly used around the {@link GBPTree} and supporting code.
+ * {@link PageCursor} functionality commonly used.
  */
-class PageCursorUtil {
-    static final short _1B_MASK = 0xFF;
-    static final int _2B_MASK = 0xFFFF;
-    static final int _3B_MASK = 0xFFFFFF;
-    static final long _4B_MASK = 0xFFFFFFFFL;
-    static final long _6B_MASK = 0xFFFF_FFFFFFFFL;
+public class PageCursorUtil {
+    public static final short _1B_MASK = 0xFF;
+    public static final int _2B_MASK = 0xFFFF;
+    public static final int _3B_MASK = 0xFFFFFF;
+    public static final long _4B_MASK = 0xFFFFFFFFL;
+    public static final long _6B_MASK = 0xFFFF_FFFFFFFFL;
 
     private PageCursorUtil() {}
 
@@ -41,7 +40,7 @@ class PageCursorUtil {
      * @param cursor {@link PageCursor} to put into, at the current offset.
      * @param value the value to put.
      */
-    static void put6BLong(PageCursor cursor, long value) {
+    public static void put6BLong(PageCursor cursor, long value) {
         if ((value & ~_6B_MASK) != 0) {
             throw new IllegalArgumentException("Illegal 6B value " + value);
         }
@@ -59,19 +58,19 @@ class PageCursorUtil {
      * @param cursor {@link PageCursor} to get from, at the current offset.
      * @return the 6 bytes as a {@code long}.
      */
-    static long get6BLong(PageCursor cursor) {
+    public static long get6BLong(PageCursor cursor) {
         long lsb = getUnsignedInt(cursor);
         long msb = getUnsignedShort(cursor);
         return lsb | (msb << Integer.SIZE);
     }
 
-    static void put3BInt(PageCursor cursor, int value) {
+    public static void put3BInt(PageCursor cursor, int value) {
         int offset = cursor.getOffset();
         put3BInt(cursor, offset, value);
         cursor.setOffset(offset + 3);
     }
 
-    static void put3BInt(PageCursor cursor, int offset, int value) {
+    public static void put3BInt(PageCursor cursor, int offset, int value) {
         if ((value & ~_3B_MASK) != 0) {
             throw new IllegalArgumentException("Illegal 3B value " + value);
         }
@@ -82,7 +81,7 @@ class PageCursorUtil {
         cursor.putByte(offset + Short.BYTES, msb);
     }
 
-    static int get3BInt(PageCursor cursor) {
+    public static int get3BInt(PageCursor cursor) {
         int offset = cursor.getOffset();
         int result = get3BInt(cursor, offset);
         cursor.setOffset(offset + 3);
@@ -102,7 +101,7 @@ class PageCursorUtil {
      * @param cursor {@link PageCursor} to put into, at the current offset.
      * @param value the value to put.
      */
-    static void putUnsignedShort(PageCursor cursor, int value) {
+    public static void putUnsignedShort(PageCursor cursor, int value) {
         int offset = cursor.getOffset();
         putUnsignedShort(cursor, offset, value);
         cursor.setOffset(offset + 2);
@@ -116,7 +115,7 @@ class PageCursorUtil {
      * @param offset offset into page where to write.
      * @param value the value to put.
      */
-    static void putUnsignedShort(PageCursor cursor, int offset, int value) {
+    public static void putUnsignedShort(PageCursor cursor, int offset, int value) {
         if ((value & ~_2B_MASK) != 0) {
             throw new IllegalArgumentException("Illegal 2B value " + value);
         }
@@ -130,7 +129,7 @@ class PageCursorUtil {
      * @param cursor {@link PageCursor} to get from, at the current offset.
      * @return {@code int} containing the value of the unsigned {@code short}.
      */
-    static int getUnsignedShort(PageCursor cursor) {
+    public static int getUnsignedShort(PageCursor cursor) {
         return cursor.getShort() & _2B_MASK;
     }
 
@@ -141,7 +140,7 @@ class PageCursorUtil {
      * @param offset offset into page from where to read.
      * @return {@code int} containing the value of the unsigned {@code short}.
      */
-    static int getUnsignedShort(PageCursor cursor, int offset) {
+    public static int getUnsignedShort(PageCursor cursor, int offset) {
         return cursor.getShort(offset) & _2B_MASK;
     }
 
@@ -151,7 +150,7 @@ class PageCursorUtil {
      * @param cursor {@link PageCursor} to get from, at the current offset.
      * @return {@code long} containing the value of the unsigned {@code int}.
      */
-    static long getUnsignedInt(PageCursor cursor) {
+    public static long getUnsignedInt(PageCursor cursor) {
         return cursor.getInt() & _4B_MASK;
     }
 
@@ -162,22 +161,8 @@ class PageCursorUtil {
      * @param offset offset into page from where to read.
      * @return {@code int} containing the value of the unsigned {@code byte}.
      */
-    static int getUnsignedByte(PageCursor cursor, int offset) {
+    public static int getUnsignedByte(PageCursor cursor, int offset) {
         return cursor.getByte(offset) & _1B_MASK;
-    }
-
-    /**
-     * Calls {@link PageCursor#checkAndClearBoundsFlag()} and if {@code true} throws {@link TreeInconsistencyException}.
-     * Should be called whenever leaving a {@link PageCursor#shouldRetry() shouldRetry-loop} successfully.
-     * Purpose of this method is to unify {@link PageCursor} read behavior and exception handling.
-     *
-     * @param cursor {@link PageCursor} to check for out-of-bounds.
-     */
-    static void checkOutOfBounds(PageCursor cursor) {
-        if (cursor.checkAndClearBoundsFlag()) {
-            throw new TreeInconsistencyException(
-                    "Some internal problem causing out of bounds: pageId:" + cursor.getCurrentPageId());
-        }
     }
 
     /**
@@ -191,7 +176,7 @@ class PageCursorUtil {
      * @param pageId page id to move to.
      * @throws IOException on {@link PageCursor#next(long)} exception.
      */
-    static void goTo(PageCursor cursor, String messageOnError, long pageId) throws IOException {
+    public static void goTo(PageCursor cursor, String messageOnError, long pageId) throws IOException {
         if (!cursor.next(pageId)) {
             throw new IllegalStateException("Could not go to page:" + pageId + " [" + messageOnError + "]");
         }

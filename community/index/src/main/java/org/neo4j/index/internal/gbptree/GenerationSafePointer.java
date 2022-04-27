@@ -20,9 +20,9 @@
 package org.neo4j.index.internal.gbptree;
 
 import static java.lang.String.format;
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.get6BLong;
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.getUnsignedInt;
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.put6BLong;
+import static org.neo4j.io.pagecache.PageCursorUtil.get6BLong;
+import static org.neo4j.io.pagecache.PageCursorUtil.getUnsignedInt;
+import static org.neo4j.io.pagecache.PageCursorUtil.put6BLong;
 
 import org.neo4j.io.pagecache.PageCursor;
 

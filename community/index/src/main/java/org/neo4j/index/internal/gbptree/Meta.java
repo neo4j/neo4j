@@ -20,7 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import static java.lang.String.format;
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
+import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
 
 import java.io.IOException;
 import org.neo4j.index.internal.gbptree.TreeNodeSelector.Factory;

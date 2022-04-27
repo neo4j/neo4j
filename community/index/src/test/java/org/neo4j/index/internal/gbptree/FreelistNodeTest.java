@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageCursorUtil;
 
 class FreelistNodeTest {
     private static final int PAGE_SIZE = 128;

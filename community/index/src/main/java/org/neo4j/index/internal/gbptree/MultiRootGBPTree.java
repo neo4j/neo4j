@@ -29,7 +29,7 @@ import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointer.MIN_GENERATION;
 import static org.neo4j.index.internal.gbptree.Header.CARRY_OVER_PREVIOUS_HEADER;
 import static org.neo4j.index.internal.gbptree.Header.replace;
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
+import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 
 import java.io.Closeable;
@@ -57,6 +57,7 @@ import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageCursorUtil;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;

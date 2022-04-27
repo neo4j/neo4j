@@ -19,7 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
+import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 

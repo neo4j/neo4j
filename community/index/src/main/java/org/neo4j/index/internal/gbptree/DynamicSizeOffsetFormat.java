@@ -19,12 +19,13 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.get3BInt;
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.getUnsignedShort;
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.put3BInt;
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.putUnsignedShort;
+import static org.neo4j.io.pagecache.PageCursorUtil.get3BInt;
+import static org.neo4j.io.pagecache.PageCursorUtil.getUnsignedShort;
+import static org.neo4j.io.pagecache.PageCursorUtil.put3BInt;
+import static org.neo4j.io.pagecache.PageCursorUtil.putUnsignedShort;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageCursorUtil;
 
 /**
  * Depending on page size {@link TreeNodeDynamicSize} need a various number of bytes to encode the offsets

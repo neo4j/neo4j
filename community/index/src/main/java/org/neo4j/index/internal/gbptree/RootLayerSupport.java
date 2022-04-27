@@ -21,7 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
+import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
 import static org.neo4j.index.internal.gbptree.SeekCursor.DEFAULT_MAX_READ_AHEAD;
 import static org.neo4j.index.internal.gbptree.SeekCursor.LEAF_LEVEL;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
@@ -37,6 +37,7 @@ import java.util.function.LongSupplier;
 import org.apache.commons.lang3.tuple.Pair;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageCursorUtil;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;

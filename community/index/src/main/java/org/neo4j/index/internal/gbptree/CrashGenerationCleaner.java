@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.LongAdder;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageCursorUtil;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.time.Stopwatch;
@@ -164,7 +165,7 @@ class CrashGenerationCleaner {
         do {
             isTreeNode = TreeNode.nodeType(cursor) == TreeNode.NODE_TYPE_TREE_NODE;
         } while (cursor.shouldRetry());
-        PageCursorUtil.checkOutOfBounds(cursor);
+        PointerChecking.checkOutOfBounds(cursor);
         return isTreeNode;
     }
 
@@ -175,7 +176,7 @@ class CrashGenerationCleaner {
             keyCount = TreeNode.keyCount(cursor);
             layerType = TreeNode.layerType(cursor);
         } while (cursor.shouldRetry());
-        PageCursorUtil.checkOutOfBounds(cursor);
+        PointerChecking.checkOutOfBounds(cursor);
 
         TreeNode<?, ?> treeNode = selectTreeNode(layerType);
         boolean hasCrashed;
@@ -190,7 +191,7 @@ class CrashGenerationCleaner {
                 }
             }
         } while (cursor.shouldRetry());
-        PageCursorUtil.checkOutOfBounds(cursor);
+        PointerChecking.checkOutOfBounds(cursor);
         return hasCrashed;
     }
 

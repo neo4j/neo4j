@@ -50,6 +50,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageCursorUtil;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;

@@ -53,6 +53,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.ConsistencyCheckState;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageCursorUtil;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;

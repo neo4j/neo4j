@@ -21,7 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import static java.lang.Math.toIntExact;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
+import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
 import static org.neo4j.index.internal.gbptree.TreeNode.NO_OFFLOAD_ID;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;

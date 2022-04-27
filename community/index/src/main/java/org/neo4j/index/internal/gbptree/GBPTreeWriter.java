@@ -22,8 +22,8 @@ package org.neo4j.index.internal.gbptree;
 import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 import static org.neo4j.index.internal.gbptree.PointerChecking.assertNoSuccessor;
+import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
 import static org.neo4j.index.internal.gbptree.TreeNode.generation;
 import static org.neo4j.index.internal.gbptree.TreeNode.isInternal;
 import static org.neo4j.index.internal.gbptree.TreeNode.keyCount;
@@ -34,6 +34,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageCursorUtil;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 

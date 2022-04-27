@@ -24,6 +24,7 @@ import static java.lang.String.format;
 import java.io.IOException;
 import java.util.Objects;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageCursorUtil;
 
 /**
  * Keeps id and generation of root of the tree. Can move {@link PageCursor} to root id and return its generation,

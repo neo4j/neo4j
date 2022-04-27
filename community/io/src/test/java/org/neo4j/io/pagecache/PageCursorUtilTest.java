@@ -17,19 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.internal.gbptree;
+package org.neo4j.io.pagecache;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.index.internal.gbptree.PageCursorUtil._2B_MASK;
-import static org.neo4j.index.internal.gbptree.PageCursorUtil._3B_MASK;
-import static org.neo4j.index.internal.gbptree.PageCursorUtil._6B_MASK;
+import static org.neo4j.io.pagecache.PageCursorUtil._2B_MASK;
+import static org.neo4j.io.pagecache.PageCursorUtil._3B_MASK;
+import static org.neo4j.io.pagecache.PageCursorUtil._6B_MASK;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.neo4j.io.pagecache.ByteArrayPageCursor;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;

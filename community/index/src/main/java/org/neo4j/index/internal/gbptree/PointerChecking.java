@@ -108,4 +108,18 @@ class PointerChecking {
         }
         return true;
     }
+
+    /**
+     * Calls {@link PageCursor#checkAndClearBoundsFlag()} and if {@code true} throws {@link TreeInconsistencyException}.
+     * Should be called whenever leaving a {@link PageCursor#shouldRetry() shouldRetry-loop} successfully.
+     * Purpose of this method is to unify {@link PageCursor} read behavior and exception handling.
+     *
+     * @param cursor {@link PageCursor} to check for out-of-bounds.
+     */
+    static void checkOutOfBounds(PageCursor cursor) {
+        if (cursor.checkAndClearBoundsFlag()) {
+            throw new TreeInconsistencyException(
+                    "Some internal problem causing out of bounds: pageId:" + cursor.getCurrentPageId());
+        }
+    }
 }

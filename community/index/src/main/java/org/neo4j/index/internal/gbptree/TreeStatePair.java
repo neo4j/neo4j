@@ -19,12 +19,13 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
+import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
 
 import java.io.IOException;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageCursorUtil;
 
 /**
  * Pair of {@link TreeState}, ability to make decision about which of the two to read and write respectively,
