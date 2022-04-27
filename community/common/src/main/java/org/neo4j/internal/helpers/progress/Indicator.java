@@ -49,8 +49,6 @@ public abstract class Indicator {
 
     public void completePart(String part) {}
 
-    public void completeProcess() {}
-
     public void failure(Throwable cause) {}
 
     static class Textual extends Indicator {

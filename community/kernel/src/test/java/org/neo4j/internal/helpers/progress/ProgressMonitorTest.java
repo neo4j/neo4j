@@ -78,7 +78,7 @@ class ProgressMonitorTest {
         for (int i = 0; i < 10; i++) {
             order.verify(indicator).progress(i, i + 1);
         }
-        order.verify(indicator).completeProcess();
+        order.verify(indicator).reportResolution();
         order.verifyNoMoreInteractions();
     }
 
@@ -121,7 +121,6 @@ class ProgressMonitorTest {
             order.verify(indicator).progress(i, i + 1);
         }
         order.verify(indicator).completePart("other");
-        order.verify(indicator).completeProcess();
         order.verify(indicator).reportResolution();
         order.verifyNoMoreInteractions();
     }
@@ -165,7 +164,7 @@ class ProgressMonitorTest {
         for (int i = 0; i < 10; i++) {
             order.verify(indicator).progress(i, i + 1);
         }
-        order.verify(indicator).completeProcess();
+        order.verify(indicator).reportResolution();
         order.verifyNoMoreInteractions();
     }
 
@@ -206,7 +205,6 @@ class ProgressMonitorTest {
             order.verify(indicator).progress(i, i + 1);
         }
         order.verify(indicator).completePart("other");
-        order.verify(indicator).completeProcess();
         order.verify(indicator).reportResolution();
         order.verifyNoMoreInteractions();
     }
@@ -223,7 +221,6 @@ class ProgressMonitorTest {
         InOrder order = inOrder(indicator);
         order.verify(indicator).startProcess(0);
         order.verify(indicator).progress(0, 10);
-        order.verify(indicator).completeProcess();
         order.verifyNoMoreInteractions();
     }
 
@@ -284,7 +281,6 @@ class ProgressMonitorTest {
         order.verify(indicator).startPart("part2", 1);
         order.verify(indicator).completePart("part1");
         order.verify(indicator).completePart("part2");
-        order.verify(indicator).completeProcess();
     }
 
     @Test

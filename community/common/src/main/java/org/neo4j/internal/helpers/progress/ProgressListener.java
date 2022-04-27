@@ -111,48 +111,37 @@ public interface ProgressListener {
     }
 
     class SinglePartProgressListener extends Adapter {
-        private final Indicator indicator;
-        private final long totalCount;
-        private long value;
-        private int lastReported;
-        private boolean stared;
+        private final Aggregator aggregator;
+        private boolean started;
 
         SinglePartProgressListener(Indicator indicator, long totalCount) {
-            this.indicator = indicator;
-            this.totalCount = totalCount;
+            this.aggregator = new Aggregator(indicator);
+            aggregator.add(new Adapter() {}, totalCount);
         }
 
         @Override
         public void started(String task) {
-            if (!stared) {
-                stared = true;
-                indicator.startProcess(totalCount);
+            if (!started) {
+                started = true;
+                aggregator.initialize();
             }
         }
 
         @Override
         public void add(long progress) {
-            update(value += progress);
+            started();
+            aggregator.update(progress);
         }
 
         @Override
         public void done() {
-            update(value = totalCount);
-            indicator.completeProcess();
+            aggregator.updateRemaining();
+            aggregator.done();
         }
 
         @Override
         public void failed(Throwable e) {
-            indicator.failure(e);
-        }
-
-        void update(long progress) {
-            started();
-            int current = totalCount == 0 ? 0 : (int) ((progress * indicator.reportResolution()) / totalCount);
-            if (current > lastReported) {
-                indicator.progress(lastReported, current);
-                lastReported = current;
-            }
+            aggregator.signalFailure(e);
         }
     }
 

@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.helpers.progress;
 
+import static java.lang.Long.min;
 import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
 import java.util.ArrayList;
@@ -56,7 +57,6 @@ final class Aggregator {
         indicator.startProcess(totalCount);
         if (states.isEmpty()) {
             indicator.progress(0, indicator.reportResolution());
-            indicator.completeProcess();
         }
 
         List<ProgressListener> progressesToClose = new ArrayList<>(states.keySet());
@@ -64,7 +64,7 @@ final class Aggregator {
     }
 
     void update(long delta) {
-        long progress = PROGRESS_UPDATER.addAndGet(this, delta);
+        long progress = min(totalCount, PROGRESS_UPDATER.addAndGet(this, delta));
         int current = (int) ((progress * indicator.reportResolution()) / totalCount);
         updateTo(current);
     }
@@ -93,7 +93,6 @@ final class Aggregator {
         if (states.remove(part) != null) {
             indicator.completePart(part.part);
             if (states.isEmpty()) {
-                indicator.completeProcess();
                 updateRemaining();
             }
         }
