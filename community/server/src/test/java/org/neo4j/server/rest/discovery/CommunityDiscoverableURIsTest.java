@@ -32,6 +32,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.procedure.builtin.routing.SimpleClientRoutingDomainChecker;
@@ -89,7 +90,7 @@ class CommunityDiscoverableURIsTest {
     @Test
     void shouldLookupBoltPortInRegisterIfConfigured() {
         var register = new ConnectorPortRegister();
-        register.register(BoltConnector.NAME, new InetSocketAddress(1337));
+        register.register(ConnectorType.BOLT, new InetSocketAddress(1337));
 
         var uris = communityDiscoverableURIs(
                 Config.newBuilder()

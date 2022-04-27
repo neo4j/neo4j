@@ -43,6 +43,7 @@ import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SecureSocketConnection;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.ssl.ClientAuth;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
@@ -101,10 +102,10 @@ public class RoutingConnectorCertificatesIT {
         try {
             // WHEN
             externalConnection
-                    .connect(server.lookupConnector(BoltConnector.NAME))
+                    .connect(server.lookupConnector(ConnectorType.BOLT))
                     .send(util.defaultAcceptedVersions());
             internalConnection
-                    .connect(server.lookupConnector(BoltConnector.INTERNAL_NAME))
+                    .connect(server.lookupConnector(ConnectorType.INTRA_BOLT))
                     .send(util.defaultAcceptedVersions());
 
             // THEN

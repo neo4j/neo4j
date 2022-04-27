@@ -22,6 +22,7 @@ package org.neo4j.cypher.testing.impl.http
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.connectors.ConnectorPortRegister
+import org.neo4j.configuration.connectors.ConnectorType
 import org.neo4j.configuration.connectors.HttpConnector
 import org.neo4j.cypher.testing.api.CypherExecutor
 import org.neo4j.cypher.testing.api.CypherExecutorFactory
@@ -45,7 +46,7 @@ case class HttpCypherExecutorFactory(
 
     val uri =
       if (config.get(HttpConnector.enabled))
-        URI.create(s"http://${connectorPortRegister.getLocalAddress(HttpConnector.NAME)}/")
+        URI.create(s"http://${connectorPortRegister.getLocalAddress(ConnectorType.HTTP)}/")
       else throw new IllegalStateException("HTTP connector is not configured")
 
     HTTP.withBaseUri(uri)

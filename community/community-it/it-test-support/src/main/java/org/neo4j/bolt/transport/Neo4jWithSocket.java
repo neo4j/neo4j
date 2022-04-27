@@ -33,6 +33,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyScope;
@@ -92,12 +93,12 @@ public class Neo4jWithSocket {
         ensureDatabase(settings -> {});
     }
 
-    public HostnamePort lookupConnector(String connectorKey) {
-        return connectorRegister.getLocalAddress(connectorKey);
+    public HostnamePort lookupConnector(ConnectorType connectorType) {
+        return connectorRegister.getLocalAddress(connectorType);
     }
 
     public HostnamePort lookupDefaultConnector() {
-        return connectorRegister.getLocalAddress(BoltConnector.NAME);
+        return connectorRegister.getLocalAddress(ConnectorType.BOLT);
     }
 
     public void shutdownDatabase() {

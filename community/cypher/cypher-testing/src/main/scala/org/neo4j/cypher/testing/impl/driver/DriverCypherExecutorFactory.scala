@@ -23,6 +23,7 @@ import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.connectors.BoltConnector
 import org.neo4j.configuration.connectors.ConnectorPortRegister
+import org.neo4j.configuration.connectors.ConnectorType
 import org.neo4j.cypher.testing.api.CypherExecutor
 import org.neo4j.cypher.testing.api.CypherExecutorFactory
 import org.neo4j.dbms.api.DatabaseManagementService
@@ -47,7 +48,7 @@ case class DriverCypherExecutorFactory(
 
     val boltURI =
       if (config.get(BoltConnector.enabled))
-        URI.create(s"bolt://${connectorPortRegister.getLocalAddress(BoltConnector.NAME)}/")
+        URI.create(s"bolt://${connectorPortRegister.getLocalAddress(ConnectorType.BOLT)}/")
       else throw new IllegalStateException("Bolt connector is not configured")
 
     GraphDatabase.driver(boltURI)

@@ -29,6 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -66,7 +67,7 @@ public class InProcessNeo4j implements Neo4j {
     @Override
     public URI boltURI() {
         if (config.get(BoltConnector.enabled)) {
-            return connectorUri("bolt", BoltConnector.NAME);
+            return connectorUri("bolt", ConnectorType.BOLT);
         }
         throw new IllegalStateException("Bolt connector is not configured");
     }
@@ -74,7 +75,7 @@ public class InProcessNeo4j implements Neo4j {
     @Override
     public URI httpURI() {
         if (config.get(HttpConnector.enabled)) {
-            return connectorUri("http", HttpConnector.NAME);
+            return connectorUri("http", ConnectorType.HTTP);
         }
         throw new IllegalStateException("HTTP connector is not configured");
     }
@@ -82,7 +83,7 @@ public class InProcessNeo4j implements Neo4j {
     @Override
     public URI httpsURI() {
         if (config.get(HttpsConnector.enabled)) {
-            return connectorUri("https", HttpsConnector.NAME);
+            return connectorUri("https", ConnectorType.HTTPS);
         }
         throw new IllegalStateException("HTTPS connector is not configured");
     }
@@ -151,8 +152,8 @@ public class InProcessNeo4j implements Neo4j {
         return config;
     }
 
-    private URI connectorUri(String scheme, String connectorName) {
-        HostnamePort hostPort = connectorPortRegister.getLocalAddress(connectorName);
+    private URI connectorUri(String scheme, ConnectorType connectorType) {
+        HostnamePort hostPort = connectorPortRegister.getLocalAddress(connectorType);
         return URI.create(scheme + "://" + hostPort + "/");
     }
 

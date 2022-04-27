@@ -35,29 +35,29 @@ class ConnectorPortRegisterTest {
     void shouldRegisterInetSocketAddress() {
         InetSocketAddress address = new InetSocketAddress(0);
 
-        portRegister.register("key", address);
+        portRegister.register(ConnectorType.BOLT, address);
 
-        verifyAddress("key", address.getHostString(), address.getPort());
+        verifyAddress(ConnectorType.BOLT, address.getHostString(), address.getPort());
     }
 
     @Test
     void shouldRegisterSocketAddress() {
         SocketAddress address = new SocketAddress("neo4j.com", 12345);
 
-        portRegister.register("key", address);
+        portRegister.register(ConnectorType.BOLT, address);
 
-        verifyAddress("key", address.getHostname(), address.getPort());
+        verifyAddress(ConnectorType.BOLT, address.getHostname(), address.getPort());
     }
 
     @Test
     void shouldDeregister() {
         SocketAddress address = new SocketAddress("neo4j.com", 42);
-        portRegister.register("key", address);
-        assertNotNull(portRegister.getLocalAddress("key"));
+        portRegister.register(ConnectorType.BOLT, address);
+        assertNotNull(portRegister.getLocalAddress(ConnectorType.BOLT));
 
-        portRegister.deregister("key");
+        portRegister.deregister(ConnectorType.BOLT);
 
-        assertNull(portRegister.getLocalAddress("key"));
+        assertNull(portRegister.getLocalAddress(ConnectorType.BOLT));
     }
 
     @Test
@@ -66,17 +66,17 @@ class ConnectorPortRegisterTest {
         SocketAddress address2 = new SocketAddress("neo4j.com", 8989);
         SocketAddress address3 = new SocketAddress("8.8.8.8", 80);
 
-        portRegister.register("key1", address1);
-        portRegister.register("key2", address2);
-        portRegister.register("key3", address3);
+        portRegister.register(ConnectorType.BOLT, address1);
+        portRegister.register(ConnectorType.HTTP, address2);
+        portRegister.register(ConnectorType.HTTPS, address3);
 
-        verifyAddress("key1", "localhost", 7574);
-        verifyAddress("key2", "neo4j.com", 8989);
-        verifyAddress("key3", "8.8.8.8", 80);
+        verifyAddress(ConnectorType.BOLT, "localhost", 7574);
+        verifyAddress(ConnectorType.HTTP, "neo4j.com", 8989);
+        verifyAddress(ConnectorType.HTTPS, "8.8.8.8", 80);
     }
 
-    private void verifyAddress(String key, String expectedHostname, int expectedPort) {
+    private void verifyAddress(ConnectorType connectorType, String expectedHostname, int expectedPort) {
         HostnamePort expectedAddress = new HostnamePort(expectedHostname, expectedPort);
-        assertEquals(expectedAddress, portRegister.getLocalAddress(key));
+        assertEquals(expectedAddress, portRegister.getLocalAddress(connectorType));
     }
 }

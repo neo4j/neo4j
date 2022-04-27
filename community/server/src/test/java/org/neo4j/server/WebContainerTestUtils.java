@@ -36,6 +36,7 @@ import java.util.Properties;
 import java.util.Random;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.HostnamePort;
@@ -130,8 +131,8 @@ public final class WebContainerTestUtils {
         }
     }
 
-    public static void verifyConnector(GraphDatabaseService db, String name, boolean enabled) {
-        HostnamePort address = connectorAddress(db, name);
+    public static void verifyConnector(GraphDatabaseService db, ConnectorType connectorType, boolean enabled) {
+        HostnamePort address = connectorAddress(db, connectorType);
         if (enabled) {
             assertNotNull(address);
             assertTrue(canConnectToSocket(address.getHost(), address.getPort()));
@@ -140,10 +141,10 @@ public final class WebContainerTestUtils {
         }
     }
 
-    public static HostnamePort connectorAddress(GraphDatabaseService db, String name) {
+    public static HostnamePort connectorAddress(GraphDatabaseService db, ConnectorType connectorType) {
         ConnectorPortRegister portRegister =
                 ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(ConnectorPortRegister.class);
-        return portRegister.getLocalAddress(name);
+        return portRegister.getLocalAddress(connectorType);
     }
 
     private static boolean canConnectToSocket(String host, int port) {

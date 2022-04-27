@@ -55,6 +55,7 @@ import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
@@ -342,9 +343,9 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
         assertEventually("Server was not started", bootstrapper::isRunning, Conditions.TRUE, 1, TimeUnit.MINUTES);
         assertDbAccessibleAsEmbedded();
 
-        verifyConnector(db(), HttpConnector.NAME, httpEnabled);
-        verifyConnector(db(), HttpsConnector.NAME, httpsEnabled);
-        verifyConnector(db(), BoltConnector.NAME, boltEnabled);
+        verifyConnector(db(), ConnectorType.HTTP, httpEnabled);
+        verifyConnector(db(), ConnectorType.HTTPS, httpsEnabled);
+        verifyConnector(db(), ConnectorType.BOLT, boltEnabled);
     }
 
     private void assertDbAccessibleAsEmbedded() {

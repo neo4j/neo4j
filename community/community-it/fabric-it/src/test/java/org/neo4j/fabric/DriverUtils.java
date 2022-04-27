@@ -21,8 +21,8 @@ package org.neo4j.fabric;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
@@ -48,7 +48,7 @@ public class DriverUtils {
     }
 
     private static URI getBoltUri(ConnectorPortRegister portRegister, String scheme) {
-        HostnamePort hostPort = portRegister.getLocalAddress(BoltConnector.NAME);
+        HostnamePort hostPort = portRegister.getLocalAddress(ConnectorType.BOLT);
         try {
             return new URI(scheme, null, hostPort.getHost(), hostPort.getPort(), null, null, null);
         } catch (URISyntaxException x) {

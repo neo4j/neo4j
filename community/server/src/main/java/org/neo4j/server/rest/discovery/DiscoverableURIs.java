@@ -30,6 +30,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.helpers.SocketAddressParser;
 import org.neo4j.graphdb.config.Setting;
@@ -173,7 +174,7 @@ public class DiscoverableURIs {
             } else {
                 var address = config.get(BoltConnector.advertised_address);
                 var port = address.getPort() == 0
-                        ? portRegister.getLocalAddress(BoltConnector.NAME).getPort()
+                        ? portRegister.getLocalAddress(ConnectorType.BOLT).getPort()
                         : address.getPort();
                 var host = address.getHostname();
                 URI uri = URI.create(String.format("%s://%s:%s", scheme, host, port));

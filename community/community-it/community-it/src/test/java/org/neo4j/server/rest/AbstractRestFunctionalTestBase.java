@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Map;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -106,7 +107,7 @@ public class AbstractRestFunctionalTestBase extends SharedWebContainerTestBase i
         GraphDatabaseAPI database = container().getDefaultDatabase();
         ConnectorPortRegister connectorPortRegister =
                 database.getDependencyResolver().resolveDependency(ConnectorPortRegister.class);
-        return connectorPortRegister.getLocalAddress("http").getPort();
+        return connectorPortRegister.getLocalAddress(ConnectorType.HTTP).getPort();
     }
 
     protected static HTTP.Response runQuery(String query, String... contentTypes) {

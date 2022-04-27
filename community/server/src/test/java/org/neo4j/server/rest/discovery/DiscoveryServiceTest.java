@@ -48,6 +48,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.server.config.AuthConfigProvider;
@@ -145,7 +146,7 @@ public class DiscoveryServiceTest {
         cases.add(Arguments.of(
                 "http://www.example.com (advertised 3)",
                 "http://www.example.com",
-                register("bolt", "localhost", 9999),
+                register(ConnectorType.BOLT, "localhost", 9999),
                 overrideWithAdvertisedAddress("www2.example.com", 0),
                 "bolt://www2.example.com:9999"));
 
@@ -213,7 +214,7 @@ public class DiscoveryServiceTest {
         if (portRegistryOverrider != null) {
             portRegistryOverrider.accept(portRegistry);
         } else {
-            when(portRegistry.getLocalAddress("bolt")).thenReturn(new HostnamePort("localhost", 7687));
+            when(portRegistry.getLocalAddress(ConnectorType.BOLT)).thenReturn(new HostnamePort("localhost", 7687));
         }
 
         DependencyResolver dependencyResolver = mock(DependencyResolver.class);
@@ -380,7 +381,7 @@ public class DiscoveryServiceTest {
         return out.toString(StandardCharsets.UTF_8);
     }
 
-    private static Consumer<ConnectorPortRegister> register(String connector, String host, int port) {
+    private static Consumer<ConnectorPortRegister> register(ConnectorType connector, String host, int port) {
         return register -> when(register.getLocalAddress(connector)).thenReturn(new HostnamePort(host, port));
     }
 

@@ -38,6 +38,7 @@ import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.bolt.v3.messaging.request.ResetMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -65,7 +66,7 @@ public class TransactionTerminationIT {
         });
         server.init(testInfo);
 
-        serverAddress = server.lookupConnector(BoltConnector.NAME);
+        serverAddress = server.lookupConnector(ConnectorType.BOLT);
         util = new TransportTestUtil(newMessageEncoder());
     }
 

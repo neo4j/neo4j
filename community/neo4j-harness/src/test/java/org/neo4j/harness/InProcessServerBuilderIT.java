@@ -54,6 +54,7 @@ import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -318,9 +319,9 @@ class InProcessServerBuilderIT {
             GraphDatabaseService db = neo4j.defaultDatabaseService();
 
             assertDbAccessible(db);
-            verifyConnector(db, "http", httpEnabled);
-            verifyConnector(db, "https", httpsEnabled);
-            verifyConnector(db, "bolt", boltEnabled);
+            verifyConnector(db, ConnectorType.HTTP, httpEnabled);
+            verifyConnector(db, ConnectorType.HTTPS, httpsEnabled);
+            verifyConnector(db, ConnectorType.BOLT, boltEnabled);
         }
     }
 

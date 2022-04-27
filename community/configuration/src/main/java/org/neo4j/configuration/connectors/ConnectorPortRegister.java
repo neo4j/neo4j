@@ -29,25 +29,25 @@ import org.neo4j.internal.helpers.HostnamePort;
  */
 public class ConnectorPortRegister {
 
-    private final ConcurrentHashMap<String, HostnamePort> connectorsInfo = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<ConnectorType, HostnamePort> connectorsInfo = new ConcurrentHashMap<>();
 
-    public void register(String connectorKey, InetSocketAddress localAddress) {
+    public void register(ConnectorType connectorKey, InetSocketAddress localAddress) {
         register(connectorKey, localAddress.getHostString(), localAddress.getPort());
     }
 
-    public void register(String connectorKey, SocketAddress localAddress) {
+    public void register(ConnectorType connectorKey, SocketAddress localAddress) {
         register(connectorKey, localAddress.getHostname(), localAddress.getPort());
     }
 
-    public void deregister(String connectorKey) {
+    public void deregister(ConnectorType connectorKey) {
         connectorsInfo.remove(connectorKey);
     }
 
-    public HostnamePort getLocalAddress(String connectorKey) {
+    public HostnamePort getLocalAddress(ConnectorType connectorKey) {
         return connectorsInfo.get(connectorKey);
     }
 
-    private void register(String connectorKey, String hostname, int port) {
+    private void register(ConnectorType connectorKey, String hostname, int port) {
         HostnamePort hostnamePort = new HostnamePort(hostname, port);
         connectorsInfo.put(connectorKey, hostnamePort);
     }

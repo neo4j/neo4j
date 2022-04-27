@@ -34,6 +34,7 @@ import javax.net.ssl.TrustManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.server.helpers.CommunityWebContainerBuilder;
 import org.neo4j.server.helpers.TestWebContainer;
@@ -79,21 +80,22 @@ class HttpsAccessIT extends ExclusiveWebContainerTestBase {
     @Test
     void shouldExposeBaseUriWhenHttpEnabledAndHttpsDisabled() throws Exception {
         startServer(true, false);
-        shouldInstallConnector("http");
+        shouldInstallConnector("http", ConnectorType.HTTP);
         shouldExposeCorrectSchemeInDiscoveryService("http");
     }
 
     @Test
     void shouldExposeBaseUriWhenHttpDisabledAndHttpsEnabled() throws Exception {
         startServer(false, true);
-        shouldInstallConnector("https");
+        shouldInstallConnector("https", ConnectorType.HTTPS);
         shouldExposeCorrectSchemeInDiscoveryService("https");
     }
 
-    private void shouldInstallConnector(String scheme) {
+    private void shouldInstallConnector(String scheme, ConnectorType connectorType) {
         var uri = testWebContainer.getBaseUri();
         assertEquals(scheme, uri.getScheme());
-        HostnamePort expectedHostPort = PortUtils.getConnectorAddress(testWebContainer.getDefaultDatabase(), scheme);
+        HostnamePort expectedHostPort =
+                PortUtils.getConnectorAddress(testWebContainer.getDefaultDatabase(), connectorType);
         assertEquals(expectedHostPort.getHost(), uri.getHost());
         assertEquals(expectedHostPort.getPort(), uri.getPort());
     }

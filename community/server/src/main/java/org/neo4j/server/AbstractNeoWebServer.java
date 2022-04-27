@@ -46,6 +46,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -304,7 +305,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     private void registerHttpAddressAfterStartup() {
         if (httpEnabled) {
             InetSocketAddress localHttpAddress = webServer.getLocalHttpAddress();
-            connectorPortRegister.register(HttpConnector.NAME, localHttpAddress);
+            connectorPortRegister.register(ConnectorType.HTTP, localHttpAddress);
             if (httpAdvertisedAddress.getPort() == 0) {
                 httpAdvertisedAddress = new SocketAddress(localHttpAddress.getHostString(), localHttpAddress.getPort());
             }
@@ -314,7 +315,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     private void registerHttpsAddressAfterStartup() {
         if (httpsEnabled) {
             InetSocketAddress localHttpsAddress = webServer.getLocalHttpsAddress();
-            connectorPortRegister.register(HttpsConnector.NAME, localHttpsAddress);
+            connectorPortRegister.register(ConnectorType.HTTPS, localHttpsAddress);
             if (httpsAdvertisedAddress.getPort() == 0) {
                 httpsAdvertisedAddress =
                         new SocketAddress(localHttpsAddress.getHostString(), localHttpsAddress.getPort());

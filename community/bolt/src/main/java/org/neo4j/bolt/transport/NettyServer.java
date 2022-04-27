@@ -44,9 +44,9 @@ import org.neo4j.bolt.transport.configuration.NioConfigurationProvider;
 import org.neo4j.bolt.transport.configuration.ServerConfigurationProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.PortBindException;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -138,7 +138,7 @@ public class NettyServer extends LifecycleAdapter {
     public void start() throws Exception {
         if (externalInitializer != null) {
             var externalLocalAddress = (InetSocketAddress) configureInitializer(externalInitializer);
-            portRegister.register(BoltConnector.NAME, externalLocalAddress);
+            portRegister.register(ConnectorType.BOLT, externalLocalAddress);
 
             var host = externalLocalAddress.getHostName();
             var port = externalLocalAddress.getPort();
@@ -148,7 +148,7 @@ public class NettyServer extends LifecycleAdapter {
 
         if (internalInitializer != null) {
             var internalLocalAddress = (InetSocketAddress) configureInitializer(internalInitializer);
-            portRegister.register(BoltConnector.INTERNAL_NAME, internalLocalAddress);
+            portRegister.register(ConnectorType.INTRA_BOLT, internalLocalAddress);
 
             var host = internalLocalAddress.getHostName();
             var port = internalLocalAddress.getPort();
@@ -225,8 +225,8 @@ public class NettyServer extends LifecycleAdapter {
     }
 
     private void unregisterListenAddresses() {
-        portRegister.deregister(BoltConnector.NAME);
-        portRegister.deregister(BoltConnector.INTERNAL_NAME);
+        portRegister.deregister(ConnectorType.BOLT);
+        portRegister.deregister(ConnectorType.INTRA_BOLT);
     }
 
     private void closeChannels() {

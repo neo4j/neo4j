@@ -39,6 +39,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SecureSocketConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.ssl.PkiUtils;
@@ -78,7 +79,7 @@ public class CertificatesIT {
         SecureSocketConnection connection = new SecureSocketConnection();
         try {
             // WHEN
-            connection.connect(server.lookupConnector(BoltConnector.NAME)).send(util.defaultAcceptedVersions());
+            connection.connect(server.lookupConnector(ConnectorType.BOLT)).send(util.defaultAcceptedVersions());
 
             // THEN
             Set<X509Certificate> certificatesSeen = connection.getServerCertificatesSeen();

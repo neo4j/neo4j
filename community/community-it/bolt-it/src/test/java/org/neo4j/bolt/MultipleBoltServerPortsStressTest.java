@@ -49,6 +49,7 @@ import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
@@ -92,8 +93,8 @@ class MultipleBoltServerPortsStressTest {
         SocketConnection externalConnection = new SocketConnection();
         SocketConnection internalConnection = new SocketConnection();
         try {
-            HostnamePort externalAddress = server.lookupConnector(BoltConnector.NAME);
-            HostnamePort internalAddress = server.lookupConnector(BoltConnector.INTERNAL_NAME);
+            HostnamePort externalAddress = server.lookupConnector(ConnectorType.BOLT);
+            HostnamePort internalAddress = server.lookupConnector(ConnectorType.INTRA_BOLT);
 
             executeStressTest(Executors.newFixedThreadPool(NUMBER_OF_THREADS), externalAddress, internalAddress);
         } finally {

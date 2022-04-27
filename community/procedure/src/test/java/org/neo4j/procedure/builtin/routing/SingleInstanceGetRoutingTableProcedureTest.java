@@ -68,6 +68,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.GraphDatabaseSettings.RoutingMode;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
@@ -287,7 +288,7 @@ public class SingleInstanceGetRoutingTableProcedureTest {
         var ctx = ctxContents.build();
 
         var portRegister = mock(ConnectorPortRegister.class);
-        when(portRegister.getLocalAddress(BoltConnector.NAME))
+        when(portRegister.getLocalAddress(ConnectorType.BOLT))
                 .thenReturn(new HostnamePort("neo4j.com", advertisedBoldPort));
         var databaseManager = databaseManagerMock(config, true);
         var logProvider = new AssertableLogProvider();
@@ -322,7 +323,7 @@ public class SingleInstanceGetRoutingTableProcedureTest {
         var clientProvidedHostPortStr = String.format("%s:%d", clientProvidedHost, clientProvidedPort);
 
         var portRegister = mock(ConnectorPortRegister.class);
-        when(portRegister.getLocalAddress(BoltConnector.NAME))
+        when(portRegister.getLocalAddress(ConnectorType.BOLT))
                 .thenReturn(new HostnamePort("neo4j.com", advertisedBoldPort));
 
         var databaseManager = databaseManagerMock(config, true);
@@ -354,7 +355,7 @@ public class SingleInstanceGetRoutingTableProcedureTest {
         var ctx = ctxContents.build();
 
         var portRegister = mock(ConnectorPortRegister.class);
-        when(portRegister.getLocalAddress(BoltConnector.NAME))
+        when(portRegister.getLocalAddress(ConnectorType.BOLT))
                 .thenReturn(new HostnamePort("neo4j.com", advertisedBoldPort));
         var config = newConfig(Config.defaults(SERVER_DEFAULTS), Duration.ofSeconds(100), advertisedBoltAddress);
         config.set(routing_default_router, routingMode);
@@ -383,7 +384,7 @@ public class SingleInstanceGetRoutingTableProcedureTest {
         var ctx = ctxContents.build();
 
         var portRegister = mock(ConnectorPortRegister.class);
-        when(portRegister.getLocalAddress(BoltConnector.NAME))
+        when(portRegister.getLocalAddress(ConnectorType.BOLT))
                 .thenReturn(new HostnamePort("neo4j.com", advertisedBoldPort));
         var config = newConfig(Config.defaults(SERVER_DEFAULTS), Duration.ofSeconds(100), advertisedBoltAddress);
         config.set(routing_default_router, routingMode);
@@ -409,7 +410,7 @@ public class SingleInstanceGetRoutingTableProcedureTest {
         config.set(GraphDatabaseSettings.routing_default_router, GraphDatabaseSettings.RoutingMode.SERVER);
 
         var portRegister = mock(ConnectorPortRegister.class);
-        when(portRegister.getLocalAddress(BoltConnector.NAME))
+        when(portRegister.getLocalAddress(ConnectorType.BOLT))
                 .thenReturn(new HostnamePort("neo4j.com", advertisedBoldPort));
 
         var databaseManager = databaseManagerMock(config, true);

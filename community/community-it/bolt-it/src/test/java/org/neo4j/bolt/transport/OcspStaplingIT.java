@@ -63,6 +63,7 @@ import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.CertConfiguredSecureSocketConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.CommonConnectorConfig;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.ssl.PkiUtils;
@@ -106,7 +107,7 @@ class OcspStaplingIT {
 
         // When
         connection
-                .connect(server.lookupConnector(BoltConnector.NAME))
+                .connect(server.lookupConnector(ConnectorType.BOLT))
                 .send(TransportTestUtil.defaultAcceptedVersions());
 
         // Then

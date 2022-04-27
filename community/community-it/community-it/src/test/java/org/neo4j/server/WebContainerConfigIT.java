@@ -40,6 +40,7 @@ import java.net.http.HttpRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -114,7 +115,7 @@ class WebContainerConfigIT extends ExclusiveWebContainerTestBase {
                 .build();
 
         GraphDatabaseAPI database = testWebContainer.getDefaultDatabase();
-        var localHttpAddress = PortUtils.getConnectorAddress(database, "http");
+        var localHttpAddress = PortUtils.getConnectorAddress(database, ConnectorType.HTTP);
         assertNotEquals(HttpConnector.DEFAULT_PORT, localHttpAddress.getPort());
         assertEquals(nonDefaultAddress.getHostname(), localHttpAddress.getHost());
 

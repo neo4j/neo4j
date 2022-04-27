@@ -27,6 +27,7 @@ import java.util.Optional;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -91,7 +92,7 @@ public class SingleAddressRoutingTableProvider
         if (addressToUse.getPort() <= 0) {
             // advertised address with a negative or zero port is not useful for callers of the routing procedure
             // attempt to resolve the actual port using the port register
-            var localAddress = portRegister.getLocalAddress(BoltConnector.NAME);
+            var localAddress = portRegister.getLocalAddress(ConnectorType.BOLT);
             if (localAddress != null) {
                 addressToUse = new SocketAddress(addressToUse.getHostname(), localAddress.getPort());
             }

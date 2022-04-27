@@ -32,8 +32,8 @@ import java.nio.channels.ServerSocketChannel;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.PortBindException;
 import org.neo4j.internal.helpers.NamedThreadFactory;
 import org.neo4j.logging.internal.NullLogService;
@@ -92,7 +92,7 @@ class NettyServerTest {
 
     @Test
     void shouldRegisterPortInPortRegister() throws Exception {
-        var connector = "bolt";
+        var connector = ConnectorType.BOLT;
         var portRegister = new ConnectorPortRegister();
 
         var address = new InetSocketAddress("localhost", 0);
@@ -132,23 +132,23 @@ class NettyServerTest {
                 NullLogService.getInstance(),
                 Config.defaults());
 
-        assertNull(portRegister.getLocalAddress(BoltConnector.NAME));
-        assertNull(portRegister.getLocalAddress(BoltConnector.INTERNAL_NAME));
+        assertNull(portRegister.getLocalAddress(ConnectorType.BOLT));
+        assertNull(portRegister.getLocalAddress(ConnectorType.INTRA_BOLT));
 
         server.init();
         server.start();
-        var actualExternalAddress = portRegister.getLocalAddress(BoltConnector.NAME);
+        var actualExternalAddress = portRegister.getLocalAddress(ConnectorType.BOLT);
         assertNotNull(actualExternalAddress);
         assertThat(actualExternalAddress.getPort()).isGreaterThan(0);
 
-        var actualInternalAddress = portRegister.getLocalAddress(BoltConnector.INTERNAL_NAME);
+        var actualInternalAddress = portRegister.getLocalAddress(ConnectorType.INTRA_BOLT);
         assertNotNull(actualInternalAddress);
         assertThat(actualInternalAddress.getPort()).isGreaterThan(0);
 
         server.stop();
         server.shutdown();
-        assertNull(portRegister.getLocalAddress(BoltConnector.NAME));
-        assertNull(portRegister.getLocalAddress(BoltConnector.INTERNAL_NAME));
+        assertNull(portRegister.getLocalAddress(ConnectorType.BOLT));
+        assertNull(portRegister.getLocalAddress(ConnectorType.INTRA_BOLT));
     }
 
     private static NettyServer.ProtocolInitializer protocolOnAddress(SocketAddress address) {

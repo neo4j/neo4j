@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.server.helpers.TestWebContainer;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -58,7 +59,8 @@ class BoltIT extends ExclusiveWebContainerTestBase {
 
         // Then
         assertEventuallyServerResponds(
-                "localhost", connectorPortRegister.getLocalAddress("bolt").getPort());
+                "localhost",
+                connectorPortRegister.getLocalAddress(ConnectorType.BOLT).getPort());
     }
 
     @Test
@@ -69,7 +71,8 @@ class BoltIT extends ExclusiveWebContainerTestBase {
         ConnectorPortRegister connectorPortRegister = getDependency(ConnectorPortRegister.class);
         // Then
         assertEventuallyServerResponds(
-                "localhost", connectorPortRegister.getLocalAddress("bolt").getPort());
+                "localhost",
+                connectorPortRegister.getLocalAddress(ConnectorType.BOLT).getPort());
     }
 
     @Test

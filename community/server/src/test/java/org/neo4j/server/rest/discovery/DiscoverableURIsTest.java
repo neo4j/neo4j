@@ -34,6 +34,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.server.configuration.ServerSettings;
 
@@ -84,7 +85,7 @@ class DiscoverableURIsTest {
                 .set(Map.of(BoltConnector.enabled, true, BoltConnector.advertised_address, new SocketAddress(0)))
                 .build();
         var register = new ConnectorPortRegister();
-        register.register(BoltConnector.NAME, new InetSocketAddress(1337));
+        register.register(ConnectorType.BOLT, new InetSocketAddress(1337));
 
         var discoverables = new DiscoverableURIs.Builder(null)
                 .addBoltEndpoint(config, register)
