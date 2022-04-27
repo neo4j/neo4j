@@ -46,6 +46,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -532,6 +533,26 @@ public class NodeRelationshipCacheTest {
             return 0;
         });
         assertThat(expectedGroups.isEmpty()).isTrue();
+    }
+
+    @Test
+    void shouldMarkAsExplicitlyDense() {
+        // given
+        int denseNodeThreshold = 10;
+        long nodeId = 5;
+        cache = new NodeRelationshipCache(NumberArrayFactories.HEAP, denseNodeThreshold, INSTANCE);
+        cache.setNodeCount(10);
+
+        // when
+        assertThat(cache.isDense(nodeId)).isFalse();
+        cache.markAsExplicitlyDense(nodeId);
+
+        // then
+        assertThat(cache.isDense(nodeId)).isTrue();
+
+        // and when
+        cache.incrementCount(nodeId);
+        assertThat(cache.isDense(nodeId)).isTrue();
     }
 
     private static void testNode(NodeRelationshipCache link, long node, Direction direction) {

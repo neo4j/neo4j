@@ -59,7 +59,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
     private static final long MAX_RELATIONSHIP_ID = (1L << 48 /*6B*/) - 2 /*reserving -1 as legal default value*/;
     // if count goes beyond this max count then count is redirected to bigCounts and index into that array
     // is stored as value in count offset
-    static final int MAX_SMALL_COUNT = (1 << 29 /*3 change bits*/) - 2 /*reserving -1 as legal default value*/;
+    static final int MAX_SMALL_COUNT = (1 << 28 /*4 change bits*/) - 2 /*reserving -1 as legal default value*/;
     // this max count is pessimistic in that it's what community format can hold, still pretty big.
     // we can make this as big as our storage needs them later on
     static final long MAX_COUNT = (1L << 35) - 1;
@@ -75,7 +75,9 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
     private static final int DENSE_NODE_CHANGED_MASK = 0x80000000;
     private static final int SPARSE_NODE_CHANGED_MASK = 0x40000000;
     private static final int BIG_COUNT_MASK = 0x20000000;
-    private static final int COUNT_FLAGS_MASKS = DENSE_NODE_CHANGED_MASK | SPARSE_NODE_CHANGED_MASK | BIG_COUNT_MASK;
+    private static final int EXPLICITLY_DENSE_MASK = 0x10000000;
+    private static final int COUNT_FLAGS_MASKS =
+            DENSE_NODE_CHANGED_MASK | SPARSE_NODE_CHANGED_MASK | BIG_COUNT_MASK | EXPLICITLY_DENSE_MASK;
     private static final int COUNT_MASK = ~COUNT_FLAGS_MASKS;
 
     private static final int TYPE_SIZE = 3;
@@ -114,12 +116,6 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
         this.memoryTracker = memoryTracker;
         this.bigCounts = arrayFactory.newDynamicLongArray(1_000, 0, memoryTracker);
         this.relGroupCache = new RelGroupCache(arrayFactory, chunkSize, base, memoryTracker);
-    }
-
-    private static byte[] minusOneBytes(int length) {
-        byte[] bytes = new byte[length];
-        Arrays.fill(bytes, (byte) -1);
-        return bytes;
     }
 
     /**
@@ -179,19 +175,19 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
     private void setCount(ByteArray array, long index, int offset, long count) {
         assertValidCount(index, count);
 
+        int rawCount = array.getInt(index, offset);
         if (count > MAX_SMALL_COUNT) {
-            int rawCount = array.getInt(index, offset);
             int slot;
             if (rawCount == -1 || !isBigCount(rawCount)) {
                 // Allocate a slot in the bigCounts array
                 slot = bigCountsCursor.getAndIncrement();
-                array.setInt(index, offset, BIG_COUNT_MASK | slot);
+                array.setInt(index, offset, (rawCount & COUNT_FLAGS_MASKS) | BIG_COUNT_MASK | slot);
             } else {
                 slot = countValue(rawCount);
             }
             bigCounts.set(slot, count);
         } else { // We can simply set it
-            array.setInt(index, offset, toIntExact(count));
+            array.setInt(index, offset, (rawCount & COUNT_FLAGS_MASKS) | toIntExact(count));
         }
     }
 
@@ -221,7 +217,10 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
         }
 
         this.highNodeId = nodeCount;
-        this.array = arrayFactory.newByteArray(highNodeId, minusOneBytes(ID_AND_COUNT_SIZE), memoryTracker);
+        var defaultValue = new byte[ID_AND_COUNT_SIZE];
+        Arrays.fill(defaultValue, 0, ID_SIZE, (byte) -1);
+        Arrays.fill(defaultValue, ID_SIZE, ID_AND_COUNT_SIZE, (byte) 0);
+        this.array = arrayFactory.newByteArray(highNodeId, defaultValue, memoryTracker);
         this.chunkChangedArray = new byte[chunkOf(nodeCount) + 1];
     }
 
@@ -231,10 +230,6 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
     private long getCount(ByteArray array, long index, int offset) {
         int rawCount = array.getInt(index, offset);
         int count = countValue(rawCount);
-        if (count == COUNT_MASK) {
-            // All bits 1, i.e. default initialized field
-            return 0;
-        }
 
         if (isBigCount(rawCount)) {
             // 'count' means index into bigCounts in this context
@@ -264,12 +259,23 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
         return isDense(array, nodeId);
     }
 
+    /**
+     * Use for incremental import where letting the importer know that a particular node is dense, even if its relationship count
+     * is less than the dense threshold. This will make it cheaper to merge the incremental data later.
+     * @param nodeId node ID to mark as being dense.
+     */
+    public void markAsExplicitlyDense(long nodeId) {
+        int bits = array.getInt(nodeId, SPARSE_COUNT_OFFSET);
+        array.setInt(nodeId, SPARSE_COUNT_OFFSET, bits | EXPLICITLY_DENSE_MASK);
+    }
+
     private boolean isDense(ByteArray array, long nodeId) {
         if (denseNodeThreshold == EMPTY) { // We haven't initialized the rel group cache yet
             return false;
         }
 
-        return getCount(array, nodeId, SPARSE_COUNT_OFFSET) >= denseNodeThreshold;
+        var explicitlyDense = (array.getInt(nodeId, SPARSE_COUNT_OFFSET) & EXPLICITLY_DENSE_MASK) != 0;
+        return explicitlyDense || getCount(array, nodeId, SPARSE_COUNT_OFFSET) >= denseNodeThreshold;
     }
 
     /**
@@ -500,7 +506,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
         private static final int BASE_IDS_OFFSET = NEXT_OFFSET + ID_SIZE;
 
         // Used for testing high id values. Should always be zero in production
-        private final byte[] DEFAULT_VALUE = minusOneBytes(GROUP_ENTRY_SIZE);
+        private final byte[] DEFAULT_VALUE = buildDefaultValue();
         private final long chunkSize;
         private final long base;
         private final ByteArray array;
@@ -512,6 +518,18 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
             assert chunkSize > 0;
             this.array = arrayFactory.newDynamicByteArray(chunkSize, DEFAULT_VALUE, memoryTracker);
             this.nextFreeId = new AtomicLong(base);
+        }
+
+        private static byte[] buildDefaultValue() {
+            // TYPE,NEXT,3x[ID,COUNT]
+            // all COUNT should have 0 as default value
+            byte[] value = new byte[GROUP_ENTRY_SIZE];
+            Arrays.fill(value, (byte) -1);
+            for (int i = 0; i < Direction.values().length; i++) {
+                var fromIndex = BASE_IDS_OFFSET + (ID_AND_COUNT_SIZE * i) + ID_SIZE;
+                Arrays.fill(value, fromIndex, fromIndex + COUNT_SIZE, (byte) 0);
+            }
+            return value;
         }
 
         private void clearIndex(ByteArray array, long relGroupId) {
