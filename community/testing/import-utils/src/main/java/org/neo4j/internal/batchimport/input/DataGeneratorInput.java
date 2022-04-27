@@ -29,15 +29,20 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.internal.batchimport.InputIterable;
 import org.neo4j.internal.batchimport.InputIterator;
+import org.neo4j.internal.batchimport.input.csv.CsvInput;
 import org.neo4j.internal.batchimport.input.csv.Header;
 import org.neo4j.internal.batchimport.input.csv.Header.Entry;
 import org.neo4j.internal.batchimport.input.csv.Type;
 import org.neo4j.internal.helpers.ArrayUtil;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.RandomValues;
 
 /**
@@ -136,6 +141,13 @@ public class DataGeneratorInput implements Input {
                 (long) (nodes * nodePropertyEstimate[1]),
                 (long) (relationships * relationshipPropertyEstimate[1]),
                 (long) (nodes * labelsPerNodeEstimate));
+    }
+
+    @Override
+    public Map<String, SchemaDescriptor> referencedNodeSchema(TokenHolders tokenHolders) {
+        Map<String, SchemaDescriptor> schema = new HashMap<>();
+        CsvInput.collectReferencedNodeSchemaFromHeader(nodeHeader, tokenHolders, schema);
+        return schema;
     }
 
     private static InputEntity[] sample(InputIterable source, int size) {

@@ -20,9 +20,12 @@
 package org.neo4j.internal.batchimport.input;
 
 import java.io.IOException;
+import java.util.Map;
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.InputIterable;
 import org.neo4j.internal.batchimport.InputIterator;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.token.TokenHolders;
 
 /**
  * Unifies all data input given to a {@link BatchImporter} to allow for more coherent implementations.
@@ -106,6 +109,14 @@ public interface Input extends AutoCloseable {
      * @throws IOException on I/O error.
      */
     Estimates calculateEstimates(PropertySizeCalculator valueSizeCalculator) throws IOException;
+
+    /**
+     * @return a {@link Map} where key is group name and value which {@link SchemaDescriptor index} it refers to.
+     * @param tokenHolders available tokens.
+     */
+    default Map<String, SchemaDescriptor> referencedNodeSchema(TokenHolders tokenHolders) {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     default void close() {}

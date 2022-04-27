@@ -53,8 +53,13 @@ import org.neo4j.internal.batchimport.input.InputEntity;
 import org.neo4j.internal.batchimport.input.Inputs;
 import org.neo4j.internal.batchimport.input.PropertySizeCalculator;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.token.TokenHolders;
+import org.neo4j.token.api.TokenConstants;
+import org.neo4j.util.Preconditions;
 
 /**
  * Provides {@link Input} from data contained in tabular/csv form. Expects factories for instantiating
@@ -330,6 +335,45 @@ public class CsvInput implements Input {
             }
         }
         return estimates;
+    }
+
+    @Override
+    public Map<String, SchemaDescriptor> referencedNodeSchema(TokenHolders tokenHolders) {
+        try {
+            // parse all node headers and remember all ID spaces
+            Map<String, SchemaDescriptor> result = new HashMap<>();
+            for (DataFactory dataFactory : nodeDataFactory) {
+                Data data = dataFactory.create(config);
+                try (CharSeeker dataStream = charSeeker(new MultiReadable(data.stream()), config, true)) {
+                    // Parsing and constructing this header will create this group,
+                    // so no need to do something with the result of it right now
+                    Header header =
+                            DataFactories.defaultFormatNodeFileHeader().create(dataStream, config, idType, groups);
+                    collectReferencedNodeSchemaFromHeader(header, tokenHolders, result);
+                }
+            }
+            return result;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public static void collectReferencedNodeSchemaFromHeader(
+            Header header, TokenHolders tokenHolders, Map<String, SchemaDescriptor> result) {
+        Arrays.stream(header.entries())
+                .filter(e -> e.type() == Type.ID)
+                .findAny()
+                .ifPresent(entry -> {
+                    Map<String, String> options = entry.rawOptions();
+                    String labelName = options.get("label");
+                    String keyName = options.get("key");
+                    int label = tokenHolders.labelTokens().getIdByName(labelName);
+                    int key = tokenHolders.propertyKeyTokens().getIdByName(keyName);
+                    Preconditions.checkState(label != TokenConstants.NO_TOKEN, "Label '%s' not found", labelName);
+                    Preconditions.checkState(key != TokenConstants.NO_TOKEN, "Property key '%s' not found", keyName);
+                    SchemaDescriptor prev = result.put(entry.group().name(), SchemaDescriptors.forLabel(label, key));
+                    Preconditions.checkState(prev == null, "Multiple indexes for group " + entry.group());
+                });
     }
 
     private static long propertyPreAllocateRounding(long initialEstimatedPropertyStoreSize) {

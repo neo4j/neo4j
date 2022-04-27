@@ -38,6 +38,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
+import static org.neo4j.csv.reader.Configuration.TABS;
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.internal.batchimport.input.Collector.EMPTY;
 import static org.neo4j.internal.batchimport.input.IdType.ACTUAL;
@@ -71,6 +72,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -81,6 +83,7 @@ import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -106,11 +109,17 @@ import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.csv.Header.Monitor;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
+import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.ReadOnlyTokenCreator;
+import org.neo4j.token.TokenHolders;
+import org.neo4j.token.api.NamedToken;
+import org.neo4j.token.api.TokenHolder;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
@@ -1823,6 +1832,42 @@ class CsvInputTest {
             // THEN
             assertThat(e.getMessage(), containsString(file.getFileName().toString()));
         }
+    }
+
+    @Test
+    void shouldParseReferencedNodeSchema() throws FileNotFoundException {
+        // given
+        Path file = directory.file("relationship-header");
+        try (PrintWriter writer = new PrintWriter(file.toFile())) {
+            writer.println("myId:ID(My Group){label:Person,key:myId}\tname:string\t:LABEL");
+        }
+
+        try (var input = new CsvInput(
+                datas(DataFactories.data(NO_DECORATOR, Charset.defaultCharset(), file)),
+                defaultFormatNodeFileHeader(),
+                datas(),
+                defaultFormatRelationshipFileHeader(),
+                STRING,
+                TABS,
+                false,
+                NO_MONITOR,
+                INSTANCE)) {
+            // when
+            var tokenHolders = new TokenHolders(
+                    tokenHolder(Map.of("myId", 4)), tokenHolder(Map.of("Person", 2)), tokenHolder(Map.of()));
+            var schema = input.referencedNodeSchema(tokenHolders);
+
+            // then
+            Assertions.assertThat(schema).isEqualTo(Map.of("My Group", SchemaDescriptors.forLabel(2, 4)));
+        }
+    }
+
+    private TokenHolder tokenHolder(Map<String, Integer> tokens) {
+        var tokenHolder = new DelegatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, "type");
+        tokenHolder.setInitialTokens(tokens.entrySet().stream()
+                .map(e -> new NamedToken(e.getKey(), e.getValue()))
+                .toList());
+        return tokenHolder;
     }
 
     private static void assertEstimatesEquals(Input.Estimates a, Input.Estimates b, double errorMargin) {
