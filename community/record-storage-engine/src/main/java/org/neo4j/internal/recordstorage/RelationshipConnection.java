@@ -30,6 +30,11 @@ public enum RelationshipConnection {
         }
 
         @Override
+        public long getRaw(RelationshipRecord rel) {
+            return rel.getFirstPrevRel();
+        }
+
+        @Override
         public void set(RelationshipRecord rel, long id, boolean isFirst) {
             rel.setFirstPrevRel(id);
             rel.setFirstInFirstChain(isFirst);
@@ -63,6 +68,11 @@ public enum RelationshipConnection {
     START_NEXT {
         @Override
         public long get(RelationshipRecord rel) {
+            return rel.getFirstNextRel();
+        }
+
+        @Override
+        public long getRaw(RelationshipRecord rel) {
             return rel.getFirstNextRel();
         }
 
@@ -103,6 +113,11 @@ public enum RelationshipConnection {
         }
 
         @Override
+        public long getRaw(RelationshipRecord rel) {
+            return rel.getSecondPrevRel();
+        }
+
+        @Override
         public void set(RelationshipRecord rel, long id, boolean isFirst) {
             rel.setSecondPrevRel(id);
             rel.setFirstInSecondChain(isFirst);
@@ -140,6 +155,11 @@ public enum RelationshipConnection {
         }
 
         @Override
+        public long getRaw(RelationshipRecord rel) {
+            return rel.getSecondNextRel();
+        }
+
+        @Override
         public void set(RelationshipRecord rel, long id, boolean isFirst) {
             rel.setSecondNextRel(id);
         }
@@ -171,6 +191,8 @@ public enum RelationshipConnection {
     };
 
     public abstract long get(RelationshipRecord rel);
+
+    public abstract long getRaw(RelationshipRecord rel);
 
     public abstract boolean isFirstInChain(RelationshipRecord rel);
 
