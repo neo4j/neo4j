@@ -168,7 +168,7 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
                 openOptions);
     }
 
-    private static final Updater NO_OP_UPDATER = new Updater() {
+    public static final Updater NO_OP_UPDATER = new Updater() {
         @Override
         public void close() {}
 

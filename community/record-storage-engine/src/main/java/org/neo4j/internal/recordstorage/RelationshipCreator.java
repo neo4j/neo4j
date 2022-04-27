@@ -246,7 +246,7 @@ public class RelationshipCreator {
                 connectToDenseMonitor);
     }
 
-    private void convertNodeToDenseNode(
+    public void convertNodeToDenseNode(
             RecordProxy<NodeRecord, Void> nodeChange,
             RelationshipRecord firstRel,
             RecordAccess<RelationshipRecord, Void> relRecords,

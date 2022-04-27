@@ -22,165 +22,165 @@ package org.neo4j.internal.recordstorage;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-enum RelationshipConnection {
+public enum RelationshipConnection {
     START_PREV {
         @Override
-        long get(RelationshipRecord rel) {
+        public long get(RelationshipRecord rel) {
             return rel.isFirstInFirstChain() ? Record.NO_NEXT_RELATIONSHIP.intValue() : rel.getFirstPrevRel();
         }
 
         @Override
-        void set(RelationshipRecord rel, long id, boolean isFirst) {
+        public void set(RelationshipRecord rel, long id, boolean isFirst) {
             rel.setFirstPrevRel(id);
             rel.setFirstInFirstChain(isFirst);
         }
 
         @Override
-        RelationshipConnection otherSide() {
+        public RelationshipConnection otherSide() {
             return START_NEXT;
         }
 
         @Override
-        long compareNode(RelationshipRecord rel) {
+        public long compareNode(RelationshipRecord rel) {
             return rel.getFirstNode();
         }
 
         @Override
-        RelationshipConnection start() {
+        public RelationshipConnection start() {
             return this;
         }
 
         @Override
-        RelationshipConnection end() {
+        public RelationshipConnection end() {
             return END_PREV;
         }
 
         @Override
-        boolean isFirstInChain(RelationshipRecord rel) {
+        public boolean isFirstInChain(RelationshipRecord rel) {
             return rel.isFirstInFirstChain();
         }
     },
     START_NEXT {
         @Override
-        long get(RelationshipRecord rel) {
+        public long get(RelationshipRecord rel) {
             return rel.getFirstNextRel();
         }
 
         @Override
-        void set(RelationshipRecord rel, long id, boolean isFirst) {
+        public void set(RelationshipRecord rel, long id, boolean isFirst) {
             rel.setFirstNextRel(id);
         }
 
         @Override
-        RelationshipConnection otherSide() {
+        public RelationshipConnection otherSide() {
             return START_PREV;
         }
 
         @Override
-        long compareNode(RelationshipRecord rel) {
+        public long compareNode(RelationshipRecord rel) {
             return rel.getFirstNode();
         }
 
         @Override
-        RelationshipConnection start() {
+        public RelationshipConnection start() {
             return this;
         }
 
         @Override
-        RelationshipConnection end() {
+        public RelationshipConnection end() {
             return END_NEXT;
         }
 
         @Override
-        boolean isFirstInChain(RelationshipRecord rel) {
+        public boolean isFirstInChain(RelationshipRecord rel) {
             return rel.isFirstInFirstChain();
         }
     },
     END_PREV {
         @Override
-        long get(RelationshipRecord rel) {
+        public long get(RelationshipRecord rel) {
             return rel.isFirstInSecondChain() ? Record.NO_NEXT_RELATIONSHIP.intValue() : rel.getSecondPrevRel();
         }
 
         @Override
-        void set(RelationshipRecord rel, long id, boolean isFirst) {
+        public void set(RelationshipRecord rel, long id, boolean isFirst) {
             rel.setSecondPrevRel(id);
             rel.setFirstInSecondChain(isFirst);
         }
 
         @Override
-        RelationshipConnection otherSide() {
+        public RelationshipConnection otherSide() {
             return END_NEXT;
         }
 
         @Override
-        long compareNode(RelationshipRecord rel) {
+        public long compareNode(RelationshipRecord rel) {
             return rel.getSecondNode();
         }
 
         @Override
-        RelationshipConnection start() {
+        public RelationshipConnection start() {
             return START_PREV;
         }
 
         @Override
-        RelationshipConnection end() {
+        public RelationshipConnection end() {
             return this;
         }
 
         @Override
-        boolean isFirstInChain(RelationshipRecord rel) {
+        public boolean isFirstInChain(RelationshipRecord rel) {
             return rel.isFirstInSecondChain();
         }
     },
     END_NEXT {
         @Override
-        long get(RelationshipRecord rel) {
+        public long get(RelationshipRecord rel) {
             return rel.getSecondNextRel();
         }
 
         @Override
-        void set(RelationshipRecord rel, long id, boolean isFirst) {
+        public void set(RelationshipRecord rel, long id, boolean isFirst) {
             rel.setSecondNextRel(id);
         }
 
         @Override
-        RelationshipConnection otherSide() {
+        public RelationshipConnection otherSide() {
             return END_PREV;
         }
 
         @Override
-        long compareNode(RelationshipRecord rel) {
+        public long compareNode(RelationshipRecord rel) {
             return rel.getSecondNode();
         }
 
         @Override
-        RelationshipConnection start() {
+        public RelationshipConnection start() {
             return START_NEXT;
         }
 
         @Override
-        RelationshipConnection end() {
+        public RelationshipConnection end() {
             return this;
         }
 
         @Override
-        boolean isFirstInChain(RelationshipRecord rel) {
+        public boolean isFirstInChain(RelationshipRecord rel) {
             return rel.isFirstInSecondChain();
         }
     };
 
-    abstract long get(RelationshipRecord rel);
+    public abstract long get(RelationshipRecord rel);
 
-    abstract boolean isFirstInChain(RelationshipRecord rel);
+    public abstract boolean isFirstInChain(RelationshipRecord rel);
 
-    abstract void set(RelationshipRecord rel, long id, boolean isFirst);
+    public abstract void set(RelationshipRecord rel, long id, boolean isFirst);
 
-    abstract long compareNode(RelationshipRecord rel);
+    public abstract long compareNode(RelationshipRecord rel);
 
-    abstract RelationshipConnection otherSide();
+    public abstract RelationshipConnection otherSide();
 
-    abstract RelationshipConnection start();
+    public abstract RelationshipConnection start();
 
-    abstract RelationshipConnection end();
+    public abstract RelationshipConnection end();
 }
