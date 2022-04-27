@@ -407,8 +407,6 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
      * @return the first relationship if node is sparse, or the result of {@link GroupVisitor} if dense.
      */
     public long getFirstRel(long nodeId, GroupVisitor visitor) {
-        assert forward : "This should only be done at forward scan";
-
         ByteArray array = this.array.at(nodeId);
         long id = getRelationshipId(array, nodeId);
         if (id != EMPTY && isDense(array, nodeId)) { // Indirection into rel group cache
@@ -470,14 +468,15 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
      * @param nodeId node to get count for.
      * @param typeId relationship type id to get count for.
      * @param direction {@link Direction} to get count for.
+     * @param resetCountAfterRead whether to reset the count to 0 after reading and returning it.
      * @return count (degree) of the requested relationship chain.
      */
-    public long getCount(long nodeId, int typeId, Direction direction) {
+    public long getCount(long nodeId, int typeId, Direction direction, boolean resetCountAfterRead) {
         ByteArray array = this.array.at(nodeId);
         boolean dense = isDense(array, nodeId);
         if (dense) { // Indirection into rel group cache
             long id = getRelationshipId(array, nodeId);
-            return id == EMPTY ? 0 : relGroupCache.getAndResetCount(id, typeId, direction);
+            return id == EMPTY ? 0 : relGroupCache.getAndResetCount(id, typeId, direction, resetCountAfterRead);
         }
 
         return getCount(array, nodeId, SPARSE_COUNT_OFFSET);
@@ -536,14 +535,16 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
             array.set(relGroupId, DEFAULT_VALUE);
         }
 
-        long getAndResetCount(long relGroupIndex, int typeId, Direction direction) {
+        long getAndResetCount(long relGroupIndex, int typeId, Direction direction, boolean resetCountAfterRead) {
             long index = rebase(relGroupIndex);
             while (index != EMPTY) {
                 ByteArray array = this.array.at(index);
                 if (getTypeId(array, index) == typeId) {
                     int offset = countOffset(direction);
                     long count = NodeRelationshipCache.this.getCount(array, index, offset);
-                    NodeRelationshipCache.this.setCount(array, index, offset, 0);
+                    if (resetCountAfterRead) {
+                        NodeRelationshipCache.this.setCount(array, index, offset, 0);
+                    }
                     return count;
                 }
                 index = getNext(array, index);

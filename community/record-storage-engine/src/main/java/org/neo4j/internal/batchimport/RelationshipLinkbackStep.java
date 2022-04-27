@@ -50,7 +50,7 @@ public class RelationshipLinkbackStep extends RelationshipLinkStep {
                 cache.getAndPutRelationship(record.getFirstNode(), typeId, Direction.OUTGOING, record.getId(), false);
         if (firstPrevRel == IdMapper.ID_NOT_FOUND) { // First one
             record.setFirstInFirstChain(true);
-            firstPrevRel = cache.getCount(record.getFirstNode(), typeId, Direction.OUTGOING);
+            firstPrevRel = cache.getCount(record.getFirstNode(), typeId, Direction.OUTGOING, true);
         }
         record.setFirstPrevRel(firstPrevRel);
     }
@@ -62,7 +62,7 @@ public class RelationshipLinkbackStep extends RelationshipLinkStep {
                 cache.getAndPutRelationship(record.getSecondNode(), typeId, Direction.INCOMING, record.getId(), false);
         if (secondPrevRel == IdMapper.ID_NOT_FOUND) { // First one
             record.setFirstInSecondChain(true);
-            secondPrevRel = cache.getCount(record.getSecondNode(), typeId, Direction.INCOMING);
+            secondPrevRel = cache.getCount(record.getSecondNode(), typeId, Direction.INCOMING, true);
         }
         record.setSecondPrevRel(secondPrevRel);
     }
@@ -75,7 +75,7 @@ public class RelationshipLinkbackStep extends RelationshipLinkStep {
         if (prevRel == IdMapper.ID_NOT_FOUND) { // First one
             record.setFirstInFirstChain(true);
             record.setFirstInSecondChain(true);
-            prevRel = cache.getCount(record.getFirstNode(), typeId, Direction.BOTH);
+            prevRel = cache.getCount(record.getFirstNode(), typeId, Direction.BOTH, true);
         }
         record.setFirstPrevRel(prevRel);
         record.setSecondPrevRel(prevRel);

@@ -167,11 +167,13 @@ public class NodeRelationshipCacheTest {
         Assertions.assertTrue(cache.isDense(nodeId));
 
         // WHEN
-        long count = cache.getCount(nodeId, typeId, OUTGOING);
-        Assertions.assertEquals(2, count);
+        long countNoReset = cache.getCount(nodeId, typeId, OUTGOING, false);
+        long countDoReset = cache.getCount(nodeId, typeId, OUTGOING, true);
+        Assertions.assertEquals(2, countNoReset);
+        Assertions.assertEquals(2, countDoReset);
 
         // THEN
-        Assertions.assertEquals(0, cache.getCount(nodeId, typeId, OUTGOING));
+        Assertions.assertEquals(0, cache.getCount(nodeId, typeId, OUTGOING, false));
     }
 
     @ParameterizedTest
@@ -425,8 +427,8 @@ public class NodeRelationshipCacheTest {
         cache.getAndPutRelationship(nodeId, typeId, INCOMING, 2, true /*increment count*/);
 
         // THEN
-        Assertions.assertEquals(highCountOut + 1, cache.getCount(nodeId, typeId, OUTGOING));
-        Assertions.assertEquals(highCountIn + 1, cache.getCount(nodeId, typeId, INCOMING));
+        Assertions.assertEquals(highCountOut + 1, cache.getCount(nodeId, typeId, OUTGOING, false));
+        Assertions.assertEquals(highCountIn + 1, cache.getCount(nodeId, typeId, INCOMING, false));
     }
 
     @ParameterizedTest
@@ -557,10 +559,10 @@ public class NodeRelationshipCacheTest {
 
     private static void testNode(NodeRelationshipCache link, long node, Direction direction) {
         int typeId = 0; // doesn't matter here because it's all sparse
-        long count = link.getCount(node, typeId, direction);
+        long count = link.getCount(node, typeId, direction, false);
         Assertions.assertEquals(-1, link.getAndPutRelationship(node, typeId, direction, 5, false));
         Assertions.assertEquals(5, link.getAndPutRelationship(node, typeId, direction, 10, false));
-        Assertions.assertEquals(count, link.getCount(node, typeId, direction));
+        Assertions.assertEquals(count, link.getCount(node, typeId, direction, false));
     }
 
     private static long findNode(NodeRelationshipCache link, long nodeCount, boolean isDense) {
