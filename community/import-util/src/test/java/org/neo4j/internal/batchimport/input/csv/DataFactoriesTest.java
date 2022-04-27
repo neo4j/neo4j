@@ -28,6 +28,7 @@ import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultForm
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 import static org.neo4j.internal.helpers.ArrayUtil.array;
 
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
@@ -39,6 +40,7 @@ import org.neo4j.csv.reader.MultiReadable;
 import org.neo4j.csv.reader.Readables;
 import org.neo4j.function.IOFunctions;
 import org.neo4j.internal.batchimport.input.DuplicateHeaderException;
+import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.InputException;
@@ -78,6 +80,7 @@ public class DataFactoriesTest {
                                 "location",
                                 Type.PROPERTY,
                                 extractors.point(),
+                                Map.of("crs", "WGS-84"),
                                 PointValue.parseHeaderInformation("{crs:WGS-84}"))),
                 header.entries());
         seeker.close();
@@ -104,16 +107,19 @@ public class DataFactoriesTest {
                                 "pointArray",
                                 Type.PROPERTY,
                                 extractors.pointArray(),
+                                Map.of("crs", "WGS-84"),
                                 PointValue.parseHeaderInformation("{crs:WGS-84}")),
                         entry(
                                 "timeArray",
                                 Type.PROPERTY,
                                 extractors.timeArray(),
+                                Map.of("timezone", "+02:00"),
                                 TimeValue.parseHeaderInformation("{timezone:+02:00}")),
                         entry(
                                 "dateTimeArray",
                                 Type.PROPERTY,
                                 extractors.dateTimeArray(),
+                                Map.of("timezone", "+02:00"),
                                 DateTimeValue.parseHeaderInformation("{timezone:+02:00}"))),
                 header.entries());
         seeker.close();
@@ -163,16 +169,19 @@ public class DataFactoriesTest {
                                 "pointArray",
                                 Type.PROPERTY,
                                 extractors.pointArray(),
+                                Map.of("crs", "WGS-84"),
                                 PointValue.parseHeaderInformation("{crs:WGS-84}")),
                         entry(
                                 "timeArray",
                                 Type.PROPERTY,
                                 extractors.timeArray(),
+                                Map.of("timezone", "+02:00"),
                                 TimeValue.parseHeaderInformation("{timezone:+02:00}")),
                         entry(
                                 "dateTimeArray",
                                 Type.PROPERTY,
                                 extractors.dateTimeArray(),
+                                Map.of("timezone", "+02:00"),
                                 DateTimeValue.parseHeaderInformation("{timezone:+02:00}"))),
                 header.entries());
         seeker.close();
@@ -320,6 +329,50 @@ public class DataFactoriesTest {
         assertThat(e.getMessage()).contains("LABEL");
     }
 
+    @Test
+    void shouldParseHeaderOptionsMap() {
+        // GIVEN
+        var seeker = seeker("id:ID(myGroup){myFirstKey:10,mySecondKey:\"Some string\"}\t:LABEL");
+
+        // WHEN
+        var header = defaultFormatNodeFileHeader().create(seeker, TABS, IdType.ACTUAL, groups);
+
+        // THEN
+        var extractors = new Extractors(';');
+        assertThat(header.entries())
+                .isEqualTo(array(
+                        entry(
+                                "id",
+                                Type.ID,
+                                "myGroup",
+                                extractors.long_(),
+                                Map.of("myFirstKey", "10", "mySecondKey", "Some string"),
+                                null),
+                        entry(null, Type.LABEL, extractors.stringArray())));
+    }
+
+    @Test
+    void shouldParseHeaderOptionsMapWithoutGroup() {
+        // GIVEN
+        var seeker = seeker("id:ID{myFirstKey:10,mySecondKey:\"Some string\"}\t:LABEL");
+
+        // WHEN
+        var header = defaultFormatNodeFileHeader().create(seeker, TABS, IdType.ACTUAL, groups);
+
+        // THEN
+        var extractors = new Extractors(';');
+        assertThat(header.entries())
+                .isEqualTo(array(
+                        entry(
+                                "id",
+                                Type.ID,
+                                Group.GLOBAL.name(),
+                                extractors.long_(),
+                                Map.of("myFirstKey", "10", "mySecondKey", "Some string"),
+                                null),
+                        entry(null, Type.LABEL, extractors.stringArray())));
+    }
+
     private static final Configuration SEEKER_CONFIG =
             Configuration.TABS.toBuilder().withBufferSize(1000).build();
 
@@ -331,8 +384,23 @@ public class DataFactoriesTest {
         return entry(name, type, null, extractor);
     }
 
-    private Header.Entry entry(String name, Type type, Extractor<?> extractor, CSVHeaderInformation optionalParameter) {
-        return new Header.Entry(name, type, groups.getOrCreate(null), extractor, optionalParameter);
+    private Header.Entry entry(
+            String name,
+            Type type,
+            Extractor<?> extractor,
+            Map<String, String> rawOptions,
+            CSVHeaderInformation optionalParameter) {
+        return new Header.Entry(name, type, groups.getOrCreate(null), extractor, rawOptions, optionalParameter);
+    }
+
+    private Header.Entry entry(
+            String name,
+            Type type,
+            String groupName,
+            Extractor<?> extractor,
+            Map<String, String> rawOptions,
+            CSVHeaderInformation optionalParameter) {
+        return new Header.Entry(name, type, groups.getOrCreate(groupName), extractor, rawOptions, optionalParameter);
     }
 
     private Header.Entry entry(String name, Type type, String groupName, Extractor<?> extractor) {

@@ -27,6 +27,7 @@ import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -328,8 +329,12 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
     }
 
     public static PointBuilder parseHeaderInformation(CharSequence text) {
+        return parseHeaderInformation(Value.parseStringMap(text));
+    }
+
+    public static PointBuilder parseHeaderInformation(Map<String, String> options) {
         PointBuilder fields = new PointBuilder();
-        Value.parseHeaderInformation(text, "point", fields);
+        options.forEach(fields::assign);
         return fields;
     }
 

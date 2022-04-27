@@ -389,8 +389,12 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
     }
 
     public static TimeCSVHeaderInformation parseHeaderInformation(String text) {
+        return parseHeaderInformation(Value.parseStringMap(text));
+    }
+
+    public static TimeCSVHeaderInformation parseHeaderInformation(Map<String, String> options) {
         TimeCSVHeaderInformation fields = new TimeCSVHeaderInformation();
-        Value.parseHeaderInformation(text, "time/datetime", fields);
+        options.forEach(fields::assign);
         return fields;
     }
 

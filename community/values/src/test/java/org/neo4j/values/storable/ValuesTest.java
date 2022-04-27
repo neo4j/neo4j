@@ -20,6 +20,7 @@
 package org.neo4j.values.storable;
 
 import static java.time.ZoneOffset.UTC;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -50,6 +51,7 @@ import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.neo4j.string.UTF8;
 
@@ -143,5 +145,17 @@ class ValuesTest {
                 }
             }
         }
+    }
+
+    @Test
+    void shouldParseStringMap() {
+        assertThat(Value.parseStringMap("{singleKey:10}")).isEqualTo(Map.of("singleKey", "10"));
+        assertThat(Value.parseStringMap("{singleKey:some string}")).isEqualTo(Map.of("singleKey", "some string"));
+        assertThat(Value.parseStringMap("{singleKey:'some string'}")).isEqualTo(Map.of("singleKey", "some string"));
+        assertThat(Value.parseStringMap("{singleKey:\"some string\"}")).isEqualTo(Map.of("singleKey", "some string"));
+        assertThat(Value.parseStringMap("{singleKey:value:with:colons}"))
+                .isEqualTo(Map.of("singleKey", "value:with:colons"));
+        assertThat(Value.parseStringMap("{key1:value:with:colons,key2:'another value'}"))
+                .isEqualTo(Map.of("key1", "value:with:colons", "key2", "another value"));
     }
 }

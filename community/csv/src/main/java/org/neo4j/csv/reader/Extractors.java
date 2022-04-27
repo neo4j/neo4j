@@ -38,6 +38,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.exception.CloneFailedException;
 import org.neo4j.graphdb.spatial.Point;
@@ -371,6 +372,16 @@ public class Extractors {
         @Override
         public Extractor<?> normalize() {
             return normalizedExtractor != null ? normalizedExtractor : this;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return this == o || this.getClass().equals(o.getClass());
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(getClass());
         }
     }
 

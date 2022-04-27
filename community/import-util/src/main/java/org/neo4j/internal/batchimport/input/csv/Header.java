@@ -21,6 +21,8 @@ package org.neo4j.internal.batchimport.input.csv;
 
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractor;
@@ -79,95 +81,18 @@ public class Header {
         }
     }
 
-    public static class Entry {
-        private final String name;
-        private final Type type;
-        private final Group group;
-        private final Extractor<?> extractor;
-        // This can be used to encapsulate the parameters set in the header for spatial and temporal columns
-        private final CSVHeaderInformation optionalParameter;
+    public record Entry(
+            String name,
+            Type type,
+            Group group,
+            Extractor<?> extractor,
+            Map<String, String> rawOptions,
+            // This can be used to encapsulate the parameters set in the header for spatial and temporal columns
+            // It's a more optimized, or 'compiled' version of the rawOptions
+            CSVHeaderInformation optionalParameter) {
 
         public Entry(String name, Type type, Group group, Extractor<?> extractor) {
-            this.name = name;
-            this.type = type;
-            this.group = group;
-            this.extractor = extractor;
-            this.optionalParameter = null;
-        }
-
-        public Entry(
-                String name, Type type, Group group, Extractor<?> extractor, CSVHeaderInformation optionalParameter) {
-            this.name = name;
-            this.type = type;
-            this.group = group;
-            this.extractor = extractor;
-            this.optionalParameter = optionalParameter;
-        }
-
-        @Override
-        public String toString() {
-            if (optionalParameter == null) {
-                return (name != null ? name : "") + ":"
-                        + (type == Type.PROPERTY ? extractor.name().toLowerCase() : type.name())
-                        + (group() != Group.GLOBAL ? "(" + group().name() + ")" : "");
-            } else {
-                return (name != null ? name : "") + ":"
-                        + (type == Type.PROPERTY
-                                ? extractor.name().toLowerCase() + "[" + optionalParameter + "]"
-                                : type.name())
-                        + (group() != Group.GLOBAL ? "(" + group().name() + ")" : "");
-            }
-        }
-
-        public Extractor<?> extractor() {
-            return extractor;
-        }
-
-        public Type type() {
-            return type;
-        }
-
-        public Group group() {
-            return group != null ? group : Group.GLOBAL;
-        }
-
-        public String name() {
-            return name;
-        }
-
-        CSVHeaderInformation optionalParameter() {
-            return optionalParameter;
-        }
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            if (name != null) {
-                result = prime * result + name.hashCode();
-            }
-            result = prime * result + type.hashCode();
-            if (group != null) {
-                result = prime * result + group.hashCode();
-            }
-            result = prime * result + extractor.hashCode();
-            return result;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (obj == null || getClass() != obj.getClass()) {
-                return false;
-            }
-            Entry other = (Entry) obj;
-            return nullSafeEquals(name, other.name)
-                    && type == other.type
-                    && nullSafeEquals(group, other.group)
-                    && extractorEquals(extractor, other.extractor)
-                    && nullSafeEquals(optionalParameter, other.optionalParameter);
+            this(name, type, group, extractor, Collections.emptyMap(), null);
         }
 
         Entry(Entry other) {
@@ -176,18 +101,8 @@ public class Header {
                     other.type,
                     other.group,
                     other.extractor != null ? other.extractor.clone() : null,
+                    other.rawOptions,
                     other.optionalParameter);
-        }
-
-        private static boolean nullSafeEquals(Object o1, Object o2) {
-            return o1 == null || o2 == null ? o1 == o2 : o1.equals(o2);
-        }
-
-        private static boolean extractorEquals(Extractor<?> first, Extractor<?> other) {
-            if (first == null || other == null) {
-                return first == other;
-            }
-            return first.getClass().equals(other.getClass());
         }
     }
 

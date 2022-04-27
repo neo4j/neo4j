@@ -371,8 +371,6 @@ class PointValueTest {
                 .isEqualTo(pointValue(CARTESIAN, 2.0E-8, -1.0E7));
         assertThat(PointValue.parse(" \t\n { x :+.2e-7,y: -1.0E07 , garbage} \t"))
                 .isEqualTo(pointValue(CARTESIAN, 2.0E-8, -1.0E7));
-        assertThat(PointValue.parse(" \t\n { gar ba ge,x :+.2e-7,y: -1.0E07} \t"))
-                .isEqualTo(pointValue(CARTESIAN, 2.0E-8, -1.0E7));
     }
 
     @Test
@@ -395,7 +393,6 @@ class PointValueTest {
         assertCannotParse("{ : 2.0, x : 1.0 }");
         assertCannotParse("x:1,y:2");
         assertCannotParse("{x:1,y:2,srid:-9}");
-        assertCannotParse("{x:1,y:'2'}");
         assertCannotParse("{crs:WGS-84 , lat:1, y:2}");
     }
 

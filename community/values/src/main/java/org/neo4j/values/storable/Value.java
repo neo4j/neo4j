@@ -27,6 +27,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.neo4j.exceptions.InvalidArgumentException;
@@ -234,9 +236,16 @@ public abstract class Value extends AnyValue {
 
     public abstract long updateHash(HashFunction hashFunction, long hash);
 
-    static void parseHeaderInformation(CharSequence text, String type, CSVHeaderInformation info) {
+    /**
+     * Parses a json-like string representing a map, into {@link Map} with {@link String} keys and values.
+     * Text should start and end with curly brackets. Text can contain multiple key/value pairs, separated by a comma.
+     *
+     * @param text textual representation of a map to parse into a {@link Map}.
+     * @return the parsed text as a {@link Map}.
+     */
+    public static Map<String, String> parseStringMap(CharSequence text) {
         Matcher mapMatcher = MAP_PATTERN.matcher(text);
-        String errorMessage = format("Failed to parse %s value: '%s'", type, text);
+        String errorMessage = format("Failed to parse map value: '%s'", text);
         if (!(mapMatcher.find() && mapMatcher.groupCount() == 1)) {
             throw new InvalidArgumentException(errorMessage);
         }
@@ -246,19 +255,53 @@ public abstract class Value extends AnyValue {
             throw new InvalidArgumentException(errorMessage);
         }
 
-        Matcher matcher = KEY_VALUE_PATTERN.matcher(mapContents);
-        if (!(matcher.find())) {
-            throw new InvalidArgumentException(errorMessage);
-        }
+        Map<String, String> data = new HashMap<>();
+        var length = mapContents.length();
+        int i = 0;
+        while (i < length) {
+            // Parse the key
+            var end = mapContents.indexOf(':', i);
+            if (end == -1) {
+                break;
+            }
+            var key = mapContents.substring(i, end).trim();
+            i = end + 1;
 
-        do {
-            String key = matcher.group("k");
-            if (key != null) {
-                String value = matcher.group("v");
-                if (value != null) {
-                    info.assign(key, value);
+            checkParseState(text, i, i < length);
+            while (i < length && Character.isWhitespace(mapContents.charAt(i))) {
+                i++;
+            }
+            var firstChar = mapContents.charAt(i);
+            if (firstChar == '\'' || firstChar == '"') {
+                i++;
+                end = mapContents.indexOf(firstChar, i);
+            } else {
+                end = mapContents.indexOf(',', i);
+                end = end == -1 ? mapContents.length() : end;
+                checkParseState(text, i, i != end);
+                while (Character.isWhitespace(mapContents.charAt(end - 1))) {
+                    end--;
                 }
             }
-        } while (matcher.find());
+            checkParseState(text, i, end != -1);
+            var value = mapContents.substring(i, end);
+
+            if (data.containsKey(key)) {
+                throw new InvalidArgumentException(format("Duplicate field '%s'", key));
+            }
+            data.put(key, value);
+            i = end + 1;
+            while (i < length && (Character.isWhitespace(mapContents.charAt(i)) || mapContents.charAt(i) == ',')) {
+                i++;
+            }
+        }
+        return data;
+    }
+
+    private static void checkParseState(CharSequence text, int i, boolean condition) {
+        if (!condition) {
+            throw new InvalidArgumentException(format(
+                    "Was expecting key:value, key:'value' or key:\"value\" pairs in %s. Error near index %d", text, i));
+        }
     }
 }

@@ -165,19 +165,12 @@ class CsvInputIterator implements SourceTraceability, Closeable {
                             idType,
                             new Groups(),
                             ZoneId::systemDefault,
-                            (sourceDescription,
-                                    entryIndex,
-                                    name,
-                                    type,
-                                    groupName,
-                                    extractors,
-                                    idExtractor,
-                                    groups,
-                                    monitor) -> new Header.Entry(
-                                    name,
-                                    type == null ? Type.PROPERTY : Type.valueOf(type),
-                                    Group.GLOBAL,
-                                    extractors.string()),
+                            (sourceDescription, entryIndex, spec, extractors, idExtractor, groups, monitor) ->
+                                    new Header.Entry(
+                                            spec.name(),
+                                            spec.type() == null ? Type.PROPERTY : Type.valueOf(spec.type()),
+                                            Group.GLOBAL,
+                                            extractors.string()),
                             Header.NO_MONITOR);
                     // OK were able to parse this line as a header, skip it
                     if (Arrays.stream(entries).anyMatch(e -> e.type() != Type.PROPERTY && e.type() != Type.IGNORE)) {
