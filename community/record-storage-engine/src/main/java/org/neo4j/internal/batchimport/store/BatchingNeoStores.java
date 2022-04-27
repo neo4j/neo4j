@@ -27,9 +27,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.check_point_iops_lim
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.LABEL_TOKEN_CURSOR;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.REL_TYPE_TOKEN_CURSOR;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.IOUtils.uncheckedConsumer;
 import static org.neo4j.io.mem.MemoryAllocator.createAllocator;
@@ -39,9 +36,6 @@ import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_STRING;
 import static org.neo4j.kernel.impl.store.StoreType.RELATIONSHIP_GROUP;
 import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
-import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
-import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
-import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -57,9 +51,6 @@ import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.input.Input;
-import org.neo4j.internal.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
-import org.neo4j.internal.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
-import org.neo4j.internal.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
 import org.neo4j.internal.batchimport.store.io.IoTracer;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
@@ -68,13 +59,13 @@ import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -105,7 +96,6 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.TokenHolders;
 
 /**
@@ -148,9 +138,6 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     // into the main store. These temporary stores will live here
     private NeoStores neoStores;
     private NeoStores temporaryNeoStores;
-    private BatchingPropertyKeyTokenRepository propertyKeyRepository;
-    private BatchingLabelTokenRepository labelRepository;
-    private BatchingRelationshipTypeTokenRepository relationshipTypeRepository;
     private TokenHolders tokenHolders;
     private PageCacheFlusher flusher;
     private final LogTailMetadata logTailMetadata;
@@ -291,22 +278,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private void instantiateStores() throws IOException {
         neoStores = newStoreFactory(databaseLayout, idGeneratorFactory, contextFactory, immutable.empty())
                 .openAllNeoStores(true);
-        propertyKeyRepository = new BatchingPropertyKeyTokenRepository(neoStores.getPropertyKeyTokenStore());
-        labelRepository = new BatchingLabelTokenRepository(neoStores.getLabelTokenStore());
-        relationshipTypeRepository =
-                new BatchingRelationshipTypeTokenRepository(neoStores.getRelationshipTypeTokenStore());
-        tokenHolders = new TokenHolders(
-                new DelegatingTokenHolder(
-                        (key, internal) -> propertyKeyRepository.getOrCreateId(key, internal), TYPE_PROPERTY_KEY),
-                new DelegatingTokenHolder((key, internal) -> labelRepository.getOrCreateId(key, internal), TYPE_LABEL),
-                new DelegatingTokenHolder(
-                        (key, internal) -> relationshipTypeRepository.getOrCreateId(key, internal),
-                        TYPE_RELATIONSHIP_TYPE));
-        try (var cachedCursors = new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT)) {
-            tokenHolders
-                    .propertyKeyTokens()
-                    .setInitialTokens(neoStores.getPropertyKeyTokenStore().getTokens(cachedCursors));
-        }
+        tokenHolders = StoreTokens.directTokenHolders(neoStores, contextFactory, memoryTracker);
 
         temporaryNeoStores = instantiateTempStores();
 
@@ -458,18 +430,6 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         return neoStores.getPropertyStore();
     }
 
-    public BatchingPropertyKeyTokenRepository getPropertyKeyRepository() {
-        return propertyKeyRepository;
-    }
-
-    public BatchingLabelTokenRepository getLabelRepository() {
-        return labelRepository;
-    }
-
-    public BatchingRelationshipTypeTokenRepository getRelationshipTypeRepository() {
-        return relationshipTypeRepository;
-    }
-
     public RelationshipStore getRelationshipStore() {
         return neoStores.getRelationshipStore();
     }
@@ -619,21 +579,6 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     }
 
     public void flushAndForce(CursorContext cursorContext, StoreCursors storeCursors) throws IOException {
-        if (propertyKeyRepository != null) {
-            try (PageCursor pageCursor = storeCursors.writeCursor(PROPERTY_KEY_TOKEN_CURSOR)) {
-                propertyKeyRepository.flush(cursorContext, pageCursor, storeCursors);
-            }
-        }
-        if (labelRepository != null) {
-            try (PageCursor pageCursor = storeCursors.writeCursor(LABEL_TOKEN_CURSOR)) {
-                labelRepository.flush(cursorContext, pageCursor, storeCursors);
-            }
-        }
-        if (relationshipTypeRepository != null) {
-            try (PageCursor pageCursor = storeCursors.writeCursor(REL_TYPE_TOKEN_CURSOR)) {
-                relationshipTypeRepository.flush(cursorContext, pageCursor, storeCursors);
-            }
-        }
         if (neoStores != null) {
             neoStores.flush(cursorContext);
         }

@@ -19,9 +19,20 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.neo4j.internal.recordstorage.DirectTokenCreator.directLabelTokenCreator;
+import static org.neo4j.internal.recordstorage.DirectTokenCreator.directPropertyKeyTokenCreator;
+import static org.neo4j.internal.recordstorage.DirectTokenCreator.directRelationshipTypeTokenCreator;
+import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
+import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
+import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
+
 import java.util.List;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TokenStore;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
@@ -101,9 +112,9 @@ public class StoreTokens {
      * @return TokenHolders that can be used for reading tokens, but cannot create new ones.
      */
     public static TokenHolders readOnlyTokenHolders(NeoStores neoStores, StoreCursors storeCursors) {
-        TokenHolder propertyKeyTokens = createReadOnlyTokenHolder(TokenHolder.TYPE_PROPERTY_KEY);
-        TokenHolder labelTokens = createReadOnlyTokenHolder(TokenHolder.TYPE_LABEL);
-        TokenHolder relationshipTypeTokens = createReadOnlyTokenHolder(TokenHolder.TYPE_RELATIONSHIP_TYPE);
+        TokenHolder propertyKeyTokens = createReadOnlyTokenHolder(TYPE_PROPERTY_KEY);
+        TokenHolder labelTokens = createReadOnlyTokenHolder(TYPE_LABEL);
+        TokenHolder relationshipTypeTokens = createReadOnlyTokenHolder(TYPE_RELATIONSHIP_TYPE);
         TokenHolders tokenHolders = new TokenHolders(propertyKeyTokens, labelTokens, relationshipTypeTokens);
         tokenHolders.setInitialTokens(allReadableTokens(neoStores), storeCursors);
         return tokenHolders;
@@ -116,5 +127,30 @@ public class StoreTokens {
      */
     public static TokenHolder createReadOnlyTokenHolder(String tokenType) {
         return new DelegatingTokenHolder(new ReadOnlyTokenCreator(), tokenType);
+    }
+
+    public static TokenHolders directTokenHolders(
+            NeoStores neoStores, CursorContextFactory contextFactory, MemoryTracker memoryTracker) {
+        TokenHolders tokenHolders = new TokenHolders(
+                new DelegatingTokenHolder(
+                        directPropertyKeyTokenCreator(neoStores, contextFactory, memoryTracker), TYPE_PROPERTY_KEY),
+                new DelegatingTokenHolder(
+                        directLabelTokenCreator(neoStores, contextFactory, memoryTracker), TYPE_LABEL),
+                new DelegatingTokenHolder(
+                        directRelationshipTypeTokenCreator(neoStores, contextFactory, memoryTracker),
+                        TYPE_RELATIONSHIP_TYPE));
+        try (CursorContext cursorContext = contextFactory.create("load tokens");
+                StoreCursors storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
+            tokenHolders
+                    .propertyKeyTokens()
+                    .setInitialTokens(neoStores.getPropertyKeyTokenStore().getTokens(storeCursors));
+            tokenHolders
+                    .labelTokens()
+                    .setInitialTokens(neoStores.getLabelTokenStore().getTokens(storeCursors));
+            tokenHolders
+                    .relationshipTypeTokens()
+                    .setInitialTokens(neoStores.getRelationshipTypeTokenStore().getTokens(storeCursors));
+        }
+        return tokenHolders;
     }
 }

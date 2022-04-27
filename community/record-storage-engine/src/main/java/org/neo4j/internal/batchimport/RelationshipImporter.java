@@ -23,6 +23,7 @@ import static java.lang.String.format;
 import static org.neo4j.storageengine.util.IdUpdateListener.IGNORE;
 
 import java.util.function.LongFunction;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
@@ -30,7 +31,6 @@ import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.internal.batchimport.input.MissingRelationshipDataException;
 import org.neo4j.internal.batchimport.input.csv.Type;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
-import org.neo4j.internal.batchimport.store.BatchingTokenRepository;
 import org.neo4j.internal.batchimport.store.PrepareIdSequence;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.PageCursor;
@@ -40,12 +40,13 @@ import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.token.api.TokenHolder;
 
 /**
  * Imports relationships using data from {@link InputChunk}.
  */
 public class RelationshipImporter extends EntityImporter {
-    private final BatchingTokenRepository.BatchingRelationshipTypeTokenRepository relationshipTypeTokenRepository;
+    private final TokenHolder relationshipTypeTokenRepository;
     private final IdMapper idMapper;
     private final RelationshipStore relationshipStore;
     private final RelationshipRecord relationshipRecord;
@@ -78,7 +79,7 @@ public class RelationshipImporter extends EntityImporter {
             MemoryTracker memoryTracker) {
         super(stores, monitor, contextFactory, memoryTracker);
         this.doubleRecordUnits = doubleRecordUnits;
-        this.relationshipTypeTokenRepository = stores.getRelationshipTypeRepository();
+        this.relationshipTypeTokenRepository = stores.getTokenHolders().relationshipTypeTokens();
         this.idMapper = idMapper;
         this.badCollector = badCollector;
         this.validateRelationshipData = validateRelationshipData;
@@ -147,8 +148,11 @@ public class RelationshipImporter extends EntityImporter {
     @Override
     public boolean type(String type) {
         this.type = type;
-        int typeId = relationshipTypeTokenRepository.getOrCreateId(type);
-        return type(typeId);
+        try {
+            return type(relationshipTypeTokenRepository.getOrCreateId(type));
+        } catch (KernelException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

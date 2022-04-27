@@ -20,17 +20,20 @@
 package org.neo4j.internal.batchimport;
 
 import static java.lang.Long.max;
-import static java.util.Arrays.copyOf;
+import static org.neo4j.collection.PrimitiveArrays.intsToLongs;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.storageengine.util.IdUpdateListener.IGNORE;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.DataImporter.Monitor;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
-import org.neo4j.internal.batchimport.store.BatchingTokenRepository;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -42,13 +45,14 @@ import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.token.api.TokenHolder;
 import org.neo4j.values.storable.Values;
 
 /**
  * Imports nodes using data from {@link InputChunk}.
  */
 public class NodeImporter extends EntityImporter {
-    private final BatchingTokenRepository.BatchingLabelTokenRepository labelTokenRepository;
+    private final TokenHolder labelTokenRepository;
     private final NodeStore nodeStore;
     private final NodeRecord nodeRecord;
     private final IdMapper idMapper;
@@ -58,8 +62,7 @@ public class NodeImporter extends EntityImporter {
     private final PropertyBlock idPropertyBlock = new PropertyBlock();
     private final PageCursor nodeUpdateCursor;
     private final PageCursor idPropertyUpdateCursor;
-    private String[] labels = new String[10];
-    private int labelsCursor;
+    private final Set<String> labels = new HashSet<>();
 
     private long nodeCount;
     private long highestId = -1;
@@ -72,7 +75,7 @@ public class NodeImporter extends EntityImporter {
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker) {
         super(stores, monitor, contextFactory, memoryTracker);
-        this.labelTokenRepository = stores.getLabelRepository();
+        this.labelTokenRepository = stores.getTokenHolders().labelTokens();
         this.idMapper = idMapper;
         this.nodeStore = stores.getNodeStore();
         this.nodeRecord = nodeStore.newRecord();
@@ -119,12 +122,7 @@ public class NodeImporter extends EntityImporter {
     @Override
     public boolean labels(String[] labels) {
         assert !hasLabelField;
-        int requiredLength = labelsCursor + labels.length;
-        if (requiredLength > this.labels.length) {
-            this.labels = copyOf(this.labels, Integer.max(requiredLength, this.labels.length * 2));
-        }
-        System.arraycopy(labels, 0, this.labels, labelsCursor, labels.length);
-        labelsCursor += labels.length;
+        Collections.addAll(this.labels, labels);
         return true;
     }
 
@@ -144,17 +142,26 @@ public class NodeImporter extends EntityImporter {
 
         // Compose the labels
         if (!hasLabelField) {
-            long[] labelIds = labelTokenRepository.getOrCreateIds(labels, labelsCursor);
-            InlineNodeLabels.putSorted(
-                    nodeRecord,
-                    labelIds,
-                    null,
-                    nodeStore.getDynamicLabelStore(),
-                    cursorContext,
-                    storeCursors,
-                    memoryTracker);
+            if (!labels.isEmpty()) {
+                var labelsArray = labels.toArray(new String[0]);
+                int[] labelIdsInts = new int[labelsArray.length];
+                try {
+                    labelTokenRepository.getOrCreateIds(labelsArray, labelIdsInts);
+                    Arrays.sort(labelIdsInts);
+                } catch (KernelException e) {
+                    throw new RuntimeException(e);
+                }
+                InlineNodeLabels.putSorted(
+                        nodeRecord,
+                        intsToLongs(labelIdsInts),
+                        null,
+                        nodeStore.getDynamicLabelStore(),
+                        cursorContext,
+                        storeCursors,
+                        memoryTracker);
+                labels.clear();
+            }
         }
-        labelsCursor = 0;
 
         // Write data to stores
         nodeRecord.setNextProp(createAndWritePropertyChain(cursorContext));

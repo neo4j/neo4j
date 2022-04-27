@@ -22,10 +22,10 @@ package org.neo4j.internal.batchimport;
 import static org.neo4j.storageengine.util.IdUpdateListener.IGNORE;
 
 import java.util.Arrays;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.DataImporter.Monitor;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
-import org.neo4j.internal.batchimport.store.BatchingTokenRepository;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.token.api.TokenHolder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -50,7 +51,7 @@ import org.neo4j.values.storable.Values;
  */
 abstract class EntityImporter extends InputEntityVisitor.Adapter {
     private static final String ENTITY_IMPORTER_TAG = "entityImporter";
-    private final BatchingTokenRepository.BatchingPropertyKeyTokenRepository propertyKeyTokenRepository;
+    private final TokenHolder propertyKeyTokenRepository;
     private final PropertyStore propertyStore;
     private final PropertyRecord propertyRecord;
     private final PageCursor propertyUpdateCursor;
@@ -80,7 +81,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter {
         this.storeCursors = new CachedStoreCursors(stores.getNeoStores(), cursorContext);
         this.tempStoreCursors = new CachedStoreCursors(stores.getTemporaryNeoStores(), cursorContext);
         this.propertyStore = stores.getPropertyStore();
-        this.propertyKeyTokenRepository = stores.getPropertyKeyRepository();
+        this.propertyKeyTokenRepository = stores.getTokenHolders().propertyKeyTokens();
         this.monitor = monitor;
         this.memoryTracker = memoryTracker;
         for (int i = 0; i < propertyBlocks.length; i++) {
@@ -100,7 +101,11 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter {
     @Override
     public boolean property(String key, Object value) {
         assert !hasPropertyId;
-        return property(propertyKeyTokenRepository.getOrCreateId(key), value);
+        try {
+            return property(propertyKeyTokenRepository.getOrCreateId(key), value);
+        } catch (KernelException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

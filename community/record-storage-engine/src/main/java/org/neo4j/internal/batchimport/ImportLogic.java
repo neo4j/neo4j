@@ -20,6 +20,7 @@
 package org.neo4j.internal.batchimport;
 
 import static java.lang.Long.max;
+import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.function.Predicates.alwaysTrue;
@@ -541,10 +542,15 @@ public class ImportLogic implements Closeable {
                                 CursorContext cursorContext,
                                 MemoryTracker memoryTracker) {
                             MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
+                            int highLabelId = toIntExact(
+                                    neoStore.getNeoStores().getLabelTokenStore().getHighId());
+                            int highRelationshipTypeId = toIntExact(neoStore.getNeoStores()
+                                    .getRelationshipTypeTokenStore()
+                                    .getHighId());
                             nodeLabelsCache = new NodeLabelsCache(
                                     numberArrayFactory,
                                     neoStore.getNodeStore().getHighId(),
-                                    neoStore.getLabelRepository().getHighId(),
+                                    highLabelId,
                                     memoryTracker);
                             MemoryUsageStatsProvider memoryUsageStats =
                                     new MemoryUsageStatsProvider(neoStore, nodeLabelsCache);
@@ -555,7 +561,7 @@ public class ImportLogic implements Closeable {
                                     neoStore,
                                     nodeLabelsCache,
                                     neoStore.getNodeStore(),
-                                    neoStore.getLabelRepository().getHighId(),
+                                    highLabelId,
                                     updater,
                                     progressMonitor.startSection("Nodes"),
                                     indexImporterFactory,
@@ -569,8 +575,8 @@ public class ImportLogic implements Closeable {
                                     neoStore,
                                     nodeLabelsCache,
                                     neoStore.getRelationshipStore(),
-                                    neoStore.getLabelRepository().getHighId(),
-                                    neoStore.getRelationshipTypeRepository().getHighId(),
+                                    highLabelId,
+                                    highRelationshipTypeId,
                                     updater,
                                     numberArrayFactory,
                                     progressMonitor.startSection("Relationships"),
