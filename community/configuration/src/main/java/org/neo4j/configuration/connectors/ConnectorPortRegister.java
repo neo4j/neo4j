@@ -20,6 +20,8 @@
 package org.neo4j.configuration.connectors;
 
 import java.net.InetSocketAddress;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.HostnamePort;
@@ -28,8 +30,12 @@ import org.neo4j.internal.helpers.HostnamePort;
  * Connector tracker that keeps information about local address that any configured connector get during bootstrapping.
  */
 public class ConnectorPortRegister {
+    public interface Listener {
+        void portRegistered(ConnectorType connectorType, SocketAddress socketAddress);
+    }
 
     private final ConcurrentHashMap<ConnectorType, HostnamePort> connectorsInfo = new ConcurrentHashMap<>();
+    private final Set<Listener> listeners = new HashSet<>();
 
     public void register(ConnectorType connectorKey, InetSocketAddress localAddress) {
         register(connectorKey, localAddress.getHostString(), localAddress.getPort());
@@ -47,8 +53,13 @@ public class ConnectorPortRegister {
         return connectorsInfo.get(connectorKey);
     }
 
+    public void addListener(Listener listener) {
+        listeners.add(listener);
+    }
+
     private void register(ConnectorType connectorKey, String hostname, int port) {
         HostnamePort hostnamePort = new HostnamePort(hostname, port);
         connectorsInfo.put(connectorKey, hostnamePort);
+        listeners.forEach(listener -> listener.portRegistered(connectorKey, new SocketAddress(hostname, port)));
     }
 }
