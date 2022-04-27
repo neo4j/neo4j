@@ -34,6 +34,29 @@ public class PageCursorUtil {
     private PageCursorUtil() {}
 
     /**
+     * Puts an {@code long}, but only the least significant 6 bytes of it, into the cursor at its current offset.
+     * In addition to values 0x0-0xFFFFFFFFFFFE, also value -1 is allowed.
+     *
+     * @param cursor {@link PageCursor} to put into, at the current offset.
+     * @param value the value to put.
+     */
+    public static void put6BLongMinusOneAware(PageCursor cursor, long value) {
+        put6BLong(cursor, value == -1L ? _6B_MASK : value);
+    }
+
+    /**
+     * Gets 6 bytes from {@code cursor} at given offset and returns that as a {@code long}.
+     * If all bits in all 6 bytes are 1's then a value of -1 is returned.
+     *
+     * @param cursor {@link PageCursor} to get from, at the given offset.
+     * @return the 6 bytes as a {@code long}, potentially -1.
+     */
+    public static long get6BLongMinusOneAware(PageCursor cursor) {
+        var value = get6BLong(cursor);
+        return value == _6B_MASK ? -1L : value;
+    }
+
+    /**
      * Puts the low 6 bytes of the {@code value} into {@code cursor} at current offset.
      * Puts {@link PageCursor#putInt(int) int} followed by {@link PageCursor#putShort(short) short}.
      *
@@ -52,7 +75,7 @@ public class PageCursorUtil {
     }
 
     /**
-     * Gets 6 bytes from {@code cursor} at current offset and returns that a as a {@code long}.
+     * Gets 6 bytes from {@code cursor} at current offset and returns that as a {@code long}.
      * Reads {@link PageCursor#getInt()} followed by {@link PageCursor#getShort()}.
      *
      * @param cursor {@link PageCursor} to get from, at the current offset.
@@ -64,12 +87,51 @@ public class PageCursorUtil {
         return lsb | (msb << Integer.SIZE);
     }
 
+    /**
+     * Puts an {@code int}, but only the least significant 3 bytes of it, into the cursor at its current offset.
+     * In addition to values 0x0-0xFFFFFE, also value -1 is allowed.
+     *
+     * @param cursor {@link PageCursor} to put into, at the current offset.
+     * @param value the value to put.
+     */
+    public static void put3BIntMinusOneAware(PageCursor cursor, int value) {
+        if (value < -1 || value >= 0xFFFFFF) {
+            throw new IllegalArgumentException("Illegal 3B (minus-one-aware) value " + value);
+        }
+        put3BInt(cursor, value == -1 ? _3B_MASK : value);
+    }
+
+    /**
+     * Gets 3 bytes from {@code cursor} at given offset and returns that as an {@code int}.
+     * If all bits in all 3 bytes are 1's then a value of -1 is returned.
+     *
+     * @param cursor {@link PageCursor} to get from, at the given offset.
+     * @return the 3 bytes as an {@code int}, potentially -1.
+     */
+    public static int get3BIntMinusOneAware(PageCursor cursor) {
+        var value = get3BInt(cursor);
+        return value == _3B_MASK ? -1 : value;
+    }
+
+    /**
+     * Puts an {@code int}, but only the least significant 3 bytes of it, into the cursor at its current offset.
+     *
+     * @param cursor {@link PageCursor} to put into, at the current offset.
+     * @param value the value to put.
+     */
     public static void put3BInt(PageCursor cursor, int value) {
         int offset = cursor.getOffset();
         put3BInt(cursor, offset, value);
         cursor.setOffset(offset + 3);
     }
 
+    /**
+     * Puts an {@code int}, but only the least significant 3 bytes of it, into the cursor at the given offset.
+     *
+     * @param cursor {@link PageCursor} to put into.
+     * @param offset offset at which to put the value at.
+     * @param value the value to put.
+     */
     public static void put3BInt(PageCursor cursor, int offset, int value) {
         if ((value & ~_3B_MASK) != 0) {
             throw new IllegalArgumentException("Illegal 3B value " + value);
@@ -81,6 +143,12 @@ public class PageCursorUtil {
         cursor.putByte(offset + Short.BYTES, msb);
     }
 
+    /**
+     * Gets 3 bytes from {@code cursor} at current offset and returns that as an {@code int}.
+     *
+     * @param cursor {@link PageCursor} to get from, at the current offset.
+     * @return the 3 bytes as an {@code int}.
+     */
     public static int get3BInt(PageCursor cursor) {
         int offset = cursor.getOffset();
         int result = get3BInt(cursor, offset);
@@ -88,6 +156,13 @@ public class PageCursorUtil {
         return result;
     }
 
+    /**
+     * Gets 3 bytes from {@code cursor} at given offset and returns that as an {@code int}.
+     *
+     * @param cursor {@link PageCursor} to get from, at the given offset.
+     * @param offset offset to read from.
+     * @return the 3 bytes as an {@code int}.
+     */
     public static int get3BInt(PageCursor cursor, int offset) {
         int lsb = getUnsignedShort(cursor, offset);
         int msb = getUnsignedByte(cursor, offset + Short.BYTES);

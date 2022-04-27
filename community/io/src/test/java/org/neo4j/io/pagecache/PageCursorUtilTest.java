@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -62,6 +63,22 @@ class PageCursorUtilTest {
     }
 
     @Test
+    void shouldPutAndGet6BLongMinusOneAware() {
+        // given
+        var cursor = ByteArrayPageCursor.wrap(20);
+
+        // when
+        PageCursorUtil.put6BLongMinusOneAware(cursor, -1);
+        var value = random.nextLong() & (_6B_MASK - 1);
+        PageCursorUtil.put6BLongMinusOneAware(cursor, value);
+
+        // then
+        cursor.setOffset(0);
+        assertThat(PageCursorUtil.get6BLongMinusOneAware(cursor)).isEqualTo(-1L);
+        assertThat(PageCursorUtil.get6BLongMinusOneAware(cursor)).isEqualTo(value);
+    }
+
+    @Test
     void shouldPutAndGet3BInt() {
         // GIVEN
         PageCursor cursor = ByteArrayPageCursor.wrap(10);
@@ -83,6 +100,22 @@ class PageCursorUtilTest {
             assertEquals(3, offsetAfterWrite);
             assertEquals(3, offsetAfterRead);
         }
+    }
+
+    @Test
+    void shouldPutAndGet3BIntMinusOneAware() {
+        // given
+        var cursor = ByteArrayPageCursor.wrap(20);
+
+        // when
+        PageCursorUtil.put3BIntMinusOneAware(cursor, -1);
+        var value = random.nextInt(_3B_MASK - 1);
+        PageCursorUtil.put3BIntMinusOneAware(cursor, value);
+
+        // then
+        cursor.setOffset(0);
+        assertThat(PageCursorUtil.get3BIntMinusOneAware(cursor)).isEqualTo(-1);
+        assertThat(PageCursorUtil.get3BIntMinusOneAware(cursor)).isEqualTo(value);
     }
 
     @Test
