@@ -1146,6 +1146,19 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .build()
   }
 
+  test("should not cache properties from a single case branch") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection(
+        "CASE WHEN n.p1 > n.p2 THEN n.p1 WHEN n.p3 > n.p4 THEN n.p4 END AS result"
+      )
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe builder.build()
+  }
+
   private def replace(
     plan: LogicalPlan,
     initialTable: SemanticTable,

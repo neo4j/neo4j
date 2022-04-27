@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompa
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.EntityType
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsNotNull
@@ -55,6 +56,7 @@ import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
@@ -216,31 +218,42 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
         copy(properties = properties.view.mapValues(_.copy(usages = 0)).toMap)
     }
 
-    def findPropertiesInPlan(acc: Acc, logicalPlan: LogicalPlan): Acc = logicalPlan.folder.treeFold(acc) {
-      // Find properties
-      case IsNotNull(prop @ Property(v: Variable, _)) if isNode(v) =>
-        acc =>
-          SkipChildren(acc.addNodeProperty(prop, logicalPlan, needsValue = false))
-      case IsNotNull(prop @ Property(v: Variable, _)) if isRel(v) =>
-        acc =>
-          SkipChildren(acc.addRelProperty(prop, logicalPlan, needsValue = false))
-      case prop @ Property(v: Variable, _) if isNode(v) =>
-        acc =>
-          TraverseChildren(acc.addNodeProperty(prop, logicalPlan, needsValue = true))
-      case prop @ Property(v: Variable, _) if isRel(v) =>
-        acc =>
-          TraverseChildren(acc.addRelProperty(prop, logicalPlan, needsValue = true))
+    def findPropertiesInPlan(acc: Acc, logicalPlan: LogicalPlan, lookIn: Option[Foldable] = None): Acc =
+      lookIn.getOrElse(logicalPlan).folder.treeFold(acc) {
+        // Find properties
+        case IsNotNull(prop @ Property(v: Variable, _)) if isNode(v) =>
+          acc =>
+            SkipChildren(acc.addNodeProperty(prop, logicalPlan, needsValue = false))
+        case IsNotNull(prop @ Property(v: Variable, _)) if isRel(v) =>
+          acc =>
+            SkipChildren(acc.addRelProperty(prop, logicalPlan, needsValue = false))
+        case prop @ Property(v: Variable, _) if isNode(v) =>
+          acc =>
+            TraverseChildren(acc.addNodeProperty(prop, logicalPlan, needsValue = true))
+        case prop @ Property(v: Variable, _) if isRel(v) =>
+          acc =>
+            TraverseChildren(acc.addRelProperty(prop, logicalPlan, needsValue = true))
 
-      // New fold for nested plan expression
-      case nested: NestedPlanExpression => acc =>
-          val accWithNested = findPropertiesInTree(acc, nested.plan)
-          TraverseChildren(accWithNested)
+        // New fold for nested plan expression
+        case nested: NestedPlanExpression => acc =>
+            val accWithNested = findPropertiesInTree(acc, nested.plan)
+            TraverseChildren(accWithNested)
 
-      // Don't traverse into other logical plans
-      case lp: LogicalPlan if !(lp eq logicalPlan) =>
-        acc =>
-          SkipChildren(acc)
-    }
+        // Don't traverse into other logical plans
+        case lp: LogicalPlan if !(lp eq logicalPlan) =>
+          acc =>
+            SkipChildren(acc)
+
+        // We don't cache all properties in case expressions to avoid the risk of reading properties that are not used.
+        // Potential optimisation: Figure out properties that are shared between all case branches and cache them.
+        case caseExp: CaseExpression => acc =>
+            val mainExpr = caseExp.expression
+            val whenExprs = caseExp.alternatives.map { case (when, _) => when }
+            val accWithCase = (mainExpr ++ whenExprs).foldLeft(acc) {
+              case (acc, expr) => findPropertiesInPlan(acc, logicalPlan, Some(expr))
+            }
+            SkipChildren(accWithCase)
+      }
 
     def findPropertiesInTree(initialAcc: Acc, logicalPlan: LogicalPlan): Acc = {
       // Traverses the plan tree in plan execution order
