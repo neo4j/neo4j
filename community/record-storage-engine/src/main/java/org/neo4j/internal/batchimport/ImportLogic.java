@@ -92,6 +92,7 @@ public class ImportLogic implements Closeable {
     private static final String IMPORT_COUNT_STORE_REBUILD_TAG = "importCountStoreRebuild";
     private static final String ID_MAPPER_PREPARATION_TAG = "Id mapper preparation.";
     public static final Supplier<SchemaMonitor> NO_SCHEMA_MONITORING = () -> SchemaMonitor.NO_MONITOR;
+    private static final RelationshipLinkingMonitor NO_LINKING_MONITOR = new RelationshipLinkingMonitor() {};
 
     private final Path databaseDirectory;
     private final String databaseName;
@@ -294,7 +295,7 @@ public class ImportLogic implements Closeable {
     /**
      * Uses {@link IdMapper} as lookup for ID --> nodeId and imports all relationships from {@link Input#relationships(Collector)}
      * and writes them into the {@link RelationshipStore}. No linking between relationships is done in this method,
-     * it's done later in {@link #linkRelationships(int)}.
+     * it's done later in {@link #linkRelationships(int,RelationshipLinkingMonitor)}.
      *
      * @throws IOException on I/O error.
      */
@@ -322,7 +323,7 @@ public class ImportLogic implements Closeable {
 
     /**
      * Populates {@link NodeRelationshipCache} with node degrees, which is required to know how to physically layout each
-     * relationship chain. This is required before running {@link #linkRelationships(int)}.
+     * relationship chain. This is required before running {@link #linkRelationships(int,RelationshipLinkingMonitor)}.
      */
     public void calculateNodeDegrees() {
         Configuration relationshipConfig =
@@ -370,7 +371,7 @@ public class ImportLogic implements Closeable {
      * @param startingFromType relationship type to start from.
      * @return the next relationship type to start linking and, if != -1, should be passed into next call to this method.
      */
-    public int linkRelationships(int startingFromType) {
+    public int linkRelationships(int startingFromType, RelationshipLinkingMonitor linkingMonitor) throws IOException {
         assert startingFromType >= 0 : startingFromType;
 
         // Link relationships together with each other, their nodes and their relationship groups
@@ -389,8 +390,8 @@ public class ImportLogic implements Closeable {
         final IntSet typesToLinkThisRound = relationshipTypeDistribution.types(startingFromType, upToType);
         int typesImported = typesToLinkThisRound.size();
         boolean thisIsTheFirstRound = startingFromType == 0;
-        boolean thisIsTheOnlyRound =
-                thisIsTheFirstRound && upToType == relationshipTypeDistribution.getNumberOfRelationshipTypes();
+        boolean thisIsTheLastRound = upToType == relationshipTypeDistribution.getNumberOfRelationshipTypes();
+        boolean thisIsTheOnlyRound = thisIsTheFirstRound && thisIsTheLastRound;
 
         Configuration relationshipConfig =
                 configWithRecordsPerPageBasedBatchSize(config, neoStore.getRelationshipStore());
@@ -445,6 +446,7 @@ public class ImportLogic implements Closeable {
                     contextFactory,
                     cursorContext -> new CachedStoreCursors(neoStore.getNeoStores(), cursorContext)));
         }
+        linkingMonitor.forwardLinkingCompleted(startingFromType, upToType, thisIsTheFirstRound, thisIsTheLastRound);
 
         // LINK backward
         nodeRelationshipCache.setForwardScan(false, true /*dense*/);
@@ -460,6 +462,7 @@ public class ImportLogic implements Closeable {
                 contextFactory,
                 new RelationshipLinkingProgress(),
                 memoryUsageStats));
+        linkingMonitor.backwardLinkingCompleted(startingFromType, upToType, thisIsTheFirstRound, thisIsTheLastRound);
 
         updatePeakMemoryUsage();
 
@@ -473,14 +476,18 @@ public class ImportLogic implements Closeable {
         return upToType;
     }
 
+    public void linkRelationshipsOfAllTypes() throws IOException {
+        linkRelationshipsOfAllTypes(NO_LINKING_MONITOR);
+    }
+
     /**
-     * Links relationships of all types, potentially doing multiple passes, each pass calling {@link #linkRelationships(int)}
+     * Links relationships of all types, potentially doing multiple passes, each pass calling {@link #linkRelationships(int,RelationshipLinkingMonitor)}
      * with a type range.
      */
-    public void linkRelationshipsOfAllTypes() {
+    public void linkRelationshipsOfAllTypes(RelationshipLinkingMonitor linkingMonitor) throws IOException {
         int type = 0;
         do {
-            type = linkRelationships(type);
+            type = linkRelationships(type, linkingMonitor);
         } while (type != -1);
     }
 
@@ -696,5 +703,13 @@ public class ImportLogic implements Closeable {
 
     private void executeStage(Stage stage) {
         ExecutionSupervisors.superviseExecution(executionMonitor, stage);
+    }
+
+    public interface RelationshipLinkingMonitor {
+        default void forwardLinkingCompleted(int fromType, int toType, boolean firstRound, boolean lastRound)
+                throws IOException {}
+
+        default void backwardLinkingCompleted(int fromType, int toType, boolean firstRound, boolean lastRound)
+                throws IOException {}
     }
 }
