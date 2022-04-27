@@ -28,6 +28,7 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
+import java.util.Arrays;
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.exceptions.EntityNotFoundException;
@@ -152,20 +153,12 @@ public final class CursorUtils {
 
         entityCursor.properties(propertyCursor, PropertySelection.selection(tokens));
 
-        int count = 0;
         final AnyValue[] values = new Value[tokens.length];
+        Arrays.fill(values, NO_VALUE);
+
         while (propertyCursor.next()) {
             final int index = indexOf(tokens, propertyCursor.propertyKey());
             values[index] = propertyCursor.propertyValue();
-            ++count;
-        }
-
-        if (count < values.length) {
-            for (int i = 0; i < values.length; ++i) {
-                if (values[i] == null) {
-                    values[i] = Values.NO_VALUE;
-                }
-            }
         }
 
         return values;
