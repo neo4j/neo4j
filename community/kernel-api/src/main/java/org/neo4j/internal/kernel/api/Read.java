@@ -443,6 +443,17 @@ public interface Read {
     Scan<RelationshipScanCursor> allRelationshipsScan();
 
     /**
+     * Scan all relationships in partitions.
+     * NOTE! This is not thread-safe for transaction state.
+     *
+     * @param desiredNumberOfPartitions the desired number of partitions for this scan
+     * @param cursorContext the underlying page cursor context for the thread doing the partitioning.
+     * @return {@link PartitionedScan} over the query
+     */
+    PartitionedScan<RelationshipScanCursor> allRelationshipsScan(
+            int desiredNumberOfPartitions, CursorContext cursorContext);
+
+    /**
      * Scan relationship type index in partitions.
      * NOTE! This is not thread-safe for transaction state.
      *

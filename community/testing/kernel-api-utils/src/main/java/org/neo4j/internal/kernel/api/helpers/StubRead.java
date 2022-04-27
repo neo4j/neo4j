@@ -184,6 +184,12 @@ public class StubRead implements Read {
     }
 
     @Override
+    public PartitionedScan<RelationshipScanCursor> allRelationshipsScan(
+            int desiredNumberOfPartitions, CursorContext cursorContext) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean nodeExists(long id) {
         throw new UnsupportedOperationException();
     }

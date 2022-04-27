@@ -54,7 +54,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
     boolean scanBatch(
             Read read,
             AllRelationshipsScan scan,
-            int sizeHint,
+            long sizeHint,
             LongIterator addedRelationships,
             boolean hasChanges,
             AccessMode accessMode) {

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-public class ParallelPartitionedNodeLabelScanTest extends ParallelPartitionedNodeCursorTestBase<ReadTestSupport> {
+public class ParallelPartitionedNodeCursorTest extends ParallelPartitionedNodeCursorTestBase<ReadTestSupport> {
     @Override
     public ReadTestSupport newTestSupport() {
         return new ReadTestSupport();

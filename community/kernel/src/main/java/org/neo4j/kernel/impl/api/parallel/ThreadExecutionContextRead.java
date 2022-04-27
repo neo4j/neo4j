@@ -174,6 +174,12 @@ public class ThreadExecutionContextRead implements Read, Closeable {
     }
 
     @Override
+    public PartitionedScan<RelationshipScanCursor> allRelationshipsScan(
+            int desiredNumberOfPartitions, CursorContext cursorContext) {
+        return read.allRelationshipsScan(desiredNumberOfPartitions, cursorContext);
+    }
+
+    @Override
     public boolean nodeExists(long reference) {
         return readSupport.nodeExistsWithoutTxState(
                 reference, context.accessMode(), context.storeCursors(), context.cursorContext());

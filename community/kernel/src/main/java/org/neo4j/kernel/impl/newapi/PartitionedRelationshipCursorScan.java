@@ -20,21 +20,23 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
-import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.storageengine.api.AllNodeScan;
+import org.neo4j.storageengine.api.AllRelationshipsScan;
 
-final class PartitionedNodeCursorScan extends PartitionedEntityCursorScan<NodeCursor, AllNodeScan> {
+final class PartitionedRelationshipCursorScan
+        extends PartitionedEntityCursorScan<RelationshipScanCursor, AllRelationshipsScan> {
 
-    PartitionedNodeCursorScan(AllNodeScan storageScan, Read read, int desiredNumberOfPartitions, long totalCount) {
+    PartitionedRelationshipCursorScan(
+            AllRelationshipsScan storageScan, Read read, int desiredNumberOfPartitions, long totalCount) {
         super(storageScan, read, desiredNumberOfPartitions, totalCount);
     }
 
     @Override
-    public boolean reservePartition(NodeCursor cursor, CursorContext cursorContext, AccessMode accessMode) {
+    public boolean reservePartition(RelationshipScanCursor cursor, CursorContext cursorContext, AccessMode accessMode) {
 
-        return ((DefaultNodeCursor) cursor)
+        return ((DefaultRelationshipScanCursor) cursor)
                 .scanBatch(
                         read, storageScan, computeBatchSize(), ImmutableEmptyLongIterator.INSTANCE, false, accessMode);
     }
