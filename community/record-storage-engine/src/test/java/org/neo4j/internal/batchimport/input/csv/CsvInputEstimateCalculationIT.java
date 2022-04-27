@@ -63,7 +63,7 @@ import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.batchimport.Monitor;
 import org.neo4j.internal.batchimport.ParallelBatchImporter;
 import org.neo4j.internal.batchimport.input.Collector;
-import org.neo4j.internal.batchimport.input.Distribution;
+import org.neo4j.internal.batchimport.input.DataGeneratorInput;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.Input;
@@ -291,7 +291,7 @@ class CsvInputEstimateCalculationIT {
         start.setValue(0);
         relationshipData.add(generateData(
                 defaultFormatRelationshipFileHeader(),
-                start,
+                new MutableLong(),
                 RELATIONSHIP_COUNT / 2,
                 NODE_COUNT,
                 ":START_ID,:TYPE,:END_ID",
@@ -299,7 +299,7 @@ class CsvInputEstimateCalculationIT {
                 groups));
         relationshipData.add(generateData(
                 defaultFormatRelationshipFileHeader(),
-                start,
+                new MutableLong(),
                 RELATIONSHIP_COUNT - start.longValue(),
                 NODE_COUNT,
                 ":START_ID,:TYPE,:END_ID,prop1,prop2",
@@ -349,21 +349,13 @@ class CsvInputEstimateCalculationIT {
             throws IOException {
         Path file = testDirectory.file(fileName);
         Header header = factory.create(charSeeker(wrap(headerString), COMMAS, false), COMMAS, IdType.INTEGER, groups);
-        Distribution<String> distribution = new Distribution<>(new String[] {"Token"});
         Deserialization<String> deserialization = new StringDeserialization(COMMAS);
+        DataGeneratorInput.DataDistribution dataDistribution = DataGeneratorInput.data(nodeCount, count)
+                .withStartNodeId(start.longValue())
+                .withMaxStringLength(5);
         try (PrintWriter out = new PrintWriter(Files.newBufferedWriter(file));
                 RandomEntityDataGenerator generator = new RandomEntityDataGenerator(
-                        nodeCount,
-                        count,
-                        toIntExact(count),
-                        random.seed(),
-                        start.longValue(),
-                        header,
-                        distribution,
-                        distribution,
-                        0,
-                        0,
-                        5);
+                        dataDistribution, count, toIntExact(count), random.seed(), header);
                 InputChunk chunk = generator.newChunk();
                 InputEntity entity = new InputEntity()) {
             out.println(headerString);

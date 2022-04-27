@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-import java.util.Random;
 import org.neo4j.values.storable.RandomValues;
 
 /**
@@ -35,18 +34,6 @@ public class Distribution<T> {
 
     public int length() {
         return items.length;
-    }
-
-    public T random(Random random) {
-        float value = random.nextFloat();
-        float comparison = 0.5f;
-        for (T item : items) {
-            if (value >= comparison) {
-                return item;
-            }
-            comparison /= 2f;
-        }
-        return items[items.length - 1];
     }
 
     public T random(RandomValues random) {

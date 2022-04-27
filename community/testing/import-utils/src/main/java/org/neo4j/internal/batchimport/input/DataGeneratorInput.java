@@ -19,7 +19,9 @@
  */
 package org.neo4j.internal.batchimport.input;
 
+import static java.lang.Integer.min;
 import static java.util.Arrays.asList;
+import static org.neo4j.internal.batchimport.input.InputEntity.NO_LABELS;
 import static org.neo4j.internal.batchimport.input.csv.CsvInput.idExtractor;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -28,12 +30,15 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.internal.batchimport.InputIterable;
 import org.neo4j.internal.batchimport.InputIterator;
 import org.neo4j.internal.batchimport.input.csv.Header;
 import org.neo4j.internal.batchimport.input.csv.Header.Entry;
 import org.neo4j.internal.batchimport.input.csv.Type;
+import org.neo4j.internal.helpers.ArrayUtil;
+import org.neo4j.values.storable.RandomValues;
 
 /**
  * {@link Input} which generates data on the fly. This input wants to know number of nodes and relationships
@@ -61,75 +66,46 @@ import org.neo4j.internal.batchimport.input.csv.Type;
  * </pre>
  */
 public class DataGeneratorInput implements Input {
-    private final long nodes;
-    private final long relationships;
+    private final DataDistribution dataDistribution;
     private final IdType idType;
     private final long seed;
     private final Header nodeHeader;
     private final Header relationshipHeader;
-    private final Distribution<String> labels;
-    private final Distribution<String> relationshipTypes;
-    private final float factorBadNodeData;
-    private final float factorBadRelationshipData;
-    private final long startId;
     private final Groups groups = new Groups();
-    private int maxStringLength = 20;
 
     public DataGeneratorInput(
-            long nodes,
-            long relationships,
-            IdType idType,
-            long seed,
-            long startId,
-            Header nodeHeader,
-            Header relationshipHeader,
-            int labelCount,
-            int relationshipTypeCount,
-            float factorBadNodeData,
-            float factorBadRelationshipData) {
-        this.nodes = nodes;
-        this.relationships = relationships;
+            DataDistribution dataDistribution, IdType idType, long seed, Header nodeHeader, Header relationshipHeader) {
+        this.dataDistribution = dataDistribution;
         this.idType = idType;
         this.seed = seed;
-        this.startId = startId;
         this.nodeHeader = nodeHeader;
         this.relationshipHeader = relationshipHeader;
-        this.factorBadNodeData = factorBadNodeData;
-        this.factorBadRelationshipData = factorBadRelationshipData;
-        this.labels = new Distribution<>(tokens("Label", labelCount));
-        this.relationshipTypes = new Distribution<>(tokens("TYPE", relationshipTypeCount));
+    }
+
+    public static DataDistribution data(long nodeCount, long relationshipCount) {
+        return new DataDistribution(
+                nodeCount,
+                relationshipCount,
+                new DefaultLabelsGenerator(1),
+                new DefaultRelationshipTypeGenerator(1),
+                0,
+                0,
+                0,
+                1,
+                20,
+                null);
     }
 
     @Override
     public InputIterable nodes(Collector badCollector) {
-        return () -> new RandomEntityDataGenerator(
-                nodes,
-                nodes,
-                10_000,
-                seed,
-                startId,
-                nodeHeader,
-                labels,
-                relationshipTypes,
-                factorBadNodeData,
-                factorBadRelationshipData,
-                maxStringLength);
+        return () ->
+                new RandomEntityDataGenerator(dataDistribution, dataDistribution.nodeCount, 10_000, seed, nodeHeader);
     }
 
     @Override
     public InputIterable relationships(Collector badCollector) {
         return () -> new RandomEntityDataGenerator(
-                nodes,
-                relationships,
-                10_000,
-                seed,
-                startId,
-                relationshipHeader,
-                labels,
-                relationshipTypes,
-                factorBadNodeData,
-                factorBadRelationshipData,
-                maxStringLength);
+                dataDistribution, dataDistribution.relationshipCount, 10_000, seed, relationshipHeader);
     }
 
     @Override
@@ -150,6 +126,8 @@ public class DataGeneratorInput implements Input {
         double[] nodePropertyEstimate = sampleProperties(nodeSample, valueSizeCalculator);
         double[] relationshipPropertyEstimate =
                 sampleProperties(sample(relationships(Collector.EMPTY), sampleSize), valueSizeCalculator);
+        var nodes = dataDistribution.nodeCount;
+        var relationships = dataDistribution.relationshipCount;
         return Input.knownEstimates(
                 nodes,
                 relationships,
@@ -209,17 +187,17 @@ public class DataGeneratorInput implements Input {
     public static Header bareboneNodeHeader(
             String idKey, IdType idType, Extractors extractors, Entry... additionalEntries) {
         List<Entry> entries = new ArrayList<>();
-        entries.add(new Entry(idKey, Type.ID, null, idExtractor(idType, extractors)));
-        entries.add(new Entry(null, Type.LABEL, null, extractors.stringArray()));
+        entries.add(new Entry(idKey, Type.ID, Group.GLOBAL, idExtractor(idType, extractors)));
+        entries.add(new Entry(null, Type.LABEL, Group.GLOBAL, extractors.stringArray()));
         entries.addAll(asList(additionalEntries));
         return new Header(entries.toArray(new Entry[0]));
     }
 
     public static Header bareboneRelationshipHeader(IdType idType, Extractors extractors, Entry... additionalEntries) {
         List<Entry> entries = new ArrayList<>();
-        entries.add(new Entry(null, Type.START_ID, null, idExtractor(idType, extractors)));
-        entries.add(new Entry(null, Type.END_ID, null, idExtractor(idType, extractors)));
-        entries.add(new Entry(null, Type.TYPE, null, extractors.string()));
+        entries.add(new Entry(null, Type.START_ID, Group.GLOBAL, idExtractor(idType, extractors)));
+        entries.add(new Entry(null, Type.END_ID, Group.GLOBAL, idExtractor(idType, extractors)));
+        entries.add(new Entry(null, Type.TYPE, Group.GLOBAL, extractors.string()));
         entries.addAll(asList(additionalEntries));
         return new Header(entries.toArray(new Entry[0]));
     }
@@ -231,4 +209,233 @@ public class DataGeneratorInput implements Input {
         }
         return result;
     }
+
+    public record DataDistribution(
+            long nodeCount,
+            long relationshipCount,
+            Function<RandomValues, String[]> labelsGenerator,
+            Function<RandomValues, String> relationshipTypeGenerator,
+            long startNodeId,
+            float factorBadNodeData,
+            float factorBadRelationshipData,
+            float relationshipDistribution,
+            int maxStringLength,
+            String name) {
+        // Basic idea is that there'll be a 1-relationshipDistribution chance that a relationship gets connected to one
+        // of the relationshipDistribution nodes
+        // 1 meaning dense nodes are evenly spread out across the node ID space. 0 not quite possible.
+
+        public DataDistribution withLabelCount(int labelCount) {
+            return new DataDistribution(
+                    nodeCount,
+                    relationshipCount,
+                    new DefaultLabelsGenerator(labelCount),
+                    relationshipTypeGenerator,
+                    startNodeId,
+                    factorBadNodeData,
+                    factorBadRelationshipData,
+                    relationshipDistribution,
+                    maxStringLength,
+                    name);
+        }
+
+        public DataDistribution withLabelGenerator(Function<RandomValues, String[]> labelsGenerator) {
+            return new DataDistribution(
+                    nodeCount,
+                    relationshipCount,
+                    labelsGenerator,
+                    relationshipTypeGenerator,
+                    startNodeId,
+                    factorBadNodeData,
+                    factorBadRelationshipData,
+                    relationshipDistribution,
+                    maxStringLength,
+                    name);
+        }
+
+        public DataDistribution withRelationshipTypeCount(int relationshipTypeCount) {
+            return new DataDistribution(
+                    nodeCount,
+                    relationshipCount,
+                    labelsGenerator,
+                    new DefaultRelationshipTypeGenerator(relationshipTypeCount),
+                    startNodeId,
+                    factorBadNodeData,
+                    factorBadRelationshipData,
+                    relationshipDistribution,
+                    maxStringLength,
+                    name);
+        }
+
+        public DataDistribution withRelationshipTypeGenerator(
+                Function<RandomValues, String> relationshipTypeGenerator) {
+            return new DataDistribution(
+                    nodeCount,
+                    relationshipCount,
+                    labelsGenerator,
+                    relationshipTypeGenerator,
+                    startNodeId,
+                    factorBadNodeData,
+                    factorBadRelationshipData,
+                    relationshipDistribution,
+                    maxStringLength,
+                    name);
+        }
+
+        public DataDistribution withStartNodeId(long startNodeId) {
+            return new DataDistribution(
+                    nodeCount,
+                    relationshipCount,
+                    labelsGenerator,
+                    relationshipTypeGenerator,
+                    startNodeId,
+                    factorBadNodeData,
+                    factorBadRelationshipData,
+                    relationshipDistribution,
+                    maxStringLength,
+                    name);
+        }
+
+        public DataDistribution withFactorBadNodeData(float factorBadNodeData) {
+            return new DataDistribution(
+                    nodeCount,
+                    relationshipCount,
+                    labelsGenerator,
+                    relationshipTypeGenerator,
+                    startNodeId,
+                    factorBadNodeData,
+                    factorBadRelationshipData,
+                    relationshipDistribution,
+                    maxStringLength,
+                    name);
+        }
+
+        public DataDistribution withFactorBadRelationshipData(float factorBadRelationshipData) {
+            return new DataDistribution(
+                    nodeCount,
+                    relationshipCount,
+                    labelsGenerator,
+                    relationshipTypeGenerator,
+                    startNodeId,
+                    factorBadNodeData,
+                    factorBadRelationshipData,
+                    relationshipDistribution,
+                    maxStringLength,
+                    name);
+        }
+
+        public DataDistribution withRelationshipDistribution(float relationshipDistribution) {
+            return new DataDistribution(
+                    nodeCount,
+                    relationshipCount,
+                    labelsGenerator,
+                    relationshipTypeGenerator,
+                    startNodeId,
+                    factorBadNodeData,
+                    factorBadRelationshipData,
+                    relationshipDistribution,
+                    maxStringLength,
+                    name);
+        }
+
+        public DataDistribution withMaxStringLength(int maxStringLength) {
+            return new DataDistribution(
+                    nodeCount,
+                    relationshipCount,
+                    labelsGenerator,
+                    relationshipTypeGenerator,
+                    startNodeId,
+                    factorBadNodeData,
+                    factorBadRelationshipData,
+                    relationshipDistribution,
+                    maxStringLength,
+                    name);
+        }
+
+        public DataDistribution withName(String name) {
+            return new DataDistribution(
+                    nodeCount,
+                    relationshipCount,
+                    labelsGenerator,
+                    relationshipTypeGenerator,
+                    startNodeId,
+                    factorBadNodeData,
+                    factorBadRelationshipData,
+                    relationshipDistribution,
+                    maxStringLength,
+                    name);
+        }
+
+        @Override
+        public String toString() {
+            if (name != null) {
+                return name;
+            }
+            return "DataDistribution{" + "nodeCount=" + nodeCount + ", relationshipCount=" + relationshipCount
+                    + ", labelsGenerator=" + labelsGenerator + ", relationshipTypeGenerator="
+                    + relationshipTypeGenerator + ", startNodeId=" + startNodeId + ", factorBadNodeData="
+                    + factorBadNodeData + ", factorBadRelationshipData="
+                    + factorBadRelationshipData + ", relationshipDistribution=" + relationshipDistribution
+                    + ", maxStringLength="
+                    + maxStringLength + '}';
+        }
+    }
+
+    public static class DefaultLabelsGenerator implements Function<RandomValues, String[]> {
+        private final Distribution<String> distribution;
+
+        public DefaultLabelsGenerator(int labelCount) {
+            this("Label", labelCount);
+        }
+
+        public DefaultLabelsGenerator(String baseName, int labelCount) {
+            this.distribution = new Distribution<>(tokens(baseName, labelCount));
+        }
+
+        @Override
+        public String[] apply(RandomValues random) {
+            if (distribution.length() == 0) {
+                return NO_LABELS;
+            }
+            int length = random.nextInt(min(3, distribution.length())) + 1;
+
+            String[] result = new String[length];
+            for (int i = 0; i < result.length; ) {
+                String candidate = distribution.random(random);
+                if (!ArrayUtil.contains(result, i, candidate)) {
+                    result[i++] = candidate;
+                }
+            }
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "DefaultLabelsGenerator{" + distribution.length() + '}';
+        }
+    }
+    ;
+
+    public static class DefaultRelationshipTypeGenerator implements Function<RandomValues, String> {
+        private final Distribution<String> distribution;
+
+        public DefaultRelationshipTypeGenerator(int relationshipTypeCount) {
+            this("TYPE", relationshipTypeCount);
+        }
+
+        public DefaultRelationshipTypeGenerator(String baseName, int relationshipTypeCount) {
+            this.distribution = new Distribution<>(tokens(baseName, relationshipTypeCount));
+        }
+
+        @Override
+        public String apply(RandomValues random) {
+            return distribution.random(random);
+        }
+
+        @Override
+        public String toString() {
+            return "DefaultRelationshipTypeGenerator{" + distribution.length() + '}';
+        }
+    }
+    ;
 }

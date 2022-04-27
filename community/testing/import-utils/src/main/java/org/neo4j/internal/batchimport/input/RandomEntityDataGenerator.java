@@ -19,18 +19,15 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-import static java.lang.Integer.min;
-import static org.neo4j.internal.batchimport.input.InputEntity.NO_LABELS;
-
 import java.util.List;
 import org.neo4j.internal.batchimport.GeneratingInputIterator;
 import org.neo4j.internal.batchimport.InputIterator;
 import org.neo4j.internal.batchimport.RandomsStates;
+import org.neo4j.internal.batchimport.input.DataGeneratorInput.DataDistribution;
 import org.neo4j.internal.batchimport.input.csv.Deserialization;
 import org.neo4j.internal.batchimport.input.csv.Header;
 import org.neo4j.internal.batchimport.input.csv.Header.Entry;
 import org.neo4j.internal.batchimport.input.csv.Type;
-import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.values.storable.RandomValues;
 
 /**
@@ -38,17 +35,7 @@ import org.neo4j.values.storable.RandomValues;
  */
 public class RandomEntityDataGenerator extends GeneratingInputIterator<RandomValues> {
     public RandomEntityDataGenerator(
-            long nodeCount,
-            long count,
-            int batchSize,
-            long seed,
-            long startId,
-            Header header,
-            Distribution<String> labels,
-            Distribution<String> relationshipTypes,
-            float factorBadNodeData,
-            float factorBadRelationshipData,
-            int maxStringLength) {
+            DataDistribution dataDistribution, long count, int batchSize, long seed, Header header) {
         super(
                 count,
                 batchSize,
@@ -56,9 +43,9 @@ public class RandomEntityDataGenerator extends GeneratingInputIterator<RandomVal
                 (randoms, visitor, id) -> {
                     for (Entry entry : header.entries()) {
                         switch (entry.type()) {
-                            case ID:
-                                if (factorBadNodeData > 0 && id > 0) {
-                                    if (randoms.nextFloat() <= factorBadNodeData) {
+                            case ID -> {
+                                if (dataDistribution.factorBadNodeData() > 0 && id > 0) {
+                                    if (randoms.nextFloat() <= dataDistribution.factorBadNodeData()) {
                                         // id between 0 - id
                                         id = randoms.nextLong(id);
                                     }
@@ -67,18 +54,24 @@ public class RandomEntityDataGenerator extends GeneratingInputIterator<RandomVal
                                 if (entry.name() != null) {
                                     visitor.property(entry.name(), id);
                                 }
-                                break;
-                            case PROPERTY:
-                                visitor.property(entry.name(), randomProperty(entry, randoms, maxStringLength));
-                                break;
-                            case LABEL:
-                                visitor.labels(randomLabels(randoms, labels));
-                                break;
-                            case START_ID:
-                            case END_ID:
-                                long nodeId = randoms.nextLong(nodeCount);
-                                if (factorBadRelationshipData > 0 && nodeId > 0) {
-                                    if (randoms.nextFloat() <= factorBadRelationshipData) {
+                            }
+                            case PROPERTY -> visitor.property(
+                                    entry.name(), randomProperty(entry, randoms, dataDistribution.maxStringLength()));
+                            case LABEL -> visitor.labels(
+                                    dataDistribution.labelsGenerator().apply(randoms));
+                            case START_ID, END_ID -> {
+                                long nodeId =
+                                        randoms.nextLong(dataDistribution.nodeCount() + dataDistribution.startNodeId());
+                                boolean connectedToDenseNode = dataDistribution.relationshipDistribution() < 1
+                                        && randoms.nextFloat() > dataDistribution.relationshipDistribution();
+                                if (connectedToDenseNode) {
+                                    // Very much poor man's way of distributing relationships such that some nodes
+                                    // become more dense than others.
+                                    nodeId = (long) ((long) (nodeId * dataDistribution.relationshipDistribution())
+                                            / dataDistribution.relationshipDistribution());
+                                }
+                                if (dataDistribution.factorBadRelationshipData() > 0 && nodeId > 0) {
+                                    if (randoms.nextFloat() <= dataDistribution.factorBadRelationshipData()) {
                                         if (randoms.nextBoolean()) {
                                             // simply missing field
                                             break;
@@ -92,61 +85,32 @@ public class RandomEntityDataGenerator extends GeneratingInputIterator<RandomVal
                                 } else {
                                     visitor.endId(idValue(entry, nodeId), entry.group());
                                 }
-                                break;
-                            case TYPE:
-                                visitor.type(randomRelationshipType(randoms, relationshipTypes));
-                                break;
-                            default:
-                                throw new IllegalArgumentException(entry.toString());
+                            }
+                            case TYPE -> visitor.type(
+                                    dataDistribution.relationshipTypeGenerator().apply(randoms));
+                            default -> throw new IllegalArgumentException(entry.toString());
                         }
                     }
                 },
-                startId);
+                dataDistribution.startNodeId());
     }
 
     private static Object idValue(Entry entry, long id) {
-        switch (entry.extractor().name()) {
-            case "String":
-                return Long.toString(id);
-            case "long":
-                return id;
-            default:
-                throw new IllegalArgumentException(entry.name());
-        }
-    }
-
-    private static String randomRelationshipType(RandomValues random, Distribution<String> relationshipTypes) {
-        return relationshipTypes.random(random);
+        return switch (entry.extractor().name()) {
+            case "String" -> Long.toString(id);
+            case "long" -> id;
+            default -> throw new IllegalArgumentException(entry.name());
+        };
     }
 
     private static Object randomProperty(Entry entry, RandomValues random, int maxLStringength) {
-        String type = entry.extractor().name();
-        switch (type) {
-            case "String":
-                return random.nextAlphaNumericTextValue(5, maxLStringength).stringValue();
-            case "long":
-                return random.nextInt(Integer.MAX_VALUE);
-            case "int":
-                return random.nextInt(20);
-            default:
-                throw new IllegalArgumentException("" + entry);
-        }
-    }
-
-    private static String[] randomLabels(RandomValues random, Distribution<String> labels) {
-        if (labels.length() == 0) {
-            return NO_LABELS;
-        }
-        int length = random.nextInt(min(3, labels.length())) + 1;
-
-        String[] result = new String[length];
-        for (int i = 0; i < result.length; ) {
-            String candidate = labels.random(random);
-            if (!ArrayUtil.contains(result, i, candidate)) {
-                result[i++] = candidate;
-            }
-        }
-        return result;
+        return switch (entry.extractor().name()) {
+            case "String" -> random.nextAlphaNumericTextValue(5, maxLStringength)
+                    .stringValue();
+            case "long" -> random.nextInt(Integer.MAX_VALUE);
+            case "int" -> random.nextInt(20);
+            default -> throw new IllegalArgumentException("" + entry);
+        };
     }
 
     /**
@@ -161,25 +125,15 @@ public class RandomEntityDataGenerator extends GeneratingInputIterator<RandomVal
         deserialization.clear();
         for (Header.Entry entry : header.entries()) {
             switch (entry.type()) {
-                case ID:
-                    deserialization.handle(entry, entity.hasLongId ? entity.longId : entity.objectId);
-                    break;
-                case PROPERTY:
-                    deserialization.handle(entry, property(entity.properties, entry.name()));
-                    break;
-                case LABEL:
-                    deserialization.handle(entry, entity.labels());
-                    break;
-                case TYPE:
-                    deserialization.handle(entry, entity.hasIntType ? entity.intType : entity.stringType);
-                    break;
-                case START_ID:
-                    deserialization.handle(entry, entity.hasLongStartId ? entity.longStartId : entity.objectStartId);
-                    break;
-                case END_ID:
-                    deserialization.handle(entry, entity.hasLongEndId ? entity.longEndId : entity.objectEndId);
-                    break;
-                default: // ignore other types
+                case ID -> deserialization.handle(entry, entity.hasLongId ? entity.longId : entity.objectId);
+                case PROPERTY -> deserialization.handle(entry, property(entity.properties, entry.name()));
+                case LABEL -> deserialization.handle(entry, entity.labels());
+                case TYPE -> deserialization.handle(entry, entity.hasIntType ? entity.intType : entity.stringType);
+                case START_ID -> deserialization.handle(
+                        entry, entity.hasLongStartId ? entity.longStartId : entity.objectStartId);
+                case END_ID -> deserialization.handle(
+                        entry, entity.hasLongEndId ? entity.longEndId : entity.objectEndId);
+                default -> {} // ignore other types
             }
         }
         return deserialization.materialize();

@@ -94,18 +94,13 @@ class HumanUnderstandableExecutionMonitorIT {
         HumanUnderstandableExecutionMonitor monitor =
                 new HumanUnderstandableExecutionMonitor(progress, new PrintStream(nullOutputStream()));
         IdType idType = IdType.INTEGER;
+        DataGeneratorInput.DataDistribution dataDistribution = DataGeneratorInput.data(NODE_COUNT, RELATIONSHIP_COUNT);
         Input input = new DataGeneratorInput(
-                NODE_COUNT,
-                RELATIONSHIP_COUNT,
+                dataDistribution,
                 idType,
                 random.seed(),
-                0,
                 bareboneNodeHeader(idType, new Extractors(';')),
-                bareboneRelationshipHeader(idType, new Extractors(';')),
-                1,
-                1,
-                0,
-                0);
+                bareboneRelationshipHeader(idType, new Extractors(';')));
         Configuration configuration = new Configuration.Overridden(Configuration.DEFAULT) {
             @Override
             public long pageCacheMemory() {

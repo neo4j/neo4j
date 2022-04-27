@@ -230,18 +230,12 @@ public class QuickImport implements Callable<Void> {
                     }
                 };
 
-        Input input = new DataGeneratorInput(
-                nodeCount,
-                relationshipCount,
-                idType,
-                randomSeed,
-                0,
-                nodeHeader,
-                relationshipHeader,
-                labelCount,
-                relationshipTypeCount,
-                factorBadNodeData,
-                factorBadRelationshipData);
+        DataGeneratorInput.DataDistribution dataDistribution = DataGeneratorInput.data(nodeCount, relationshipCount)
+                .withLabelCount(labelCount)
+                .withRelationshipTypeCount(relationshipTypeCount)
+                .withFactorBadNodeData(factorBadNodeData)
+                .withFactorBadRelationshipData(factorBadRelationshipData);
+        Input input = new DataGeneratorInput(dataDistribution, idType, randomSeed, nodeHeader, relationshipHeader);
 
         try (FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
                 Lifespan life = new Lifespan()) {
