@@ -249,8 +249,14 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
   override def singleNode(id: Long, cursor: NodeCursor): Unit =
     translateException(tokenNameLookup, inner.singleNode(id, cursor))
 
+  override def singleNodePositioned(id: Long, cursor: NodeCursor): Unit =
+    translateException(tokenNameLookup, inner.singleNodePositioned(id, cursor))
+
   override def singleRelationship(id: Long, cursor: RelationshipScanCursor): Unit =
     translateException(tokenNameLookup, inner.singleRelationship(id, cursor))
+
+  override def singleRelationshipPositioned(id: Long, cursor: RelationshipScanCursor): Unit =
+    translateException(tokenNameLookup, inner.singleRelationshipPositioned(id, cursor))
 
   override def nodeGetTotalDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int =
     translateException(tokenNameLookup, inner.nodeGetTotalDegree(node, relationship, nodeCursor))

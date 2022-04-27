@@ -500,8 +500,22 @@ private[internal] class TransactionBoundReadQueryContext(
     reads().singleNode(id, cursor)
   }
 
+  override def singleNodePositioned(id: Long, cursor: NodeCursor): Unit = {
+    reads().singleNode(id, cursor)
+    if (!cursor.next() && reads().nodeDeletedInTransaction(id)) {
+      throw new EntityNotFoundException(s"Node with id $id has been deleted in this transaction")
+    }
+  }
+
   override def singleRelationship(id: Long, cursor: RelationshipScanCursor): Unit = {
     reads().singleRelationship(id, cursor)
+  }
+
+  override def singleRelationshipPositioned(id: Long, cursor: RelationshipScanCursor): Unit = {
+    reads().singleRelationship(id, cursor)
+    if (!cursor.next() && reads().relationshipDeletedInTransaction(id)) {
+      throw new EntityNotFoundException(s"Relationship with id $id has been deleted in this transaction")
+    }
   }
 
   override def getLabelsForNode(node: Long, nodeCursor: NodeCursor): ListValue = {

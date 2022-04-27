@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime;
 
 import java.util.Optional;
+import org.neo4j.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -93,7 +94,21 @@ public interface DbAccess extends EntityById {
 
     void singleNode(long id, NodeCursor cursor);
 
+    /**
+     * Positions the cursor at the node with the specified id.
+     *
+     * @throws EntityNotFoundException if the node is deleted in the transaction.
+     */
+    void singleNodePositioned(long id, NodeCursor cursor);
+
     void singleRelationship(long id, RelationshipScanCursor cursor);
+
+    /**
+     * Positions the cursor at the relationship with the specified id.
+     *
+     * @throws EntityNotFoundException if the relationship is deleted in the transaction.
+     */
+    void singleRelationshipPositioned(long id, RelationshipScanCursor cursor);
 
     ListValue getLabelsForNode(long id, NodeCursor nodeCursor);
 

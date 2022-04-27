@@ -559,7 +559,11 @@ object StaticEvaluation {
 
     override def singleNode(id: Long, cursor: NodeCursor): Unit = notAvailable()
 
+    override def singleNodePositioned(id: Long, cursor: NodeCursor): Unit = notAvailable()
+
     override def singleRelationship(id: Long, cursor: RelationshipScanCursor): Unit = notAvailable()
+
+    override def singleRelationshipPositioned(id: Long, cursor: RelationshipScanCursor): Unit = notAvailable()
 
     override def getLabelsForNode(id: Long, nodeCursor: NodeCursor): ListValue = notAvailable()
 

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.operations;
 
 import static java.lang.String.format;
+import static org.apache.commons.lang3.ArrayUtils.indexOf;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
@@ -32,6 +33,7 @@ import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.exceptions.EntityNotFoundException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.EntityCursor;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
@@ -40,6 +42,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.newapi.Cursors;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.values.AnyValue;
@@ -136,6 +139,36 @@ public final class CursorUtils {
         }
         nodeCursor.properties(propertyCursor, PropertySelection.selection(prop));
         return propertyCursor.next() ? propertyCursor.propertyValue() : NO_VALUE;
+    }
+
+    /**
+     * Returns a set of property values (or NoValue) from the specified entity cursor.
+     *
+     * Note, NoValue will be used for tokens that does not exist, including TokenConstants.NO_TOKEN.
+     */
+    public static AnyValue[] entityGetProperties(
+            EntityCursor entityCursor, PropertyCursor propertyCursor, int[] tokens) {
+        assert entityCursor.reference() != StatementConstants.NO_SUCH_ENTITY;
+
+        entityCursor.properties(propertyCursor, PropertySelection.selection(tokens));
+
+        int count = 0;
+        final AnyValue[] values = new Value[tokens.length];
+        while (propertyCursor.next()) {
+            final int index = indexOf(tokens, propertyCursor.propertyKey());
+            values[index] = propertyCursor.propertyValue();
+            ++count;
+        }
+
+        if (count < values.length) {
+            for (int i = 0; i < values.length; ++i) {
+                if (values[i] == null) {
+                    values[i] = Values.NO_VALUE;
+                }
+            }
+        }
+
+        return values;
     }
 
     /**

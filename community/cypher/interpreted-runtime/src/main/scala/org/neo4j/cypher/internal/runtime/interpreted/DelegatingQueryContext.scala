@@ -169,7 +169,12 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def singleNode(id: Long, cursor: NodeCursor): Unit = inner.singleNode(id, cursor)
 
+  override def singleNodePositioned(id: Long, cursor: NodeCursor): Unit = inner.singleNodePositioned(id, cursor)
+
   override def singleRelationship(id: Long, cursor: RelationshipScanCursor): Unit = inner.singleRelationship(id, cursor)
+
+  override def singleRelationshipPositioned(id: Long, cursor: RelationshipScanCursor): Unit =
+    inner.singleRelationshipPositioned(id, cursor)
 
   override def relationshipById(
     relationshipId: Long,
