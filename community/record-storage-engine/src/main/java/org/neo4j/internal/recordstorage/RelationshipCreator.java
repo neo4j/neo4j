@@ -37,6 +37,9 @@ import org.neo4j.storageengine.api.txstate.RelationshipModifications.Relationshi
  * It is assumed that all required locks are taken before the use of this class
  */
 public class RelationshipCreator {
+    public static final ConnectToDenseMonitor NO_CONNECT_TO_DENSE_MONITOR =
+            (createdRelationship, group, direction) -> {};
+
     private final int denseNodeThreshold;
     private final long externalDegreesThreshold;
     private final CursorContext cursorContext;
@@ -148,7 +151,12 @@ public class RelationshipCreator {
             RecordProxy<RelationshipRecord, Void> relProxy = relRecords.getOrLoad(relId, null);
             if (relCount(node.getId(), relProxy.forReadingData()) >= denseNodeThreshold) {
                 convertNodeToDenseNode(
-                        nodeChange, relProxy.forChangingLinkage(), relRecords, groupDegreesUpdater, nodeDataLookup);
+                        nodeChange,
+                        relProxy.forChangingLinkage(),
+                        relRecords,
+                        groupDegreesUpdater,
+                        nodeDataLookup,
+                        NO_CONNECT_TO_DENSE_MONITOR);
             }
         }
     }
@@ -185,7 +193,8 @@ public class RelationshipCreator {
                     relRecords,
                     groupDegreesUpdater,
                     nodeDataLookup.insertionPoint(firstNode.getId(), rel.getType(), index),
-                    nodeDataLookup);
+                    nodeDataLookup,
+                    NO_CONNECT_TO_DENSE_MONITOR);
         }
 
         if (!secondNode.isDense()) {
@@ -202,7 +211,8 @@ public class RelationshipCreator {
                     relRecords,
                     groupDegreesUpdater,
                     nodeDataLookup.insertionPoint(secondNode.getId(), rel.getType(), NodeDataLookup.DIR_IN),
-                    nodeDataLookup);
+                    nodeDataLookup,
+                    NO_CONNECT_TO_DENSE_MONITOR);
         }
 
         if (!firstNode.isDense()) {
@@ -221,7 +231,8 @@ public class RelationshipCreator {
             RecordAccess<RelationshipRecord, Void> relRecords,
             RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
             RecordProxy<RelationshipRecord, Void> insertionPoint,
-            NodeDataLookup nodeDataLookup) {
+            NodeDataLookup nodeDataLookup,
+            ConnectToDenseMonitor connectToDenseMonitor) {
         NodeRecord node = nodeChange.forReadingLinkage();
         DirectionWrapper dir = DirectionWrapper.wrapDirection(createdRelationship, node);
         connectDense(
@@ -231,7 +242,8 @@ public class RelationshipCreator {
                 createdRelationship,
                 relRecords,
                 groupDegreesUpdater,
-                insertionPoint);
+                insertionPoint,
+                connectToDenseMonitor);
     }
 
     private void convertNodeToDenseNode(
@@ -239,7 +251,8 @@ public class RelationshipCreator {
             RelationshipRecord firstRel,
             RecordAccess<RelationshipRecord, Void> relRecords,
             RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
-            NodeDataLookup nodeDataLookup) {
+            NodeDataLookup nodeDataLookup,
+            ConnectToDenseMonitor connectToDenseMonitor) {
         NodeRecord node = nodeChange.forChangingLinkage();
         node.setDense(true);
         node.setNextRel(NO_NEXT_RELATIONSHIP.intValue());
@@ -251,7 +264,13 @@ public class RelationshipCreator {
             relRecord.setPrevRel(NO_NEXT_RELATIONSHIP.longValue(), node.getId());
             relRecord.setNextRel(NO_NEXT_RELATIONSHIP.longValue(), node.getId());
             connectRelationshipToDenseNode(
-                    nodeChange, relRecord, relRecords, groupDegreesUpdater, null, nodeDataLookup);
+                    nodeChange,
+                    relRecord,
+                    relRecords,
+                    groupDegreesUpdater,
+                    null,
+                    nodeDataLookup,
+                    connectToDenseMonitor);
             if (!isNull(relId)) { // Lock and load the next relationship in the chain
                 relRecord = relRecords.getOrLoad(relId, null).forChangingLinkage();
             }
@@ -278,7 +297,8 @@ public class RelationshipCreator {
             RelationshipRecord createdRelationship,
             RecordAccess<RelationshipRecord, Void> relRecords,
             RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
-            RecordProxy<RelationshipRecord, Void> insertionPoint) {
+            RecordProxy<RelationshipRecord, Void> insertionPoint,
+            ConnectToDenseMonitor monitor) {
         long nodeId = node.getId();
         RelationshipGroupRecord group = groupProxy.forReadingLinkage();
         long firstRelId = direction.getNextRel(group);
@@ -316,6 +336,7 @@ public class RelationshipCreator {
                 // This is the first and only relationship in this chain. Set degree to 0 since the degree is
                 // incremented below.
                 createdRelationship.setPrevRel(0, nodeId);
+                monitor.firstRelationshipInChainInserted(createdRelationship, group, direction);
             }
 
             group = groupProxy.forChangingData();
@@ -398,5 +419,10 @@ public class RelationshipCreator {
             createdRelationship.setSecondPrevRel(newCount);
             createdRelationship.setFirstInSecondChain(true);
         }
+    }
+
+    public interface ConnectToDenseMonitor {
+        void firstRelationshipInChainInserted(
+                RelationshipRecord relationship, RelationshipGroupRecord group, DirectionWrapper direction);
     }
 }
