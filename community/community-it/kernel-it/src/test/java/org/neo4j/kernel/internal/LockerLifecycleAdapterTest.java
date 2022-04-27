@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.internal.locker.FileLockException;
+import org.neo4j.io.locker.FileLockException;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;

@@ -27,8 +27,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.junit.jupiter.api.Test;
 import org.neo4j.commandline.dbms.LockChecker;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.io.locker.FileLockException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 

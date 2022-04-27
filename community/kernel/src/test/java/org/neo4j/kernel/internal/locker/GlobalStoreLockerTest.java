@@ -25,6 +25,7 @@ import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.locker.FileLockException;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 

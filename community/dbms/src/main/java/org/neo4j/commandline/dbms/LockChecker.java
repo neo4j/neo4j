@@ -27,10 +27,10 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.locker.FileLockException;
+import org.neo4j.io.locker.Locker;
 import org.neo4j.kernel.internal.locker.DatabaseLocker;
-import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.kernel.internal.locker.GlobalLocker;
-import org.neo4j.kernel.internal.locker.Locker;
 
 public final class LockChecker implements Closeable {
     private final FileSystemAbstraction fileSystem;

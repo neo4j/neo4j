@@ -22,6 +22,7 @@ package org.neo4j.kernel.internal.locker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.locker.Locker;
 
 /**
  * Service to provide DBMS and individual databases file lockers

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.internal.locker;
 
+import org.neo4j.io.locker.Locker;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class LockerLifecycleAdapter extends LifecycleAdapter {

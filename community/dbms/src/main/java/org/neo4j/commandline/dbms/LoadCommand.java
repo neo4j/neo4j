@@ -49,10 +49,10 @@ import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.locker.FileLockException;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
-import org.neo4j.kernel.internal.locker.FileLockException;
 
 @Command(
         name = "load",

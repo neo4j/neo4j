@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.internal.locker;
+package org.neo4j.io.locker;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -36,7 +36,7 @@ public class Locker implements Closeable {
     private final FileSystemAbstraction fileSystemAbstraction;
     private final Path lockFile;
 
-    FileLock lockFileLock;
+    protected FileLock lockFileLock;
     private StoreChannel lockFileChannel;
 
     public Locker(FileSystemAbstraction fileSystemAbstraction, Path lockFile) {
@@ -134,11 +134,11 @@ public class Locker implements Closeable {
         return lockFileLock != null && lockFileChannel != null;
     }
 
-    FileLockException unableToObtainLockException() {
+    protected FileLockException unableToObtainLockException() {
         return unableToObtainLockException(null, null);
     }
 
-    FileLockException unableToObtainLockException(String additionalInformation, Exception cause) {
+    protected FileLockException unableToObtainLockException(String additionalInformation, Exception cause) {
         String message = String.format(
                 "Unable to obtain lock on file: %s%s",
                 lockFile, additionalInformation != null ? ": " + additionalInformation : "");

@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.locker.Locker;
 
 /**
  * File locker that guarantee that only single channel ever will be opened and then closed

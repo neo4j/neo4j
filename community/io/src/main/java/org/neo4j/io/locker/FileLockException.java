@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.internal.locker;
+package org.neo4j.io.locker;
 
 /**
  * Signals a failure to lock the dbms or database lock file

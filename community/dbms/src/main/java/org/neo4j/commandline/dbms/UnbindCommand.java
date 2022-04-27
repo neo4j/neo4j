@@ -29,7 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.kernel.internal.locker.FileLockException;
+import org.neo4j.io.locker.FileLockException;
 
 @Command(
         name = "unbind",
