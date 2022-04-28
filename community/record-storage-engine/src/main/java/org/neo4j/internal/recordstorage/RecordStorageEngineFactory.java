@@ -126,7 +126,6 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -517,8 +516,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             stores.start(cursorContext);
             TokenHolders tokenHolders = loadReadOnlyTokens(stores, lenient, contextFactory);
             List<SchemaRule> rules = new ArrayList<>();
-            SchemaStorage storage =
-                    new SchemaStorage(stores.getSchemaStore(), tokenHolders, KernelVersionRepository.LATEST);
+            SchemaStorage storage = new SchemaStorage(stores.getSchemaStore(), tokenHolders);
             if (lenient) {
                 storage.getAllIgnoreMalformed(storeCursors).forEach(rules::add);
             } else {
@@ -716,15 +714,6 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 readBehaviour);
     }
 
-    /**
-     * @return SchemaRuleMigrationAccess that uses the latest kernel version and therefore never includes an injected node label index.
-     */
-    public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess(
-            NeoStores stores, CursorContextFactory contextFactory, MemoryTracker memoryTracker) {
-        return createMigrationTargetSchemaRuleAccess(
-                stores, contextFactory, memoryTracker, KernelVersionRepository.LATEST);
-    }
-
     @Override
     public long optimalAvailableConsistencyCheckerMemory(
             FileSystemAbstraction fs, DatabaseLayout layout, Config config, PageCache pageCache) {
@@ -823,10 +812,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     }
 
     public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess(
-            NeoStores stores,
-            CursorContextFactory contextFactory,
-            MemoryTracker memoryTracker,
-            KernelVersionRepository kernelVersionRepository) {
+            NeoStores stores, CursorContextFactory contextFactory, MemoryTracker memoryTracker) {
         SchemaStore dstSchema = stores.getSchemaStore();
         TokenCreator propertyKeyTokenCreator = (name, internal) -> {
             try (var cursorContext = contextFactory.create("createMigrationTargetSchemaRuleAccess");
@@ -861,11 +847,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
         var storeCursors = new CachedStoreCursors(stores, cursorContext);
         TokenHolders dstTokenHolders = loadTokenHolders(stores, propertyKeyTokenCreator, storeCursors);
         return new SchemaRuleMigrationAccessImpl(
-                stores,
-                new SchemaStorage(dstSchema, dstTokenHolders, kernelVersionRepository),
-                cursorContext,
-                memoryTracker,
-                storeCursors);
+                stores, new SchemaStorage(dstSchema, dstTokenHolders), cursorContext, memoryTracker, storeCursors);
     }
 
     private static TokenHolders loadTokenHolders(

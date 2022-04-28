@@ -275,8 +275,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                                 StoreType.RELATIONSHIP_TYPE_TOKEN,
                                 StoreType.PROPERTY_KEY_TOKEN);
                         var dstCursors = new CachedStoreCursors(dstStore, cursorContext);
-                        var dstAccess = createMigrationTargetSchemaRuleAccess(
-                                dstStore, contextFactory, memoryTracker, dstStore.getMetaDataStore())) {
+                        var dstAccess =
+                                createMigrationTargetSchemaRuleAccess(dstStore, contextFactory, memoryTracker)) {
                     MetaDataStore metaDataStore = dstStore.getMetaDataStore();
                     metaDataStore.regenerateMetadata(storeId, externalId, cursorContext);
                     metaDataStore.setDatabaseIdUuid(databaseId, cursorContext);

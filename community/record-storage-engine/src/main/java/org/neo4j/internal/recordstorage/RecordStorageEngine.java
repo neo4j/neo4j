@@ -65,7 +65,6 @@ import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreIdUsage;
 import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreRecords;
 import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreVersions;
 import org.neo4j.internal.schema.IndexConfigCompleter;
-import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -74,19 +73,16 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.api.InjectedNLIUpgradeCallback;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.stats.RecordDatabaseEntityCounters;
 import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
@@ -211,8 +207,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         Stream.of(SchemaIdType.values()).forEach(idType -> idGeneratorWorkSyncs.add(idGeneratorFactory.get(idType)));
 
         try {
-            schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess(
-                    neoStores.getSchemaStore(), tokenHolders, neoStores.getMetaDataStore());
+            schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess(neoStores.getSchemaStore(), tokenHolders);
             schemaCache = new SchemaCache(constraintSemantics, indexConfigCompleter);
 
             integrityValidator = new IntegrityValidator(neoStores);
@@ -464,8 +459,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     @Override
-    public List<StorageCommand> createUpgradeCommands(
-            KernelVersion versionToUpgradeTo, InjectedNLIUpgradeCallback injectedNLIUpgradeCallback) {
+    public List<StorageCommand> createUpgradeCommands(KernelVersion versionToUpgradeTo) {
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
         KernelVersion currentVersion = metaDataStore.kernelVersion();
         checkState(
@@ -486,43 +480,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
 
         var commands = new ArrayList<StorageCommand>();
         commands.add(new Command.MetaDataCommand(serialization, before, after));
-
-        // If we are on a version before the version where token indexes were introduced, we
-        // have a NLI (the old labelscanstore) but no matching schema rule in the store.
-        // Now we write a real schema rule for that index so we don't have to fake that we found
-        // it in the schemaStore.
-        if (currentVersion.isLessThan(KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED)) {
-            commands.add(createSchemaUpgradeCommand(serialization, injectedNLIUpgradeCallback));
-        }
         return commands;
-    }
-
-    /**
-     * This is the command that creates an actual SchemaRecord for our injected NLI (the index corresponding to the old labelscanstore).
-     * To avoid having to handle token creation for any property key tokens that doesn't already exist,
-     * the SchemaRecord is not connected to any properties at all.
-     * Instead we interpret a SchemaRecord with no properties as the NLI rule when reading from the SchemaStore later.
-     */
-    private StorageCommand createSchemaUpgradeCommand(
-            LogCommandSerialization serialization, InjectedNLIUpgradeCallback injectedNLIUpgradeCallback) {
-        // Pass in callback with new id here and modify
-        try (var cursorContext = contextFactory.create(SCHEMA_UPGRADE_TAG)) {
-            SchemaStore schemaStore = neoStores.getSchemaStore();
-            long nliId = schemaStore.nextId(cursorContext);
-
-            var before = schemaStore.newRecord();
-            before.setId(nliId);
-            before.initialize(false, Record.NO_NEXT_PROPERTY.longValue());
-
-            var after = schemaStore.newRecord();
-            after.setId(nliId);
-            after.initialize(true, Record.NO_NEXT_PROPERTY.longValue());
-            after.setCreated();
-
-            var rule = IndexDescriptor.NLI_PROTOTYPE.materialise(nliId);
-            injectedNLIUpgradeCallback.apply(nliId);
-            return new Command.SchemaRuleCommand(serialization, before, after, rule);
-        }
     }
 
     @Override

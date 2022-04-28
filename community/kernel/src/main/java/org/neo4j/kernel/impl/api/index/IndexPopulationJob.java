@@ -31,6 +31,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -65,7 +66,7 @@ public class IndexPopulationJob implements Runnable {
     /**
      * A list of all indexes populated by this job.
      */
-    private final List<IndexProxyStrategy> populatedIndexes = new ArrayList<>();
+    private final List<IndexDescriptor> populatedIndexes = new ArrayList<>();
 
     private volatile StoreScan storeScan;
     private volatile boolean stopped;
@@ -111,7 +112,7 @@ public class IndexPopulationJob implements Runnable {
             FlippableIndexProxy flipper,
             FailedIndexProxyFactory failedIndexProxyFactory) {
         assert storeScan == null : "Population have already started, too late to add populators at this point";
-        populatedIndexes.add(indexProxyStrategy);
+        populatedIndexes.add(indexProxyStrategy.getIndexDescriptor());
         return this.multiPopulator.addPopulator(populator, indexProxyStrategy, flipper, failedIndexProxyFactory);
     }
 
@@ -267,10 +268,7 @@ public class IndexPopulationJob implements Runnable {
                         stateDescriptionBuilder.append(",");
                     }
 
-                    stateDescriptionBuilder
-                            .append("'")
-                            .append(index.getIndexDescriptor().getName())
-                            .append("'");
+                    stateDescriptionBuilder.append("'").append(index.getName()).append("'");
                 }
 
                 stateDescriptionBuilder.append("; ");
@@ -299,7 +297,7 @@ public class IndexPopulationJob implements Runnable {
 
         if (populatedIndexes.size() == 1) {
             var index = populatedIndexes.get(0);
-            return "Population of index '" + index.getIndexDescriptor().getName() + "'";
+            return "Population of index '" + index.getName() + "'";
         }
 
         return "Population of " + populatedIndexes.size() + " '" + populatedEntityType + "' indexes";

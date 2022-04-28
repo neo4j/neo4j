@@ -61,7 +61,6 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Value;
@@ -113,14 +112,7 @@ class SchemaChecker {
             MutableLongObjectMap<ConstraintObligation> constraintObligations = LongObjectMaps.mutable.empty();
             Map<SchemaRuleKey, SchemaRecord> verifiedRulesWithRecords = new HashMap<>();
 
-            // KernelVersion only controls if there will be an injected NLI on non-upgraded stores. That index is not in
-            // the store and will
-            // not be found when going through the file in performSchemaCheck anyway so we can use latest KernelVersion
-            // here.
-            // If an injected NLI exist but is not online that will not be reported, but this is an unlikely corner case
-            // that we
-            // ignore. The index itself will be checked as long as it is online (it is found by IndexAccessors).
-            SchemaStorage schemaStorage = new SchemaStorage(schemaStore, tokenHolders, KernelVersionRepository.LATEST);
+            SchemaStorage schemaStorage = new SchemaStorage(schemaStore, tokenHolders);
             // Build map of obligations and such
             buildObligationsMap(
                     highId,

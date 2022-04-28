@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -91,9 +90,9 @@ class IndexIteratorIT {
             var tokenHolders = StoreTokens.readOnlyTokenHolders(neoStores, storeCursors);
             indexAccessors = new IndexAccessors(
                     providerMap,
-                    c -> asResourceIterator(SchemaRuleAccess.getSchemaRuleAccess(
-                                    neoStores.getSchemaStore(), tokenHolders, KernelVersionRepository.LATEST)
-                            .indexesGetAll(storeCursors)),
+                    c -> asResourceIterator(
+                            SchemaRuleAccess.getSchemaRuleAccess(neoStores.getSchemaStore(), tokenHolders)
+                                    .indexesGetAll(storeCursors)),
                     new IndexSamplingConfig(config),
                     SIMPLE_NAME_LOOKUP,
                     contextFactory,

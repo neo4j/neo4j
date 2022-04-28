@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
@@ -45,7 +44,7 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy {
             MinimalIndexAccessor minimalIndexAccessor,
             IndexPopulationFailure populationFailure,
             InternalLogProvider logProvider) {
-        super(indexProxyStrategy, populationFailure);
+        super(indexProxyStrategy.getIndexDescriptor(), populationFailure);
         this.indexProxyStrategy = indexProxyStrategy;
         this.minimalIndexAccessor = minimalIndexAccessor;
         this.log = logProvider.getLog(getClass());
@@ -54,11 +53,6 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy {
     @Override
     public void start() {
         // nothing to start
-    }
-
-    @Override
-    public void changeIdentity(IndexDescriptor descriptor) {
-        indexProxyStrategy.changeIndexDescriptor(descriptor);
     }
 
     @Override

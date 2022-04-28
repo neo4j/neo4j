@@ -75,8 +75,7 @@ class IndexProxyCreator {
 
         MultipleIndexPopulator.IndexPopulation indexPopulation =
                 populationJob.addPopulator(populator, indexProxyStrategy, flipper, failureDelegateFactory);
-        PopulatingIndexProxy populatingIndex =
-                new PopulatingIndexProxy(indexProxyStrategy, populationJob, indexPopulation);
+        PopulatingIndexProxy populatingIndex = new PopulatingIndexProxy(index, populationJob, indexPopulation);
 
         flipper.flipTo(populatingIndex);
 
@@ -103,8 +102,7 @@ class IndexProxyCreator {
     }
 
     IndexProxy createRecoveringIndexProxy(IndexDescriptor descriptor) {
-        IndexProxyStrategy indexProxyStrategy = createIndexProxyStrategy(descriptor);
-        IndexProxy proxy = new RecoveringIndexProxy(indexProxyStrategy);
+        IndexProxy proxy = new RecoveringIndexProxy(descriptor);
         return new ContractCheckingIndexProxy(proxy);
     }
 
@@ -128,8 +126,7 @@ class IndexProxyCreator {
 
     private IndexProxyStrategy createIndexProxyStrategy(IndexDescriptor descriptor) {
         if (descriptor.getIndexType() == LOOKUP) {
-            boolean allowToChangeDescriptor = descriptor.getId() == IndexDescriptor.INJECTED_NLI_ID;
-            return new TokenIndexProxyStrategy(descriptor, tokenNameLookup, allowToChangeDescriptor);
+            return new TokenIndexProxyStrategy(descriptor, tokenNameLookup);
         } else {
             return new ValueIndexProxyStrategy(descriptor, indexStatisticsStore, tokenNameLookup);
         }

@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -61,7 +60,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.storageengine.api.CommandCreationContext;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -116,8 +114,6 @@ public final class KernelTransactionFactory {
                 DatabaseReadOnlyChecker.writable(),
                 TransactionExecutionMonitor.NO_OP,
                 CommunitySecurityLog.NULL_LOG,
-                KernelVersionRepository.LATEST,
-                mock(DbmsRuntimeRepository.class),
                 new NoOpClient(),
                 mock(KernelTransactions.class),
                 NullLogProvider.getInstance());

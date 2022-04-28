@@ -60,7 +60,6 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -101,7 +100,7 @@ class SchemaStorageIT {
         }
         storageCursors = storageEngine.createStorageCursors(NULL_CONTEXT);
         schemaStore = storageEngine.testAccessNeoStores().getSchemaStore();
-        storage = new SchemaStorage(schemaStore, tokenHolders, KernelVersionRepository.LATEST);
+        storage = new SchemaStorage(schemaStore, tokenHolders);
     }
 
     @Test

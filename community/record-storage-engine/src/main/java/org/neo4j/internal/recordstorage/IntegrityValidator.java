@@ -19,17 +19,11 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import static org.neo4j.kernel.KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED;
-import static org.neo4j.kernel.KernelVersion.VERSION_RANGE_POINT_TEXT_INDEX_TYPES_ARE_INTRODUCED;
-
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.DeletedNodeStillHasRelationshipsException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -84,45 +78,6 @@ class IntegrityValidator {
 
     void validateSchemaRule(SchemaRule schemaRule) throws TransactionFailureException {
         Preconditions.checkState(indexValidator != null, "No index validator installed");
-        KernelVersion currentVersion = neoStores.getMetaDataStore().kernelVersion();
-        if (currentVersion.isLessThan(VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED)) {
-            if (schemaRule instanceof IndexDescriptor index) {
-                if (index.isTokenIndex()) {
-                    throw new TransactionFailureException(
-                            Status.General.UpgradeRequired,
-                            "Index operation on index '%s' not allowed. "
-                                    + "Required kernel version for this transaction is %s, but actual version was %s.",
-                            index,
-                            VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED.name(),
-                            currentVersion.name());
-                }
-            }
-        } else if (currentVersion.isLessThan(VERSION_RANGE_POINT_TEXT_INDEX_TYPES_ARE_INTRODUCED)) {
-            if (schemaRule instanceof IndexDescriptor index) {
-                IndexType indexType = index.getIndexType();
-                if (isRangePointOrTextIndex(indexType)) {
-                    throw new TransactionFailureException(
-                            Status.General.UpgradeRequired,
-                            "Index operation on index '%s' not allowed. "
-                                    + "Required kernel version for this transaction is %s, but actual version was %s.",
-                            index,
-                            VERSION_RANGE_POINT_TEXT_INDEX_TYPES_ARE_INTRODUCED.name(),
-                            currentVersion.name());
-                }
-            } else if (schemaRule instanceof ConstraintDescriptor constraint) {
-                if (constraint.isIndexBackedConstraint()
-                        && isRangePointOrTextIndex(
-                                constraint.asIndexBackedConstraint().indexType())) {
-                    throw new TransactionFailureException(
-                            Status.General.UpgradeRequired,
-                            "Constraint operation on constraint '%s' not allowed. "
-                                    + "Required kernel version for this transaction is %s, but actual version was %s.",
-                            constraint,
-                            VERSION_RANGE_POINT_TEXT_INDEX_TYPES_ARE_INTRODUCED.name(),
-                            currentVersion.name());
-                }
-            }
-        }
 
         if (schemaRule instanceof ConstraintDescriptor constraint) {
             if (constraint.isIndexBackedConstraint()) {
@@ -148,9 +103,5 @@ class IntegrityValidator {
                 }
             }
         }
-    }
-
-    private boolean isRangePointOrTextIndex(IndexType indexType) {
-        return indexType == IndexType.RANGE || indexType == IndexType.POINT || indexType == IndexType.TEXT;
     }
 }

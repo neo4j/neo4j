@@ -21,7 +21,6 @@ package org.neo4j.internal.schema;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.OptionalLong;
 import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.tuple.Pair;
@@ -219,14 +218,6 @@ public class SchemaRuleMapifier {
             return ((TextValue) value).stringValue();
         }
         throw new MalformedSchemaRuleException("Expected property " + property + " to be a TextValue but was " + value);
-    }
-
-    private static Optional<String> getOptionalString(String property, Map<String, Value> map) {
-        Value value = map.get(property);
-        if (value instanceof TextValue) {
-            return Optional.of(((TextValue) value).stringValue());
-        }
-        return Optional.empty();
     }
 
     private static void putLongProperty(Map<String, Value> map, String property, long value) {

@@ -191,8 +191,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
 
     private IndexAccessors instantiateIndexAccessors(
             NeoStores neoStores, IndexProviderMap indexProviders, TokenHolders tokenHolders, Config config) {
-        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess(
-                neoStores.getSchemaStore(), tokenHolders, neoStores.getMetaDataStore());
+        SchemaRuleAccess schemaRuleAccess =
+                SchemaRuleAccess.getSchemaRuleAccess(neoStores.getSchemaStore(), tokenHolders);
         return new IndexAccessors(
                 indexProviders,
                 new SchemaRulesDescriptors(neoStores, schemaRuleAccess),

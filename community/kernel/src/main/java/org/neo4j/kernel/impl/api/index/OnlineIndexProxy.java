@@ -113,11 +113,6 @@ public class OnlineIndexProxy implements IndexProxy {
     }
 
     @Override
-    public void changeIdentity(IndexDescriptor descriptor) {
-        indexProxyStrategy.changeIndexDescriptor(descriptor);
-    }
-
-    @Override
     public InternalIndexState getState() {
         return InternalIndexState.ONLINE;
     }

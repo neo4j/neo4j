@@ -39,6 +39,7 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.AnyTokenSchemaDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -71,7 +72,6 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 
 public class SchemaStore44Reader implements AutoCloseable {
-    public static final long FORMER_LABEL_SCAN_STORE_ID = -2;
     public static final AnyTokenSchemaDescriptor FORMER_LABEL_SCAN_STORE_SCHEMA =
             SchemaDescriptors.forAnyEntityTokens(EntityType.NODE);
     public static final String FORMER_LABEL_SCAN_STORE_GENERATED_NAME =
@@ -234,7 +234,7 @@ public class SchemaStore44Reader implements AutoCloseable {
     }
 
     public static SchemaRule44 constructFormerLabelScanStoreSchemaRule() {
-        return constructFormerLabelScanStoreSchemaRule(FORMER_LABEL_SCAN_STORE_ID);
+        return constructFormerLabelScanStoreSchemaRule(IndexDescriptor.FORMER_LABEL_SCAN_STORE_ID);
     }
 
     /**

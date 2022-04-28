@@ -40,7 +40,6 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -175,10 +174,6 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord, IntStoreHeade
                 insertPropertyIntoMap(propertyKeyValue, props, tokenHolders);
             }
             nextProp = propRecord.getNextProp();
-        }
-        if (props.isEmpty()) {
-            IndexDescriptor descriptor = IndexDescriptor.NLI_PROTOTYPE.materialise(record.getId());
-            props.putAll(mapifySchemaRule(descriptor));
         }
         return props;
     }

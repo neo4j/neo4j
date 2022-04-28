@@ -113,7 +113,6 @@ import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
@@ -540,7 +539,7 @@ class FulltextIndexProviderTest {
                         var storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
                     TokenHolders tokens = StoreTokens.readOnlyTokenHolders(neoStores, storeCursors);
                     SchemaStore schemaStore = neoStores.getSchemaStore();
-                    SchemaStorage storage = new SchemaStorage(schemaStore, tokens, KernelVersionRepository.LATEST);
+                    SchemaStorage storage = new SchemaStorage(schemaStore, tokens);
                     IndexDescriptor index = (IndexDescriptor) storage.loadSingleSchemaRule(indexId, storeCursors);
                     Map<String, Value> indexConfigMap =
                             new HashMap<>(index.getIndexConfig().asMap());

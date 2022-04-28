@@ -57,11 +57,6 @@ class ValueIndexProxyStrategy implements IndexProxyStrategy {
     }
 
     @Override
-    public void changeIndexDescriptor(IndexDescriptor descriptor) {
-        throw new UnsupportedOperationException("Changing descriptor on this index proxy strategy is not allowed");
-    }
-
-    @Override
     public String getIndexUserDescription() {
         return indexUserDescription;
     }

@@ -192,16 +192,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             indexMapRef.modify(indexMap -> {
                 Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>(InternalIndexState.class);
                 for (IndexDescriptor descriptor : indexDescriptors) {
-                    // No index (except NLI) is allowed to have the name generated for NLI.
-                    if (descriptor.getName().equals(IndexDescriptor.NLI_GENERATED_NAME)
-                            && !(descriptor.schema().isAnyTokenSchemaDescriptor()
-                                    && descriptor.schema().entityType() == NODE)) {
-                        throw new IllegalStateException("Index '" + descriptor.userDescription(tokenNameLookup)
-                                + "' is using a reserved name: '" + IndexDescriptor.NLI_GENERATED_NAME
-                                + "'. This index must be removed on an earlier version "
-                                + "to be able to use binaries for version 4.3 or newer.");
-                    }
-
                     IndexProviderDescriptor providerDescriptor = descriptor.getIndexProvider();
                     IndexProvider provider = providerMap.lookup(providerDescriptor);
                     InternalIndexState initialState = provider.getInitialState(descriptor, cursorContext, openOptions);
@@ -519,56 +509,9 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
      */
     @Override
     public void createIndexes(Subject subject, IndexDescriptor... rules) {
-        IndexDescriptor[] newlyCreated = filterOutAndHandleInjectedTokenIndex(rules);
-        IndexPopulationStarter populationStarter = new IndexPopulationStarter(subject, newlyCreated);
+        IndexPopulationStarter populationStarter = new IndexPopulationStarter(subject, rules);
         indexMapRef.modify(populationStarter);
         populationStarter.startPopulation();
-    }
-
-    /**
-     * Once upon a time there was something called label scan store.
-     * In essence, it was a btree used for indexing nodes, but it was not managed like other indexes.
-     * Most importantly, it did not have a record in the schema store.
-     * In 4.3, the label scan store was turned into a proper index referred to as node label index
-     * and got a corresponding record in a schema store.
-     * However, during a rolling upgrade until the cluster is fully upgraded to a version >= 4.3,
-     * a former label scan store behaves like a node label index, but does not have a record in schema store.
-     * We call such node label index as "injected".
-     * During an upgrade, a record in a schema store is created for the injected node label index.
-     * The purpose of this code is to catch the event when a new index descriptor for the injected node label index
-     * is submitted, filter it from the list of to-be-created indexes and swap the old descriptor on
-     * the injected node label index with the newly submitted descriptor.
-     * In other words, adding identity to an injected index is the only and very special case when
-     * {@link #createIndexes} is called with a descriptor for an already existing index
-     * and such operation needs to cause the index being linked to the new descriptor instead of
-     * a new index being created and because we effectively "remove" the old injected index and replace
-     * with the new we also need to clear the schema state.
-     * Of course it would be much simpler to close the injected index and create a new one with the new identity.
-     * The reason why the elaborate migration was introduced is not to interrupt any ongoing operations
-     * against the index by keeping the file/accessor of the injected label index open.
-     */
-    private IndexDescriptor[] filterOutAndHandleInjectedTokenIndex(IndexDescriptor[] rules) {
-        IndexProxy nli = indexMapRef.indexMapSnapshot().getIndexProxy(IndexDescriptor.INJECTED_NLI_ID);
-        if (nli == null) {
-            return rules;
-        }
-
-        List<IndexDescriptor> filteredRules = new ArrayList<>();
-        for (IndexDescriptor rule : rules) {
-            if (rule.schema().isAnyTokenSchemaDescriptor() && rule.schema().entityType() == NODE) {
-                nli.changeIdentity(rule);
-
-                indexMapRef.modify(indexMap -> {
-                    indexMap.putIndexProxy(nli);
-                    indexMap.removeIndexProxy(IndexDescriptor.INJECTED_NLI_ID);
-                    return indexMap;
-                });
-                schemaState.clear();
-            } else {
-                filteredRules.add(rule);
-            }
-        }
-        return filteredRules.toArray(IndexDescriptor[]::new);
     }
 
     private static void processUpdate(

@@ -56,7 +56,6 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -97,7 +96,6 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.storageengine.api.CommandCreationContext;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.test.InMemoryTokens;
@@ -903,9 +901,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(ConstraintSemantics.class),
                 mock(IndexingProvidersService.class),
                 Config.defaults(),
-                INSTANCE,
-                KernelVersionRepository.LATEST,
-                mock(DbmsRuntimeRepository.class));
+                INSTANCE);
 
         // when
         operations.nodeCreate();
@@ -947,9 +943,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(ConstraintSemantics.class),
                 mock(IndexingProvidersService.class),
                 Config.defaults(),
-                INSTANCE,
-                KernelVersionRepository.LATEST,
-                mock(DbmsRuntimeRepository.class));
+                INSTANCE);
         operations.initialize(NULL_CONTEXT);
 
         // when
@@ -989,9 +983,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(ConstraintSemantics.class),
                 mock(IndexingProvidersService.class),
                 Config.defaults(),
-                INSTANCE,
-                KernelVersionRepository.LATEST,
-                mock(DbmsRuntimeRepository.class));
+                INSTANCE);
 
         // when
         operations.relationshipCreate(0, 1, 2);
@@ -1032,9 +1024,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(ConstraintSemantics.class),
                 indexingProvidersService,
                 Config.defaults(),
-                INSTANCE,
-                KernelVersionRepository.LATEST,
-                mock(DbmsRuntimeRepository.class));
+                INSTANCE);
 
         // when
         operations.indexCreate(IndexPrototype.forSchema(schema).withName("name"));

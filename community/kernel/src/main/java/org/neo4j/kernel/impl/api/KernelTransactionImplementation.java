@@ -48,7 +48,6 @@ import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.NotInTransactionException;
@@ -132,7 +131,6 @@ import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.CommandCreationContext;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageLocks;
@@ -262,8 +260,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             DatabaseReadOnlyChecker readOnlyDatabaseChecker,
             TransactionExecutionMonitor transactionExecutionMonitor,
             AbstractSecurityLog securityLog,
-            KernelVersionRepository kernelVersionRepository,
-            DbmsRuntimeRepository dbmsRuntimeRepository,
             Locks.Client lockClient,
             KernelTransactions kernelTransactions,
             LogProvider internalLogProvider) {
@@ -330,9 +326,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 constraintSemantics,
                 indexingService,
                 config,
-                memoryTracker,
-                kernelVersionRepository,
-                dbmsRuntimeRepository);
+                memoryTracker);
         traceProvider = getTraceProvider(config);
         transactionHeapBytesLimit = config.get(memory_transaction_max_size);
         registerConfigChangeListeners(config);
@@ -1143,19 +1137,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public UUID getDatabaseId() {
         return namedDatabaseId.databaseId().uuid();
-    }
-
-    /**
-     * WARNING! This method should only be called from DatabaseUpgradeTransactionHandler
-     */
-    @Override
-    public InjectedNLIUpgradeCallback injectedNLIUpgradeCallback() {
-        return id -> {
-            if (txState.indexChanges().getRemoved().contains(IndexDescriptor.INJECTED_NLI)) {
-                txState.indexDoUnRemove(IndexDescriptor.INJECTED_NLI);
-                txState.indexDoDrop(IndexDescriptor.NLI_PROTOTYPE.materialise(id));
-            }
-        };
     }
 
     @Override

@@ -41,7 +41,6 @@ import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -52,7 +51,6 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.token.TokenHolders;
@@ -63,17 +61,10 @@ import org.neo4j.values.storable.Values;
 public class SchemaStorage implements SchemaRuleAccess {
     private final SchemaStore schemaStore;
     private final TokenHolders tokenHolders;
-    private final KernelVersionRepository versionSupplier;
 
-    /**
-     * @param versionSupplier Used to know whether or not to inject a rule for NLI (that was formerly labelscanstore).
-     *                        Use metadatastore as versionSupplier if you are not absolutely sure that the injected
-     *                        rule is never needed.
-     */
-    public SchemaStorage(SchemaStore schemaStore, TokenHolders tokenHolders, KernelVersionRepository versionSupplier) {
+    public SchemaStorage(SchemaStore schemaStore, TokenHolders tokenHolders) {
         this.schemaStore = schemaStore;
         this.tokenHolders = tokenHolders;
-        this.versionSupplier = versionSupplier;
     }
 
     @Override
@@ -309,24 +300,12 @@ public class SchemaStorage implements SchemaRuleAccess {
     Stream<SchemaRule> streamAllSchemaRules(boolean ignoreMalformed, StoreCursors storeCursors) {
         long startId = schemaStore.getNumberOfReservedLowIds();
         long endId = schemaStore.getHighId();
-        Stream<IndexDescriptor> nli = Stream.empty();
-        KernelVersion currentVersion = versionSupplier.kernelVersion();
 
-        if (currentVersion.isLessThan(KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED)) {
-            nli = Stream.of(IndexDescriptor.INJECTED_NLI);
-        }
-
-        return Stream.concat(
-                LongStream.range(startId, endId)
-                        .mapToObj(id -> schemaStore.getRecordByCursor(
-                                id,
-                                schemaStore.newRecord(),
-                                RecordLoad.LENIENT_ALWAYS,
-                                storeCursors.readCursor(SCHEMA_CURSOR)))
-                        .filter(AbstractBaseRecord::inUse)
-                        .flatMap(record ->
-                                readSchemaRuleThrowingRuntimeException(record, ignoreMalformed, storeCursors)),
-                nli);
+        return LongStream.range(startId, endId)
+                .mapToObj(id -> schemaStore.getRecordByCursor(
+                        id, schemaStore.newRecord(), RecordLoad.LENIENT_ALWAYS, storeCursors.readCursor(SCHEMA_CURSOR)))
+                .filter(AbstractBaseRecord::inUse)
+                .flatMap(record -> readSchemaRuleThrowingRuntimeException(record, ignoreMalformed, storeCursors));
     }
 
     private static Stream<IndexDescriptor> indexRules(Stream<SchemaRule> stream) {

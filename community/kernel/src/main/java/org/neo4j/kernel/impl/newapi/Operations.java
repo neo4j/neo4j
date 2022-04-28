@@ -63,7 +63,6 @@ import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnspecifiedKernelException;
 import org.neo4j.function.ThrowingIntFunction;
@@ -107,7 +106,6 @@ import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -137,7 +135,6 @@ import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
@@ -167,8 +164,6 @@ public class Operations implements Write, SchemaWrite {
     private final IndexingProvidersService indexProviders;
     private final MemoryTracker memoryTracker;
     private final boolean additionLockVerification;
-    private final KernelVersionRepository kernelVersionRepository;
-    private final DbmsRuntimeRepository dbmsRuntimeRepository;
     private DefaultNodeCursor nodeCursor;
     private DefaultNodeCursor restrictedNodeCursor;
     private DefaultPropertyCursor propertyCursor;
@@ -188,9 +183,7 @@ public class Operations implements Write, SchemaWrite {
             ConstraintSemantics constraintSemantics,
             IndexingProvidersService indexProviders,
             Config config,
-            MemoryTracker memoryTracker,
-            KernelVersionRepository kernelVersionRepository,
-            DbmsRuntimeRepository dbmsRuntimeRepository) {
+            MemoryTracker memoryTracker) {
         this.storageReader = storageReader;
         this.commandCreationContext = commandCreationContext;
         this.storageLocks = storageLocks;
@@ -203,8 +196,6 @@ public class Operations implements Write, SchemaWrite {
         this.constraintSemantics = constraintSemantics;
         this.indexProviders = indexProviders;
         this.memoryTracker = memoryTracker;
-        this.kernelVersionRepository = kernelVersionRepository;
-        this.dbmsRuntimeRepository = dbmsRuntimeRepository;
         this.additionLockVerification = config.get(additional_lock_verification);
     }
 
@@ -1343,19 +1334,10 @@ public class Operations implements Write, SchemaWrite {
 
     @Override
     public IndexDescriptor indexCreate(IndexPrototype prototype) throws KernelException {
-        if (prototype.isTokenIndex()) {
-            assertTokenAndRelationshipPropertyIndexesSupported("Failed to create Token lookup index.");
+        if (prototype.getIndexType() == IndexType.TEXT && prototype.schema().getPropertyIds().length > 1) {
+            throw new UnsupportedOperationException("Composite indexes are not supported for TEXT index type.");
         }
-        IndexType indexType = prototype.getIndexType();
-        if (indexType == IndexType.TEXT) {
-            assertTextIndexSupport(prototype);
-        }
-        if (indexType == IndexType.RANGE) {
-            assertRangePointTextIndexesSupported("Failed to create RANGE index.");
-        }
-        if (indexType == IndexType.POINT) {
-            assertRangePointTextIndexesSupported("Failed to create POINT index.");
-        }
+
         exclusiveSchemaLock(prototype.schema());
         ktx.assertOpen();
         assertValidDescriptor(prototype.schema(), INDEX_CREATION);
@@ -1368,40 +1350,6 @@ public class Operations implements Write, SchemaWrite {
         assertNoBlockingSchemaRulesExists(prototype);
 
         return indexDoCreate(prototype);
-    }
-
-    private void assertTextIndexSupport(IndexPrototype prototype) {
-        assertRangePointTextIndexesSupported("Failed to create TEXT index.");
-        if (prototype.schema().getPropertyIds().length > 1) {
-            throw new UnsupportedOperationException("Composite indexes are not supported for TEXT index type.");
-        }
-    }
-
-    private void assertRangePointTextIndexesSupported(String message) {
-        assertIndexSupportedInVersion(message, KernelVersion.VERSION_RANGE_POINT_TEXT_INDEX_TYPES_ARE_INTRODUCED);
-    }
-
-    private void assertTokenAndRelationshipPropertyIndexesSupported(String message) {
-        assertIndexSupportedInVersion(message, KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED);
-    }
-
-    private void assertIndexSupportedInVersion(String message, KernelVersion minimumVersionForSupport) {
-        KernelVersion currentStoreVersion = kernelVersionRepository.kernelVersion();
-        if (currentStoreVersion.isAtLeast(minimumVersionForSupport)) {
-            // new or upgraded store, good to go
-            return;
-        }
-
-        // store version is old
-        KernelVersion currentDbmsVersion = dbmsRuntimeRepository.getVersion().kernelVersion();
-        if (currentDbmsVersion.isAtLeast(minimumVersionForSupport)) {
-            // dbms runtime version is good, current transaction will trigger upgrade transaction
-            // we will double check kernel version during commit
-            return;
-        }
-        throw new UnsupportedOperationException(format(
-                "%s Version was %s, but required version for operation is %s. Please upgrade dbms using 'dbms.upgrade()'.",
-                message, currentDbmsVersion.name(), minimumVersionForSupport.name()));
     }
 
     // Note: this will be sneakily executed by an internal transaction, so no additional locking is required.
@@ -1476,9 +1424,6 @@ public class Operations implements Write, SchemaWrite {
         if (index == IndexDescriptor.NO_INDEX) {
             throw new DropIndexFailureException("No index was specified.");
         }
-        if (index.isTokenIndex()) {
-            assertTokenAndRelationshipPropertyIndexesSupported("Failed to drop token lookup index.");
-        }
         exclusiveSchemaLock(index.schema());
         exclusiveSchemaNameLock(index.getName());
         assertIndexExistsForDrop(index);
@@ -1507,9 +1452,6 @@ public class Operations implements Write, SchemaWrite {
             throw new DropIndexFailureException(
                     "Unable to drop index called `" + indexName + "`. There is no such index.");
         }
-        if (index.isTokenIndex()) {
-            assertTokenAndRelationshipPropertyIndexesSupported("Failed to drop token lookup index.");
-        }
         exclusiveSchemaLock(index.schema());
         assertIndexExistsForDrop(index);
         if (index.isUnique()) {
@@ -1524,12 +1466,6 @@ public class Operations implements Write, SchemaWrite {
 
     @Override
     public ConstraintDescriptor uniquePropertyConstraintCreate(IndexPrototype prototype) throws KernelException {
-        if (prototype.getIndexType() == IndexType.RANGE) {
-            assertIndexSupportedInVersion(
-                    "Failed to create constraint backed by RANGE index.",
-                    KernelVersion.VERSION_RANGE_POINT_TEXT_INDEX_TYPES_ARE_INTRODUCED);
-        }
-
         SchemaDescriptor schema = prototype.schema();
         exclusiveSchemaLock(schema);
         ktx.assertOpen();
@@ -1677,20 +1613,10 @@ public class Operations implements Write, SchemaWrite {
         if (indexWithSameName != IndexDescriptor.NO_INDEX) {
             throw new IndexWithNameAlreadyExistsException(name);
         }
-        if (name.equals(IndexDescriptor.NLI_GENERATED_NAME)) {
-            throw new IllegalArgumentException("The name '" + IndexDescriptor.NLI_GENERATED_NAME
-                    + "' is a reserved name and can't be used when creating indexes");
-        }
     }
 
     @Override
     public ConstraintDescriptor nodeKeyConstraintCreate(IndexPrototype prototype) throws KernelException {
-        if (prototype.getIndexType() == IndexType.RANGE) {
-            assertIndexSupportedInVersion(
-                    "Failed to create constraint backed by RANGE index.",
-                    KernelVersion.VERSION_RANGE_POINT_TEXT_INDEX_TYPES_ARE_INTRODUCED);
-        }
-
         SchemaDescriptor schema = prototype.schema();
         exclusiveSchemaLock(schema);
         ktx.assertOpen();

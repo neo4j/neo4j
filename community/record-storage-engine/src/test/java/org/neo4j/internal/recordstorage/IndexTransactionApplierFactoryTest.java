@@ -32,13 +32,16 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.common.EntityType;
 import org.neo4j.common.Subject;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -62,7 +65,13 @@ class IndexTransactionApplierFactoryTest {
         PropertyStore propertyStore = mock(PropertyStore.class);
         IndexTransactionApplierFactory applier = new IndexTransactionApplierFactory(indexUpdateListener);
         final SchemaCache mock = mock(SchemaCache.class);
-        when(mock.indexForSchemaAndType(any(), any())).thenReturn(IndexDescriptor.INJECTED_NLI);
+        IndexDescriptor nli = IndexPrototype.forSchema(
+                        SchemaDescriptors.forAnyEntityTokens(EntityType.NODE),
+                        new IndexProviderDescriptor("token-lookup", "1.0"))
+                .withName("NLI")
+                .withIndexType(IndexType.LOOKUP)
+                .materialise(1);
+        when(mock.indexForSchemaAndType(any(), any())).thenReturn(nli);
         try (var batchContext = new BatchContextImpl(
                 indexUpdateListener,
                 indexUpdatesSync,

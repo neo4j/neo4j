@@ -24,21 +24,15 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexSample;
 
 /**
- * Method {@link #changeIndexDescriptor} allows changing the descriptor.
- * However this is a very special operation and should be used with care.
- * <p>
- * Also collecting statistics on token indexes is not needed and therefore not supported.
+ * Collecting statistics on token indexes is not needed and therefore not supported.
  */
 class TokenIndexProxyStrategy implements IndexProxyStrategy {
-    private volatile IndexDescriptor descriptor;
+    private final IndexDescriptor descriptor;
     private final TokenNameLookup tokenNameLookup;
-    private final boolean allowToChangeDescriptor;
 
-    TokenIndexProxyStrategy(
-            IndexDescriptor descriptor, TokenNameLookup tokenNameLookup, boolean allowToChangeDescriptor) {
+    TokenIndexProxyStrategy(IndexDescriptor descriptor, TokenNameLookup tokenNameLookup) {
         this.descriptor = descriptor;
         this.tokenNameLookup = tokenNameLookup;
-        this.allowToChangeDescriptor = allowToChangeDescriptor;
     }
 
     @Override
@@ -54,16 +48,6 @@ class TokenIndexProxyStrategy implements IndexProxyStrategy {
 
     @Override
     public void replaceStatisticsForIndex(IndexSample sample) {}
-
-    @Override
-    public void changeIndexDescriptor(IndexDescriptor descriptor) {
-        if (!allowToChangeDescriptor) {
-            throw new UnsupportedOperationException(
-                    "Changing descriptor on this token index proxy strategy is not allowed");
-        }
-
-        this.descriptor = descriptor;
-    }
 
     @Override
     public String getIndexUserDescription() {

@@ -37,7 +37,6 @@ import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
@@ -72,7 +71,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.resources.CpuClock;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -95,8 +93,6 @@ public class KernelTransactions extends LifecycleAdapter
     private final TransactionCommitProcess transactionCommitProcess;
     private final DatabaseTransactionEventListeners eventListeners;
     private final TransactionMonitor transactionMonitor;
-    private final DbmsRuntimeRepository dbmsRuntimeRepository;
-    private final KernelVersionRepository kernelVersionRepository;
     private final GlobalMemoryGroupTracker transactionsMemoryPool;
     private final TransactionExecutionMonitor transactionExecutionMonitor;
     private final AvailabilityGuard databaseAvailabilityGuard;
@@ -160,8 +156,6 @@ public class KernelTransactions extends LifecycleAdapter
             StorageEngine storageEngine,
             GlobalProcedures globalProcedures,
             TransactionIdStore transactionIdStore,
-            DbmsRuntimeRepository dbmsRuntimeRepository,
-            KernelVersionRepository kernelVersionRepository,
             SystemNanoClock clock,
             AtomicReference<CpuClock> cpuClockRef,
             AccessCapabilityFactory accessCapabilityFactory,
@@ -193,8 +187,6 @@ public class KernelTransactions extends LifecycleAdapter
         this.storageEngine = storageEngine;
         this.globalProcedures = globalProcedures;
         this.transactionIdStore = transactionIdStore;
-        this.kernelVersionRepository = kernelVersionRepository;
-        this.dbmsRuntimeRepository = dbmsRuntimeRepository;
         this.cpuClockRef = cpuClockRef;
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.tokenHolders = tokenHolders;
@@ -471,8 +463,6 @@ public class KernelTransactions extends LifecycleAdapter
                     readOnlyDatabaseChecker,
                     transactionExecutionMonitor,
                     securityLog,
-                    kernelVersionRepository,
-                    dbmsRuntimeRepository,
                     locks.newClient(),
                     KernelTransactions.this,
                     internalLogProvider);

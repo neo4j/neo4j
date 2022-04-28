@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.token.TokenHolders;
 
@@ -181,8 +180,7 @@ public class SchemaStoreMigration {
                     var srcCursors = new CachedStoreCursors(srcStore, cursorContext)) {
                 TokenHolders srcTokenHolders = createTokenHolders(srcStore, srcCursors);
                 org.neo4j.internal.recordstorage.SchemaStorage schemaStorage =
-                        new org.neo4j.internal.recordstorage.SchemaStorage(
-                                srcStore.getSchemaStore(), srcTokenHolders, KernelVersionRepository.LATEST);
+                        new org.neo4j.internal.recordstorage.SchemaStorage(srcStore.getSchemaStore(), srcTokenHolders);
 
                 schemaRules = Iterables.asList(schemaStorage.getAll(srcCursors));
             }

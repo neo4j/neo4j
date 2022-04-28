@@ -54,7 +54,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.ClockContext;
-import org.neo4j.kernel.impl.api.InjectedNLIUpgradeCallback;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -260,11 +259,6 @@ public class StubKernelTransaction implements KernelTransaction {
 
     @Override
     public Revertable overrideWith(SecurityContext context) {
-        throw new UnsupportedOperationException("not implemented");
-    }
-
-    @Override
-    public InjectedNLIUpgradeCallback injectedNLIUpgradeCallback() {
         throw new UnsupportedOperationException("not implemented");
     }
 

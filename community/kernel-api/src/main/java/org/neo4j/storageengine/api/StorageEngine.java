@@ -30,7 +30,6 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.api.InjectedNLIUpgradeCallback;
 import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.lock.LockGroup;
@@ -114,11 +113,9 @@ public interface StorageEngine extends Lifecycle {
      * Generates a list of {@link StorageCommand commands} representing the upgrade of the {@link KernelVersion} for this
      * store to the desired version.
      * @param versionToUpgradeTo the {@link KernelVersion} that the returned commands will represent an upgrade to.
-     * @param injectedNLIUpgradeCallback callback for token indexes upgrade commands
      * @return commands for making an upgrade to the desired {@link KernelVersion}.
      */
-    List<StorageCommand> createUpgradeCommands(
-            KernelVersion versionToUpgradeTo, InjectedNLIUpgradeCallback injectedNLIUpgradeCallback);
+    List<StorageCommand> createUpgradeCommands(KernelVersion versionToUpgradeTo);
 
     /**
      * Claims exclusive locks for some records whilst performing recovery.

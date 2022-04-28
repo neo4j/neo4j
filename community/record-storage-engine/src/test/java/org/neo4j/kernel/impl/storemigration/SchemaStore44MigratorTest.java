@@ -626,7 +626,7 @@ class SchemaStore44MigratorTest {
 
         // Then
         verify(access).nextId();
-        verify(access).writeSchemaRule(IndexDescriptor.NLI_PROTOTYPE.materialise(id));
+        verify(access).writeSchemaRule(SchemaStore44Migration.NLI_PROTOTYPE.materialise(id));
         verifyNoMoreInteractions(access);
     }
 
@@ -652,7 +652,7 @@ class SchemaStore44MigratorTest {
         schemaStoreMigration44.migrate(access, tokenHolders);
 
         // Then
-        verify(access).writeSchemaRule(IndexDescriptor.NLI_PROTOTYPE.materialise(id));
+        verify(access).writeSchemaRule(SchemaStore44Migration.NLI_PROTOTYPE.materialise(id));
         verifyNoMoreInteractions(access);
     }
 

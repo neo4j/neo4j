@@ -24,11 +24,7 @@ import org.neo4j.kernel.api.index.IndexSample;
 
 /**
  * Representation of an index used by indexing services in this package.
- * It is a connection between index proxies and index descriptors with the
- * main purpose being the ability to change an index descriptor.
- * A proxy can represent only one index, but there is a special case when
- * two different descriptors represent the same index at a different point in time.
- * <p>
+ * It is a connection between index proxies and index descriptors.
  * This is also a link to index statistics.
  */
 interface IndexProxyStrategy {
@@ -39,8 +35,6 @@ interface IndexProxyStrategy {
     void incrementUpdateStatisticsForIndex(long delta);
 
     void replaceStatisticsForIndex(IndexSample sample);
-
-    void changeIndexDescriptor(IndexDescriptor descriptor);
 
     String getIndexUserDescription();
 }

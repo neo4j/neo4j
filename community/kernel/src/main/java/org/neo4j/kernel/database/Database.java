@@ -177,7 +177,6 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandReaderFactory;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -544,7 +543,6 @@ public class Database extends LifecycleAdapter {
                     databaseSchemaState,
                     storageEngine,
                     metadataProvider,
-                    metadataProvider,
                     databaseAvailabilityGuard,
                     clock,
                     indexStatisticsStore,
@@ -907,7 +905,6 @@ public class Database extends LifecycleAdapter {
             DatabaseSchemaState databaseSchemaState,
             StorageEngine storageEngine,
             TransactionIdStore transactionIdStore,
-            KernelVersionRepository kernelVersionRepository,
             AvailabilityGuard databaseAvailabilityGuard,
             SystemNanoClock clock,
             IndexStatisticsStore indexStatisticsStore,
@@ -940,8 +937,6 @@ public class Database extends LifecycleAdapter {
                 storageEngine,
                 globalProcedures,
                 transactionIdStore,
-                globalDependencies.resolveDependency(DbmsRuntimeRepository.class),
-                kernelVersionRepository,
                 clock,
                 cpuClockRef,
                 accessCapabilityFactory,

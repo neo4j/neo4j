@@ -47,7 +47,6 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -86,7 +85,6 @@ import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.storageengine.api.CommandCreationContext;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -215,8 +213,6 @@ class KernelTransactionTestBase {
                 readOnlyChecker.forDatabase(databaseId),
                 TransactionExecutionMonitor.NO_OP,
                 CommunitySecurityLog.NULL_LOG,
-                KernelVersionRepository.LATEST,
-                mock(DbmsRuntimeRepository.class),
                 locksClient,
                 mock(KernelTransactions.class),
                 NullLogProvider.getInstance());

@@ -46,7 +46,6 @@ import org.junit.jupiter.api.Timeout;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -72,7 +71,6 @@ import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.resources.CpuClock;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.Race;
 import org.neo4j.time.Clocks;
@@ -278,8 +276,6 @@ class KernelTransactionTerminationTest {
                     DatabaseReadOnlyChecker.writable(),
                     TransactionExecutionMonitor.NO_OP,
                     CommunitySecurityLog.NULL_LOG,
-                    KernelVersionRepository.LATEST,
-                    mock(DbmsRuntimeRepository.class),
                     new NoOpClient(),
                     mock(KernelTransactions.class),
                     NullLogProvider.getInstance());

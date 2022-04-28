@@ -27,7 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.stream.Stream;
-import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 
 public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaRule {
@@ -36,16 +35,8 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
      * This descriptor <em>cannot</em> be modified by any of the {@code with*} methods.
      */
     public static final IndexDescriptor NO_INDEX = new IndexDescriptor();
-
-    public static final long INJECTED_NLI_ID = -2;
-    public static final String NLI_GENERATED_NAME =
-            "__org_neo4j_schema_index_label_scan_store_converted_to_token_index";
-    public static final IndexPrototype NLI_PROTOTYPE = IndexPrototype.forSchema(
-                    SchemaDescriptors.forAnyEntityTokens(EntityType.NODE),
-                    new IndexProviderDescriptor("token-lookup", "1.0"))
-            .withIndexType(IndexType.LOOKUP)
-            .withName(IndexDescriptor.NLI_GENERATED_NAME);
-    public static final IndexDescriptor INJECTED_NLI = NLI_PROTOTYPE.materialise(IndexDescriptor.INJECTED_NLI_ID);
+    // Needs to be possible to create IndexDescriptors with this special id during migration
+    public static final long FORMER_LABEL_SCAN_STORE_ID = -2;
 
     private final long id;
     private final String name;
@@ -80,7 +71,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
             IndexCapability capability,
             IndexType indexType,
             IndexConfig indexConfig) {
-        if (id < 0 && id != INJECTED_NLI_ID) {
+        if (id < 0 && id != FORMER_LABEL_SCAN_STORE_ID) {
             throw new IllegalArgumentException(
                     "The id of an index must not be negative, but it was attempted to assign " + id + ".");
         }

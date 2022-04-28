@@ -37,26 +37,21 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 
 public class PopulatingIndexProxy implements IndexProxy {
-    private final IndexProxyStrategy indexProxyStrategy;
+    private final IndexDescriptor indexDescriptor;
     private final IndexPopulationJob job;
     private final MultipleIndexPopulator.IndexPopulation indexPopulation;
 
     PopulatingIndexProxy(
-            IndexProxyStrategy indexProxyStrategy,
+            IndexDescriptor indexDescriptor,
             IndexPopulationJob job,
             MultipleIndexPopulator.IndexPopulation indexPopulation) {
-        this.indexProxyStrategy = indexProxyStrategy;
+        this.indexDescriptor = indexDescriptor;
         this.job = job;
         this.indexPopulation = indexPopulation;
     }
 
     @Override
     public void start() {}
-
-    @Override
-    public void changeIdentity(IndexDescriptor descriptor) {
-        indexProxyStrategy.changeIndexDescriptor(descriptor);
-    }
 
     @Override
     public IndexUpdater newUpdater(final IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
@@ -86,7 +81,7 @@ public class PopulatingIndexProxy implements IndexProxy {
 
     @Override
     public IndexDescriptor getDescriptor() {
-        return indexProxyStrategy.getIndexDescriptor();
+        return indexDescriptor;
     }
 
     @Override

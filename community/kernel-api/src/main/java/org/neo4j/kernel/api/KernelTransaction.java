@@ -52,7 +52,6 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.ClockContext;
-import org.neo4j.kernel.impl.api.InjectedNLIUpgradeCallback;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -402,12 +401,6 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable {
      * @return {@link Revertable} which reverts to the original SecurityContext.
      */
     Revertable overrideWith(SecurityContext context);
-
-    /**
-     * This callback is used by upgrade listener to adapt transaction state
-     * to the changes made by the upgrade transaction.
-     */
-    InjectedNLIUpgradeCallback injectedNLIUpgradeCallback();
 
     /**
      * Clocks associated with this transaction.

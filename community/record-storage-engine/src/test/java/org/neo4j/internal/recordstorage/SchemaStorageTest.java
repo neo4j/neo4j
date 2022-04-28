@@ -69,7 +69,6 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
@@ -130,7 +129,7 @@ class SchemaStorageTest {
                 new DelegatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY),
                 new DelegatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_LABEL),
                 new DelegatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE));
-        storage = new SchemaStorage(neoStores.getSchemaStore(), tokenHolders, KernelVersionRepository.LATEST);
+        storage = new SchemaStorage(neoStores.getSchemaStore(), tokenHolders);
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
     }
 

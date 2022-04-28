@@ -70,7 +70,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.internal.id.IdController;
@@ -118,7 +117,6 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandCreationContext;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
@@ -761,8 +759,6 @@ class KernelTransactionsTest {
                 storageEngine,
                 mock(GlobalProcedures.class),
                 transactionIdStore,
-                mock(DbmsRuntimeRepository.class),
-                KernelVersionRepository.LATEST,
                 clock,
                 new AtomicReference<>(CpuClock.NOT_AVAILABLE),
                 any -> CanWrite.INSTANCE,
@@ -866,8 +862,6 @@ class KernelTransactionsTest {
                     storageEngine,
                     globalProcedures,
                     transactionIdStore,
-                    mock(DbmsRuntimeRepository.class),
-                    KernelVersionRepository.LATEST,
                     clock,
                     new AtomicReference<>(CpuClock.NOT_AVAILABLE),
                     accessCapabilityFactory,

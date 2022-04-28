@@ -492,12 +492,6 @@ public class SchemaCache {
                 cacheUniquenessConstraint(constraint);
             } else if (rule instanceof IndexDescriptor) {
                 IndexDescriptor index = indexConfigCompleter.completeConfiguration((IndexDescriptor) rule);
-                if (indexesById.containsKey(IndexDescriptor.INJECTED_NLI_ID)
-                        && index.schema().isAnyTokenSchemaDescriptor()
-                        && index.schema().entityType() == EntityType.NODE) {
-                    removeSchemaRule(IndexDescriptor.INJECTED_NLI_ID);
-                }
-
                 indexesById.put(index.getId(), index);
                 SchemaDescriptor schema = index.schema();
                 indexesBySchema.merge(schema, Set.of(index), SchemaCacheState::concatImmutableSets);

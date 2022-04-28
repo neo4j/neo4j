@@ -48,7 +48,6 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -86,7 +85,6 @@ import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.SecurityLogHelper;
 import org.neo4j.storageengine.api.CommandCreationContext;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
@@ -200,9 +198,7 @@ abstract class OperationsTest {
                 mock(ConstraintSemantics.class),
                 indexingProvidersService,
                 Config.defaults(),
-                INSTANCE,
-                KernelVersionRepository.LATEST,
-                mock(DbmsRuntimeRepository.class));
+                INSTANCE);
         operations.initialize(NULL_CONTEXT);
 
         this.order = inOrder(locks, txState, storageReader, storageReaderSnapshot, creationContext, storageLocks);

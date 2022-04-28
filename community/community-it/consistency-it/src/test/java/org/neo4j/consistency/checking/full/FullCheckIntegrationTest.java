@@ -174,7 +174,6 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
@@ -3106,8 +3105,8 @@ public class FullCheckIntegrationTest {
     }
 
     private void writeToSchemaStore(SchemaStore schemaStore, SchemaRule rule) throws KernelException {
-        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess(
-                schemaStore, fixture.writableTokenHolders(), KernelVersionRepository.LATEST);
+        SchemaRuleAccess schemaRuleAccess =
+                SchemaRuleAccess.getSchemaRuleAccess(schemaStore, fixture.writableTokenHolders());
         schemaRuleAccess.writeSchemaRule(
                 rule, IdUpdateListener.DIRECT, NULL_CONTEXT, INSTANCE, fixture.getStoreCursors());
     }

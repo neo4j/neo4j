@@ -110,7 +110,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -171,7 +170,7 @@ class CheckerTestBase {
         relationshipStore = neoStores.getRelationshipStore();
         schemaStore = neoStores.getSchemaStore();
         tokenHolders = dependencies.resolveDependency(TokenHolders.class);
-        schemaStorage = new SchemaStorage(schemaStore, tokenHolders, neoStores.getMetaDataStore());
+        schemaStorage = new SchemaStorage(schemaStore, tokenHolders);
         cacheAccess = new DefaultCacheAccess(
                 NumberArrayFactories.HEAP.newDynamicByteArray(10_000, new byte[MAX_BYTES], INSTANCE),
                 Counts.NONE,
@@ -285,8 +284,7 @@ class CheckerTestBase {
 
     private Iterable<IndexDescriptor> allIndexes(NeoStores neoStores, TokenHolders tokenHolders) {
         try (var storeCursors = new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT)) {
-            return Iterators.asCollection(SchemaRuleAccess.getSchemaRuleAccess(
-                            neoStores.getSchemaStore(), tokenHolders, KernelVersionRepository.LATEST)
+            return Iterators.asCollection(SchemaRuleAccess.getSchemaRuleAccess(neoStores.getSchemaStore(), tokenHolders)
                     .indexesGetAllIgnoreMalformed(storeCursors));
         }
     }

@@ -53,7 +53,6 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.token.TokenHolders;
@@ -135,9 +134,9 @@ class RelationshipCheckerIT {
         var neoStores = storageEngine.testAccessNeoStores();
         var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
         try (var storeCursors = new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT)) {
-            Iterable<IndexDescriptor> indexDescriptors = () -> SchemaRuleAccess.getSchemaRuleAccess(
-                            neoStores.getSchemaStore(), tokenHolders, KernelVersionRepository.LATEST)
-                    .indexesGetAll(storeCursors);
+            Iterable<IndexDescriptor> indexDescriptors =
+                    () -> SchemaRuleAccess.getSchemaRuleAccess(neoStores.getSchemaStore(), tokenHolders)
+                            .indexesGetAll(storeCursors);
             var indexAccessors = new IndexAccessors(
                     providerMap,
                     c -> asResourceIterator(indexDescriptors.iterator()),

@@ -210,7 +210,7 @@ class TokenIndexPopulationTest {
     private void addIndexPopulator(IndexPopulator populator, IndexDescriptor descriptor) {
         IndexProxyStrategy indexProxyStrategy;
         if (descriptor.getIndexType() == IndexType.LOOKUP) {
-            indexProxyStrategy = new TokenIndexProxyStrategy(descriptor, new InMemoryTokens(), false);
+            indexProxyStrategy = new TokenIndexProxyStrategy(descriptor, new InMemoryTokens());
         } else {
             indexProxyStrategy = new ValueIndexProxyStrategy(
                     TestIndexDescriptorFactory.forLabel(1, 1), mock(IndexStatisticsStore.class), new InMemoryTokens());

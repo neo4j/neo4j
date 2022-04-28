@@ -31,6 +31,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.StringJoiner;
+import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.Numbers;
@@ -43,6 +44,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -71,6 +73,12 @@ import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.token.TokenHolders;
 
 public class SchemaStore44Migration {
+
+    public static final IndexPrototype NLI_PROTOTYPE = IndexPrototype.forSchema(
+                    SchemaDescriptors.forAnyEntityTokens(EntityType.NODE),
+                    new IndexProviderDescriptor("token-lookup", "1.0"))
+            .withIndexType(IndexType.LOOKUP)
+            .withName("__org_neo4j_schema_index_label_scan_store_converted_to_token_index");
 
     /**
      * If a BTREE index has a replacement index - RANGE, TEXT or POINT index on same schema - the BTREE index will be removed.
@@ -166,7 +174,7 @@ public class SchemaStore44Migration {
             // Write all the schemaRules that already had ids first to make sure that any newly allocated ids will be
             // unique
             for (SchemaRule rule : existingSchemaRulesToAdd) {
-                if (rule.getId() == SchemaStore44Reader.FORMER_LABEL_SCAN_STORE_ID) {
+                if (rule.getId() == IndexDescriptor.FORMER_LABEL_SCAN_STORE_ID) {
                     foundNliWithoutId = true;
                 } else {
                     dstAccess.writeSchemaRule(rule);
@@ -175,7 +183,7 @@ public class SchemaStore44Migration {
 
             // Now any indexes that already had ids are in place, and we can get new ids
             if (foundNliWithoutId) {
-                dstAccess.writeSchemaRule(IndexDescriptor.NLI_PROTOTYPE.materialise(dstAccess.nextId()));
+                dstAccess.writeSchemaRule(NLI_PROTOTYPE.materialise(dstAccess.nextId()));
             }
 
             if (systemDb) {

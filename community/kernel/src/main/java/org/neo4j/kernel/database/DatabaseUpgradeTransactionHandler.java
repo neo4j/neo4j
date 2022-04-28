@@ -121,9 +121,8 @@ class DatabaseUpgradeTransactionHandler {
                             log.info(
                                     "Upgrade transaction from %s to %s started",
                                     currentKernelVersion, kernelVersionToUpgradeTo);
-                            var callback = tx.injectedNLIUpgradeCallback();
                             internalTransactionCommitHandler.commit(
-                                    storageEngine.createUpgradeCommands(kernelVersionToUpgradeTo, callback));
+                                    storageEngine.createUpgradeCommands(kernelVersionToUpgradeTo));
                             log.info(
                                     "Upgrade transaction from %s to %s completed",
                                     currentKernelVersion, kernelVersionToUpgradeTo);

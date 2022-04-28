@@ -67,9 +67,8 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T> {
             CursorContextFactory contextFactory,
             Function<CursorContext, StoreCursors> storeCursorsFactory) {
         var schemaStore = neoStores.getNeoStores().getSchemaStore();
-        var metaDataStore = neoStores.getNeoStores().getMetaDataStore();
         var tokenHolders = neoStores.getTokenHolders();
-        var schemaRuleAccess = getSchemaRuleAccess(schemaStore, tokenHolders, metaDataStore);
+        var schemaRuleAccess = getSchemaRuleAccess(schemaStore, tokenHolders);
         try (var cursorContext = contextFactory.create(INDEX_IMPORTER_CREATION_TAG);
                 var storeCursors = storeCursorsFactory.apply(cursorContext)) {
             var index = findIndex(entityType, schemaRuleAccess, storeCursors)
