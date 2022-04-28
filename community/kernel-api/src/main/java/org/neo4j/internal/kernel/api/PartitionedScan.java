@@ -33,6 +33,8 @@ import org.neo4j.io.pagecache.context.CursorContext;
  */
 public interface PartitionedScan<Cursor extends org.neo4j.internal.kernel.api.Cursor> {
     /**
+     * The number of partitions is always a number between 1 and the number of desired partitions.
+     *
      * @return the total number of partitions in this scan object
      */
     int getNumberOfPartitions();

@@ -39,7 +39,7 @@ abstract class PartitionedEntityCursorScan<C extends Cursor, S> implements Parti
         if (desiredNumberOfPartitions < totalCount) {
             this.numberOfPartitions = desiredNumberOfPartitions;
         } else {
-            this.numberOfPartitions = (int) totalCount;
+            this.numberOfPartitions = Math.max((int) totalCount, 1);
         }
         this.batchSize = (long) Math.ceil((double) totalCount / numberOfPartitions);
         this.emittedPartitions = new AtomicInteger(0);
