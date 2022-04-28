@@ -435,7 +435,7 @@ class SchemaStore44MigratorTest {
     }
 
     @Test
-    void assertCanMigrateOnSystemShouldNotThrowOnNonReplacedBtreeIndex() {
+    void assertCanMigrateWithForceShouldNotThrowOnNonReplacedBtreeIndex() {
         // Given
         var index = index(BTREE, labels[0], props[0], NAME_ONE);
         var reader = mock(SchemaStore44Reader.class);
@@ -451,7 +451,7 @@ class SchemaStore44MigratorTest {
     }
 
     @Test
-    void schemaMigrationOnSystemShouldReplaceNonUniqueBtreeIndex() throws KernelException {
+    void schemaMigrationWithForceShouldReplaceNonUniqueBtreeIndex() throws KernelException {
         // Given
         var index = index(BTREE, labels[0], props[0], NAME_ONE);
         var reader = mock(SchemaStore44Reader.class);
@@ -480,7 +480,7 @@ class SchemaStore44MigratorTest {
     }
 
     @Test
-    void schemaMigrationOnSystemShouldNotReplaceNonUniqueBtreeIndexThatHasReplacement() throws KernelException {
+    void schemaMigrationWithForceShouldNotReplaceNonUniqueBtreeIndexThatHasReplacement() throws KernelException {
         // Given
         var btreeIndex = index(BTREE, labels[0], props[0], NAME_ONE);
         var rangeIndex = index(RANGE, labels[0], props[0], NAME_TWO);
@@ -509,7 +509,7 @@ class SchemaStore44MigratorTest {
     @EnumSource(
             value = SchemaRule44.ConstraintRuleType.class,
             names = {"UNIQUE", "UNIQUE_EXISTS"})
-    void schemaMigrationOnSystemShouldReplaceBtreeConstraint(SchemaRule44.ConstraintRuleType constraintType)
+    void schemaMigrationWithForceShouldReplaceBtreeConstraint(SchemaRule44.ConstraintRuleType constraintType)
             throws KernelException {
         // Given
         var btreeUnique = constraint(constraintType, BTREE, labels[0], props[0], NAME_ONE);
@@ -545,7 +545,7 @@ class SchemaStore44MigratorTest {
     @EnumSource(
             value = SchemaRule44.ConstraintRuleType.class,
             names = {"UNIQUE", "UNIQUE_EXISTS"})
-    void schemaMigrationOnSystemShouldNotReplaceBtreeConstraintThatAlreadyHasReplacement(
+    void schemaMigrationWithForceShouldNotReplaceBtreeConstraintThatAlreadyHasReplacement(
             SchemaRule44.ConstraintRuleType constraintType) throws KernelException {
         // Given
         var btreeUnique = constraint(constraintType, BTREE, labels[0], props[0], NAME_ONE);
@@ -577,7 +577,7 @@ class SchemaStore44MigratorTest {
     @EnumSource(
             value = SchemaRule44.ConstraintRuleType.class,
             names = {"UNIQUE", "UNIQUE_EXISTS"})
-    void schemaMigrationOnSystemShouldNotTouchRangeSchemas(SchemaRule44.ConstraintRuleType constraintType)
+    void schemaMigrationWithForceShouldNotTouchRangeSchemas(SchemaRule44.ConstraintRuleType constraintType)
             throws KernelException {
         // Given
         var rangeIndex = index(RANGE, labels[0], props[0], NAME_ONE);

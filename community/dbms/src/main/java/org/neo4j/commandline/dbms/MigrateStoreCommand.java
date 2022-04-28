@@ -116,6 +116,12 @@ public class MigrateStoreCommand extends AbstractCommand {
             description = "Configuration file to supply additional configuration in.")
     private Path additionalConfig;
 
+    @Option(
+            names = "--forceBtreeIndexesToRange",
+            hidden = true,
+            description = "Special option for turning all btree indexes/constraints into range")
+    private boolean forceBtreeToRange;
+
     public MigrateStoreCommand(ExecutionContext ctx) {
         super(ctx);
     }
@@ -183,7 +189,7 @@ public class MigrateStoreCommand extends AbstractCommand {
                                 databaseLayout,
                                 memoryTracker)));
 
-                storeMigrator.migrateIfNeeded(formatFamily);
+                storeMigrator.migrateIfNeeded(formatFamily, forceBtreeToRange);
             } catch (FileLockException e) {
                 throw new CommandFailedException(
                         "The database is in use. Stop database '" + database.name() + "' and try again.", e);

@@ -82,10 +82,12 @@ public class SchemaStore44Migration {
 
     /**
      * If a BTREE index has a replacement index - RANGE, TEXT or POINT index on same schema - the BTREE index will be removed.
-     * If BTREE index doesn't have any replacement, an exception will be thrown.
+     * If BTREE index doesn't have any replacement, an exception will be thrown (unless force=true in which case they
+     * are replaced with RANGE equivalents).
      * If a constraint backed by a BTREE index has a replacement constraint - constraint of same type, on same schema,
      * backed by other index type than BTREE - the BTREE backed constraint will be removed.
-     * If constraint backed by BTREE index doesn't have any replacement, an exception will be thrown.
+     * If constraint backed by BTREE index doesn't have any replacement, an exception will be thrown (unless force=true
+     * in which case they are replaced with RANGE equivalents).
      *
      * The SchemaStore (and naturally also the PropertyStore) will be updated non-transactionally.
      *
@@ -93,7 +95,7 @@ public class SchemaStore44Migration {
      */
     public record SchemaStore44Migrator(
             boolean shouldCreateNewSchemaStore,
-            boolean systemDb,
+            boolean forceBtreeIndexesToRange,
             List<SchemaRule44.Index> nonReplacedIndexes,
             List<Pair<SchemaRule44.Constraint, SchemaRule44.Index>> nonReplacedConstraints,
             List<SchemaRule44> toDelete,
@@ -103,7 +105,7 @@ public class SchemaStore44Migration {
 
         @Override
         public void assertCanMigrate() throws IllegalStateException {
-            if (!systemDb && (!nonReplacedIndexes.isEmpty() || !nonReplacedConstraints.isEmpty())) {
+            if (!forceBtreeIndexesToRange && (!nonReplacedIndexes.isEmpty() || !nonReplacedConstraints.isEmpty())) {
                 // Throw if non-replaced index exists
                 var nonReplacedIndexString = new StringJoiner(", ", "[", "]");
                 var nonReplacedConstraintsString = new StringJoiner(", ", "[", "]");
@@ -186,7 +188,7 @@ public class SchemaStore44Migration {
                 dstAccess.writeSchemaRule(NLI_PROTOTYPE.materialise(dstAccess.nextId()));
             }
 
-            if (systemDb) {
+            if (forceBtreeIndexesToRange) {
                 // Forcefully replace non-replaced indexes and constraints
                 for (SchemaRule44.Index index : nonReplacedIndexes) {
                     IndexDescriptor rangeIndex = asRangeIndex(index, dstAccess);
@@ -221,7 +223,7 @@ public class SchemaStore44Migration {
             RecordDatabaseLayout directoryLayout,
             CursorContext cursorContext,
             boolean shouldCreateNewSchemaStore,
-            boolean systemDb,
+            boolean forceBtreeIndexesToRange,
             Config config,
             PageCache pageCache,
             CursorContextFactory contextFactory,
@@ -257,7 +259,11 @@ public class SchemaStore44Migration {
                     contextFactory,
                     () -> kernelVersion)) {
                 return getSchemaStoreMigration44(
-                        schemaStore44Reader, srcCursors, systemDb, shouldCreateNewSchemaStore, srcTokensHolders);
+                        schemaStore44Reader,
+                        srcCursors,
+                        forceBtreeIndexesToRange,
+                        shouldCreateNewSchemaStore,
+                        srcTokensHolders);
             }
         }
     }
@@ -265,7 +271,7 @@ public class SchemaStore44Migration {
     public static SchemaStore44Migrator getSchemaStoreMigration44(
             SchemaStore44Reader schemaStore44Reader,
             StoreCursors srcCursors,
-            boolean systemDb,
+            boolean forceBtreeIndexesToRange,
             boolean shouldCreateNewSchemaStore,
             TokenHolders srcTokenHolders) {
         var all = schemaStore44Reader.loadAllSchemaRules(srcCursors);
@@ -375,7 +381,7 @@ public class SchemaStore44Migration {
 
         return new SchemaStore44Migrator(
                 shouldCreateNewSchemaStore,
-                systemDb,
+                forceBtreeIndexesToRange,
                 nonReplacedIndexes,
                 nonReplacedConstraints,
                 toDelete,

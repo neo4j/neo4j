@@ -133,7 +133,8 @@ public interface StorageEngineFactory {
             LogService logService,
             MemoryTracker memoryTracker,
             PageCacheTracer pageCacheTracer,
-            CursorContextFactory contextFactory);
+            CursorContextFactory contextFactory,
+            boolean forceBtreeIndexesToRange);
 
     /**
      * Instantiates a {@link StorageEngine} where all dependencies can be retrieved from the supplied {@code dependencyResolver}.

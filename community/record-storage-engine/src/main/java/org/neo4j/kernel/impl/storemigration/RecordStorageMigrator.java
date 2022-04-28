@@ -145,6 +145,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
     private final CursorContextFactory contextFactory;
     private final BatchImporterFactory batchImporterFactory;
     private final MemoryTracker memoryTracker;
+    private final boolean forceBtreeIndexesToRange;
 
     public RecordStorageMigrator(
             FileSystemAbstraction fileSystem,
@@ -155,7 +156,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             JobScheduler jobScheduler,
             CursorContextFactory contextFactory,
             BatchImporterFactory batchImporterFactory,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            boolean forceBtreeIndexesToRange) {
         super(NAME);
         this.fileSystem = fileSystem;
         this.pageCache = pageCache;
@@ -166,6 +168,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
         this.contextFactory = contextFactory;
         this.batchImporterFactory = batchImporterFactory;
         this.memoryTracker = memoryTracker;
+        this.forceBtreeIndexesToRange = forceBtreeIndexesToRange;
     }
 
     @Override
@@ -193,7 +196,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                     directoryLayout,
                     cursorContext,
                     requiresPropertyMigration,
-                    SYSTEM_DATABASE_NAME.equals(directoryLayoutArg.getDatabaseName()),
+                    forceBtreeIndexesToRange || SYSTEM_DATABASE_NAME.equals(directoryLayoutArg.getDatabaseName()),
                     config,
                     pageCache,
                     fileSystem,

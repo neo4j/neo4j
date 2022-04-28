@@ -166,7 +166,8 @@ class RecordStorageMigratorIT {
                 jobScheduler,
                 contextFactory,
                 batchImporterFactory,
-                INSTANCE);
+                INSTANCE,
+                false);
         migrator.migrate(
                 databaseLayout,
                 migrationLayout,
@@ -186,7 +187,8 @@ class RecordStorageMigratorIT {
                 jobScheduler,
                 contextFactory,
                 batchImporterFactory,
-                INSTANCE);
+                INSTANCE,
+                false);
         migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, getVersionToMigrateTo());
 
         // THEN starting the new store should be successful
@@ -226,7 +228,8 @@ class RecordStorageMigratorIT {
                 jobScheduler,
                 contextFactory,
                 batchImporterFactory,
-                INSTANCE);
+                INSTANCE,
+                false);
         String migrateTo = getVersionToMigrateTo();
         migrator.migrate(
                 databaseLayout,
@@ -281,7 +284,8 @@ class RecordStorageMigratorIT {
                 jobScheduler,
                 contextFactory,
                 batchImporterFactory,
-                INSTANCE);
+                INSTANCE,
+                false);
         String migrateTo = getVersionToMigrateTo();
         migrator.migrate(
                 databaseLayout,
@@ -351,7 +355,8 @@ class RecordStorageMigratorIT {
                 jobScheduler,
                 contextFactory,
                 batchImporterFactory,
-                INSTANCE);
+                INSTANCE,
+                false);
         migrator.migrate(
                 databaseLayout,
                 migrationLayout,
@@ -414,7 +419,8 @@ class RecordStorageMigratorIT {
                 jobScheduler,
                 contextFactory,
                 batchImporterFactory,
-                INSTANCE);
+                INSTANCE,
+                false);
 
         // WHEN migrating
         var engineFactory = StorageEngineFactory.defaultStorageEngine();
@@ -515,7 +521,8 @@ class RecordStorageMigratorIT {
                 jobScheduler,
                 contextFactory,
                 batchImporterFactory,
-                INSTANCE);
+                INSTANCE,
+                false);
         migrator.migrate(
                 databaseLayout,
                 migrationLayout,
@@ -566,7 +573,8 @@ class RecordStorageMigratorIT {
                 jobScheduler,
                 contextFactory,
                 batchImporterFactory,
-                INSTANCE);
+                INSTANCE,
+                false);
 
         // when
         migrator.migrate(

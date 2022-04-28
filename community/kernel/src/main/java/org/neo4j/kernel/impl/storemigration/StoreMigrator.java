@@ -146,7 +146,7 @@ public class StoreMigrator {
         this.logTailSupplier = logTailSupplier;
     }
 
-    public void migrateIfNeeded(String formatFamily) throws UnableToMigrateException {
+    public void migrateIfNeeded(String formatFamily, boolean forceBtreeIndexesToRange) throws UnableToMigrateException {
         checkStoreExists();
 
         try (var cursorContext = contextFactory.create(STORE_UPGRADE_TAG)) {
@@ -173,7 +173,8 @@ public class StoreMigrator {
                     checkResult.versionToMigrateFrom(),
                     checkResult.versionToMigrateTo(),
                     VisibleMigrationProgressMonitorFactory.forMigration(internalLog),
-                    LogsMigrator.CheckResult::migrate);
+                    LogsMigrator.CheckResult::migrate,
+                    forceBtreeIndexesToRange);
         }
     }
 
@@ -209,7 +210,8 @@ public class StoreMigrator {
                     checkResult.versionToMigrateFrom(),
                     checkResult.versionToMigrateTo(),
                     VisibleMigrationProgressMonitorFactory.forUpgrade(internalLog),
-                    LogsMigrator.CheckResult::upgrade);
+                    LogsMigrator.CheckResult::upgrade,
+                    false);
         }
     }
 
@@ -224,8 +226,9 @@ public class StoreMigrator {
             String versionToMigrateFrom,
             String versionToMigrateTo,
             MigrationProgressMonitor progressMonitor,
-            LogsAction logsAction) {
-        var participants = getStoreMigrationParticipants();
+            LogsAction logsAction,
+            boolean forceBtreeIndexesToRange) {
+        var participants = getStoreMigrationParticipants(forceBtreeIndexesToRange);
         // One or more participants would like to do migration
         progressMonitor.started(participants.size());
 
@@ -321,9 +324,9 @@ public class StoreMigrator {
                         migrationStatus.versionToMigrateFrom(),
                         migrationStatus.versionToMigrateTo(),
                         VisibleMigrationProgressMonitorFactory.forMigration(internalLog),
-                        LogsMigrator.CheckResult
-                                ::migrate); // Since we are doing a migration it should be safe to use the
-                // LogsMigrator#migrate
+                        // Since we are doing a migration it should be safe to use the LogsMigrator#migrate
+                        LogsMigrator.CheckResult::migrate,
+                        false);
 
                 // Have new logTail now, use that one instead
                 logTailSupplier = getLogTailSupplier();
@@ -354,7 +357,8 @@ public class StoreMigrator {
                         migrationStatus.versionToMigrateFrom(),
                         migrationStatus.versionToMigrateTo(),
                         VisibleMigrationProgressMonitorFactory.forUpgrade(internalLog),
-                        LogsMigrator.CheckResult::upgrade);
+                        LogsMigrator.CheckResult::upgrade,
+                        false);
 
                 // Could have new logTail now, use that one instead
                 logTailSupplier = getLogTailSupplier();
@@ -364,10 +368,18 @@ public class StoreMigrator {
         }
     }
 
-    private List<StoreMigrationParticipant> getStoreMigrationParticipants() {
+    private List<StoreMigrationParticipant> getStoreMigrationParticipants(boolean forceBtreeIndexesToRange) {
         // Get all the participants from the storage engine and add them where they want to be
         var storeParticipants = storageEngineFactory.migrationParticipants(
-                fs, config, pageCache, jobScheduler, logService, memoryTracker, pageCacheTracer, contextFactory);
+                fs,
+                config,
+                pageCache,
+                jobScheduler,
+                logService,
+                memoryTracker,
+                pageCacheTracer,
+                contextFactory,
+                forceBtreeIndexesToRange);
         List<StoreMigrationParticipant> participants = new ArrayList<>(storeParticipants);
 
         // Do individual index provider migration last because they may delete files that we need in earlier steps.

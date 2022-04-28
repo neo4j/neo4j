@@ -117,7 +117,8 @@ class RecordStoreMigratorTest {
                 jobScheduler,
                 contextFactory,
                 batchImporterFactory,
-                INSTANCE);
+                INSTANCE,
+                false);
     }
 
     private static class MyProgressReporter implements ProgressReporter {
