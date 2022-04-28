@@ -1811,6 +1811,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows of cartesian product") {
+    assume(!(isParallel && runOnlySafeScenarios))
     val size = Math.sqrt(sizeHint).toInt
     given { nodeGraph(size) }
 

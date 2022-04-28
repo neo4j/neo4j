@@ -627,7 +627,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile dbhits with optional expand into") {
     // TODO: parallel scans don't seem on the rhs of apply are flaky, expected
-    assume(runtime.name.toLowerCase != "parallel")
+    assume(!(isParallel && runOnlySafeScenarios))
     // given
     val n = Math.sqrt(sizeHint).toInt
     val extraNodes = 20
@@ -918,6 +918,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile dbHits of cartesian product") {
+    assume(!(isParallel && runOnlySafeScenarios))
     // given
     val size = Math.sqrt(sizeHint).toInt
     given { nodeGraph(size) }
