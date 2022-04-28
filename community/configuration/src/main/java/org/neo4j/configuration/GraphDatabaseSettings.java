@@ -174,11 +174,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             newBuilder("server.config.strict_validation.enabled", BOOL, true).build();
 
     @Description(
-            "Whether to allow a store upgrade in case the current version of the database starts against an older version of the store.")
-    public static final Setting<Boolean> allow_upgrade =
-            newBuilder("dbms.allow_upgrade", BOOL, false).dynamic().build();
-
-    @Description(
             "Max number of processors used when upgrading the store. Defaults to the number of processors available to the JVM. "
                     + "There is a certain amount of minimum threads needed so for that reason there is no lower bound for this "
                     + "value. For optimal performance this value shouldn't be greater than the number of available processors.")
@@ -186,22 +181,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .addConstraint(min(0))
             .dynamic()
             .build();
-
-    @Description(
-            "Database record format. Valid values are blank(no value, default), `standard`, `aligned`, or `high_limit`. "
-                    + "This setting does not affect newly created databases, use dbms.record_format_created_db for that. "
-                    + "Specifying a value will force existing databases to migrate if `dbms.allow_upgrade=true` is specified. "
-                    + "The `aligned` format is essentially the `standard` format with some minimal padding at the end of pages such that a single "
-                    + "record will never cross a page boundary. The `high_limit` format is available for Enterprise Edition only. "
-                    + "It is required if you have a graph that is larger than 34 billion nodes, 34 billion relationships, or 68 billion properties. "
-                    + "A change of the record format is irreversible. "
-                    + "Certain operations may suffer from a performance penalty of up to 10%, which is why this format is not switched on by default. "
-                    + "However, if you want to change the configured record format value, you must also set `dbms.allow_upgrade=true`, "
-                    + "because the setting implies a one-way store format migration.")
-    @DocumentedDefaultValue(
-            "Blank (no value). New databases will use `aligned`. Existing databases will stay on their current format")
-    public static final Setting<String> record_format =
-            newBuilder("dbms.record_format", STRING, "").build();
 
     @Description(
             "Database record format. This is the format that will be used for new databases. "

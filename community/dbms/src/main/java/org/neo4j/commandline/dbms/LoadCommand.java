@@ -154,13 +154,11 @@ public class LoadCommand extends AbstractCommand {
         }
 
         StoreVersionLoader.Result result = loader.getStoreVersion(ctx.fs(), config, databaseLayout, contextFactory);
-        if (!result.isLatest) {
+        if (result.migrationNeeded) {
             ctx.err()
                     .printf(
-                            "The loaded database is not on the latest format (current:%s, latest:%s). Set %s=true to enable migration.%n",
-                            result.currentFormatName,
-                            result.latestFormatName,
-                            GraphDatabaseSettings.allow_upgrade.name());
+                            "The loaded database is not on a supported version (current:%s). Use the migrate-store command%n",
+                            result.currentFormatName);
         }
     }
 

@@ -20,7 +20,6 @@
 package org.neo4j.configuration;
 
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.select_specific_record_format;
-import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
 
 import java.util.Collection;
 import java.util.Map;
@@ -42,13 +41,7 @@ public class DatabaseConfig extends Config implements Lifecycle {
             Map<Setting<?>, Object> databaseSpecificSettings, Config globalConfig, NamedDatabaseId namedDatabaseId) {
         this.databaseSpecificSettings = databaseSpecificSettings;
         this.globalConfig = globalConfig;
-        overriddenSettings = !namedDatabaseId.isSystemDatabase()
-                ? null
-                : Map.of(
-                        record_format,
-                                "", // Latest version of the format family it is currently on. Needs to work in rolling
-                        // upgrade.
-                        select_specific_record_format, "");
+        overriddenSettings = !namedDatabaseId.isSystemDatabase() ? null : Map.of(select_specific_record_format, "");
     }
 
     @Override

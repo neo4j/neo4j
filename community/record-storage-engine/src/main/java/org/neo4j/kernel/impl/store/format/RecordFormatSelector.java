@@ -139,29 +139,6 @@ public class RecordFormatSelector {
     }
 
     /**
-     * Select configured record format based on available services in class path.
-     * Specific format can be specified by {@link GraphDatabaseSettings#record_format} property.
-     * <p>
-     * If format is not specified {@link #DEFAULT_FORMAT} will be used.
-     *
-     * @param config configuration parameters
-     * @param logProvider logging provider
-     * @return selected record format
-     * @throws IllegalArgumentException if requested format not found
-     */
-    public static RecordFormats selectForConfig(Config config, InternalLogProvider logProvider) {
-        String recordFormat = configuredRecordFormat(config);
-        if (StringUtils.isEmpty(recordFormat)) {
-            info(logProvider, "Record format not configured, selected default: " + defaultFormat());
-            return defaultFormat(config.get(GraphDatabaseInternalSettings.include_versions_under_development));
-        }
-        RecordFormats format = selectSpecificFormat(
-                recordFormat, config.get(GraphDatabaseInternalSettings.include_versions_under_development));
-        info(logProvider, "Selected record format based on config: " + format);
-        return format;
-    }
-
-    /**
      * Select record format for the given store directory.
      * <p>
      * <b>Note:</b> package private only for testing.
@@ -281,59 +258,6 @@ public class RecordFormatSelector {
      */
     public static boolean isStoreAndConfigFormatsCompatible(RecordFormats format, RecordFormats otherFormat) {
         return (format == null) || (otherFormat == null) || formatSameFamilyAndVersion(format, otherFormat);
-    }
-
-    /**
-     * Select explicitly configured record format (via given {@code config}) or the newest format compatible with the store. If store does
-     * not exist then this method returns {@link #DEFAULT_FORMAT}.
-     *
-     * @param config configuration parameters
-     * @param databaseLayout database directory structure
-     * @param fs file system used to access store files
-     * @param pageCache page cache to read store files
-     * @param contextFactory underlying page cache context factory.
-     * @return newest record format compatible with the store (if it can be read) or configured record format or {@link #DEFAULT_FORMAT}
-     */
-    public static RecordFormats selectNewestFormat(
-            Config config,
-            RecordDatabaseLayout databaseLayout,
-            FileSystemAbstraction fs,
-            PageCache pageCache,
-            InternalLogProvider logProvider,
-            CursorContextFactory contextFactory) {
-        String specificFormat = config.get(GraphDatabaseInternalSettings.select_specific_record_format);
-        if (StringUtils.isNotEmpty(specificFormat)) {
-            return selectSpecificFormat(
-                    specificFormat, config.get(GraphDatabaseInternalSettings.include_versions_under_development));
-        }
-
-        boolean formatConfigured = StringUtils.isNotEmpty(configuredRecordFormat(config));
-        if (formatConfigured) {
-            // format was explicitly configured so select it
-            return selectForConfig(config, logProvider);
-        } else {
-            final RecordFormats result = selectForStore(databaseLayout, fs, pageCache, logProvider, contextFactory);
-            if (result == null) {
-                // format was not explicitly configured and store does not exist, select default format
-                RecordFormats formats =
-                        defaultFormat(config.get(GraphDatabaseInternalSettings.include_versions_under_development));
-                info(
-                        logProvider,
-                        format(
-                                "Selected format '%s' for the new store %s",
-                                formats, databaseLayout.databaseDirectory()));
-                return formats;
-            }
-            Optional<RecordFormats> newestFormatInFamily = findLatestFormatInFamily(
-                    result, config.get(GraphDatabaseInternalSettings.include_versions_under_development));
-            RecordFormats newestFormat = newestFormatInFamily.orElse(result);
-            info(
-                    logProvider,
-                    format(
-                            "Selected format '%s' for existing store %s with format '%s'",
-                            newestFormat, databaseLayout.databaseDirectory(), result));
-            return newestFormat;
-        }
     }
 
     public static Optional<RecordFormats> findLatestSupportedFormatInFamily(RecordFormats result, Config config) {
@@ -468,9 +392,5 @@ public class RecordFormatSelector {
 
     private static void info(InternalLogProvider logProvider, String message) {
         logProvider.getLog(RecordFormatSelector.class).info(message);
-    }
-
-    private static String configuredRecordFormat(Config config) {
-        return config.get(GraphDatabaseSettings.record_format);
     }
 }

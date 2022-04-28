@@ -992,9 +992,8 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
-    @Description(
-            "Selects specifc record format for new dbs and upgrade. Overrides dbms.record_format_created_db and dbms.record_format. "
-                    + "To be used from tests that need to use a test format that can't normally be selected.")
+    @Description("Selects specific record format for new dbs and upgrade. Overrides dbms.record_format_created_db. "
+            + "To be used from tests that need to use a test format that can't normally be selected.")
     public static final Setting<String> select_specific_record_format =
             newBuilder("internal.dbms.select_specfic_record_format", STRING, "").build();
 

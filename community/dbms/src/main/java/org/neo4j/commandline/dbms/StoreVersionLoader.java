@@ -19,7 +19,6 @@
  */
 package org.neo4j.commandline.dbms;
 
-import java.util.Objects;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.ByteUnit;
@@ -81,23 +80,28 @@ public class StoreVersionLoader implements AutoCloseable {
                 .orElseGet(StorageEngineFactory::defaultStorageEngine);
         StoreVersionCheck versionCheck =
                 sef.versionCheck(fs, layout, config, pageCache, NullLogService.getInstance(), contextFactory);
-
-        String storeVersion = versionCheck
-                .storeVersion(CursorContext.NULL_CONTEXT)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Can not read store version of database " + layout.getDatabaseName()));
-        return new Result(storeVersion, sef.versionInformation(storeVersion).latestStoreVersion(config));
+        try (CursorContext cursorContext = contextFactory.create("Store version loader")) {
+            StoreVersionCheck.UpgradeCheckResult checkResult =
+                    versionCheck.getAndCheckUpgradeTargetVersion(cursorContext);
+            if (checkResult.outcome() == StoreVersionCheck.UpgradeOutcome.STORE_VERSION_RETRIEVAL_FAILURE) {
+                throw new IllegalStateException("Can not read store version of database " + layout.getDatabaseName());
+            }
+            return new Result(
+                    checkResult.outcome() == StoreVersionCheck.UpgradeOutcome.UNSUPPORTED_TARGET_VERSION,
+                    checkResult.versionToUpgradeFrom(),
+                    checkResult.versionToUpgradeTo());
+        }
     }
 
     public static class Result {
         public final String currentFormatName;
         public final String latestFormatName;
-        public final boolean isLatest;
+        public final boolean migrationNeeded;
 
-        private Result(String currentFormatName, String latestFormatName) {
+        private Result(boolean migrationNeeded, String currentFormatName, String latestFormatName) {
             this.currentFormatName = currentFormatName;
             this.latestFormatName = latestFormatName;
-            this.isLatest = Objects.equals(currentFormatName, latestFormatName);
+            this.migrationNeeded = migrationNeeded;
         }
     }
 }

@@ -71,7 +71,7 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest {
         // The size of the config is not fixed so just make sure it's the right magnitude
         assertTrue(names.size() > 10);
 
-        assertThat(names).contains(GraphDatabaseSettings.record_format.name());
+        assertThat(names).contains(GraphDatabaseSettings.record_format_created_db.name());
 
         // Should not contain "internal.*" configs
         assertEquals(0, names.stream().filter(n -> n.startsWith("internal")).count());
