@@ -106,6 +106,10 @@ final class Aggregator {
         states.keySet().forEach(ProgressListener::done);
     }
 
+    void mark(char mark) {
+        indicator.mark(mark);
+    }
+
     enum State {
         INIT,
         LIVE

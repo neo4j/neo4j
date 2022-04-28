@@ -35,6 +35,8 @@ public interface ProgressListener {
 
     void add(long progress);
 
+    void mark(char mark);
+
     void done();
 
     void failed(Throwable e);
@@ -58,6 +60,9 @@ public interface ProgressListener {
         public void add(long progress) {}
 
         @Override
+        public void mark(char mark) {}
+
+        @Override
         public void done() {}
 
         @Override
@@ -75,6 +80,7 @@ public interface ProgressListener {
         private final int threshold;
         private final ProgressListener parent;
         private int localUnreportedProgress;
+        private Character mark;
 
         ThreadLocalReporter(int threshold, ProgressListener parent) {
             this.threshold = threshold;
@@ -90,11 +96,20 @@ public interface ProgressListener {
         }
 
         @Override
+        public void mark(char mark) {
+            this.mark = mark;
+        }
+
+        @Override
         public void done() {
             reportToParent();
         }
 
         private void reportToParent() {
+            if (mark != null) {
+                parent.mark(mark);
+                mark = null;
+            }
             parent.add(localUnreportedProgress);
             localUnreportedProgress = 0;
         }
@@ -131,6 +146,11 @@ public interface ProgressListener {
         public void add(long progress) {
             started();
             aggregator.update(progress);
+        }
+
+        @Override
+        public void mark(char mark) {
+            aggregator.mark(mark);
         }
 
         @Override
@@ -177,6 +197,11 @@ public interface ProgressListener {
                 progress.addAndGet(delta);
                 aggregator.update(delta);
             }
+        }
+
+        @Override
+        public void mark(char mark) {
+            aggregator.mark(mark);
         }
 
         @Override

@@ -41,20 +41,28 @@ public abstract class ProgressMonitorFactory {
         return textual(
                 new OutputStreamWriter(out, StandardCharsets.UTF_8),
                 false,
-                Indicator.Textual.DEFAULT_DOTS_PER_LINE,
+                Indicator.Textual.DEFAULT_DOTS_PER_GROUP,
+                Indicator.Textual.DEFAULT_GROUPS_PER_LINE,
                 Indicator.Textual.DEFAULT_NUM_LINES);
     }
 
     public static ProgressMonitorFactory textual(final Writer out) {
-        return textual(out, false, Indicator.Textual.DEFAULT_DOTS_PER_LINE, Indicator.Textual.DEFAULT_NUM_LINES);
+        return textual(
+                out,
+                false,
+                Indicator.Textual.DEFAULT_DOTS_PER_GROUP,
+                Indicator.Textual.DEFAULT_GROUPS_PER_LINE,
+                Indicator.Textual.DEFAULT_NUM_LINES);
     }
 
     public static ProgressMonitorFactory textual(
-            final OutputStream out, boolean deltaTimes, int dotsPerLine, int numLines) {
-        return textual(new OutputStreamWriter(out, StandardCharsets.UTF_8), deltaTimes, dotsPerLine, numLines);
+            final OutputStream out, boolean deltaTimes, int dotsPerGroup, int groupsPerLine, int numLines) {
+        return textual(
+                new OutputStreamWriter(out, StandardCharsets.UTF_8), deltaTimes, dotsPerGroup, groupsPerLine, numLines);
     }
 
-    public static ProgressMonitorFactory textual(final Writer out, boolean deltaTimes, int dotsPerLine, int numLines) {
+    public static ProgressMonitorFactory textual(
+            final Writer out, boolean deltaTimes, int dotsPerGroup, int groupsPerLine, int numLines) {
         return new ProgressMonitorFactory() {
             @Override
             protected Indicator newIndicator(String process) {
@@ -64,7 +72,8 @@ public abstract class ProgressMonitorFactory {
                         deltaTimes,
                         Clocks.nanoClock(),
                         Indicator.Textual.DEFAULT_DELTA_CHARACTER,
-                        dotsPerLine,
+                        dotsPerGroup,
+                        groupsPerLine,
                         numLines);
             }
 
