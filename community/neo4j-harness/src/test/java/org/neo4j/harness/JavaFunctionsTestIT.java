@@ -25,7 +25,7 @@ import static org.neo4j.internal.kernel.api.security.AccessMode.Static.FULL;
 import static org.neo4j.internal.kernel.api.security.AccessMode.Static.READ;
 import static org.neo4j.messages.MessageUtil.authDisabled;
 import static org.neo4j.messages.MessageUtil.createNodeWithLabelsDenied;
-import static org.neo4j.messages.MessageUtil.overriddenMode;
+import static org.neo4j.messages.MessageUtil.overridenMode;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -153,7 +153,7 @@ class JavaFunctionsTestIT {
             assertQueryGetsError(
                     server,
                     "RETURN my.willFail() AS value",
-                    createNodeWithLabelsDenied("", "neo4j", overriddenMode(authDisabled(FULL.name()), READ.name())));
+                    createNodeWithLabelsDenied("", "neo4j", overridenMode(authDisabled(FULL.name()), READ.name())));
         }
     }
 

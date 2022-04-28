@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
-import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTString
 
 sealed trait AdministrationCommand extends StatementWithGraph with SemanticAnalysisTooling {
@@ -803,142 +802,39 @@ sealed abstract class DropDatabaseAdditionalAction(val name: String)
 case object DumpData extends DropDatabaseAdditionalAction("DUMP DATA")
 case object DestroyData extends DropDatabaseAdditionalAction("DESTROY DATA")
 
-final case class ShowAliases(override val yieldOrWhere: YieldOrWhere, defaultColumns: DefaultOrAllShowColumns)(
-  val position: InputPosition
-) extends ReadAdministrationCommand {
-  override val defaultColumnSet: List[ShowColumn] = defaultColumns.columns
-  override def name: String = "SHOW ALIASES FOR DATABASE"
+final case class CreateDatabaseAlias(
+  aliasName: Either[String, Parameter],
+  targetName: Either[String, Parameter],
+  ifExistsDo: IfExistsDo
+)(val position: InputPosition) extends WriteAdministrationCommand with EitherAsString {
+
+  override def name: String = ifExistsDo match {
+    case IfExistsReplace | IfExistsInvalidSyntax => "CREATE OR REPLACE ALIAS"
+    case _                                       => "CREATE ALIAS"
+  }
+
+  override def semanticCheck: SemanticCheck = ifExistsDo match {
+    case IfExistsInvalidSyntax => error(
+        s"Failed to create the specified alias '${Prettifier.escapeName(aliasName)}': cannot have both `OR REPLACE` and `IF NOT EXISTS`.",
+        position
+      )
+    case _ =>
+      super.semanticCheck chain
+        SemanticState.recordCurrentScope(this)
+  }
+}
+
+final case class AlterDatabaseAlias(
+  aliasName: Either[String, Parameter],
+  targetName: Either[String, Parameter],
+  ifExists: Boolean
+)(val position: InputPosition) extends WriteAdministrationCommand {
+
+  override def name = "ALTER ALIAS"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
-
-  override def withYieldOrWhere(newYieldOrWhere: YieldOrWhere): ShowAliases =
-    this.copy(yieldOrWhere = newYieldOrWhere)(position)
-}
-
-object ShowAliases {
-
-  def apply(yieldOrWhere: YieldOrWhere)(position: InputPosition): ShowAliases = {
-    val showColumns = List(
-      // (column, brief)
-      (ShowColumn("name")(position), true),
-      (ShowColumn("database")(position), true),
-      (ShowColumn("location")(position), true),
-      (ShowColumn("url")(position), true),
-      (ShowColumn("user")(position), true),
-      (ShowColumn("driver", CTMap)(position), false)
-    )
-
-    val briefShowColumns = showColumns.filter(_._2).map(_._1)
-    val allShowColumns = showColumns.map(_._1)
-    val allColumns = yieldOrWhere match {
-      case Some(Left(_)) => true
-      case _             => false
-    }
-    val columns = DefaultOrAllShowColumns(allColumns, briefShowColumns, allShowColumns)
-    ShowAliases(yieldOrWhere, columns)(position)
-  }
-}
-
-object AliasDriverSettingsCheck {
-  val errorMessage = "The EXISTS clause is not valid in driver settings."
-
-  def findInvalidDriverSettings(driverSettings: Option[Either[Map[String, Expression], Parameter]])
-    : Option[Expression] = {
-    driverSettings match {
-      case Some(Left(settings)) =>
-        settings.values.flatMap(s => s.folder.treeFind[Expression] { case _: ExistsSubClause => true }).headOption
-      case _ => None
-    }
-  }
-}
-
-final case class CreateLocalDatabaseAlias(
-  aliasName: Either[String, Parameter],
-  targetName: Either[String, Parameter],
-  ifExistsDo: IfExistsDo
-)(val position: InputPosition) extends WriteAdministrationCommand {
-
-  override def name: String = ifExistsDo match {
-    case IfExistsReplace | IfExistsInvalidSyntax => "CREATE OR REPLACE ALIAS"
-    case _                                       => "CREATE ALIAS"
-  }
-
-  override def semanticCheck: SemanticCheck = ifExistsDo match {
-    case IfExistsInvalidSyntax => error(
-        s"Failed to create the specified alias '${Prettifier.escapeName(aliasName)}': cannot have both `OR REPLACE` and `IF NOT EXISTS`.",
-        position
-      )
-    case _ => super.semanticCheck chain SemanticState.recordCurrentScope(this)
-  }
-}
-
-final case class CreateRemoteDatabaseAlias(
-  aliasName: Either[String, Parameter],
-  targetName: Either[String, Parameter],
-  ifExistsDo: IfExistsDo,
-  url: Either[String, Parameter],
-  username: Either[String, Parameter],
-  password: Expression,
-  driverSettings: Option[Either[Map[String, Expression], Parameter]] = None
-)(val position: InputPosition) extends WriteAdministrationCommand {
-
-  override def name: String = ifExistsDo match {
-    case IfExistsReplace | IfExistsInvalidSyntax => "CREATE OR REPLACE ALIAS"
-    case _                                       => "CREATE ALIAS"
-  }
-
-  override def semanticCheck: SemanticCheck = ifExistsDo match {
-    case IfExistsInvalidSyntax => error(
-        s"Failed to create the specified alias '${Prettifier.escapeName(aliasName)}': cannot have both `OR REPLACE` and `IF NOT EXISTS`.",
-        position
-      )
-    case _ => AliasDriverSettingsCheck.findInvalidDriverSettings(driverSettings) match {
-        case Some(expr) => error(AliasDriverSettingsCheck.errorMessage, expr.position)
-        case _          => super.semanticCheck chain SemanticState.recordCurrentScope(this)
-      }
-  }
-}
-
-final case class AlterLocalDatabaseAlias(
-  aliasName: Either[String, Parameter],
-  targetName: Either[String, Parameter],
-  ifExists: Boolean = false
-)(val position: InputPosition) extends WriteAdministrationCommand {
-
-  override def name = "ALTER ALIAS"
-
-  override def semanticCheck: SemanticCheck = super.semanticCheck chain SemanticState.recordCurrentScope(this)
-}
-
-final case class AlterRemoteDatabaseAlias(
-  aliasName: Either[String, Parameter],
-  targetName: Option[Either[String, Parameter]] = None,
-  ifExists: Boolean = false,
-  url: Option[Either[String, Parameter]] = None,
-  username: Option[Either[String, Parameter]] = None,
-  password: Option[Expression] = None,
-  driverSettings: Option[Either[Map[String, Expression], Parameter]] = None
-)(val position: InputPosition) extends WriteAdministrationCommand {
-
-  override def name = "ALTER ALIAS"
-
-  override def semanticCheck: SemanticCheck =
-    AliasDriverSettingsCheck.findInvalidDriverSettings(driverSettings) match {
-      case Some(expr) => error(AliasDriverSettingsCheck.errorMessage, expr.position)
-      case _ =>
-        val isLocalAlias = targetName.isDefined && url.isEmpty
-        val isRemoteAlias = url.isDefined || username.isDefined || password.isDefined || driverSettings.isDefined
-        if (isLocalAlias && isRemoteAlias) {
-          error(
-            s"Failed to alter the specified database alias '${Prettifier.escapeName(aliasName)}': url needs to be defined to alter a remote alias target.",
-            position
-          )
-        } else {
-          super.semanticCheck chain SemanticState.recordCurrentScope(this)
-        }
-    }
 }
 
 final case class DropDatabaseAlias(aliasName: Either[String, Parameter], ifExists: Boolean)(val position: InputPosition)

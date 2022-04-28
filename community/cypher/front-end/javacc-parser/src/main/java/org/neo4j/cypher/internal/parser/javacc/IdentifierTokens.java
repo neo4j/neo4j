@@ -24,7 +24,6 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ACTIVE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ADMIN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ADMINISTRATOR;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ALIAS;
-import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ALIASES;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ALL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ALL_SHORTEST_PATH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ALTER;
@@ -34,7 +33,6 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.AS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASC;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASSERT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASSIGN;
-import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.AT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BOOSTED;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BRIEF;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BTREE;
@@ -66,7 +64,6 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DESC;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DESTROY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DETACH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DISTINCT;
-import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DRIVER;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DROP;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DUMP;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EACH;
@@ -212,7 +209,6 @@ public class IdentifierTokens {
             ADMIN,
             ADMINISTRATOR,
             ALIAS,
-            ALIASES,
             ALL_SHORTEST_PATH,
             ALL,
             ALTER,
@@ -222,7 +218,6 @@ public class IdentifierTokens {
             ASC,
             ASSERT,
             ASSIGN,
-            AT,
             BOOSTED,
             BRIEF,
             BTREE,
@@ -254,7 +249,6 @@ public class IdentifierTokens {
             DESTROY,
             DETACH,
             DISTINCT,
-            DRIVER,
             DROP,
             DUMP,
             EACH,

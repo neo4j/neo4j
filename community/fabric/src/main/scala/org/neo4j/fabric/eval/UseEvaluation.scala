@@ -21,7 +21,6 @@ package org.neo4j.fabric.eval
 
 import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.GraphSelection
-import org.neo4j.cypher.internal.evaluator.StaticEvaluation
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.Property

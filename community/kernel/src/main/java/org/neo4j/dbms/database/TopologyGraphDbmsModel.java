@@ -128,29 +128,9 @@ public interface TopologyGraphDbmsModel {
     String DATABASE_NAME = DATABASE_NAME_LABEL.name();
     String DATABASE_NAME_LABEL_DESCRIPTION = "Database alias";
     String NAME_PROPERTY = "name";
-    String VERSION_PROPERTY = "version"; // used to refresh connection pool on change
     RelationshipType TARGETS_RELATIONSHIP = RelationshipType.withName("TARGETS");
     String TARGETS = TARGETS_RELATIONSHIP.name();
-    String TARGET_NAME_PROPERTY = "target_name";
     String PRIMARY_PROPERTY = "primary";
-    Label REMOTE_DATABASE_LABEL = Label.label("Remote");
-    String REMOTE_DATABASE = REMOTE_DATABASE_LABEL.name();
-    String URL_PROPERTY = "url";
-    String USERNAME_PROPERTY = "username";
-    String PASSWORD_PROPERTY = "password";
-    String IV_PROPERTY = "iv"; // Initialization Vector for AES encryption
-    Label DRIVER_SETTINGS_LABEL = Label.label("DriverSettings");
-    String DRIVER_SETTINGS = DRIVER_SETTINGS_LABEL.name();
-    String SSL_ENFORCED = "ssl_enforced";
-    String CONNECTION_TIMEOUT = "connection_timeout";
-    String CONNECTION_MAX_LIFETIME = "connection_max_lifetime";
-    String CONNECTION_POOL_AQUISITION_TIMEOUT = "connection_pool_acquisition_timeout";
-    String CONNECTION_POOL_IDLE_TEST = "connection_pool_idle_test";
-    String CONNECTION_POOL_MAX_SIZE = "connection_pool_max_size";
-    String LOGGING_LEVEL = "logging_level";
-
-    RelationshipType CONNECTS_WITH_RELATIONSHIP = RelationshipType.withName("CONNECTS_WITH");
-    String CONNECTS_WITH = CONNECTS_WITH_RELATIONSHIP.name();
 
     Label INSTANCE_LABEL = Label.label("Instance");
     Label REMOVED_INSTANCE_LABEL = Label.label("RemovedInstance");

@@ -1146,7 +1146,7 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL createLocalDatabaseAlias(
+    public NULL createDatabaseAlias(
             NULL p,
             boolean replace,
             SimpleEither<String, NULL> aliasName,
@@ -1156,45 +1156,13 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL createRemoteDatabaseAlias(
-            NULL p,
-            boolean replace,
-            SimpleEither<String, NULL> aliasName,
-            SimpleEither<String, NULL> targetName,
-            boolean ifNotExists,
-            SimpleEither<String, NULL> url,
-            SimpleEither<String, NULL> username,
-            NULL password,
-            SimpleEither<Map<String, NULL>, NULL> driverSettings) {
-        return null;
-    }
-
-    @Override
-    public NULL alterLocalDatabaseAlias(
+    public NULL alterDatabaseAlias(
             NULL p, SimpleEither<String, NULL> aliasName, SimpleEither<String, NULL> targetName, boolean ifExists) {
         return null;
     }
 
     @Override
-    public NULL alterRemoteDatabaseAlias(
-            NULL p,
-            SimpleEither<String, NULL> aliasName,
-            SimpleEither<String, NULL> targetName,
-            boolean ifExists,
-            SimpleEither<String, NULL> url,
-            SimpleEither<String, NULL> username,
-            NULL password,
-            SimpleEither<Map<String, NULL>, NULL> driverSettings) {
-        return null;
-    }
-
-    @Override
     public NULL dropAlias(NULL p, SimpleEither<String, NULL> aliasName, boolean ifExists) {
-        return null;
-    }
-
-    @Override
-    public NULL showAliases(NULL p, NULL yieldExpr, NULL returnWithoutGraph, NULL aNull) {
         return null;
     }
 }

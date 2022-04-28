@@ -19,11 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import org.neo4j.cypher.internal.ast.AlterAliasAction
 import org.neo4j.cypher.internal.ast.AlterDatabase
 import org.neo4j.cypher.internal.ast.AlterDatabaseAction
-import org.neo4j.cypher.internal.ast.AlterLocalDatabaseAlias
-import org.neo4j.cypher.internal.ast.AlterRemoteDatabaseAlias
+import org.neo4j.cypher.internal.ast.AlterDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
@@ -31,11 +29,9 @@ import org.neo4j.cypher.internal.ast.CallClause
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.ClauseAllowedOnSystem
 import org.neo4j.cypher.internal.ast.CommandClauseAllowedOnSystem
-import org.neo4j.cypher.internal.ast.CreateAliasAction
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
-import org.neo4j.cypher.internal.ast.CreateLocalDatabaseAlias
-import org.neo4j.cypher.internal.ast.CreateRemoteDatabaseAlias
+import org.neo4j.cypher.internal.ast.CreateDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateRoleAction
 import org.neo4j.cypher.internal.ast.CreateUser
@@ -45,7 +41,6 @@ import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DbmsPrivilege
 import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DestroyData
-import org.neo4j.cypher.internal.ast.DropAliasAction
 import org.neo4j.cypher.internal.ast.DropDatabase
 import org.neo4j.cypher.internal.ast.DropDatabaseAction
 import org.neo4j.cypher.internal.ast.DropDatabaseAlias
@@ -81,8 +76,6 @@ import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
 import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
-import org.neo4j.cypher.internal.ast.ShowAliasAction
-import org.neo4j.cypher.internal.ast.ShowAliases
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
@@ -547,16 +540,16 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case c @ CreateDatabase(dbName, ifExistsDo, options, waitUntilComplete) =>
         (ifExistsDo match {
           case IfExistsReplace =>
-            Some(plans.AssertNotBlockedDatabaseManagement(CreateDatabaseAction))
+            Some(plans.AssertNotBlocked(CreateDatabaseAction))
               .map(p => plans.AssertAllowedDbmsActions(Some(p), Seq(DropDatabaseAction, CreateDatabaseAction)))
               .map(plans.EnsureDatabaseHasNoAliases(_, dbName))
               .map(plans.DropDatabase(_, dbName, DestroyData))
           case IfExistsDoNothing =>
-            Some(plans.AssertNotBlockedDatabaseManagement(CreateDatabaseAction))
+            Some(plans.AssertNotBlocked(CreateDatabaseAction))
               .map(plans.AssertAllowedDbmsActions(_, CreateDatabaseAction))
               .map(plans.DoNothingIfDatabaseExists(_, dbName, s => new NormalizedDatabaseName(s).name()))
           case _ =>
-            Some(plans.AssertNotBlockedDatabaseManagement(CreateDatabaseAction))
+            Some(plans.AssertNotBlocked(CreateDatabaseAction))
               .map(plans.AssertAllowedDbmsActions(_, CreateDatabaseAction))
         }).map(plans.CreateDatabase(_, dbName, options))
           .map(plans.EnsureValidNumberOfDatabases(_))
@@ -565,10 +558,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // DROP DATABASE foo [IF EXISTS] [DESTROY | DUMP DATA]
       case c @ DropDatabase(dbName, ifExists, additionalAction, waitUntilComplete) =>
-        Some(plans.AssertAllowedDbmsActions(
-          plans.AssertNotBlockedDatabaseManagement(DropDatabaseAction),
-          DropDatabaseAction
-        ))
+        Some(plans.AssertAllowedDbmsActions(plans.AssertNotBlocked(DropDatabaseAction), DropDatabaseAction))
           .map(assertAllowed =>
             if (ifExists)
               plans.DoNothingIfDatabaseNotExists(
@@ -587,10 +577,8 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // ALTER DATABASE foo [IF EXISTS] SET ACCESS {READ ONLY | READ WRITE}
       case c @ AlterDatabase(dbName, ifExists, access) =>
-        val assertAllowed = plans.AssertAllowedDbmsActions(
-          plans.AssertNotBlockedDatabaseManagement(AlterDatabaseAction),
-          SetDatabaseAccessAction
-        )
+        val assertAllowed =
+          plans.AssertAllowedDbmsActions(plans.AssertNotBlocked(AlterDatabaseAction), SetDatabaseAccessAction)
         val source =
           if (ifExists) plans.DoNothingIfDatabaseNotExists(
             assertAllowed,
@@ -607,7 +595,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val assertAllowed = plans.AssertAllowedDatabaseAction(
           StartDatabaseAction,
           dbName,
-          Some(plans.AssertNotBlockedDatabaseManagement(StartDatabaseAction))
+          Some(plans.AssertNotBlocked(StartDatabaseAction))
         )
         val plan = wrapInWait(plans.StartDatabase(assertAllowed, dbName), dbName, waitUntilComplete)
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
@@ -617,7 +605,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val assertAllowed = plans.AssertAllowedDatabaseAction(
           StopDatabaseAction,
           dbName,
-          Some(plans.AssertNotBlockedDatabaseManagement(StopDatabaseAction))
+          Some(plans.AssertNotBlocked(StopDatabaseAction))
         )
         val plan = wrapInWait(
           plans.StopDatabase(plans.EnsureValidNonSystemDatabase(assertAllowed, dbName, "stop"), dbName),
@@ -627,69 +615,37 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // CREATE DATABASE ALIAS
-      case c @ CreateLocalDatabaseAlias(aliasName, targetName, ifExistsDo) =>
+      case c @ CreateDatabaseAlias(aliasName, targetName, ifExistsDo) =>
         val (source, replace) = ifExistsDo match {
           case IfExistsReplace => (
               plans.DropDatabaseAlias(
-                plans.AssertAllowedOneOfDbmsActions(
-                  Some(plans.AssertAllowedOneOfDbmsActions(None, Seq(CreateDatabaseAction, CreateAliasAction))),
-                  Seq(DropDatabaseAction, DropAliasAction)
-                ),
+                plans.AssertAllowedDbmsActions(None, Seq(CreateDatabaseAction, DropDatabaseAction)),
                 aliasName
               ),
               true
             )
           case IfExistsDoNothing => (
               plans.DoNothingIfDatabaseExists(
-                plans.AssertAllowedOneOfDbmsActions(None, Seq(CreateDatabaseAction, CreateAliasAction)),
+                plans.AssertAllowedDbmsActions(None, Seq(CreateDatabaseAction)),
                 aliasName
               ),
               false
             )
-          case _ => (plans.AssertAllowedOneOfDbmsActions(None, Seq(CreateDatabaseAction, CreateAliasAction)), false)
+          case _ => (plans.AssertAllowedDbmsActions(None, Seq(CreateDatabaseAction)), false)
         }
-        val ensureValidDatabase = plans.EnsureValidNonSystemDatabase(source, targetName, "create", Some(aliasName))
-        val aliasCommand = plans.CreateLocalDatabaseAlias(ensureValidDatabase, aliasName, targetName, replace)
-        Some(plans.LogSystemCommand(aliasCommand, prettifier.asString(c)))
-
-      // CREATE DATABASE ALIAS name AT
-      case c @ CreateRemoteDatabaseAlias(aliasName, targetName, ifExistsDo, url, username, password, driverSettings) =>
-        val assertAllowed =
-          plans.AssertAllowedOneOfDbmsActions(
-            Some(plans.AssertNotBlockedRemoteAliasManagement()),
-            Seq(CreateDatabaseAction, CreateAliasAction)
-          )
-
-        val (source, replace) = ifExistsDo match {
-          case IfExistsReplace =>
-            (
-              plans.DropDatabaseAlias(
-                plans.AssertAllowedOneOfDbmsActions(Some(assertAllowed), Seq(DropDatabaseAction, DropAliasAction)),
-                aliasName
-              ),
-              true
-            )
-          case IfExistsDoNothing => (plans.DoNothingIfDatabaseExists(assertAllowed, aliasName), false)
-          case _                 => (assertAllowed, false)
-        }
-        val aliasCommand = plans.CreateRemoteDatabaseAlias(
-          source,
-          aliasName,
-          targetName,
-          replace,
-          url,
-          username,
-          password,
-          driverSettings
-        )
-        Some(plans.LogSystemCommand(aliasCommand, prettifier.asString(c)))
+        Some(plans.LogSystemCommand(
+          plans.CreateDatabaseAlias(
+            plans.EnsureValidNonSystemDatabase(source, targetName, "create", Some(aliasName)),
+            aliasName,
+            targetName,
+            replace
+          ),
+          prettifier.asString(c)
+        ))
 
       // DROP DATABASE ALIAS foo [IF EXISTS]
       case c @ DropDatabaseAlias(aliasName, ifExists) =>
-        val assertAllowed = plans.AssertAllowedOneOfDbmsActions(
-          Some(plans.AssertNotBlockedDropAlias(aliasName)),
-          Seq(DropDatabaseAction, DropAliasAction)
-        )
+        val assertAllowed = plans.AssertAllowedDbmsActions(None, Seq(DropDatabaseAction))
         val source =
           if (ifExists) plans.DoNothingIfDatabaseNotExists(assertAllowed, aliasName, "delete")
           else plans.EnsureNodeExists(
@@ -704,15 +660,13 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
         Some(plans.LogSystemCommand(plans.DropDatabaseAlias(source, aliasName), prettifier.asString(c)))
 
-      // ALTER DATABASE ALIAS foo (local)
-      case c @ AlterLocalDatabaseAlias(aliasName, targetName, ifExists) =>
-        val assertAllowedLocal = plans.AssertAllowedOneOfDbmsActions(None, Seq(AlterDatabaseAction, AlterAliasAction))
-
+      // ALTER DATABASE ALIAS foo
+      case c @ AlterDatabaseAlias(aliasName, targetName, ifExists) =>
+        val assertAllowed = plans.AssertAllowedDbmsActions(None, Seq(AlterDatabaseAction))
         val source =
-          if (ifExists)
-            plans.DoNothingIfDatabaseNotExists(assertAllowedLocal, aliasName, "alter")
+          if (ifExists) plans.DoNothingIfDatabaseNotExists(assertAllowed, aliasName, "alter")
           else plans.EnsureNodeExists(
-            assertAllowedLocal,
+            assertAllowed,
             DATABASE_NAME,
             aliasName,
             new NormalizedDatabaseName(_).name(),
@@ -720,46 +674,14 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             DATABASE_NAME_LABEL_DESCRIPTION,
             "alter"
           )
-
-        val aliasCommand = plans.AlterLocalDatabaseAlias(
-          plans.EnsureValidNonSystemDatabase(source, targetName, "alter", Some(aliasName)),
-          aliasName,
-          targetName
-        )
-        Some(plans.LogSystemCommand(aliasCommand, prettifier.asString(c)))
-
-      // ALTER DATABASE ALIAS foo (remote)
-      case c @ AlterRemoteDatabaseAlias(aliasName, targetName, ifExists, url, username, password, driverSettings) =>
-        val assertAllowedRemote = plans.AssertAllowedOneOfDbmsActions(
-          Some(plans.AssertNotBlockedRemoteAliasManagement()),
-          Seq(AlterDatabaseAction, AlterAliasAction)
-        )
-
-        val source =
-          if (ifExists) plans.DoNothingIfDatabaseNotExists(assertAllowedRemote, aliasName, "alter")
-          else plans.EnsureNodeExists(
-            assertAllowedRemote,
-            DATABASE_NAME,
+        Some(plans.LogSystemCommand(
+          plans.AlterDatabaseAlias(
+            plans.EnsureValidNonSystemDatabase(source, targetName, "alter", Some(aliasName)),
             aliasName,
-            new NormalizedDatabaseName(_).name(),
-            node => s"WHERE $node.$PRIMARY_PROPERTY = false",
-            DATABASE_NAME_LABEL_DESCRIPTION,
-            "alter"
-          )
-
-        val aliasCommand =
-          plans.AlterRemoteDatabaseAlias(source, aliasName, targetName, url, username, password, driverSettings)
-        Some(plans.LogSystemCommand(aliasCommand, prettifier.asString(c)))
-
-      case showAliases: ShowAliases =>
-        Some(plans.AssertAllowedDbmsActions(None, Seq(ShowAliasAction)))
-          .map(plans.ShowAliases(
-            _,
-            showAliases.defaultColumns.useAllColumns,
-            showAliases.defaultColumnNames,
-            showAliases.yields,
-            showAliases.returns
-          ))
+            targetName
+          ),
+          prettifier.asString(c)
+        ))
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!
       case Query(SingleQuery(Seq(

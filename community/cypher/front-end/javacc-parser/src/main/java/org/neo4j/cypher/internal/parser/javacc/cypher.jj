@@ -316,7 +316,6 @@ TOKEN [IGNORE_CASE] :
     | < ADMIN: "ADMIN" >
     | < ADMINISTRATOR: "ADMINISTRATOR">
     | < ALIAS: "ALIAS" >
-    | < ALIASES: "ALIASES" >
     | < ALL_SHORTEST_PATH: "allShortestPaths" >
     | < ALL: "ALL" >
     | < ALTER: "ALTER" >
@@ -326,7 +325,6 @@ TOKEN [IGNORE_CASE] :
     | < ASC: "ASC" ("ENDING")? >
     | < ASSERT: "ASSERT" >
     | < ASSIGN: "ASSIGN" >
-    | < AT: "AT" >
     | < BAR: "|" >
     | < BOOSTED: "BOOSTED" >
     | < BRIEF: "BRIEF" >
@@ -363,7 +361,6 @@ TOKEN [IGNORE_CASE] :
     | < DIVIDE: "/" >
     | < DOT: "." >
     | < DOTDOT: ".." >
-    | < DRIVER: "DRIVER" >
     | < DROP: "DROP" >
     | < DUMP: "DUMP" >
     | < EACH: "EACH" >
@@ -1988,7 +1985,7 @@ CLAUSE LoadCSVClause() :
     t=<LOAD> <CSV>
     ( <WITH> <HEADERS> { headers = true; } )?
     <FROM> source=Expression() <AS> v=Variable()
-    ( <FIELDTERMINATOR> ( sep=StringToken() ) )?
+    ( <FIELDTERMINATOR> ( sep=<STRING_LITERAL1> | sep=<STRING_LITERAL2> ) )?
     {
         return astFactory.loadCsvClause( pos( t ), headers, source, v, sep == null ? null : sep.image );
     }
@@ -2956,7 +2953,8 @@ EXPRESSION StringLiteral() :
     Token t;
 }
 {
-    t=StringToken() { return astFactory.newString( pos( t ), token.image ); }
+    t=<STRING_LITERAL1> { return astFactory.newString( pos( t ), token.image ); }
+    | t=<STRING_LITERAL2> { return astFactory.newString( pos( t ), token.image ); }
 }
 
 EXPRESSION NumberLiteral() :
@@ -3241,7 +3239,6 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) :
         | statement=ShowProcedures( start, useClause )
         | statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowTransactions( start, useClause )
-        | statement=ShowAliases( start, useClause )
         | statement=ShowPrivileges( start, useClause )
         | <ROLE> statement=ShowRolePrivileges( start, useClause )
 
@@ -4390,7 +4387,8 @@ EXPRESSION passwordExpression():
 }
 {
     (
-        name=StringToken()
+        name=<STRING_LITERAL1>
+        | name=<STRING_LITERAL2>
         | parameter=Parameter( ParameterType.STRING )
     )
     {
@@ -4403,30 +4401,6 @@ EXPRESSION passwordExpression():
             return astFactory.passwordExpression( parameter );
         }
     }
-}
-
-Token StringToken():
-{
-   Token stringLiteral = null;
-}
-{
-    (
-        stringLiteral=<STRING_LITERAL1>
-        | stringLiteral=<STRING_LITERAL2>
-    )
-    {
-        return stringLiteral;
-    }
-}
-
-SimpleEither<String, PARAMETER> StringOrParameter():
-{
-    Token token = null;
-    PARAMETER parameter = null;
-}
-{
-    token=StringToken() { return SimpleEither.<String, PARAMETER>left( token.image ); }
-    | parameter=Parameter( ParameterType.STRING ) { return SimpleEither.<String, PARAMETER>right( parameter ); }
 }
 
 Optional<Boolean> PasswordChangeRequired( Token start, Optional<Boolean> changeRequired ) throws Exception:
@@ -4758,7 +4732,6 @@ PRIVILEGE_TYPE createPrivilege(Token start):
        ) | (
            (
                <DATABASE> { action = astFactory.privilegeAction( ActionType.DATABASE_CREATE ); }
-               | <ALIAS> { action = astFactory.privilegeAction( ActionType.ALIAS_CREATE ); }
                | <ROLE> { action = astFactory.privilegeAction( ActionType.ROLE_CREATE ); }
                | <USER> { action = astFactory.privilegeAction( ActionType.USER_CREATE ); }
            ) <ON> <DBMS> { privilege = astFactory.dbmsPrivilege( pos(start), action,  astFactory.allQualifier() ); }
@@ -4783,7 +4756,6 @@ PRIVILEGE_TYPE dropPrivilege(Token start):
        ) | (
            (
                <DATABASE> { action = astFactory.privilegeAction( ActionType.DATABASE_DROP ); }
-               | <ALIAS> { action = astFactory.privilegeAction( ActionType.ALIAS_DROP ); }
                | <ROLE> { action = astFactory.privilegeAction( ActionType.ROLE_DROP ); }
                | <USER> { action = astFactory.privilegeAction( ActionType.USER_DROP ); }
            ) <ON> <DBMS> { privilege = astFactory.dbmsPrivilege( pos(start), action, astFactory.allQualifier() ); }
@@ -4811,8 +4783,7 @@ PRIVILEGE_TYPE showPrivilege(Token start):
             ) <ON> databases=DatabaseScopeList() { privilege = astFactory.databasePrivilege( pos(start), action, databases, qualifier ); }
         ) | (
             (
-                <ALIAS> { action = astFactory.privilegeAction( ActionType.ALIAS_SHOW ); }
-                | <PRIVILEGE> { action = astFactory.privilegeAction( ActionType.PRIVILEGE_SHOW ); }
+                <PRIVILEGE> { action = astFactory.privilegeAction( ActionType.PRIVILEGE_SHOW ); }
                 | <ROLE> { action = astFactory.privilegeAction( ActionType.ROLE_SHOW ); }
                 | <USER> { action = astFactory.privilegeAction( ActionType.USER_SHOW ); }
             ) <ON> <DBMS> { privilege = astFactory.dbmsPrivilege( pos(start), action, astFactory.allQualifier() ); }
@@ -4911,16 +4882,14 @@ PRIVILEGE_TYPE dbmsPrivilege(Token start):
 {
     (
         <ALTER> (
-            <USER> { action = astFactory.privilegeAction( ActionType.USER_ALTER ); }
-            | <DATABASE> { action = astFactory.privilegeAction( ActionType.DATABASE_ALTER ); }
-            | <ALIAS> { action = astFactory.privilegeAction( ActionType.ALIAS_ALTER ); }
+            <USER> { action = astFactory.privilegeAction( ActionType.USER_ALTER ); } |
+            <DATABASE> { action = astFactory.privilegeAction( ActionType.DATABASE_ALTER ); }
         )
         | <ASSIGN> (
             <PRIVILEGE> { action = astFactory.privilegeAction( ActionType.PRIVILEGE_ASSIGN ); }
             | <ROLE> { action = astFactory.privilegeAction( ActionType.ROLE_ASSIGN ); }
         )
         | <DATABASE> <MANAGEMENT> { action = astFactory.privilegeAction( ActionType.DATABASE_MANAGEMENT ); }
-        | <ALIAS> <MANAGEMENT> { action = astFactory.privilegeAction( ActionType.ALIAS_MANAGEMENT ); }
         | <EXECUTE> (
             ( <ADMIN> | <ADMINISTRATOR> ) <PROCEDURES> { action = astFactory.privilegeAction( ActionType.EXECUTE_ADMIN_PROCEDURE ); }
             | <BOOSTED> (
@@ -5254,36 +5223,19 @@ List<GRAPH_SCOPE> graphScopeList():
     }
 }
 
-ADMINISTRATION_COMMAND CreateAlias( Token start, boolean replace ) throws Exception:
+ADMINISTRATION_COMMAND CreateAlias( Token start, boolean replace ):
 {
-    AliasName<PARAMETER> aliasName = null;
+    SimpleEither<String, PARAMETER> aliasName = null;
     SimpleEither<String, PARAMETER> targetName = null;
     boolean ifNotExists = false;
-    SimpleEither<String, PARAMETER> url = null;
-    SimpleEither<String, PARAMETER> username = null;
-    EXPRESSION password = null;
-    SimpleEither<Map<String, EXPRESSION>, PARAMETER> driverSettings = null;
 }
 {
     <ALIAS>
-    aliasName=SymbolicAliasName()
+    aliasName=SymbolicDatabaseNameStringOrParameter()
     ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )?
     <FOR> <DATABASE> targetName=SymbolicDatabaseNameStringOrParameter()
-    (
-        <AT> url=StringOrParameter()
-        <USER> username=SymbolicNameOrStringParameter()
-        <PASSWORD> password=passwordExpression()
-        ( <DRIVER> driverSettings=MapOrParameter() )?
-    )?
     {
-       if ( url == null )
-       {
-           return astFactory.createLocalDatabaseAlias( pos( start ), replace, aliasName.getLocalAliasName(), targetName, ifNotExists );
-       }
-       else
-       {
-           return astFactory.createRemoteDatabaseAlias( pos( start ), replace, aliasName.getRemoteAliasName(), targetName, ifNotExists, url, username, password, driverSettings );
-       }
+       return astFactory.createDatabaseAlias( pos( start ), replace, aliasName, targetName, ifNotExists );
     }
 }
 
@@ -5302,57 +5254,21 @@ ADMINISTRATION_COMMAND DropAlias( Token start ):
 }
 
 
-ADMINISTRATION_COMMAND AlterAlias( Token start ) throws Exception:
+ADMINISTRATION_COMMAND AlterAlias( Token start ):
 {
-    AliasName<PARAMETER> aliasName = null;
+    SimpleEither<String, PARAMETER> aliasName = null;
     SimpleEither<String, PARAMETER> targetName = null;
-    boolean ifExists = false;
-    SimpleEither<String, PARAMETER> url = null;
-    SimpleEither<String, PARAMETER> username = null;
-    EXPRESSION password = null;
-    SimpleEither<Map<String, EXPRESSION>, PARAMETER> driverSettings = null;
-    Token errorStart = null;
-    String alreadySet = "Duplicate SET DATABASE %s clause";
+        boolean ifExists = false;
 }
 {
-    <ALIAS> aliasName=SymbolicAliasName()
+    <ALIAS> aliasName=SymbolicDatabaseNameStringOrParameter()
     (<IF> <EXISTS> { ifExists = true; })?
-    <SET> <DATABASE>
-    (
-        errorStart=<TARGET> { assertNotAlreadySet( targetName, errorStart, String.format(alreadySet, errorStart.image) ); } targetName=SymbolicDatabaseNameStringOrParameter()  ( <AT> url=StringOrParameter() )?
-        | errorStart=<USER> { assertNotAlreadySet( username, errorStart, String.format(alreadySet, errorStart.image) ); } username=SymbolicNameOrStringParameter()
-        | errorStart=<PASSWORD> { assertNotAlreadySet( password, errorStart, String.format(alreadySet, errorStart.image) ); } password=passwordExpression()
-        | errorStart=<DRIVER> { assertNotAlreadySet( driverSettings, errorStart, String.format(alreadySet, errorStart.image) ); } driverSettings=MapOrParameter()
-    )+
+    <SET> <DATABASE> <TARGET> targetName=SymbolicDatabaseNameStringOrParameter()
     {
-        if ( url == null && username == null && password == null && driverSettings == null )
-        {
-            return astFactory.alterLocalDatabaseAlias( pos( start ), aliasName.getLocalAliasName(), targetName, ifExists );
-        }
-        else
-        {
-            return astFactory.alterRemoteDatabaseAlias( pos( start ), aliasName.getRemoteAliasName(), targetName, ifExists, url, username, password, driverSettings );
-        }
+        return astFactory.alterDatabaseAlias( pos( start ), aliasName, targetName, ifExists );
     }
 }
 
-STATEMENT ShowAliases( Token start, USE_CLAUSE useClause ):
-{
-    WHERE where = null;
-    YIELD yieldClause = null;
-    RETURN_CLAUSE returnClause = null;
-}
-{
-    ( <ALIAS> | <ALIASES> )
-    ( <FOR> ( <DATABASE> | <DATABASES> ))
-    (
-        ( yieldClause=YieldClause() ( returnClause=ReturnClause() )? )
-        | where=WhereClause()
-    )?
-    {
-        return astFactory.useGraph( astFactory.showAliases( pos( start ), yieldClause, returnClause, where), useClause );
-    }
-}
 
 List<SimpleEither<String, PARAMETER>> SymbolicDatabaseNameStringOrParameterList():
 {
@@ -5380,21 +5296,6 @@ SimpleEither<String, PARAMETER> SymbolicDatabaseNameStringOrParameter():
             return SimpleEither.<String, PARAMETER>left( nameBuilder.toString() );
         }
     | parameter=Parameter(ParameterType.STRING) { return SimpleEither.<String, PARAMETER>right( parameter ); }
-}
-
-AliasName<PARAMETER> SymbolicAliasName() throws Exception:
-{
-    Token token;
-    AliasName<PARAMETER> name = null;
-    PARAMETER parameter;
-}
-{
-    token=SymbolicNameString() { name = new AliasName<PARAMETER>( exceptionFactory, token ); }
-        ( <DOT> token=SymbolicNameString() { name.add( token ); } )*
-        {
-            return name;
-        }
-    | parameter=Parameter(ParameterType.STRING) { return new AliasName<PARAMETER>( exceptionFactory, parameter ); }
 }
 
 List<SimpleEither<String, PARAMETER>> SymbolicNameOrStringParameterList() :
@@ -5490,7 +5391,8 @@ String TransactionIdString():
     Token t;
 }
 {
-    t=StringToken() { return token.image; }
+    t=<STRING_LITERAL1> { return token.image; }
+    | t=<STRING_LITERAL2> { return token.image; }
 }
 
 List<String> TransactionIdStringList():
@@ -5587,7 +5489,6 @@ Token UnescapedSymbolicNameString() :
         | t=<ADMIN>
         | t=<ADMINISTRATOR>
         | t=<ALIAS>
-        | t=<ALIASES>
         | t=<ALL_SHORTEST_PATH>
         | t=<ALL>
         | t=<ALTER>
@@ -5597,7 +5498,6 @@ Token UnescapedSymbolicNameString() :
         | t=<ASC>
         | t=<ASSERT>
         | t=<ASSIGN>
-        | t=<AT>
         | t=<BOOSTED>
         | t=<BRIEF>
         | t=<BTREE>
@@ -5629,7 +5529,6 @@ Token UnescapedSymbolicNameString() :
         | t=<DESTROY>
         | t=<DETACH>
         | t=<DISTINCT>
-        | t=<DRIVER>
         | t=<DROP>
         | t=<DUMP>
         | t=<EACH>

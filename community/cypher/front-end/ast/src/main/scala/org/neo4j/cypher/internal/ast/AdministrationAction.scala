@@ -162,18 +162,6 @@ case object AlterDatabaseAction extends DatabaseManagementAction("ALTER DATABASE
 
 case object SetDatabaseAccessAction extends DatabaseManagementAction("SET DATABASE ACCESS")
 
-abstract class AliasManagementAction(override val name: String) extends DbmsAction(name)
-
-case object AllAliasManagementActions extends AliasManagementAction("ALIAS MANAGEMENT")
-
-case object CreateAliasAction extends AliasManagementAction("CREATE ALIAS")
-
-case object DropAliasAction extends AliasManagementAction("DROP ALIAS")
-
-case object AlterAliasAction extends AliasManagementAction("ALTER ALIAS")
-
-case object ShowAliasAction extends AliasManagementAction("SHOW ALIAS")
-
 abstract class PrivilegeManagementAction(override val name: String) extends DbmsAction(name)
 
 case object AllPrivilegeActions extends PrivilegeManagementAction("PRIVILEGE MANAGEMENT")

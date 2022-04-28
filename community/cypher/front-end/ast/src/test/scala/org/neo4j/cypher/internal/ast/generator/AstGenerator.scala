@@ -21,7 +21,6 @@ import org.neo4j.cypher.internal.ast.AccessDatabaseAction
 import org.neo4j.cypher.internal.ast.ActionResource
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
-import org.neo4j.cypher.internal.ast.AllAliasManagementActions
 import org.neo4j.cypher.internal.ast.AllConstraintActions
 import org.neo4j.cypher.internal.ast.AllConstraints
 import org.neo4j.cypher.internal.ast.AllDatabaseAction
@@ -42,11 +41,9 @@ import org.neo4j.cypher.internal.ast.AllRoleActions
 import org.neo4j.cypher.internal.ast.AllTokenActions
 import org.neo4j.cypher.internal.ast.AllTransactionActions
 import org.neo4j.cypher.internal.ast.AllUserActions
-import org.neo4j.cypher.internal.ast.AlterAliasAction
 import org.neo4j.cypher.internal.ast.AlterDatabase
 import org.neo4j.cypher.internal.ast.AlterDatabaseAction
-import org.neo4j.cypher.internal.ast.AlterLocalDatabaseAlias
-import org.neo4j.cypher.internal.ast.AlterRemoteDatabaseAlias
+import org.neo4j.cypher.internal.ast.AlterDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AscSortItem
@@ -56,16 +53,15 @@ import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.ConstraintVersion2
 import org.neo4j.cypher.internal.ast.Create
-import org.neo4j.cypher.internal.ast.CreateAliasAction
 import org.neo4j.cypher.internal.ast.CreateConstraintAction
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
+import org.neo4j.cypher.internal.ast.CreateDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateElementAction
 import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.CreateIndexAction
-import org.neo4j.cypher.internal.ast.CreateLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
@@ -77,7 +73,6 @@ import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipTypeAction
-import org.neo4j.cypher.internal.ast.CreateRemoteDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateRoleAction
 import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
@@ -96,7 +91,6 @@ import org.neo4j.cypher.internal.ast.DeleteElementAction
 import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DescSortItem
 import org.neo4j.cypher.internal.ast.DestroyData
-import org.neo4j.cypher.internal.ast.DropAliasAction
 import org.neo4j.cypher.internal.ast.DropConstraintAction
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropDatabase
@@ -210,8 +204,6 @@ import org.neo4j.cypher.internal.ast.SetPropertyAction
 import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
-import org.neo4j.cypher.internal.ast.ShowAliasAction
-import org.neo4j.cypher.internal.ast.ShowAliases
 import org.neo4j.cypher.internal.ast.ShowAllPrivileges
 import org.neo4j.cypher.internal.ast.ShowConstraintAction
 import org.neo4j.cypher.internal.ast.ShowConstraintType
@@ -1497,12 +1489,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     finalMap <- oneOf(OptionsMap(map), OptionsParam(param), NoOptions)
   } yield finalMap
 
-  def _optionalMapAsEither: Gen[Either[Map[String, Expression], Parameter]] = for {
-    map <- oneOrMore(tuple(_identifier, _expression)).map(_.toMap)
-    param <- _mapParameter
-    finalMap <- oneOf(Left(map), Right(param))
-  } yield finalMap
-
   def _listOfNameOfEither: Gen[List[Either[String, Parameter]]] = for {
     names <- oneOrMore(_nameAsEither)
   } yield names
@@ -1663,11 +1649,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     DropDatabaseAction,
     AlterDatabaseAction,
     SetDatabaseAccessAction,
-    AllAliasManagementActions,
-    CreateAliasAction,
-    DropAliasAction,
-    AlterAliasAction,
-    ShowAliasAction,
     AllPrivilegeActions,
     ShowPrivilegeAction,
     AssignPrivilegeAction,
@@ -1923,54 +1904,27 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     wait <- oneOf(NoWait, IndefiniteWait, TimeoutAfter(timeout))
   } yield wait
 
-  def _createLocalDatabaseAlias: Gen[CreateLocalDatabaseAlias] = for {
+  def _createAlias: Gen[CreateDatabaseAlias] = for {
     aliasName <- _nameAsEither
     targetName <- _nameAsEither
     ifExistsDo <- _ifExistsDo
-  } yield CreateLocalDatabaseAlias(aliasName, targetName, ifExistsDo)(pos)
-
-  def _createRemoteDatabaseAlias: Gen[CreateRemoteDatabaseAlias] = for {
-    aliasName <- _nameAsEither
-    targetName <- _nameAsEither
-    ifExistsDo <- _ifExistsDo
-    url <- _nameAsEither
-    username <- _nameAsEither
-    password <- _password
-    driverSettings <- option(_optionalMapAsEither)
-  } yield CreateRemoteDatabaseAlias(aliasName, targetName, ifExistsDo, url, username, password, driverSettings)(pos)
+  } yield CreateDatabaseAlias(aliasName, targetName, ifExistsDo)(pos)
 
   def _dropAlias: Gen[DropDatabaseAlias] = for {
     aliasName <- _nameAsEither
     ifExists <- boolean
   } yield DropDatabaseAlias(aliasName, ifExists)(pos)
 
-  def _alterLocalAlias: Gen[AlterLocalDatabaseAlias] = for {
+  def _alterAlias: Gen[AlterDatabaseAlias] = for {
     aliasName <- _nameAsEither
     targetName <- _nameAsEither
     ifExists <- boolean
-  } yield AlterLocalDatabaseAlias(aliasName, targetName, ifExists)(pos)
-
-  def _alterRemoteAlias: Gen[AlterRemoteDatabaseAlias] = for {
-    aliasName <- _nameAsEither
-    targetName <- option(_nameAsEither)
-    ifExists <- boolean
-    url <- if (targetName.nonEmpty) some(_nameAsEither) else const(None)
-    username <- option(_nameAsEither)
-    password <- option(_password)
-    driverSettings <- option(_optionalMapAsEither)
-  } yield AlterRemoteDatabaseAlias(aliasName, targetName, ifExists, url, username, password, driverSettings)(pos)
-
-  def _showAliases: Gen[ShowAliases] = for {
-    yields <- _eitherYieldOrWhere
-  } yield ShowAliases(yields)(pos)
+  } yield AlterDatabaseAlias(aliasName, targetName, ifExists)(pos)
 
   def _aliasCommands: Gen[AdministrationCommand] = oneOf(
-    _createLocalDatabaseAlias,
-    _createRemoteDatabaseAlias,
+    _createAlias,
     _dropAlias,
-    _alterLocalAlias,
-    _alterRemoteAlias,
-    _showAliases
+    _alterAlias
   )
 
   // Top level administration command

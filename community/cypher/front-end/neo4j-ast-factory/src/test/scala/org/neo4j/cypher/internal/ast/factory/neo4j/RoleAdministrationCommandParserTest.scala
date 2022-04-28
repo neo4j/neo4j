@@ -670,7 +670,6 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
       testName,
       """Invalid input 'ROLES': expected
         |  "ACCESS"
-        |  "ALIAS"
         |  "ALL"
         |  "ALTER"
         |  "ASSIGN"

@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
-import org.neo4j.cypher.internal.ast.ShowAliases
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
@@ -65,8 +64,6 @@ case object expandShowWhere extends Rewriter with Step with PreparatoryRewriting
       s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)
     case s @ ShowCurrentUser(Some(Right(where)), _) =>
       s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)
-    case s @ ShowAliases(Some(Right(where)), _) =>
-      s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)
 
     // add default columns to explicit YIELD/RETURN * as well
     case s @ ShowDatabase(_, Some(Left((yieldClause, returnClause))), _)
@@ -85,9 +82,6 @@ case object expandShowWhere extends Rewriter with Step with PreparatoryRewriting
       if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
       s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
     case s @ ShowCurrentUser(Some(Left((yieldClause, returnClause))), _)
-      if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
-      s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
-    case s @ ShowAliases(Some(Left((yieldClause, returnClause))), _)
       if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
       s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
   })

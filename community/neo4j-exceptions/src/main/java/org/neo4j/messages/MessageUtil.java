@@ -19,10 +19,8 @@
  */
 package org.neo4j.messages;
 
-import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Collection of error and log messages (usable in product and test classes)
@@ -51,12 +49,6 @@ public class MessageUtil {
     private static final String WITH_USER = "user '%s' with %s";
     private static final String OVERRIDDEN_MODE = "%s overridden by %s";
     private static final String RESTRICTED_MODE = "%s restricted to %s";
-
-    // alias
-    private static final String ALTER_TO_REMOTE =
-            "Failed to alter the specified database alias '%s': alter a local alias to a remote alias is not supported.";
-    private static final String FAILED_TO_READ_REMOTE_ALIAS_KEY =
-            "Failed to read the symmetric key from the configured keystore";
 
     // hints
     // 1 = operatorDescription, 2 = hint serialization, 3 = details
@@ -87,7 +79,7 @@ public class MessageUtil {
     }
 
     // mode names
-    public static String overriddenMode(String original, String wrapping) {
+    public static String overridenMode(String original, String wrapping) {
         return String.format(OVERRIDDEN_MODE, original, wrapping);
     }
 
@@ -98,44 +90,6 @@ public class MessageUtil {
     public static String standardMode(Set<String> roles) {
         Set<String> sortedRoles = new TreeSet<>(roles);
         return roles.isEmpty() ? "no roles" : "roles " + sortedRoles;
-    }
-
-    /**
-     * alias messages
-     */
-    public static String alterToLocalAlias(String alias) {
-        return String.format(ALTER_TO_REMOTE, alias);
-    }
-
-    public static String failedToFindEncryptionKeyInKeystore(String keyName) {
-        return String.format(
-                "%s. The key '%s' was not found in the given keystore file.", FAILED_TO_READ_REMOTE_ALIAS_KEY, keyName);
-    }
-
-    public static String failedToReadRemoteAliasEncryptionKey(String... settings) {
-        return String.format(
-                "%s. Please verify the keystore configurations: %s.",
-                FAILED_TO_READ_REMOTE_ALIAS_KEY, StringUtils.join(settings, ", "));
-    }
-
-    public static String failedToEncryptPassword() {
-        return "Failed to encrypt remote user password.";
-    }
-
-    public static String failedToDecryptPassword() {
-        return "Failed to decrypt remote user password.";
-    }
-
-    public static String invalidScheme(String url, List<String> schemes) {
-        return String.format(
-                "The provided url '%s' has an invalid scheme. Please use one of the following schemes: %s.",
-                url, StringUtils.join(schemes, ", "));
-    }
-
-    public static String insecureScheme(String url, List<String> schemes) {
-        return String.format(
-                "The provided url '%s' is not a secure scheme. Please use one of the following schemes: %s.",
-                url, StringUtils.join(schemes, ", "));
     }
 
     // hints

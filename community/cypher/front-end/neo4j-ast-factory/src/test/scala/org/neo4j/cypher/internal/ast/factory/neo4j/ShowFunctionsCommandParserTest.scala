@@ -195,8 +195,6 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
     assertFailsWithMessage(
       testName,
       """Invalid input 'EXECUTABLE': expected
-        |  "ALIAS"
-        |  "ALIASES"
         |  "ALL"
         |  "BTREE"
         |  "BUILT"
