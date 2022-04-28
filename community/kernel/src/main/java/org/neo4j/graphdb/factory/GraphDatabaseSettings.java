@@ -895,7 +895,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> log_queries_parameter_logging_enabled =
             setting( "dbms.logs.query.parameter_logging_enabled", BOOLEAN, TRUE );
 
-    @Description( "Log detailed time information for the executed queries being logged. Requires `dbms.track_query_cpu_time=true`" )
+    @Description( "Log detailed time information for the executed queries being logged, such as `(planning: 92, waiting: 0)`." )
     @Dynamic
     public static final Setting<Boolean> log_queries_detailed_time_logging_enabled =
             setting( "dbms.logs.query.time_logging_enabled", BOOLEAN, FALSE );
