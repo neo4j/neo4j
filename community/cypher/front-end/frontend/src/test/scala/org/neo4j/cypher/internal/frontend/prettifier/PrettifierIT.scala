@@ -1374,14 +1374,52 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE ALIAS alias FOR DATABASE database",
     "create alias alias if not exists for database database" ->
       "CREATE ALIAS alias IF NOT EXISTS FOR DATABASE database",
+    "create or replace alias alias FOR database database" ->
+      "CREATE OR REPLACE ALIAS alias FOR DATABASE database",
+    "create alias alias FOR database database at 'url' user user password 'password'" ->
+      """CREATE ALIAS alias FOR DATABASE database AT "url" USER user PASSWORD '******'""",
+    "create or replace alias alias FOR database database at 'url' user user password 'password' driver { ssl_enforced: $val }" ->
+      """CREATE OR REPLACE ALIAS alias FOR DATABASE database AT "url" USER user PASSWORD '******' DRIVER {ssl_enforced: $val}""",
+    "create alias $alias if not exists FOR database $database at $url user $user password $password driver { }" ->
+      """CREATE ALIAS $alias IF NOT EXISTS FOR DATABASE $database AT $url USER $user PASSWORD $password DRIVER {}""",
     "alter alias alias if exists set database target database" ->
       "ALTER ALIAS alias IF EXISTS SET DATABASE TARGET database",
     "alter alias alias set database target database" ->
       "ALTER ALIAS alias SET DATABASE TARGET database",
+    "alter alias $alias set database target $database at $url user $user password $password driver $driver" ->
+      "ALTER ALIAS $alias SET DATABASE TARGET $database AT $url USER $user PASSWORD $password DRIVER $driver",
+    "alter alias alias if exists set database target database at 'url'" ->
+      """ALTER ALIAS alias IF EXISTS SET DATABASE TARGET database AT "url"""",
+    "alter alias alias set database user user" ->
+      "ALTER ALIAS alias SET DATABASE USER user",
+    "alter alias alias set database password 'password'" ->
+      "ALTER ALIAS alias SET DATABASE PASSWORD '******'",
+    "alter alias alias set database driver { ssl_enforced: true }" ->
+      "ALTER ALIAS alias SET DATABASE DRIVER {ssl_enforced: true}",
     "drop alias alias for database" ->
       "DROP ALIAS alias FOR DATABASE",
     "drop alias alias if exists for database" ->
-      "DROP ALIAS alias IF EXISTS FOR DATABASE"
+      "DROP ALIAS alias IF EXISTS FOR DATABASE",
+    "show alias for database" ->
+      "SHOW ALIASES FOR DATABASE",
+    "show aliases for database" ->
+      "SHOW ALIASES FOR DATABASE",
+    "show aliases for database YIELD * where name = 'neo4j' Return *" ->
+      """SHOW ALIASES FOR DATABASE
+        |  YIELD *
+        |    WHERE name = "neo4j"
+        |  RETURN *""".stripMargin,
+    "show aliases for database YIELD * Return DISTINCT default, name" ->
+      """SHOW ALIASES FOR DATABASE
+        |  YIELD *
+        |  RETURN DISTINCT default, name""".stripMargin,
+    "show aliases for database yield name order by name skip 1 limit 1 where name='neo4j'" ->
+      """SHOW ALIASES FOR DATABASE
+        |  YIELD name
+        |    ORDER BY name ASCENDING
+        |    SKIP 1
+        |    LIMIT 1
+        |    WHERE name = "neo4j"""".stripMargin
   ) ++ privilegeTests()
 
   def privilegeTests(): Seq[(String, String)] = {
@@ -1734,6 +1772,16 @@ class PrettifierIT extends CypherFunSuite {
             s"$action ALTER DATABASE ON DBMS $preposition role",
           s"$action set database access on dbms $preposition role" ->
             s"$action SET DATABASE ACCESS ON DBMS $preposition role",
+          s"$action aliaS Management on dbms $preposition role" ->
+            s"$action ALIAS MANAGEMENT ON DBMS $preposition role",
+          s"$action  create alias on DBMS $preposition role" ->
+            s"$action CREATE ALIAS ON DBMS $preposition role",
+          s"$action dRoP aLiAs On DbMs $preposition role" ->
+            s"$action DROP ALIAS ON DBMS $preposition role",
+          s"$action Alter AliAs on dbms $preposition role" ->
+            s"$action ALTER ALIAS ON DBMS $preposition role",
+          s"$action show    alias on dbms $preposition role" ->
+            s"$action SHOW ALIAS ON DBMS $preposition role",
           s"$action privilege management on dbms $preposition role" ->
             s"$action PRIVILEGE MANAGEMENT ON DBMS $preposition role",
           s"$action show privilege on dbms $preposition role" ->

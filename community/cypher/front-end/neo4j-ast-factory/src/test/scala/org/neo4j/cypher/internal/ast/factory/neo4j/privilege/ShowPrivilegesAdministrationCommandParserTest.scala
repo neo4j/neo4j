@@ -509,6 +509,8 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
   test("SHOW PRIVILAGES") {
     val exceptionMessage =
       s"""Invalid input 'PRIVILAGES': expected
+         |  "ALIAS"
+         |  "ALIASES"
          |  "ALL"
          |  "BTREE"
          |  "BUILT"

@@ -529,18 +529,41 @@ public interface ASTFactory<
     WAIT_CLAUSE wait(boolean wait, long seconds);
 
     // Alias Administration Commands
-    ADMINISTRATION_COMMAND createDatabaseAlias(
+    ADMINISTRATION_COMMAND createLocalDatabaseAlias(
             POS p,
             boolean replace,
             SimpleEither<String, PARAMETER> aliasName,
             SimpleEither<String, PARAMETER> targetName,
             boolean ifNotExists);
 
-    ADMINISTRATION_COMMAND alterDatabaseAlias(
+    ADMINISTRATION_COMMAND createRemoteDatabaseAlias(
+            POS p,
+            boolean replace,
+            SimpleEither<String, PARAMETER> aliasName,
+            SimpleEither<String, PARAMETER> targetName,
+            boolean ifNotExists,
+            SimpleEither<String, PARAMETER> url,
+            SimpleEither<String, PARAMETER> username,
+            EXPRESSION password,
+            SimpleEither<Map<String, EXPRESSION>, PARAMETER> driverSettings);
+
+    ADMINISTRATION_COMMAND alterLocalDatabaseAlias(
             POS p,
             SimpleEither<String, PARAMETER> aliasName,
             SimpleEither<String, PARAMETER> targetName,
             boolean ifExists);
 
+    ADMINISTRATION_COMMAND alterRemoteDatabaseAlias(
+            POS p,
+            SimpleEither<String, PARAMETER> aliasName,
+            SimpleEither<String, PARAMETER> targetName,
+            boolean ifExists,
+            SimpleEither<String, PARAMETER> url,
+            SimpleEither<String, PARAMETER> username,
+            EXPRESSION password,
+            SimpleEither<Map<String, EXPRESSION>, PARAMETER> driverSettings);
+
     ADMINISTRATION_COMMAND dropAlias(POS p, SimpleEither<String, PARAMETER> aliasName, boolean ifExists);
+
+    ADMINISTRATION_COMMAND showAliases(POS p, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where);
 }

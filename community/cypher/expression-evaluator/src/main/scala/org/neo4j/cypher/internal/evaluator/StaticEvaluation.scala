@@ -17,15 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.fabric.eval
+package org.neo4j.cypher.internal.evaluator
 
 import org.eclipse.collections.api.map.primitive.IntObjectMap
 import org.eclipse.collections.api.set.primitive.IntSet
 import org.neo4j.common.DependencyResolver
 import org.neo4j.common.EntityType
 import org.neo4j.configuration.Config
-import org.neo4j.cypher.internal.evaluator.EvaluationException
-import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -121,6 +119,12 @@ object StaticEvaluation {
           while (unwrapped.isInstanceOf[EvaluationException])
             unwrapped = unwrapped.getCause
           if (unwrapped != null && unwrapped.isInstanceOf[HasStatus]) {
+            throw unwrapped
+          } else if (
+            unwrapped != null && unwrapped.isInstanceOf[IllegalStateException] && unwrapped.getMessage.startsWith(
+              "Unknown field"
+            )
+          ) {
             throw unwrapped
           } else {
             // there isn't an exception with a status wrapped in the EvaluationException,
