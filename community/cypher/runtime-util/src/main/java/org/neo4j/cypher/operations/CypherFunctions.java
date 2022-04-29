@@ -223,7 +223,7 @@ public final class CypherFunctions {
         }
 
         if (in instanceof NumberValue && precisionValue instanceof NumberValue) {
-            int precision = asInt(precisionValue, () -> "Invalid input for precision value in function 'round()'");
+            int precision = asIntExact(precisionValue, () -> "Invalid input for precision value in function 'round()'");
             if (precision < 0) {
                 throw new InvalidArgumentException("Precision argument to 'round()' cannot be negative");
             }
@@ -630,9 +630,9 @@ public final class CypherFunctions {
 
     public static TextValue left(AnyValue in, AnyValue endPos) {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof TextValue) {
-            int len = asInt(endPos, () -> "Invalid input for length value in function 'left()'");
-            return ((TextValue) in).substring(0, len);
+        if (in instanceof TextValue text) {
+            int len = asIntExact(endPos, () -> "Invalid input for length value in function 'left()'");
+            return text.substring(0, len);
         } else {
             throw notAString("left", in);
         }
@@ -692,7 +692,7 @@ public final class CypherFunctions {
     public static TextValue right(AnyValue original, AnyValue length) {
         assert original != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if (original instanceof TextValue asText) {
-            int len = asInt(length, () -> "Invalid input for length value in function 'right()'");
+            int len = asIntExact(length, () -> "Invalid input for length value in function 'right()'");
             if (len < 0) {
                 throw new IndexOutOfBoundsException("negative length");
             }
@@ -728,7 +728,7 @@ public final class CypherFunctions {
         assert original != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if (original instanceof TextValue asText) {
 
-            return asText.substring(asInt(start, () -> "Invalid input for start value in function 'substring()'"));
+            return asText.substring(asIntExact(start, () -> "Invalid input for start value in function 'substring()'"));
         } else {
             throw notAString("substring", original);
         }
@@ -739,8 +739,8 @@ public final class CypherFunctions {
         if (original instanceof TextValue asText) {
 
             return asText.substring(
-                    asInt(start, () -> "Invalid input for start value in function 'substring()'"),
-                    asInt(length, () -> "Invalid input for length value in function 'substring()'"));
+                    asIntExact(start, () -> "Invalid input for start value in function 'substring()'"),
+                    asIntExact(length, () -> "Invalid input for length value in function 'substring()'"));
         } else {
             throw notAString("substring", original);
         }
@@ -1192,7 +1192,7 @@ public final class CypherFunctions {
     public static ListValue fromSlice(AnyValue collection, AnyValue fromValue) {
         assert collection != NO_VALUE && fromValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
 
-        int from = asInt(fromValue);
+        int from = asIntExact(fromValue);
         ListValue list = asList(collection);
         if (from >= 0) {
             return list.drop(from);
@@ -1203,7 +1203,7 @@ public final class CypherFunctions {
 
     public static ListValue toSlice(AnyValue collection, AnyValue toValue) {
         assert collection != NO_VALUE && toValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        int from = asInt(toValue);
+        int from = asIntExact(toValue);
         ListValue list = asList(collection);
         if (from >= 0) {
             return list.take(from);
@@ -1216,8 +1216,8 @@ public final class CypherFunctions {
         assert collection != NO_VALUE && fromValue != NO_VALUE && toValue != NO_VALUE
                 : "NO_VALUE checks need to happen outside this call";
 
-        int from = asInt(fromValue);
-        int to = asInt(toValue);
+        int from = asIntExact(fromValue);
+        int to = asIntExact(toValue);
         ListValue list = asList(collection);
         int size = list.size();
         if (from >= 0 && to >= 0) {
@@ -1453,13 +1453,23 @@ public final class CypherFunctions {
         }
     }
 
-    @CalledFromGeneratedCode
-    public static int asInt(AnyValue value) {
-        return asInt(value, null);
+    public static int asIntExact(AnyValue value) {
+        return asIntExact(value, null);
     }
 
-    public static int asInt(AnyValue value, Supplier<String> contextForErrorMessage) {
-        return (int) asLong(value, contextForErrorMessage);
+    public static int asIntExact(AnyValue value, Supplier<String> contextForErrorMessage) {
+        final long longValue = asLong(value, contextForErrorMessage);
+        final int intValue = (int) longValue;
+        if (intValue != longValue) {
+            String errorMsg = format(
+                    "Expected an integer between %d and %d, but got: %d",
+                    Integer.MIN_VALUE, Integer.MAX_VALUE, longValue);
+            if (contextForErrorMessage != null) {
+                errorMsg = contextForErrorMessage.get() + ": " + errorMsg;
+            }
+            throw new IllegalArgumentException(errorMsg);
+        }
+        return intValue;
     }
 
     public static long nodeId(AnyValue value) {

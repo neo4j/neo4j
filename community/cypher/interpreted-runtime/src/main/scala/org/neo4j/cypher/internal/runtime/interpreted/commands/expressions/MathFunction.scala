@@ -31,7 +31,6 @@ import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.DoubleValue
 import org.neo4j.values.storable.FloatingPointValue
-import org.neo4j.values.storable.IntValue
 import org.neo4j.values.storable.IntegralValue
 import org.neo4j.values.storable.LongValue
 import org.neo4j.values.storable.NumberValue
@@ -76,8 +75,6 @@ object NumericHelper {
   }
 
   def asDouble(a: AnyValue): DoubleValue = Values.doubleValue(asNumber(a).doubleValue())
-
-  def asInt(a: AnyValue): IntValue = Values.intValue(asPrimitiveInt(a))
 
   def asPrimitiveInt(a: AnyValue): Int = asNumber(a).longValue().toInt
 

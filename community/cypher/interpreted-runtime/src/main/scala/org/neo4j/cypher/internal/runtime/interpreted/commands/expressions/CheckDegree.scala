@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper.asPrimitiveInt
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.operations.CypherFunctions.asIntExact
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
@@ -49,7 +49,7 @@ abstract class CheckDegree(node: Expression, typ: Option[KeyToken], direction: S
   override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = value match {
     case n: VirtualNodeValue => maxDegree.apply(ctx, state) match {
         case x if x eq NO_VALUE => NO_VALUE
-        case e                  => booleanValue(computePredicate(state, n.id(), asPrimitiveInt(e)))
+        case e                  => booleanValue(computePredicate(state, n.id(), asIntExact(e)))
       }
     case other => throw new CypherTypeException(
         s"Type mismatch: expected a node but was $other of type ${other.getClass.getSimpleName}"
