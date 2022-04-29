@@ -91,6 +91,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
+import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SingleIterablePredicate
 import org.neo4j.cypher.internal.expressions.StartsWith
@@ -116,6 +117,8 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
+
+import java.nio.charset.StandardCharsets
 
 import scala.language.implicitConversions
 
@@ -222,6 +225,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def literalFloat(floatValue: Double): DecimalDoubleLiteral =
     DecimalDoubleLiteral(floatValue.toString)(pos)
+
+  def sensitiveLiteral(stringVal: String): SensitiveStringLiteral =
+    SensitiveStringLiteral(stringVal.getBytes(StandardCharsets.UTF_8))(pos)
 
   def listOf(expressions: Expression*): ListLiteral =
     ListLiteral(expressions)(pos)

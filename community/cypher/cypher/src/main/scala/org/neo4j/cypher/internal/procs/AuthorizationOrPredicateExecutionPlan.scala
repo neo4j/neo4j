@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.ast.AdministrationAction
-import org.neo4j.cypher.internal.procs.AuthorizationPredicateExecutionPlan.buildMessage
-import org.neo4j.cypher.internal.procs.AuthorizationPredicateExecutionPlan.checkToPredicate
+import org.neo4j.cypher.internal.procs.AuthorizationOrPredicateExecutionPlan.buildMessage
+import org.neo4j.cypher.internal.procs.AuthorizationOrPredicateExecutionPlan.checkToPredicate
 import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
 import org.neo4j.internal.kernel.api.security.PermissionState
@@ -30,7 +30,7 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.values.virtual.MapValue
 
-case class AuthorizationPredicateExecutionPlan(
+case class AuthorizationOrPredicateExecutionPlan(
   securityAuthorizationHandler: SecurityAuthorizationHandler,
   check: (MapValue, SecurityContext) => Seq[(AdministrationAction, PermissionState)],
   source: Option[ExecutionPlan] = None,
@@ -41,7 +41,7 @@ case class AuthorizationPredicateExecutionPlan(
       buildMessage(securityAuthorizationHandler, _, _, check, violationMessage)
     )
 
-object AuthorizationPredicateExecutionPlan {
+object AuthorizationOrPredicateExecutionPlan {
 
   private def buildMessage(
     securityAuthorizationHandler: SecurityAuthorizationHandler,
@@ -50,11 +50,23 @@ object AuthorizationPredicateExecutionPlan {
     check: (MapValue, SecurityContext) => Seq[(AdministrationAction, PermissionState)],
     messageGenerator: (PermissionState, Seq[AdministrationAction]) => String
   ): Exception = {
-    val errorMsgs = check(params, securityContext)
-      .groupBy(_._2)
-      .filterKeys(state => state != PermissionState.EXPLICIT_GRANT).map { case (state, actions) =>
-        messageGenerator(state, actions.map(_._1))
-      }.mkString("; ")
+
+    val permissionStates = check.apply(params, securityContext)
+    val errorStates = permissionStates.groupBy(_._2).filterKeys(state => state != PermissionState.EXPLICIT_GRANT)
+
+    // In case an action requires privileges A OR B and the check returns EXPLICIT_DENY for A and NOT_GRANTED for B,
+    // we only want to warn about the EXPLICIT_DENY since we do not have enough information to know whether there is also a GRANT on A,
+    // in which case the missing GRANT on B is not relevant.
+    val filteredErrorStates =
+      if (errorStates.exists(state => state._1 == PermissionState.EXPLICIT_DENY)) {
+        errorStates.filterKeys(state => state != PermissionState.NOT_GRANTED)
+      } else {
+        errorStates
+      }
+
+    val errorMsgs = filteredErrorStates.map { case (state, actions) =>
+      messageGenerator(state, actions.map(_._1))
+    }.mkString("; ")
     securityAuthorizationHandler.logAndGetAuthorizationException(securityContext, errorMsgs)
     throw new AuthorizationViolationException(errorMsgs)
   }
@@ -64,6 +76,10 @@ object AuthorizationPredicateExecutionPlan {
     sc: SecurityContext,
     check: (MapValue, SecurityContext) => Seq[(AdministrationAction, PermissionState)]
   ): Boolean = {
-    check.apply(params, sc).forall { case (_, state) => state == PermissionState.EXPLICIT_GRANT }
+    val permissionStates = check.apply(params, sc)
+
+    // At least one of the privileges must be granted and none denied
+    permissionStates.exists { case (_, state) => state == PermissionState.EXPLICIT_GRANT } &&
+    !permissionStates.exists { case (_, state) => state == PermissionState.EXPLICIT_DENY }
   }
 }
