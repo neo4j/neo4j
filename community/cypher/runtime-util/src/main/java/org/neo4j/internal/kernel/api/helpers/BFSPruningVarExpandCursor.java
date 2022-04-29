@@ -603,8 +603,6 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         private HeapTrackingLongHashSet currFrontier;
         // Keeps track of all seen nodes and their parent nodes. The parent is used for loop detection.
         private final HeapTrackingLongLongHashMap seenNodesWithParent;
-        // Used to filter out the case where there are multiple relationships between nodes.
-        private final HeapTrackingLongHashSet checkUniqueEndNodes;
 
         private LongIterator currentExpand;
         private final long startNode;
@@ -624,7 +622,6 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             this.prevFrontier = HeapTrackingCollections.newLongSet(memoryTracker);
             this.currFrontier = HeapTrackingCollections.newLongSet(memoryTracker);
             this.seenNodesWithParent = HeapTrackingCollections.newLongLongMap(memoryTracker);
-            this.checkUniqueEndNodes = HeapTrackingCollections.newLongSet(memoryTracker);
             expand(startNode);
         }
 
@@ -632,7 +629,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         public final boolean next() {
             while (currentDepth < maxDepth) {
                 clearLoopCount();
-                while (nextRelationship()) {
+                while (selectionCursor.next()) {
                     if (relFilter.test(selectionCursor)) {
                         long origin = selectionCursor.originNodeReference();
                         long other = selectionCursor.otherNodeReference();
@@ -647,6 +644,12 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                         }
 
                         long parentOfOther = seenNodesWithParent.getIfAbsent(other, NO_SUCH_NODE);
+
+                        // NOTE: we are eliminating duplicated end nodes except from the first layer here in order to
+                        // simplify the loop detection later
+                        if (origin != startNode && parentOfOther == origin) {
+                            continue;
+                        }
 
                         if (parentOfOther == NO_SUCH_NODE && nodeFilter.test(other)) {
                             seenNodesWithParent.put(other, origin);
@@ -730,22 +733,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             return loopCounter >= START_NODE_EMITTED;
         }
 
-        /**
-         * NOTE: we are eliminating duplicated end nodes except from the first layer here in order to simplify the loop detection later
-         */
-        private boolean nextRelationship() {
-            while (selectionCursor.next()) {
-                if (currentDepth == 0) {
-                    return true;
-                } else if (checkUniqueEndNodes.add(selectionCursor.otherNodeReference())) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         private boolean expand(long nodeId) {
-            checkUniqueEndNodes.clear();
             read.singleNode(nodeId, nodeCursor);
             if (nodeCursor.next()) {
                 selectionCursor = allCursor(relCursor, nodeCursor, types);
@@ -760,7 +748,6 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             seenNodesWithParent.close();
             prevFrontier.close();
             currFrontier.close();
-            checkUniqueEndNodes.close();
         }
     }
 
