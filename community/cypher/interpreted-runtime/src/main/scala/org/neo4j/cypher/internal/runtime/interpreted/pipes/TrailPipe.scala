@@ -123,8 +123,7 @@ case class TrailPipe(
                     val newGroupNodes = computeGroupVariables(groupNodeNames, trailState.groupNodes, row)
                     val newGroupRels = computeGroupVariables(groupRelationshipNames, trailState.groupRelationships, row)
                     if (repetitions.max.isGreaterThan(trailState.iterations)) {
-                      val newSet = HeapTrackingCollections.newLongSet(tracker)
-                      newSet.addAll(trailState.relationshipsSeen)
+                      val newSet = HeapTrackingCollections.newLongSet(tracker, trailState.relationshipsSeen)
 
                       var allRelationshipsUnique = true
                       var i = 0

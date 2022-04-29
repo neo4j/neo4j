@@ -20,6 +20,8 @@
 package org.neo4j.collection.trackable;
 
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+
 import org.neo4j.memory.MemoryTracker;
 
 public final class HeapTrackingCollections {
@@ -35,6 +37,10 @@ public final class HeapTrackingCollections {
 
     public static HeapTrackingLongHashSet newLongSet(MemoryTracker memoryTracker, int initialCapacity) {
         return HeapTrackingLongHashSet.createLongHashSet(memoryTracker, initialCapacity);
+    }
+
+    public static HeapTrackingLongHashSet newLongSet( MemoryTracker memoryTracker, LongHashSet set ) {
+        return HeapTrackingLongHashSet.createLongHashSet(memoryTracker, set);
     }
 
     public static <V> HeapTrackingLongObjectHashMap<V> newLongObjectMap(MemoryTracker memoryTracker) {

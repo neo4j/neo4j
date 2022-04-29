@@ -42,6 +42,12 @@ public class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseabl
         return new HeapTrackingLongHashSet(memoryTracker);
     }
 
+    static HeapTrackingLongHashSet createLongHashSet(MemoryTracker memoryTracker, LongHashSet set) {
+        int capacity = smallestPowerOfTwoGreaterThan(set.size());
+        memoryTracker.allocateHeap(SHALLOW_SIZE + arrayHeapSize(capacity));
+        return new HeapTrackingLongHashSet(memoryTracker, capacity, set);
+    }
+
     static HeapTrackingLongHashSet createLongHashSet(MemoryTracker memoryTracker, int initialCapacity) {
         int capacity = smallestPowerOfTwoGreaterThan(initialCapacity);
         memoryTracker.allocateHeap(SHALLOW_SIZE + arrayHeapSize(capacity));
@@ -55,6 +61,12 @@ public class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseabl
 
     private HeapTrackingLongHashSet(MemoryTracker memoryTracker, int initialCapacity) {
         super(initialCapacity);
+        this.memoryTracker = requireNonNull(memoryTracker);
+        this.trackedCapacity = initialCapacity;
+    }
+
+    private HeapTrackingLongHashSet(MemoryTracker memoryTracker, int initialCapacity, LongHashSet set) {
+        super(set);
         this.memoryTracker = requireNonNull(memoryTracker);
         this.trackedCapacity = initialCapacity;
     }
