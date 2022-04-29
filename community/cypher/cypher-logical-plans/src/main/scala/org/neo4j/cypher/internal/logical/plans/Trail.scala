@@ -62,8 +62,14 @@ case class Trail(
 }
 
 case class Repetitions(min: Int, max: UpperBound)
-sealed trait UpperBound
-case object Unlimited extends UpperBound
-case class Limited(n: Int) extends UpperBound
+sealed trait UpperBound {
+  def isGreaterThan(count: Int): Boolean
+}
+case object Unlimited extends UpperBound {
+  override def isGreaterThan(count: Int): Boolean = true
+}
+case class Limited(n: Int) extends UpperBound {
+  override def isGreaterThan(count: Int): Boolean = count < n
+}
 
 case class GroupEntity(innerName: String, outerName: String)

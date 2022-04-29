@@ -31,7 +31,6 @@ import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.RelationshipType
-import org.neo4j.kernel.impl.coreapi.InternalTransaction
 
 import java.util.Collections.emptyList
 
@@ -601,40 +600,5 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
         chain.relationshipAt(2)
       )
     }
-  }
-}
-
-object TrailTestBase {
-
-  /**
-   *{{{
-   *                ↗ (3) → (5:A) → (7:A)
-   *   (1:A) → (2:A)   ↑
-   *               ↘ (4:A) → (6:A) → (8:A) → (9:A) → (10:A)
-   *}}}
-   */
-  def smallTestGraph(tx: InternalTransaction): (Node, Node, Node, Node, Node, Node, Node, Node, Node, Node) = {
-    val n1 = tx.createNode(label("A"), label("START"))
-    val n2 = tx.createNode(label("A"))
-    val n3 = tx.createNode() // NOTE: no A
-    val n4 = tx.createNode(label("A"))
-    val n5 = tx.createNode(label("A"))
-    val n6 = tx.createNode(label("A"))
-    val n7 = tx.createNode(label("A"))
-    val n8 = tx.createNode(label("A"))
-    val n9 = tx.createNode(label("A"))
-    val n10 = tx.createNode(label("A"))
-
-    n1.createRelationshipTo(n2, RelationshipType.withName("R"))
-    n2.createRelationshipTo(n3, RelationshipType.withName("R"))
-    n2.createRelationshipTo(n4, RelationshipType.withName("R"))
-    n4.createRelationshipTo(n2, RelationshipType.withName("R"))
-    n4.createRelationshipTo(n6, RelationshipType.withName("R"))
-    n6.createRelationshipTo(n8, RelationshipType.withName("R"))
-    n8.createRelationshipTo(n9, RelationshipType.withName("R"))
-    n9.createRelationshipTo(n10, RelationshipType.withName("R"))
-    n3.createRelationshipTo(n5, RelationshipType.withName("R"))
-    n5.createRelationshipTo(n7, RelationshipType.withName("R"))
-    (n1, n2, n3, n4, n5, n6, n7, n8, n9, n10)
   }
 }
