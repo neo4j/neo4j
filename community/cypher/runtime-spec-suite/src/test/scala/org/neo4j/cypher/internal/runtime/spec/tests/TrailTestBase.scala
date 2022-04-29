@@ -42,7 +42,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should respect upper limit") {
-    // (n1) → (n2) → (n3) → (n4)
+    // (n1:START) → (n2) → (n3) → (n4)
     val (n1, n2, n3, n4, r12, r23, r34) = smallChainGraph
 
     // (me:START) [(a)-[r]->(b)]{0,2} (you)
@@ -79,7 +79,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle missing end-node") {
-    // (n1) → (n2) → (n3) → (n4)
+    // (n1:START) → (n2) → (n3) → (n4)
     val (n1, n2, n3, n4, r12, r23, r34) = smallChainGraph
 
     // (me:START) [(a)-[r]->(b)]{0,2}
@@ -116,7 +116,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should respect lower limit") {
-    // (n1) → (n2) → (n3) → (n4)
+    // (n1:START) → (n2) → (n3) → (n4)
     val (n1, n2, n3, n4, r12, r23, r34) = smallChainGraph
 
     // (me:START) [(a)-[r]->(b)]{2,2} (you)
@@ -352,7 +352,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
   test("should be able to reference LHS from RHS") {
     // (n1) → (n2) → (n3) → (n4)
     val (n1, n2, n3, n4, r12, r23, r34) = given {
-      val n1 = tx.createNode(label("START"))
+      val n1 = tx.createNode()
       n1.setProperty("prop", 1)
       val n2 = tx.createNode()
       n2.setProperty("prop", 1)
@@ -366,7 +366,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       (n1, n2, n3, n4, r12, r23, r34)
     }
 
-    // (me:START) [(a)-[r]->(b) WHERE b.prop = me.prop]{0,2} (you)
+    // (me) [(a)-[r]->(b) WHERE b.prop = me.prop]{0,2} (you)
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "a", "b", "r")
       .trail(

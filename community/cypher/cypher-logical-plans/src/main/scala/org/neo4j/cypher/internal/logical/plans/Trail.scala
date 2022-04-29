@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
- * Used for solve queries like: `(start) [(innerStart)-->(innerEnd)]{i, j} (end)`
+ * Used to solve queries like: `(start) [(innerStart)-->(innerEnd)]{i, j} (end)`
  *
  * @param left                  source plan
  * @param right                 inner plan to repeat
