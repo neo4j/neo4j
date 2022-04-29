@@ -517,6 +517,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     execute("CREATE (:User {age: 99})-[:KNOWS]->(:Buddy {p: 42})-[:WANTS]->(:Raccoon)") // create tokens
 
     execute("MATCH (:User)-[:KNOWS]->(:Buddy)-[:WANTS]->(:Raccoon) RETURN 1")
+    execute("MATCH (n:User) USING SCAN n:User RETURN 1")
     execute("MATCH ({p: 42}), ({age: 43}) RETURN 1")
 
     // when
@@ -525,6 +526,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     // then
     res.toList should beListWithoutOrder(
       querySection("MATCH (:L0)-[:R0]->(:L1)-[:R1]->(:L2) RETURN 1"),
+      querySection("MATCH (var0:L0) USING SCAN var0:LoR0 RETURN 1"),
       querySection("MATCH ({p11: 42}), ({p10: 43}) RETURN 1")
     )
   }
@@ -570,6 +572,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
   test("[retrieveAllAnonymized] should anonymize unknown tokens inside queries") {
     // given
     execute("MATCH (:User)-[:KNOWS]->(:Buddy)-[:WANTS]->(:Raccoon) RETURN 1")
+    execute("MATCH (n:User) USING SCAN n:User RETURN 1")
     execute("MATCH ({p: 42}), ({age: 43}) RETURN 1")
 
     // when
@@ -578,6 +581,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     // then
     res.toList should beListWithoutOrder(
       querySection("MATCH (:UNKNOWN0)-[:UNKNOWN1]->(:UNKNOWN2)-[:UNKNOWN3]->(:UNKNOWN4) RETURN 1"),
+      querySection("MATCH (var0:UNKNOWN0) USING SCAN var0:UNKNOWN0 RETURN 1"),
       querySection("MATCH ({UNKNOWN0: 42}), ({UNKNOWN1: 43}) RETURN 1")
     )
   }
@@ -644,6 +648,54 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
           )
         )
       )
+    )
+  }
+
+  test("[retrieveAllAnonymized] should anonymize tokens and names inside index commands") {
+    // given
+    execute("CREATE INDEX name0 FOR (n:Label) ON (n.prop)")
+    execute("CREATE INDEX name1 FOR ()-[r:TYPE]-() ON (r.prop1, r.prop2)")
+    execute("CREATE TEXT INDEX name2 FOR (n:Label) ON (n.prop)")
+    execute("CREATE TEXT INDEX name3 FOR ()-[r:TYPE]-() ON (r.prop)")
+    execute("CREATE POINT INDEX name4 FOR (n:Label) ON (n.prop)")
+    execute("CREATE POINT INDEX name5 FOR ()-[r:TYPE]-() ON (r.prop)")
+    execute("CREATE FULLTEXT INDEX name6 FOR (n:Label) ON EACH [n.prop]")
+    execute("CREATE FULLTEXT INDEX name7 FOR ()-[r:TYPE1|TYPE2]-() ON EACH [r.prop]")
+    execute("CREATE LOOKUP INDEX name8 IF NOT EXISTS FOR (n) ON EACH labels(n)")
+    execute("CREATE LOOKUP INDEX name9 IF NOT EXISTS FOR ()-[r]-() ON EACH type(r)")
+    execute("DROP INDEX name0")
+
+    // when
+    val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
+
+    // then
+    res.toList should beListWithoutOrder(
+      querySection("CREATE INDEX index0 FOR (var0:L0) ON (var0.p10)"),
+      querySection("CREATE INDEX index0 FOR ()-[var0:R0]-() ON (var0.p11, var0.p12)"),
+      querySection("CREATE TEXT INDEX index0 FOR (var0:L0) ON (var0.p10)"),
+      querySection("CREATE TEXT INDEX index0 FOR ()-[var0:R0]-() ON (var0.p10)"),
+      querySection("CREATE POINT INDEX index0 FOR (var0:L0) ON (var0.p10)"),
+      querySection("CREATE POINT INDEX index0 FOR ()-[var0:R0]-() ON (var0.p10)"),
+      querySection("CREATE FULLTEXT INDEX index0 FOR (var0:L0) ON EACH [var0.p10]"),
+      querySection("CREATE FULLTEXT INDEX index0 FOR ()-[var0:R1|R2]-() ON EACH [var0.p10]"),
+      querySection("CREATE LOOKUP INDEX index0 IF NOT EXISTS FOR (var0) ON EACH labels(var0)"),
+      querySection("CREATE LOOKUP INDEX index0 IF NOT EXISTS FOR ()-[var0]-() ON EACH type(var0)"),
+      querySection("DROP INDEX index0")
+    )
+  }
+
+  test("[retrieveAllAnonymized] should anonymize tokens and names inside constraint commands") {
+    // given (community constraint, this test doesn't allow the enterprise constraints)
+    execute("CREATE CONSTRAINT name FOR (n:Label) REQUIRE (n.prop) IS UNIQUE")
+    execute("DROP CONSTRAINT name")
+
+    // when
+    val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
+
+    // then
+    res.toList should beListWithoutOrder(
+      querySection("CREATE CONSTRAINT constraint0 FOR (var0:L0) REQUIRE (var0.p10) IS UNIQUE"),
+      querySection("DROP CONSTRAINT constraint0")
     )
   }
 
