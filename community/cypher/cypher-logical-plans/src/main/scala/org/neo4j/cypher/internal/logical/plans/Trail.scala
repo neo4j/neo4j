@@ -28,16 +28,18 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * @param right                 inner plan to repeat
  * @param repetitions           how many times to repeat the RHS on each partial result
  * @param start                 the outside node variable where the quantified pattern
- *                              starts. Assumed to be present in the output of `left`
+ *                              starts. Assumed to be present in the output of `left`.
+ *                              [[start]] (and for subsequent iterations [[innerEnd]]) is projected to [[innerStart]].
  * @param end                   the outside node variable where the quantified pattern
  *                              ends. Projected in output if present.
  * @param innerStart            the node variable where the inner pattern starts
- * @param innerEnd              the node variable where the inner pattern ends
+ * @param innerEnd              the node variable where the inner pattern ends.
+ *                              [[innerEnd]] will eventually be projected to [[end]] (if present).
  * @param groupNodes            node variables to aggregate
  * @param groupRelationships    relationship variables to aggregate
  * @param allRelationships      these are a superset of all relationship variables in the inner pattern.
  *                              relationship uniqueness must be enforced between these relationships and those in [[allRelationshipGroups]]
- * @param allRelationshipGroups relationship group variables originating from previous [[Trail]] operators.
+ * @param allRelationshipGroups relationship group variables originating from previous [[Trail]] or [[VarLengthExpand]] operators.
  *                              relationship uniqueness must be enforced between these relationships and those in [[allRelationships]].
  */
 case class Trail(
@@ -56,7 +58,7 @@ case class Trail(
     extends LogicalBinaryPlan(idGen) with ApplyPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
-  override val availableSymbols: Set[String] = (left.availableSymbols ++ right.availableSymbols ++ end) + start
+  override val availableSymbols: Set[String] = left.availableSymbols ++ end + start ++ groupNodes.map(_.outerName) ++ groupRelationships.map(_.outerName)
 }
 
 case class Repetitions(min: Int, max: UpperBound)

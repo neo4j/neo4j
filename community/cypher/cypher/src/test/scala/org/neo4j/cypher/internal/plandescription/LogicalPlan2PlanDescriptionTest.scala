@@ -4772,7 +4772,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         ),
         2345.0
       ),
-      planDescription(id, "Trail", TwoChildren(lhsPD, rhsPD), List(details("{0, *}")), Set("a", "b", "start", "end"))
+      planDescription(
+        id,
+        "Trail",
+        TwoChildren(lhsPD, rhsPD),
+        List(details("{0, *}")),
+        Set("r", "a", "b", "start", "end")
+      )
     )
   }
 
