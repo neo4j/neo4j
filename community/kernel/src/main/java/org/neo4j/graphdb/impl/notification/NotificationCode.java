@@ -72,11 +72,6 @@ public enum NotificationCode {
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
             "Binding relationships to a list in a variable length pattern is deprecated."),
-    DEPRECATED_BTREE_INDEX_SYNTAX(
-            SeverityLevel.WARNING,
-            Status.Statement.FeatureDeprecationWarning,
-            "B-tree indexes are deprecated, partially replaced by text indexes and will be fully replaced later on. "
-                    + "For now, b-tree indexes are still the correct alternative to use."),
     DEPRECATED_OCTAL_LITERAL_SYNTAX(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,

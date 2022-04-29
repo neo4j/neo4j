@@ -45,7 +45,6 @@ import org.neo4j.cypher.internal.compiler.SuboptimalIndexForConstainsQueryNotifi
 import org.neo4j.cypher.internal.compiler.SuboptimalIndexForEndsWithQueryNotification
 import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.DeprecatedAmbiguousGroupingNotification
-import org.neo4j.cypher.internal.util.DeprecatedBtreeIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
@@ -155,8 +154,6 @@ object NotificationWrapping {
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.bindingVarLengthRelationship(variable)
       )
-    case DeprecatedBtreeIndexSyntax(pos) =>
-      NotificationCode.DEPRECATED_BTREE_INDEX_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case ProcedureWarningNotification(pos, name, warning) =>
       NotificationCode.PROCEDURE_WARNING.notification(
         pos.withOffset(offset).asInputPosition,

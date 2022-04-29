@@ -2900,57 +2900,6 @@ EXPRESSION ExistsSubQuery() :
     }
 }
 
-EXPRESSION Literal() :
-{
-    Token t;
-    EXPRESSION e;
-}
-{
-    (
-        e=NumberLiteral()
-        | e=StringLiteral()
-        | e=Parameter( ParameterType.ANY )
-        | t=<TRUE> { e = astFactory.newTrueLiteral( pos( t ) ); }
-        | t=<FALSE> { e = astFactory.newFalseLiteral( pos( t ) ); }
-        | LOOKAHEAD( 2 ) t=<NULL> { e = astFactory.newNullLiteral( pos( t ) ); }
-        | e=ListLiteralOfLiterals()
-        | e=MapLiteralOfLiterals()
-        | e=FunctionInvocation() // for spatial and temporal constructors
-    )
-    {
-        return e;
-    }
-}
-
-EXPRESSION ListLiteralOfLiterals() :
-{
-    Token t;
-    EXPRESSION e;
-    List<EXPRESSION> list = new ArrayList<>();
-}
-{
-    t=<LBRACKET> ( e=Literal() { list.add(e); } )? ( "," e=Literal() {list.add( e ); } )* <RBRACKET>
-    {
-        return astFactory.listLiteral( pos( t ), list );
-    }
-}
-
-EXPRESSION MapLiteralOfLiterals() :
-{
-    Token t;
-    StringPos<POS> key;
-    EXPRESSION value;
-    List<StringPos<POS>> keys = new ArrayList<>();
-    List<EXPRESSION> values = new ArrayList<>();
-}
-{
-    t=<LCURLY> ( key=PropertyKeyName() ":" value=Literal() {keys.add( key ); values.add( value ); } )?
-           ( "," key=PropertyKeyName() ":" value=Literal() {keys.add( key ); values.add( value ); } )* <RCURLY>
-    {
-        return astFactory.mapLiteral( pos( t ), keys, values );
-    }
-}
-
 EXPRESSION StringLiteral() :
 {
     Token t;
