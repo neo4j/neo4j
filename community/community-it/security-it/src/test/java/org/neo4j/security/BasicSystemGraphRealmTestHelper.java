@@ -27,14 +27,15 @@ import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
 import static org.neo4j.server.security.auth.SecurityTestUtils.password;
 
 import java.util.Collections;
+import java.util.NavigableMap;
 import java.util.Optional;
-import java.util.SortedMap;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
@@ -46,13 +47,13 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.utils.TestDirectory;
 
 public class BasicSystemGraphRealmTestHelper {
-    public static class TestDatabaseManager extends LifecycleAdapter
-            implements DatabaseManager<StandaloneDatabaseContext> {
+    public static class TestDatabaseContextProvider extends LifecycleAdapter
+            implements DatabaseContextProvider<StandaloneDatabaseContext> {
         protected GraphDatabaseFacade testSystemDb;
         protected final DatabaseManagementService managementService;
-        private final DatabaseIdRepository.Caching databaseIdRepository = new TestDatabaseIdRepository.Caching();
+        private final DatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
 
-        protected TestDatabaseManager(TestDirectory testDir) {
+        protected TestDatabaseContextProvider(TestDirectory testDir) {
             managementService = createManagementService(testDir);
             testSystemDb = (GraphDatabaseFacade) managementService.database(SYSTEM_DATABASE_NAME);
         }
@@ -80,27 +81,23 @@ public class BasicSystemGraphRealmTestHelper {
         }
 
         @Override
-        public StandaloneDatabaseContext createDatabase(NamedDatabaseId namedDatabaseId) {
-            throw new UnsupportedOperationException("Call to createDatabase not expected");
+        public Optional<StandaloneDatabaseContext> getDatabaseContext(String databaseName) {
+            return databaseIdRepository().getByName(databaseName).flatMap(this::getDatabaseContext);
         }
 
         @Override
-        public void dropDatabase(NamedDatabaseId namedDatabaseId) {}
+        public Optional<StandaloneDatabaseContext> getDatabaseContext(DatabaseId databaseId) {
+            return databaseIdRepository().getById(databaseId).flatMap(this::getDatabaseContext);
+        }
 
         @Override
-        public void stopDatabase(NamedDatabaseId namedDatabaseId) {}
-
-        @Override
-        public void startDatabase(NamedDatabaseId namedDatabaseId) {}
-
-        @Override
-        public DatabaseIdRepository.Caching databaseIdRepository() {
+        public DatabaseIdRepository databaseIdRepository() {
             return databaseIdRepository;
         }
 
         @Override
-        public SortedMap<NamedDatabaseId, StandaloneDatabaseContext> registeredDatabases() {
-            return Collections.emptySortedMap();
+        public NavigableMap<NamedDatabaseId, StandaloneDatabaseContext> registeredDatabases() {
+            return Collections.emptyNavigableMap();
         }
     }
 

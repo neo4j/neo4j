@@ -45,7 +45,7 @@ import org.neo4j.kernel.monitoring.DatabaseEventListeners;
 import org.neo4j.logging.InternalLog;
 
 public class DatabaseManagementServiceImpl implements DatabaseManagementService {
-    private final DatabaseManager<?> databaseManager;
+    private final DatabaseContextProvider<?> databaseContextProvider;
     private final Lifecycle globalLife;
     private final DatabaseEventListeners databaseEventListeners;
     private final GlobalTransactionEventListeners transactionEventListeners;
@@ -53,13 +53,13 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService 
     private final Config globalConfig;
 
     public DatabaseManagementServiceImpl(
-            DatabaseManager<?> databaseManager,
+            DatabaseContextProvider<?> databaseContextProvider,
             Lifecycle globalLife,
             DatabaseEventListeners databaseEventListeners,
             GlobalTransactionEventListeners transactionEventListeners,
             InternalLog log,
             Config globalConfig) {
-        this.databaseManager = databaseManager;
+        this.databaseContextProvider = databaseContextProvider;
         this.globalLife = globalLife;
         this.databaseEventListeners = databaseEventListeners;
         this.transactionEventListeners = transactionEventListeners;
@@ -69,8 +69,10 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService 
 
     @Override
     public GraphDatabaseService database(String name) throws DatabaseNotFoundException {
-        return databaseManager
-                .getDatabaseContext(name)
+        return databaseContextProvider
+                .databaseIdRepository()
+                .getByName(name)
+                .flatMap(databaseContextProvider::getDatabaseContext)
                 .orElseThrow(() -> new DatabaseNotFoundException(name))
                 .databaseFacade();
     }
@@ -103,7 +105,7 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService 
 
     @Override
     public List<String> listDatabases() {
-        return databaseManager.registeredDatabases().keySet().stream()
+        return databaseContextProvider.registeredDatabases().keySet().stream()
                 .map(NamedDatabaseId::name)
                 .sorted()
                 .collect(Collectors.toList());

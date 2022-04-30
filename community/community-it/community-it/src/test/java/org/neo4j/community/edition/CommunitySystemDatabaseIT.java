@@ -39,7 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -64,7 +64,7 @@ class CommunitySystemDatabaseIT {
     private TestDirectory testDirectory;
 
     private GraphDatabaseService database;
-    private DatabaseManager<?> databaseManager;
+    private DatabaseContextProvider<?> databaseContextProvider;
     private GraphDatabaseFacade defaultDb;
     private GraphDatabaseFacade systemDb;
     private DatabaseManagementService managementService;
@@ -75,14 +75,14 @@ class CommunitySystemDatabaseIT {
                 .noOpSystemGraphInitializer()
                 .build();
         database = managementService.database(DEFAULT_DATABASE_NAME);
-        databaseManager = getDatabaseManager(database);
+        databaseContextProvider = getDatabaseManager(database);
         defaultDb = getDatabaseByName(
-                databaseManager,
-                databaseManager
+                databaseContextProvider,
+                databaseContextProvider
                         .databaseIdRepository()
                         .getByName(DEFAULT_DATABASE_NAME)
                         .get());
-        systemDb = getDatabaseByName(databaseManager, NAMED_SYSTEM_DATABASE_ID);
+        systemDb = getDatabaseByName(databaseContextProvider, NAMED_SYSTEM_DATABASE_ID);
     }
 
     @AfterEach
@@ -191,9 +191,10 @@ class CommunitySystemDatabaseIT {
             Path disabledSystemDbDirectory = testDirectory.homePath("withSystemDd");
             managementService = new TestDatabaseManagementServiceBuilder(disabledSystemDbDirectory).build();
             databaseWithSystemDb = managementService.database(DEFAULT_DATABASE_NAME);
-            DatabaseManager<?> databaseManager = getDatabaseManager(databaseWithSystemDb);
-            assertTrue(
-                    databaseManager.getDatabaseContext(NAMED_SYSTEM_DATABASE_ID).isPresent());
+            DatabaseContextProvider<?> databaseContextProvider = getDatabaseManager(databaseWithSystemDb);
+            assertTrue(databaseContextProvider
+                    .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
+                    .isPresent());
         } finally {
             if (databaseWithSystemDb != null) {
                 managementService.shutdown();
@@ -219,14 +220,14 @@ class CommunitySystemDatabaseIT {
     }
 
     private static GraphDatabaseFacade getDatabaseByName(
-            DatabaseManager<?> databaseManager, NamedDatabaseId namedDatabaseId) {
-        return databaseManager
+            DatabaseContextProvider<?> databaseContextProvider, NamedDatabaseId namedDatabaseId) {
+        return databaseContextProvider
                 .getDatabaseContext(namedDatabaseId)
                 .orElseThrow(IllegalStateException::new)
                 .databaseFacade();
     }
 
-    private static DatabaseManager<?> getDatabaseManager(GraphDatabaseService database) {
-        return ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency(DatabaseManager.class);
+    private static DatabaseContextProvider<?> getDatabaseManager(GraphDatabaseService database) {
+        return ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency(DatabaseContextProvider.class);
     }
 }

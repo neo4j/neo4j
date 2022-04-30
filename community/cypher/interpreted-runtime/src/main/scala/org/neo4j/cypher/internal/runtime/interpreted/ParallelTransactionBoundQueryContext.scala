@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.runtime.debug.DebugSupport
 import org.neo4j.cypher.internal.runtime.interpreted.ParallelTransactionBoundQueryContext.UnsupportedWriteQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.dbms.database.DatabaseContext
-import org.neo4j.dbms.database.DatabaseManager
+import org.neo4j.dbms.database.DatabaseContextProvider
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
@@ -154,7 +154,7 @@ object ParallelTransactionBoundQueryContext {
     override def dropNamedConstraint(name: String): Unit = unsupported()
     override def detachDeleteNode(id: Long): Int = unsupported()
     override def assertSchemaWritesAllowed(): Unit = unsupported()
-    override def getDatabaseManager: DatabaseManager[DatabaseContext] = unsupported()
+    override def getDatabaseContextProvider: DatabaseContextProvider[DatabaseContext] = unsupported()
     override def getConfig: Config = unsupported()
 
     override def nodeApplyChanges(

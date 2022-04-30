@@ -52,7 +52,7 @@ case class TerminateTransactionsCommand(givenIds: Either[List[String], Expressio
 
     log.info("User %s trying to terminate transactions: %s.", loggingUser, ids.mkString("[", ", ", "]"))
 
-    val databaseManager = ctx.getDatabaseManager
+    val databaseManager = ctx.getDatabaseContextProvider
     val databaseIdRepository = databaseManager.databaseIdRepository
 
     val (transactionsByDatabase, otherTxIds) =

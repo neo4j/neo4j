@@ -23,14 +23,14 @@ import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailabl
 
 import java.util.Optional;
 import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 public class LocalRoutingTableProcedureValidator extends BaseRoutingTableProcedureValidator {
-    public LocalRoutingTableProcedureValidator(DatabaseManager<?> databaseManager) {
-        super(databaseManager);
+    public LocalRoutingTableProcedureValidator(DatabaseContextProvider<?> databaseContextProvider) {
+        super(databaseContextProvider);
     }
 
     @Override
@@ -57,6 +57,6 @@ public class LocalRoutingTableProcedureValidator extends BaseRoutingTableProcedu
     }
 
     Optional<Database> getDatabase(NamedDatabaseId databaseId) {
-        return databaseManager.getDatabaseContext(databaseId).map(DatabaseContext::database);
+        return databaseContextProvider.getDatabaseContext(databaseId).map(DatabaseContext::database);
     }
 }

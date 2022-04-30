@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Caching {
     private static final Optional<NamedDatabaseId> OPT_SYS_DB = Optional.of(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID);
 
-    private final DatabaseIdRepository delegate;
+    private volatile DatabaseIdRepository delegate;
     private volatile Map<String, NamedDatabaseId> databaseIdsByName;
     private volatile Map<DatabaseId, NamedDatabaseId> databaseIdsByUuid;
 
@@ -35,6 +35,14 @@ public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Cach
         this.delegate = delegate;
         this.databaseIdsByName = new ConcurrentHashMap<>();
         this.databaseIdsByUuid = new ConcurrentHashMap<>();
+    }
+
+    public MapCachingDatabaseIdRepository() {
+        this(null);
+    }
+
+    public void setDelegate(DatabaseIdRepository databaseIdRepository) {
+        delegate = databaseIdRepository;
     }
 
     @Override

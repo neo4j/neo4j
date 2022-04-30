@@ -48,7 +48,7 @@ import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.cypher.internal.runtime.interpreted.DelegatingQueryTransactionalContext
 import org.neo4j.dbms.database.DatabaseContext
-import org.neo4j.dbms.database.DatabaseManager
+import org.neo4j.dbms.database.DatabaseContextProvider
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Path
@@ -645,8 +645,8 @@ class ExceptionTranslatingQueryContext(override val inner: QueryContext)
   override def assertSchemaWritesAllowed(): Unit =
     translateException(tokenNameLookup, inner.assertSchemaWritesAllowed())
 
-  override def getDatabaseManager: DatabaseManager[DatabaseContext] =
-    translateException(tokenNameLookup, inner.getDatabaseManager)
+  override def getDatabaseContextProvider: DatabaseContextProvider[DatabaseContext] =
+    translateException(tokenNameLookup, inner.getDatabaseContextProvider)
 
   override def getConfig: Config = translateException(tokenNameLookup, inner.getConfig)
 

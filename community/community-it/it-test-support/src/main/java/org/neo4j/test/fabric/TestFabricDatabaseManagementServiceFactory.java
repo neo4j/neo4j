@@ -23,8 +23,8 @@ import java.util.function.Function;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.dbms.database.DatabaseManagementServiceImpl;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.fabric.bolt.BoltFabricDatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -60,9 +60,9 @@ public class TestFabricDatabaseManagementServiceFactory extends TestDatabaseMana
             GlobalModule globalModule,
             LifeSupport globalLife,
             InternalLog internalLog,
-            DatabaseManager<?> databaseManager) {
+            DatabaseContextProvider<?> databaseContextProvider) {
         return new DatabaseManagementServiceImpl(
-                databaseManager,
+                databaseContextProvider,
                 globalLife,
                 globalModule.getDatabaseEventListeners(),
                 globalModule.getTransactionEventListeners(),
@@ -74,7 +74,7 @@ public class TestFabricDatabaseManagementServiceFactory extends TestDatabaseMana
                         .getGlobalDependencies()
                         .resolveDependency(BoltFabricDatabaseManagementService.class);
 
-                var baseDb = databaseManager
+                var baseDb = databaseContextProvider
                         .getDatabaseContext(name)
                         .orElseThrow(() -> new DatabaseNotFoundException(name))
                         .databaseFacade();

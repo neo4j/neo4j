@@ -29,12 +29,11 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.dbms.database.DatabaseInfoService;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponents;
-import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -81,7 +80,7 @@ public abstract class AbstractEditionModule {
             GlobalProcedures globalProcedures,
             ProcedureConfig procedureConfig,
             GlobalModule globalModule,
-            DatabaseManager<?> databaseManager)
+            DatabaseContextProvider<?> databaseContextProvider)
             throws KernelException {
         globalProcedures.registerProcedure(BuiltInProcedures.class);
         globalProcedures.registerProcedure(TokenProcedures.class);
@@ -90,10 +89,10 @@ public abstract class AbstractEditionModule {
         globalProcedures.registerProcedure(DataCollectorProcedures.class);
         registerTemporalFunctions(globalProcedures, procedureConfig);
 
-        registerEditionSpecificProcedures(globalProcedures, databaseManager);
+        registerEditionSpecificProcedures(globalProcedures, databaseContextProvider);
         AbstractRoutingProcedureInstaller routingProcedureInstaller = createRoutingProcedureInstaller(
                 globalModule,
-                databaseManager,
+                databaseContextProvider,
                 globalModule.getGlobalDependencies().resolveDependency(ClientRoutingDomainChecker.class));
         routingProcedureInstaller.install(globalProcedures);
     }
@@ -107,18 +106,20 @@ public abstract class AbstractEditionModule {
     }
 
     protected abstract void registerEditionSpecificProcedures(
-            GlobalProcedures globalProcedures, DatabaseManager<?> databaseManager) throws KernelException;
+            GlobalProcedures globalProcedures, DatabaseContextProvider<?> databaseContextProvider)
+            throws KernelException;
 
     protected abstract AbstractRoutingProcedureInstaller createRoutingProcedureInstaller(
             GlobalModule globalModule,
-            DatabaseManager<?> databaseManager,
+            DatabaseContextProvider<?> databaseContextProvider,
             ClientRoutingDomainChecker clientRoutingDomainChecker);
 
     protected abstract AuthConfigProvider createAuthConfigProvider(GlobalModule globalModule);
 
-    public abstract <DB extends DatabaseContext> DatabaseManager<DB> createDatabaseManager(GlobalModule globalModule);
+    public abstract <DB extends DatabaseContext> DatabaseContextProvider<DB> createDatabaseContextProvider(
+            GlobalModule globalModule);
 
-    public abstract SystemGraphInitializer createSystemGraphInitializer(GlobalModule globalModule);
+    public abstract void registerSystemGraphInitializer(GlobalModule globalModule);
 
     public abstract void registerSystemGraphComponents(
             SystemGraphComponents systemGraphComponents, GlobalModule globalModule);
@@ -185,7 +186,7 @@ public abstract class AbstractEditionModule {
 
     public abstract DbmsRuntimeRepository createAndRegisterDbmsRuntimeRepository(
             GlobalModule globalModule,
-            DatabaseManager<?> databaseManager,
+            DatabaseContextProvider<?> databaseContextProvider,
             Dependencies dependencies,
             DbmsRuntimeSystemGraphComponent dbmsRuntimeSystemGraphComponent);
 
@@ -198,7 +199,7 @@ public abstract class AbstractEditionModule {
                 portRegister, RoutingOption.ROUTE_WRITE_AND_READ, config, logProvider, ttlProvider);
     }
 
-    public abstract DatabaseInfoService createDatabaseInfoService(DatabaseManager<?> databaseManager);
+    public abstract DatabaseInfoService createDatabaseInfoService(DatabaseContextProvider<?> databaseContextProvider);
 
     public static <T> T tryResolveOrCreate(
             Class<T> clazz, DependencyResolver dependencies, Supplier<T> newInstanceMethod) {

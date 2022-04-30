@@ -28,7 +28,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.cypher.internal.security.SecureHasher;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -57,8 +57,9 @@ public class CommunitySecurityModule extends SecurityModule {
     @Override
     public void setup() {
         Supplier<GraphDatabaseService> systemSupplier = () -> {
-            DatabaseManager<?> databaseManager = globalDependencies.resolveDependency(DatabaseManager.class);
-            return databaseManager
+            DatabaseContextProvider<?> databaseContextProvider =
+                    globalDependencies.resolveDependency(DatabaseContextProvider.class);
+            return databaseContextProvider
                     .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
                     .orElseThrow(
                             () -> new RuntimeException("No database called `" + SYSTEM_DATABASE_NAME + "` was found."))

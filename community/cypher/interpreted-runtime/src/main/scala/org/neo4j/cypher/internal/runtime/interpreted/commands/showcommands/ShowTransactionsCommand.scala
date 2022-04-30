@@ -62,7 +62,7 @@ case class ShowTransactionsCommand(
     val ctx = state.query
     val securityContext = ctx.transactionalContext.securityContext
 
-    val allowedTransactions = ctx.getDatabaseManager.registeredDatabases.values.asScala.toList
+    val allowedTransactions = ctx.getDatabaseContextProvider.registeredDatabases.values.asScala.toList
       .filter(_.database.isStarted)
       .flatMap(databaseContext => {
         val dbName = databaseContext.databaseFacade.databaseName

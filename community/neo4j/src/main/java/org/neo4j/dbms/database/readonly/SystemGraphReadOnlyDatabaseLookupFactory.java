@@ -25,7 +25,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.neo4j.dbms.database.CommunityTopologyGraphDbmsModel;
 import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.dbms.database.TopologyGraphDbmsModel;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -33,20 +33,20 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 
 public final class SystemGraphReadOnlyDatabaseLookupFactory implements ReadOnlyDatabases.LookupFactory {
-    private final DatabaseManager<?> databaseManager;
+    private final DatabaseContextProvider<?> databaseContextProvider;
     private final InternalLog log;
 
     private volatile SystemGraphLookup previousLookup;
 
     public SystemGraphReadOnlyDatabaseLookupFactory(
-            DatabaseManager<?> databaseManager, InternalLogProvider logProvider) {
-        this.databaseManager = databaseManager;
+            DatabaseContextProvider<?> databaseContextProvider, InternalLogProvider logProvider) {
+        this.databaseContextProvider = databaseContextProvider;
         this.previousLookup = SystemGraphLookup.ALWAYS_READONLY;
         this.log = logProvider.getLog(getClass());
     }
 
     private Optional<GraphDatabaseFacade> systemDatabase() {
-        var systemDb = databaseManager.getDatabaseContext(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID);
+        var systemDb = databaseContextProvider.getDatabaseContext(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID);
         var started = systemDb.map(db -> db.databaseFacade().isAvailable()).orElse(false);
 
         if (started) {

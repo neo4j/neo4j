@@ -34,8 +34,8 @@ import org.neo4j.internal.helpers.collection.Iterables;
 public class StandaloneDbmsRuntimeRepository extends DbmsRuntimeRepository implements TransactionEventListener<Object> {
 
     public StandaloneDbmsRuntimeRepository(
-            DatabaseManager<?> databaseManager, DbmsRuntimeSystemGraphComponent component) {
-        super(databaseManager, component);
+            DatabaseContextProvider<?> databaseContextProvider, DbmsRuntimeSystemGraphComponent component) {
+        super(databaseContextProvider, component);
     }
 
     @Override

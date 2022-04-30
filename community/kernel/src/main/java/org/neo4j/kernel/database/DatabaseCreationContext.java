@@ -22,7 +22,6 @@ package org.neo4j.kernel.database;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.configuration.Config;
 import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.function.Factory;
@@ -67,8 +66,6 @@ public interface DatabaseCreationContext {
     NamedDatabaseId getNamedDatabaseId();
 
     DatabaseLayout getDatabaseLayout();
-
-    Config getGlobalConfig();
 
     DatabaseConfig getDatabaseConfig();
 

@@ -26,7 +26,7 @@ import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -64,9 +64,13 @@ class TestDatabaseManagementServiceBuilderTest {
 
     private static void checkAvailableDatabases(GraphDatabaseAPI database) {
         DependencyResolver resolver = database.getDependencyResolver();
-        DatabaseManager<?> databaseManager = resolver.resolveDependency(DatabaseManager.class);
+        DatabaseContextProvider<?> databaseContextProvider = resolver.resolveDependency(DatabaseContextProvider.class);
 
-        assertTrue(databaseManager.getDatabaseContext(NAMED_SYSTEM_DATABASE_ID).isPresent());
-        assertTrue(databaseManager.getDatabaseContext(DEFAULT_DATABASE_NAME).isPresent());
+        assertTrue(databaseContextProvider
+                .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
+                .isPresent());
+        assertTrue(databaseContextProvider
+                .getDatabaseContext(DEFAULT_DATABASE_NAME)
+                .isPresent());
     }
 }

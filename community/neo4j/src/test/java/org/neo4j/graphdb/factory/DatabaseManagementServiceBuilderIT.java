@@ -36,7 +36,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -62,10 +62,11 @@ class DatabaseManagementServiceBuilderIT {
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
         try {
             DependencyResolver dependencyResolver = database.getDependencyResolver();
-            DatabaseManager<?> databaseManager = dependencyResolver.resolveDependency(DatabaseManager.class);
-            assertThat(databaseManager.getDatabaseContext(DEFAULT_DATABASE_NAME))
+            DatabaseContextProvider<?> databaseContextProvider =
+                    dependencyResolver.resolveDependency(DatabaseContextProvider.class);
+            assertThat(databaseContextProvider.getDatabaseContext(DEFAULT_DATABASE_NAME))
                     .isNotEmpty();
-            assertThat(databaseManager.getDatabaseContext(NAMED_SYSTEM_DATABASE_ID))
+            assertThat(databaseContextProvider.getDatabaseContext(NAMED_SYSTEM_DATABASE_ID))
                     .isNotEmpty();
         } finally {
             managementService.shutdown();

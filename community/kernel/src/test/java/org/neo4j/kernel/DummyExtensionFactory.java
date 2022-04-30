@@ -21,7 +21,7 @@ package org.neo4j.kernel;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -31,7 +31,7 @@ public class DummyExtensionFactory extends ExtensionFactory<DummyExtensionFactor
     public interface Dependencies {
         Config getConfig();
 
-        DatabaseManager<?> getDatabaseManager();
+        DatabaseContextProvider<?> getDatabaseManager();
     }
 
     static final String EXTENSION_ID = "dummy";

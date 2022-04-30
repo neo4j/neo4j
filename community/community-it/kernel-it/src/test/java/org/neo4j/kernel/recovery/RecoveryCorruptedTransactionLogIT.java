@@ -55,7 +55,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -1169,7 +1169,7 @@ class RecoveryCorruptedTransactionLogIT {
     private StandaloneDatabaseContext getDefaultDbContext(DatabaseManagementService dbms) {
         return (StandaloneDatabaseContext) ((GraphDatabaseAPI) dbms.database(SYSTEM_DATABASE_NAME))
                 .getDependencyResolver()
-                .resolveDependency(DatabaseManager.class)
+                .resolveDependency(DatabaseContextProvider.class)
                 .getDatabaseContext(DEFAULT_DATABASE_NAME)
                 .orElseThrow();
     }

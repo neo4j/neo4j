@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 import org.neo4j.cypher.internal.security.FormatException;
 import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.cypher.internal.security.SystemGraphCredential;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -95,8 +95,9 @@ public class SystemGraphRealmHelper {
         return systemDb;
     }
 
-    public static Supplier<GraphDatabaseService> makeSystemSupplier(DatabaseManager<?> databaseManager) {
-        return () -> databaseManager
+    public static Supplier<GraphDatabaseService> makeSystemSupplier(
+            DatabaseContextProvider<?> databaseContextProvider) {
+        return () -> databaseContextProvider
                 .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
                 .orElseThrow(() ->
                         new AuthProviderFailedException("No database called `" + SYSTEM_DATABASE_NAME + "` was found."))

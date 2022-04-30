@@ -25,13 +25,14 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.util.VisibleForTesting;
 
 public abstract class DbmsRuntimeRepository {
-    private final DatabaseManager<?> databaseManager;
+    private final DatabaseContextProvider<?> databaseContextProvider;
     final DbmsRuntimeSystemGraphComponent component;
 
     private volatile DbmsRuntimeVersion currentVersion;
 
-    protected DbmsRuntimeRepository(DatabaseManager<?> databaseManager, DbmsRuntimeSystemGraphComponent component) {
-        this.databaseManager = databaseManager;
+    protected DbmsRuntimeRepository(
+            DatabaseContextProvider<?> databaseContextProvider, DbmsRuntimeSystemGraphComponent component) {
+        this.databaseContextProvider = databaseContextProvider;
         this.component = component;
     }
 
@@ -41,7 +42,7 @@ public abstract class DbmsRuntimeRepository {
     }
 
     protected GraphDatabaseService getSystemDb() {
-        return databaseManager
+        return databaseContextProvider
                 .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
                 .orElseThrow(() -> new RuntimeException("Failed to get System Database"))
                 .databaseFacade();

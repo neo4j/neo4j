@@ -24,7 +24,6 @@ import java.util.function.LongFunction;
 import java.util.function.Predicate;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.configuration.Config;
 import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.function.Factory;
@@ -78,7 +77,6 @@ import org.neo4j.token.TokenHolders;
 
 public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     private final NamedDatabaseId namedDatabaseId;
-    private final Config globalConfig;
     private final DatabaseConfig databaseConfig;
     private final QueryEngineProvider queryEngineProvider;
     private final ExternalIdReuseConditionProvider externalIdReuseConditionProvider;
@@ -187,7 +185,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
             DatabaseStartupController databaseStartupController,
             ReadOnlyDatabases readOnlyDatabases) {
         this.namedDatabaseId = namedDatabaseId;
-        this.globalConfig = globalModule.getGlobalConfig();
         this.databaseConfig = databaseConfig;
         this.contextFactory = contextFactory;
         this.queryEngineProvider = queryEngineProvider;
@@ -242,11 +239,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     @Override
     public DatabaseLayout getDatabaseLayout() {
         return databaseLayout;
-    }
-
-    @Override
-    public Config getGlobalConfig() {
-        return globalConfig;
     }
 
     @Override

@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.fabric.FabricDatabaseManager;
 import org.neo4j.fabric.bolt.BoltFabricDatabaseManagementService;
 import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
@@ -115,7 +115,7 @@ public abstract class FabricServicesBootstrap {
         InternalLogProvider internalLogProvider = logService.getInternalLogProvider();
 
         @SuppressWarnings("unchecked")
-        var databaseManager = (DatabaseManager<DatabaseContext>) resolve(DatabaseManager.class);
+        var databaseManager = (DatabaseContextProvider<DatabaseContext>) resolve(DatabaseContextProvider.class);
         var fabricDatabaseManager = register(createFabricDatabaseManager(fabricConfig), FabricDatabaseManager.class);
 
         var jobScheduler = resolve(JobScheduler.class);
@@ -201,7 +201,8 @@ public abstract class FabricServicesBootstrap {
 
         var transactionIdTracker = new TransactionIdTracker(managementService, monitors, clock);
 
-        var databaseManager = (DatabaseManager<DatabaseContext>) dependencies.resolveDependency(DatabaseManager.class);
+        var databaseManager = (DatabaseContextProvider<DatabaseContext>)
+                dependencies.resolveDependency(DatabaseContextProvider.class);
         var databaseIdRepository = databaseManager.databaseIdRepository();
         var transactionBookmarkManagerFactory = dependencies.resolveDependency(TransactionBookmarkManagerFactory.class);
 
@@ -251,7 +252,7 @@ public abstract class FabricServicesBootstrap {
 
         @Override
         protected FabricDatabaseManager createFabricDatabaseManager(FabricConfig fabricConfig) {
-            var databaseManager = (DatabaseManager<DatabaseContext>) resolve(DatabaseManager.class);
+            var databaseManager = (DatabaseContextProvider<DatabaseContext>) resolve(DatabaseContextProvider.class);
             return new FabricDatabaseManager.Community(fabricConfig, databaseManager);
         }
 

@@ -25,7 +25,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
 import org.neo4j.configuration.database.readonly.ConfigReadOnlyDatabaseListener;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
 import org.neo4j.dbms.database.StandaloneDbmsRuntimeRepository;
@@ -41,11 +41,11 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule {
     @Override
     public DbmsRuntimeRepository createAndRegisterDbmsRuntimeRepository(
             GlobalModule globalModule,
-            DatabaseManager<?> databaseManager,
+            DatabaseContextProvider<?> databaseContextProvider,
             Dependencies dependencies,
             DbmsRuntimeSystemGraphComponent dbmsRuntimeSystemGraphComponent) {
         var dbmsRuntimeRepository =
-                new StandaloneDbmsRuntimeRepository(databaseManager, dbmsRuntimeSystemGraphComponent);
+                new StandaloneDbmsRuntimeRepository(databaseContextProvider, dbmsRuntimeSystemGraphComponent);
         globalModule
                 .getTransactionEventListeners()
                 .registerTransactionEventListener(SYSTEM_DATABASE_NAME, dbmsRuntimeRepository);
@@ -53,13 +53,15 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule {
     }
 
     protected static ReadOnlyDatabases createGlobalReadOnlyChecker(
-            DatabaseManager<?> databaseManager,
+            DatabaseContextProvider<?> databaseContextProvider,
             Config globalConfig,
             GlobalTransactionEventListeners txListeners,
             LifeSupport globalLife,
             InternalLogProvider logProvider) {
-        var systemGraphReadOnlyLookup = new SystemGraphReadOnlyDatabaseLookupFactory(databaseManager, logProvider);
-        var configReadOnlyLookup = new ConfigBasedLookupFactory(globalConfig, databaseManager.databaseIdRepository());
+        var systemGraphReadOnlyLookup =
+                new SystemGraphReadOnlyDatabaseLookupFactory(databaseContextProvider, logProvider);
+        var configReadOnlyLookup =
+                new ConfigBasedLookupFactory(globalConfig, databaseContextProvider.databaseIdRepository());
         var globalChecker = new ReadOnlyDatabases(systemGraphReadOnlyLookup, configReadOnlyLookup);
         var configListener = new ConfigReadOnlyDatabaseListener(globalChecker, globalConfig);
         var systemGraphListener = new SystemGraphReadOnlyListener(txListeners, globalChecker);

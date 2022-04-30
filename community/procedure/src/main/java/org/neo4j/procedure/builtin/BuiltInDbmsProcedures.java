@@ -58,7 +58,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingImpl;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.fabric.executor.FabricStatementLifecycles;
@@ -348,8 +348,8 @@ public class BuiltInDbmsProcedures {
                 "User %s trying to kill transactions: %s.",
                 securityContext.subject().executingUser(), transactionIds.toString());
 
-        DatabaseManager<DatabaseContext> databaseManager = getDatabaseManager();
-        DatabaseIdRepository databaseIdRepository = databaseManager.databaseIdRepository();
+        DatabaseContextProvider<DatabaseContext> databaseContextProvider = getDatabaseManager();
+        DatabaseIdRepository databaseIdRepository = databaseContextProvider.databaseIdRepository();
 
         Map<NamedDatabaseId, Set<TransactionId>> byDatabase = new HashMap<>();
         for (String idText : transactionIds) {
@@ -364,7 +364,7 @@ public class BuiltInDbmsProcedures {
         for (Map.Entry<NamedDatabaseId, Set<TransactionId>> entry : byDatabase.entrySet()) {
             NamedDatabaseId databaseId = entry.getKey();
             var dbScope = new DatabaseScope(databaseId.name());
-            Optional<DatabaseContext> maybeDatabaseContext = databaseManager.getDatabaseContext(databaseId);
+            Optional<DatabaseContext> maybeDatabaseContext = databaseContextProvider.getDatabaseContext(databaseId);
             if (maybeDatabaseContext.isPresent()) {
                 Set<TransactionId> txIds = entry.getValue();
                 DatabaseContext databaseContext = maybeDatabaseContext.get();
@@ -460,8 +460,8 @@ public class BuiltInDbmsProcedures {
     @Procedure(name = "dbms.killQueries", mode = DBMS, deprecatedBy = "TERMINATE TRANSACTIONS command")
     public Stream<QueryTerminationResult> killQueries(@Name("ids") List<String> idTexts)
             throws InvalidArgumentsException {
-        DatabaseManager<DatabaseContext> databaseManager = getDatabaseManager();
-        DatabaseIdRepository databaseIdRepository = databaseManager.databaseIdRepository();
+        DatabaseContextProvider<DatabaseContext> databaseContextProvider = getDatabaseManager();
+        DatabaseIdRepository databaseIdRepository = databaseContextProvider.databaseIdRepository();
 
         Map<Long, QueryId> queryIds = new HashMap<>(idTexts.size());
         for (String idText : idTexts) {
@@ -473,7 +473,7 @@ public class BuiltInDbmsProcedures {
 
         killFabricTransactions(queryIds, result);
 
-        killNonFabricTransactions(databaseManager, queryIds, result);
+        killNonFabricTransactions(databaseContextProvider, queryIds, result);
 
         // Add error about the rest
         for (QueryId queryId : queryIds.values()) {
@@ -507,11 +507,11 @@ public class BuiltInDbmsProcedures {
     }
 
     private void killNonFabricTransactions(
-            DatabaseManager<DatabaseContext> databaseManager,
+            DatabaseContextProvider<DatabaseContext> databaseContextProvider,
             Map<Long, QueryId> queryIds,
             List<QueryTerminationResult> result) {
         for (Map.Entry<NamedDatabaseId, DatabaseContext> databaseEntry :
-                databaseManager.registeredDatabases().entrySet()) {
+                databaseContextProvider.registeredDatabases().entrySet()) {
             NamedDatabaseId databaseId = databaseEntry.getKey();
             DatabaseContext databaseContext = databaseEntry.getValue();
             if (databaseContext.database().isStarted()) {
@@ -715,8 +715,8 @@ public class BuiltInDbmsProcedures {
         return databaseAPI.getDependencyResolver().resolveDependency(StoreIdProvider.class);
     }
 
-    private DatabaseManager<DatabaseContext> getDatabaseManager() {
-        return (DatabaseManager<DatabaseContext>) resolver.resolveDependency(DatabaseManager.class);
+    private DatabaseContextProvider<DatabaseContext> getDatabaseManager() {
+        return (DatabaseContextProvider<DatabaseContext>) resolver.resolveDependency(DatabaseContextProvider.class);
     }
 
     private ZoneId getConfiguredTimeZone() {

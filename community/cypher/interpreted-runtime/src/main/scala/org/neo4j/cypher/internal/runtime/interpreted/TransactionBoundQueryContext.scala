@@ -62,7 +62,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.TypeAn
 import org.neo4j.cypher.operations.CursorUtils
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.dbms.database.DatabaseContext
-import org.neo4j.dbms.database.DatabaseManager
+import org.neo4j.dbms.database.DatabaseContextProvider
 import org.neo4j.exceptions.EntityNotFoundException
 import org.neo4j.exceptions.FailedIndexException
 import org.neo4j.graphalgo.BasicEvaluationContext
@@ -374,11 +374,11 @@ sealed class TransactionBoundQueryContext(
   override def assertSchemaWritesAllowed(): Unit =
     transactionalContext.schemaWrite
 
-  override def getDatabaseManager: DatabaseManager[DatabaseContext] = {
+  override def getDatabaseContextProvider: DatabaseContextProvider[DatabaseContext] = {
     val dependencyResolver = transactionalContext.graph.getDependencyResolver
-    dependencyResolver.resolveDependency(classOf[DatabaseManager[_ <: DatabaseContext]]).asInstanceOf[DatabaseManager[
-      DatabaseContext
-    ]]
+    dependencyResolver.resolveDependency(classOf[DatabaseContextProvider[_ <: DatabaseContext]]).asInstanceOf[
+      DatabaseContextProvider[DatabaseContext]
+    ]
   }
 
   override def getConfig: Config =

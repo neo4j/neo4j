@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.dbms.database.DatabaseContext
-import org.neo4j.dbms.database.DatabaseManager
+import org.neo4j.dbms.database.DatabaseContextProvider
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Path
@@ -505,7 +505,7 @@ trait WriteQueryContext {
 
   def assertSchemaWritesAllowed(): Unit
 
-  def getDatabaseManager: DatabaseManager[DatabaseContext]
+  def getDatabaseContextProvider: DatabaseContextProvider[DatabaseContext]
 
   def getConfig: Config
 

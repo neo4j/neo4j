@@ -43,20 +43,20 @@ public class StandaloneDatabaseInfoService implements DatabaseInfoService {
     private final ReadOnlyDatabases readOnlyDatabases;
     private final ServerId serverId;
     private final SocketAddress address;
-    private final DatabaseManager<?> databaseManager;
+    private final DatabaseContextProvider<?> databaseContextProvider;
     private final DatabaseStateService stateService;
 
     public StandaloneDatabaseInfoService(
             ServerId serverId,
             SocketAddress address,
-            DatabaseManager<?> databaseManager,
+            DatabaseContextProvider<?> databaseContextProvider,
             DatabaseStateService stateService,
             ReadOnlyDatabases readOnlyDatabases) {
         this.serverId = serverId;
         this.address = address;
-        this.databaseManager = databaseManager;
+        this.databaseContextProvider = databaseContextProvider;
         this.stateService = stateService;
-        this.idRepository = databaseManager.databaseIdRepository();
+        this.idRepository = databaseContextProvider.databaseIdRepository();
         this.readOnlyDatabases = readOnlyDatabases;
     }
 
@@ -81,7 +81,7 @@ public class StandaloneDatabaseInfoService implements DatabaseInfoService {
     }
 
     private long getLastCommittedTransactionForDatabase(NamedDatabaseId namedDatabaseId) {
-        return databaseManager
+        return databaseContextProvider
                 .getDatabaseContext(namedDatabaseId)
                 .map(DatabaseContext::dependencies)
                 .map(dependencies -> dependencies.resolveDependency(TransactionIdStore.class))

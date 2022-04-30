@@ -30,7 +30,7 @@ public final class NoOpSystemGraphInitializer {
     }
 
     /**
-     * Disable SystemGraphInitializer to avoid interfering with tests or changing backups. Injects {@link TestDatabaseIdRepository.Caching} as it will no longer
+     * Disable SystemGraphInitializer to avoid interfering with tests or changing backups. Injects {@link TestDatabaseIdRepository} as it will no longer
      * be possible to read {@link NamedDatabaseId} from system database.
      * Assumes default database name is {@link GraphDatabaseSettings#DEFAULT_DATABASE_NAME}
      * @return Dependencies that can set as external dependencies in DatabaseManagementServiceBuilder
@@ -40,7 +40,7 @@ public final class NoOpSystemGraphInitializer {
     }
 
     /**
-     * Disable SystemGraphInitializer to avoid interfering with tests or changing backups. Injects {@link TestDatabaseIdRepository.Caching} as it will no longer
+     * Disable SystemGraphInitializer to avoid interfering with tests or changing backups. Injects {@link TestDatabaseIdRepository} as it will no longer
      * be possible to read {@link NamedDatabaseId} from system database.
      * @param config Used for default database name
      * @return Dependencies that can set as external dependencies in DatabaseManagementServiceBuilder
@@ -50,7 +50,7 @@ public final class NoOpSystemGraphInitializer {
     }
 
     /**
-     * Disable SystemGraphInitializer to avoid interfering with tests or changing backups. Injects {@link TestDatabaseIdRepository.Caching} as it will no longer
+     * Disable SystemGraphInitializer to avoid interfering with tests or changing backups. Injects {@link TestDatabaseIdRepository} as it will no longer
      * be possible to read {@link NamedDatabaseId} from system database.
      * @param dependencies to include in returned {@link DependencyResolver}
      * @param config Used for default database name
@@ -61,7 +61,7 @@ public final class NoOpSystemGraphInitializer {
     }
 
     private static Dependencies noOpSystemGraphInitializer(Dependencies dependencies, Config config) {
-        dependencies.satisfyDependencies(SystemGraphInitializer.NO_OP, new TestDatabaseIdRepository.Caching(config));
+        dependencies.satisfyDependencies(SystemGraphInitializer.NO_OP, new TestDatabaseIdRepository(config));
         return dependencies;
     }
 }

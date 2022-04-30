@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionFactoryContractTest;
 import org.neo4j.kernel.extension.GlobalExtensions;
@@ -75,7 +75,7 @@ class TestExtension extends ExtensionFactoryContractTest {
                     .getDependencies()
                     .getConfig());
             assertEquals(
-                    graphdb.getDependencyResolver().resolveDependency(DatabaseManager.class),
+                    graphdb.getDependencyResolver().resolveDependency(DatabaseContextProvider.class),
                     globalExtensions
                             .resolveDependency(DummyExtension.class)
                             .getDependencies()

@@ -24,17 +24,17 @@ import static org.neo4j.io.fs.FileSystemUtils.size;
 import java.io.IOException;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 public class DatabaseSizeServiceImpl implements DatabaseSizeService {
-    private final DatabaseManager<? extends DatabaseContext> databaseManager;
+    private final DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider;
 
-    public DatabaseSizeServiceImpl(DatabaseManager<? extends DatabaseContext> databaseManager) {
-        this.databaseManager = databaseManager;
+    public DatabaseSizeServiceImpl(DatabaseContextProvider<?> databaseContextProvider) {
+        this.databaseContextProvider = databaseContextProvider;
     }
 
     @Override
@@ -56,7 +56,7 @@ public class DatabaseSizeServiceImpl implements DatabaseSizeService {
     }
 
     private Database getDatabase(NamedDatabaseId databaseId) {
-        return databaseManager
+        return databaseContextProvider
                 .getDatabaseContext(databaseId)
                 .orElseThrow(() -> new DatabaseNotFoundException("Database " + databaseId.name() + " not found."))
                 .database();

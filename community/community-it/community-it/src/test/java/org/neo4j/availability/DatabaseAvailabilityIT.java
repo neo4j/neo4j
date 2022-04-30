@@ -29,7 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -62,15 +62,17 @@ class DatabaseAvailabilityIT {
     void anyOfDatabaseUnavailabilityIsGlobalUnavailability() {
         AvailabilityRequirement outerSpaceRequirement = () -> "outer space";
         DependencyResolver dependencyResolver = database.getDependencyResolver();
-        DatabaseManager<?> databaseManager = getDatabaseManager(dependencyResolver);
+        DatabaseContextProvider<?> databaseContextProvider = getDatabaseManager(dependencyResolver);
         CompositeDatabaseAvailabilityGuard compositeGuard =
                 dependencyResolver.resolveDependency(CompositeDatabaseAvailabilityGuard.class);
         assertTrue(compositeGuard.isAvailable());
 
-        DatabaseContext systemContext =
-                databaseManager.getDatabaseContext(NAMED_SYSTEM_DATABASE_ID).get();
-        DatabaseContext defaultContext =
-                databaseManager.getDatabaseContext(defaultNamedDatabaseId).get();
+        DatabaseContext systemContext = databaseContextProvider
+                .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
+                .get();
+        DatabaseContext defaultContext = databaseContextProvider
+                .getDatabaseContext(defaultNamedDatabaseId)
+                .get();
 
         AvailabilityGuard systemGuard = systemContext.dependencies().resolveDependency(DatabaseAvailabilityGuard.class);
         systemGuard.require(outerSpaceRequirement);
@@ -91,9 +93,10 @@ class DatabaseAvailabilityIT {
     @Test
     void stoppedDatabaseIsNotAvailable() {
         DependencyResolver dependencyResolver = database.getDependencyResolver();
-        DatabaseManager<?> databaseManager = getDatabaseManager(dependencyResolver);
-        DatabaseContext databaseContext =
-                databaseManager.getDatabaseContext(defaultNamedDatabaseId).get();
+        DatabaseContextProvider<?> databaseContextProvider = getDatabaseManager(dependencyResolver);
+        DatabaseContext databaseContext = databaseContextProvider
+                .getDatabaseContext(defaultNamedDatabaseId)
+                .get();
         databaseContext.database().stop();
 
         assertThrows(DatabaseShutdownException.class, () -> database.beginTx());
@@ -102,9 +105,10 @@ class DatabaseAvailabilityIT {
     @Test
     void notConfusingMessageOnDatabaseNonAvailability() {
         DependencyResolver dependencyResolver = database.getDependencyResolver();
-        DatabaseManager<?> databaseManager = getDatabaseManager(dependencyResolver);
-        DatabaseContext databaseContext =
-                databaseManager.getDatabaseContext(defaultNamedDatabaseId).get();
+        DatabaseContextProvider<?> databaseContextProvider = getDatabaseManager(dependencyResolver);
+        DatabaseContext databaseContext = databaseContextProvider
+                .getDatabaseContext(defaultNamedDatabaseId)
+                .get();
         DatabaseAvailability databaseAvailability =
                 databaseContext.database().getDependencyResolver().resolveDependency(DatabaseAvailability.class);
         databaseAvailability.stop();
@@ -119,9 +123,10 @@ class DatabaseAvailabilityIT {
     @Test
     void restartedDatabaseIsAvailable() {
         DependencyResolver dependencyResolver = database.getDependencyResolver();
-        DatabaseManager<?> databaseManager = getDatabaseManager(dependencyResolver);
-        DatabaseContext databaseContext =
-                databaseManager.getDatabaseContext(defaultNamedDatabaseId).get();
+        DatabaseContextProvider<?> databaseContextProvider = getDatabaseManager(dependencyResolver);
+        DatabaseContext databaseContext = databaseContextProvider
+                .getDatabaseContext(defaultNamedDatabaseId)
+                .get();
         Database database = databaseContext.database();
 
         executeTransactionOnDefaultDatabase();
@@ -139,7 +144,7 @@ class DatabaseAvailabilityIT {
         }
     }
 
-    private static DatabaseManager<?> getDatabaseManager(DependencyResolver dependencyResolver) {
-        return dependencyResolver.resolveDependency(DatabaseManager.class);
+    private static DatabaseContextProvider<?> getDatabaseManager(DependencyResolver dependencyResolver) {
+        return dependencyResolver.resolveDependency(DatabaseContextProvider.class);
     }
 }

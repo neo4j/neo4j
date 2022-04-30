@@ -33,7 +33,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
@@ -214,7 +214,7 @@ public class DbmsDiagnosticsManager {
                 log, "Database: " + database.getNamedDatabaseId().name());
     }
 
-    private DatabaseManager<?> getDatabaseManager() {
-        return dependencies.resolveDependency(DatabaseManager.class);
+    private DatabaseContextProvider<?> getDatabaseManager() {
+        return dependencies.resolveDependency(DatabaseContextProvider.class);
     }
 }

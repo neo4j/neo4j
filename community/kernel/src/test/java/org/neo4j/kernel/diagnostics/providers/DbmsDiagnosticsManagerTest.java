@@ -42,7 +42,7 @@ import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
@@ -70,7 +70,7 @@ class DbmsDiagnosticsManagerTest {
 
     private DbmsDiagnosticsManager diagnosticsManager;
     private AssertableLogProvider logProvider;
-    private DatabaseManager<StandaloneDatabaseContext> databaseManager;
+    private DatabaseContextProvider<StandaloneDatabaseContext> databaseContextProvider;
     private StorageEngine storageEngine;
     private StorageEngineFactory storageEngineFactory;
     private Database defaultDatabase;
@@ -81,7 +81,7 @@ class DbmsDiagnosticsManagerTest {
     @SuppressWarnings("unchecked")
     void setUp() throws IOException {
         logProvider = new AssertableLogProvider();
-        databaseManager = mock(DatabaseManager.class);
+        databaseContextProvider = mock(DatabaseContextProvider.class);
 
         storageEngine = mock(StorageEngine.class);
         storageEngineFactory = mock(StorageEngineFactory.class);
@@ -91,11 +91,11 @@ class DbmsDiagnosticsManagerTest {
 
         dependencies = new Dependencies();
         dependencies.satisfyDependency(Config.defaults());
-        dependencies.satisfyDependency(databaseManager);
+        dependencies.satisfyDependency(databaseContextProvider);
 
         when(defaultContext.database()).thenReturn(defaultDatabase);
-        when(databaseManager.getDatabaseContext(DEFAULT_DATABASE_ID)).thenReturn(Optional.of(defaultContext));
-        when(databaseManager.registeredDatabases())
+        when(databaseContextProvider.getDatabaseContext(DEFAULT_DATABASE_ID)).thenReturn(Optional.of(defaultContext));
+        when(databaseContextProvider.registeredDatabases())
                 .thenReturn(new TreeMap<>(singletonMap(DEFAULT_DATABASE_ID, defaultContext)));
 
         diagnosticsManager = new DbmsDiagnosticsManager(dependencies, new SimpleLogService(logProvider));
@@ -221,7 +221,7 @@ class DbmsDiagnosticsManagerTest {
             when(database.getNamedDatabaseId()).thenReturn(namedDatabaseId);
             databaseMap.put(namedDatabaseId, new StandaloneDatabaseContext(database));
         }
-        when(databaseManager.registeredDatabases()).thenReturn(new TreeMap<>(databaseMap));
+        when(databaseContextProvider.registeredDatabases()).thenReturn(new TreeMap<>(databaseMap));
 
         diagnosticsManager.dumpAll();
         var logAssertions = assertThat(logProvider);

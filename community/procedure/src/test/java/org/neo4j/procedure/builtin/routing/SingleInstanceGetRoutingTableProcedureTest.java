@@ -70,7 +70,7 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -203,7 +203,7 @@ public class SingleInstanceGetRoutingTableProcedureTest {
 
         var databaseIdRepository = mock(DatabaseIdRepository.Caching.class);
         when(databaseIdRepository.getByName(UNKNOWN_DATABASE_NAME)).thenReturn(Optional.empty());
-        var databaseManager = mock(DatabaseManager.class);
+        var databaseManager = mock(DatabaseContextProvider.class);
         when(databaseManager.databaseIdRepository()).thenReturn(databaseIdRepository);
 
         var procedure = newProcedure(databaseManager, portRegister, config, NullLogProvider.getInstance());
@@ -479,13 +479,13 @@ public class SingleInstanceGetRoutingTableProcedureTest {
     }
 
     protected GetRoutingTableProcedure newProcedure(
-            DatabaseManager<?> databaseManager,
+            DatabaseContextProvider<?> databaseContextProvider,
             ConnectorPortRegister portRegister,
             Config config,
             InternalLogProvider logProvider) {
         var clientRoutingDomainChecker = SimpleClientRoutingDomainChecker.fromConfig(config, logProvider);
         return new SingleInstanceRoutingProcedureInstaller(
-                        databaseManager, clientRoutingDomainChecker, portRegister, config, logProvider)
+                        databaseContextProvider, clientRoutingDomainChecker, portRegister, config, logProvider)
                 .createProcedure(DEFAULT_NAMESPACE);
     }
 
@@ -512,8 +512,9 @@ public class SingleInstanceGetRoutingTableProcedureTest {
     }
 
     @SuppressWarnings("unchecked")
-    private static DatabaseManager<DatabaseContext> databaseManagerMock(Config config, boolean databaseAvailable) {
-        var databaseManager = mock(DatabaseManager.class);
+    private static DatabaseContextProvider<DatabaseContext> databaseManagerMock(
+            Config config, boolean databaseAvailable) {
+        var databaseManager = mock(DatabaseContextProvider.class);
         var databaseContext = mock(DatabaseContext.class);
         var database = mock(Database.class);
         var availabilityGuard = mock(DatabaseAvailabilityGuard.class);

@@ -46,7 +46,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.database.DatabaseIdRepository;
@@ -101,7 +101,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback {
     public DatabaseIdRepository databaseIdRepository() {
         assertTestStarted();
         var resolver = gdb.getDependencyResolver();
-        var databaseManager = resolver.resolveDependency(DatabaseManager.class);
+        var databaseManager = resolver.resolveDependency(DatabaseContextProvider.class);
         return databaseManager.databaseIdRepository();
     }
 

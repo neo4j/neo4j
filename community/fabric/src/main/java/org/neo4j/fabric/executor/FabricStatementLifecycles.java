@@ -26,7 +26,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.cypher.internal.CypherQueryObfuscator;
 import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.fabric.planning.FabricPlan;
 import org.neo4j.fabric.transaction.FabricTransactionInfo;
 import org.neo4j.kernel.api.query.ExecutingQuery;
@@ -39,16 +39,16 @@ import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
 public class FabricStatementLifecycles {
-    private final DatabaseManager<DatabaseContext> databaseManager;
+    private final DatabaseContextProvider<DatabaseContext> databaseContextProvider;
     private final QueryExecutionMonitor dbmsMonitor;
     private final ExecutingQueryFactory executingQueryFactory;
 
     public FabricStatementLifecycles(
-            DatabaseManager<DatabaseContext> databaseManager,
+            DatabaseContextProvider<DatabaseContext> databaseContextProvider,
             Monitors dbmsMonitors,
             Config config,
             SystemNanoClock systemNanoClock) {
-        this.databaseManager = databaseManager;
+        this.databaseContextProvider = databaseContextProvider;
         this.dbmsMonitor = dbmsMonitors.newMonitor(QueryExecutionMonitor.class);
         this.executingQueryFactory =
                 new ExecutingQueryFactory(systemNanoClock, setupCpuClockAtomicReference(config), config);
@@ -142,7 +142,7 @@ public class FabricStatementLifecycles {
             if (dbMonitor == null) {
                 executingQuery
                         .databaseId()
-                        .flatMap(databaseManager::getDatabaseContext)
+                        .flatMap(databaseContextProvider::getDatabaseContext)
                         .map(dbm -> dbm.dependencies().resolveDependency(Monitors.class))
                         .map(monitors -> monitors.newMonitor(QueryExecutionMonitor.class))
                         .ifPresent(monitor -> dbMonitor = monitor);

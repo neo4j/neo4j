@@ -53,7 +53,7 @@ import org.neo4j.test.utils.TestDirectory;
  */
 @TestDirectoryExtension
 class UserSecurityGraphInitializationIT {
-    private BasicSystemGraphRealmTestHelper.TestDatabaseManager dbManager;
+    private BasicSystemGraphRealmTestHelper.TestDatabaseContextProvider dbManager;
     private SystemGraphRealmHelper realmHelper;
 
     @SuppressWarnings("unused")
@@ -65,7 +65,7 @@ class UserSecurityGraphInitializationIT {
 
     @BeforeEach
     void setUp() {
-        dbManager = new BasicSystemGraphRealmTestHelper.TestDatabaseManager(testDirectory);
+        dbManager = new BasicSystemGraphRealmTestHelper.TestDatabaseContextProvider(testDirectory);
         SecureHasher secureHasher = new SecureHasher();
         realmHelper = new SystemGraphRealmHelper(SystemGraphRealmHelper.makeSystemSupplier(dbManager), secureHasher);
         initialPassword = new InMemoryUserRepository();

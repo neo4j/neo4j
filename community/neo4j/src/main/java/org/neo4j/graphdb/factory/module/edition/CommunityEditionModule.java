@@ -20,6 +20,8 @@
 package org.neo4j.graphdb.factory.module.edition;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.dbms.database.DatabaseContextProviderDelegate.delegate;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
 import java.util.function.Supplier;
@@ -33,17 +35,19 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.CommunityDatabaseStateService;
 import org.neo4j.dbms.DatabaseStateService;
+import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.dbms.database.DatabaseIdCacheClearingListener;
 import org.neo4j.dbms.database.DatabaseInfoService;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseLifecycles;
 import org.neo4j.dbms.database.DatabaseOperationCounts;
+import org.neo4j.dbms.database.DatabaseRepository;
 import org.neo4j.dbms.database.DefaultDatabaseContextFactory;
 import org.neo4j.dbms.database.DefaultDatabaseContextFactoryComponents;
-import org.neo4j.dbms.database.DefaultDatabaseManager;
 import org.neo4j.dbms.database.DefaultSystemGraphComponent;
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
+import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.dbms.database.StandaloneDatabaseInfoService;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.SystemGraphInitializer;
@@ -54,6 +58,7 @@ import org.neo4j.dbms.identity.ServerIdentityFactory;
 import org.neo4j.dbms.systemgraph.CommunityTopologyGraphComponent;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.fabric.bootstrap.FabricServicesBootstrap;
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
@@ -63,10 +68,14 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
+import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.MapCachingDatabaseIdRepository;
+import org.neo4j.kernel.database.SystemGraphDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
@@ -94,6 +103,7 @@ public class CommunityEditionModule extends StandaloneEditionModule implements D
 
     protected DatabaseStateService databaseStateService;
     protected ReadOnlyDatabases globalReadOnlyChecker;
+    private Lifecycle defaultDatabaseInitializer = new LifecycleAdapter();
 
     public CommunityEditionModule(GlobalModule globalModule) {
         Dependencies globalDependencies = globalModule.getGlobalDependencies();
@@ -121,33 +131,50 @@ public class CommunityEditionModule extends StandaloneEditionModule implements D
     }
 
     @Override
-    public DatabaseManager<? extends DatabaseContext> createDatabaseManager(GlobalModule globalModule) {
+    public DatabaseContextProvider<?> createDatabaseContextProvider(GlobalModule globalModule) {
         var databaseContextFactory = new DefaultDatabaseContextFactory(
                 globalModule,
                 getTransactionMonitorFactory(),
                 createIdContextFactory(globalModule),
                 createCommitProcessFactory(),
                 this);
-        var databaseManager = new DefaultDatabaseManager(globalModule, databaseContextFactory);
-        databaseStateService = new CommunityDatabaseStateService(databaseManager);
+        var mapCachingDatabaseIdRepository = new MapCachingDatabaseIdRepository();
+        var databaseIdCacheCleaner = new DatabaseIdCacheClearingListener(mapCachingDatabaseIdRepository);
+        var databaseRepository = new DatabaseRepository<StandaloneDatabaseContext>(mapCachingDatabaseIdRepository);
+        var rootDatabaseIdRepository = CommunityEditionModule.tryResolveOrCreate(
+                DatabaseIdRepository.class,
+                globalModule.getExternalDependencyResolver(),
+                () -> new SystemGraphDatabaseIdRepository(() -> databaseRepository
+                        .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
+                        .orElseThrow(() -> new DatabaseShutdownException(
+                                new DatabaseManagementException("Unable to retrieve the system database!")))));
+        mapCachingDatabaseIdRepository.setDelegate(rootDatabaseIdRepository);
+        var databaseLifecycles = new DatabaseLifecycles(
+                databaseRepository,
+                globalModule.getGlobalConfig().get(default_database),
+                databaseContextFactory,
+                globalModule.getLogService().getInternalLogProvider());
+        databaseStateService = new CommunityDatabaseStateService(databaseRepository);
 
-        globalModule.getGlobalLife().add(databaseManager);
-        globalModule.getGlobalDependencies().satisfyDependency(databaseManager);
+        globalModule.getGlobalLife().add(databaseLifecycles.systemDatabaseStarter());
+        globalModule.getGlobalLife().add(databaseLifecycles.allDatabaseShutdown());
+        globalModule.getGlobalDependencies().satisfyDependency(delegate(databaseRepository));
         globalModule.getGlobalDependencies().satisfyDependency(databaseStateService);
 
         globalReadOnlyChecker = createGlobalReadOnlyChecker(
-                databaseManager,
+                databaseRepository,
                 globalModule.getGlobalConfig(),
                 globalModule.getTransactionEventListeners(),
                 globalModule.getGlobalLife(),
                 globalModule.getLogService().getInternalLogProvider());
 
-        var databaseIdCacheCleaner = new DatabaseIdCacheClearingListener(databaseManager.databaseIdRepository());
         globalModule
                 .getTransactionEventListeners()
                 .registerTransactionEventListener(SYSTEM_DATABASE_NAME, databaseIdCacheCleaner);
 
-        return databaseManager;
+        defaultDatabaseInitializer = databaseLifecycles.defaultDatabaseStarter();
+
+        return databaseRepository;
     }
 
     @Override
@@ -169,26 +196,31 @@ public class CommunityEditionModule extends StandaloneEditionModule implements D
     }
 
     @Override
-    public DatabaseInfoService createDatabaseInfoService(DatabaseManager<?> databaseManager) {
+    public DatabaseInfoService createDatabaseInfoService(DatabaseContextProvider<?> databaseContextProvider) {
         var address = globalModule.getGlobalConfig().get(BoltConnector.advertised_address);
         return new StandaloneDatabaseInfoService(
-                identityModule.serverId(), address, databaseManager, databaseStateService, globalReadOnlyChecker);
+                identityModule.serverId(),
+                address,
+                databaseContextProvider,
+                databaseStateService,
+                globalReadOnlyChecker);
     }
 
     @Override
-    public void registerEditionSpecificProcedures(GlobalProcedures globalProcedures, DatabaseManager<?> databaseManager)
+    public void registerEditionSpecificProcedures(
+            GlobalProcedures globalProcedures, DatabaseContextProvider<?> databaseContextProvider)
             throws KernelException {}
 
     @Override
     protected AbstractRoutingProcedureInstaller createRoutingProcedureInstaller(
             GlobalModule globalModule,
-            DatabaseManager<?> databaseManager,
+            DatabaseContextProvider<?> databaseContextProvider,
             ClientRoutingDomainChecker clientRoutingDomainChecker) {
         ConnectorPortRegister portRegister = globalModule.getConnectorPortRegister();
         Config config = globalModule.getGlobalConfig();
         InternalLogProvider logProvider = globalModule.getLogService().getInternalLogProvider();
         return new SingleInstanceRoutingProcedureInstaller(
-                databaseManager, clientRoutingDomainChecker, portRegister, config, logProvider);
+                databaseContextProvider, clientRoutingDomainChecker, portRegister, config, logProvider);
     }
 
     @Override
@@ -197,7 +229,7 @@ public class CommunityEditionModule extends StandaloneEditionModule implements D
     }
 
     @Override
-    public SystemGraphInitializer createSystemGraphInitializer(GlobalModule globalModule) {
+    public void registerSystemGraphInitializer(GlobalModule globalModule) {
         DependencyResolver globalDependencies = globalModule.getGlobalDependencies();
         Supplier<GraphDatabaseService> systemSupplier = systemSupplier(globalDependencies);
         var systemGraphComponents = globalModule.getSystemGraphComponents();
@@ -205,7 +237,9 @@ public class CommunityEditionModule extends StandaloneEditionModule implements D
                 SystemGraphInitializer.class,
                 globalModule.getExternalDependencyResolver(),
                 () -> new DefaultSystemGraphInitializer(systemSupplier, systemGraphComponents));
-        return globalModule.getGlobalDependencies().satisfyDependency(initializer);
+        globalModule.getGlobalDependencies().satisfyDependency(initializer);
+        globalModule.getGlobalLife().add(initializer);
+        globalModule.getGlobalLife().add(defaultDatabaseInitializer);
     }
 
     @Override
@@ -221,8 +255,9 @@ public class CommunityEditionModule extends StandaloneEditionModule implements D
 
     protected static Supplier<GraphDatabaseService> systemSupplier(DependencyResolver dependencies) {
         return () -> {
-            DatabaseManager<?> databaseManager = dependencies.resolveDependency(DatabaseManager.class);
-            return databaseManager
+            DatabaseContextProvider<?> databaseContextProvider =
+                    dependencies.resolveDependency(DatabaseContextProvider.class);
+            return databaseContextProvider
                     .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
                     .orElseThrow(
                             () -> new RuntimeException("No database called `" + SYSTEM_DATABASE_NAME + "` was found."))

@@ -36,7 +36,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 @DbmsExtension()
 class DbmsRuntimeVersionTest {
     @Inject
-    private DatabaseManager<DatabaseContext> databaseManager;
+    private DatabaseContextProvider<DatabaseContext> databaseContextProvider;
 
     @Inject
     private DbmsRuntimeRepository dbmsRuntimeRepository;
@@ -45,7 +45,7 @@ class DbmsRuntimeVersionTest {
 
     @BeforeEach
     void beforeEach() {
-        systemDb = databaseManager
+        systemDb = databaseContextProvider
                 .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
                 .get()
                 .databaseFacade();

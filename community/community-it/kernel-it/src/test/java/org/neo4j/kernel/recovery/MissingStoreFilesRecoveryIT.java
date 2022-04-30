@@ -32,7 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -119,8 +119,10 @@ class MissingStoreFilesRecoveryIT {
         return logFiles;
     }
 
-    private DatabaseManager getDatabaseManager() {
-        return defaultDatabase(managementService).getDependencyResolver().resolveDependency(DatabaseManager.class);
+    private DatabaseContextProvider getDatabaseManager() {
+        return defaultDatabase(managementService)
+                .getDependencyResolver()
+                .resolveDependency(DatabaseContextProvider.class);
     }
 
     private DatabaseStateService getDatabaseStateService() {

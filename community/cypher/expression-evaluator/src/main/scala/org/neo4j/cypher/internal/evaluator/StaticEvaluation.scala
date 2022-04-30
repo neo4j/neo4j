@@ -46,7 +46,7 @@ import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.dbms.database.DatabaseContext
-import org.neo4j.dbms.database.DatabaseManager
+import org.neo4j.dbms.database.DatabaseContextProvider
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Path
@@ -594,7 +594,7 @@ object StaticEvaluation {
 
     override def providedLanguageFunctions(): Seq[FunctionInformation] = notAvailable()
 
-    override def getDatabaseManager: DatabaseManager[DatabaseContext] = notAvailable()
+    override def getDatabaseContextProvider: DatabaseContextProvider[DatabaseContext] = notAvailable()
 
     override def getConfig: Config = notAvailable()
 

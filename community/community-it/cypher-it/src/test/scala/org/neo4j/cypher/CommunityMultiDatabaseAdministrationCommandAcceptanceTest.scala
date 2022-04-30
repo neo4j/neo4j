@@ -26,7 +26,7 @@ import org.neo4j.configuration.GraphDatabaseSettings.default_database
 import org.neo4j.cypher.internal.DatabaseStatus
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.dbms.database.DatabaseContext
-import org.neo4j.dbms.database.DatabaseManager
+import org.neo4j.dbms.database.DatabaseContextProvider
 import org.neo4j.dbms.database.DefaultSystemGraphComponent
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer
 import org.neo4j.dbms.database.SystemGraphComponents
@@ -712,8 +712,9 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
       config
     ))
 
-    val databaseManager = graph.getDependencyResolver.resolveDependency(classOf[DatabaseManager[DatabaseContext]])
-    val systemSupplier = SystemGraphRealmHelper.makeSystemSupplier(databaseManager)
+    val databaseContextProvider =
+      graph.getDependencyResolver.resolveDependency(classOf[DatabaseContextProvider[DatabaseContext]])
+    val systemSupplier = SystemGraphRealmHelper.makeSystemSupplier(databaseContextProvider)
     val systemGraphInitializer = new DefaultSystemGraphInitializer(systemSupplier, systemGraphComponents)
     systemGraphInitializer.start()
 

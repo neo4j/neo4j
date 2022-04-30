@@ -32,7 +32,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -43,14 +43,14 @@ import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 class SingleInstanceRoutingProcedureInstallerTest {
     @Test
     void shouldRegisterRoutingProcedures() throws Exception {
-        DatabaseManager<?> databaseManager = mock(DatabaseManager.class);
+        DatabaseContextProvider<?> databaseContextProvider = mock(DatabaseContextProvider.class);
         ConnectorPortRegister portRegister = mock(ConnectorPortRegister.class);
         ClientRoutingDomainChecker clientRoutingDomainChecker = mock(ClientRoutingDomainChecker.class);
         Config config = Config.defaults();
         InternalLogProvider logProvider = NullLogProvider.getInstance();
 
         SingleInstanceRoutingProcedureInstaller installer = new SingleInstanceRoutingProcedureInstaller(
-                databaseManager, clientRoutingDomainChecker, portRegister, config, logProvider);
+                databaseContextProvider, clientRoutingDomainChecker, portRegister, config, logProvider);
         GlobalProcedures procedures = spy(new GlobalProceduresRegistry());
 
         installer.install(procedures);

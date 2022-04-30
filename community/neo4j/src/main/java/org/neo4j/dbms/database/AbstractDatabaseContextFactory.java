@@ -61,9 +61,10 @@ public abstract class AbstractDatabaseContextFactory<DB> implements DatabaseCont
     }
 
     public static TokenHolders createTokenHolderProvider(GlobalModule platform, NamedDatabaseId databaseId) {
-        DatabaseManager<?> databaseManager = platform.getGlobalDependencies().resolveDependency(DatabaseManager.class);
+        DatabaseContextProvider<?> databaseContextProvider =
+                platform.getGlobalDependencies().resolveDependency(DatabaseContextProvider.class);
         Supplier<Kernel> kernelSupplier = () -> {
-            var databaseContext = databaseManager
+            var databaseContext = databaseContextProvider
                     .getDatabaseContext(databaseId)
                     .orElseThrow(() -> new IllegalStateException(format("Database %s not found.", databaseId.name())));
             return databaseContext.dependencies().resolveDependency(Kernel.class);

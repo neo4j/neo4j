@@ -46,10 +46,9 @@ import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.dbms.database.DatabaseManagementServiceImpl;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
-import org.neo4j.dbms.database.DefaultDatabaseInitializer;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.UnableToStartDatabaseException;
 import org.neo4j.exceptions.KernelException;
@@ -134,24 +133,24 @@ public class DatabaseManagementServiceFactory {
 
         LogService logService = globalModule.getLogService();
         InternalLog internalLog = logService.getInternalLog(getClass());
-        DatabaseManager<?> databaseManager = edition.createDatabaseManager(globalModule);
+        var databaseContextProvider = edition.createDatabaseContextProvider(globalModule);
         DatabaseManagementService managementService =
-                createManagementService(globalModule, globalLife, internalLog, databaseManager);
+                createManagementService(globalModule, globalLife, internalLog, databaseContextProvider);
         globalDependencies.satisfyDependencies(managementService);
-        globalDependencies.satisfyDependency(new DatabaseSizeServiceImpl(databaseManager));
+        globalDependencies.satisfyDependency(new DatabaseSizeServiceImpl(databaseContextProvider));
 
-        var databaseInfoService = edition.createDatabaseInfoService(databaseManager);
+        var databaseInfoService = edition.createDatabaseInfoService(databaseContextProvider);
         globalDependencies.satisfyDependencies(databaseInfoService);
 
         edition.bootstrapFabricServices();
 
-        setupProcedures(globalModule, edition, databaseManager);
+        setupProcedures(globalModule, edition, databaseContextProvider);
 
         var dbmsRuntimeSystemGraphComponent = new DbmsRuntimeSystemGraphComponent(globalModule.getGlobalConfig());
         globalModule.getSystemGraphComponents().register(dbmsRuntimeSystemGraphComponent);
 
         edition.registerSystemGraphComponents(globalModule.getSystemGraphComponents(), globalModule);
-        globalLife.add(edition.createSystemGraphInitializer(globalModule));
+        edition.registerSystemGraphInitializer(globalModule);
 
         edition.createDefaultDatabaseResolver(globalModule);
         globalDependencies.satisfyDependency(edition.getDefaultDatabaseResolver());
@@ -161,10 +160,8 @@ public class DatabaseManagementServiceFactory {
         globalDependencies.satisfyDependencies(securityProvider.authManager());
 
         var dbmsRuntimeRepository = edition.createAndRegisterDbmsRuntimeRepository(
-                globalModule, databaseManager, globalDependencies, dbmsRuntimeSystemGraphComponent);
+                globalModule, databaseContextProvider, globalDependencies, dbmsRuntimeSystemGraphComponent);
         globalDependencies.satisfyDependency(dbmsRuntimeRepository);
-
-        globalLife.add(new DefaultDatabaseInitializer(databaseManager));
 
         globalLife.add(globalModule.getGlobalExtensions());
         BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI =
@@ -175,7 +172,10 @@ public class DatabaseManagementServiceFactory {
                         globalModule.getGlobalClock(),
                         logService);
         globalLife.add(createBoltServer(
-                globalModule, edition, boltGraphDatabaseManagementServiceSPI, databaseManager.databaseIdRepository()));
+                globalModule,
+                edition,
+                boltGraphDatabaseManagementServiceSPI,
+                databaseContextProvider.databaseIdRepository()));
         var webServer = createWebServer(
                 edition,
                 managementService,
@@ -187,12 +187,12 @@ public class DatabaseManagementServiceFactory {
 
         globalLife.add(globalModule.getCapabilitiesService());
 
-        startDatabaseServer(globalModule, globalLife, internalLog, databaseManager, managementService);
+        startDatabaseServer(globalModule, globalLife, internalLog, databaseContextProvider, managementService);
 
         // System is available here, checked on startDatabaseServer
         dumpDbmsInfo(
                 logService.getUserLog(getClass()),
-                databaseManager
+                databaseContextProvider
                         .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
                         .get()
                         .databaseFacade());
@@ -204,9 +204,9 @@ public class DatabaseManagementServiceFactory {
             GlobalModule globalModule,
             LifeSupport globalLife,
             InternalLog internalLog,
-            DatabaseManager<?> databaseManager) {
+            DatabaseContextProvider<?> databaseContextProvider) {
         return new DatabaseManagementServiceImpl(
-                databaseManager,
+                databaseContextProvider,
                 globalLife,
                 globalModule.getDatabaseEventListeners(),
                 globalModule.getTransactionEventListeners(),
@@ -235,18 +235,17 @@ public class DatabaseManagementServiceFactory {
             GlobalModule globalModule,
             LifeSupport globalLife,
             InternalLog internalLog,
-            DatabaseManager<?> databaseManager,
+            DatabaseContextProvider<?> databaseContextProvider,
             DatabaseManagementService managementService) {
 
         RuntimeException startupException = null;
         try {
-            databaseManager.initialiseSystemDatabase();
             globalLife.start();
 
             DatabaseStateService databaseStateService =
                     globalModule.getGlobalDependencies().resolveDependency(DatabaseStateService.class);
 
-            verifySystemDatabaseStart(databaseManager, databaseStateService);
+            verifySystemDatabaseStart(databaseContextProvider, databaseStateService);
         } catch (Throwable throwable) {
             String message = "Error starting Neo4j database server at "
                     + globalModule.getNeo4jLayout().databasesDirectory();
@@ -269,9 +268,9 @@ public class DatabaseManagementServiceFactory {
     }
 
     private static void verifySystemDatabaseStart(
-            DatabaseManager<?> databaseManager, DatabaseStateService dbStateService) {
+            DatabaseContextProvider<?> databaseContextProvider, DatabaseStateService dbStateService) {
         Optional<? extends DatabaseContext> databaseContext =
-                databaseManager.getDatabaseContext(NAMED_SYSTEM_DATABASE_ID);
+                databaseContextProvider.getDatabaseContext(NAMED_SYSTEM_DATABASE_ID);
         if (databaseContext.isEmpty()) {
             throw new UnableToStartDatabaseException(SYSTEM_DATABASE_NAME + " not found.");
         }
@@ -291,12 +290,14 @@ public class DatabaseManagementServiceFactory {
 
     /**
      * Creates and registers the systems procedures, including those which belong to a particular edition.
-     * N.B. This method takes a {@link DatabaseManager} as an unused parameter *intentionally*, in
+     * N.B. This method takes a {@link DatabaseContextProvider} as an unused parameter *intentionally*, in
      * order to enforce that the databaseManager must be constructed first.
      */
     @SuppressWarnings("unused")
     private static void setupProcedures(
-            GlobalModule globalModule, AbstractEditionModule editionModule, DatabaseManager<?> databaseManager) {
+            GlobalModule globalModule,
+            AbstractEditionModule editionModule,
+            DatabaseContextProvider<?> databaseContextProvider) {
         tryResolveOrCreate(
                 ClientRoutingDomainChecker.class,
                 globalModule.getGlobalDependencies(),
@@ -364,7 +365,8 @@ public class DatabaseManagementServiceFactory {
 
             // Edition procedures
             try {
-                editionModule.registerProcedures(globalProcedures, procedureConfig, globalModule, databaseManager);
+                editionModule.registerProcedures(
+                        globalProcedures, procedureConfig, globalModule, databaseContextProvider);
             } catch (KernelException e) {
                 internalLog.error("Failed to register built-in edition procedures at start up: " + e.getMessage());
             }

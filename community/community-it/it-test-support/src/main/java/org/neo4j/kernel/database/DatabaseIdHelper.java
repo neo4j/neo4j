@@ -17,22 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.dbms.database;
+package org.neo4j.kernel.database;
 
-import org.neo4j.kernel.lifecycle.SafeLifecycle;
+import java.util.UUID;
+import org.apache.commons.lang3.RandomStringUtils;
 
-/**
- * Run after {@link SystemGraphInitializer} but before registering extensions
- */
-public class DefaultDatabaseInitializer extends SafeLifecycle {
-    private final DatabaseManager<?> databaseManager;
-
-    public DefaultDatabaseInitializer(DatabaseManager<?> databaseManager) {
-        this.databaseManager = databaseManager;
+public final class DatabaseIdHelper {
+    private DatabaseIdHelper() { // no-op
     }
 
-    @Override
-    public void start0() throws Exception {
-        databaseManager.initialiseDefaultDatabase();
+    public static NamedDatabaseId randomNamedDatabaseId() {
+        return new NamedDatabaseId(RandomStringUtils.randomAlphabetic(20), UUID.randomUUID());
+    }
+
+    public static DatabaseId randomDatabaseId() {
+        return new DatabaseId(UUID.randomUUID());
     }
 }

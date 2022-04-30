@@ -22,7 +22,7 @@ package org.neo4j.fabric;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.config.FabricSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -39,13 +39,14 @@ public abstract class FabricDatabaseManager {
         Node createDatabaseNode(Transaction tx, NormalizedDatabaseName databaseName);
     }
 
-    private final DatabaseManager<DatabaseContext> databaseManager;
+    private final DatabaseContextProvider<DatabaseContext> databaseContextProvider;
     private final DatabaseIdRepository databaseIdRepository;
     private final boolean multiGraphEverywhere;
 
-    public FabricDatabaseManager(FabricConfig fabricConfig, DatabaseManager<DatabaseContext> databaseManager) {
-        this.databaseManager = databaseManager;
-        this.databaseIdRepository = databaseManager.databaseIdRepository();
+    public FabricDatabaseManager(
+            FabricConfig fabricConfig, DatabaseContextProvider<DatabaseContext> databaseContextProvider) {
+        this.databaseContextProvider = databaseContextProvider;
+        this.databaseIdRepository = databaseContextProvider.databaseIdRepository();
         this.multiGraphEverywhere = fabricConfig.isEnabledByDefault();
     }
 
@@ -68,7 +69,7 @@ public abstract class FabricDatabaseManager {
     public GraphDatabaseFacade getDatabase(String databaseNameRaw) throws UnavailableException {
         var databaseContext = databaseIdRepository
                 .getByName(databaseNameRaw)
-                .flatMap(databaseManager::getDatabaseContext)
+                .flatMap(databaseContextProvider::getDatabaseContext)
                 .orElseThrow(() -> new DatabaseNotFoundException("Database " + databaseNameRaw + " not found"));
 
         databaseContext.database().getDatabaseAvailabilityGuard().assertDatabaseAvailable();
@@ -83,8 +84,8 @@ public abstract class FabricDatabaseManager {
     public abstract boolean isFabricDatabase(String databaseNameRaw);
 
     public static class Community extends FabricDatabaseManager {
-        public Community(FabricConfig fabricConfig, DatabaseManager<DatabaseContext> databaseManager) {
-            super(fabricConfig, databaseManager);
+        public Community(FabricConfig fabricConfig, DatabaseContextProvider<DatabaseContext> databaseContextProvider) {
+            super(fabricConfig, databaseContextProvider);
         }
 
         @Override
