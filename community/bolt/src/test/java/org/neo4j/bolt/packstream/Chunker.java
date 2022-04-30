@@ -33,6 +33,7 @@ import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.io.memory.ByteBuffers;
 
@@ -41,7 +42,8 @@ public class Chunker {
     private Chunker() {}
 
     public static byte[] chunk(int maxChunkSize, byte[][] messages) throws IOException {
-        final ByteBuffer outputBuffer = ByteBuffers.allocate(toIntExact(KibiByte.toBytes(8)), INSTANCE);
+        final ByteBuffer outputBuffer =
+                ByteBuffers.allocate(toIntExact(KibiByte.toBytes(8)), ByteOrder.LITTLE_ENDIAN, INSTANCE);
 
         Channel ch = mock(Channel.class);
         when(ch.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);

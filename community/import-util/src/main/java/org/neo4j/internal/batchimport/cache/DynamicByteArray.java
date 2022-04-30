@@ -20,6 +20,7 @@
 package org.neo4j.internal.batchimport.cache;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.neo4j.memory.MemoryTracker;
 
 public class DynamicByteArray extends DynamicNumberArray<ByteArray> implements ByteArray {
@@ -31,7 +32,7 @@ public class DynamicByteArray extends DynamicNumberArray<ByteArray> implements B
             NumberArrayFactory factory, long chunkSize, byte[] defaultValue, MemoryTracker memoryTracker) {
         super(factory, chunkSize, new ByteArray[0]);
         this.defaultValue = defaultValue;
-        this.defaultValueConvenienceBuffer = ByteBuffer.wrap(defaultValue);
+        this.defaultValueConvenienceBuffer = ByteBuffer.wrap(defaultValue).order(ByteOrder.LITTLE_ENDIAN);
         this.memoryTracker = memoryTracker;
     }
 

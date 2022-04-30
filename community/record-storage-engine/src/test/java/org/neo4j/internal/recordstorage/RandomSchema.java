@@ -127,23 +127,14 @@ public class RandomSchema implements Supplier<SchemaRule> {
 
     public IndexDescriptor nextIndex() {
         int choice = rng.nextInt(4);
-        SchemaDescriptor schema;
-        switch (choice) {
-            case 0:
-                schema = nextNodeSchema();
-                break;
-            case 1:
-                schema = nextNodeFulltextSchema();
-                break;
-            case 2:
-                schema = nextRelationshipSchema();
-                break;
-            case 3:
-                schema = nextRelationshipFulltextSchema();
-                break;
-            default:
-                throw new RuntimeException("Bad index choice: " + choice);
-        }
+        SchemaDescriptor schema =
+                switch (choice) {
+                    case 0 -> nextNodeSchema();
+                    case 1 -> nextNodeFulltextSchema();
+                    case 2 -> nextRelationshipSchema();
+                    case 3 -> nextRelationshipFulltextSchema();
+                    default -> throw new RuntimeException("Bad index choice: " + choice);
+                };
 
         boolean isUnique = rng.nextBoolean() && !schema.isFulltextSchemaDescriptor();
         IndexPrototype prototype = isUnique ? IndexPrototype.uniqueForSchema(schema) : IndexPrototype.forSchema(schema);
@@ -177,36 +168,29 @@ public class RandomSchema implements Supplier<SchemaRule> {
     public ConstraintDescriptor nextConstraint() {
         long ruleId = nextRuleIdForConstraint();
         int choice = rng.nextInt(6);
-        switch (choice) {
-            case 0:
-                return ConstraintDescriptorFactory.existsForSchema(nextRelationshipSchema())
-                        .withId(ruleId)
-                        .withName(nextName());
-            case 1:
-                return ConstraintDescriptorFactory.existsForSchema(nextNodeSchema())
-                        .withId(ruleId)
-                        .withName(nextName());
-            case 2:
-                return ConstraintDescriptorFactory.uniqueForSchema(nextNodeSchema())
-                        .withId(ruleId)
-                        .withName(nextName());
-            case 3:
-                return ConstraintDescriptorFactory.uniqueForSchema(nextNodeSchema())
-                        .withId(ruleId)
-                        .withOwnedIndexId(existingIndexId())
-                        .withName(nextName());
-            case 4:
-                return ConstraintDescriptorFactory.nodeKeyForSchema(nextNodeSchema())
-                        .withId(ruleId)
-                        .withName(nextName());
-            case 5:
-                return ConstraintDescriptorFactory.nodeKeyForSchema(nextNodeSchema())
-                        .withId(ruleId)
-                        .withOwnedIndexId(existingIndexId())
-                        .withName(nextName());
-            default:
-                throw new RuntimeException("Bad constraint choice: " + choice);
-        }
+        return switch (choice) {
+            case 0 -> ConstraintDescriptorFactory.existsForSchema(nextRelationshipSchema())
+                    .withId(ruleId)
+                    .withName(nextName());
+            case 1 -> ConstraintDescriptorFactory.existsForSchema(nextNodeSchema())
+                    .withId(ruleId)
+                    .withName(nextName());
+            case 2 -> ConstraintDescriptorFactory.uniqueForSchema(nextNodeSchema())
+                    .withId(ruleId)
+                    .withName(nextName());
+            case 3 -> ConstraintDescriptorFactory.uniqueForSchema(nextNodeSchema())
+                    .withId(ruleId)
+                    .withOwnedIndexId(existingIndexId())
+                    .withName(nextName());
+            case 4 -> ConstraintDescriptorFactory.nodeKeyForSchema(nextNodeSchema())
+                    .withId(ruleId)
+                    .withName(nextName());
+            case 5 -> ConstraintDescriptorFactory.nodeKeyForSchema(nextNodeSchema())
+                    .withId(ruleId)
+                    .withOwnedIndexId(existingIndexId())
+                    .withName(nextName());
+            default -> throw new RuntimeException("Bad constraint choice: " + choice);
+        };
     }
 
     public long nextRuleIdForConstraint() {

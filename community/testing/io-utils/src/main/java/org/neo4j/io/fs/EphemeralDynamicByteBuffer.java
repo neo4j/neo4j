@@ -22,6 +22,7 @@ package org.neo4j.io.fs;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -153,7 +154,7 @@ class EphemeralDynamicByteBuffer {
     }
 
     private static ByteBuffer newSector() {
-        return ByteBuffers.allocate(EphemeralDynamicByteBuffer.SECTOR_SIZE, INSTANCE);
+        return ByteBuffers.allocate(EphemeralDynamicByteBuffer.SECTOR_SIZE, ByteOrder.LITTLE_ENDIAN, INSTANCE);
     }
 
     private synchronized ByteBuffer getOrCreateSector(long sector) {

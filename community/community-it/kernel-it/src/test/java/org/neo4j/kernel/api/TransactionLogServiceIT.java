@@ -36,6 +36,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Path;
 import java.util.List;
@@ -231,13 +232,14 @@ class TransactionLogServiceIT {
             StoreChannel storeChannel = channel.getChannel();
             assertThrows(
                     UnsupportedOperationException.class,
-                    () -> storeChannel.writeAll(ByteBuffers.allocate(1, INSTANCE)));
+                    () -> storeChannel.writeAll(ByteBuffers.allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)));
             assertThrows(
                     UnsupportedOperationException.class,
-                    () -> storeChannel.writeAll(ByteBuffers.allocate(1, INSTANCE), 1));
+                    () -> storeChannel.writeAll(ByteBuffers.allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE), 1));
             assertThrows(UnsupportedOperationException.class, () -> storeChannel.truncate(1));
             assertThrows(
-                    UnsupportedOperationException.class, () -> storeChannel.write(ByteBuffers.allocate(1, INSTANCE)));
+                    UnsupportedOperationException.class,
+                    () -> storeChannel.write(ByteBuffers.allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)));
             assertThrows(UnsupportedOperationException.class, () -> storeChannel.write(new ByteBuffer[] {}, 1, 1));
             assertThrows(UnsupportedOperationException.class, () -> storeChannel.write(new ByteBuffer[] {}));
         }
@@ -635,11 +637,11 @@ class TransactionLogServiceIT {
     }
 
     private static ByteBuffer createBuffer(int length) {
-        return ByteBuffers.allocateDirect(length, INSTANCE);
+        return ByteBuffers.allocateDirect(length, ByteOrder.LITTLE_ENDIAN, INSTANCE);
     }
 
     private static ByteBuffer createBuffer() {
-        return ByteBuffers.allocateDirect((int) (THRESHOLD << 1), INSTANCE);
+        return ByteBuffers.allocateDirect((int) (THRESHOLD << 1), ByteOrder.LITTLE_ENDIAN, INSTANCE);
     }
 
     private static class BulkAppendLogRotationMonitor extends LogRotationMonitorAdapter {

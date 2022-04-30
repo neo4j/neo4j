@@ -20,6 +20,7 @@
 package org.neo4j.io.memory;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.function.Supplier;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
@@ -109,7 +110,7 @@ public class ByteBufferFactory implements AutoCloseable {
     private static final Allocator HEAP_ALLOCATOR = new Allocator() {
         @Override
         public ScopedBuffer allocate(int bufferSize, MemoryTracker memoryTracker) {
-            return new HeapScopedBuffer(bufferSize, memoryTracker);
+            return new HeapScopedBuffer(bufferSize, ByteOrder.LITTLE_ENDIAN, memoryTracker);
         }
 
         @Override

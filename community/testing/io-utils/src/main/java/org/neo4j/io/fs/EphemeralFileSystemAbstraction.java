@@ -36,6 +36,7 @@ import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryNotEmptyException;
@@ -428,7 +429,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction {
     }
 
     private static ByteBuffer newCopyBuffer() {
-        return ByteBuffers.allocate(toIntExact(ByteUnit.MebiByte.toBytes(1)), INSTANCE);
+        return ByteBuffers.allocate(toIntExact(ByteUnit.MebiByte.toBytes(1)), ByteOrder.LITTLE_ENDIAN, INSTANCE);
     }
 
     private void copyRecursivelyFromOtherFs(Path from, FileSystemAbstraction fromFs, Path to, ByteBuffer buffer)

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import static java.lang.Math.toIntExact;
 
+import java.nio.ByteOrder;
 import org.neo4j.internal.batchimport.input.PropertySizeCalculator;
 import org.neo4j.internal.id.BatchingIdSequence;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -81,7 +82,8 @@ public class PropertyValueRecordSizeCalculator implements PropertySizeCalculator
                     stringRecordCounter,
                     arrayRecordCounter,
                     cursorContext,
-                    memoryTracker);
+                    memoryTracker,
+                    ByteOrder.LITTLE_ENDIAN); // byte order doesn't matter as block is thrown away
             if (block.getValueBlocks().length > freeBlocksInCurrentRecord) {
                 propertyRecordsUsed++;
                 freeBlocksInCurrentRecord = PropertyType.getPayloadSizeLongs();

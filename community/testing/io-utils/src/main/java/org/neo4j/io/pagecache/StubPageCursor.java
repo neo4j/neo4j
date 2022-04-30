@@ -25,6 +25,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
@@ -48,7 +49,7 @@ public class StubPageCursor extends PageCursor {
     private int mark;
 
     public StubPageCursor(long initialPageId, int pageSize) {
-        this(initialPageId, ByteBuffers.allocate(pageSize, INSTANCE), RESERVED_BYTES);
+        this(initialPageId, ByteBuffers.allocate(pageSize, ByteOrder.LITTLE_ENDIAN, INSTANCE), RESERVED_BYTES);
     }
 
     public StubPageCursor(long initialPageId, ByteBuffer buffer) {

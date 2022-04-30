@@ -20,12 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.LOG_VERSION_MASK;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.encodeLogVersion;
@@ -35,18 +30,14 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_HEADER
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.file.Path;
+import java.nio.ByteOrder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -79,144 +70,98 @@ class LogHeaderReaderTest {
 
     @Test
     void shouldReadAnOldLogHeaderFromAByteChannel() throws IOException {
-        // given
-        final ByteBuffer buffer = ByteBuffers.allocate(CURRENT_FORMAT_LOG_HEADER_SIZE, INSTANCE);
-        final ReadableByteChannel channel = mock(ReadableByteChannel.class);
+        var buffer = ByteBuffers.allocate(CURRENT_FORMAT_LOG_HEADER_SIZE, ByteOrder.BIG_ENDIAN, INSTANCE);
         byte oldVersion = 6;
+        buffer.putLong(encodeLogVersion(expectedLogVersion, oldVersion));
+        buffer.putLong(expectedTxId);
 
-        when(channel.read(buffer)).thenAnswer(new Answer<>() {
-            private int count;
+        var channel = new InMemoryClosableChannel(buffer.array(), true, true, ByteOrder.LITTLE_ENDIAN);
 
-            @Override
-            public Integer answer(InvocationOnMock invocation) {
-                count++;
-                if (count == 1) {
-                    buffer.putLong(encodeLogVersion(expectedLogVersion, oldVersion));
-                    return Long.BYTES;
-                }
-                if (count == 2) {
-                    buffer.putLong(expectedTxId);
-                    return Long.BYTES;
-                }
-                throw new AssertionError("Should only be called twice");
-            }
-        });
+        var result = readLogHeader(channel, true, null, INSTANCE);
 
-        // when
-        final LogHeader result = readLogHeader(buffer, channel, true, null);
-
-        // then
-        assertEquals(new LogHeader(oldVersion, expectedLogVersion, expectedTxId, LOG_HEADER_SIZE_3_5), result);
+        assertThat(result).isEqualTo(new LogHeader(oldVersion, expectedLogVersion, expectedTxId, LOG_HEADER_SIZE_3_5));
     }
 
     @Test
     void shouldReadALogHeaderFromAByteChannel() throws IOException {
-        // given
-        final ByteBuffer buffer = ByteBuffers.allocate(CURRENT_FORMAT_LOG_HEADER_SIZE, INSTANCE);
-        final ReadableByteChannel channel = mock(ReadableByteChannel.class);
+        var buffer = ByteBuffers.allocate(CURRENT_FORMAT_LOG_HEADER_SIZE, ByteOrder.BIG_ENDIAN, INSTANCE);
+        buffer.putLong(encodeLogVersion(expectedLogVersion, CURRENT_LOG_FORMAT_VERSION));
+        buffer.putLong(expectedTxId);
+        buffer.putLong(expectedStoreId.getCreationTime());
+        buffer.putLong(expectedStoreId.getRandomId());
+        buffer.putLong(expectedStoreId.getStoreVersion());
+        buffer.putLong(0); // reserved
+        buffer.putLong(0); // reserved
+        buffer.putLong(0); // reserved
 
-        when(channel.read(buffer)).thenAnswer(new Answer<>() {
-            private int count;
+        var channel = new InMemoryClosableChannel(buffer.array(), true, true, ByteOrder.LITTLE_ENDIAN);
 
-            @Override
-            public Integer answer(InvocationOnMock invocation) {
-                count++;
-                if (count == 1) {
-                    buffer.putLong(encodeLogVersion(expectedLogVersion, CURRENT_LOG_FORMAT_VERSION));
-                    return Long.BYTES;
-                }
-                if (count == 2) {
-                    buffer.putLong(expectedTxId);
-                    buffer.putLong(expectedStoreId.getCreationTime());
-                    buffer.putLong(expectedStoreId.getRandomId());
-                    buffer.putLong(expectedStoreId.getStoreVersion());
-                    buffer.putLong(0); // reserved
-                    buffer.putLong(0); // reserved
-                    buffer.putLong(0); // reserved
-                    return Long.BYTES * 7;
-                }
-                throw new AssertionError("Should only be called 3 times");
-            }
-        });
+        var result = readLogHeader(channel, true, null, INSTANCE);
 
-        // when
-        final LogHeader result = readLogHeader(buffer, channel, true, null);
-
-        // then
-        assertEquals(
-                new LogHeader(
+        assertThat(result)
+                .isEqualTo(new LogHeader(
                         CURRENT_LOG_FORMAT_VERSION,
                         expectedLogVersion,
                         expectedTxId,
                         expectedStoreId,
-                        CURRENT_FORMAT_LOG_HEADER_SIZE),
-                result);
+                        CURRENT_FORMAT_LOG_HEADER_SIZE));
     }
 
     @Test
     void shouldFailWhenUnableToReadALogHeaderFromAChannel() throws IOException {
-        // given
-        final ByteBuffer buffer = ByteBuffers.allocate(CURRENT_FORMAT_LOG_HEADER_SIZE, INSTANCE);
-        final ReadableByteChannel channel = mock(ReadableByteChannel.class);
+        var buffer = ByteBuffers.allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE);
+        buffer.put((byte) 0xAF);
 
-        when(channel.read(buffer)).thenReturn(1);
+        var channel = new InMemoryClosableChannel(buffer.array(), true, true, ByteOrder.LITTLE_ENDIAN);
 
-        assertThrows(IncompleteLogHeaderException.class, () -> readLogHeader(buffer, channel, true, null));
+        assertThatThrownBy(() -> readLogHeader(channel, true, null, INSTANCE))
+                .isInstanceOf(IncompleteLogHeaderException.class);
     }
 
     @Test
     void shouldReadALogHeaderFromAFile() throws IOException {
-        // given
-        final Path file = testDirectory.file("ReadLogHeader");
+        var file = testDirectory.file("ReadLogHeader");
 
-        final ByteBuffer buffer = ByteBuffers.allocate(CURRENT_FORMAT_LOG_HEADER_SIZE, INSTANCE);
+        var buffer = ByteBuffers.allocate(CURRENT_FORMAT_LOG_HEADER_SIZE, ByteOrder.BIG_ENDIAN, INSTANCE);
         buffer.putLong(encodeLogVersion(expectedLogVersion, CURRENT_LOG_FORMAT_VERSION));
         buffer.putLong(expectedTxId);
         buffer.putLong(expectedStoreId.getCreationTime());
         buffer.putLong(expectedStoreId.getRandomId());
         buffer.putLong(expectedStoreId.getStoreVersion());
 
-        try (OutputStream stream = fileSystem.openAsOutputStream(file, false)) {
+        try (var stream = fileSystem.openAsOutputStream(file, false)) {
             stream.write(buffer.array());
         }
 
-        // when
-        final LogHeader result = readLogHeader(fileSystem, file, INSTANCE);
+        var result = readLogHeader(fileSystem, file, INSTANCE);
 
-        // then
-        assertEquals(
-                new LogHeader(
+        assertThat(result)
+                .isEqualTo(new LogHeader(
                         CURRENT_LOG_FORMAT_VERSION,
                         expectedLogVersion,
                         expectedTxId,
                         expectedStoreId,
-                        CURRENT_FORMAT_LOG_HEADER_SIZE),
-                result);
+                        CURRENT_FORMAT_LOG_HEADER_SIZE));
     }
 
     @Test
     void shouldFailWhenUnableToReadALogHeaderFromAFile() throws IOException {
-        // given
-        final Path file = testDirectory.file("ReadLogHeader");
+        var file = testDirectory.file("ReadLogHeader");
+
         ((StoreChannel) fileSystem.write(file)).close();
-        IncompleteLogHeaderException exception =
-                assertThrows(IncompleteLogHeaderException.class, () -> readLogHeader(fileSystem, file, INSTANCE));
-        assertThat(exception.getMessage()).contains(file.getFileName().toString());
+
+        assertThatThrownBy(() -> readLogHeader(fileSystem, file, INSTANCE))
+                .isInstanceOf(IncompleteLogHeaderException.class)
+                .hasMessageContaining(file.getFileName().toString());
     }
 
     @Test
     void readEmptyPreallocatedFileHeaderAsNoHeader() throws IOException {
-        ByteBuffer buffer = ByteBuffers.allocate(CURRENT_FORMAT_LOG_HEADER_SIZE, INSTANCE);
-        ReadableByteChannel channel = mock(ReadableByteChannel.class);
+        var channel =
+                new InMemoryClosableChannel(new byte[CURRENT_LOG_FORMAT_VERSION], true, true, ByteOrder.LITTLE_ENDIAN);
 
-        when(channel.read(buffer)).thenAnswer(invocation -> {
-            buffer.putLong(0L);
-            return Long.BYTES;
-        });
+        var result = readLogHeader(channel, true, null, INSTANCE);
 
-        LogHeader result = readLogHeader(buffer, channel, true, null);
-
-        assertNull(result);
-        verify(channel).read(buffer);
+        assertThat(result).isNull();
     }
 }

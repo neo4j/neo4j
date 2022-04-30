@@ -130,11 +130,12 @@ public class CheckpointInfoFactory {
                 var kernelVersion = (versionCode < KernelVersion.EARLIEST.version())
                         ? KernelVersion.EARLIEST
                         : KernelVersion.getForVersion(versionCode);
+                var reverseBytes = kernelVersion.isLessThan(KernelVersion.VERSION_LITTLE_ENDIAN_TX_LOG_INTRODUCED);
                 byte entryCode = fallbackReader.get();
                 if (entryCode == TX_COMMIT) {
-                    long transactionId = fallbackReader.getLong();
-                    long timeWritten = fallbackReader.getLong();
-                    int checksum = fallbackReader.getInt();
+                    long transactionId = maybeReverse(fallbackReader.getLong(), reverseBytes);
+                    long timeWritten = maybeReverse(fallbackReader.getLong(), reverseBytes);
+                    int checksum = maybeReverse(fallbackReader.getInt(), reverseBytes);
                     // we may not even have the earliest version, so we select the oldest available
                     return new TransactionInfo(new TransactionId(transactionId, checksum, timeWritten), kernelVersion);
                 } else {
@@ -151,6 +152,14 @@ public class CheckpointInfoFactory {
             throw new UncheckedIOException(
                     "Unable to find last transaction in log files. Position: " + transactionPosition, ioe);
         }
+    }
+
+    private static int maybeReverse(int value, boolean reverseBytes) {
+        return reverseBytes ? Integer.reverseBytes(value) : value;
+    }
+
+    private static long maybeReverse(long value, boolean reverseBytes) {
+        return reverseBytes ? Long.reverseBytes(value) : value;
     }
 
     private record TransactionInfo(TransactionId transactionId, KernelVersion version) {}

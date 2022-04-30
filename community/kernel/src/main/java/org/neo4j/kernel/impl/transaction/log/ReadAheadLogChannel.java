@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import org.neo4j.io.fs.ReadAheadChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.NativeScopedBuffer;
@@ -37,13 +38,17 @@ public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChann
         this(
                 startingChannel,
                 LogVersionBridge.NO_MORE_CHANNELS,
-                new NativeScopedBuffer(DEFAULT_READ_AHEAD_SIZE, memoryTracker),
+                new NativeScopedBuffer(DEFAULT_READ_AHEAD_SIZE, ByteOrder.LITTLE_ENDIAN, memoryTracker),
                 false);
     }
 
     public ReadAheadLogChannel(
             LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, MemoryTracker memoryTracker) {
-        this(startingChannel, bridge, new NativeScopedBuffer(DEFAULT_READ_AHEAD_SIZE, memoryTracker), false);
+        this(
+                startingChannel,
+                bridge,
+                new NativeScopedBuffer(DEFAULT_READ_AHEAD_SIZE, ByteOrder.LITTLE_ENDIAN, memoryTracker),
+                false);
     }
 
     public ReadAheadLogChannel(
@@ -51,7 +56,11 @@ public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChann
             LogVersionBridge bridge,
             MemoryTracker memoryTracker,
             boolean raw) {
-        this(startingChannel, bridge, new NativeScopedBuffer(DEFAULT_READ_AHEAD_SIZE, memoryTracker), raw);
+        this(
+                startingChannel,
+                bridge,
+                new NativeScopedBuffer(DEFAULT_READ_AHEAD_SIZE, ByteOrder.LITTLE_ENDIAN, memoryTracker),
+                raw);
     }
 
     /**

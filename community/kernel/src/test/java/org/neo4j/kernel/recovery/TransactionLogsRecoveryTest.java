@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.recovery;
 
+import static java.lang.Math.toIntExact;
 import static java.util.UUID.randomUUID;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,6 +50,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -80,7 +82,6 @@ import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
@@ -653,17 +654,17 @@ class TransactionLogsRecoveryTest {
             Visitor<Pair<LogEntryWriter<?>, Consumer<LogPositionMarker>>, IOException> visitor,
             KernelVersion version)
             throws IOException {
-        try (LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
+        try (var versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
                         fileSystem.write(file),
                         logVersion,
                         CURRENT_LOG_FORMAT_VERSION,
                         file,
                         EMPTY_ACCESSOR,
                         DatabaseTracer.NULL);
-                PositionAwarePhysicalFlushableChecksumChannel writableLogChannel =
-                        new PositionAwarePhysicalFlushableChecksumChannel(
-                                versionedStoreChannel, new HeapScopedBuffer(1, KibiByte, INSTANCE))) {
-            writeLogHeader(writableLogChannel, new LogHeader(logVersion, 2L, LegacyStoreId.UNKNOWN));
+                var writableLogChannel = new PositionAwarePhysicalFlushableChecksumChannel(
+                        versionedStoreChannel,
+                        new HeapScopedBuffer(toIntExact(KibiByte.toBytes(1)), ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
+            writeLogHeader(versionedStoreChannel, new LogHeader(logVersion, 2L, LegacyStoreId.UNKNOWN), INSTANCE);
             writableLogChannel.beginChecksum();
             Consumer<LogPositionMarker> consumer = marker -> {
                 try {

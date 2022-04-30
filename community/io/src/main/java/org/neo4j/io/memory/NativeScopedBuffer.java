@@ -22,6 +22,7 @@ package org.neo4j.io.memory;
 import static java.lang.Math.toIntExact;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.neo4j.memory.MemoryTracker;
 
 /**
@@ -32,12 +33,12 @@ public final class NativeScopedBuffer implements ScopedBuffer {
     private final MemoryTracker memoryTracker;
     private boolean closed;
 
-    public NativeScopedBuffer(long capacity, MemoryTracker memoryTracker) {
-        this(toIntExact(capacity), memoryTracker);
+    public NativeScopedBuffer(long capacity, ByteOrder byteOrder, MemoryTracker memoryTracker) {
+        this(toIntExact(capacity), byteOrder, memoryTracker);
     }
 
-    public NativeScopedBuffer(int capacity, MemoryTracker memoryTracker) {
-        buffer = ByteBuffers.allocateDirect(capacity, memoryTracker);
+    public NativeScopedBuffer(int capacity, ByteOrder byteOrder, MemoryTracker memoryTracker) {
+        this.buffer = ByteBuffers.allocateDirect(capacity, byteOrder, memoryTracker);
         this.memoryTracker = memoryTracker;
     }
 

@@ -28,6 +28,7 @@ import static org.neo4j.io.IOUtils.closeAll;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
@@ -89,13 +90,15 @@ class DiskBufferedIds implements BufferedIds {
     private PhysicalFlushableChannel openSegmentForWriting(int segmentId) throws IOException {
         return new PhysicalFlushableChannel(
                 fs.open(segmentName(segmentId), Set.of(CREATE, TRUNCATE_EXISTING, WRITE)),
-                new NativeScopedBuffer(PhysicalFlushableChannel.DEFAULT_BUFFER_SIZE, memoryTracker));
+                new NativeScopedBuffer(
+                        PhysicalFlushableChannel.DEFAULT_BUFFER_SIZE, ByteOrder.LITTLE_ENDIAN, memoryTracker));
     }
 
     private ReadAheadChannel<StoreChannel> openSegmentForReading(int segmentId) throws IOException {
         return new ReadAheadChannel<>(
                 fs.open(segmentName(segmentId), Set.of(READ)),
-                new NativeScopedBuffer(ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE, memoryTracker));
+                new NativeScopedBuffer(
+                        ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE, ByteOrder.LITTLE_ENDIAN, memoryTracker));
     }
 
     @VisibleForTesting

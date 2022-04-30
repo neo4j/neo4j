@@ -23,6 +23,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.WritableByteChannel;
 import org.neo4j.io.memory.ByteBuffers;
 
@@ -31,7 +32,7 @@ public class BufferedChannelOutput implements PackOutput {
     private WritableByteChannel channel;
 
     public BufferedChannelOutput(int bufferSize) {
-        this.buffer = ByteBuffers.allocate(bufferSize, INSTANCE);
+        this.buffer = ByteBuffers.allocate(bufferSize, ByteOrder.BIG_ENDIAN, INSTANCE);
     }
 
     public BufferedChannelOutput(WritableByteChannel channel) {

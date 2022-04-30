@@ -30,9 +30,12 @@ import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -99,29 +102,34 @@ class DetachedCheckpointLogEntryParserV42Test {
 
     @Test
     void writeAndParseCheckpointKernelVersion() throws IOException {
-        try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), INSTANCE)) {
-            Path path = directory.createFile("a");
+        Path path = directory.createFile("a");
+
+        try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), ByteOrder.BIG_ENDIAN, INSTANCE)) {
             StoreChannel storeChannel = fs.write(path);
             try (PhysicalFlushableChecksumChannel writeChannel =
                     new PhysicalFlushableChecksumChannel(storeChannel, buffer)) {
                 writeCheckpoint(writeChannel, KernelVersion.V4_4, StringUtils.repeat("b", 1024));
+            }
+        }
+        try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), ByteOrder.LITTLE_ENDIAN, INSTANCE)) {
+            StoreChannel storeChannel = fs.open(path, Set.of(StandardOpenOption.WRITE, StandardOpenOption.APPEND));
+            try (PhysicalFlushableChecksumChannel writeChannel =
+                    new PhysicalFlushableChecksumChannel(storeChannel, buffer)) {
                 writeCheckpoint(writeChannel, KernelVersion.V5_0, StringUtils.repeat("c", 1024));
             }
+        }
 
-            VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader(
-                    StorageEngineFactory.defaultStorageEngine().commandReaderFactory());
-            try (var readChannel = new ReadAheadLogChannel(
-                    new PhysicalLogVersionedStoreChannel(
-                            fs.read(path), -1 /* ignored */, (byte) -1, path, EMPTY_ACCESSOR, DatabaseTracer.NULL),
-                    NO_MORE_CHANNELS,
-                    INSTANCE)) {
-                assertEquals(
-                        KernelVersion.V4_4,
-                        readCheckpoint(entryReader, readChannel).getVersion());
-                assertEquals(
-                        KernelVersion.V5_0,
-                        readCheckpoint(entryReader, readChannel).getVersion());
-            }
+        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader(
+                StorageEngineFactory.defaultStorageEngine().commandReaderFactory());
+        try (var readChannel = new ReadAheadLogChannel(
+                new PhysicalLogVersionedStoreChannel(
+                        fs.read(path), -1 /* ignored */, (byte) -1, path, EMPTY_ACCESSOR, DatabaseTracer.NULL),
+                NO_MORE_CHANNELS,
+                INSTANCE)) {
+            assertEquals(
+                    KernelVersion.V4_4, readCheckpoint(entryReader, readChannel).getVersion());
+            assertEquals(
+                    KernelVersion.V5_0, readCheckpoint(entryReader, readChannel).getVersion());
         }
     }
 

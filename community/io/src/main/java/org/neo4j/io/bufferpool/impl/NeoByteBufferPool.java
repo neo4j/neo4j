@@ -20,6 +20,7 @@
 package org.neo4j.io.bufferpool.impl;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -114,7 +115,7 @@ public class NeoByteBufferPool extends LifecycleAdapter implements ByteBufferMan
     @Override
     public ByteBuffer acquire(int size) {
         if (size > maxPooledBufferCapacity) {
-            return ByteBuffers.allocateDirect(size, memoryMonitor.getMemoryTracker());
+            return ByteBuffers.allocateDirect(size, ByteOrder.BIG_ENDIAN, memoryMonitor.getMemoryTracker());
         }
 
         var bucket = getBucketFor(size);

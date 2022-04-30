@@ -22,6 +22,7 @@ package org.neo4j.io.memory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.memory.MemoryPools.NO_TRACKING;
 
+import java.nio.ByteOrder;
 import org.junit.jupiter.api.Test;
 import org.neo4j.memory.LocalMemoryTracker;
 
@@ -29,7 +30,7 @@ class HeapScopedBufferTest {
     @Test
     void trackBufferScopeMemoryAllocation() {
         var memoryTracker = new LocalMemoryTracker(NO_TRACKING, 400, 0, null);
-        try (var bufferScope = new HeapScopedBuffer(100, memoryTracker)) {
+        try (var bufferScope = new HeapScopedBuffer(100, ByteOrder.LITTLE_ENDIAN, memoryTracker)) {
             assertEquals(100, memoryTracker.estimatedHeapMemory());
             assertEquals(0, memoryTracker.usedNativeMemory());
         }
@@ -41,7 +42,7 @@ class HeapScopedBufferTest {
     @Test
     void closeBufferMultipleTimesIsSafe() {
         var memoryTracker = new LocalMemoryTracker(NO_TRACKING, 400, 0, null);
-        var bufferScope = new HeapScopedBuffer(100, memoryTracker);
+        var bufferScope = new HeapScopedBuffer(100, ByteOrder.LITTLE_ENDIAN, memoryTracker);
         assertEquals(100, memoryTracker.estimatedHeapMemory());
         assertEquals(0, memoryTracker.usedNativeMemory());
 

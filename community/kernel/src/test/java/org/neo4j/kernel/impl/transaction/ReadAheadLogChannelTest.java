@@ -30,6 +30,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.Test;
@@ -167,7 +168,8 @@ class ReadAheadLogChannelTest {
 
     private void writeSomeData(Path file, Visitor<ByteBuffer, IOException> visitor) throws IOException {
         try (StoreChannel channel = fileSystem.write(file)) {
-            ByteBuffer buffer = ByteBuffers.allocate(toIntExact(KibiByte.toBytes(1)), INSTANCE);
+            ByteBuffer buffer =
+                    ByteBuffers.allocate(toIntExact(KibiByte.toBytes(1)), ByteOrder.LITTLE_ENDIAN, INSTANCE);
             visitor.visit(buffer);
             buffer.flip();
             channel.writeAll(buffer);

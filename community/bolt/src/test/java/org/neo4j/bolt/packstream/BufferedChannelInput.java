@@ -23,6 +23,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.ReadableByteChannel;
 import org.neo4j.io.memory.ByteBuffers;
 
@@ -34,7 +35,7 @@ public class BufferedChannelInput implements PackInput {
     private ReadableByteChannel channel;
 
     public BufferedChannelInput(int bufferCapacity) {
-        this.buffer = ByteBuffers.allocate(bufferCapacity, INSTANCE);
+        this.buffer = ByteBuffers.allocate(bufferCapacity, ByteOrder.BIG_ENDIAN, INSTANCE);
     }
 
     public BufferedChannelInput reset(ReadableByteChannel ch) {

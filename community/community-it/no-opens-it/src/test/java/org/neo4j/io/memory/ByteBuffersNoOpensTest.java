@@ -25,6 +25,7 @@ import static org.neo4j.io.memory.ByteBuffers.allocateDirect;
 import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
 import static org.neo4j.memory.MemoryPools.NO_TRACKING;
 
+import java.nio.ByteOrder;
 import org.junit.jupiter.api.Test;
 import org.neo4j.memory.LocalMemoryTracker;
 
@@ -32,7 +33,7 @@ class ByteBuffersNoOpensTest {
     @Test
     void trackMemoryAllocationsForNativeByteBuffers() {
         var memoryTracker = new LocalMemoryTracker(NO_TRACKING, 100, 0, null);
-        var byteBuffer = allocateDirect(30, memoryTracker);
+        var byteBuffer = allocateDirect(30, ByteOrder.LITTLE_ENDIAN, memoryTracker);
         try {
             assertEquals(0, memoryTracker.estimatedHeapMemory());
             assertEquals(30, memoryTracker.usedNativeMemory());
@@ -47,7 +48,7 @@ class ByteBuffersNoOpensTest {
     @Test
     void trackMemoryAllocationsForHeapByteBuffers() {
         var memoryTracker = new LocalMemoryTracker(NO_TRACKING, 100, 0, null);
-        var byteBuffer = allocate(30, memoryTracker);
+        var byteBuffer = allocate(30, ByteOrder.LITTLE_ENDIAN, memoryTracker);
         try {
             assertEquals(30, memoryTracker.estimatedHeapMemory());
             assertEquals(0, memoryTracker.usedNativeMemory());

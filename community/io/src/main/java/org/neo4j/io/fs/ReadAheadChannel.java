@@ -153,6 +153,19 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChecksu
     }
 
     @Override
+    public int getChecksum() {
+        if (DISABLE_WAL_CHECKSUM) {
+            return 0xDEAD5EED;
+        }
+
+        // Consume remaining bytes
+        checksumView.limit(aheadBuffer.position());
+        checksum.update(checksumView);
+
+        return (int) checksum.getValue();
+    }
+
+    @Override
     public void beginChecksum() {
         if (DISABLE_WAL_CHECKSUM) {
             return;

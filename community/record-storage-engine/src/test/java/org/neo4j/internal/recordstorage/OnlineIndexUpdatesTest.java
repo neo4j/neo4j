@@ -42,6 +42,7 @@ import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TA
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.util.Iterator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -411,7 +412,8 @@ class OnlineIndexUpdatesTest {
                 propertyStore.getStringStore(),
                 propertyStore.getArrayStore(),
                 NULL_CONTEXT,
-                INSTANCE);
+                INSTANCE,
+                ByteOrder.BIG_ENDIAN);
         propertyRecord.addPropertyBlock(propertyBlock);
 
         return propertyRecord.getId();

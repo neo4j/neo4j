@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import org.neo4j.internal.unsafe.NativeMemoryAllocationRefusedError;
@@ -43,12 +44,12 @@ public class UnsafeDirectByteBufferAllocator implements ByteBufferFactory.Alloca
     public synchronized ScopedBuffer allocate(int bufferSize, MemoryTracker memoryTracker) {
         assertOpen();
         try {
-            var byteBuffer = new NativeScopedBuffer(bufferSize, memoryTracker);
+            var byteBuffer = new NativeScopedBuffer(bufferSize, ByteOrder.LITTLE_ENDIAN, memoryTracker);
             allocations.add(byteBuffer);
             return byteBuffer;
         } catch (NativeMemoryAllocationRefusedError allocationRefusedError) {
             // What ever went wrong fallback to on-heap buffer.
-            return new HeapScopedBuffer(bufferSize, memoryTracker);
+            return new HeapScopedBuffer(bufferSize, ByteOrder.LITTLE_ENDIAN, memoryTracker);
         }
     }
 

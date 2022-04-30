@@ -27,10 +27,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.io.pagecache.PageCache.RESERVED_BYTES;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.StubPageCursor;
@@ -43,7 +46,9 @@ class CompositePageCursorTest {
     private final byte[] bytes = new byte[4];
 
     private static StubPageCursor generatePage(int initialPageId, int pageSize, int initialValue) {
-        StubPageCursor cursor = new StubPageCursor(initialPageId, pageSize);
+        // TODO little-endian format CompositeCursor doesn't support little-endian stores yet
+        var cursor = new StubPageCursor(
+                initialPageId, ByteBuffers.allocate(pageSize, ByteOrder.BIG_ENDIAN, INSTANCE), RESERVED_BYTES);
         for (int i = 0; i < pageSize - RESERVED_BYTES; i++) {
             cursor.putByte(i, (byte) (initialValue + i));
         }

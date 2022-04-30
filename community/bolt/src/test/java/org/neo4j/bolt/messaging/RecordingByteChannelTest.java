@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.memory.ByteBuffers;
 
@@ -36,7 +37,7 @@ public class RecordingByteChannelTest {
         // When
         byte[] data = new byte[] {1, 2, 3, 4, 5};
         channel.write(ByteBuffer.wrap(data));
-        ByteBuffer buffer = ByteBuffers.allocate(10, INSTANCE);
+        ByteBuffer buffer = ByteBuffers.allocate(10, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         int bytesRead = channel.read(buffer);
 
         // Then

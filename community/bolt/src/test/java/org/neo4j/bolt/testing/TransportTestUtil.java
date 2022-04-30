@@ -30,6 +30,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -110,7 +111,7 @@ public class TransportTestUtil {
     }
 
     public static byte[] chunk(int chunkSize, byte[]... messages) {
-        ByteBuffer output = ByteBuffers.allocate(10000, INSTANCE);
+        ByteBuffer output = ByteBuffers.allocate(10000, ByteOrder.BIG_ENDIAN, INSTANCE);
 
         for (byte[] wholeMessage : messages) {
             int left = wholeMessage.length;
@@ -192,7 +193,7 @@ public class TransportTestUtil {
     }
 
     public static byte[] acceptedVersions(long option1, long option2, long option3, long option4) {
-        ByteBuffer bb = ByteBuffers.allocate(5 * Integer.BYTES, INSTANCE);
+        ByteBuffer bb = ByteBuffers.allocate(5 * Integer.BYTES, ByteOrder.BIG_ENDIAN, INSTANCE);
         bb.putInt(0x6060B017);
         bb.putInt((int) option1);
         bb.putInt((int) option2);

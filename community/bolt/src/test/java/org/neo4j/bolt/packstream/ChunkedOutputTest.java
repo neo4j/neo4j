@@ -39,6 +39,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -547,7 +548,7 @@ public class ChunkedOutputTest {
             }
         }
 
-        ByteBuffer buffer = ByteBuffers.allocate(chunkSize + CHUNK_HEADER_SIZE, INSTANCE);
+        ByteBuffer buffer = ByteBuffers.allocate(chunkSize + CHUNK_HEADER_SIZE, ByteOrder.BIG_ENDIAN, INSTANCE);
         buffer.putShort(chunkSize);
 
         for (Number value : values) {
@@ -571,7 +572,7 @@ public class ChunkedOutputTest {
     }
 
     private static String messageBoundary() {
-        ByteBuffer buffer = ByteBuffers.allocate(Short.BYTES, INSTANCE);
+        ByteBuffer buffer = ByteBuffers.allocate(Short.BYTES, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         buffer.putShort((short) 0);
         buffer.flip();
         return ByteBufUtil.hexDump(buffer.array());

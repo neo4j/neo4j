@@ -28,6 +28,7 @@ import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.time.Instant;
 import org.apache.commons.lang3.StringUtils;
@@ -61,7 +62,7 @@ class DetachedCheckpointLogEntryParserV50Test {
 
     @Test
     void writeAndParseCheckpointKernelVersion() throws IOException {
-        try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), INSTANCE)) {
+        try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), ByteOrder.LITTLE_ENDIAN, INSTANCE)) {
             Path path = directory.createFile("a");
             StoreChannel storeChannel = fs.write(path);
             try (PhysicalFlushableChecksumChannel writeChannel =
@@ -88,7 +89,7 @@ class DetachedCheckpointLogEntryParserV50Test {
 
     @Test
     void failToParse50CheckpointWithOlderKernelVersion() throws IOException {
-        try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), INSTANCE)) {
+        try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), ByteOrder.LITTLE_ENDIAN, INSTANCE)) {
             Path path = directory.createFile("a");
             StoreChannel storeChannel = fs.write(path);
             try (PhysicalFlushableChecksumChannel writeChannel =

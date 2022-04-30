@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.eclipse.collections.impl.map.mutable.primitive.ByteObjectHashMap;
+import org.neo4j.io.fs.ReadableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.CommandReaderFactory;
@@ -90,4 +91,6 @@ public abstract class LogEntryParserSet {
     public KernelVersion getIntroductionVersion() {
         return introductionVersion;
     }
+
+    public abstract ReadableChecksumChannel wrap(ReadableChecksumChannel channel);
 }

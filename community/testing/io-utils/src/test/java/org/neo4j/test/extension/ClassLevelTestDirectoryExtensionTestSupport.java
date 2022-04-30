@@ -22,6 +22,7 @@ package org.neo4j.test.extension;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.RepeatedTest;
@@ -58,6 +59,6 @@ class ClassLevelTestDirectoryExtensionTestSupport {
         // This will fail if the test directory is not initialised,
         // or if the file is deleted by the clearing of the test directory,
         // in between the runs.
-        channel.writeAll(ByteBuffers.allocate(1, INSTANCE));
+        channel.writeAll(ByteBuffers.allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE));
     }
 }

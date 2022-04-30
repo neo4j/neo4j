@@ -36,6 +36,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -678,7 +679,7 @@ public abstract class FileSystemAbstractionTest {
         try (StoreChannel channel = fsa.write(b)) {
             ThreadLocalRandom rng = ThreadLocalRandom.current();
             int fileSize = (int) channel.size();
-            ByteBuffer buffer = ByteBuffers.allocate(fileSize, INSTANCE);
+            ByteBuffer buffer = ByteBuffers.allocate(fileSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
             for (int i = 0; i < fileSize; i++) {
 
                 buffer.put(i, (byte) rng.nextInt());
@@ -717,7 +718,7 @@ public abstract class FileSystemAbstractionTest {
             channel.writeAll(ByteBuffer.wrap(data));
             channel.truncate(4);
             assertThat(channel.size()).isEqualTo(4);
-            ByteBuffer buf = ByteBuffers.allocate(data.length, INSTANCE);
+            ByteBuffer buf = ByteBuffers.allocate(data.length, ByteOrder.LITTLE_ENDIAN, INSTANCE);
             channel.position(0);
             int read = channel.read(buf);
             assertThat(read).isEqualTo(4);
@@ -736,7 +737,7 @@ public abstract class FileSystemAbstractionTest {
 
     private void generateFileWithRecords(Path file, int recordCount) throws IOException {
         try (StoreChannel channel = fsa.write(file)) {
-            ByteBuffer buf = ByteBuffers.allocate(recordSize, INSTANCE);
+            ByteBuffer buf = ByteBuffers.allocate(recordSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
             for (int i = 0; i < recordCount; i++) {
                 generateRecordForId(i, buf);
                 int rem = buf.remaining();
@@ -749,8 +750,8 @@ public abstract class FileSystemAbstractionTest {
 
     private void verifyRecordsInFile(Path file, int recordCount) throws IOException {
         try (StoreChannel channel = fsa.write(file)) {
-            ByteBuffer buf = ByteBuffers.allocate(recordSize, INSTANCE);
-            ByteBuffer observation = ByteBuffers.allocate(recordSize, INSTANCE);
+            ByteBuffer buf = ByteBuffers.allocate(recordSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
+            ByteBuffer observation = ByteBuffers.allocate(recordSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
             for (int i = 0; i < recordCount; i++) {
                 generateRecordForId(i, buf);
                 observation.position(0);
@@ -813,7 +814,8 @@ public abstract class FileSystemAbstractionTest {
 
     private void writeIntegerIntoFile(Path targetFile) throws IOException {
         StoreChannel storeChannel = fsa.write(targetFile);
-        ByteBuffer byteBuffer = ByteBuffers.allocate(Integer.SIZE, INSTANCE).putInt(7);
+        ByteBuffer byteBuffer = ByteBuffers.allocate(Integer.SIZE, ByteOrder.LITTLE_ENDIAN, INSTANCE)
+                .putInt(7);
         byteBuffer.flip();
         storeChannel.writeAll(byteBuffer);
         storeChannel.close();

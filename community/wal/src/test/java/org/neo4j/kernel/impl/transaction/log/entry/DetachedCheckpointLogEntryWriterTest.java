@@ -26,6 +26,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.DetachedCheckpointLogE
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.time.Instant;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
@@ -51,7 +52,7 @@ class DetachedCheckpointLogEntryWriterTest {
 
     @Test
     void detachedCheckpointEntryHasSpecificLength() throws IOException {
-        try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), INSTANCE)) {
+        try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), ByteOrder.LITTLE_ENDIAN, INSTANCE)) {
             StoreChannel storeChannel = fs.write(directory.createFile("a"));
             try (PhysicalFlushableChecksumChannel writeChannel =
                     new PhysicalFlushableChecksumChannel(storeChannel, buffer)) {
@@ -67,7 +68,7 @@ class DetachedCheckpointLogEntryWriterTest {
 
     @Test
     void anyCheckpointEntryHaveTheSameSize() throws IOException {
-        try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), INSTANCE)) {
+        try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), ByteOrder.LITTLE_ENDIAN, INSTANCE)) {
             StoreChannel storeChannel = fs.write(directory.createFile("b"));
             try (PhysicalFlushableChecksumChannel writeChannel =
                     new PhysicalFlushableChecksumChannel(storeChannel, buffer)) {
@@ -86,7 +87,7 @@ class DetachedCheckpointLogEntryWriterTest {
 
     @Test
     void longCheckpointReasonIsTrimmedToFit() throws IOException {
-        try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), INSTANCE)) {
+        try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), ByteOrder.LITTLE_ENDIAN, INSTANCE)) {
             StoreChannel storeChannel = fs.write(directory.createFile("b"));
             try (PhysicalFlushableChecksumChannel writeChannel =
                     new PhysicalFlushableChecksumChannel(storeChannel, buffer)) {

@@ -113,4 +113,9 @@ class LogEntryParserSetV4_2 extends LogEntryParserSet {
         // much easier on the brain. Thank you and good day.
         register(new DetachedCheckpointLogEntryParserV4_2());
     }
+
+    @Override
+    public ReadableChecksumChannel wrap(ReadableChecksumChannel channel) {
+        return new ByteReversingReadableChecksumChannel(channel);
+    }
 }

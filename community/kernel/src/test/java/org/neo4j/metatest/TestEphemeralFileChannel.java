@@ -26,6 +26,7 @@ import static org.neo4j.io.memory.ByteBuffers.allocate;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,7 +46,7 @@ class TestEphemeralFileChannel {
         StoreChannel channel = fileSystem.write(Path.of("yo"));
 
         // Clear it because we depend on it to be zeros where we haven't written
-        ByteBuffer buffer = allocate(23, INSTANCE);
+        ByteBuffer buffer = allocate(23, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         buffer.put(new byte[23]); // zeros
         buffer.flip();
         channel.write(buffer);

@@ -25,11 +25,12 @@ import static org.neo4j.io.memory.ByteBuffers.allocate;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
 public class RecordingByteChannel implements WritableByteChannel, ReadableByteChannel {
-    private final ByteBuffer buffer = allocate(toIntExact(KibiByte.toBytes(64)), INSTANCE);
+    private final ByteBuffer buffer = allocate(toIntExact(KibiByte.toBytes(64)), ByteOrder.LITTLE_ENDIAN, INSTANCE);
     private int writePosition;
     private int readPosition;
     private boolean eof;

@@ -31,6 +31,7 @@ import static org.neo4j.kernel.impl.transaction.log.files.RangeLogVersionVisitor
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -327,8 +328,8 @@ public class DetachedLogTailScanner {
         long initialPosition = channel.position();
         try {
             channel.position(logPosition.getByteOffset());
-            try (var scopedBuffer =
-                    new HeapScopedBuffer(safeCastLongToInt(min(kibiBytes(12), channelLeftovers)), memoryTracker)) {
+            try (var scopedBuffer = new HeapScopedBuffer(
+                    safeCastLongToInt(min(kibiBytes(12), channelLeftovers)), ByteOrder.LITTLE_ENDIAN, memoryTracker)) {
                 ByteBuffer byteBuffer = scopedBuffer.getBuffer();
                 channel.readAll(byteBuffer);
                 byteBuffer.flip();

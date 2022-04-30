@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 
 import java.io.IOException;
-import org.neo4j.io.fs.FlushableChannel;
+import java.nio.ByteOrder;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.memory.MemoryTracker;
@@ -39,28 +39,19 @@ import org.neo4j.storageengine.api.LegacyStoreId;
  *  store id       24 bytes
  *  reserved       24 bytes
  * </pre>
+ *
+ * Byte order is big-endian
  */
 public class LogHeaderWriter {
-    private static final long LOG_VERSION_BITS = 56;
-    static final long LOG_VERSION_MASK = (1L << LOG_VERSION_BITS) - 1;
+    static final long LOG_VERSION_BITS = 56;
+    static final long LOG_VERSION_MASK = 0x00FF_FFFF_FFFF_FFFFL;
 
     private LogHeaderWriter() {}
 
-    public static void writeLogHeader(FlushableChannel channel, LogHeader logHeader) throws IOException {
-        channel.putLong(encodeLogVersion(logHeader.getLogVersion(), logHeader.getLogFormatVersion()));
-        channel.putLong(logHeader.getLastCommittedTxId());
-        LegacyStoreId storeId = logHeader.getStoreId();
-        channel.putLong(storeId.getCreationTime());
-        channel.putLong(storeId.getRandomId());
-        channel.putLong(storeId.getStoreVersion());
-        channel.putLong(0 /* reserved */);
-        channel.putLong(0 /* reserved */);
-        channel.putLong(0 /* reserved */);
-    }
-
     public static void writeLogHeader(StoreChannel channel, LogHeader logHeader, MemoryTracker memoryTracker)
             throws IOException {
-        try (var scopedBuffer = new HeapScopedBuffer(CURRENT_FORMAT_LOG_HEADER_SIZE, memoryTracker)) {
+        try (var scopedBuffer =
+                new HeapScopedBuffer(CURRENT_FORMAT_LOG_HEADER_SIZE, ByteOrder.BIG_ENDIAN, memoryTracker)) {
             var buffer = scopedBuffer.getBuffer();
             buffer.putLong(encodeLogVersion(logHeader.getLogVersion(), logHeader.getLogFormatVersion()));
             buffer.putLong(logHeader.getLastCommittedTxId());

@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.util.Arrays;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
@@ -48,7 +49,8 @@ public class ByteArrayPageCursor extends PageCursor {
     private CursorException cursorException;
 
     public static PageCursor wrap(byte[] array, int offset, int length, long currentPageId) {
-        return new ByteArrayPageCursor(currentPageId, ByteBuffer.wrap(array, offset, length));
+        return new ByteArrayPageCursor(
+                currentPageId, ByteBuffer.wrap(array, offset, length).order(ByteOrder.LITTLE_ENDIAN));
     }
 
     public static PageCursor wrap(byte[] array, int offset, int length) {

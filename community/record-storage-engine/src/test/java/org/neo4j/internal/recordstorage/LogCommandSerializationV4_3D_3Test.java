@@ -22,6 +22,7 @@ package org.neo4j.internal.recordstorage;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
@@ -43,7 +44,7 @@ class LogCommandSerializationV4_3D_3Test extends LogCommandSerializationV4_2Test
         byte[] bytes = new byte[] {
             19, -1, -1, -1, -1, -1, -1, -1, -1, 0, -1, -1, -1, -1, -1, -1, -1, -1, 1, 0, 0, 0, 0, 0, 0, 3, -25
         };
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         // When
         CommandReader reader = createReader();
@@ -73,7 +74,7 @@ class LogCommandSerializationV4_3D_3Test extends LogCommandSerializationV4_2Test
             0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0,
             7
         };
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         // When
         CommandReader reader = createReader();
@@ -104,7 +105,7 @@ class LogCommandSerializationV4_3D_3Test extends LogCommandSerializationV4_2Test
             0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0,
             0, 0, 7
         };
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         // When
         CommandReader reader = createReader();
@@ -115,6 +116,11 @@ class LogCommandSerializationV4_3D_3Test extends LogCommandSerializationV4_2Test
 
         // Then
         assertBeforeAndAfterEquals(relationshipGroupCommand, before, after);
+    }
+
+    private InMemoryClosableChannel createChannel(byte[] bytes) {
+        // 4.3 transaction log commands are big-endian
+        return new InMemoryClosableChannel(bytes, true, true, ByteOrder.BIG_ENDIAN);
     }
 
     @Override

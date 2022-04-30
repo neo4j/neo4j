@@ -23,6 +23,7 @@ import static java.lang.System.arraycopy;
 
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -38,6 +39,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -101,6 +103,8 @@ public class DynamicArrayStore extends AbstractDynamicStore {
     // store version, each store ends with this string (byte encoded)
     public static final String TYPE_DESCRIPTOR = "ArrayPropertyStore";
 
+    private final ByteOrder byteOrder;
+
     public DynamicArrayStore(
             Path path,
             Path idFile,
@@ -129,6 +133,8 @@ public class DynamicArrayStore extends AbstractDynamicStore {
                 readOnlyChecker,
                 databaseName,
                 openOptions);
+        this.byteOrder =
+                openOptions.contains(PageCacheOpenOptions.BIG_ENDIAN) ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN;
     }
 
     public static byte[] encodeFromNumbers(Object array, int offsetBytes) {
@@ -227,7 +233,8 @@ public class DynamicArrayStore extends AbstractDynamicStore {
             String[] array,
             DynamicRecordAllocator recordAllocator,
             CursorContext cursorContext,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            ByteOrder byteOrder) {
         byte[][] stringsAsBytes = new byte[array.length][];
         int totalBytesRequired = STRING_HEADER_SIZE; // 1b type + 4b array length
         for (int i = 0; i < array.length; i++) {
@@ -237,8 +244,8 @@ public class DynamicArrayStore extends AbstractDynamicStore {
             totalBytesRequired += 4 /*byte[].length*/ + bytes.length;
         }
 
-        try (var scopedBuffer = new HeapScopedBuffer(totalBytesRequired, memoryTracker)) {
-            var buffer = scopedBuffer.getBuffer();
+        try (var scopedBuffer = new HeapScopedBuffer(totalBytesRequired, ByteOrder.LITTLE_ENDIAN, memoryTracker)) {
+            var buffer = scopedBuffer.getBuffer().order(byteOrder);
             buffer.put(PropertyType.STRING.byteValue());
             buffer.putInt(array.length);
             for (byte[] stringAsBytes : stringsAsBytes) {
@@ -251,7 +258,7 @@ public class DynamicArrayStore extends AbstractDynamicStore {
 
     public void allocateRecords(
             Collection<DynamicRecord> target, Object array, CursorContext cursorContext, MemoryTracker memoryTracker) {
-        allocateRecords(target, array, this, cursorContext, memoryTracker);
+        allocateRecords(target, array, this, cursorContext, memoryTracker, byteOrder);
     }
 
     public static void allocateRecords(
@@ -259,14 +266,15 @@ public class DynamicArrayStore extends AbstractDynamicStore {
             Object array,
             DynamicRecordAllocator recordAllocator,
             CursorContext cursorContext,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            ByteOrder byteOrder) {
         if (!array.getClass().isArray()) {
             throw new IllegalArgumentException(array + " not an array");
         }
 
         Class<?> type = array.getClass().getComponentType();
         if (type.equals(String.class)) {
-            allocateFromString(target, (String[]) array, recordAllocator, cursorContext, memoryTracker);
+            allocateFromString(target, (String[]) array, recordAllocator, cursorContext, memoryTracker, byteOrder);
         } else if (type.equals(PointValue.class)) {
             allocateFromCompositeType(
                     target,
@@ -321,20 +329,22 @@ public class DynamicArrayStore extends AbstractDynamicStore {
         }
     }
 
-    public static Value getRightArray(HeavyRecordData data) {
+    // TODO little-endian format check usages
+    public static Value getRightArray(HeavyRecordData data, ByteOrder byteOrder) {
         byte[] header = data.header();
         byte[] bArray = data.data();
-        return getRightArray(header, bArray);
+        return getRightArray(header, bArray, byteOrder);
     }
 
-    public static ArrayValue getRightArray(byte[] header, byte[] bArray) {
+    public static ArrayValue getRightArray(byte[] header, byte[] bArray, ByteOrder byteOrder) {
         byte typeId = header[0];
         if (typeId == PropertyType.STRING.intValue()) {
-            ByteBuffer headerBuffer = ByteBuffer.wrap(header, 1 /*skip the type*/, header.length - 1);
+            ByteBuffer headerBuffer = ByteBuffer.wrap(header, 1 /*skip the type*/, header.length - 1)
+                    .order(byteOrder);
             int arrayLength = headerBuffer.getInt();
             String[] result = new String[arrayLength];
 
-            ByteBuffer dataBuffer = ByteBuffer.wrap(bArray);
+            ByteBuffer dataBuffer = ByteBuffer.wrap(bArray).order(byteOrder);
             for (int i = 0; i < arrayLength; i++) {
                 int byteLength = dataBuffer.getInt();
                 byte[] stringByteArray = new byte[byteLength];
@@ -367,7 +377,7 @@ public class DynamicArrayStore extends AbstractDynamicStore {
     }
 
     public Object getArrayFor(Iterable<DynamicRecord> records, StoreCursors storeCursors) {
-        return getRightArray(readFullByteArray(records, PropertyType.ARRAY, storeCursors))
+        return getRightArray(readFullByteArray(records, PropertyType.ARRAY, storeCursors), ByteOrder.LITTLE_ENDIAN)
                 .asObject();
     }
 }

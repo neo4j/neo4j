@@ -19,13 +19,12 @@
  */
 package org.neo4j.io.memory;
 
-import static java.lang.Math.toIntExact;
 import static org.neo4j.io.memory.ByteBuffers.allocate;
 import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.nio.ByteBuffer;
-import org.neo4j.io.ByteUnit;
+import java.nio.ByteOrder;
 import org.neo4j.memory.MemoryTracker;
 
 /**
@@ -33,17 +32,14 @@ import org.neo4j.memory.MemoryTracker;
  */
 public final class HeapScopedBuffer implements ScopedBuffer {
     public static final HeapScopedBuffer EMPTY_BUFFER =
-            new HeapScopedBuffer(allocate(0, INSTANCE).asReadOnlyBuffer(), INSTANCE);
+            new HeapScopedBuffer(allocate(0, ByteOrder.LITTLE_ENDIAN, INSTANCE).asReadOnlyBuffer(), INSTANCE);
+
     private final ByteBuffer buffer;
     private final MemoryTracker memoryTracker;
     private boolean closed;
 
-    public HeapScopedBuffer(int capacity, MemoryTracker memoryTracker) {
-        this(allocate(capacity, memoryTracker), memoryTracker);
-    }
-
-    public HeapScopedBuffer(int capacity, ByteUnit byteUnit, MemoryTracker memoryTracker) {
-        this(allocate(toIntExact(byteUnit.toBytes(capacity)), memoryTracker), memoryTracker);
+    public HeapScopedBuffer(int capacity, ByteOrder byteOrder, MemoryTracker memoryTracker) {
+        this(allocate(capacity, byteOrder, memoryTracker), memoryTracker);
     }
 
     private HeapScopedBuffer(ByteBuffer buffer, MemoryTracker memoryTracker) {

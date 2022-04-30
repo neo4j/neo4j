@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.OpenOption;
@@ -566,7 +567,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
     }
 
     private static ByteBuffer wrap(byte[] bytes) {
-        ByteBuffer buffer = ByteBuffers.allocate(bytes.length, INSTANCE);
+        ByteBuffer buffer = ByteBuffers.allocate(bytes.length, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         for (byte b : bytes) {
             buffer.put(b);
         }

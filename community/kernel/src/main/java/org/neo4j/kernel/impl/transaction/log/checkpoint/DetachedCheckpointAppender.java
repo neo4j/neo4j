@@ -25,6 +25,7 @@ import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHA
 import static org.neo4j.storageengine.api.CommandReaderFactory.NO_COMMANDS;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.time.Instant;
 import org.neo4j.io.IOUtils;
@@ -98,7 +99,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
                 version, () -> context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId(logFiles));
         context.getMonitors().newMonitor(LogRotationMonitor.class).started(channel.getPath(), version);
         seekCheckpointChannel(version);
-        buffer = new NativeScopedBuffer(kibiBytes(1), context.getMemoryTracker());
+        buffer = new NativeScopedBuffer(kibiBytes(1), ByteOrder.LITTLE_ENDIAN, context.getMemoryTracker());
         writer = new PositionAwarePhysicalFlushableChecksumChannel(channel, buffer);
         checkpointWriter = new DetachedCheckpointLogEntryWriter(writer, context.getKernelVersionProvider());
     }

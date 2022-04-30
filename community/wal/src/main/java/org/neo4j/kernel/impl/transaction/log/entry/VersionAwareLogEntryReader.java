@@ -108,7 +108,10 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
             try {
                 var entryReader = parserSet.select(typeCode);
                 entry = entryReader.parse(
-                        parserSet.getIntroductionVersion(), channel, positionMarker, commandReaderFactory);
+                        parserSet.getIntroductionVersion(),
+                        parserSet.wrap(channel),
+                        positionMarker,
+                        commandReaderFactory);
             } catch (ReadPastEndException e) { // Make these exceptions slip by straight out to the outer handler
                 throw e;
             } catch (Exception e) { // Tag all other exceptions with log position and other useful information

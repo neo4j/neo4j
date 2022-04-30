@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 import org.neo4j.internal.id.BatchingIdSequence;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -41,6 +43,7 @@ import org.neo4j.kernel.impl.store.format.RecordGenerators.Generator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -133,7 +136,9 @@ public abstract class AbstractRecordFormatTest {
         int recordSize = format.getRecordSize(new IntStoreHeader(DATA_SIZE));
         BatchingIdSequence idSequence = new BatchingIdSequence(1);
         // WHEN
-        PageCursor cursor = ByteArrayPageCursor.wrap(recordSize);
+        // TODO little-endian format dynamic store assumes big-endian byte order
+        PageCursor cursor = new ByteArrayPageCursor(
+                ByteBuffers.allocate(recordSize, ByteOrder.BIG_ENDIAN, EmptyMemoryTracker.INSTANCE));
         long time = currentTimeMillis();
         long endTime = time + TEST_TIME;
         long i = 0;

@@ -27,6 +27,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Path;
@@ -108,22 +109,26 @@ public class FileSystemAbstractionInterruptionTest {
 
     @Test
     void channelWriteAllByteBuffer() {
-        assertThrows(ClosedByInterruptException.class, () -> channel(true).writeAll(allocate(1, INSTANCE)));
+        assertThrows(ClosedByInterruptException.class, () -> channel(true)
+                .writeAll(allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)));
     }
 
     @Test
     void channelWriteAllByteBufferPosition() {
-        assertThrows(ClosedByInterruptException.class, () -> channel(true).writeAll(allocate(1, INSTANCE), 1));
+        assertThrows(ClosedByInterruptException.class, () -> channel(true)
+                .writeAll(allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE), 1));
     }
 
     @Test
     void channelReadByteBuffer() {
-        assertThrows(ClosedByInterruptException.class, () -> channel(true).read(allocate(1, INSTANCE)));
+        assertThrows(ClosedByInterruptException.class, () -> channel(true)
+                .read(allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)));
     }
 
     @Test
     void channelWriteByteBuffer() {
-        assertThrows(ClosedByInterruptException.class, () -> channel(true).write(allocate(1, INSTANCE)));
+        assertThrows(ClosedByInterruptException.class, () -> channel(true)
+                .write(allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)));
     }
 
     @Test
@@ -139,25 +144,25 @@ public class FileSystemAbstractionInterruptionTest {
     @Test
     void channelWriteByteBuffersOffsetLength() {
         assertThrows(ClosedByInterruptException.class, () -> channel(true)
-                .write(new ByteBuffer[] {allocate(1, INSTANCE)}, 0, 1));
+                .write(new ByteBuffer[] {allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)}, 0, 1));
     }
 
     @Test
     void channelWriteByteBuffers() {
-        assertThrows(
-                ClosedByInterruptException.class, () -> channel(true).write(new ByteBuffer[] {allocate(1, INSTANCE)}));
+        assertThrows(ClosedByInterruptException.class, () -> channel(true)
+                .write(new ByteBuffer[] {allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)}));
     }
 
     @Test
     void channelReadByteBuffersOffsetLength() {
         assertThrows(ClosedByInterruptException.class, () -> channel(true)
-                .read(new ByteBuffer[] {allocate(1, INSTANCE)}, 0, 1));
+                .read(new ByteBuffer[] {allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)}, 0, 1));
     }
 
     @Test
     void channelReadByteBuffers() {
-        assertThrows(
-                ClosedByInterruptException.class, () -> channel(true).read(new ByteBuffer[] {allocate(1, INSTANCE)}));
+        assertThrows(ClosedByInterruptException.class, () -> channel(true)
+                .read(new ByteBuffer[] {allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)}));
     }
 
     private StoreChannel channel(boolean channelShouldBeClosed) throws IOException {

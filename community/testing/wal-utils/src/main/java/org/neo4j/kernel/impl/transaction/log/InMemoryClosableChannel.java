@@ -25,6 +25,8 @@ import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
 import java.util.zip.Checksum;
 import org.neo4j.io.fs.ChecksumMismatchException;
@@ -37,11 +39,14 @@ import org.neo4j.io.fs.ReadPastEndException;
 public class InMemoryClosableChannel
         implements ReadableClosablePositionAwareChecksumChannel,
                 FlushablePositionAwareChecksumChannel,
-                PositionableChannel {
+                PositionableChannel,
+                ReadableByteChannel {
     private final byte[] bytes;
     private final Reader reader;
     private final Writer writer;
     private final boolean isReader;
+
+    private boolean open = true;
 
     public InMemoryClosableChannel() {
         this(false);
@@ -51,11 +56,11 @@ public class InMemoryClosableChannel
         this(1000, isReader);
     }
 
-    public InMemoryClosableChannel(byte[] bytes, boolean append, boolean isReader) {
+    public InMemoryClosableChannel(byte[] bytes, boolean append, boolean isReader, ByteOrder byteOrder) {
         this.bytes = bytes;
         this.isReader = isReader;
-        ByteBuffer writeBuffer = ByteBuffer.wrap(this.bytes);
-        ByteBuffer readBuffer = ByteBuffer.wrap(this.bytes);
+        ByteBuffer writeBuffer = ByteBuffer.wrap(this.bytes).order(byteOrder);
+        ByteBuffer readBuffer = ByteBuffer.wrap(this.bytes).order(byteOrder);
         if (append) {
             writeBuffer.position(bytes.length);
         }
@@ -64,11 +69,11 @@ public class InMemoryClosableChannel
     }
 
     public InMemoryClosableChannel(int bufferSize, boolean isReader) {
-        this(new byte[bufferSize], false, isReader);
+        this(new byte[bufferSize], false, isReader, ByteOrder.LITTLE_ENDIAN);
     }
 
     public InMemoryClosableChannel(int bufferSize) {
-        this(new byte[bufferSize], false, false);
+        this(new byte[bufferSize], false, false, ByteOrder.LITTLE_ENDIAN);
     }
 
     public void reset() {
@@ -134,7 +139,13 @@ public class InMemoryClosableChannel
     }
 
     @Override
+    public boolean isOpen() {
+        return open;
+    }
+
+    @Override
     public void close() {
+        open = false;
         reader.close();
         writer.close();
     }
@@ -207,6 +218,11 @@ public class InMemoryClosableChannel
         writer.beginChecksum();
     }
 
+    @Override
+    public int getChecksum() {
+        return reader.getChecksum();
+    }
+
     public int positionWriter(int position) {
         int previous = writer.position();
         writer.position(position);
@@ -254,6 +270,20 @@ public class InMemoryClosableChannel
     @Override
     public void write(ByteBuffer buffer) throws IOException {
         writer.write(buffer);
+    }
+
+    @Override
+    public int read(ByteBuffer dst) throws IOException {
+        var readerRemaining = reader.buffer.remaining();
+        if (readerRemaining >= dst.remaining()) {
+            var limitedSlice = reader.buffer.slice().limit(dst.remaining());
+            var remaining = limitedSlice.remaining();
+            dst.put(limitedSlice);
+            reader.buffer.position(reader.buffer.position() + remaining);
+            return remaining;
+        }
+        dst.put(reader.buffer);
+        return readerRemaining;
     }
 
     static class ByteBufferBase implements PositionAwareChannel, Closeable {
@@ -371,6 +401,11 @@ public class InMemoryClosableChannel
         @Override
         public void beginChecksum() {
             checksum.reset();
+        }
+
+        @Override
+        public int getChecksum() {
+            return (int) this.checksum.getValue();
         }
 
         @Override

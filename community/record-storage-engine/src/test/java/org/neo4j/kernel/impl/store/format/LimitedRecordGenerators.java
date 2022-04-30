@@ -24,6 +24,7 @@ import static java.lang.Math.abs;
 import static java.lang.Math.toIntExact;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
+import java.nio.ByteOrder;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -135,7 +136,8 @@ public class LimitedRecordGenerators implements RecordGenerators {
                         stringAllocator,
                         arrayAllocator,
                         CursorContext.NULL_CONTEXT,
-                        INSTANCE);
+                        INSTANCE,
+                        ByteOrder.BIG_ENDIAN);
                 int tentativeBlocksWithThisOne = blocksOccupied + block.getValueBlocks().length;
                 if (tentativeBlocksWithThisOne <= 4) {
                     record.addPropertyBlock(block);

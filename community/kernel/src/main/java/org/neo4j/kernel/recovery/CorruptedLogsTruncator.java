@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.recovery;
 
+import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.io.ByteUnit.MebiByte;
@@ -28,6 +29,7 @@ import static org.neo4j.io.IOUtils.uncheckedLongConsumer;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
@@ -145,7 +147,8 @@ public class CorruptedLogsTruncator {
             throws IOException {
         Path corruptedLogArchive = getArchiveFile(recoveredTransactionLogVersion, recoveredTransactionOffset);
         try (ZipOutputStream recoveryContent = new ZipOutputStream(fs.openAsOutputStream(corruptedLogArchive, false));
-                var bufferScope = new HeapScopedBuffer(1, MebiByte, memoryTracker)) {
+                var bufferScope =
+                        new HeapScopedBuffer(toIntExact(MebiByte.toBytes(1)), ByteOrder.LITTLE_ENDIAN, memoryTracker)) {
             LogFile transactionLogFile = logFiles.getLogFile();
             copyLogsContent(
                     recoveredTransactionLogVersion,
@@ -241,7 +244,8 @@ public class CorruptedLogsTruncator {
             if (fs.getFileSize(logFile.getLogFileForVersion(recoveredTransactionLogVersion))
                     > recoveredTransactionOffset) {
                 try (PhysicalLogVersionedStoreChannel channel = logFile.openForVersion(recoveredTransactionLogVersion);
-                        var scopedBuffer = new NativeScopedBuffer(safeCastLongToInt(kibiBytes(64)), memoryTracker)) {
+                        var scopedBuffer = new NativeScopedBuffer(
+                                safeCastLongToInt(kibiBytes(64)), ByteOrder.LITTLE_ENDIAN, memoryTracker)) {
                     channel.position(recoveredTransactionOffset);
                     ByteBuffer byteBuffer = scopedBuffer.getBuffer();
                     while (channel.read(byteBuffer) >= 0) {

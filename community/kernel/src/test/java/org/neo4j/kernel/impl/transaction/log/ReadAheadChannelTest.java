@@ -27,6 +27,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.util.zip.Checksum;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,7 +56,7 @@ class ReadAheadChannelTest {
         // Given
         Path bytesReadTestFile = Path.of("bytesReadTest.txt");
         StoreChannel storeChannel = fileSystem.write(bytesReadTestFile);
-        ByteBuffer buffer = ByteBuffers.allocate(1, INSTANCE);
+        ByteBuffer buffer = ByteBuffers.allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         buffer.put((byte) 1);
         buffer.flip();
         storeChannel.writeAll(buffer);
@@ -78,7 +79,7 @@ class ReadAheadChannelTest {
         // Given
         Path shortReadTestFile = Path.of("shortReadTest.txt");
         StoreChannel storeChannel = fileSystem.write(shortReadTestFile);
-        ByteBuffer buffer = ByteBuffers.allocate(1, INSTANCE);
+        ByteBuffer buffer = ByteBuffers.allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         buffer.put((byte) 1);
         buffer.flip();
         storeChannel.writeAll(buffer);
@@ -98,8 +99,8 @@ class ReadAheadChannelTest {
     void shouldHandleRunningOutOfBytesWhenRequestSpansMultipleFiles(Constructor constructor) throws Exception {
         // Given
         StoreChannel storeChannel1 = fileSystem.write(Path.of("foo.1"));
-        ByteBuffer buffer = ByteBuffers.allocate(2, INSTANCE);
-        buffer.put((byte) 0);
+        ByteBuffer buffer = ByteBuffers.allocate(2, ByteOrder.LITTLE_ENDIAN, INSTANCE);
+        buffer.put((byte) 1);
         buffer.put((byte) 0);
         buffer.flip();
         storeChannel1.writeAll(buffer);
@@ -123,7 +124,7 @@ class ReadAheadChannelTest {
         channel.nextChannelHook = storeChannel2Copy;
 
         assertThrows(ReadPastEndException.class, channel::getLong);
-        assertEquals(1, channel.getInt());
+        assertEquals(0x0100_0001, channel.getInt());
         assertThrows(ReadPastEndException.class, channel::get);
     }
 
@@ -158,7 +159,7 @@ class ReadAheadChannelTest {
         int checksumValue;
         Path file = Path.of("foo.1");
         try (StoreChannel storeChannel = fileSystem.write(file)) {
-            ByteBuffer buffer = ByteBuffers.allocate(6, INSTANCE);
+            ByteBuffer buffer = ByteBuffers.allocate(6, ByteOrder.LITTLE_ENDIAN, INSTANCE);
             buffer.put((byte) 1);
             checksum.update(1);
             buffer.put((byte) 2);
@@ -186,7 +187,7 @@ class ReadAheadChannelTest {
         Checksum checksum = CHECKSUM_FACTORY.get();
         Path file = Path.of("foo.1");
         try (StoreChannel storeChannel = fileSystem.write(file)) {
-            ByteBuffer buffer = ByteBuffers.allocate(6, INSTANCE);
+            ByteBuffer buffer = ByteBuffers.allocate(6, ByteOrder.LITTLE_ENDIAN, INSTANCE);
             buffer.put((byte) 1);
             checksum.update(1);
             buffer.put((byte) 2);
@@ -215,7 +216,7 @@ class ReadAheadChannelTest {
         Path file = Path.of("foo.1");
         int testSize = 100;
         try (StoreChannel storeChannel = fileSystem.write(file)) {
-            ByteBuffer buffer = ByteBuffers.allocate(testSize + 4, INSTANCE);
+            ByteBuffer buffer = ByteBuffers.allocate(testSize + 4, ByteOrder.LITTLE_ENDIAN, INSTANCE);
             for (int i = 0; i < testSize; i++) {
                 buffer.put((byte) i);
                 checksum.update(i);
@@ -239,7 +240,7 @@ class ReadAheadChannelTest {
 
     private static void createFile(EphemeralFileSystemAbstraction fsa, Path name, int bufferSize) throws IOException {
         StoreChannel storeChannel = fsa.write(name);
-        ByteBuffer buffer = ByteBuffers.allocate(bufferSize, INSTANCE);
+        ByteBuffer buffer = ByteBuffers.allocate(bufferSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         for (int i = 0; i < bufferSize; i++) {
             buffer.put((byte) i);
         }
@@ -274,13 +275,15 @@ class ReadAheadChannelTest {
         HEAP_BUFFER {
             @Override
             public HookedReadAheadChannel apply(StoreChannel channel, int readAheadSize) {
-                return new HookedReadAheadChannel(channel, new HeapScopedBuffer(readAheadSize, INSTANCE));
+                return new HookedReadAheadChannel(
+                        channel, new HeapScopedBuffer(readAheadSize, ByteOrder.LITTLE_ENDIAN, INSTANCE));
             }
         },
         DIRECT_BUFFER {
             @Override
             public HookedReadAheadChannel apply(StoreChannel channel, int readAheadSize) {
-                return new HookedReadAheadChannel(channel, new NativeScopedBuffer(readAheadSize, INSTANCE));
+                return new HookedReadAheadChannel(
+                        channel, new NativeScopedBuffer(readAheadSize, ByteOrder.LITTLE_ENDIAN, INSTANCE));
             }
         },
     }

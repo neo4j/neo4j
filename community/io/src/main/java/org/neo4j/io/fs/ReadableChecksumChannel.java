@@ -31,6 +31,11 @@ public interface ReadableChecksumChannel extends ReadableChannel {
     void beginChecksum();
 
     /**
+     * Returns checksum calculated over the stream since the call to {@link #beginChecksum()}.
+     */
+    int getChecksum();
+
+    /**
      * Mark the end for checksum calculations. This method will go through a number of stages:
      * <ul>
      *     <li>Calculate the checksum over the stream since the call to {@link #beginChecksum()}.

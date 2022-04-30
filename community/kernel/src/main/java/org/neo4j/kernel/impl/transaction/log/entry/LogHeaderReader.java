@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_VERSION_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.LOG_VERSION_BITS;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.LOG_VERSION_MASK;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_HEADER_SIZE_3_5;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_HEADER_SIZE_4_0;
@@ -30,6 +32,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSIO
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -49,29 +52,38 @@ public final class LogHeaderReader {
     public static LogHeader readLogHeader(
             FileSystemAbstraction fileSystem, Path file, boolean strict, MemoryTracker memoryTracker)
             throws IOException {
-        try (StoreChannel channel = fileSystem.read(file);
-                var scopedBuffer = new HeapScopedBuffer(CURRENT_FORMAT_LOG_HEADER_SIZE, memoryTracker)) {
-            return readLogHeader(scopedBuffer.getBuffer(), channel, strict, file);
+        try (StoreChannel channel = fileSystem.read(file)) {
+            return readLogHeader(channel, strict, file, memoryTracker);
         }
     }
 
     /**
-     * Reads the header of a log. Data will be read from {@code channel} using supplied {@code buffer}
-     * as to allow more controlled allocation.
+     * Reads the header of a log.
      *
-     * @param buffer {@link ByteBuffer} to read into. Passed in to allow control over allocation.
      * @param channel {@link ReadableByteChannel} to read from, typically a channel over a file containing the data.
      * @param strict if {@code true} then will fail with {@link IncompleteLogHeaderException} on incomplete
      * header, i.e. if there's not enough data in the channel to even read the header. If {@code false} then
      * the return value will instead be {@code null}.
-     * @param fileForAdditionalErrorInformationOrNull when in {@code strict} mode the exception can be
+     * @param additionalErrorInformation when in {@code strict} mode the exception can be
      * amended with information about which file the channel represents, if any. Purely for better forensics
      * ability.
+     * @param memoryTracker memory tracker
      * @return {@link LogHeader} containing the log header data from the {@code channel}.
      * @throws IOException if unable to read from {@code channel}
      * @throws IncompleteLogHeaderException if {@code strict} and not enough data could be read
      */
     public static LogHeader readLogHeader(
+            ReadableByteChannel channel, boolean strict, Path additionalErrorInformation, MemoryTracker memoryTracker)
+            throws IOException {
+        // log header has big-endian byte order
+        try (var scopedBuffer =
+                new HeapScopedBuffer(CURRENT_FORMAT_LOG_HEADER_SIZE, ByteOrder.BIG_ENDIAN, memoryTracker)) {
+            var order = scopedBuffer.getBuffer();
+            return readLogHeader(order, channel, strict, additionalErrorInformation);
+        }
+    }
+
+    private static LogHeader readLogHeader(
             ByteBuffer buffer,
             ReadableByteChannel channel,
             boolean strict,
@@ -166,10 +178,10 @@ public final class LogHeaderReader {
     }
 
     static long decodeLogVersion(long encLogVersion) {
-        return encLogVersion & 0x00FF_FFFF_FFFF_FFFFL;
+        return encLogVersion & LOG_VERSION_MASK;
     }
 
     static byte decodeLogFormatVersion(long encLogVersion) {
-        return (byte) ((encLogVersion >> 56) & 0xFF);
+        return (byte) ((encLogVersion >> LOG_VERSION_BITS) & 0xFF);
     }
 }

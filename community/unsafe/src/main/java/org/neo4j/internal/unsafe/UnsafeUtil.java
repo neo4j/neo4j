@@ -190,11 +190,10 @@ public final class UnsafeUtil {
     }
 
     /**
-     * Atomically compare the current value of the given long field with the expected value, and if they are the
-     * equal, set the field to the updated value and return true. Otherwise return false.
+     * Atomically compare the current value of the given long field with the expected value, and if they are the equal, set the field to the updated value and
+     * return true. Otherwise return false.
      * <p>
-     * If this method returns true, then it has the memory visibility semantics of a volatile read followed by a
-     * volatile write.
+     * If this method returns true, then it has the memory visibility semantics of a volatile read followed by a volatile write.
      */
     public static boolean compareAndSwapLong(Object obj, long offset, long expected, long update) {
         return unsafe.compareAndSwapLong(obj, offset, expected, update);
@@ -603,6 +602,7 @@ public final class UnsafeUtil {
 
     /**
      * Releases a {@link ByteBuffer}
+     *
      * @param byteBuffer The ByteBuffer to free, allocated by {@link UnsafeUtil#allocateByteBuffer(int, MemoryTracker)}
      */
     public static void freeByteBuffer(ByteBuffer byteBuffer, MemoryTracker memoryTracker) {
@@ -666,7 +666,7 @@ public final class UnsafeUtil {
     public static void initDirectByteBuffer(ByteBuffer dbb, long addr, int cap) {
         assertUnsafeByteBufferAccess();
         checkAccess(addr, cap);
-        dbb.order(ByteOrder.BIG_ENDIAN);
+        dbb.order(ByteOrder.LITTLE_ENDIAN);
         BYTE_BUFFER_MARK.set(dbb, -1);
         BYTE_BUFFER_POSITION.set(dbb, 0);
         BYTE_BUFFER_LIMIT.set(dbb, cap);

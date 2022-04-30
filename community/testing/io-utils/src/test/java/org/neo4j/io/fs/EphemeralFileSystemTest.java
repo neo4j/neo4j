@@ -29,6 +29,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -61,7 +62,7 @@ class EphemeralFileSystemTest {
         Path aFile = Path.of("test");
         StoreChannel channel = fs.write(aFile);
 
-        ByteBuffer buffer = allocate(Long.BYTES, INSTANCE);
+        ByteBuffer buffer = allocate(Long.BYTES, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         int mebiBytes = (int) ByteUnit.mebiBytes(1);
         for (int position = mebiBytes + 42; position < 10_000_000; position += mebiBytes) {
             buffer.putLong(1);
@@ -193,7 +194,7 @@ class EphemeralFileSystemTest {
     private static void verifyFileIsFullOfLongIntegerOnes(StoreChannel channel) {
         try {
             long claimedSize = channel.size();
-            ByteBuffer buffer = allocate((int) claimedSize, INSTANCE);
+            ByteBuffer buffer = allocate((int) claimedSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
             channel.readAll(buffer);
             buffer.flip();
 
@@ -209,7 +210,7 @@ class EphemeralFileSystemTest {
     private static void verifyFileIsEitherEmptyOrContainsLongIntegerValueOne(StoreChannel channel) {
         try {
             long claimedSize = channel.size();
-            ByteBuffer buffer = allocate(8, INSTANCE);
+            ByteBuffer buffer = allocate(8, ByteOrder.LITTLE_ENDIAN, INSTANCE);
             channel.read(buffer, 0);
             buffer.flip();
 
@@ -224,14 +225,14 @@ class EphemeralFileSystemTest {
     }
 
     private static ByteBuffer readLong(StoreChannel readChannel) throws IOException {
-        ByteBuffer readBuffer = allocate(8, INSTANCE);
+        ByteBuffer readBuffer = allocate(8, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         readChannel.readAll(readBuffer);
         readBuffer.flip();
         return readBuffer;
     }
 
     private static void writeLong(StoreChannel channel, long value) throws IOException {
-        ByteBuffer buffer = allocate(8, INSTANCE);
+        ByteBuffer buffer = allocate(8, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         buffer.putLong(value);
         buffer.flip();
         channel.write(buffer);

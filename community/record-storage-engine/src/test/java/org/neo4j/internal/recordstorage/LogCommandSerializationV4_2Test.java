@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -52,7 +53,7 @@ class LogCommandSerializationV4_2Test {
         byte[] bytes = new byte[] {
             5, 0, 0, 0, 42, 0, 0, 0, 0, 0, -1, -1, -1, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 13, 0, 0, 0, 0
         };
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         // When
         CommandReader reader = createReader();
@@ -77,7 +78,7 @@ class LogCommandSerializationV4_2Test {
         byte[] bytes = new byte[] {
             5, 0, 0, 0, 42, 0, 0, 0, 0, 0, -1, -1, -1, -1, 0, 0, 0, 0, 33, 0, 0, 0, 0, 0, 0, 0, 13, 0, 0, 0, 0
         };
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         // When
         CommandReader reader = createReader();
@@ -99,7 +100,7 @@ class LogCommandSerializationV4_2Test {
         after.setCreated();
 
         byte[] bytes = new byte[] {8, 0, 0, 0, 42, 0, -1, -1, -1, -1, 0, 0, 0, 0, 1, 0, 0, 0, 13, 0, 0, 0, 0};
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         // When
         CommandReader reader = createReader();
@@ -122,7 +123,7 @@ class LogCommandSerializationV4_2Test {
         after.setInternal(true);
 
         byte[] bytes = new byte[] {8, 0, 0, 0, 42, 0, -1, -1, -1, -1, 0, 0, 0, 0, 33, 0, 0, 0, 13, 0, 0, 0, 0};
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         // When
         CommandReader reader = createReader();
@@ -144,7 +145,7 @@ class LogCommandSerializationV4_2Test {
         after.setCreated();
 
         byte[] bytes = new byte[] {4, 0, 0, 0, 42, 0, -1, -1, -1, -1, 0, 0, 0, 0, 1, 0, 0, 0, 13, 0, 0, 0, 0};
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         // When
         CommandReader reader = createReader();
@@ -168,7 +169,7 @@ class LogCommandSerializationV4_2Test {
         after.setInternal(true);
 
         byte[] bytes = new byte[] {4, 0, 0, 0, 42, 0, -1, -1, -1, -1, 0, 0, 0, 0, 33, 0, 0, 0, 13, 0, 0, 0, 0};
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         // When
         CommandReader reader = createReader();
@@ -196,7 +197,7 @@ class LogCommandSerializationV4_2Test {
             3, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0,
             0, 0, 0, 0, 0, 3
         };
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         // When
         CommandReader reader = createReader();
@@ -226,7 +227,7 @@ class LogCommandSerializationV4_2Test {
                     0, 0, 0, 0, 0, 0, 0, 7,
             0, 0, 0, 0, 0, 0, 0, 0, 3
         };
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         CommandReader reader = createReader();
         StorageCommand command = reader.read(channel);
@@ -253,7 +254,7 @@ class LogCommandSerializationV4_2Test {
                     0, 0, 0, 0, 0, 0, 0, 7,
             0, 0, 0, 0, 0, 0, 0, 0, 3
         };
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         CommandReader reader = createReader();
         StorageCommand command = reader.read(channel);
@@ -281,7 +282,7 @@ class LogCommandSerializationV4_2Test {
                     0, 0, 0, 0, 0, 0, 0, 0,
             3
         };
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         CommandReader reader = createReader();
         StorageCommand command = reader.read(channel);
@@ -306,7 +307,7 @@ class LogCommandSerializationV4_2Test {
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 0, 3, 0, 0, 0, 0,
             0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 7
         };
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         // When
         CommandReader reader = createReader();
@@ -334,7 +335,7 @@ class LogCommandSerializationV4_2Test {
             0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0,
             7, 0, 0, 0, 0, 0, 0, 0, 17
         };
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         // When
         CommandReader reader = createReader();
@@ -362,7 +363,7 @@ class LogCommandSerializationV4_2Test {
             0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0,
             7, 0, 0, 0, 0, 0, 0, 0, 17
         };
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         // When
         CommandReader reader = createReader();
@@ -391,7 +392,7 @@ class LogCommandSerializationV4_2Test {
             0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0,
             0, 7
         };
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         // When
         CommandReader reader = createReader();
@@ -421,7 +422,7 @@ class LogCommandSerializationV4_2Test {
             0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0,
             0, 0, 7
         };
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         // When
         CommandReader reader = createReader();
@@ -446,7 +447,7 @@ class LogCommandSerializationV4_2Test {
             1, 0, 0, 0, 0, 0, 0, 0, 42, 17, 0, 0, 0, 0, 0, 0, 0, 0, 33, 0, 0, 0, 0, 0, 0, 0, 99, 0, 0, 0, 0, 0, 0, 0,
             66, 0, 0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 33, 0, 0, 0, 0, 0, 0, 0, 99, 0, 0, 0, 0, 0, 0, 0, 66, 0, 0, 0, 0
         };
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         // When
         CommandReader reader = createReader();
@@ -474,7 +475,7 @@ class LogCommandSerializationV4_2Test {
                     0, 0, 0, 0, 0, 0, 0, 78,
             0, 0, 0, 0, 0
         };
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         CommandReader reader = createReader();
         StorageCommand command = reader.read(channel);
@@ -499,7 +500,7 @@ class LogCommandSerializationV4_2Test {
                     0, 0, 0, 0, 0, 0, 0, 78,
             0, 0, 0, 0, 0
         };
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         CommandReader reader = createReader();
         StorageCommand command = reader.read(channel);
@@ -523,7 +524,7 @@ class LogCommandSerializationV4_2Test {
             -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 16, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0
         };
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         CommandReader reader = createReader();
         StorageCommand command = reader.read(channel);
@@ -556,7 +557,7 @@ class LogCommandSerializationV4_2Test {
             -1, -1, 0, 0, 0, 0, 0, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, 1, 8, 0, 0, 0, 7, -75, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
         };
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         // THEN
         assertTrue(reader.read(channel) instanceof Command.NodeCommand);
@@ -601,12 +602,17 @@ class LogCommandSerializationV4_2Test {
             110, 101, 111, 52, 106, 46, 83, 99, 104, 101, 109, 97, 82, 117, 108, 101, 46, 115, 99, 104, 101, 109, 97,
             69, 110, 116, 105, 116, 121, 73, 100, 115, 11, 0, 0, 0, 1, 5, 0, 0, 0, 1
         };
-        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
+        InMemoryClosableChannel channel = createChannel(bytes);
 
         CommandReader reader = createReader();
         Command.SchemaRuleCommand command = (Command.SchemaRuleCommand) reader.read(channel);
 
         assertBeforeAndAfterEquals(command, before, after);
+    }
+
+    private InMemoryClosableChannel createChannel(byte[] bytes) {
+        // 4.2 transaction log commands are big-endian
+        return new InMemoryClosableChannel(bytes, true, true, ByteOrder.BIG_ENDIAN);
     }
 
     protected CommandReader createReader() {

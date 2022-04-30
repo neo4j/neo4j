@@ -46,6 +46,7 @@ import org.neo4j.internal.recordstorage.InconsistentDataReadException;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.internal.recordstorage.RecordPropertyCursor;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -157,6 +158,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
     private final DynamicStringStore stringStore;
     private final PropertyKeyTokenStore propertyKeyTokenStore;
     private final DynamicArrayStore arrayStore;
+    private final ByteOrder byteOrder;
 
     public PropertyStore(
             Path path,
@@ -190,6 +192,8 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
         this.stringStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayStore = arrayPropertyStore;
+        this.byteOrder =
+                openOptions.contains(PageCacheOpenOptions.BIG_ENDIAN) ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN;
     }
 
     public DynamicStringStore getStringStore() {
@@ -292,25 +296,19 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
     }
 
     private PageCursor dynamicStoreCursorForType(StoreCursors storeCursors, PropertyType type) {
-        switch (type) {
-            case ARRAY:
-                return storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR);
-            case STRING:
-                return storeCursors.readCursor(DYNAMIC_STRING_STORE_CURSOR);
-            default:
-                throw new IllegalArgumentException("Unsupported type of dynamic property " + type);
-        }
+        return switch (type) {
+            case ARRAY -> storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR);
+            case STRING -> storeCursors.readCursor(DYNAMIC_STRING_STORE_CURSOR);
+            default -> throw new IllegalArgumentException("Unsupported type of dynamic property " + type);
+        };
     }
 
     private RecordStore<DynamicRecord> dynamicStoreForValueType(PropertyType type) {
-        switch (type) {
-            case ARRAY:
-                return arrayStore;
-            case STRING:
-                return stringStore;
-            default:
-                return null;
-        }
+        return switch (type) {
+            case ARRAY -> arrayStore;
+            case STRING -> stringStore;
+            default -> null;
+        };
     }
 
     public Value getValue(PropertyBlock propertyBlock, StoreCursors cursors) {
@@ -331,16 +329,17 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
             Object array,
             DynamicRecordAllocator allocator,
             CursorContext cursorContext,
-            MemoryTracker memoryTracker) {
-        DynamicArrayStore.allocateRecords(target, array, allocator, cursorContext, memoryTracker);
+            MemoryTracker memoryTracker,
+            ByteOrder byteOrder) {
+        DynamicArrayStore.allocateRecords(target, array, allocator, cursorContext, memoryTracker, byteOrder);
     }
 
     public void encodeValue(
             PropertyBlock block, int keyId, Value value, CursorContext cursorContext, MemoryTracker memoryTracker) {
-        encodeValue(block, keyId, value, stringStore, arrayStore, cursorContext, memoryTracker);
+        encodeValue(block, keyId, value, stringStore, arrayStore, cursorContext, memoryTracker, byteOrder);
     }
 
-    public static void encodeValue(
+    public void encodeValue(
             PropertyBlock block,
             int keyId,
             Value value,
@@ -348,6 +347,19 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
             DynamicRecordAllocator arrayAllocator,
             CursorContext cursorContext,
             MemoryTracker memoryTracker) {
+        encodeValue(block, keyId, value, stringAllocator, arrayAllocator, cursorContext, memoryTracker, byteOrder);
+    }
+
+    // TODO little-endian format make private
+    public static void encodeValue(
+            PropertyBlock block,
+            int keyId,
+            Value value,
+            DynamicRecordAllocator stringAllocator,
+            DynamicRecordAllocator arrayAllocator,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker,
+            ByteOrder byteOrder) {
         if (value instanceof ArrayValue) {
             Object asObject = value.asObject();
 
@@ -358,7 +370,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
 
             // Fall back to dynamic array store
             List<DynamicRecord> arrayRecords = newArrayList(memoryTracker);
-            allocateArrayRecords(arrayRecords, asObject, arrayAllocator, cursorContext, memoryTracker);
+            allocateArrayRecords(arrayRecords, asObject, arrayAllocator, cursorContext, memoryTracker, byteOrder);
             setSingleBlockValue(
                     block,
                     keyId,
@@ -619,7 +631,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
     }
 
     public Value getArrayFor(Collection<DynamicRecord> records, StoreCursors storeCursors) {
-        return getRightArray(arrayStore.readFullByteArray(records, PropertyType.ARRAY, storeCursors));
+        return getRightArray(arrayStore.readFullByteArray(records, PropertyType.ARRAY, storeCursors), byteOrder);
     }
 
     @Override
@@ -639,54 +651,50 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
         return new PropertyValueRecordSizeCalculator(this);
     }
 
-    public static ArrayValue readArrayFromBuffer(ByteBuffer buffer) {
+    public ArrayValue readArrayFromBuffer(ByteBuffer buffer) {
         if (buffer.limit() <= 0) {
             throw new IllegalStateException("Given buffer is empty");
         }
 
         byte typeId = buffer.get();
-        buffer.order(ByteOrder.BIG_ENDIAN);
-        try {
-            if (typeId == PropertyType.STRING.intValue()) {
-                int arrayLength = buffer.getInt();
-                String[] result = new String[arrayLength];
+        buffer.order(byteOrder);
+        if (typeId == PropertyType.STRING.intValue()) {
+            int arrayLength = buffer.getInt();
+            String[] result = new String[arrayLength];
 
-                for (int i = 0; i < arrayLength; i++) {
-                    int byteLength = buffer.getInt();
-                    result[i] = UTF8.decode(buffer.array(), buffer.position(), byteLength);
-                    buffer.position(buffer.position() + byteLength);
-                }
-                return Values.stringArray(result);
-            } else if (typeId == PropertyType.GEOMETRY.intValue()) {
-                GeometryType.GeometryHeader header = GeometryType.GeometryHeader.fromArrayHeaderByteBuffer(buffer);
-                byte[] byteArray = new byte[buffer.limit() - buffer.position()];
-                buffer.get(byteArray);
-                return GeometryType.decodeGeometryArray(header, byteArray);
-            } else if (typeId == PropertyType.TEMPORAL.intValue()) {
-                TemporalType.TemporalHeader header = TemporalType.TemporalHeader.fromArrayHeaderByteBuffer(buffer);
-                byte[] byteArray = new byte[buffer.limit() - buffer.position()];
-                buffer.get(byteArray);
-                return TemporalType.decodeTemporalArray(header, byteArray);
-            } else {
-                ShortArray type = ShortArray.typeOf(typeId);
-                int bitsUsedInLastByte = buffer.get();
-                int requiredBits = buffer.get();
-                if (requiredBits == 0) {
-                    return type.createEmptyArray();
-                }
-                if (type == ShortArray.BYTE
-                        && requiredBits == Byte.SIZE) { // Optimization for byte arrays (probably large ones)
-                    byte[] byteArray = new byte[buffer.limit() - buffer.position()];
-                    buffer.get(byteArray);
-                    return Values.byteArray(byteArray);
-                } else { // Fallback to the generic approach, which is a slower
-                    Bits bits = Bits.bitsFromBytes(buffer.array(), buffer.position());
-                    int length = ((buffer.limit() - buffer.position()) * 8 - (8 - bitsUsedInLastByte)) / requiredBits;
-                    return type.createArray(length, bits, requiredBits);
-                }
+            for (int i = 0; i < arrayLength; i++) {
+                int byteLength = buffer.getInt();
+                result[i] = UTF8.decode(buffer.array(), buffer.position(), byteLength);
+                buffer.position(buffer.position() + byteLength);
             }
-        } finally {
-            buffer.order(ByteOrder.LITTLE_ENDIAN);
+            return Values.stringArray(result);
+        } else if (typeId == PropertyType.GEOMETRY.intValue()) {
+            GeometryType.GeometryHeader header = GeometryType.GeometryHeader.fromArrayHeaderByteBuffer(buffer);
+            byte[] byteArray = new byte[buffer.limit() - buffer.position()];
+            buffer.get(byteArray);
+            return GeometryType.decodeGeometryArray(header, byteArray);
+        } else if (typeId == PropertyType.TEMPORAL.intValue()) {
+            TemporalType.TemporalHeader header = TemporalType.TemporalHeader.fromArrayHeaderByteBuffer(buffer);
+            byte[] byteArray = new byte[buffer.limit() - buffer.position()];
+            buffer.get(byteArray);
+            return TemporalType.decodeTemporalArray(header, byteArray);
+        } else {
+            ShortArray type = ShortArray.typeOf(typeId);
+            int bitsUsedInLastByte = buffer.get();
+            int requiredBits = buffer.get();
+            if (requiredBits == 0) {
+                return type.createEmptyArray();
+            }
+            if (type == ShortArray.BYTE
+                    && requiredBits == Byte.SIZE) { // Optimization for byte arrays (probably large ones)
+                byte[] byteArray = new byte[buffer.limit() - buffer.position()];
+                buffer.get(byteArray);
+                return Values.byteArray(byteArray);
+            } else { // Fallback to the generic approach, which is a slower
+                Bits bits = Bits.bitsFromBytes(buffer.array(), buffer.position());
+                int length = ((buffer.limit() - buffer.position()) * 8 - (8 - bitsUsedInLastByte)) / requiredBits;
+                return type.createArray(length, bits, requiredBits);
+            }
         }
     }
 }

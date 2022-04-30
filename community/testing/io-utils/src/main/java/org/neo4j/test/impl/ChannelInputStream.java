@@ -19,11 +19,13 @@
  */
 package org.neo4j.test.impl;
 
+import static java.lang.Math.toIntExact;
 import static org.neo4j.io.ByteUnit.KibiByte;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.ScopedBuffer;
@@ -37,7 +39,8 @@ public class ChannelInputStream extends InputStream {
 
     public ChannelInputStream(StoreChannel channel, MemoryTracker memoryTracker) {
         this.channel = channel;
-        this.scopedBuffer = new HeapScopedBuffer(8, KibiByte, memoryTracker);
+        this.scopedBuffer =
+                new HeapScopedBuffer(toIntExact(KibiByte.toBytes(8)), ByteOrder.LITTLE_ENDIAN, memoryTracker);
         this.buffer = scopedBuffer.getBuffer();
     }
 

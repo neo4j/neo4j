@@ -71,6 +71,7 @@ import static org.neo4j.util.Bits.bits;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -929,8 +930,9 @@ public class FullCheckIntegrationTest {
             @Override
             protected void transactionData(
                     GraphStoreFixture.TransactionDataBuilder tx, GraphStoreFixture.IdGenerator next) {
-                long nodeId = ((long[]) getRightArray(readFullByteArrayFromHeavyRecords(chain, ARRAY))
-                                .asObject())
+                long nodeId = ((long[])
+                                getRightArray(readFullByteArrayFromHeavyRecords(chain, ARRAY), ByteOrder.LITTLE_ENDIAN)
+                                        .asObject())
                         [0];
                 NodeRecord before = inUse(new NodeRecord(nodeId).initialize(false, -1, false, -1, 0));
                 NodeRecord after = inUse(new NodeRecord(nodeId).initialize(false, -1, false, -1, 0));
@@ -1378,7 +1380,8 @@ public class FullCheckIntegrationTest {
                             }
                         },
                         NULL_CONTEXT,
-                        INSTANCE);
+                        INSTANCE,
+                        ByteOrder.BIG_ENDIAN);
                 assertThat(allocatedRecords.size()).isGreaterThan(1);
                 DynamicRecord array = allocatedRecords.get(0);
                 array.setType(ARRAY.intValue());
@@ -2820,7 +2823,14 @@ public class FullCheckIntegrationTest {
                 PropertyRecord record = new PropertyRecord(id).initialize(true, prev, next);
                 PropertyBlock block = new PropertyBlock();
                 PropertyStore.encodeValue(
-                        block, propertyKeyId, Values.intValue(10), null, null, NULL_CONTEXT, INSTANCE);
+                        block,
+                        propertyKeyId,
+                        Values.intValue(10),
+                        null,
+                        null,
+                        NULL_CONTEXT,
+                        INSTANCE,
+                        ByteOrder.BIG_ENDIAN);
                 record.addPropertyBlock(block);
                 return record;
             }
@@ -3170,7 +3180,8 @@ public class FullCheckIntegrationTest {
         DynamicRecordAllocator arrayAllocator = null;
         protoProperties.forEachKeyValue((keyId, value) -> {
             PropertyBlock block = new PropertyBlock();
-            PropertyStore.encodeValue(block, keyId, value, stringAllocator, arrayAllocator, NULL_CONTEXT, INSTANCE);
+            PropertyStore.encodeValue(
+                    block, keyId, value, stringAllocator, arrayAllocator, NULL_CONTEXT, INSTANCE, ByteOrder.BIG_ENDIAN);
             blocks.add(block);
         });
 

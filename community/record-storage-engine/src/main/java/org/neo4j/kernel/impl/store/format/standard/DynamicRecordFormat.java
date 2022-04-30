@@ -139,6 +139,7 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
             cursor.putInt((int) nextBlock);
             cursor.putBytes(record.getData());
         } else {
+            // TODO little-endian format this byte in different place
             cursor.putByte(Record.NOT_IN_USE.byteValue());
         }
     }

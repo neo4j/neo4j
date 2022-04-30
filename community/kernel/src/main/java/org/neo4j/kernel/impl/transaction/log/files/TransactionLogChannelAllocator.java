@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
 
 import java.io.IOException;
@@ -30,7 +29,6 @@ import java.nio.file.Path;
 import java.util.function.LongSupplier;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -64,24 +62,20 @@ public class TransactionLogChannelAllocator {
         AllocatedFile allocatedFile = allocateFile(version);
         var storeChannel = allocatedFile.storeChannel();
         var logFile = allocatedFile.path();
-        try (var scopedBuffer =
-                new HeapScopedBuffer(CURRENT_FORMAT_LOG_HEADER_SIZE, logFilesContext.getMemoryTracker())) {
-            var buffer = scopedBuffer.getBuffer();
-            LogHeader header = readLogHeader(buffer, storeChannel, false, logFile);
-            if (header == null) {
-                try (LogFileCreateEvent ignored = databaseTracer.createLogFile()) {
-                    // we always write file header from the beginning of the file
-                    storeChannel.position(0);
-                    long lastTxId = lastCommittedTransactionId.getAsLong();
-                    LogHeader logHeader = new LogHeader(version, lastTxId, logFilesContext.getStoreId());
-                    LogHeaderWriter.writeLogHeader(storeChannel, logHeader, logFilesContext.getMemoryTracker());
-                    logHeaderCache.putHeader(version, logHeader);
-                }
+        LogHeader header = readLogHeader(storeChannel, false, logFile, logFilesContext.getMemoryTracker());
+        if (header == null) {
+            try (LogFileCreateEvent ignored = databaseTracer.createLogFile()) {
+                // we always write file header from the beginning of the file
+                storeChannel.position(0);
+                long lastTxId = lastCommittedTransactionId.getAsLong();
+                LogHeader logHeader = new LogHeader(version, lastTxId, logFilesContext.getStoreId());
+                LogHeaderWriter.writeLogHeader(storeChannel, logHeader, logFilesContext.getMemoryTracker());
+                logHeaderCache.putHeader(version, logHeader);
             }
-            byte formatVersion = header == null ? CURRENT_LOG_FORMAT_VERSION : header.getLogFormatVersion();
-            return new PhysicalLogVersionedStoreChannel(
-                    storeChannel, version, formatVersion, logFile, nativeChannelAccessor, databaseTracer);
         }
+        byte formatVersion = header == null ? CURRENT_LOG_FORMAT_VERSION : header.getLogFormatVersion();
+        return new PhysicalLogVersionedStoreChannel(
+                storeChannel, version, formatVersion, logFile, nativeChannelAccessor, databaseTracer);
     }
 
     public PhysicalLogVersionedStoreChannel openLogChannel(long version) throws IOException {
@@ -99,28 +93,24 @@ public class TransactionLogChannelAllocator {
         StoreChannel rawChannel = null;
         try {
             rawChannel = fileSystem.read(fileToOpen);
-            try (var scopedBuffer =
-                    new HeapScopedBuffer(CURRENT_FORMAT_LOG_HEADER_SIZE, logFilesContext.getMemoryTracker())) {
-                var buffer = scopedBuffer.getBuffer();
-                LogHeader header = readLogHeader(buffer, rawChannel, true, fileToOpen);
-                if ((header == null) || (header.getLogVersion() != version)) {
-                    throw new IllegalStateException(format(
-                            "Unexpected log file header. Expected header version: %d, actual header: %s",
-                            version, header != null ? header.toString() : "null header."));
-                }
-                var versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
-                        rawChannel,
-                        version,
-                        header.getLogFormatVersion(),
-                        fileToOpen,
-                        nativeChannelAccessor,
-                        databaseTracer,
-                        raw);
-                if (!raw) {
-                    nativeChannelAccessor.adviseSequentialAccessAndKeepInCache(rawChannel, version);
-                }
-                return versionedStoreChannel;
+            LogHeader header = readLogHeader(rawChannel, true, fileToOpen, logFilesContext.getMemoryTracker());
+            if ((header == null) || (header.getLogVersion() != version)) {
+                throw new IllegalStateException(format(
+                        "Unexpected log file header. Expected header version: %d, actual header: %s",
+                        version, header != null ? header.toString() : "null header."));
             }
+            var versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
+                    rawChannel,
+                    version,
+                    header.getLogFormatVersion(),
+                    fileToOpen,
+                    nativeChannelAccessor,
+                    databaseTracer,
+                    raw);
+            if (!raw) {
+                nativeChannelAccessor.adviseSequentialAccessAndKeepInCache(rawChannel, version);
+            }
+            return versionedStoreChannel;
         } catch (NoSuchFileException cause) {
             throw (NoSuchFileException)
                     new NoSuchFileException(fileToOpen.toAbsolutePath().toString()).initCause(cause);

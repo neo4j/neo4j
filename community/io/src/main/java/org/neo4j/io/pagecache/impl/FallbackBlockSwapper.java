@@ -20,6 +20,7 @@
 package org.neo4j.io.pagecache.impl;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
@@ -40,7 +41,7 @@ final class FallbackBlockSwapper implements BlockSwapper {
     @Override
     public int swapIn(StoreChannel channel, long bufferAddress, long fileOffset, int bufferSize) throws IOException {
         int readTotal = 0;
-        try (var scopedBuffer = new HeapScopedBuffer(bufferSize, memoryTracker)) {
+        try (var scopedBuffer = new HeapScopedBuffer(bufferSize, ByteOrder.LITTLE_ENDIAN, memoryTracker)) {
             var buffer = scopedBuffer.getBuffer();
             int read;
             do {
@@ -73,7 +74,7 @@ final class FallbackBlockSwapper implements BlockSwapper {
     @Override
     public void swapOut(StoreChannel channel, long bufferAddress, long fileOffset, int bufferLength)
             throws IOException {
-        try (var scopedBuffer = new HeapScopedBuffer(bufferLength, memoryTracker)) {
+        try (var scopedBuffer = new HeapScopedBuffer(bufferLength, ByteOrder.LITTLE_ENDIAN, memoryTracker)) {
             var buffer = scopedBuffer.getBuffer();
 
             for (int i = 0; i < bufferLength; i++) {

@@ -24,6 +24,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.ALWAYS;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.common.EntityType;
@@ -440,7 +441,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     private ArrayValue array(RecordPropertyCursor cursor, long reference, PageCursor page) {
         propertyStore.loadArray(reference, cursor, page, loadMode.orElse(ALWAYS));
         buffer.flip();
-        return PropertyStore.readArrayFromBuffer(buffer);
+        return propertyStore.readArrayFromBuffer(buffer);
     }
 
     public void setScopedBuffer(ScopedBuffer scopedBuffer) {
@@ -450,7 +451,8 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
 
     public ByteBuffer getOrCreateClearBuffer() {
         if (buffer == null) {
-            setScopedBuffer(new HeapScopedBuffer(DEFAULT_PROPERTY_BUFFER_CAPACITY, memoryTracker));
+            setScopedBuffer(
+                    new HeapScopedBuffer(DEFAULT_PROPERTY_BUFFER_CAPACITY, ByteOrder.LITTLE_ENDIAN, memoryTracker));
         } else {
             buffer.clear();
         }
@@ -463,7 +465,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
         int newCapacity = Math.max(oldCapacity, minAdditionalCapacity) + oldCapacity;
 
         var oldScopedBuffer = scopedBuffer;
-        setScopedBuffer(new HeapScopedBuffer(newCapacity, memoryTracker));
+        setScopedBuffer(new HeapScopedBuffer(newCapacity, ByteOrder.LITTLE_ENDIAN, memoryTracker));
         buffer.put(oldScopedBuffer.getBuffer());
         oldScopedBuffer.close();
 

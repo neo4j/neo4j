@@ -27,6 +27,7 @@ import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
 import static org.neo4j.memory.MemoryPools.NO_TRACKING;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.junit.jupiter.api.Test;
 import org.neo4j.memory.LocalMemoryTracker;
 
@@ -34,7 +35,7 @@ class ByteBuffersTest {
     @Test
     void trackMemoryAllocationsForNativeByteBuffers() {
         var memoryTracker = new LocalMemoryTracker(NO_TRACKING, 100, 0, null);
-        var byteBuffer = allocateDirect(30, memoryTracker);
+        var byteBuffer = allocateDirect(30, ByteOrder.LITTLE_ENDIAN, memoryTracker);
         try {
             assertEquals(0, memoryTracker.estimatedHeapMemory());
             assertEquals(30, memoryTracker.usedNativeMemory());
@@ -49,7 +50,7 @@ class ByteBuffersTest {
     @Test
     void trackMemoryAllocationsForHeapByteBuffers() {
         var memoryTracker = new LocalMemoryTracker(NO_TRACKING, 100, 0, null);
-        var byteBuffer = allocate(30, memoryTracker);
+        var byteBuffer = allocate(30, ByteOrder.LITTLE_ENDIAN, memoryTracker);
         try {
             assertEquals(30, memoryTracker.estimatedHeapMemory());
             assertEquals(0, memoryTracker.usedNativeMemory());
@@ -64,7 +65,7 @@ class ByteBuffersTest {
     @Test
     void byteBufferMustThrowOutOfBoundsAfterRelease() {
         var tracker = new LocalMemoryTracker();
-        ByteBuffer buffer = ByteBuffers.allocateDirect(Long.BYTES, tracker);
+        ByteBuffer buffer = allocateDirect(Long.BYTES, ByteOrder.LITTLE_ENDIAN, tracker);
         buffer.get(0);
         ByteBuffers.releaseBuffer(buffer, tracker);
         assertThrows(IndexOutOfBoundsException.class, () -> buffer.get(0));
@@ -73,7 +74,7 @@ class ByteBuffersTest {
     @Test
     void heapByteBufferMustThrowOutOfBoundsAfterRelease() {
         var tracker = new LocalMemoryTracker();
-        ByteBuffer buffer = ByteBuffers.allocateDirect(Long.BYTES, tracker);
+        ByteBuffer buffer = allocateDirect(Long.BYTES, ByteOrder.LITTLE_ENDIAN, tracker);
         buffer.get(0);
         ByteBuffers.releaseBuffer(buffer, tracker);
         assertThrows(IndexOutOfBoundsException.class, () -> buffer.get(0));
@@ -82,7 +83,7 @@ class ByteBuffersTest {
     @Test
     void doubleFreeOfByteBufferIsOkay() {
         var tracker = new LocalMemoryTracker();
-        ByteBuffer buffer = ByteBuffers.allocate(Long.BYTES, tracker);
+        ByteBuffer buffer = allocate(Long.BYTES, ByteOrder.LITTLE_ENDIAN, tracker);
         ByteBuffers.releaseBuffer(buffer, tracker);
         ByteBuffers.releaseBuffer(buffer, tracker); // This must not throw.
         assertThrows(IndexOutOfBoundsException.class, () -> buffer.get(0)); // And this still throws.
@@ -91,7 +92,7 @@ class ByteBuffersTest {
     @Test
     void doubleFreeOfHeapByteBufferIsOkay() {
         var tracker = new LocalMemoryTracker();
-        ByteBuffer buffer = ByteBuffers.allocate(Long.BYTES, tracker);
+        ByteBuffer buffer = allocate(Long.BYTES, ByteOrder.LITTLE_ENDIAN, tracker);
         ByteBuffers.releaseBuffer(buffer, tracker);
         ByteBuffers.releaseBuffer(buffer, tracker); // This must not throw.
         assertThrows(IndexOutOfBoundsException.class, () -> buffer.get(0)); // And this still throws.

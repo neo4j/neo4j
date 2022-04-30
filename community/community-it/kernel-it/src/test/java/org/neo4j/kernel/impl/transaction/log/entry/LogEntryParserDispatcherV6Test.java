@@ -65,7 +65,7 @@ class LogEntryParserDispatcherV6Test {
     @Test
     void shouldParserOnePhaseCommitEntry() throws IOException {
         // given
-        final LogEntryCommit commit = new LogEntryCommit(version, 42, 21, -668317999);
+        final LogEntryCommit commit = new LogEntryCommit(version, 42, 21, -361070784);
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.putLong(commit.getTxId());

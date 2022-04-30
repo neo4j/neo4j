@@ -25,6 +25,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
@@ -130,7 +131,8 @@ class EphemeralFileChannel extends FileChannel implements EphemeralPositionable 
         position(position);
         try {
             long transferred = 0;
-            ByteBuffer intermediary = ByteBuffers.allocate(toIntExact(ByteUnit.MebiByte.toBytes(8)), INSTANCE);
+            ByteBuffer intermediary =
+                    ByteBuffers.allocate(toIntExact(ByteUnit.MebiByte.toBytes(8)), ByteOrder.LITTLE_ENDIAN, INSTANCE);
             while (transferred < count) {
                 intermediary.clear();
                 intermediary.limit((int) min(intermediary.capacity(), count - transferred));

@@ -27,6 +27,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -156,8 +157,8 @@ class RecoverIndexDropIT {
             LogPosition position = logEntryReader.lastPosition();
             StoreChannel storeChannel = fs.write(logFile.getLogFileForVersion(logFile.getHighestLogVersion()));
             storeChannel.position(position.getByteOffset());
-            try (PhysicalFlushableChecksumChannel writeChannel =
-                    new PhysicalFlushableChecksumChannel(storeChannel, new HeapScopedBuffer(100, INSTANCE))) {
+            try (var writeChannel = new PhysicalFlushableChecksumChannel(
+                    storeChannel, new HeapScopedBuffer(100, ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
                 new LogEntryWriter<>(writeChannel, KernelVersion.LATEST).serialize(dropTransaction);
             }
         }

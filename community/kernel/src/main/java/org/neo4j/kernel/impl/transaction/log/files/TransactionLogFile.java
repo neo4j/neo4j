@@ -28,6 +28,7 @@ import java.io.Flushable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -142,7 +143,9 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         seekChannelPosition(currentLogVersion);
 
         writer = new PositionAwarePhysicalFlushableChecksumChannel(
-                channel, new NativeScopedBuffer(context.getConfig().get(transaction_log_buffer_size), memoryTracker));
+                channel,
+                new NativeScopedBuffer(
+                        context.getConfig().get(transaction_log_buffer_size), ByteOrder.LITTLE_ENDIAN, memoryTracker));
         transactionLogWriter =
                 new TransactionLogWriter(writer, new DbmsLogEntryWriterFactory(context.getKernelVersionProvider()));
     }
@@ -345,7 +348,8 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
                 return false;
             }
             try (StoreChannel channel = fileSystem.read(logFile)) {
-                try (var scopedBuffer = new HeapScopedBuffer(headerSize + 1, context.getMemoryTracker())) {
+                try (var scopedBuffer =
+                        new HeapScopedBuffer(headerSize + 1, ByteOrder.LITTLE_ENDIAN, context.getMemoryTracker())) {
                     var buffer = scopedBuffer.getBuffer();
                     channel.readAll(buffer);
                     buffer.flip();

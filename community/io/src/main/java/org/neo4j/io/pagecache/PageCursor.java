@@ -68,8 +68,6 @@ import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
  */
 public abstract class PageCursor implements AutoCloseable {
     public static final long UNBOUND_PAGE_ID = -1;
-    public static final int UNBOUND_PAYLOAD_SIZE = -1;
-    public static final int UNBOUND_PAGE_SIZE = -1;
 
     /**
      * Get the signed byte at the current page offset, and then increment the offset by one.

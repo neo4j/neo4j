@@ -30,7 +30,7 @@ public class LogHeader {
     /**
      * The size of the version section of the header
      */
-    public static final int LOG_HEADER_VERSION_SIZE = Long.BYTES;
+    static final int LOG_HEADER_VERSION_SIZE = Long.BYTES;
 
     private final byte logFormatVersion;
     private final long logVersion;

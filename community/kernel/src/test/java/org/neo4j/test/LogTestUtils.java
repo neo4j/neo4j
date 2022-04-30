@@ -20,8 +20,6 @@
 package org.neo4j.test;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.EMPTY_ACCESSOR;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
@@ -29,7 +27,6 @@ import java.nio.file.Path;
 import java.util.function.Predicate;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
@@ -82,29 +79,24 @@ public final class LogTestUtils {
             LogFiles logFiles, FileSystemAbstraction fileSystem, LogHook<LogEntry> filter) throws IOException {
         Path[] files = logFiles.logFiles();
         for (Path file : files) {
-            filterTransactionLogFile(fileSystem, file, filter, EMPTY_ACCESSOR);
+            filterTransactionLogFile(fileSystem, file, filter);
         }
 
         return files;
     }
 
     private static void filterTransactionLogFile(
-            FileSystemAbstraction fileSystem,
-            Path file,
-            final LogHook<LogEntry> filter,
-            ChannelNativeAccessor channelNativeAccessor)
-            throws IOException {
+            FileSystemAbstraction fileSystem, Path file, final LogHook<LogEntry> filter) throws IOException {
         filter.file(file);
         try (StoreChannel in = fileSystem.read(file)) {
-            LogHeader logHeader =
-                    readLogHeader(ByteBuffers.allocate(CURRENT_FORMAT_LOG_HEADER_SIZE, INSTANCE), in, true, file);
+            LogHeader logHeader = readLogHeader(in, true, file, INSTANCE);
             assert logHeader != null : "Looks like we tried to read a log header of an empty pre-allocated file.";
             PhysicalLogVersionedStoreChannel inChannel = new PhysicalLogVersionedStoreChannel(
                     in,
                     logHeader.getLogVersion(),
                     logHeader.getLogFormatVersion(),
                     file,
-                    channelNativeAccessor,
+                    ChannelNativeAccessor.EMPTY_ACCESSOR,
                     DatabaseTracer.NULL);
             ReadableLogChannel inBuffer = new ReadAheadLogChannel(inChannel, INSTANCE);
             LogEntryReader entryReader = new VersionAwareLogEntryReader(new TestCommandReaderFactory());

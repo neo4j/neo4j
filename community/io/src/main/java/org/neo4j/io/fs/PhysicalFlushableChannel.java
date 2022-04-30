@@ -26,6 +26,7 @@ import static org.neo4j.io.memory.HeapScopedBuffer.EMPTY_BUFFER;
 import java.io.Flushable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.ClosedChannelException;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.memory.HeapScopedBuffer;
@@ -48,7 +49,7 @@ public class PhysicalFlushableChannel implements FlushableChannel {
 
     @VisibleForTesting
     public PhysicalFlushableChannel(StoreChannel channel, MemoryTracker memoryTracker) {
-        this(channel, new HeapScopedBuffer(DEFAULT_BUFFER_SIZE, memoryTracker));
+        this(channel, new HeapScopedBuffer(DEFAULT_BUFFER_SIZE, ByteOrder.LITTLE_ENDIAN, memoryTracker));
     }
 
     public PhysicalFlushableChannel(StoreChannel channel, ScopedBuffer scopedBuffer) {

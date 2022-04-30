@@ -33,6 +33,7 @@ import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -55,7 +56,8 @@ class ByteBufferFactoryTest {
         // given
         ByteBufferFactory.Allocator allocator = mock(ByteBufferFactory.Allocator.class);
         when(allocator.allocate(anyInt(), any()))
-                .thenAnswer(invocationOnMock -> new HeapScopedBuffer(invocationOnMock.getArgument(0), INSTANCE));
+                .thenAnswer(invocationOnMock ->
+                        new HeapScopedBuffer(invocationOnMock.getArgument(0), ByteOrder.LITTLE_ENDIAN, INSTANCE));
         ByteBufferFactory factory = new ByteBufferFactory(() -> allocator, 100);
 
         // when doing some allocations that are counted as global

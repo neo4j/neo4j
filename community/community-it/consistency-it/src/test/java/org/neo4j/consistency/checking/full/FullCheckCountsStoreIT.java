@@ -29,6 +29,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -113,7 +114,7 @@ public class FullCheckCountsStoreIT {
     private static boolean corruptFileIfExists(Path file) throws IOException {
         if (Files.exists(file)) {
             try (FileChannel channel = FileChannel.open(file, READ, WRITE)) {
-                ByteBuffer buffer = ByteBuffers.allocate(30, INSTANCE);
+                ByteBuffer buffer = ByteBuffers.allocate(30, ByteOrder.LITTLE_ENDIAN, INSTANCE);
                 while (buffer.hasRemaining()) {
                     buffer.put((byte) 9);
                 }

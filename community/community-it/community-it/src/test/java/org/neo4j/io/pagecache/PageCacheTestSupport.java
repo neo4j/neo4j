@@ -25,6 +25,7 @@ import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
@@ -116,7 +117,7 @@ public abstract class PageCacheTestSupport<T extends PageCache> {
         recordCount = 5 * maxPages * recordsPerFilePage;
         filePayloadSize = recordsPerFilePage * recordSize;
         filePageSize = filePayloadSize + reservedBytes;
-        bufA = ByteBuffers.allocate(recordSize, INSTANCE);
+        bufA = ByteBuffers.allocate(recordSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         return pageCache;
     }
 
@@ -166,22 +167,25 @@ public abstract class PageCacheTestSupport<T extends PageCache> {
      * This does the do-while-retry loop internally.
      */
     protected void verifyRecordsMatchExpected(PageCursor cursor) throws IOException {
-        ByteBuffer expectedPageContents = ByteBuffers.allocate(filePageSize, INSTANCE);
-        ByteBuffer actualPageContents = ByteBuffers.allocate(filePageSize, INSTANCE);
-        byte[] record = new byte[recordSize];
+        ByteBuffer expectedPageContents = ByteBuffers.allocate(filePageSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
+        ByteBuffer actualPageContents = ByteBuffers.allocate(filePageSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
+        int recordInPart;
+        byte[] recordBytesPart = new byte[recordSize - Integer.BYTES];
         long pageId = cursor.getCurrentPageId();
         for (int i = 0; i < recordsPerFilePage; i++) {
             long recordId = (pageId * recordsPerFilePage) + i;
             expectedPageContents.position(recordSize * i);
-            ByteBuffer slice = expectedPageContents.slice();
+            ByteBuffer slice = expectedPageContents.slice().order(ByteOrder.LITTLE_ENDIAN);
             slice.limit(recordSize);
             generateRecordForId(recordId, slice);
             do {
                 cursor.setOffset(recordSize * i);
-                cursor.getBytes(record);
+                recordInPart = cursor.getInt();
+                cursor.getBytes(recordBytesPart);
             } while (cursor.shouldRetry());
             actualPageContents.position(recordSize * i);
-            actualPageContents.put(record);
+            actualPageContents.putInt(recordInPart);
+            actualPageContents.put(recordBytesPart);
         }
         assertRecords(pageId, actualPageContents, expectedPageContents);
     }
@@ -192,11 +196,11 @@ public abstract class PageCacheTestSupport<T extends PageCache> {
      * This does the do-while-retry loop internally.
      */
     protected void verifyRecordsMatchExpected(long pageId, int offset, ByteBuffer actualPageContents) {
-        ByteBuffer expectedPageContents = ByteBuffers.allocate(filePayloadSize, INSTANCE);
+        ByteBuffer expectedPageContents = ByteBuffers.allocate(filePayloadSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         for (int i = 0; i < recordsPerFilePage; i++) {
             long recordId = (pageId * recordsPerFilePage) + i;
             expectedPageContents.position(recordSize * i);
-            ByteBuffer slice = expectedPageContents.slice();
+            ByteBuffer slice = expectedPageContents.slice().order(ByteOrder.LITTLE_ENDIAN);
             slice.limit(recordSize);
             generateRecordForId(recordId, slice);
         }
@@ -250,7 +254,7 @@ public abstract class PageCacheTestSupport<T extends PageCache> {
     protected static void generateFileWithRecords(
             WritableByteChannel channel, int recordCount, int recordSize, int recordsPerFilePage, int reservedBytes)
             throws IOException {
-        ByteBuffer buf = ByteBuffers.allocate(recordSize, INSTANCE);
+        ByteBuffer buf = ByteBuffers.allocate(recordSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         for (int i = 0; i < recordCount; i++) {
             if (i % recordsPerFilePage == 0) {
                 writeBuffer(channel, ByteBuffer.allocate(reservedBytes));
@@ -285,8 +289,8 @@ public abstract class PageCacheTestSupport<T extends PageCache> {
     }
 
     protected void verifyRecordsInFile(StoreChannel channel, int recordCount) throws IOException {
-        ByteBuffer buf = ByteBuffers.allocate(recordSize, INSTANCE);
-        ByteBuffer observation = ByteBuffers.allocate(recordSize, INSTANCE);
+        ByteBuffer buf = ByteBuffers.allocate(recordSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
+        ByteBuffer observation = ByteBuffers.allocate(recordSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         for (int i = 0; i < recordCount; i++) {
             if (i % recordsPerFilePage == 0) {
                 channel.position(channel.position() + reservedBytes);

@@ -26,6 +26,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.zip.Checksum;
@@ -52,8 +53,8 @@ class PhysicalFlushableChecksumChannelTest {
         final Path firstFile = directory.homePath().resolve("file1");
         StoreChannel storeChannel = fileSystem.write(firstFile);
         int channelChecksum;
-        try (PhysicalFlushableChecksumChannel channel =
-                new PhysicalFlushableChecksumChannel(storeChannel, new HeapScopedBuffer(100, INSTANCE))) {
+        try (var channel = new PhysicalFlushableChecksumChannel(
+                storeChannel, new HeapScopedBuffer(100, ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
             channel.beginChecksum();
             channel.put((byte) 10);
             channelChecksum = channel.putChecksum();
@@ -65,7 +66,7 @@ class PhysicalFlushableChecksumChannelTest {
         try (InputStream in = Files.newInputStream(firstFile)) {
             in.read(writtenBytes);
         }
-        ByteBuffer buffer = ByteBuffer.wrap(writtenBytes);
+        ByteBuffer buffer = ByteBuffer.wrap(writtenBytes).order(ByteOrder.LITTLE_ENDIAN);
 
         Checksum checksum = CHECKSUM_FACTORY.get();
         checksum.update(10);
@@ -80,8 +81,8 @@ class PhysicalFlushableChecksumChannelTest {
         final Path firstFile = directory.homePath().resolve("file1");
         StoreChannel storeChannel = fileSystem.write(firstFile);
         int channelChecksum;
-        try (PhysicalFlushableChecksumChannel channel =
-                new PhysicalFlushableChecksumChannel(storeChannel, new HeapScopedBuffer(100, INSTANCE))) {
+        try (var channel = new PhysicalFlushableChecksumChannel(
+                storeChannel, new HeapScopedBuffer(100, ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
             channel.put((byte) 5);
             channel.beginChecksum();
             channel.put((byte) 10);
@@ -94,7 +95,7 @@ class PhysicalFlushableChecksumChannelTest {
         try (InputStream in = Files.newInputStream(firstFile)) {
             in.read(writtenBytes);
         }
-        ByteBuffer buffer = ByteBuffer.wrap(writtenBytes);
+        ByteBuffer buffer = ByteBuffer.wrap(writtenBytes).order(ByteOrder.LITTLE_ENDIAN);
 
         Checksum checksum = CHECKSUM_FACTORY.get();
         checksum.update(10);

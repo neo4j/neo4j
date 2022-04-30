@@ -38,7 +38,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -69,31 +68,6 @@ class LogHeaderWriterTest {
         expectedTxId = random.nextLong(0, Long.MAX_VALUE);
         expectedStoreId = new LegacyStoreId(random.nextLong(), random.nextLong(), random.nextLong());
         logHeader = new LogHeader(expectedLogVersion, expectedTxId, expectedStoreId);
-    }
-
-    @Test
-    void shouldWriteALogHeaderInTheGivenChannel() throws IOException {
-        // given
-        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
-
-        // when
-        writeLogHeader(channel, logHeader);
-
-        // then
-        long encodedLogVersions = channel.getLong();
-        assertEquals(encodeLogVersion(expectedLogVersion, CURRENT_LOG_FORMAT_VERSION), encodedLogVersions);
-
-        byte logFormatVersion = decodeLogFormatVersion(encodedLogVersions);
-        assertEquals(CURRENT_LOG_FORMAT_VERSION, logFormatVersion);
-
-        long logVersion = decodeLogVersion(encodedLogVersions);
-        assertEquals(expectedLogVersion, logVersion);
-
-        long txId = channel.getLong();
-        assertEquals(expectedTxId, txId);
-
-        LegacyStoreId storeId = new LegacyStoreId(channel.getLong(), channel.getLong(), channel.getLong());
-        assertEquals(expectedStoreId, storeId);
     }
 
     @Test

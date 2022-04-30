@@ -2130,7 +2130,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
 
             try (StoreChannel channel = fs.read(file("a"))) {
-                ByteBuffer bufB = ByteBuffers.allocate(recordSize, INSTANCE);
+                ByteBuffer bufB = ByteBuffers.allocate(recordSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
                 for (int i = 0; i < recordCount; i++) {
                     if (i % recordsPerFilePage == 0) {
                         channel.position(channel.position() + reservedBytes);
@@ -4345,7 +4345,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void copyToHeapByteBufferFromReadPageCursorMustCheckBounds() throws Exception {
         configureStandardPageCache();
-        ByteBuffer buffer = ByteBuffers.allocate(filePayloadSize, INSTANCE);
+        ByteBuffer buffer = ByteBuffers.allocate(filePayloadSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         Path file = file("a");
         generateFileWithRecords(file, recordsPerFilePage, recordSize, recordsPerFilePage, reservedBytes);
         try (PagedFile pf = map(file, filePageSize);
@@ -4358,7 +4358,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void copyToDirectByteBufferFromReadPageCursorMustCheckBounds() throws Exception {
         configureStandardPageCache();
-        ByteBuffer buffer = allocateDirect(filePayloadSize, INSTANCE);
+        ByteBuffer buffer = allocateDirect(filePayloadSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         try {
             Path file = file("a");
             generateFileWithRecords(file, recordsPerFilePage, recordSize, recordsPerFilePage, reservedBytes);
@@ -4375,7 +4375,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void copyToHeapByteBufferFromWritePageCursorMustCheckBounds() throws Exception {
         configureStandardPageCache();
-        ByteBuffer buffer = ByteBuffers.allocate(filePayloadSize, INSTANCE);
+        ByteBuffer buffer = ByteBuffers.allocate(filePayloadSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         Path file = file("a");
         generateFileWithRecords(file, recordsPerFilePage, recordSize, recordsPerFilePage, reservedBytes);
         try (PagedFile pf = map(file, filePageSize);
@@ -4388,7 +4388,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void copyToDirectByteBufferFromWritePageCursorMustCheckBounds() throws Exception {
         configureStandardPageCache();
-        ByteBuffer buffer = allocateDirect(filePayloadSize, INSTANCE);
+        ByteBuffer buffer = allocateDirect(filePayloadSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         try {
             Path file = file("a");
             generateFileWithRecords(file, recordsPerFilePage, recordSize, recordsPerFilePage, reservedBytes);
@@ -4471,7 +4471,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void copyToReadOnlyHeapByteBufferMustThrow() throws Exception {
         configureStandardPageCache();
-        ByteBuffer buf = ByteBuffers.allocate(filePageSize, INSTANCE).asReadOnlyBuffer();
+        ByteBuffer buf = ByteBuffers.allocate(filePageSize, ByteOrder.LITTLE_ENDIAN, INSTANCE)
+                .asReadOnlyBuffer();
         try (PagedFile pf = map(file("a"), filePageSize);
                 PageCursor cursor = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
             assertTrue(cursor.next());
@@ -4483,7 +4484,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void copyToReadOnlyDirectByteBufferMustThrow() throws Exception {
         configureStandardPageCache();
-        ByteBuffer allocation = allocateDirect(filePageSize, INSTANCE);
+        ByteBuffer allocation = allocateDirect(filePageSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         try {
             ByteBuffer buf = allocation.asReadOnlyBuffer();
             try (PagedFile pf = map(file("a"), filePageSize);

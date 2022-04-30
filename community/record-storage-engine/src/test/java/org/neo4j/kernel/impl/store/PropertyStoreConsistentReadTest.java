@@ -25,6 +25,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
+import java.nio.ByteOrder;
 import java.util.List;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.PageCursor;
@@ -66,7 +67,7 @@ class PropertyStoreConsistentReadTest extends RecordStoreConsistentReadTest<Prop
         PropertyBlock block = new PropertyBlock();
         DynamicRecordAllocator stringAllocator = new ReusableRecordsAllocator(64, new DynamicRecord(7));
         Value value = Values.of("a string too large to fit in the property block itself");
-        PropertyStore.encodeValue(block, 6, value, stringAllocator, null, NULL_CONTEXT, INSTANCE);
+        PropertyStore.encodeValue(block, 6, value, stringAllocator, null, NULL_CONTEXT, INSTANCE, ByteOrder.BIG_ENDIAN);
         if (light) {
             block.getValueRecords().clear();
         }

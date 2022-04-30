@@ -20,6 +20,7 @@
 package org.neo4j.io.bufferpool.impl;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
@@ -54,7 +55,7 @@ class Bucket {
             return idleBuffer.byteBuffer;
         }
 
-        return ByteBuffers.allocateDirect(bufferCapacity, memoryTracker);
+        return ByteBuffers.allocateDirect(bufferCapacity, ByteOrder.BIG_ENDIAN, memoryTracker);
     }
 
     void release(ByteBuffer buffer) {

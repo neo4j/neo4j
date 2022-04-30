@@ -33,6 +33,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -264,7 +265,8 @@ class TransactionLogFilesTest {
             throws IOException {
         try (StoreChannel storeChannel =
                 fileSystem.write(createTransactionLogFile(databaseLayout, getVersionedLogFileName(version)))) {
-            ByteBuffer byteBuffer = ByteBuffers.allocate(LOG_HEADER_SIZE_3_5 + bytesOfData, INSTANCE);
+            ByteBuffer byteBuffer =
+                    ByteBuffers.allocate(LOG_HEADER_SIZE_3_5 + bytesOfData, ByteOrder.LITTLE_ENDIAN, INSTANCE);
             while (byteBuffer.hasRemaining()) {
                 byteBuffer.put(LOG_VERSION_3_5);
             }

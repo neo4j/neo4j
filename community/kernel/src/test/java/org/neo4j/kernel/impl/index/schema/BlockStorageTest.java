@@ -35,6 +35,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.OtherThreadExecutor.command;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -389,7 +390,7 @@ class BlockStorageTest {
         try (BlockReader<MutableLong, MutableLong> reader = storage.reader(false)) {
             for (List<BlockEntry<MutableLong, MutableLong>> expectedBlock : expectedBlocks) {
                 try (BlockEntryReader<MutableLong, MutableLong> block =
-                        reader.nextBlock(new HeapScopedBuffer(1024, INSTANCE))) {
+                        reader.nextBlock(new HeapScopedBuffer(1024, ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
                     assertNotNull(block);
                     assertEquals(expectedBlock.size(), block.entryCount());
                     for (BlockEntry<MutableLong, MutableLong> expectedEntry : expectedBlock) {

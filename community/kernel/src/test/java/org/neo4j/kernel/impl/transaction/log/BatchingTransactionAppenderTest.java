@@ -46,6 +46,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 import java.io.Flushable;
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -243,7 +244,8 @@ class BatchingTransactionAppenderTest {
         long txId = 3;
         String failureMessage = "Forces a failure";
         FlushablePositionAwareChecksumChannel channel = spy(new PositionAwarePhysicalFlushableChecksumChannel(
-                mock(PhysicalLogVersionedStoreChannel.class), new HeapScopedBuffer(Long.BYTES * 2, INSTANCE)));
+                mock(PhysicalLogVersionedStoreChannel.class),
+                new HeapScopedBuffer(Long.BYTES * 2, ByteOrder.LITTLE_ENDIAN, INSTANCE)));
         IOException failure = new IOException(failureMessage);
         when(channel.putLong(anyLong())).thenThrow(failure);
         when(logFile.getTransactionLogWriter())

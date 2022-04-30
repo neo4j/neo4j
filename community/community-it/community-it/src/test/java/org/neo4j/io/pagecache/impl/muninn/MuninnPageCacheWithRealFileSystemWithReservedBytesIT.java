@@ -377,8 +377,8 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
 
             var heapBuffer =
                     ByteBuffers.allocate(writer.getPageSize(), ByteOrder.LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE);
-            var nativeBuffer = ByteBuffers.allocateDirect(writer.getPageSize(), EmptyMemoryTracker.INSTANCE)
-                    .order(ByteOrder.LITTLE_ENDIAN);
+            var nativeBuffer = ByteBuffers.allocateDirect(
+                    writer.getPageSize(), ByteOrder.LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE);
 
             try {
                 checkCopiedBuffer(writer, writtenValues, heapBuffer, writer.copyTo(0, heapBuffer));

@@ -33,6 +33,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -102,8 +103,8 @@ class PhysicalFlushableChannelTest {
                 storeChannel, 1, (byte) -1, firstFile, nativeChannelAccessor, databaseTracer);
         int length = 26_145;
         byte[] bytes;
-        try (PhysicalFlushableChannel channel =
-                new PhysicalFlushableChannel(versionedStoreChannel, new HeapScopedBuffer(100, INSTANCE))) {
+        try (PhysicalFlushableChannel channel = new PhysicalFlushableChannel(
+                versionedStoreChannel, new HeapScopedBuffer(100, ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
             bytes = generateBytes(length);
             channel.put(bytes, length);
         }
@@ -191,8 +192,8 @@ class PhysicalFlushableChannelTest {
         StoreChannel storeChannel = fileSystem.write(firstFile);
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
                 storeChannel, 1, (byte) -1, firstFile, nativeChannelAccessor, databaseTracer);
-        PhysicalFlushableLogChannel channel =
-                new PhysicalFlushableLogChannel(versionedStoreChannel, new HeapScopedBuffer(100, INSTANCE));
+        PhysicalFlushableLogChannel channel = new PhysicalFlushableLogChannel(
+                versionedStoreChannel, new HeapScopedBuffer(100, ByteOrder.LITTLE_ENDIAN, INSTANCE));
 
         // WHEN writing a transaction, of sorts
         byte byteValue = (byte) 4;
@@ -242,7 +243,7 @@ class PhysicalFlushableChannelTest {
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
                 storeChannel, 1, (byte) -1, file, nativeChannelAccessor, databaseTracer);
         try (var channel = new PositionAwarePhysicalFlushableChecksumChannel(
-                versionedStoreChannel, new NativeScopedBuffer(1024, INSTANCE))) {
+                versionedStoreChannel, new NativeScopedBuffer(1024, ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
             LogPosition initialPosition = channel.getCurrentPosition();
 
             // WHEN
@@ -312,7 +313,7 @@ class PhysicalFlushableChannelTest {
 
     private ByteBuffer readFile(Path file) throws IOException {
         try (StoreChannel channel = fileSystem.read(file)) {
-            ByteBuffer buffer = ByteBuffers.allocate((int) channel.size(), INSTANCE);
+            ByteBuffer buffer = ByteBuffers.allocate((int) channel.size(), ByteOrder.LITTLE_ENDIAN, INSTANCE);
             channel.readAll(buffer);
             buffer.flip();
             return buffer;
@@ -321,25 +322,28 @@ class PhysicalFlushableChannelTest {
 
     private static Stream<Arguments> bytesToChannelParameters() {
         return Stream.of(
-                Arguments.of(128, new HeapScopedBuffer(128, INSTANCE)),
-                Arguments.of(256, new HeapScopedBuffer(128, INSTANCE)),
-                Arguments.of(258, new HeapScopedBuffer(128, INSTANCE)),
-                Arguments.of(512, new HeapScopedBuffer(128, INSTANCE)),
-                Arguments.of(12, new HeapScopedBuffer(512, INSTANCE)),
-                Arguments.of(120, new HeapScopedBuffer(512, INSTANCE)),
-                Arguments.of(1200, new HeapScopedBuffer(512, INSTANCE)),
-                Arguments.of(512 * 3 + 1, new HeapScopedBuffer(512, INSTANCE)),
-                Arguments.of(512 * 3 - 1, new HeapScopedBuffer(512, INSTANCE)),
-                Arguments.of((int) kibiBytes(24), new HeapScopedBuffer(512, INSTANCE)),
-                Arguments.of((int) kibiBytes(1024), new HeapScopedBuffer(512, INSTANCE)),
-                Arguments.of((int) kibiBytes(5024), new HeapScopedBuffer(512, INSTANCE)),
-                Arguments.of((int) kibiBytes(10024), new HeapScopedBuffer(512, INSTANCE)),
-                Arguments.of((int) kibiBytes(10024), new HeapScopedBuffer(1024, INSTANCE)),
-                Arguments.of((int) kibiBytes(11024), new HeapScopedBuffer(1024, INSTANCE)),
-                Arguments.of((int) kibiBytes(11424), new HeapScopedBuffer(1024, INSTANCE)),
+                Arguments.of(128, new HeapScopedBuffer(128, ByteOrder.LITTLE_ENDIAN, INSTANCE)),
+                Arguments.of(256, new HeapScopedBuffer(128, ByteOrder.LITTLE_ENDIAN, INSTANCE)),
+                Arguments.of(258, new HeapScopedBuffer(128, ByteOrder.LITTLE_ENDIAN, INSTANCE)),
+                Arguments.of(512, new HeapScopedBuffer(128, ByteOrder.LITTLE_ENDIAN, INSTANCE)),
+                Arguments.of(12, new HeapScopedBuffer(512, ByteOrder.LITTLE_ENDIAN, INSTANCE)),
+                Arguments.of(120, new HeapScopedBuffer(512, ByteOrder.LITTLE_ENDIAN, INSTANCE)),
+                Arguments.of(1200, new HeapScopedBuffer(512, ByteOrder.LITTLE_ENDIAN, INSTANCE)),
+                Arguments.of(512 * 3 + 1, new HeapScopedBuffer(512, ByteOrder.LITTLE_ENDIAN, INSTANCE)),
+                Arguments.of(512 * 3 - 1, new HeapScopedBuffer(512, ByteOrder.LITTLE_ENDIAN, INSTANCE)),
+                Arguments.of((int) kibiBytes(24), new HeapScopedBuffer(512, ByteOrder.LITTLE_ENDIAN, INSTANCE)),
+                Arguments.of((int) kibiBytes(1024), new HeapScopedBuffer(512, ByteOrder.LITTLE_ENDIAN, INSTANCE)),
+                Arguments.of((int) kibiBytes(5024), new HeapScopedBuffer(512, ByteOrder.LITTLE_ENDIAN, INSTANCE)),
+                Arguments.of((int) kibiBytes(10024), new HeapScopedBuffer(512, ByteOrder.LITTLE_ENDIAN, INSTANCE)),
+                Arguments.of((int) kibiBytes(10024), new HeapScopedBuffer(1024, ByteOrder.LITTLE_ENDIAN, INSTANCE)),
+                Arguments.of((int) kibiBytes(11024), new HeapScopedBuffer(1024, ByteOrder.LITTLE_ENDIAN, INSTANCE)),
+                Arguments.of((int) kibiBytes(11424), new HeapScopedBuffer(1024, ByteOrder.LITTLE_ENDIAN, INSTANCE)),
                 Arguments.of(
                         (int) bytes(ThreadLocalRandom.current().nextInt(1024, (int) mebiBytes(100))),
-                        new HeapScopedBuffer(ThreadLocalRandom.current().nextInt(128, (int) mebiBytes(2)), INSTANCE)));
+                        new HeapScopedBuffer(
+                                ThreadLocalRandom.current().nextInt(128, (int) mebiBytes(2)),
+                                ByteOrder.LITTLE_ENDIAN,
+                                INSTANCE)));
     }
 
     private static byte[] generateBytes(int length) {

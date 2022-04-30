@@ -29,6 +29,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -136,7 +137,7 @@ public class TransportUnauthenticatedConnectionErrorIT extends AbstractBoltTrans
         initParameters(connectionClass, neo4jPack, name);
 
         // Given half written bolt handshake message
-        ByteBuffer bb = ByteBuffers.allocate(Integer.BYTES, INSTANCE);
+        ByteBuffer bb = ByteBuffers.allocate(Integer.BYTES, ByteOrder.BIG_ENDIAN, INSTANCE);
         bb.putInt(0x6060B017);
         // When
         connection.connect(address).send(bb.array());

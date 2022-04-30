@@ -29,6 +29,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
@@ -110,7 +111,7 @@ class KernelDiagnosticsTest {
     private Path file(Path parent, String name, int size) throws IOException {
         Path file = parent.resolve(name);
         try (StoreChannel channel = fs.write(file)) {
-            ByteBuffer buffer = ByteBuffers.allocate(size, INSTANCE);
+            ByteBuffer buffer = ByteBuffers.allocate(size, ByteOrder.LITTLE_ENDIAN, INSTANCE);
             buffer.position(size).flip();
             channel.writeAll(buffer);
         }

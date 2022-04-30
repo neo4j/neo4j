@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
@@ -35,7 +34,7 @@ import org.neo4j.values.storable.Value;
 public class PropertyCreator {
     private final DynamicRecordAllocator stringRecordAllocator;
     private final DynamicRecordAllocator arrayRecordAllocator;
-    private final IdSequence propertyRecordIdGenerator;
+    private final PropertyStore propertyStore;
     private final PropertyTraverser traverser;
     private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
@@ -57,13 +56,13 @@ public class PropertyCreator {
     PropertyCreator(
             DynamicRecordAllocator stringRecordAllocator,
             DynamicRecordAllocator arrayRecordAllocator,
-            IdSequence propertyRecordIdGenerator,
+            PropertyStore propertyStore,
             PropertyTraverser traverser,
             CursorContext cursorContext,
             MemoryTracker memoryTracker) {
         this.stringRecordAllocator = stringRecordAllocator;
         this.arrayRecordAllocator = arrayRecordAllocator;
-        this.propertyRecordIdGenerator = propertyRecordIdGenerator;
+        this.propertyStore = propertyStore;
         this.traverser = traverser;
         this.cursorContext = cursorContext;
         this.memoryTracker = memoryTracker;
@@ -147,7 +146,7 @@ public class PropertyCreator {
         if (freeHostProxy == null) {
             // We couldn't find free space along the way, so create a new host record
             freeHost = propertyRecords
-                    .create(propertyRecordIdGenerator.nextId(cursorContext), primitive, cursorContext)
+                    .create(propertyStore.nextId(cursorContext), primitive, cursorContext)
                     .forChangingData();
             freeHost.setInUse(true);
             if (primitive.getNextProp() != Record.NO_NEXT_PROPERTY.intValue()) {
@@ -200,7 +199,7 @@ public class PropertyCreator {
 
     private PropertyBlock encodePropertyValue(int propertyKey, Value value) {
         PropertyBlock block = new PropertyBlock();
-        PropertyStore.encodeValue(
+        propertyStore.encodeValue(
                 block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator, cursorContext, memoryTracker);
         return block;
     }

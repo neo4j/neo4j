@@ -24,6 +24,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.io.memory.ByteBuffers;
@@ -51,7 +52,7 @@ public class UnixDomainSocketConnection implements TransportConnection {
 
     @Override
     public byte[] recv(int length) throws IOException {
-        ByteBuffer byteBuffer = ByteBuffers.allocate(length, INSTANCE);
+        ByteBuffer byteBuffer = ByteBuffers.allocate(length, ByteOrder.BIG_ENDIAN, INSTANCE);
         while (byteBuffer.hasRemaining()) {
             socketChannel.read(byteBuffer);
         }

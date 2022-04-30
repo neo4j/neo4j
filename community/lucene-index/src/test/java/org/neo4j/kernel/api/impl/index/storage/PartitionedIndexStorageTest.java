@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
@@ -215,7 +216,7 @@ class PartitionedIndexStorageTest {
     private void createRandomFile(Path rootFolder) throws IOException {
         Path file = rootFolder.resolve(RandomStringUtils.randomNumeric(5));
         try (StoreChannel channel = fs.write(file);
-                var scopedBuffer = new HeapScopedBuffer(100, EmptyMemoryTracker.INSTANCE)) {
+                var scopedBuffer = new HeapScopedBuffer(100, ByteOrder.LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE)) {
             channel.writeAll(scopedBuffer.getBuffer());
         }
     }

@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.PagedFile;
  * A CompositePageCursor is a seamless view over parts of two other PageCursors.
  * @see #compose(PageCursor, int, PageCursor, int)
  */
+// TODO little-endian format
 public final class CompositePageCursor extends PageCursor {
     private final PageCursor first;
     private final int firstBaseOffset;

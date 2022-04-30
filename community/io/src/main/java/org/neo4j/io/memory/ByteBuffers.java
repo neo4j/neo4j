@@ -28,16 +28,6 @@ public final class ByteBuffers {
     private ByteBuffers() {}
 
     /**
-     * Allocate on heap byte buffer with default byte order
-     * @param capacity byte buffer capacity
-     * @param memoryTracker underlying buffers allocation memory tracker
-     * @return byte buffer with requested size
-     */
-    public static ByteBuffer allocate(int capacity, MemoryTracker memoryTracker) {
-        return allocate(capacity, ByteOrder.BIG_ENDIAN, memoryTracker);
-    }
-
-    /**
      * Allocate on heap byte buffer with requested byte order
      * @param capacity byte buffer capacity
      * @param order byte buffer order
@@ -59,13 +49,15 @@ public final class ByteBuffers {
      *
      * Allocated memory will be tracked by global memory allocator.
      * @param capacity byte buffer capacity
+     * @param order byte order
+     * @param memoryTracker memory tracker
      * @return byte buffer with requested size
      */
-    public static ByteBuffer allocateDirect(int capacity, MemoryTracker memoryTracker) {
+    public static ByteBuffer allocateDirect(int capacity, ByteOrder order, MemoryTracker memoryTracker) {
         if (UnsafeUtil.unsafeByteBufferAccessAvailable()) {
-            return UnsafeUtil.allocateByteBuffer(capacity, memoryTracker);
+            return UnsafeUtil.allocateByteBuffer(capacity, memoryTracker).order(order);
         } else {
-            return allocateDirectFallback(capacity, memoryTracker);
+            return allocateDirectFallback(capacity, memoryTracker).order(order);
         }
     }
 

@@ -48,6 +48,7 @@ import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
@@ -129,7 +130,7 @@ public class RecordPropertyCursorTest {
         neoStores.close();
     }
 
-    @Test
+    @RepeatedTest(10)
     void shouldReadPropertyChain() {
         // given
         Value[] values = createValues();

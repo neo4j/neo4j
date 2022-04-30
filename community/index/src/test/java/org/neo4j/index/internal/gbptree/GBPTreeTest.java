@@ -47,6 +47,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -1864,7 +1865,7 @@ class GBPTreeTest {
         options.add(StandardOpenOption.READ);
         try (StoreChannel storeChannel = fileSystem.open(indexFile, options)) {
             int fileSize = (int) storeChannel.size();
-            ByteBuffer expectedContent = ByteBuffers.allocate(fileSize, INSTANCE);
+            ByteBuffer expectedContent = ByteBuffers.allocate(fileSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
             storeChannel.readAll(expectedContent);
             expectedContent.flip();
             byte[] bytes = new byte[fileSize];

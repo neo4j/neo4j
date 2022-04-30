@@ -23,6 +23,7 @@ import static java.lang.Math.toIntExact;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.impl.util.collection.Memory;
@@ -32,7 +33,7 @@ import org.neo4j.memory.MemoryTracker;
 class TestMemoryAllocator implements MemoryAllocator {
     @Override
     public Memory allocate(long size, boolean zeroed, MemoryTracker memoryTracker) {
-        final ByteBuffer buf = ByteBuffers.allocate(toIntExact(size), INSTANCE);
+        final ByteBuffer buf = ByteBuffers.allocate(toIntExact(size), ByteOrder.LITTLE_ENDIAN, INSTANCE);
         if (zeroed) {
             Arrays.fill(buf.array(), (byte) 0);
         }
