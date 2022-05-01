@@ -58,16 +58,21 @@ case class Trail(
     extends LogicalBinaryPlan(idGen) with ApplyPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
-  override val availableSymbols: Set[String] = left.availableSymbols ++ end + start ++ groupNodes.map(_.outerName) ++ groupRelationships.map(_.outerName)
+
+  override val availableSymbols: Set[String] =
+    left.availableSymbols ++ end + start ++ groupNodes.map(_.outerName) ++ groupRelationships.map(_.outerName)
 }
 
 case class Repetitions(min: Int, max: UpperBound)
+
 sealed trait UpperBound {
   def isGreaterThan(count: Int): Boolean
 }
+
 case object Unlimited extends UpperBound {
   override def isGreaterThan(count: Int): Boolean = true
 }
+
 case class Limited(n: Int) extends UpperBound {
   override def isGreaterThan(count: Int): Boolean = count < n
 }

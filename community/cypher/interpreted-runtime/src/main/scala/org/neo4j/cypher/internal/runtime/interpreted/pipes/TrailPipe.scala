@@ -167,19 +167,22 @@ case class TrailPipe(
                     outerRow.set(innerStart, VirtualValues.node(trailState.node))
                     val innerState = state.withInitialContext(outerRow)
                     innerResult = inner.createResults(innerState).filter(row => {
-                        var relationshipsAreUnique = true
-                        var i = 0
-                        while (relationshipsAreUnique && i < allRelationshipsArray.length) {
-                          val r = allRelationshipsArray(i)
-                          // TODO optimization: allRelationships is a superset of RHS rels, we should only check RHS rels as only they can change
-                          if (trailState.relationshipsSeen.contains(castOrFail[VirtualRelationshipValue](row.getByName(r)).id())) {
-                            relationshipsAreUnique = false
-                          }
-                          i += 1
+                      var relationshipsAreUnique = true
+                      var i = 0
+                      while (relationshipsAreUnique && i < allRelationshipsArray.length) {
+                        val r = allRelationshipsArray(i)
+                        // TODO optimization: allRelationships is a superset of RHS rels, we should only check RHS rels as only they can change
+                        if (
+                          trailState.relationshipsSeen.contains(
+                            castOrFail[VirtualRelationshipValue](row.getByName(r)).id()
+                          )
+                        ) {
+                          relationshipsAreUnique = false
                         }
-                        relationshipsAreUnique
+                        i += 1
                       }
-                    )
+                      relationshipsAreUnique
+                    })
                     produceNext()
                   } else {
                     None
