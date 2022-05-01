@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.collection.trackable.HeapTrackingArrayList
 import org.neo4j.collection.trackable.HeapTrackingCollections
 import org.neo4j.collection.trackable.HeapTrackingCollections.newArrayDeque
 import org.neo4j.collection.trackable.HeapTrackingLongHashSet
@@ -29,9 +30,11 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.PrefetchingIterator
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TrailPipe.emptyLists
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.memory.EmptyMemoryTracker
+import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualNodeValue
@@ -43,8 +46,8 @@ import scala.annotation.tailrec
 
 case class TrailState(
   node: Long,
-  groupNodes: Array[ListValue],
-  groupRelationships: Array[ListValue],
+  groupNodes: HeapTrackingArrayList[ListValue],
+  groupRelationships: HeapTrackingArrayList[ListValue],
   relationshipsSeen: HeapTrackingLongHashSet,
   iterations: Int
 ) extends AutoCloseable {
@@ -70,8 +73,8 @@ case class TrailPipe(
 
   private val groupNodeNames = groupNodes.toArray.sortBy(_.innerName)
   private val groupRelationshipNames = groupRelationships.toArray.sortBy(_.innerName)
-  private val emptyGroupNodes = Array.fill(groupNodeNames.length)(EMPTY_LIST)
-  private val emptyGroupRelationships = Array.fill(groupRelationshipNames.length)(EMPTY_LIST)
+  private val emptyGroupNodes = emptyLists(groupNodes.size)
+  private val emptyGroupRelationships = emptyLists(groupRelationships.size)
   private val allRelationshipsArray = allRelationships.toArray
 
   override protected def internalCreateResults(
@@ -120,8 +123,9 @@ case class TrailPipe(
                   } else if (innerResult.hasNext) {
                     val row = innerResult.next()
                     val innerEndNode = castOrFail[VirtualNodeValue](row.getByName(innerEnd))
-                    val newGroupNodes = computeGroupVariables(groupNodeNames, trailState.groupNodes, row)
-                    val newGroupRels = computeGroupVariables(groupRelationshipNames, trailState.groupRelationships, row)
+                    val newGroupNodes = computeGroupVariables(groupNodeNames, trailState.groupNodes, row, tracker)
+                    val newGroupRels =
+                      computeGroupVariables(groupRelationshipNames, trailState.groupRelationships, row, tracker)
                     if (repetitions.max.isGreaterThan(trailState.iterations)) {
                       val newSet = HeapTrackingCollections.newLongSet(tracker, trailState.relationshipsSeen)
 
@@ -192,33 +196,34 @@ case class TrailPipe(
 
   private def computeGroupVariables(
     groupNames: Array[GroupEntity],
-    groupVariables: Array[ListValue],
-    row: CypherRow
-  ): Array[ListValue] = {
-    val res = new Array[ListValue](groupNames.length)
+    groupVariables: HeapTrackingArrayList[ListValue],
+    row: CypherRow,
+    tracker: MemoryTracker
+  ): HeapTrackingArrayList[ListValue] = {
+    val res = HeapTrackingCollections.newArrayList[ListValue](groupNames.length, tracker)
     var i = 0
     while (i < groupNames.length) {
-      res(i) = groupVariables(i).append(row.getByName(groupNames(i).innerName))
+      res.add(groupVariables.get(i).append(row.getByName(groupNames(i).innerName)))
       i += 1
     }
     res
   }
 
   private def computeNewEntries(
-    newGroupNodes: Array[ListValue],
-    newGroupRels: Array[ListValue],
+    newGroupNodes: HeapTrackingArrayList[ListValue],
+    newGroupRels: HeapTrackingArrayList[ListValue],
     innerEndNode: VirtualNodeValue
   ): collection.Seq[(String, AnyValue)] = {
-    val newSize = newGroupNodes.length + newGroupRels.length + end.size
+    val newSize = newGroupNodes.size() + newGroupRels.size() + end.size
     val res = new Array[(String, AnyValue)](newSize)
     var i = 0
-    while (i < newGroupNodes.length) {
-      res(i) = (groupNodeNames(i).outerName, newGroupNodes(i))
+    while (i < newGroupNodes.size()) {
+      res(i) = (groupNodeNames(i).outerName, newGroupNodes.get(i))
       i += 1
     }
     var j = 0
-    while (j < newGroupRels.length) {
-      res(i) = (groupRelationshipNames(j).outerName, newGroupRels(j))
+    while (j < newGroupRels.size()) {
+      res(i) = (groupRelationshipNames(j).outerName, newGroupRels.get(j))
       j += 1
       i += 1
     }
@@ -228,5 +233,10 @@ case class TrailPipe(
 }
 
 object TrailPipe {
-  def EMPTY_SET: HeapTrackingLongHashSet = HeapTrackingCollections.newLongSet(EmptyMemoryTracker.INSTANCE, 0)
+
+  def emptyLists(size: Int): HeapTrackingArrayList[ListValue] = {
+    val emptyList = HeapTrackingCollections.newArrayList[ListValue](size, EmptyMemoryTracker.INSTANCE)
+    (0 until size).foreach(_ => emptyList.add(EMPTY_LIST))
+    emptyList
+  }
 }
