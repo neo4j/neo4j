@@ -42,10 +42,9 @@ public class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseabl
         return new HeapTrackingLongHashSet(memoryTracker);
     }
 
-    static HeapTrackingLongHashSet createLongHashSet(MemoryTracker memoryTracker, LongHashSet set) {
-        int capacity = smallestPowerOfTwoGreaterThan(set.size());
-        memoryTracker.allocateHeap(SHALLOW_SIZE + arrayHeapSize(capacity));
-        return new HeapTrackingLongHashSet(memoryTracker, capacity, set);
+    static HeapTrackingLongHashSet createLongHashSet(MemoryTracker memoryTracker, HeapTrackingLongHashSet set) {
+        memoryTracker.allocateHeap(SHALLOW_SIZE + arrayHeapSize(set.trackedCapacity));
+        return new HeapTrackingLongHashSet(memoryTracker, set);
     }
 
     static HeapTrackingLongHashSet createLongHashSet(MemoryTracker memoryTracker, int initialCapacity) {
@@ -65,10 +64,10 @@ public class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseabl
         this.trackedCapacity = initialCapacity;
     }
 
-    private HeapTrackingLongHashSet(MemoryTracker memoryTracker, int initialCapacity, LongHashSet set) {
+    private HeapTrackingLongHashSet(MemoryTracker memoryTracker, HeapTrackingLongHashSet set) {
         super(set);
         this.memoryTracker = requireNonNull(memoryTracker);
-        this.trackedCapacity = initialCapacity;
+        this.trackedCapacity = set.trackedCapacity;
     }
 
     private static int smallestPowerOfTwoGreaterThan(int n) {
