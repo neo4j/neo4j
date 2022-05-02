@@ -122,9 +122,9 @@ class IndexStatisticsStoreTest {
         openStore("tracedStats");
 
         assertThat(pageCacheTracer.faults() - initialFaults).isEqualTo(5);
-        assertThat(pageCacheTracer.pins() - initialPins).isEqualTo(14);
-        assertThat(pageCacheTracer.unpins() - initialUnpins).isEqualTo(14);
-        assertThat(pageCacheTracer.hits() - initialHits).isEqualTo(9);
+        assertThat(pageCacheTracer.pins() - initialPins).isEqualTo(10);
+        assertThat(pageCacheTracer.unpins() - initialUnpins).isEqualTo(10);
+        assertThat(pageCacheTracer.hits() - initialHits).isEqualTo(5);
     }
 
     @Test

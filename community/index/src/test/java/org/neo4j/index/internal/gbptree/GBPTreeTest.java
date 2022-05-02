@@ -1193,22 +1193,6 @@ class GBPTreeTest {
     /* Checkpoint tests */
 
     @Test
-    void shouldCheckpointAfterInitialCreation() throws Exception {
-        // GIVEN
-        CheckpointCounter checkpointCounter = new CheckpointCounter();
-
-        try (PageCache pageCache = createPageCache(defaultPageSize)) {
-            // WHEN
-            GBPTree<MutableLong, MutableLong> index =
-                    index(pageCache).with(checkpointCounter).build();
-
-            // THEN
-            assertEquals(1, checkpointCounter.count());
-            index.close();
-        }
-    }
-
-    @Test
     void shouldNotCheckpointOnClose() throws Exception {
         // GIVEN
         CheckpointCounter checkpointCounter = new CheckpointCounter();

@@ -156,15 +156,15 @@ class GBPTreeGenericCountsStoreTest {
                 NullLogProvider.getInstance(),
                 cursorContextFactory,
                 Sets.immutable.empty())) {
-            assertThat(pageCacheTracer.pins()).isEqualTo(14);
-            assertThat(pageCacheTracer.unpins()).isEqualTo(14);
-            assertThat(pageCacheTracer.hits()).isEqualTo(9);
+            assertThat(pageCacheTracer.pins()).isEqualTo(10);
+            assertThat(pageCacheTracer.unpins()).isEqualTo(10);
+            assertThat(pageCacheTracer.hits()).isEqualTo(5);
             assertThat(pageCacheTracer.faults()).isEqualTo(5);
         }
 
-        assertThat(pageCacheTracer.pins()).isEqualTo(18);
-        assertThat(pageCacheTracer.unpins()).isEqualTo(18);
-        assertThat(pageCacheTracer.hits()).isEqualTo(13);
+        assertThat(pageCacheTracer.pins()).isEqualTo(14);
+        assertThat(pageCacheTracer.unpins()).isEqualTo(14);
+        assertThat(pageCacheTracer.hits()).isEqualTo(9);
         assertThat(pageCacheTracer.faults()).isEqualTo(5);
     }
 

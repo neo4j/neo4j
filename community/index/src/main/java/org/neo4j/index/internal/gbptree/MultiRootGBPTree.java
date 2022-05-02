@@ -575,17 +575,17 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             // Create or load state
             if (created) {
                 initializeAfterCreation(headerWriter, cursorContext);
+                dirtyOnStartup = false;
+                cleaning = CleanupJob.CLEAN;
             } else {
                 loadState(pagedFile, headerReader, cursorContext);
+                dirtyOnStartup = !clean;
+                clean = false;
+                bumpUnstableGeneration();
+                forceState(cursorContext);
+                cleaning = createCleanupJob(recoveryCleanupWorkCollector, dirtyOnStartup);
             }
-            this.monitor.startupState(clean);
-
-            // Prepare tree for action
-            dirtyOnStartup = !clean;
-            clean = false;
-            bumpUnstableGeneration();
-            forceState(cursorContext);
-            cleaning = createCleanupJob(recoveryCleanupWorkCollector, dirtyOnStartup);
+            this.monitor.startupState(!dirtyOnStartup);
         } catch (IOException e) {
             throw exitConstructor(new UncheckedIOException(e));
         } catch (Throwable e) {
@@ -618,11 +618,14 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
 
         // Initialize free-list
         freeList.initializeAfterCreation(cursorContext);
-        changesSinceLastCheckpoint.set(true);
+        pagedFile.flushAndForce();
 
-        // Checkpoint to make the created root node stable. Forcing tree state also piggy-backs on this.
-        checkpoint(headerWriter, cursorContext);
-        clean = true;
+        var unstableGeneration = Generation.unstableGeneration(generation);
+        // We're co-forcing the creation above as well as a bump of unstable
+        // which is a natural part of opening a GBPTree
+        generation = Generation.generation(unstableGeneration, unstableGeneration + 2);
+        writeState(pagedFile, replace(headerWriter), cursorContext);
+        pagedFile.flushAndForce();
     }
 
     private PagedFile openOrCreate(
