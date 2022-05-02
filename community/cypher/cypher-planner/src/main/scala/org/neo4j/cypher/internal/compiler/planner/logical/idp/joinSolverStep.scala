@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningSupport.RichHint
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.joinSolverStep.VERBOSE
-import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
@@ -34,11 +34,11 @@ object joinSolverStep {
 }
 
 case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Boolean = false)
-    extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
+    extends IDPSolverStep[NodeConnection, LogicalPlan, LogicalPlanningContext] {
   // IGNORE_EXPAND_SOLUTIONS_FOR_TEST can be used to force expandStillPossible to be false if needed
 
   override def apply(
-    registry: IdRegistry[PatternRelationship],
+    registry: IdRegistry[NodeConnection],
     goal: Goal,
     table: IDPCache[LogicalPlan],
     context: LogicalPlanningContext
@@ -134,7 +134,7 @@ case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Bool
   private def show(goal: Goal, symbols: Set[String]) =
     s"${showIds(goal.bitSet)}: ${showNames(symbols)}"
 
-  private def goalSymbols(goal: Goal, registry: IdRegistry[PatternRelationship]) =
+  private def goalSymbols(goal: Goal, registry: IdRegistry[NodeConnection]) =
     registry.explode(goal.bitSet).flatMap(_.coveredIds)
 
   private def showIds(ids: Set[Int]) =

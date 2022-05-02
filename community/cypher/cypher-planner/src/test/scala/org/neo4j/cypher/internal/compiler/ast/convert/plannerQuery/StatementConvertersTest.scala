@@ -235,9 +235,11 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val subQuery = query.tail.get
 
     subQuery.horizon shouldEqual CallSubqueryHorizon(
-      RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
-        .addMutatingPatterns(createPattern(Seq(createNode("x"))))
-        .addArgumentId("n")),
+      RegularSinglePlannerQuery(queryGraph =
+        QueryGraph.empty
+          .addMutatingPatterns(createPattern(Seq(createNode("x"))))
+          .addArgumentId("n")
+      ),
       correlated = true,
       yielding = false,
       inTransactionsParameters = Some(inTransactionsParameters(None))
@@ -706,7 +708,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.patternNodes should equal(Set("a"))
     query.horizon should equal(RegularQueryProjection(Map("b" -> literalInt(1))))
     query.tail should equal(Some(RegularSinglePlannerQuery(
-      QueryGraph(Set.empty, Set.empty, Set("b")),
+      QueryGraph(argumentIds = Set("b")),
       InterestingOrder.empty,
       RegularQueryProjection(Map("b" -> varFor("b")))
     )))
@@ -717,7 +719,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     query.horizon should equal(RegularQueryProjection(Map("b" -> literalInt(1))))
     query.tail should equal(Some(RegularSinglePlannerQuery(
-      QueryGraph(Set.empty, Set.empty, Set("b")),
+      QueryGraph(argumentIds = Set("b")),
       InterestingOrder.empty,
       RegularQueryProjection(Map("b" -> varFor("b")))
     )))

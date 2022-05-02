@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -42,15 +43,15 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
   val table = IDPTable.empty[LogicalPlan]
 
   test("does not join based on empty table") {
-    implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
+    implicit val registry: DefaultIdRegistry[NodeConnection] = IdRegistry[NodeConnection]
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val qg = QueryGraph.empty.addPatternNodes("a", "b", "c")
-      joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx) should be(empty)
+      joinSolverStep(qg)(registry, register[NodeConnection](pattern1, pattern2), table, ctx) should be(empty)
     }
   }
 
   test("joins plans that solve a single pattern relationship") {
-    implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
+    implicit val registry: DefaultIdRegistry[NodeConnection] = IdRegistry[NodeConnection]
 
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
@@ -66,10 +67,10 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
       val qg = QueryGraph.empty.addPatternNodes("a", "b", "c")
 
-      table.put(register(pattern1), sorted = false, plan1)
-      table.put(register(pattern2), sorted = false, plan2)
+      table.put(register[NodeConnection](pattern1), sorted = false, plan1)
+      table.put(register[NodeConnection](pattern2), sorted = false, plan2)
 
-      joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx).toSet should equal(Set(
+      joinSolverStep(qg)(registry, register[NodeConnection](pattern1, pattern2), table, ctx).toSet should equal(Set(
         NodeHashJoin(Set("b"), plan1, plan2),
         NodeHashJoin(Set("b"), plan2, plan1)
       ))
@@ -77,7 +78,7 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
   }
 
   test("can produce a join for a single pattern relationship") {
-    implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
+    implicit val registry: DefaultIdRegistry[NodeConnection] = IdRegistry[NodeConnection]
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
       ctx.planningAttributes.solveds.set(
@@ -89,10 +90,10 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
       val qg = QueryGraph.empty.addPatternNodes("a", "b")
 
-      table.put(register(pattern1), sorted = false, plan1)
-      table.put(register(pattern2), sorted = false, plan2)
+      table.put(register[NodeConnection](pattern1), sorted = false, plan1)
+      table.put(register[NodeConnection](pattern2), sorted = false, plan2)
 
-      joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx).toSet should equal(Set(
+      joinSolverStep(qg)(registry, register[NodeConnection](pattern1, pattern2), table, ctx).toSet should equal(Set(
         NodeHashJoin(Set("b"), plan1, plan2),
         NodeHashJoin(Set("b"), plan2, plan1)
       ))
@@ -100,7 +101,7 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
   }
 
   test("does not join plans that do not overlap") {
-    implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
+    implicit val registry: DefaultIdRegistry[NodeConnection] = IdRegistry[NodeConnection]
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
       ctx.planningAttributes.solveds.set(
@@ -115,15 +116,15 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
       val qg = QueryGraph.empty.addPatternNodes("a", "b", "c", "d")
 
-      table.put(register(pattern1), sorted = false, plan1)
-      table.put(register(pattern2), sorted = false, plan2)
+      table.put(register[NodeConnection](pattern1), sorted = false, plan1)
+      table.put(register[NodeConnection](pattern2), sorted = false, plan2)
 
-      joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx) should be(empty)
+      joinSolverStep(qg)(registry, register[NodeConnection](pattern1, pattern2), table, ctx) should be(empty)
     }
   }
 
   test("does join plans where available nodes are subset of available symbols") {
-    implicit val registry = IdRegistry[PatternRelationship]
+    implicit val registry = IdRegistry[NodeConnection]
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b", "c") // those will become available symbols
       ctx.planningAttributes.solveds.set(
@@ -137,12 +138,12 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
       val qg = QueryGraph.empty.addPatternNodes("a", "b", "c")
 
-      table.put(register(pattern1), sorted = false, plan1)
-      table.put(register(pattern2), sorted = false, plan2)
+      table.put(register[NodeConnection](pattern1), sorted = false, plan1)
+      table.put(register[NodeConnection](pattern2), sorted = false, plan2)
 
       joinSolverStep(qg, IGNORE_EXPAND_SOLUTIONS_FOR_TEST = true)(
         registry,
-        register(pattern1, pattern2),
+        register[NodeConnection](pattern1, pattern2),
         table,
         ctx
       ).toSet should equal(Set(
@@ -153,7 +154,7 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
   }
 
   test("does not join plans that overlap on non-nodes") {
-    implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
+    implicit val registry: DefaultIdRegistry[NodeConnection] = IdRegistry[NodeConnection]
 
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b", "x")
@@ -169,15 +170,15 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
       val qg = QueryGraph.empty.addPatternNodes("a", "b", "c", "d")
 
-      table.put(register(pattern1), sorted = false, plan1)
-      table.put(register(pattern2), sorted = false, plan2)
+      table.put(register[NodeConnection](pattern1), sorted = false, plan1)
+      table.put(register[NodeConnection](pattern2), sorted = false, plan2)
 
-      joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx) should be(empty)
+      joinSolverStep(qg)(registry, register[NodeConnection](pattern1, pattern2), table, ctx) should be(empty)
     }
   }
 
   test("does not join plans that overlap on nodes that are arguments") {
-    implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
+    implicit val registry: DefaultIdRegistry[NodeConnection] = IdRegistry[NodeConnection]
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b", "x")
       ctx.planningAttributes.solveds.set(
@@ -192,15 +193,15 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
       val qg = QueryGraph.empty.addPatternNodes("a", "b", "c", "d").addArgumentIds(Seq('x))
 
-      table.put(register(pattern1), sorted = false, plan1)
-      table.put(register(pattern2), sorted = false, plan2)
+      table.put(register[NodeConnection](pattern1), sorted = false, plan1)
+      table.put(register[NodeConnection](pattern2), sorted = false, plan2)
 
-      joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx) should be(empty)
+      joinSolverStep(qg)(registry, register[NodeConnection](pattern1, pattern2), table, ctx) should be(empty)
     }
   }
 
   test("does join plans that overlap on arguments if all of the goal is compacted") {
-    implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
+    implicit val registry: DefaultIdRegistry[NodeConnection] = IdRegistry[NodeConnection]
     new given().withLogicalPlanningContext { (_, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b", "c") // symbols
       ctx.planningAttributes.solveds.set(
@@ -215,8 +216,8 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
       val qg = QueryGraph.empty.addPatternNodes("a", "b", "c").addArgumentIds(Seq("b"))
 
-      val id1: Goal = register(pattern1)
-      val id2: Goal = register(pattern2)
+      val id1: Goal = register[NodeConnection](pattern1)
+      val id2: Goal = register[NodeConnection](pattern2)
 
       // Compact goals
       val compactedId1 = Goal(BitSet(registry.compact(id1.bitSet)))

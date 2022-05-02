@@ -28,28 +28,16 @@ final case class PatternRelationship(
   dir: SemanticDirection,
   types: Seq[RelTypeName],
   length: PatternLength
-) {
+) extends NodeConnection {
 
   def directionRelativeTo(node: String): SemanticDirection = if (node == left) dir else dir.reversed
 
-  def otherSide(node: String): String =
-    if (node == left) {
-      right
-    } else if (node == right) {
-      left
-    } else {
-      throw new IllegalArgumentException(
-        s"Did not provide either side as an argument to otherSide. Rel: $this, argument: $node"
-      )
-    }
+  override lazy val coveredIds: Set[String] = Set(name, left, right)
 
-  def coveredIds: Set[String] = Set(name, left, right)
+  override val left: String = nodes._1
+  override val right: String = nodes._2
 
-  def left = nodes._1
-
-  def right = nodes._2
-
-  def inOrder = dir match {
+  def inOrder: (String, String) = dir match {
     case SemanticDirection.INCOMING => (right, left)
     case _                          => (left, right)
   }

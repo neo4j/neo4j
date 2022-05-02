@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.p
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
@@ -36,10 +37,10 @@ import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 import org.neo4j.cypher.internal.util.InputPosition
 
 case class expandSolverStep(qg: QueryGraph)
-    extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
+    extends IDPSolverStep[NodeConnection, LogicalPlan, LogicalPlanningContext] {
 
   override def apply(
-    registry: IdRegistry[PatternRelationship],
+    registry: IdRegistry[NodeConnection],
     goal: Goal,
     table: IDPCache[LogicalPlan],
     context: LogicalPlanningContext
@@ -50,15 +51,18 @@ case class expandSolverStep(qg: QueryGraph)
         plan <- table(Goal(goal.bitSet - patternId)).iterator
         pattern <- registry.lookup(patternId)
       } yield {
-        if (plan.availableSymbols.contains(pattern.name))
-          Iterator(
-            planSingleProjectEndpoints(pattern, plan, context)
-          )
-        else
-          Iterator(
-            planSinglePatternSide(qg, pattern, plan, pattern.left, context),
-            planSinglePatternSide(qg, pattern, plan, pattern.right, context)
-          ).flatten
+        pattern match {
+          case relationship: PatternRelationship if plan.availableSymbols.contains(relationship.name) =>
+            Iterator(
+              // we do not project endpoints for quantified path patterns
+              planSingleProjectEndpoints(relationship, plan, context)
+            )
+          case _ =>
+            Iterator(
+              planSinglePatternSide(qg, pattern, plan, pattern.left, context),
+              planSinglePatternSide(qg, pattern, plan, pattern.right, context)
+            ).flatten
+        }
       }
 
     result.flatten
@@ -88,7 +92,7 @@ object expandSolverStep {
 
   def planSinglePatternSide(
     qg: QueryGraph,
-    patternRel: PatternRelationship,
+    patternRel: NodeConnection,
     sourcePlan: LogicalPlan,
     nodeId: String,
     context: LogicalPlanningContext
@@ -99,6 +103,19 @@ object expandSolverStep {
       Some(produceLogicalPlan(qg, patternRel, sourcePlan, nodeId, availableSymbols, context))
     } else {
       None
+    }
+  }
+
+  private def produceLogicalPlan(
+    qg: QueryGraph,
+    patternRel: NodeConnection,
+    sourcePlan: LogicalPlan,
+    nodeId: String,
+    availableSymbols: Set[String],
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+    patternRel match {
+      case rel: PatternRelationship => produceLogicalPlan(qg, rel, sourcePlan, nodeId, availableSymbols, context)
     }
   }
 

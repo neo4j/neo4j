@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
@@ -35,7 +35,7 @@ trait IDPSolverConfig {
 trait SingleComponentIDPSolverConfig extends IDPSolverConfig {
 
   def solvers(queryGraph: QueryGraph)
-    : Seq[QueryGraph => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]]
+    : Seq[QueryGraph => IDPSolverStep[NodeConnection, LogicalPlan, LogicalPlanningContext]]
 }
 
 /* The default settings for IDP uses a maxTableSize and a inner loop duration threshold
@@ -84,13 +84,13 @@ case class AdaptiveChainPatternConfig(patternLengthThreshold: Int) extends Singl
 }
 
 case class AdaptiveSolverStep(qg: QueryGraph, predicate: (QueryGraph, Goal) => Boolean)
-    extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
+    extends IDPSolverStep[NodeConnection, LogicalPlan, LogicalPlanningContext] {
 
   private val join = joinSolverStep(qg)
   private val expand = expandSolverStep(qg)
 
   override def apply(
-    registry: IdRegistry[PatternRelationship],
+    registry: IdRegistry[NodeConnection],
     goal: Goal,
     table: IDPCache[LogicalPlan],
     context: LogicalPlanningContext

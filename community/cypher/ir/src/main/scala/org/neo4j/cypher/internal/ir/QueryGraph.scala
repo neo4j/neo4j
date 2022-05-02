@@ -56,6 +56,8 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
   mutatingPatterns: IndexedSeq[MutatingPattern] = IndexedSeq.empty
 ) extends UpdateGraph {
 
+  val nodeConnections: Set[NodeConnection] = Set.empty[NodeConnection] ++ patternRelationships
+
   /**
    * Dependencies from this QG to variables - from WHERE predicates and update clauses using expressions
    *

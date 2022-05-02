@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -48,16 +49,16 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
   private val qg = mock[QueryGraph]
 
   test("does not expand based on empty table") {
-    implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
-    new given().withLogicalPlanningContext { (cfg, ctx) =>
+    implicit val registry: DefaultIdRegistry[NodeConnection] = IdRegistry[NodeConnection]
+    new given().withLogicalPlanningContext { (_, ctx) =>
       expandSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx) should be(empty)
     }
   }
 
   test("expands if an unsolved pattern relationship overlaps once with a single solved plan") {
-    implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
+    implicit val registry: DefaultIdRegistry[NodeConnection] = IdRegistry[NodeConnection]
 
-    new given().withLogicalPlanningContext { (cfg, ctx) =>
+    new given().withLogicalPlanningContext { (_, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
       ctx.planningAttributes.solveds.set(
         plan1.id,
@@ -72,9 +73,9 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("expands if an unsolved pattern relationships overlaps twice with a single solved plan") {
-    implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
+    implicit val registry: DefaultIdRegistry[NodeConnection] = IdRegistry[NodeConnection]
 
-    new given().withLogicalPlanningContext { (cfg, ctx) =>
+    new given().withLogicalPlanningContext { (_, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
       ctx.planningAttributes.solveds.set(
         plan1.id,
@@ -99,8 +100,8 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("does not expand if an unsolved pattern relationship does not overlap with a solved plan") {
-    implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
-    new given().withLogicalPlanningContext { (cfg, ctx) =>
+    implicit val registry: DefaultIdRegistry[NodeConnection] = IdRegistry[NodeConnection]
+    new given().withLogicalPlanningContext { (_, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
       ctx.planningAttributes.solveds.set(
         plan1.id,
@@ -116,9 +117,9 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("expands if an unsolved pattern relationship overlaps with multiple solved plans") {
-    implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
+    implicit val registry: DefaultIdRegistry[NodeConnection] = IdRegistry[NodeConnection]
 
-    new given().withLogicalPlanningContext { (cfg, ctx) =>
+    new given().withLogicalPlanningContext { (_, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b", "c", "r2", "d")
       ctx.planningAttributes.solveds.set(
         plan1.id,
@@ -128,7 +129,12 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       val pattern3 = PatternRelationship("r3", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-      expandSolverStep(qg)(registry, register(pattern1, pattern2, pattern3), table, ctx).toSet should equal(Set(
+      expandSolverStep(qg)(
+        registry,
+        register(pattern1, pattern2, pattern3),
+        table,
+        ctx
+      ).toSet should equal(Set(
         Expand(plan1, "b", SemanticDirection.OUTGOING, Seq.empty, "c", "r3", ExpandInto),
         Expand(plan1, "c", SemanticDirection.INCOMING, Seq.empty, "b", "r3", ExpandInto)
       ))
@@ -136,7 +142,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("does not expand if goal is entirely compacted") {
-    implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
+    implicit val registry: DefaultIdRegistry[NodeConnection] = IdRegistry[NodeConnection]
 
     new given().withLogicalPlanningContext { (_, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
@@ -159,5 +165,6 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
     }
   }
 
-  def register[X](patRels: X*)(implicit registry: IdRegistry[X]): Goal = Goal(registry.registerAll(patRels))
+  def register(patRels: NodeConnection*)(implicit registry: IdRegistry[NodeConnection]): Goal =
+    Goal(registry.registerAll(patRels))
 }
