@@ -133,4 +133,23 @@ abstract class FilterTestBase[CONTEXT <: RuntimeContext](
     val expected = 0 until sizeHint / 2
     runtimeResult should beColumns("prop").withRows(singleColumn(expected))
   }
+
+  test("should handle filter + limit on the RHS of an apply") {
+    given(nodeGraph(sizeHint))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .apply()
+      .|.limit(5)
+      .|.filter("id(x) % 2 = 0")
+      .|.allNodeScan("x")
+      .input(variables = Seq("y"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues((1 to 5).map(i => Array[Any](i)): _*))
+
+    // then
+    runtimeResult should beColumns("y").withRows(rowCount(25))
+  }
 }
