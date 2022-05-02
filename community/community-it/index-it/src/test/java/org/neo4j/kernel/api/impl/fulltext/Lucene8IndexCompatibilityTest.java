@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import static java.io.OutputStream.nullOutputStream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -26,6 +27,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
 
+import java.io.PrintStream;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -218,7 +220,8 @@ class Lucene8IndexCompatibilityTest {
         var homeDir = testDirectory.homePath().toAbsolutePath();
         var configDir = homeDir.resolve(Config.DEFAULT_CONFIG_DIR_NAME);
 
-        var ctx = new ExecutionContext(homeDir, configDir, System.out, System.err, new DefaultFileSystemAbstraction());
+        var nullOut = new PrintStream(nullOutputStream());
+        var ctx = new ExecutionContext(homeDir, configDir, nullOut, nullOut, new DefaultFileSystemAbstraction());
         for (var database : List.of(DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME)) {
             var command = CommandLine.populateCommand(new MigrateStoreCommand(ctx), "--database", database);
             command.call();
