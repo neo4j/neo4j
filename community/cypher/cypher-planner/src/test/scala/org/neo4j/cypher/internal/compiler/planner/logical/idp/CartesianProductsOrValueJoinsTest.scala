@@ -286,16 +286,17 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
           List((xPlan, xProp), (yPlan, yProp), (zPlan, zProp)) <-
             List((planA, prop("a", "id")), (planB, prop("b", "id")), (planC, prop("c", "id"))).permutations.toSeq
           xyEq <- List(equals(xProp, yProp), equals(yProp, xProp))
-          yzEq = equals(yProp, zProp)
-          xzEq = equals(xProp, zProp)
+          yzEq <- List(equals(yProp, zProp), equals(zProp, yProp))
+          xzEq <- List(equals(xProp, zProp), equals(zProp, xProp))
           allEqs = Set(xyEq, yzEq, xzEq)
           if Set(eq1, eq2, eq3).forall(eq => allEqs(eq) || allEqs(eq.switchSides))
+          (outerEq, innerEq) <- List((xyEq, xzEq), (xzEq, xyEq))
         } yield Selection(
-          Seq(xyEq),
+          Seq(outerEq),
           ValueHashJoin(
             xPlan,
             ValueHashJoin(yPlan, zPlan, yzEq),
-            xzEq
+            innerEq
           )
         )
     )
@@ -415,6 +416,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     graph: QueryGraph,
     input: PlanningAttributes => Set[PlannedComponent],
     expectedPlans: Seq[LogicalPlan]
-  ): Unit =
+  ): Unit = {
     testThis(graph, input, (result: LogicalPlan) => { expectedPlans should contain(result); () })
+  }
 }

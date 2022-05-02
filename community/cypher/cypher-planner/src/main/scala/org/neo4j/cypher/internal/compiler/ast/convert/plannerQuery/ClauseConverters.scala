@@ -497,7 +497,7 @@ object ClauseConverters {
           qg
             .addSelections(selections)
             .addPatternNodes(patternContent.nodeIds: _*)
-            .addPatternRelationships(patternContent.rels)
+            .addPatternRelationships(patternContent.rels.toSet)
             .addHints(clause.hints)
             .addShortestPaths(patternContent.shortestPaths: _*)
       }

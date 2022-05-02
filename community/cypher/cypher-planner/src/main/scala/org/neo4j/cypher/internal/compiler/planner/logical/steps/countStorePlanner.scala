@@ -78,6 +78,7 @@ case object countStorePlanner {
     query.queryGraph match {
       case QueryGraph(
           patternRelationships,
+          quantifiedPathPatterns,
           patternNodes,
           argumentIds,
           selections,
@@ -85,7 +86,8 @@ case object countStorePlanner {
           hints,
           shortestPathPatterns,
           _
-        ) if hints.isEmpty && shortestPathPatterns.isEmpty && query.queryGraph.readOnly && patternHasNoDependencies =>
+        )
+        if hints.isEmpty && shortestPathPatterns.isEmpty && quantifiedPathPatterns.isEmpty && query.queryGraph.readOnly && patternHasNoDependencies =>
         checkForValidAggregations(
           query,
           columnName,
@@ -156,7 +158,7 @@ case object countStorePlanner {
     }
 
   /**
-   * @param variableName the name of the variable in the count function. None, if this is count(*)
+   * @param variableName    the name of the variable in the count function. None, if this is count(*)
    * @param propertyKeyName the name of the property in the count function. None, if this is count(*) or count(n)
    */
   private def trySolveNodeAggregation(

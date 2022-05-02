@@ -488,7 +488,7 @@ object LogicalPlanToPlanBuilderString {
       case Trail(
           _,
           _,
-          repetitions,
+          repetition,
           start,
           end,
           innerStart,
@@ -500,7 +500,7 @@ object LogicalPlanToPlanBuilderString {
         ) =>
         def groupEntitiesString(groupEntities: Set[GroupEntity]): String =
           groupEntities.map(g => s"(${wrapInQuotations(g.innerName)}, ${wrapInQuotations(g.outerName)})").mkString(", ")
-        s"""${repetitions.min}, ${repetitions.max}, "$start", ${end.map(wrapInQuotations)}, "$innerStart", "$innerEnd",
+        s"""${repetition.min}, ${repetition.max}, "$start", ${end.map(wrapInQuotations)}, "$innerStart", "$innerEnd",
            |Set(${groupEntitiesString(groupNodes)}), Set(${groupEntitiesString(groupRelationships)}),
            |Set(${wrapInQuotationsAndMkString(allRelationships)}),
            |Set(${wrapInQuotationsAndMkString(allRelationshipGroups)})""".stripMargin

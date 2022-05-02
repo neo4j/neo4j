@@ -22,11 +22,8 @@ package org.neo4j.cypher.internal.compiler.planner
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -46,33 +43,6 @@ class QueryGraphTest extends CypherFunSuite {
 
   private val hint2 =
     UsingIndexHint(Variable("m")(pos), LabelOrRelTypeName("Label")(pos), Seq(PropertyKeyName("prop2")(pos)))(pos)
-
-  test("returns no pattern relationships when the query graph doesn't contain any") {
-    val rels: Set[PatternRelationship] = Set.empty
-    val qg = QueryGraph(patternRelationships = rels)
-
-    qg.findRelationshipsEndingOn(x) shouldBe empty
-  }
-
-  test("finds single pattern relationship") {
-    val r = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
-    val qg = QueryGraph(patternRelationships = Set(r))
-
-    qg.findRelationshipsEndingOn(x) shouldBe empty
-    qg.findRelationshipsEndingOn(n) should equal(Set(r))
-    qg.findRelationshipsEndingOn(m) should equal(Set(r))
-  }
-
-  test("finds multiple pattern relationship") {
-    val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
-    val pattRel2 = PatternRelationship(r2, (m, c), BOTH, Seq.empty, SimplePatternLength)
-    val qg = QueryGraph(patternRelationships = Set(pattRel1, pattRel2))
-
-    qg.findRelationshipsEndingOn(x) shouldBe empty
-    qg.findRelationshipsEndingOn(n) should equal(Set(pattRel1))
-    qg.findRelationshipsEndingOn(m) should equal(Set(pattRel1, pattRel2))
-    qg.findRelationshipsEndingOn(c) should equal(Set(pattRel2))
-  }
 
   test("addHints should add new hints") {
     val qg1 = QueryGraph(hints = Set(hint1))

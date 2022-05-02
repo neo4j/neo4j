@@ -118,7 +118,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     newMockedLogicalPlanWithPatterns(
       context.planningAttributes,
       Set("a", "b"),
-      Seq(PatternRelationship("r", ("a", "b"), BOTH, Seq.empty, SimplePatternLength)),
+      Set(PatternRelationship("r", ("a", "b"), BOTH, Seq.empty, SimplePatternLength)),
       selections = selections
     )
   }
@@ -383,7 +383,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val plan: LogicalPlan = newMockedLogicalPlanWithPatterns(
       context.planningAttributes,
       Set("a", "b"),
-      Seq(PatternRelationship("r", ("a", "b"), BOTH, Seq.empty, SimplePatternLength)),
+      Set(PatternRelationship("r", ("a", "b"), BOTH, Seq.empty, SimplePatternLength)),
       hints = Set[Hint](newRelationshipIndexHint())
     )
 

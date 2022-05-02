@@ -125,7 +125,7 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
     def fixArgumentIdsOnMerge(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = {
       val newMergeMatchGraph = plannerQuery.queryGraph.mergeQueryGraph.map {
         qg =>
-          val nodesAndRels = QueryGraph.coveredIdsForPatterns(qg.patternNodes, qg.patternRelationships)
+          val nodesAndRels = qg.coveredIdsForPatterns
           val predicateDependencies = qg.withoutArguments().dependencies
           val requiredArguments = nodesAndRels ++ predicateDependencies
           val availableArguments = qg.argumentIds

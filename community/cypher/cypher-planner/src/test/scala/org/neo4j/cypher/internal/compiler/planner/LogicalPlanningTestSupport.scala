@@ -384,7 +384,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMockedLogicalPlanWithPatterns(
     planningAttributes: PlanningAttributes,
     idNames: Set[String],
-    patterns: Seq[PatternRelationship] = Seq.empty,
+    patterns: Set[PatternRelationship] = Set.empty,
     hints: Set[Hint] = Set[Hint](),
     selections: Selections = Selections(),
     availablePropertiesFromIndexes: Map[Property, String] = Map.empty

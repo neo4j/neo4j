@@ -22,11 +22,15 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.util.Repetition
+import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class QueryGraphConnectedComponentsTest
@@ -35,10 +39,22 @@ class QueryGraphConnectedComponentsTest
   private val A = "a"
   private val B = "b"
   private val C = "c"
+  private val D = "d"
   private val X = "x"
   private val A_to_B = PatternRelationship("r1", (A, B), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   private val C_to_X = PatternRelationship("r7", (C, X), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   private val B_to_X = PatternRelationship("r12", (B, X), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+
+  private def rel(from: String, to: String) =
+    PatternRelationship(s"rel$from$to", (from, to), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+
+  private def qpp(from: String, to: String) =
+    QuantifiedPathPattern(
+      NodeBinding(from, s"${from}_inner"),
+      NodeBinding(to, s"${to}_inner"),
+      QueryGraph(patternRelationships = Set(rel(s"${from}_inner", s"${to}_inner"))),
+      Repetition(0, Unlimited)
+    )
 
   test("empty query graph returns no connected querygraphs") {
     QueryGraph().connectedComponents shouldBe empty
@@ -225,7 +241,7 @@ class QueryGraphConnectedComponentsTest
     ))
   }
 
-  test("should pick the predicates correctly when they depend on arguments") {
+  test("should pick the predicates correctly on relationships when they depend on arguments") {
     //  UNWIND [0] as x match (a)-[r]->(b) where id(r) = x
     val graph = QueryGraph(
       argumentIds = Set(X),
@@ -261,5 +277,70 @@ class QueryGraphConnectedComponentsTest
     )
 
     graph.connectedComponents.size should equal(2)
+  }
+
+  test("single quantified path pattern") {
+    // (a) [(a_inner)-[r1]->(b_inner)]* (b)
+    val singleQuantifiedPathPatternQG = QueryGraph(patternNodes = Set(A, B), quantifiedPathPatterns = Set(qpp(A, B)))
+
+    singleQuantifiedPathPatternQG.connectedComponents shouldBe Seq(singleQuantifiedPathPatternQG)
+  }
+
+  test("single quantified path pattern and path pattern") {
+    // (a)-[r]->(b) [(b_inner)-[r1]->(c_inner)]* (c)
+    val singleQuantifiedPathPatternQG =
+      QueryGraph(
+        patternNodes = Set(A, B, C),
+        patternRelationships = Set(A_to_B),
+        quantifiedPathPatterns = Set(qpp(B, C))
+      )
+
+    singleQuantifiedPathPatternQG.connectedComponents shouldBe Seq(singleQuantifiedPathPatternQG)
+  }
+
+  test("single quantified path pattern and path pattern in separate components") {
+    // (a)-[r1]->(b), (c) [(c_inner)-[]->(d_inner)]+ (d)
+    val singleQuantifiedPathPatternQG =
+      QueryGraph(
+        patternNodes = Set(A, B, C, D),
+        patternRelationships = Set(A_to_B),
+        quantifiedPathPatterns = Set(qpp(C, D))
+      )
+
+    val qq1 = QueryGraph(patternNodes = Set(A, B), patternRelationships = Set(A_to_B))
+    val qq2 = QueryGraph(patternNodes = Set(C, D), quantifiedPathPatterns = Set(qpp(C, D)))
+
+    singleQuantifiedPathPatternQG.connectedComponents.toSet shouldBe Set(qq1, qq2)
+  }
+
+  test("two consecutive quantified path patterns connecting three nodes") {
+    val quantifiedPathPatternQG =
+      QueryGraph(
+        patternNodes = Set(A, B, C, D),
+        patternRelationships = Set.empty,
+        quantifiedPathPatterns = Set(qpp(A, B), qpp(C, B))
+      )
+
+    val connectedPart =
+      QueryGraph(
+        patternNodes = Set(A, B, C),
+        patternRelationships = Set.empty,
+        quantifiedPathPatterns = Set(qpp(A, B), qpp(C, B))
+      )
+    val otherNode = QueryGraph(patternNodes = Set(D))
+    quantifiedPathPatternQG.connectedComponents.toSet shouldBe Set(connectedPart, otherNode)
+  }
+
+  test("should pick the predicates correctly on quantified path patterns when they depend on arguments") {
+    //  UNWIND [[0]] AS x MATCH (a) ((a_inner)-[]->(b_inner))* (b) WHERE a_inner = x
+    val graph = QueryGraph(
+      argumentIds = Set(X),
+      patternNodes = Set(A, B),
+      quantifiedPathPatterns = Set(qpp(A, B)),
+      selections = Selections.from(equals(varFor("a_inner"), varFor(X)))
+    )
+
+    val components = graph.connectedComponents
+    components should equal(Seq(graph))
   }
 }

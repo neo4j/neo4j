@@ -47,11 +47,11 @@ import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.logical.plans.Limited
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.UpperBound.Limited
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.neo4j.graphdb.schema.IndexType
@@ -1838,6 +1838,9 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
             |import org.neo4j.cypher.internal.ir.NoHeaders
             |import org.neo4j.cypher.internal.ir.EagernessReason
             |import org.neo4j.cypher.internal.util.InputPosition
+            |import org.neo4j.cypher.internal.util.UpperBound.Limited
+            |import org.neo4j.cypher.internal.util.Repetition
+            |import org.neo4j.cypher.internal.util.UpperBound.Unlimited
             |import org.neo4j.graphdb.schema.IndexType
             |""".stripMargin
         )

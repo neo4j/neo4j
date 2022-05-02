@@ -24,13 +24,13 @@ import org.neo4j.collection.trackable.HeapTrackingCollections
 import org.neo4j.collection.trackable.HeapTrackingCollections.newArrayDeque
 import org.neo4j.collection.trackable.HeapTrackingLongHashSet
 import org.neo4j.cypher.internal.logical.plans.GroupEntity
-import org.neo4j.cypher.internal.logical.plans.Repetitions
 import org.neo4j.cypher.internal.runtime.CastSupport.castOrFail
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.PrefetchingIterator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TrailPipe.emptyLists
+import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.memory.EmptyMemoryTracker
@@ -60,7 +60,7 @@ case class TrailState(
 case class TrailPipe(
   source: Pipe,
   inner: Pipe,
-  repetitions: Repetitions,
+  repetition: Repetition,
   start: String,
   end: Option[String],
   innerStart: String,
@@ -89,7 +89,7 @@ case class TrailPipe(
           outerRow.getByName(start) match {
             case startNode: VirtualNodeValue =>
               val stack = newArrayDeque[TrailState](tracker)
-              if (repetitions.max.isGreaterThan(0)) {
+              if (repetition.max.isGreaterThan(0)) {
                 val relationshipsSeen = HeapTrackingCollections.newLongSet(tracker)
                 val ig = allRelationshipGroups.iterator
                 while (ig.hasNext) {
@@ -103,7 +103,7 @@ case class TrailPipe(
               new PrefetchingIterator[CypherRow] {
                 private var innerResult: ClosingIterator[CypherRow] = ClosingIterator.empty
                 private var trailState: TrailState = _
-                private var emitFirst = repetitions.min == 0
+                private var emitFirst = repetition.min == 0
 
                 override protected[this] def closeMore(): Unit = {
                   if (trailState != null) {
@@ -126,7 +126,7 @@ case class TrailPipe(
                     val newGroupNodes = computeGroupVariables(groupNodeNames, trailState.groupNodes, row, tracker)
                     val newGroupRels =
                       computeGroupVariables(groupRelationshipNames, trailState.groupRelationships, row, tracker)
-                    if (repetitions.max.isGreaterThan(trailState.iterations)) {
+                    if (repetition.max.isGreaterThan(trailState.iterations)) {
                       val newSet = HeapTrackingCollections.newLongSet(tracker, trailState.relationshipsSeen)
 
                       var allRelationshipsUnique = true
@@ -151,7 +151,7 @@ case class TrailPipe(
                       }
                     }
                     // if iterated long enough emit, otherwise recurse
-                    if (trailState.iterations >= repetitions.min) {
+                    if (trailState.iterations >= repetition.min) {
                       val resultRow = row.copyWith(computeNewEntries(newGroupNodes, newGroupRels, innerEndNode))
                       Some(resultRow)
                     } else {

@@ -39,14 +39,15 @@ import scala.collection.mutable.ArrayBuffer
 import scala.math.Ordering.Implicits
 import scala.runtime.ScalaRunTime
 
-/*
+/**
  * This is one of the core classes used during query planning. It represents the declarative query,
  * it contains no more information than the AST, but it contains data in a format that is easier
  * to consume by the planner. If you want to trace this back to the original query - one QueryGraph
  * represents all the MATCH, OPTIONAL MATCHes, and update clauses between two WITHs.
  */
-case class QueryGraph( // !!! If you change anything here, make sure to update the equals method at the bottom of this class !!!
+case class QueryGraph(
   patternRelationships: Set[PatternRelationship] = Set.empty,
+  quantifiedPathPatterns: Set[QuantifiedPathPattern] = Set.empty,
   patternNodes: Set[String] = Set.empty,
   argumentIds: Set[String] = Set.empty,
   selections: Selections = Selections(),
@@ -54,25 +55,25 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
   hints: Set[Hint] = Set.empty,
   shortestPathPatterns: Set[ShortestPathPattern] = Set.empty,
   mutatingPatterns: IndexedSeq[MutatingPattern] = IndexedSeq.empty
+  // !!! If you change anything here, make sure to update the equals, ++ and hashCode methods at the bottom of this class !!!
 ) extends UpdateGraph {
 
-  val nodeConnections: Set[NodeConnection] = Set.empty[NodeConnection] ++ patternRelationships
+  val nodeConnections: Set[NodeConnection] = Set.empty[NodeConnection] ++ patternRelationships ++ quantifiedPathPatterns
 
   /**
    * Dependencies from this QG to variables - from WHERE predicates and update clauses using expressions
-   *
-   * @return
    */
   def dependencies: Set[String] =
     optionalMatches.flatMap(_.dependencies).toSet ++
       selections.predicates.flatMap(_.dependencies) ++
       mutatingPatterns.flatMap(_.dependencies) ++
+      quantifiedPathPatterns.flatMap(_.dependencies) ++
       argumentIds
 
   /**
-   * The size of a QG is defined as the number of pattern relationships that are introduced
+   * The size of a QG is defined as the number of node connections that are introduced
    */
-  def size: Int = patternRelationships.size
+  def size: Int = nodeConnections.size
 
   def isEmpty: Boolean = this == QueryGraph.empty
 
@@ -86,12 +87,21 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
 
   def addPatternRelationship(rel: PatternRelationship): QueryGraph =
     copy(
-      patternNodes = patternNodes + rel.nodes._1 + rel.nodes._2,
+      patternNodes = patternNodes ++ rel.coveredNodeIds,
       patternRelationships = patternRelationships + rel
     )
 
-  def addPatternRelationships(rels: Seq[PatternRelationship]): QueryGraph =
+  def addPatternRelationships(rels: Set[PatternRelationship]): QueryGraph =
     rels.foldLeft[QueryGraph](this)((qg, rel) => qg.addPatternRelationship(rel))
+
+  def addQuantifiedPathPattern(pattern: QuantifiedPathPattern): QueryGraph =
+    copy(
+      patternNodes = patternNodes ++ pattern.coveredNodeIds,
+      quantifiedPathPatterns = quantifiedPathPatterns + pattern
+    )
+
+  def addQuantifiedPathPatterns(pattern: Set[QuantifiedPathPattern]): QueryGraph =
+    pattern.foldLeft[QueryGraph](this)((qg, rel) => qg.addQuantifiedPathPattern(rel))
 
   def addShortestPath(shortestPath: ShortestPathPattern): QueryGraph = {
     val rel = shortestPath.rel
@@ -129,7 +139,7 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
     nodes
   }
 
-  def collectAllPatternNodes(f: String => Unit): Unit = {
+  private def collectAllPatternNodes(f: String => Unit): Unit = {
     patternNodes.foreach(f)
     optionalMatches.foreach(m => m.allPatternNodes.foreach(f))
     for {
@@ -232,7 +242,7 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
   def withPatternNodes(nodes: Set[String]): QueryGraph =
     copy(patternNodes = nodes)
 
-  def knownProperties(idName: String): Set[PropertyKeyName] =
+  private def knownProperties(idName: String): Set[PropertyKeyName] =
     selections.allPropertyPredicatesInvolving.getOrElse(idName, Set.empty).map(_.propertyKey)
 
   private def possibleLabelsOnNode(node: String): Set[LabelName] = {
@@ -265,31 +275,34 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
   }
 
   def allPossibleLabelsOnNode(node: String): Set[LabelName] =
-    possibleLabelsOnNode(node) ++ optionalMatches.flatMap(_.allPossibleLabelsOnNode(node))
+    possibleLabelsOnNode(node) ++
+      optionalMatches.flatMap(_.allPossibleLabelsOnNode(node)) ++
+      quantifiedPathPatterns.flatMap(_.pattern.allPossibleLabelsOnNode(node))
 
   def allPossibleTypesOnRel(rel: String): Set[RelTypeName] =
-    possibleTypesOnRel(rel) ++ optionalMatches.flatMap(_.allPossibleTypesOnRel(rel))
+    possibleTypesOnRel(rel) ++
+      optionalMatches.flatMap(_.allPossibleTypesOnRel(rel)) ++
+      quantifiedPathPatterns.flatMap(_.pattern.allPossibleTypesOnRel(rel))
 
   def allKnownPropertiesOnIdentifier(idName: String): Set[PropertyKeyName] =
-    knownProperties(idName) ++ optionalMatches.flatMap(_.allKnownPropertiesOnIdentifier(idName))
+    knownProperties(idName) ++
+      optionalMatches.flatMap(_.allKnownPropertiesOnIdentifier(idName)) ++
+      quantifiedPathPatterns.flatMap(_.pattern.allKnownPropertiesOnIdentifier(idName))
 
-  def findRelationshipsEndingOn(id: String): Set[PatternRelationship] =
-    patternRelationships.filter { r => r.left == id || r.right == id }
-
-  def allPatternRelationships: Set[PatternRelationship] =
-    patternRelationships ++ optionalMatches.flatMap(_.allPatternRelationships) ++
-      // Recursively add relationships from the merge-read-part
-      mergeNodePatterns.flatMap(_.matchGraph.allPatternRelationships) ++
-      mergeRelationshipPatterns.flatMap(_.matchGraph.allPatternRelationships)
+  def coveredIdsForPatterns: Set[String] = {
+    val patternRelIds = patternRelationships.flatMap(_.coveredIds)
+    patternNodes ++ patternRelIds
+  }
 
   /**
    * Variables are bound after matching this QG, but before optional
    * matches and updates have been applied
    */
   def idsWithoutOptionalMatchesOrUpdates: Set[String] =
-    QueryGraph.coveredIdsForPatterns(patternNodes, patternRelationships) ++ argumentIds ++ shortestPathPatterns.flatMap(
-      _.name
-    )
+    coveredIdsForPatterns ++
+      argumentIds ++
+      shortestPathPatterns.flatMap(_.name) ++
+      quantifiedPathPatterns.flatMap(_.pattern.idsWithoutOptionalMatchesOrUpdates)
 
   /**
    * All variables that are bound after this QG has been matched
@@ -302,17 +315,32 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
   def allHints: Set[Hint] =
     hints ++ optionalMatches.flatMap(_.allHints)
 
-  def ++(other: QueryGraph): QueryGraph =
-    QueryGraph(
-      selections = selections ++ other.selections,
-      patternNodes = patternNodes ++ other.patternNodes,
-      patternRelationships = patternRelationships ++ other.patternRelationships,
-      optionalMatches = optionalMatches ++ other.optionalMatches,
-      argumentIds = argumentIds ++ other.argumentIds,
-      hints = hints ++ other.hints,
-      shortestPathPatterns = shortestPathPatterns ++ other.shortestPathPatterns,
-      mutatingPatterns = mutatingPatterns ++ other.mutatingPatterns
-    )
+  def ++(other: QueryGraph): QueryGraph = {
+    other match {
+      case QueryGraph(
+          otherPatternRelationships,
+          otherQuantifiedPathPatterns,
+          otherPatternNodes,
+          otherArgumentIds,
+          otherSelections,
+          otherOptionalMatches,
+          otherHints,
+          otherShortestPathPatterns,
+          otherMutatingPatterns
+        ) =>
+        QueryGraph(
+          selections = selections ++ otherSelections,
+          patternNodes = patternNodes ++ otherPatternNodes,
+          quantifiedPathPatterns = quantifiedPathPatterns ++ otherQuantifiedPathPatterns,
+          patternRelationships = patternRelationships ++ otherPatternRelationships,
+          optionalMatches = optionalMatches ++ otherOptionalMatches,
+          argumentIds = argumentIds ++ otherArgumentIds,
+          hints = hints ++ otherHints,
+          shortestPathPatterns = shortestPathPatterns ++ otherShortestPathPatterns,
+          mutatingPatterns = mutatingPatterns ++ otherMutatingPatterns
+        )
+    }
+  }
 
   def hasOptionalPatterns: Boolean = optionalMatches.nonEmpty
 
@@ -377,41 +405,66 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
 
   private def connectedComponentFor(startNode: String, visited: mutable.Set[String]): QueryGraph = {
     val queue = mutable.Queue(startNode)
-    var qg = QueryGraph.empty
+    var connectedComponent = QueryGraph.empty
     while (queue.nonEmpty) {
       val node = queue.dequeue()
       if (!visited(node)) {
         visited += node
 
-        val filteredPatterns = patternRelationships.filter { rel =>
-          rel.coveredIds.contains(node) && !qg.patternRelationships.contains(rel)
-        }
+        val (
+          patternRelationshipsInConnectedComponent: Set[PatternRelationship],
+          quantifiedPathPatternsInConnectedComponent: Set[QuantifiedPathPattern],
+          nodes: Set[String]
+        ) = findConnectedEntities(node, connectedComponent)
 
-        val patternsWithSameName =
-          patternRelationships.filterNot(filteredPatterns).filter { r => filteredPatterns.exists(_.name == r.name) }
+        queue.enqueueAll(nodes)
 
-        queue.enqueueAll(filteredPatterns.toIndexedSeq.map(_.otherSide(node)))
-        queue.enqueueAll(patternsWithSameName.toIndexedSeq.flatMap(r => Seq(r.left, r.right)))
-
-        val patternsInConnectedComponent = filteredPatterns ++ patternsWithSameName
-        qg = qg
+        connectedComponent = connectedComponent
           .addPatternNodes(node)
-          .addPatternRelationships(patternsInConnectedComponent.toIndexedSeq)
+          .addPatternRelationships(patternRelationshipsInConnectedComponent)
+          .addQuantifiedPathPatterns(quantifiedPathPatternsInConnectedComponent)
 
-        val alreadyHaveArguments = qg.argumentIds.nonEmpty
+        val alreadyHaveArguments = connectedComponent.argumentIds.nonEmpty
 
         if (
           !alreadyHaveArguments && (argumentsOverLapsWith(
-            qg.idsWithoutOptionalMatchesOrUpdates
+            connectedComponent.idsWithoutOptionalMatchesOrUpdates
           ) || predicatePullsInArguments(node))
         ) {
-          qg = qg.withArgumentIds(argumentIds)
-          val nodesSolvedByArguments = patternNodes intersect qg.argumentIds
+          connectedComponent = connectedComponent.withArgumentIds(argumentIds)
+          val nodesSolvedByArguments = patternNodes intersect connectedComponent.argumentIds
           queue.enqueueAll(nodesSolvedByArguments.toIndexedSeq)
         }
       }
     }
-    qg
+    connectedComponent
+  }
+
+  private def findConnectedEntities(
+    node: String,
+    connectedComponent: QueryGraph
+  ): (Set[PatternRelationship], Set[QuantifiedPathPattern], Set[String]) = {
+
+    val filteredPatterns = patternRelationships.filter { rel =>
+      rel.coveredNodeIds.contains(node) && !connectedComponent.patternRelationships.contains(rel)
+    }
+    val filteredQPPatterns = quantifiedPathPatterns.filter { rel =>
+      rel.coveredNodeIds.contains(node) && !connectedComponent.quantifiedPathPatterns.contains(rel)
+    }
+
+    val patternsWithSameName =
+      patternRelationships.filterNot(filteredPatterns).filter { r => filteredPatterns.exists(_.name == r.name) }
+
+    val filteredPatternNodes = filteredPatterns.map(_.otherSide(node))
+    val filteredQPPatternNodes = filteredQPPatterns.map(_.otherSide(node))
+
+    val patternsWithSameNameNodes = patternsWithSameName.flatMap(r => Seq(r.left, r.right))
+
+    (
+      filteredPatterns ++ patternsWithSameName,
+      filteredQPPatterns,
+      filteredPatternNodes ++ filteredQPPatternNodes ++ patternsWithSameNameNodes
+    )
   }
 
   private def argumentsOverLapsWith(coveredIds: Set[String]) = (argumentIds intersect coveredIds).nonEmpty
@@ -424,6 +477,7 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
   def containsReads: Boolean = {
     (patternNodes.nonEmpty && (patternNodes -- argumentIds).nonEmpty) ||
     patternRelationships.nonEmpty ||
+    quantifiedPathPatterns.nonEmpty ||
     selections.nonEmpty ||
     shortestPathPatterns.nonEmpty ||
     optionalMatches.nonEmpty ||
@@ -453,6 +507,7 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
       .intersect(argumentIds)
       .diff(patternRelationships.flatMap(_.coveredIds))
       .diff(shortestPathPatterns.flatMap(_.rel.coveredIds))
+      .diff(quantifiedPathPatterns.flatMap(_.coveredNodeIds))
   }
 
   override def toString: String = {
@@ -486,6 +541,7 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
 
     addSetIfNonEmptyS(patternNodes, "Nodes")
     addSetIfNonEmpty(patternRelationships, "Rels", (_: PatternRelationship).toString)
+    addSetIfNonEmpty(quantifiedPathPatterns, "Quantified path patterns", (_: QuantifiedPathPattern).toString)
     addSetIfNonEmptyS(argumentIds, "Arguments")
     addSetIfNonEmpty(selections.flatPredicates, "Predicates", (e: Expression) => stringifier.apply(e))
     addSetIfNonEmpty(shortestPathPatterns, "Shortest paths", (_: ShortestPathPattern).toString)
@@ -505,46 +561,56 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
    */
   override def equals(in: Any): Boolean = {
     in match {
-      case other: QueryGraph =>
+      case other @ QueryGraph(
+          otherPatternRelationships,
+          otherQuantifiedPathPatterns,
+          otherPatternNodes,
+          otherArgumentIds,
+          otherSelections,
+          otherOptionalMatches,
+          otherHints,
+          otherShortestPathPatterns,
+          otherMutatingPatterns
+        ) =>
         if (this eq other) {
           true
         } else {
-          patternRelationships == other.patternRelationships &&
-          patternNodes == other.patternNodes &&
-          argumentIds == other.argumentIds &&
-          selections == other.selections &&
-          optionalMatches.toSet == other.optionalMatches.toSet &&
-          hints == other.hints &&
-          shortestPathPatterns == other.shortestPathPatterns &&
-          mutatingPatterns == other.mutatingPatterns
+          patternRelationships == otherPatternRelationships &&
+          quantifiedPathPatterns == otherQuantifiedPathPatterns &&
+          patternNodes == otherPatternNodes &&
+          argumentIds == otherArgumentIds &&
+          selections == otherSelections &&
+          optionalMatches.toSet == otherOptionalMatches.toSet &&
+          hints == otherHints &&
+          shortestPathPatterns == otherShortestPathPatterns &&
+          mutatingPatterns == otherMutatingPatterns
         }
       case _ =>
         false
     }
   }
 
-  override lazy val hashCode: Int = {
-    ScalaRunTime._hashCode((
-      patternRelationships,
-      patternNodes,
-      argumentIds,
-      selections,
-      optionalMatches.toSet,
-      hints.groupBy(identity),
-      shortestPathPatterns,
-      mutatingPatterns
-    ))
+  override lazy val hashCode: Int = this match {
+    // The point of this "useless" match case is to catch your attention if you modified the fields of the QueryGraph.
+    // Please remember to update the hash code.
+    case QueryGraph(_, _, _, _, _, _, _, _, _) =>
+      ScalaRunTime._hashCode((
+        patternRelationships,
+        quantifiedPathPatterns,
+        patternNodes,
+        argumentIds,
+        selections,
+        optionalMatches.toSet,
+        hints.groupBy(identity),
+        shortestPathPatterns,
+        mutatingPatterns
+      ))
   }
 
 }
 
 object QueryGraph {
   val empty: QueryGraph = QueryGraph()
-
-  def coveredIdsForPatterns(patternNodeIds: Set[String], patternRels: Set[PatternRelationship]): Set[String] = {
-    val patternRelIds = patternRels.flatMap(_.coveredIds)
-    patternNodeIds ++ patternRelIds
-  }
 
   implicit object byCoveredIds extends Ordering[QueryGraph] {
 

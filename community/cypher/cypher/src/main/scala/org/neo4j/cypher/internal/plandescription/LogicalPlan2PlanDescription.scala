@@ -137,7 +137,6 @@ import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSemiApply
 import org.neo4j.cypher.internal.logical.plans.Limit
-import org.neo4j.cypher.internal.logical.plans.Limited
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlans
@@ -180,7 +179,6 @@ import org.neo4j.cypher.internal.logical.plans.RangeLessThan
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
-import org.neo4j.cypher.internal.logical.plans.Repetitions
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
@@ -227,7 +225,6 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.Uniqueness
-import org.neo4j.cypher.internal.logical.plans.Unlimited
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
@@ -245,6 +242,9 @@ import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInte
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringMaker
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.util.Repetition
+import org.neo4j.cypher.internal.util.UpperBound.Limited
+import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols.ListType
 import org.neo4j.exceptions.InternalException
@@ -1912,10 +1912,10 @@ case class LogicalPlan2PlanDescription(
       case _: MultiNodeIndexSeek | _: AssertingMultiNodeIndexSeek | _: SubqueryForeach =>
         PlanDescriptionImpl(id = plan.id, plan.productPrefix, children, Seq.empty, variables, withRawCardinalities)
 
-      case Trail(_, _, repetitions, _, _, _, _, _, _, _, _) =>
-        val repString = repetitions match {
-          case Repetitions(min, Limited(n)) => s"{$min, $n}"
-          case Repetitions(min, Unlimited)  => s"{$min, *}"
+      case Trail(_, _, repetition, _, _, _, _, _, _, _, _) =>
+        val repString = repetition match {
+          case Repetition(min, Limited(n)) => s"{$min, $n}"
+          case Repetition(min, Unlimited)  => s"{$min, *}"
         }
         PlanDescriptionImpl(
           id = plan.id,
@@ -2439,8 +2439,9 @@ case class LogicalPlan2PlanDescription(
     case NoOptions               => pretty""
     case OptionsParam(parameter) => pretty" OPTIONS ${asPrettyString(parameter)}"
     case OptionsMap(options) =>
-      pretty" OPTIONS ${options.map({ case (s, e) => pretty"${asPrettyString(s)}: ${asPrettyString(e)}" }
-      ).mkPrettyString("{", SEPARATOR, "}")}"
+      pretty" OPTIONS ${options.map({
+        case (s, e) => pretty"${asPrettyString(s)}: ${asPrettyString(e)}"
+      }).mkPrettyString("{", SEPARATOR, "}")}"
   }
 
   private def setPropertyInfo(idName: PrettyString, expression: Expression, removeOtherProps: Boolean): PrettyString = {

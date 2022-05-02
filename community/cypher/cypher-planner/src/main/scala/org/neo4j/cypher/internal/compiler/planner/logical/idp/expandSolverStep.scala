@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
@@ -115,7 +116,8 @@ object expandSolverStep {
     context: LogicalPlanningContext
   ): LogicalPlan = {
     patternRel match {
-      case rel: PatternRelationship => produceLogicalPlan(qg, rel, sourcePlan, nodeId, availableSymbols, context)
+      case rel: PatternRelationship   => produceLogicalPlan(qg, rel, sourcePlan, nodeId, availableSymbols, context)
+      case qpp: QuantifiedPathPattern => ??? // TODO: implement
     }
   }
 

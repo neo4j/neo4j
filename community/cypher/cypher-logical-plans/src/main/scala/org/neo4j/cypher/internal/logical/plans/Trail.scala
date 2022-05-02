@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
@@ -45,7 +46,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 case class Trail(
   override val left: LogicalPlan,
   override val right: LogicalPlan,
-  repetitions: Repetitions,
+  repetition: Repetition,
   start: String,
   end: Option[String],
   innerStart: String,
@@ -61,20 +62,6 @@ case class Trail(
 
   override val availableSymbols: Set[String] =
     left.availableSymbols ++ end + start ++ groupNodes.map(_.outerName) ++ groupRelationships.map(_.outerName)
-}
-
-case class Repetitions(min: Int, max: UpperBound)
-
-sealed trait UpperBound {
-  def isGreaterThan(count: Int): Boolean
-}
-
-case object Unlimited extends UpperBound {
-  override def isGreaterThan(count: Int): Boolean = true
-}
-
-case class Limited(n: Int) extends UpperBound {
-  override def isGreaterThan(count: Int): Boolean = count < n
 }
 
 case class GroupEntity(innerName: String, outerName: String)

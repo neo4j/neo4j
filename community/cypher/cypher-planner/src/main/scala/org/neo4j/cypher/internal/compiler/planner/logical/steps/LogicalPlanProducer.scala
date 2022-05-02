@@ -1059,7 +1059,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       optionalQG
         .patternRelationships
         .filter(rel => ids(rel.name))
-        .toSeq
 
     val optionalMatchQG =
       solveds

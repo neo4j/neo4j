@@ -155,6 +155,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
           QueryGraph(
             Set.empty,
             Set.empty,
+            Set.empty,
             Set("i"),
             Selections(Set.empty),
             Vector.empty,

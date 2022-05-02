@@ -1391,7 +1391,7 @@ case class InterpretedPipeMapper(
       case Trail(
           _,
           _,
-          repetitions,
+          repetition,
           start,
           end,
           innerStart,
@@ -1404,7 +1404,7 @@ case class InterpretedPipeMapper(
         TrailPipe(
           lhs,
           rhs,
-          repetitions,
+          repetition,
           start,
           end,
           innerStart,

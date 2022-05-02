@@ -37,24 +37,24 @@ class ConnectedComponentsTest extends CypherFunSuite {
   }
 
   test("(a)->(b)->(c) does contain one connected component") {
-    val disconnected = connectedComponents(Vector(
+    val connected = connectedComponents(Vector(
       ComponentPart(varFor("a"), varFor("b")),
       ComponentPart(varFor("b"), varFor("c"))
     ))
 
-    disconnected should equal(Vector(
+    connected should equal(Vector(
       ConnectedComponent(ComponentPart(varFor("a"), varFor("b")), ComponentPart(varFor("b"), varFor("c")))
     ))
   }
 
   test("(a)->(b)->(c)->(d) does only contain one component") {
-    val disconnected = connectedComponents(Vector(
+    val connected = connectedComponents(Vector(
       ComponentPart(varFor("a"), varFor("b")),
       ComponentPart(varFor("b"), varFor("c")),
       ComponentPart(varFor("c"), varFor("d"))
     ))
 
-    disconnected shouldBe Vector(ConnectedComponent(
+    connected shouldBe Vector(ConnectedComponent(
       ComponentPart(varFor("a"), varFor("b")),
       ComponentPart(varFor("b"), varFor("c")),
       ComponentPart(varFor("c"), varFor("d"))
@@ -62,16 +62,28 @@ class ConnectedComponentsTest extends CypherFunSuite {
   }
 
   test("(a)->(b)->(c)-(a) contains one component ") {
-    val disconnected = connectedComponents(Vector(
+    val connected = connectedComponents(Vector(
       ComponentPart(varFor("a"), varFor("b")),
       ComponentPart(varFor("b"), varFor("c")),
       ComponentPart(varFor("c"), varFor("a"))
     ))
 
-    disconnected shouldBe Vector(ConnectedComponent(
+    connected shouldBe Vector(ConnectedComponent(
       ComponentPart(varFor("a"), varFor("b")),
       ComponentPart(varFor("b"), varFor("c")),
       ComponentPart(varFor("c"), varFor("a"))
+    ))
+  }
+
+  test("(a)->(b)->(c), (b)->(d) contains one component ") {
+    val connected = connectedComponents(Vector(
+      ComponentPart(varFor("a"), varFor("b"), varFor("c")),
+      ComponentPart(varFor("b"), varFor("d"))
+    ))
+
+    connected shouldBe Vector(ConnectedComponent(
+      ComponentPart(varFor("a"), varFor("b"), varFor("c")),
+      ComponentPart(varFor("b"), varFor("d"))
     ))
   }
 
