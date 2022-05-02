@@ -19,10 +19,6 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
-import static java.lang.Thread.sleep;
-
 import java.time.Clock;
 import org.neo4j.time.Clocks;
 
@@ -56,11 +52,13 @@ public class ExecutionSupervisor {
         long startTime = currentTimeMillis();
         start(execution);
 
-        while (execution.stillExecuting()) {
-            finishAwareSleep(execution);
-            monitor.check(execution);
+        try {
+            execution.awaitCompletion();
+        } catch (InterruptedException e) {
+            execution.panic(e);
+        } finally {
+            end(execution, currentTimeMillis() - startTime);
         }
-        end(execution, currentTimeMillis() - startTime);
     }
 
     private long currentTimeMillis() {
@@ -73,21 +71,5 @@ public class ExecutionSupervisor {
 
     protected void start(StageExecution execution) {
         monitor.start(execution);
-    }
-
-    private void finishAwareSleep(StageExecution execution) {
-        long endTime = monitor.nextCheckTime();
-        while (currentTimeMillis() < endTime) {
-            if (!execution.stillExecuting()) {
-                break;
-            }
-
-            try {
-                sleep(min(10, max(0, endTime - currentTimeMillis())));
-            } catch (InterruptedException e) {
-                execution.panic(e);
-                break;
-            }
-        }
     }
 }
