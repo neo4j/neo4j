@@ -233,7 +233,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
 
     private void runProcess(List<String> command, ProcessManager.Behaviour behaviour) {
         List<String> entireCommand = asExternalCommand(command);
-        ctx.processManager().run(entireCommand, behaviour);
+        var powershellProcessId = ctx.processManager().run(entireCommand, behaviour);
         if (entireCommand.stream().anyMatch(cmd -> cmd.equals(powershellCmd()))
                 && command.stream()
                         .anyMatch(cmd -> cmd.endsWith(PRUNSRV_I_386_EXE) || cmd.endsWith(PRUNSRV_AMD_64_EXE))) {
@@ -258,8 +258,15 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
             Stopwatch stopwatch = Stopwatch.start();
             do {
                 try {
-                    resultFromPowerShellCommand("Get-Process", PRUNSRV_AMD_64_EXE + "," + PRUNSRV_I_386_EXE);
-                    // If this command completes normally there's at least one running process containing that name
+                    // First check if the powershell process that should have started the "prunsrv" command still runs
+                    resultFromPowerShellCommand("Get-Process", "-Id", String.valueOf(powershellProcessId));
+                    // Then check if the actual prunsrv process is still running
+                    resultFromPowerShellCommand(
+                            "Get-Process", PRUNSRV_AMD_64_EXE + "," + PRUNSRV_I_386_EXE + "," + powershellCmd());
+                    // ... if these two commands complete normally then either the powershell process that's starting
+                    // the prunsrv process still runs, or there's at least one running process containing that
+                    // prunsrv name
+
                     try {
                         Thread.sleep(100);
                     } catch (InterruptedException ie) {
