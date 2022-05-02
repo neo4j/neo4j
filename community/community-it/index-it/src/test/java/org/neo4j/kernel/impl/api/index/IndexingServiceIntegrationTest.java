@@ -252,7 +252,7 @@ public class IndexingServiceIntegrationTest {
     void dropIndexRaceWithCheckpoint(IndexType indexType) throws Throwable {
         CheckPointer checkPointer = getCheckPointer(database);
 
-        int nbrOfIndexes = 100;
+        int nbrOfIndexes = 10;
         try (Transaction tx = database.beginTx()) {
             for (int i = 0; i < nbrOfIndexes; i++) {
                 tx.schema()
