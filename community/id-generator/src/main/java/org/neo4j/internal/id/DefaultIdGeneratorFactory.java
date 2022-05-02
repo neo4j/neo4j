@@ -180,9 +180,6 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
                 defaultIdMonitor(fs, fileName, config),
                 openOptions,
                 slotDistribution);
-        try (var cursorContext = contextFactory.create("idGeneratorCreation")) {
-            generator.checkpoint(cursorContext);
-        }
         generators.put(idType, generator);
         return generator;
     }
