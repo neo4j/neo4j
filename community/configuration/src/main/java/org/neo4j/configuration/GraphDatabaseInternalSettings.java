@@ -722,14 +722,14 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Description("Specifies at which file size the checkpoint log will auto-rotate. Minimum accepted value is 1 KiB. ")
     @Internal
     public static final Setting<Long> checkpoint_logical_log_rotation_threshold = newBuilder(
-                    "internal.dbms.checkpoint_log.rotation.size", BYTES, mebiBytes(1))
+                    "internal.db.checkpoint_log.rotation.size", BYTES, mebiBytes(1))
             .addConstraint(min(kibiBytes(1)))
             .build();
 
     @Description("Number of checkpoint logs files to keep.")
     @Internal
     public static final Setting<Integer> checkpoint_logical_log_keep_threshold = newBuilder(
-                    "internal.dbms.checkpoint_log.rotation.keep.files", INT, 3)
+                    "internal.db.checkpoint_log.rotation.keep.files", INT, 3)
             .addConstraint(range(2, 100))
             .build();
 

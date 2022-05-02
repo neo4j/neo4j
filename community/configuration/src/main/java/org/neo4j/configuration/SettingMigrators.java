@@ -20,14 +20,7 @@
 package org.neo4j.configuration;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
-import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
-import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
-import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
-import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
-import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
-import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
-import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.*;
 
 import java.util.Collection;
 import java.util.List;
@@ -127,6 +120,18 @@ public final class SettingMigrators {
                     log,
                     "dbms.connector.bolt.connection_keep_alive_scheduling_interval",
                     BoltConnector.connection_keep_alive_streaming_scheduling_interval);
+        }
+    }
+
+    @ServiceProvider
+    public static class CheckpointSettingsMigrator implements SettingMigrator {
+        @Override
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.checkpoint", check_point_policy);
+            migrateSettingNameChange(values, log, "dbms.checkpoint.interval.time", check_point_interval_time);
+            migrateSettingNameChange(values, log, "dbms.checkpoint.interval.tx", check_point_interval_tx);
+            migrateSettingNameChange(values, log, "dbms.checkpoint.interval.volume", check_point_interval_volume);
+            migrateSettingNameChange(values, log, "dbms.checkpoint.iops.limit", check_point_iops_limit);
         }
     }
 
@@ -465,9 +470,9 @@ public final class SettingMigrators {
                         "internal.dbms.bolt.outbound_buffer_throttle.max_duration"),
                 new Mapping(
                         "unsupported.dbms.checkpoint_log.rotation.keep.files",
-                        "internal.dbms.checkpoint_log.rotation.keep.files"),
+                        "internal.db.checkpoint_log.rotation.keep.files"),
                 new Mapping(
-                        "unsupported.dbms.checkpoint_log.rotation.size", "internal.dbms.checkpoint_log.rotation.size"),
+                        "unsupported.dbms.checkpoint_log.rotation.size", "internal.db.checkpoint_log.rotation.size"),
                 new Mapping(
                         "unsupported.dbms.config.command_evaluation_timeout",
                         "internal.dbms.config.command_evaluation_timeout"),

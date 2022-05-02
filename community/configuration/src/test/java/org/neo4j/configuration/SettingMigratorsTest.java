@@ -22,14 +22,7 @@ package org.neo4j.configuration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
-import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
-import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
-import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
-import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
-import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
-import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
-import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.*;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
@@ -38,6 +31,7 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -45,6 +39,7 @@ import org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.test.extension.Inject;
@@ -184,6 +179,29 @@ class SettingMigratorsTest {
                         "dbms.memory.transaction.datababase_max_size", memory_transaction_database_max_size.name());
 
         assertEquals(1073741824L, config.get(memory_transaction_database_max_size));
+    }
+
+    @Test
+    void checkpointSettingsMigration() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(
+                confFile,
+                List.of(
+                        "dbms.checkpoint=PERIODIC",
+                        "dbms.checkpoint.interval.time=10m",
+                        "dbms.checkpoint.interval.tx=17",
+                        "dbms.checkpoint.interval.volume=125m",
+                        "dbms.checkpoint.iops.limit=456"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger(logProvider.getLog(Config.class));
+
+        assertEquals(GraphDatabaseSettings.CheckpointPolicy.PERIODIC, config.get(check_point_policy));
+        assertEquals(Duration.ofMinutes(10), config.get(check_point_interval_time));
+        assertEquals(17, config.get(check_point_interval_tx));
+        assertEquals(ByteUnit.mebiBytes(125), config.get(check_point_interval_volume));
+        assertEquals(456, config.get(check_point_iops_limit));
     }
 
     @Test

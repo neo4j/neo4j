@@ -399,7 +399,7 @@ public interface ProcedureITBase {
                         "db.checkpoint",
                         "() :: (success :: BOOLEAN?, message :: STRING?)",
                         "Initiate and wait for a new check point, or wait any already on-going check point to complete. "
-                                + "Note that this temporarily disables the `dbms.checkpoint.iops.limit` setting in order to make the check point "
+                                + "Note that this temporarily disables the `db.checkpoint.iops.limit` setting in order to make the check point "
                                 + "complete faster."
                                 + " This might cause transaction throughput to degrade slightly, due to increased IO load.",
                         stringArray("reader", "editor", "publisher", "architect", "admin"),

@@ -518,8 +518,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     }
 
     @Description("Configures the general policy for when check-points should occur. The default policy is the "
-            + "'periodic' check-point policy, as specified by the 'dbms.checkpoint.interval.tx' and "
-            + "'dbms.checkpoint.interval.time' settings. "
+            + "'periodic' check-point policy, as specified by the 'db.checkpoint.interval.tx' and "
+            + "'db.checkpoint.interval.time' settings. "
             + "The Neo4j Enterprise Edition provides two alternative policies: "
             + "The first is the 'continuous' check-point policy, which will ignore those settings and run the "
             + "check-point process all the time. "
@@ -527,7 +527,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "often enough so that the database doesn't get too far behind on deleting old transaction logs in "
             + "accordance with the 'dbms.tx_log.rotation.retention_policy' setting.")
     public static final Setting<CheckpointPolicy> check_point_policy = newBuilder(
-                    "dbms.checkpoint", ofEnum(CheckpointPolicy.class), CheckpointPolicy.PERIODIC)
+                    "db.checkpoint", ofEnum(CheckpointPolicy.class), CheckpointPolicy.PERIODIC)
             .build();
 
     @Description("Configures the transaction interval between check-points. The database will not check-point more "
@@ -538,8 +538,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "of a crash. On the other hand, a longer check-point interval can also reduce the I/O load that "
             + "the database places on the system, as each check-point implies a flushing and forcing of all the "
             + "store files.  The default is '100000' for a check-point every 100000 transactions.")
-    public static final Setting<Integer> check_point_interval_tx = newBuilder(
-                    "dbms.checkpoint.interval.tx", INT, 100000)
+    public static final Setting<Integer> check_point_interval_tx = newBuilder("db.checkpoint.interval.tx", INT, 100000)
             .addConstraint(min(1))
             .build();
 
@@ -552,7 +551,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "the database places on the system, as each check-point implies a flushing and forcing of all the "
             + "store files.")
     public static final Setting<Duration> check_point_interval_time =
-            newBuilder("dbms.checkpoint.interval.time", DURATION, ofMinutes(15)).build();
+            newBuilder("db.checkpoint.interval.time", DURATION, ofMinutes(15)).build();
 
     @Description(
             "Configures the volume of transaction logs between check-points. The database will not check-point more often "
@@ -564,7 +563,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
                     + "the database places on the system, as each check-point implies a flushing and forcing of all the "
                     + "store files.")
     public static final Setting<Long> check_point_interval_volume = newBuilder(
-                    "dbms.checkpoint.interval.volume", BYTES, mebiBytes(250))
+                    "db.checkpoint.interval.volume", BYTES, mebiBytes(250))
             .addConstraint(min(ByteUnit.kibiBytes(1)))
             .build();
 
@@ -581,7 +580,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "this will let the checkpointer flush data as fast as the hardware will go. "
             + "Removing the setting, or commenting it out, will set the default value of 600.")
     public static final Setting<Integer> check_point_iops_limit =
-            newBuilder("dbms.checkpoint.iops.limit", INT, 600).dynamic().build();
+            newBuilder("db.checkpoint.iops.limit", INT, 600).dynamic().build();
 
     // Index sampling
     @Description("Enable or disable background index sampling")
