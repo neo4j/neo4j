@@ -38,7 +38,7 @@ class CypherTransactionsParserTest extends JavaccParserAstTestBase[Clause] with 
             (1, 8, 7)
           ))
         )(defaultPos),
-        Some(InTransactionsParameters(None)(1, 21, 20))
+        Some(InTransactionsParameters(None)((1, 21, 20)))
       )(defaultPos)
 
     parsing(testName) shouldVerify { actual =>

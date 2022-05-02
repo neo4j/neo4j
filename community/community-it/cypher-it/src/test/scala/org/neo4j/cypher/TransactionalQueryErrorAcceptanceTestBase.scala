@@ -113,10 +113,6 @@ abstract class TransactionalQueryErrorAcceptanceTestBase
       "can only be executed in an implicit transaction, but tried to execute in an explicit transaction."
     )(code)
 
-  private def createCsv() = createCSVTempFileURL("file") { writer =>
-    writer.println("1,2")
-  }
-
   override def createBackingDbms(config: Config): DatabaseManagementService =
     new TestDatabaseManagementServiceBuilder().impermanent.setConfig(config).build()
 

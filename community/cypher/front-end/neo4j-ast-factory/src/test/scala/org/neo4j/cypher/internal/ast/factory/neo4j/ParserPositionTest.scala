@@ -105,11 +105,15 @@ class ParserPositionTest extends CypherFunSuite with TestName {
   }
 
   test("MATCH (n) WHERE exists { MATCH (m) WHERE exists { (n)-[]->(m) } }") {
-    val exists :: existsNested :: Nil = javaCcAST(testName).folder.findAllByClass[ExistsSubClause]
-    exists.position shouldBe InputPosition(16, 1, 17)
-    exists.folder.treeFindByClass[Pattern].get.position shouldBe InputPosition(31, 1, 32)
-    existsNested.position shouldBe InputPosition(41, 1, 42)
-    existsNested.folder.treeFindByClass[Pattern].get.position shouldBe InputPosition(50, 1, 51)
+    val existClause = javaCcAST(testName).folder.findAllByClass[ExistsSubClause]
+    existClause match {
+      case exists :: existsNested :: Nil =>
+        exists.position shouldBe InputPosition(16, 1, 17)
+        exists.folder.treeFindByClass[Pattern].get.position shouldBe InputPosition(31, 1, 32)
+        existsNested.position shouldBe InputPosition(41, 1, 42)
+        existsNested.folder.treeFindByClass[Pattern].get.position shouldBe InputPosition(50, 1, 51)
+      case _ => fail("Expected exists subclause to be a Seq of length 2")
+    }
   }
 
   test("MATCH (n) SET n += {name: null}") {

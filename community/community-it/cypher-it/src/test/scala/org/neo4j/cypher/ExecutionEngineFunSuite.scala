@@ -43,6 +43,7 @@ abstract class ExecutionEngineFunSuite
         val entity = left match {
           case _: Node         => tx.getNodeById(left.getId)
           case _: Relationship => tx.getRelationshipById(left.getId)
+          case e               => fail(s"This method only supports Node and Relationship, but got ${e.getClass}")
         }
         entity.hasProperty(propName)
       })
@@ -61,6 +62,7 @@ abstract class ExecutionEngineFunSuite
           val entity = left match {
             case _: Node         => tx.getNodeById(left.getId)
             case _: Relationship => tx.getRelationshipById(left.getId)
+            case e               => fail(s"This method only supports Node and Relationship, but got ${e.getClass}")
           }
           entity.getProperty(propName)
         })

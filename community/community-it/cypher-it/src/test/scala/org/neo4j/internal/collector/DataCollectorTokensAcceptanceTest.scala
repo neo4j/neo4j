@@ -40,9 +40,9 @@ class DataCollectorTokensAcceptanceTest extends ExecutionEngineFunSuite {
 
     // then
     res("section") should be("TOKENS")
-    list(res("data"), "labels") should contain only ("User", "Office", "Manager")
-    list(res("data"), "relationshipTypes") should contain only ("KNOWS", "BOSSES", "AT")
-    list(res("data"), "propertyKeys") should contain only ("name", "age", "weight", "firstName", "lastName", "since")
+    list(res("data"), "labels") should contain.only("User", "Office", "Manager")
+    list(res("data"), "relationshipTypes") should contain.only("KNOWS", "BOSSES", "AT")
+    list(res("data"), "propertyKeys") should contain.only("name", "age", "weight", "firstName", "lastName", "since")
   }
 
   test("should put token counts into META section on retrieveAllAnonymized") {

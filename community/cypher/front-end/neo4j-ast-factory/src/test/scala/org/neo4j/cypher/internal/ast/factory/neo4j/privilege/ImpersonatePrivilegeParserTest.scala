@@ -89,8 +89,8 @@ class ImpersonatePrivilegeParserTest extends AdministrationAndSchemaCommandParse
         val useParamColumn: Int = fooColumn + "foo $".length
         assertAst(func(
           List(
-            ast.UserQualifier(Left("foo"))(1, fooColumn + 1, fooColumn),
-            ast.UserQualifier(Right(ExplicitParameter("userParam", CTString)(1, useParamColumn + 1, useParamColumn)))(
+            ast.UserQualifier(Left("foo"))((1, fooColumn + 1, fooColumn)),
+            ast.UserQualifier(Right(ExplicitParameter("userParam", CTString)((1, useParamColumn + 1, useParamColumn))))(
               defaultPos
             )
           ),

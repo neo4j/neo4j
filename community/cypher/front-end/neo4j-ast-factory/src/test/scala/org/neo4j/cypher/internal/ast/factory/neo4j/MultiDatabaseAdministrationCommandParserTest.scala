@@ -326,8 +326,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         Left("foo"),
         ast.IfExistsThrowError,
         ast.OptionsMap(Map(
-          "existingData" -> StringLiteral("use")(1, 44, 43),
-          "existingDataSeedInstance" -> StringLiteral("84c3ee6f-260e-47db-a4b6-589c807f2c2e")(1, 77, 76)
+          "existingData" -> StringLiteral("use")((1, 44, 43)),
+          "existingDataSeedInstance" -> StringLiteral("84c3ee6f-260e-47db-a4b6-589c807f2c2e")((1, 77, 76))
         )),
         ast.NoWait
       )(defaultPos)
@@ -342,8 +342,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         Left("foo"),
         ast.IfExistsThrowError,
         ast.OptionsMap(Map(
-          "existingData" -> StringLiteral("use")(1, 44, 43),
-          "existingDataSeedInstance" -> StringLiteral("84c3ee6f-260e-47db-a4b6-589c807f2c2e")(1, 77, 76)
+          "existingData" -> StringLiteral("use")((1, 44, 43)),
+          "existingDataSeedInstance" -> StringLiteral("84c3ee6f-260e-47db-a4b6-589c807f2c2e")((1, 77, 76))
         )),
         ast.IndefiniteWait
       )(defaultPos)
@@ -355,7 +355,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ast.CreateDatabase(
         Left("foo"),
         ast.IfExistsThrowError,
-        ast.OptionsParam(Parameter("param", CTMap)(1, 29, 28)),
+        ast.OptionsParam(Parameter("param", CTMap)((1, 29, 28))),
         ast.NoWait
       )(defaultPos)
     )
@@ -495,7 +495,11 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       }
 
       test(s"ALTER DATABASE $$foo SET ACCESS $accessKeyword") {
-        assertAst(ast.AlterDatabase(Right(Parameter("foo", CTString)(1, 16, 15)), ifExists = false, accessType)(
+        assertAst(ast.AlterDatabase(
+          Right(Parameter("foo", CTString)((1, 16, 15))),
+          ifExists = false,
+          accessType
+        )(
           defaultPos
         ))
       }
@@ -506,7 +510,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
       test(s"USE system ALTER DATABASE foo SET ACCESS $accessKeyword") {
         // can parse USE clause, but is not included in AST
-        assertAst(ast.AlterDatabase(literalFoo, ifExists = false, accessType)(1, 12, 11))
+        assertAst(ast.AlterDatabase(literalFoo, ifExists = false, accessType)((1, 12, 11)))
       }
 
       test(s"ALTER DATABASE foo IF EXISTS SET ACCESS $accessKeyword") {

@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.StringLiteral
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
 /* Tests for listing transactions */
@@ -54,7 +53,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
 
     test(s"SHOW $transactionKeyword $$param") {
       assertAst(query(ast.ShowTransactionsClause(
-        Right(Parameter("param", CTAny)(1, 7 + transactionKeyword.length, 6 + transactionKeyword.length)),
+        Right(Parameter("param", CTAny)((1, 7 + transactionKeyword.length, 6 + transactionKeyword.length))),
         None,
         hasYield = false
       )(defaultPos)))
@@ -96,8 +95,8 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       ast.ShowTransactionsClause(
         Left(List.empty),
         Some(ast.Where(
-          Equals(Variable("transactionId")(1, 24, 23), StringLiteral("db1-transaction-123")(1, 40, 39))(1, 38, 37)
-        )(1, 18, 17)),
+          Equals(varFor("transactionId", (1, 24, 23)), StringLiteral("db1-transaction-123")((1, 40, 39)))((1, 38, 37))
+        )((1, 18, 17))),
         hasYield = false
       )(defaultPos)
     ))

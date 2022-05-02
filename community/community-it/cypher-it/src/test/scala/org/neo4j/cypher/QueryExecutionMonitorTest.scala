@@ -66,8 +66,8 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     // when
     runQuery(
       "RETURN 42",
-      r => {
-        verify(monitor, never()).endSuccess(_)
+      _ => {
+        verify(monitor, never()).endSuccess(any())
       }
     )
   }

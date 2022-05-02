@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.util.symbols.CTString
 
 import java.nio.charset.StandardCharsets
 
-import scala.language.implicitConversions
 import scala.util.Failure
 import scala.util.Success
 

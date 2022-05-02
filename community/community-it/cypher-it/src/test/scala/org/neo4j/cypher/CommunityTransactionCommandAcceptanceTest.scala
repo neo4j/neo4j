@@ -1487,31 +1487,30 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     def execute(username: String, password: String, threading: Threading, query: String): Unit = {
       val startTransaction =
         new NamedFunction[LoginContext, Throwable]("threaded-transaction-" + util.Arrays.hashCode(query.toCharArray)) {
-          override def apply(subject: LoginContext): Throwable =
-            try {
-              val tx = graphService.beginTransaction(Type.EXPLICIT, subject)
+          override def apply(subject: LoginContext): Throwable = {
+            val tx = graphService.beginTransaction(Type.EXPLICIT, subject)
 
+            try {
+              var result: Result = null
               try {
-                var result: Result = null
-                try {
-                  result = tx.execute(query)
-                  latch.startAndWaitForAllToStart()
-                } finally {
-                  latch.start()
-                  latch.finishAndWaitForAllToFinish()
-                }
-                if (result != null) {
-                  result.accept((_: Result.ResultRow) => true)
-                  result.close()
-                }
-                tx.commit()
-                null
-              } catch {
-                case t: Throwable => t
+                result = tx.execute(query)
+                latch.startAndWaitForAllToStart()
               } finally {
-                if (tx != null) tx.close()
+                latch.start()
+                latch.finishAndWaitForAllToFinish()
               }
+              if (result != null) {
+                result.accept((_: Result.ResultRow) => true)
+                result.close()
+              }
+              tx.commit()
+              null
+            } catch {
+              case t: Throwable => t
+            } finally {
+              if (tx != null) tx.close()
             }
+          }
         }
       val subject = login(username, password)
       threading.execute(startTransaction, subject)

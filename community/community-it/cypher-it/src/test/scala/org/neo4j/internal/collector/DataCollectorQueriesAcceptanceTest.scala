@@ -711,7 +711,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
 
     override def apply(left: AnyRef): MatchResult = {
       left match {
-        case m: Map[String, AnyRef] =>
+        case m: Map[String, AnyRef] @unchecked =>
           val query = m("query")
           if (query != expectedQuery)
             return MatchResult(
@@ -756,7 +756,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     override def apply(left: AnyRef): MatchResult = {
       val errors = new ArrayBuffer[String]
       left match {
-        case values: Seq[AnyRef] =>
+        case values: Seq[AnyRef] @unchecked =>
           var previousInvocationTime = 0L
 
           for (i <- expectedParams.indices) {
@@ -764,7 +764,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
 
             if (i < values.size) {
               values(i) match {
-                case map: Map[String, AnyRef] =>
+                case map: Map[String, AnyRef] @unchecked =>
                   if (expectedParam != null) {
                     val params = map.getOrElse("params", null)
                     if (params != expectedParam)

@@ -87,7 +87,7 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
     assertAst(query(
       ast.ShowFunctionsClause(ast.AllFunctions, None, None, hasYield = true)(defaultPos),
       yieldClause(
-        ast.ReturnItems(includeExisting = false, Seq(variableReturnItem("description", (1, 22, 21))))(1, 22, 21)
+        ast.ReturnItems(includeExisting = false, Seq(variableReturnItem("description", (1, 22, 21))))((1, 22, 21))
       )
     ))
   }

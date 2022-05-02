@@ -96,14 +96,14 @@ object DataCollectorMatchers {
     override def apply(left: AnyRef): MatchResult = {
       val errors = new ArrayBuffer[String]
       left match {
-        case m: Map[String, AnyRef] =>
+        case m: Map[String, AnyRef] @unchecked =>
           for ((key, expected) <- expecteds) {
             m.get(key) match {
               case None =>
                 errors += s"Expected map to contain '$key', but didn't"
               case Some(value) =>
                 expected match {
-                  case m: Matcher[AnyRef] =>
+                  case m: Matcher[AnyRef] @unchecked =>
                     val matchResult = m.apply(value)
                     if (!matchResult.matches)
                       errors += s"Error matching value for key '$key': \n" + matchResult.failureMessage
@@ -143,14 +143,14 @@ object DataCollectorMatchers {
     override def apply(left: AnyRef): MatchResult = {
       val errors = new ArrayBuffer[String]
       left match {
-        case values: Seq[AnyRef] =>
+        case values: Seq[AnyRef] @unchecked =>
           for (expectedValue <- expected) {
             val contained = contains(values, expectedValue)
             if (contained.isLeft) {
               errors +=
                 (expectedValue match {
-                  case _: Matcher[AnyRef] => s"No value matching ${contained.left}"
-                  case _                  => s"Expected value '$expectedValue' in list, but wasn't there"
+                  case _: Matcher[AnyRef] @unchecked => s"No value matching ${contained.left}"
+                  case _                             => s"Expected value '$expectedValue' in list, but wasn't there"
                 })
             }
           }
@@ -181,7 +181,7 @@ object DataCollectorMatchers {
     override def apply(left: AnyRef): MatchResult = {
       val errors = new ArrayBuffer[String]
       left match {
-        case values: Seq[AnyRef] =>
+        case values: Seq[AnyRef] @unchecked =>
           for (i <- expected.indices) {
             val expectedValue = expected(i)
 
@@ -189,7 +189,7 @@ object DataCollectorMatchers {
               val value = values(i)
               val found =
                 expectedValue match {
-                  case m: Matcher[AnyRef] =>
+                  case m: Matcher[AnyRef] @unchecked =>
                     m.apply(value).matches
                   case something =>
                     arraySafeEquals(value, something)
@@ -220,10 +220,10 @@ object DataCollectorMatchers {
     var error = ""
     var matchedElement: Option[AnyRef] = None
     left match {
-      case values: Seq[AnyRef] =>
+      case values: Seq[AnyRef] @unchecked =>
         val matcher: Matcher[AnyRef] = expected match {
-          case m: Matcher[AnyRef] => m
-          case expectedValue      => equal(expectedValue)
+          case m: Matcher[AnyRef] @unchecked => m
+          case expectedValue                 => equal(expectedValue)
         }
         matchedElement = values.find(matcher(_).matches)
         if (matchedElement.isEmpty) {
@@ -267,7 +267,7 @@ object DataCollectorMatchers {
 
     override def apply(left: AnyRef): MatchResult =
       MatchResult(
-        matches = left.isInstanceOf[T],
+        matches = left.isInstanceOf[T @unchecked],
         rawFailureMessage = s"'$left' is not an instance of '${clazz.getSimpleName}'",
         rawNegatedFailureMessage = ""
       )
@@ -321,7 +321,7 @@ object DataCollectorMatchers {
         case key :: Nil => res(key)
         case key :: rest =>
           res(key) match {
-            case m: Map[String, AnyRef] => inner(m, rest)
+            case m: Map[String, AnyRef] @unchecked => inner(m, rest)
             case notMap =>
               throw new IllegalArgumentException(s"Expected map but got '$notMap'")
           }

@@ -57,7 +57,7 @@ class NodePatternPredicateParserTest extends CypherFunSuite with TestName with J
         ),
         properties = Some(mapOf("prop" -> literalInt(42))),
         predicate = Some(lessThan(prop("n", "otherProp"), literalInt(123)))
-      )(1, 1, 0)
+      )((1, 1, 0))
     }
   }
 
