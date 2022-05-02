@@ -124,6 +124,7 @@ import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans
@@ -3586,6 +3587,64 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // with(out) relationship types
     // length variations
 
+    // simple length
+    assertGood(
+      attach(
+        FindShortestPaths(
+          lhsLP,
+          ShortestPathPattern(
+            None,
+            PatternRelationship(
+              "r",
+              ("  UNNAMED23", "y"),
+              SemanticDirection.BOTH,
+              Seq.empty,
+              SimplePatternLength
+            ),
+            single = true
+          )(null),
+          Seq.empty
+        ),
+        2345.0
+      ),
+      planDescription(
+        id,
+        "ShortestPath",
+        SingleChild(lhsPD),
+        Seq(details(s"(${anonVar("23")})-[r]-(y)")),
+        Set("r", "a", anonVar("23"), "y")
+      )
+    )
+
+    // fixed length of 1
+    assertGood(
+      attach(
+        FindShortestPaths(
+          lhsLP,
+          ShortestPathPattern(
+            None,
+            PatternRelationship(
+              "r",
+              ("  UNNAMED23", "y"),
+              SemanticDirection.BOTH,
+              Seq.empty,
+              VarPatternLength(1, Some(1))
+            ),
+            single = true
+          )(null),
+          Seq.empty
+        ),
+        2345.0
+      ),
+      planDescription(
+        id,
+        "ShortestPath",
+        SingleChild(lhsPD),
+        Seq(details(s"(${anonVar("23")})-[r]-(y)")),
+        Set("r", "a", anonVar("23"), "y")
+      )
+    )
+
     // without: predicates, path name, relationship type
     assertGood(
       attach(
@@ -3672,6 +3731,35 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         Set("r", "a", anonVar("2"))
       )
     )
+
+    // with: predicates, UNNAMED variables, relationship type, unbounded max length
+    assertGood(
+      attach(
+        FindShortestPaths(
+          lhsLP,
+          ShortestPathPattern(
+            None,
+            PatternRelationship(
+              "r",
+              ("a", "  UNNAMED2"),
+              SemanticDirection.BOTH,
+              Seq(relType("R")),
+              VarPatternLength(1, None)
+            ),
+            single = true
+          )(null),
+          Seq(predicate)
+        ),
+        2345.0
+      ),
+      planDescription(
+        id,
+        "ShortestPath",
+        SingleChild(lhsPD),
+        Seq(details(s"(a)-[r:R*]-(${anonVar("2")}) WHERE r.prop = $$autostring_1")),
+        Set("r", "a", anonVar("2"))
+      )
+    )
   }
 
   test("Optional") {
@@ -3706,6 +3794,54 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "ProjectEndpoints",
         SingleChild(lhsPD),
         Seq(details("(start)-[r]->(end)")),
+        Set("a", "start", "r", "end")
+      )
+    )
+
+    assertGood(
+      attach(
+        ProjectEndpoints(
+          lhsLP,
+          "r",
+          "start",
+          startInScope = true,
+          "end",
+          endInScope = true,
+          None,
+          directed = true,
+          SimplePatternLength
+        ),
+        234.2
+      ),
+      planDescription(
+        id,
+        "ProjectEndpoints",
+        SingleChild(lhsPD),
+        Seq(details("(start)-[r]->(end)")),
+        Set("a", "start", "r", "end")
+      )
+    )
+
+    assertGood(
+      attach(
+        ProjectEndpoints(
+          lhsLP,
+          "r",
+          "start",
+          startInScope = true,
+          "end",
+          endInScope = true,
+          None,
+          directed = true,
+          VarPatternLength(1, None)
+        ),
+        234.2
+      ),
+      planDescription(
+        id,
+        "ProjectEndpoints",
+        SingleChild(lhsPD),
+        Seq(details("(start)-[r*]->(end)")),
         Set("a", "start", "r", "end")
       )
     )

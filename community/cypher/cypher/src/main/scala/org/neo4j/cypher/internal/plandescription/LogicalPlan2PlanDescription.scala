@@ -2222,7 +2222,7 @@ case class LogicalPlan2PlanDescription(
     patternLength: PatternLength
   ): PrettyString = {
     val (min, maybeMax) = patternLength match {
-      case SimplePatternLength             => (1, None)
+      case SimplePatternLength             => (1, Some(1))
       case VarPatternLength(min, maybeMax) => (min, maybeMax)
     }
 
