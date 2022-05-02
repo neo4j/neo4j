@@ -42,7 +42,7 @@ case object selectCovered extends SelectionCandidateGenerator with SelectionCand
     if (unsolvedScalarPredicates.isEmpty) {
       Iterator.empty
     } else {
-      val plan = context.logicalPlanProducer.planSelection(input, unsolvedScalarPredicates.toSeq, context)
+      val plan = context.logicalPlanProducer.planSelection(input, unsolvedScalarPredicates.toVector, context)
       Iterator(SelectionCandidate(plan, unsolvedScalarPredicates))
     }
   }

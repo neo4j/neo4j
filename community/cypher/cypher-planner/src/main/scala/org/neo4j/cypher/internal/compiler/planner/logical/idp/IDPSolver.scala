@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.compiler.helpers.IteratorSupport.RichIterator
-import org.neo4j.cypher.internal.compiler.helpers.LazyIterable
 import org.neo4j.cypher.internal.compiler.planner.logical.ProjectingSelector
 import org.neo4j.cypher.internal.compiler.planner.logical.Selector
 import org.neo4j.exceptions.InternalException
@@ -123,7 +122,7 @@ class IDPSolver[Solvable, Result, Context](
         while (keepGoing && goals.hasNext) {
           val goal = goals.next()
           if (!table.contains(goal, sorted = false)) {
-            val candidates = LazyIterable(generator(registry, goal, table, context))
+            val candidates: Iterable[Result] = generator(registry, goal, table, context).toVector
             val (extraCandidates, baseCandidates) = candidates.partition(extraRequirement.fulfils)
             val bestExtraCandidate = candidateSelector(
               s"best sorted plan for ${goal.bitSet}@${registry.explode(goal.bitSet)}"
@@ -156,7 +155,7 @@ class IDPSolver[Solvable, Result, Context](
 
     def findBestCandidateInBlock(blockSize: Int): Goal = {
       // Find all candidates that solve the highest number of relationships, ignoring sorted plans.
-      val blockCandidates: Iterable[(Goal, Result)] = LazyIterable(table.unsortedPlansOfSize(blockSize)).toIndexedSeq
+      val blockCandidates: Iterable[(Goal, Result)] = table.unsortedPlansOfSize(blockSize).toVector
       // Select the best of those. These candidates solve different things.
       // The best of the candidates is likely to appear in larger plans, so it is a good idea to compact that one.
       val bestInBlock: Option[(Goal, Result)] =
