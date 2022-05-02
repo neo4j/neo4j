@@ -72,3 +72,17 @@ Feature "List6 - List size": Scenario "Fail for `size()` on pattern predicates":
 
 // Failing with M18 TCK - Bug in TCK impacting Scala 2.13 Only https://github.com/opencypher/openCypher/pull/528
 Feature "Graph3 - Node labels": Scenario "`labels()` should accept type Any"
+
+// Removed octal syntax, these tests will be fixed in the M19 TCK release
+Feature "Literals4 - Octal integer": Scenario "Return a short positive octal integer"
+Feature "Literals4 - Octal integer": Scenario "Return the largest octal integer"
+Feature "Literals4 - Octal integer": Scenario "Return a positive octal zero"
+Feature "Literals4 - Octal integer": Scenario "Return a negative octal zero"
+Feature "Literals4 - Octal integer": Scenario "Return a short negative octal integer"
+Feature "Literals4 - Octal integer": Scenario "Return a long negative octal integer"
+Feature "Literals4 - Octal integer": Scenario "Return a long positive octal integer"
+Feature "Literals4 - Octal integer": Scenario "Return the smallest octal integer"
+Feature "Literals7 - List": Scenario "Return a list containing a octal integer"
+Feature "Literals7 - List": Scenario "Return a list containing multiple integer"
+Feature "Literals8 - Maps": Scenario "Return a map containing a octal integer"
+Feature "Temporal5 - Access Components of Temporal Values": Scenario "Should provide accessors for date in last weekYear"

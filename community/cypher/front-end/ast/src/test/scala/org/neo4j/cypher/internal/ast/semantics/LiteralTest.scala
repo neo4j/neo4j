@@ -123,7 +123,7 @@ class LiteralTest extends SemanticFunSuite {
     assert(signedHex("-0x034").value === -0x034)
   }
 
-  test("correctly parses hex numbers (with soon-to-be-deprecated syntax)") {
+  test("correctly parses hex numbers with old syntax") {
     assert(signedHex("0X22").value === 0x22)
     assert(signedHex("0X0").value === 0x0)
     assert(signedHex("0X734").value === 0x734)

@@ -48,39 +48,4 @@ class ReplaceDeprecatedCypherSyntaxTest extends CypherFunSuite with AstConstruct
   test("should not rewrite test.timestamp()") {
     assertNotRewritten("RETURN test.timestamp() AS t")
   }
-
-  test("should rewrite 0X123 to 0x123") {
-    assertRewritten(
-      "RETURN 0X123 AS t",
-      "RETURN 0x123 AS t"
-    )
-  }
-
-  test("should rewrite 0X9fff to 0x9fff") {
-    assertRewritten(
-      "RETURN 0X9fff AS t",
-      "RETURN 0x9fff AS t"
-    )
-  }
-
-  test("should rewrite -0X9FFF to -0x9fff") {
-    assertRewritten(
-      "RETURN -0X9FFF AS t",
-      "RETURN -0x9fff AS t"
-    )
-  }
-
-  test("should rewrite 01256 to 0o1256") {
-    assertRewritten(
-      "RETURN 01256 AS t",
-      "RETURN 0o1256 AS t"
-    )
-  }
-
-  test("should rewrite -01256 to -0o1256") {
-    assertRewritten(
-      "RETURN -01256 AS t",
-      "RETURN -0o1256 AS t"
-    )
-  }
 }

@@ -26,12 +26,8 @@ import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
-import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
-import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
-import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.Ref
@@ -53,21 +49,6 @@ object Deprecations {
   case object syntacticallyDeprecatedFeaturesIn4_X extends SyntacticDeprecations {
 
     override val find: PartialFunction[Any, Deprecation] = {
-
-      // old octal literal syntax, don't support underscores
-      case p @ SignedOctalIntegerLiteral(stringVal)
-        if stringVal.charAt(stringVal.indexOf('0') + 1) != 'o' && stringVal.charAt(stringVal.indexOf('0') + 1) != '_' =>
-        Deprecation(
-          Some(Ref(p) -> SignedOctalIntegerLiteral(stringVal.patch(stringVal.indexOf('0') + 1, "o", 0))(p.position)),
-          Some(DeprecatedOctalLiteralSyntax(p.position))
-        )
-
-      // old hex literal syntax
-      case p @ SignedHexIntegerLiteral(stringVal) if stringVal.charAt(stringVal.indexOf('0') + 1) == 'X' =>
-        Deprecation(
-          Some(Ref(p) -> SignedHexIntegerLiteral(stringVal.toLowerCase)(p.position)),
-          Some(DeprecatedHexLiteralSyntax(p.position))
-        )
 
       // timestamp
       case f @ FunctionInvocation(namespace, FunctionName(name), _, _)

@@ -585,19 +585,54 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         } chain specifyType(CTInteger, x)
 
       case x: OctalIntegerLiteral =>
+        val stringVal = x.stringVal
         when(!validNumber(x)) {
-          if (x.stringVal matches "^-?0o?[0-7]+$")
+          if (stringVal matches "^-?0o?[0-7]+$")
             SemanticError("integer is too large", x.position)
           else
             SemanticError("invalid literal number", x.position)
+        } ifOkChain {
+          (state: SemanticState) =>
+            {
+              val errors =
+                // old octal literal syntax, don't support underscores
+                if (
+                  stringVal.charAt(stringVal.indexOf('0') + 1) != 'o' && stringVal.charAt(
+                    stringVal.indexOf('0') + 1
+                  ) != '_'
+                ) {
+                  val newStringVal = stringVal.patch(stringVal.indexOf('0') + 1, "o", 0)
+                  Seq(SemanticError(
+                    s"The octal integer literal syntax `$stringVal` is no longer supported, please use `$newStringVal` instead",
+                    x.position
+                  ))
+                } else
+                  Seq.empty[SemanticErrorDef]
+              SemanticCheckResult(state, errors)
+            }
         } chain specifyType(CTInteger, x)
 
       case x: HexIntegerLiteral =>
+        val stringVal = x.stringVal
         when(!validNumber(x)) {
-          if (x.stringVal matches "^-?0x[0-9a-fA-F]+$")
+          if (stringVal matches "^-?0x[0-9a-fA-F]+$")
             SemanticError("integer is too large", x.position)
           else
             SemanticError("invalid literal number", x.position)
+        } ifOkChain {
+          (state: SemanticState) =>
+            {
+              val errors =
+                if (stringVal.charAt(stringVal.indexOf('0') + 1) == 'X') {
+                  val newStringVal = stringVal.replace('X', 'x')
+                  Seq(SemanticError(
+                    s"The hex integer literal syntax `$stringVal` is no longer supported, please use `$newStringVal` instead",
+                    x.position
+                  ))
+                } else
+                  Seq.empty[SemanticErrorDef]
+              SemanticCheckResult(state, errors)
+            }
         } chain specifyType(CTInteger, x)
 
       case x: DecimalDoubleLiteral =>

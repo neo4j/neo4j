@@ -35,10 +35,6 @@ case class DeprecatedVarLengthBindingNotification(position: InputPosition, varia
 case class DeprecatedRepeatedRelVarInPatternExpression(position: InputPosition, relName: String)
     extends InternalNotification
 
-case class DeprecatedOctalLiteralSyntax(position: InputPosition) extends InternalNotification
-
-case class DeprecatedHexLiteralSyntax(position: InputPosition) extends InternalNotification
-
 case class DeprecatedCoercionOfListToBoolean(position: InputPosition) extends InternalNotification
 
 case class DeprecatedSelfReferenceToVariableInCreatePattern(position: InputPosition) extends InternalNotification
