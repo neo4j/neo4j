@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
@@ -112,6 +114,7 @@ public class PointBlockBasedIndexPopulatorTest extends BlockBasedIndexPopulatorT
             assertThat(reader.iterator()).isExhausted();
         }
         final var populator = instantiatePopulator(BlockStorage.Monitor.NO_MONITOR);
+        assertThat(populator.indexConfig()).isEqualTo(spatialSettingsAsMap(SPATIAL_SETTINGS));
 
         try {
             final var idGen = idGenerator();
@@ -134,6 +137,12 @@ public class PointBlockBasedIndexPopulatorTest extends BlockBasedIndexPopulatorT
             // then   updates should not have been indexed
             assertThat(reader.iterator()).isExhausted();
         }
+    }
+
+    private static Map<String, Value> spatialSettingsAsMap(IndexSpecificSpaceFillingCurveSettings spatialSettings) {
+        Map<String, Value> values = new HashMap<>();
+        spatialSettings.visitIndexSpecificSettings(new SpatialConfigVisitor(values));
+        return values;
     }
 
     private static LongSupplier idGenerator() {

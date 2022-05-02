@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.index.schema;
 import static org.neo4j.kernel.impl.index.schema.PointIndexProvider.UPDATE_IGNORE_STRATEGY;
 
 import java.nio.file.OpenOption;
+import java.util.HashMap;
+import java.util.Map;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
@@ -30,6 +32,7 @@ import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.values.storable.Value;
 
 public class PointBlockBasedIndexPopulator extends BlockBasedIndexPopulator<PointKey> {
     private final IndexSpecificSpaceFillingCurveSettings spatialSettings;
@@ -107,5 +110,12 @@ public class PointBlockBasedIndexPopulator extends BlockBasedIndexPopulator<Poin
     @Override
     protected IndexUpdateIgnoreStrategy indexUpdateIgnoreStrategy() {
         return UPDATE_IGNORE_STRATEGY;
+    }
+
+    @Override
+    public Map<String, Value> indexConfig() {
+        Map<String, Value> map = new HashMap<>();
+        spatialSettings.visitIndexSpecificSettings(new SpatialConfigVisitor(map));
+        return map;
     }
 }
