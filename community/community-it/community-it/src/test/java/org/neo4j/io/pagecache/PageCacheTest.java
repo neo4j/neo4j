@@ -1844,6 +1844,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
     @Test
     void allowOpeningMultipleReadAndWriteCursorsPerThread() {
+        assumeFalse(multiVersioned);
         assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
             configureStandardPageCache();
 
@@ -1902,6 +1903,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
     @Test
     void writeLocksMustNotBeExclusive() {
+        assumeFalse(multiVersioned);
         assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
             configureStandardPageCache();
 
@@ -5401,6 +5403,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
     @Test
     void noFaultNextReadOnInMemoryPages() throws Exception {
+        assumeFalse(multiVersioned);
         configureStandardPageCache();
         try (PagedFile pf = map(file("a"), filePageSize);
                 PageCursor faulter = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT);
@@ -5411,6 +5414,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
     @Test
     void noFaultNextWriteOnInMemoryPages() throws Exception {
+        assumeFalse(multiVersioned);
         configureStandardPageCache();
         try (PagedFile pf = map(file("a"), filePageSize);
                 PageCursor faulter = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT);
@@ -5421,6 +5425,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
     @Test
     void noFaultNextLinkedReadOnInMemoryPages() throws Exception {
+        assumeFalse(multiVersioned);
         configureStandardPageCache();
         try (PagedFile pf = map(file("a"), filePageSize);
                 PageCursor faulter = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT);
@@ -5432,6 +5437,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
     @Test
     void noFaultNextLinkedWriteOnInMemoryPages() throws Exception {
+        assumeFalse(multiVersioned);
         configureStandardPageCache();
         try (PagedFile pf = map(file("a"), filePageSize);
                 PageCursor faulter = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT);

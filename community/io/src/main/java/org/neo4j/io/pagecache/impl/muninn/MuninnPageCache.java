@@ -625,6 +625,7 @@ public class MuninnPageCache implements PageCache {
                 databaseName,
                 faultLockStriping,
                 ioController,
+                versionStorage,
                 littleEndian);
         pagedFile.incrementRefCount();
         pagedFile.setDeleteOnClose(deleteOnClose);

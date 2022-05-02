@@ -40,6 +40,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
+import org.neo4j.io.pagecache.impl.muninn.versioned.VersionStorage;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -94,6 +95,8 @@ public abstract class MuninnPageCursor extends PageCursor {
     private boolean markOutOfBounds;
     private boolean outOfBounds;
     private int pageReservedBytes;
+    private VersionStorage versionStorage;
+    protected boolean versioned;
     private int payloadSize;
     // This is a String with the exception message if usePreciseCursorErrorStackTraces is false, otherwise it is a
     // CursorExceptionWithPreciseStackTrace with the message and stack trace pointing more or less directly at the
@@ -122,6 +125,8 @@ public abstract class MuninnPageCursor extends PageCursor {
         this.swapperId = pagedFile.swapperId;
         this.filePageSize = pagedFile.filePageSize;
         this.pageReservedBytes = pagedFile.pageCache.pageReservedBytes();
+        this.versionStorage = pagedFile.versionStorage;
+        this.versioned = pagedFile.versioned;
         this.pagedFile = pagedFile;
         this.pageId = pageId;
         this.pf_flags = pf_flags;

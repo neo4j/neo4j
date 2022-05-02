@@ -58,6 +58,10 @@ import org.neo4j.internal.unsafe.UnsafeUtil;
  * <p>
  * Note that the lock-word is assumed to be 8 bytes, and should ideally be aligned to 8-byte boundaries, and ideally
  * run on platforms that support 8-byte-wide atomic memory operations.
+ *
+ * Please note that in multi versioned mode page can have only one writer and different mask is used to see if writer
+ * present already or not. Another difference is that we do not throw overflow exception in that mode. Instead, page
+ * will be owned by that writer until it will not release it.
  */
 public final class OffHeapPageLock {
     /*
@@ -91,6 +95,8 @@ public final class OffHeapPageLock {
     private static final long EXL_MASK = 0b01000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000L;
     private static final long MOD_MASK = 0b00100000_00000000_00000000_00000000_00000000_00000000_00000000_00000000L;
     private static final long CNT_MASK = 0b00011111_11111111_11110000_00000000_00000000_00000000_00000000_00000000L;
+    private static final long MULTI_VERSIONED_CNT_MASK =
+            0b00000000_00000000_00010000_00000000_00000000_00000000_00000000_00000000L;
     private static final long SEQ_MASK = 0b00000000_00000000_00001111_11111111_11111111_11111111_11111111_11111111L;
     private static final long CNT_UNIT = 0b00000000_00000000_00010000_00000000_00000000_00000000_00000000_00000000L;
     private static final long SEQ_IMSK = 0b11111111_11111111_11110000_00000000_00000000_00000000_00000000_00000000L;
@@ -164,16 +170,17 @@ public final class OffHeapPageLock {
      *
      * @return {@code true} if the write lock was taken, {@code false} otherwise.
      */
-    public static boolean tryWriteLock(long address) {
+    public static boolean tryWriteLock(long address, boolean multiVersioned) {
         long s;
         long n;
+        final long cntMask = multiVersioned ? MULTI_VERSIONED_CNT_MASK : CNT_MASK;
         for (; ; ) {
             s = getState(address);
             boolean unwritablyLocked = (s & EXL_MASK) != 0;
-            boolean writeCountOverflow = (s & CNT_MASK) == CNT_MASK;
+            boolean writeCountOverflow = (s & cntMask) == cntMask;
 
             if (unwritablyLocked || writeCountOverflow) {
-                return failWriteLock(s, writeCountOverflow);
+                return failWriteLock(s, !multiVersioned && writeCountOverflow);
             }
 
             n = s + CNT_UNIT | MOD_MASK;
@@ -184,8 +191,8 @@ public final class OffHeapPageLock {
         }
     }
 
-    private static boolean failWriteLock(long s, boolean writeCountOverflow) {
-        if (writeCountOverflow) {
+    private static boolean failWriteLock(long s, boolean throwOverflowException) {
+        if (throwOverflowException) {
             throwWriteLockOverflow(s);
         }
         // Otherwise it was exclusively locked
@@ -197,13 +204,15 @@ public final class OffHeapPageLock {
     }
 
     /**
-     * Release a write lock taking with {@link #tryWriteLock(long)}.
+     * Release a write lock taking with {@link #tryWriteLock(long, boolean)}.
      */
     public static void unlockWrite(long address) {
         long s;
         long n;
         do {
             s = getState(address);
+            // we do not need to do any difference here between cnt and multi versioned case -
+            // we use the widest available mask here
             if ((s & CNT_MASK) == 0) {
                 throwUnmatchedUnlockWrite(s);
             }
@@ -244,7 +253,8 @@ public final class OffHeapPageLock {
      * optimistic read lock, and fail write and flush locks. If any write or flush locks are currently taken, or if
      * the exclusive lock is already taken, then the attempt to grab an exclusive lock will fail.
      * <p>
-     * Successfully grabbed exclusive locks must always be paired with a corresponding {@link #unlockExclusive(long)}.
+     * Successfully grabbed exclusive locks must always be paired with a corresponding
+     * {@link #unlockExclusive(long)}.
      *
      * @return {@code true} if we successfully got the exclusive lock, {@code false} otherwise.
      */
@@ -317,8 +327,8 @@ public final class OffHeapPageLock {
      * {@link #unlockFlush(long, long, boolean)}.
      *
      * @return If the lock is successfully grabbed, the method will return a stamp value that must be passed to the
-     * {@link #unlockFlush(long, long, boolean)}, and which is used for detecting any overlapping write locks. If the
-     * flush lock could not be taken, {@code 0} will be returned.
+     * {@link #unlockFlush(long, long, boolean)}, and which is used for detecting any overlapping write locks.
+     * If the flush lock could not be taken, {@code 0} will be returned.
      */
     public static long tryFlushLock(long address) {
         long s = getState(address);

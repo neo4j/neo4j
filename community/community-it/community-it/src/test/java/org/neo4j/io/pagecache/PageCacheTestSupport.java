@@ -72,6 +72,7 @@ public abstract class PageCacheTestSupport<T extends PageCache> {
     protected int pageCachePageSize;
     protected int pageCachePayloadSize;
     protected int reservedBytes;
+    protected boolean multiVersioned;
     protected int recordsPerFilePage;
     protected int recordCount;
     protected int filePageSize;
@@ -89,6 +90,7 @@ public abstract class PageCacheTestSupport<T extends PageCache> {
     public void setUp() throws IOException {
         fixture = createFixture();
         reservedBytes = fixture.getReservedBytes();
+        multiVersioned = reservedBytes > 0;
         //noinspection ResultOfMethodCallIgnored
         Thread.interrupted(); // Clear stray interrupts
         fs = createFileSystemAbstraction();

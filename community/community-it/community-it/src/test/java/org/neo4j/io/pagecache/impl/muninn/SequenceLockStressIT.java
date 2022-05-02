@@ -24,18 +24,15 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.test.scheduler.DaemonThreadFactory;
 import org.neo4j.util.concurrent.Futures;
@@ -61,8 +58,15 @@ class SequenceLockStressIT {
         UnsafeUtil.putLong(lockAddr, 0);
     }
 
-    @RepeatedTest(2)
-    void stressTest() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void stressTest(boolean multiVersioned) throws Exception {
+        for (int i = 0; i < 5; i++) {
+            runTest(multiVersioned);
+        }
+    }
+
+    private void runTest(boolean multiVersioned) throws InterruptedException, ExecutionException {
         int[][] data = new int[10][10];
         AtomicBoolean stop = new AtomicBoolean();
         AtomicInteger writerId = new AtomicInteger();
@@ -112,7 +116,7 @@ class SequenceLockStressIT {
                 int bigSpin = rng.nextInt(100, 1000);
 
                 while (!stop.get()) {
-                    if (OffHeapPageLock.tryWriteLock(lockAddr)) {
+                    if (OffHeapPageLock.tryWriteLock(lockAddr, multiVersioned)) {
                         int[] record = data[id];
                         for (int i = 0; i < record.length; i++) {
                             record[i] = counter;

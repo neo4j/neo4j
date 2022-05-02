@@ -85,7 +85,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
 
     @Override
     protected boolean tryLockPage(long pageRef) {
-        return PageList.tryWriteLock(pageRef);
+        return PageList.tryWriteLock(pageRef, versioned);
     }
 
     @Override

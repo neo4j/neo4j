@@ -221,8 +221,8 @@ class PageList implements PageReferenceTranslator {
         return OffHeapPageLock.isExclusivelyLocked(offLock(pageRef));
     }
 
-    static boolean tryWriteLock(long pageRef) {
-        return OffHeapPageLock.tryWriteLock(offLock(pageRef));
+    static boolean tryWriteLock(long pageRef, boolean multiVersioned) {
+        return OffHeapPageLock.tryWriteLock(offLock(pageRef), multiVersioned);
     }
 
     static void unlockWrite(long pageRef) {

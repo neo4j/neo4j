@@ -42,8 +42,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntFunction;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -61,9 +61,9 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.scheduler.DaemonThreadFactory;
 import org.neo4j.util.concurrent.Futures;
 
-public class PageListTest {
+public class AbstractPageListTest {
     private static final int ALIGNMENT = 8;
-    private static final Duration TIMEOUT = Duration.ofMinutes(1);
+    protected static final Duration TIMEOUT = Duration.ofMinutes(1);
 
     private static final int[] pageIds = new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
     private static final DummyPageSwapper DUMMY_SWAPPER = new DummyPageSwapper("", UnsafeUtil.pageSize());
@@ -73,17 +73,17 @@ public class PageListTest {
         return Arrays.stream(pageIds).mapToObj(toArguments);
     }
 
-    private static ExecutorService executor;
-    private static MemoryAllocator mman;
+    protected ExecutorService executor;
+    private MemoryAllocator mman;
 
-    @BeforeAll
-    public static void setUpStatics() {
+    @BeforeEach
+    void setUpAbstract() {
         executor = Executors.newCachedThreadPool(new DaemonThreadFactory());
         mman = MemoryAllocator.createAllocator(MebiByte.toBytes(1), EmptyMemoryTracker.INSTANCE);
     }
 
-    @AfterAll
-    public static void tearDownStatics() {
+    @AfterEach
+    void tearDownAbstract() {
         mman.close();
         mman = null;
         executor.shutdown();
@@ -92,14 +92,15 @@ public class PageListTest {
 
     private int prevPageId;
     private int nextPageId;
-    private long pageRef;
+    protected long pageRef;
     private long prevPageRef;
     private long nextPageRef;
     private int pageSize;
     private SwapperSet swappers;
     private PageList pageList;
+    protected boolean multiVersioned;
 
-    private void init(int pageId) {
+    protected void init(int pageId) {
         prevPageId = pageId == 0 ? pageIds.length - 1 : (pageId - 1) % pageIds.length;
         nextPageId = (pageId + 1) % pageIds.length;
         pageSize = UnsafeUtil.pageSize();
@@ -173,7 +174,7 @@ public class PageListTest {
 
         PageList.unlockExclusive(pageRef);
         long r = PageList.tryOptimisticReadLock(pageRef);
-        PageList.tryWriteLock(pageRef);
+        PageList.tryWriteLock(pageRef, multiVersioned);
         PageList.unlockWrite(pageRef);
         assertFalse(PageList.validateReadLock(pageRef, r));
     }
@@ -184,7 +185,7 @@ public class PageListTest {
         init(pageId);
 
         long r = PageList.tryOptimisticReadLock(pageRef);
-        PageList.tryWriteLock(pageRef);
+        PageList.tryWriteLock(pageRef, multiVersioned);
         assertFalse(PageList.validateReadLock(pageRef, r));
     }
 
@@ -193,7 +194,7 @@ public class PageListTest {
     public void optimisticReadLockMustNotValidateUnderWriteLock(int pageId) {
         init(pageId);
 
-        PageList.tryWriteLock(pageRef);
+        PageList.tryWriteLock(pageRef, multiVersioned);
         long r = PageList.tryOptimisticReadLock(pageRef);
         assertFalse(PageList.validateReadLock(pageRef, r));
     }
@@ -204,7 +205,7 @@ public class PageListTest {
         init(pageId);
 
         PageList.unlockExclusive(pageRef);
-        PageList.tryWriteLock(pageRef);
+        PageList.tryWriteLock(pageRef, multiVersioned);
         long r = PageList.tryOptimisticReadLock(pageRef);
         PageList.unlockWrite(pageRef);
         assertFalse(PageList.validateReadLock(pageRef, r));
@@ -216,7 +217,7 @@ public class PageListTest {
         init(pageId);
 
         PageList.unlockExclusive(pageRef);
-        assertTrue(PageList.tryWriteLock(pageRef));
+        assertTrue(PageList.tryWriteLock(pageRef, multiVersioned));
     }
 
     @ParameterizedTest(name = "pageRef = {0}")
@@ -225,44 +226,10 @@ public class PageListTest {
         init(pageId);
 
         PageList.unlockExclusive(pageRef);
-        PageList.tryWriteLock(pageRef);
+        PageList.tryWriteLock(pageRef, multiVersioned);
         PageList.unlockWrite(pageRef);
         long r = PageList.tryOptimisticReadLock(pageRef);
         assertTrue(PageList.validateReadLock(pageRef, r));
-    }
-
-    @ParameterizedTest(name = "pageRef = {0}")
-    @MethodSource("argumentsProvider")
-    public void writeLocksMustNotBlockOtherWriteLocks(int pageId) {
-        init(pageId);
-
-        assertTimeoutPreemptively(TIMEOUT, () -> {
-            PageList.unlockExclusive(pageRef);
-            assertTrue(PageList.tryWriteLock(pageRef));
-            assertTrue(PageList.tryWriteLock(pageRef));
-        });
-    }
-
-    @ParameterizedTest(name = "pageRef = {0}")
-    @MethodSource("argumentsProvider")
-    public void writeLocksMustNotBlockOtherWriteLocksInOtherThreads(int pageId) {
-        init(pageId);
-
-        assertTimeoutPreemptively(TIMEOUT, () -> {
-            PageList.unlockExclusive(pageRef);
-            int threads = 10;
-            CountDownLatch end = new CountDownLatch(threads);
-            Runnable runnable = () -> {
-                assertTrue(PageList.tryWriteLock(pageRef));
-                end.countDown();
-            };
-            List<Future<?>> futures = new ArrayList<>();
-            for (int i = 0; i < threads; i++) {
-                futures.add(executor.submit(runnable));
-            }
-            end.await();
-            Futures.getAll(futures);
-        });
     }
 
     @ParameterizedTest(name = "pageRef = {0}")
@@ -271,22 +238,6 @@ public class PageListTest {
         init(pageId);
 
         assertThrows(IllegalMonitorStateException.class, () -> PageList.unlockWrite(pageRef));
-    }
-
-    @ParameterizedTest(name = "pageRef = {0}")
-    @MethodSource("argumentsProvider")
-    public void writeLockCountOverflowMustThrow(int pageId) {
-        init(pageId);
-
-        assertThrows(
-                IllegalMonitorStateException.class,
-                () -> assertTimeoutPreemptively(TIMEOUT, () -> {
-                    PageList.unlockExclusive(pageRef);
-                    //noinspection InfiniteLoopStatement
-                    for (; ; ) {
-                        assertTrue(PageList.tryWriteLock(pageRef));
-                    }
-                }));
     }
 
     @ParameterizedTest(name = "pageRef = {0}")
@@ -360,19 +311,7 @@ public class PageListTest {
         init(pageId);
 
         PageList.unlockExclusive(pageRef);
-        PageList.tryWriteLock(pageRef);
-        assertFalse(PageList.tryExclusiveLock(pageRef));
-    }
-
-    @ParameterizedTest(name = "pageRef = {0}")
-    @MethodSource("argumentsProvider")
-    public void concurrentWriteLocksMustFailExclusiveLocks(int pageId) {
-        init(pageId);
-
-        PageList.unlockExclusive(pageRef);
-        PageList.tryWriteLock(pageRef);
-        PageList.tryWriteLock(pageRef);
-        PageList.unlockWrite(pageRef);
+        PageList.tryWriteLock(pageRef, multiVersioned);
         assertFalse(PageList.tryExclusiveLock(pageRef));
     }
 
@@ -382,7 +321,7 @@ public class PageListTest {
         init(pageId);
 
         PageList.unlockExclusive(pageRef);
-        PageList.tryWriteLock(pageRef);
+        PageList.tryWriteLock(pageRef, multiVersioned);
         PageList.unlockWrite(pageRef);
         assertTrue(PageList.tryExclusiveLock(pageRef));
     }
@@ -417,7 +356,7 @@ public class PageListTest {
 
         assertTimeoutPreemptively(TIMEOUT, () -> {
             // exclusive lock implied by constructor
-            assertFalse(PageList.tryWriteLock(pageRef));
+            assertFalse(PageList.tryWriteLock(pageRef, multiVersioned));
         });
     }
 
@@ -453,7 +392,7 @@ public class PageListTest {
             PageList.unlockExclusive(pageRef);
             PageList.tryExclusiveLock(pageRef);
             PageList.unlockExclusive(pageRef);
-            assertTrue(PageList.tryWriteLock(pageRef));
+            assertTrue(PageList.tryWriteLock(pageRef, multiVersioned));
             PageList.unlockWrite(pageRef);
         });
     }
@@ -487,18 +426,6 @@ public class PageListTest {
         // exclusive lock implied by constructor
         PageList.unlockExclusiveAndTakeWriteLock(pageRef);
         assertFalse(PageList.tryExclusiveLock(pageRef));
-    }
-
-    @ParameterizedTest(name = "pageRef = {0}")
-    @MethodSource("argumentsProvider")
-    public void unlockExclusiveAndTakeWriteLockMustAllowConcurrentWriteLocks(int pageId) {
-        init(pageId);
-
-        assertTimeoutPreemptively(TIMEOUT, () -> {
-            // exclusive lock implied by constructor
-            PageList.unlockExclusiveAndTakeWriteLock(pageRef);
-            assertTrue(PageList.tryWriteLock(pageRef));
-        });
     }
 
     @ParameterizedTest(name = "pageRef = {0}")
@@ -541,7 +468,7 @@ public class PageListTest {
 
         // exclusive lock implied by constructor
         long r = PageList.unlockExclusive(pageRef);
-        assertTrue(PageList.tryWriteLock(pageRef));
+        assertTrue(PageList.tryWriteLock(pageRef, multiVersioned));
         assertFalse(PageList.validateReadLock(pageRef, r));
     }
 
@@ -573,7 +500,7 @@ public class PageListTest {
 
         PageList.unlockExclusive(pageRef);
         PageList.tryFlushLock(pageRef);
-        assertTrue(PageList.tryWriteLock(pageRef));
+        assertTrue(PageList.tryWriteLock(pageRef, multiVersioned));
     }
 
     @ParameterizedTest(name = "pageRef = {0}")
@@ -602,7 +529,7 @@ public class PageListTest {
         init(pageId);
 
         PageList.unlockExclusive(pageRef);
-        PageList.tryWriteLock(pageRef);
+        PageList.tryWriteLock(pageRef, multiVersioned);
         assertTrue(PageList.tryFlushLock(pageRef) != 0);
     }
 
@@ -689,7 +616,7 @@ public class PageListTest {
         PageList.unlockExclusive(pageRef);
         long s = PageList.tryFlushLock(pageRef);
         PageList.unlockFlush(pageRef, s, true);
-        assertTrue(PageList.tryWriteLock(pageRef));
+        assertTrue(PageList.tryWriteLock(pageRef, multiVersioned));
     }
 
     @ParameterizedTest(name = "pageRef = {0}")
@@ -709,7 +636,7 @@ public class PageListTest {
         init(pageId);
 
         PageList.unlockExclusive(pageRef);
-        PageList.tryWriteLock(pageRef);
+        PageList.tryWriteLock(pageRef, multiVersioned);
         PageList.unlockWrite(pageRef);
         assertTrue(PageList.tryFlushLock(pageRef) != 0);
     }
@@ -755,8 +682,8 @@ public class PageListTest {
         PageList.unlockExclusive(prevPageRef);
         PageList.unlockExclusive(pageRef);
         PageList.unlockExclusive(nextPageRef);
-        assertTrue(PageList.tryWriteLock(prevPageRef));
-        assertTrue(PageList.tryWriteLock(nextPageRef));
+        assertTrue(PageList.tryWriteLock(prevPageRef, multiVersioned));
+        assertTrue(PageList.tryWriteLock(nextPageRef, multiVersioned));
         long r = PageList.tryOptimisticReadLock(pageRef);
         assertTrue(PageList.validateReadLock(pageRef, r));
         PageList.unlockWrite(prevPageRef);
@@ -811,7 +738,7 @@ public class PageListTest {
         PageList.unlockExclusive(nextPageRef);
         assertTrue(PageList.tryExclusiveLock(prevPageRef));
         assertTrue(PageList.tryExclusiveLock(nextPageRef));
-        assertTrue(PageList.tryWriteLock(pageRef));
+        assertTrue(PageList.tryWriteLock(pageRef, multiVersioned));
         PageList.unlockWrite(pageRef);
         PageList.unlockExclusive(prevPageRef);
         PageList.unlockExclusive(nextPageRef);
@@ -880,8 +807,8 @@ public class PageListTest {
         PageList.unlockExclusive(pageRef);
         PageList.unlockExclusive(prevPageRef);
         PageList.unlockExclusive(nextPageRef);
-        assertTrue(PageList.tryWriteLock(prevPageRef));
-        assertTrue(PageList.tryWriteLock(nextPageRef));
+        assertTrue(PageList.tryWriteLock(prevPageRef, multiVersioned));
+        assertTrue(PageList.tryWriteLock(nextPageRef, multiVersioned));
         assertTrue(PageList.tryExclusiveLock(pageRef));
         PageList.unlockExclusive(pageRef);
         PageList.unlockWrite(prevPageRef);
@@ -937,7 +864,7 @@ public class PageListTest {
 
         PageList.unlockExclusive(pageRef);
         assertFalse(PageList.isModified(pageRef));
-        assertTrue(PageList.tryWriteLock(pageRef));
+        assertTrue(PageList.tryWriteLock(pageRef, multiVersioned));
         assertTrue(PageList.isModified(pageRef));
         PageList.unlockWrite(pageRef);
     }
@@ -962,7 +889,7 @@ public class PageListTest {
         init(pageId);
 
         PageList.unlockExclusive(pageRef);
-        assertTrue(PageList.tryWriteLock(pageRef));
+        assertTrue(PageList.tryWriteLock(pageRef, multiVersioned));
         PageList.unlockWrite(pageRef);
         assertTrue(PageList.isModified(pageRef));
         long s = PageList.tryFlushLock(pageRef);
@@ -976,7 +903,7 @@ public class PageListTest {
         init(pageId);
 
         PageList.unlockExclusive(pageRef);
-        assertTrue(PageList.tryWriteLock(pageRef));
+        assertTrue(PageList.tryWriteLock(pageRef, multiVersioned));
         PageList.unlockWrite(pageRef);
         assertTrue(PageList.isModified(pageRef));
         long s = PageList.tryFlushLock(pageRef);
@@ -994,7 +921,7 @@ public class PageListTest {
         init(pageId);
 
         PageList.unlockExclusive(pageRef);
-        assertTrue(PageList.tryWriteLock(pageRef));
+        assertTrue(PageList.tryWriteLock(pageRef, multiVersioned));
         PageList.unlockWrite(pageRef);
         assertTrue(PageList.isModified(pageRef));
         long s = PageList.tryFlushLock(pageRef);
@@ -1009,7 +936,7 @@ public class PageListTest {
 
         PageList.unlockExclusive(pageRef);
         long s = PageList.tryFlushLock(pageRef);
-        assertTrue(PageList.tryWriteLock(pageRef));
+        assertTrue(PageList.tryWriteLock(pageRef, multiVersioned));
         PageList.unlockWrite(pageRef);
         PageList.unlockFlush(pageRef, s, true);
         assertTrue(PageList.isModified(pageRef));
@@ -1021,7 +948,7 @@ public class PageListTest {
         init(pageId);
 
         PageList.unlockExclusive(pageRef);
-        assertTrue(PageList.tryWriteLock(pageRef));
+        assertTrue(PageList.tryWriteLock(pageRef, multiVersioned));
         long s = PageList.tryFlushLock(pageRef);
         PageList.unlockWrite(pageRef);
         PageList.unlockFlush(pageRef, s, true);
@@ -1035,7 +962,7 @@ public class PageListTest {
 
         PageList.unlockExclusive(pageRef);
         long s = PageList.tryFlushLock(pageRef);
-        assertTrue(PageList.tryWriteLock(pageRef));
+        assertTrue(PageList.tryWriteLock(pageRef, multiVersioned));
         PageList.unlockFlush(pageRef, s, true);
         assertTrue(PageList.isModified(pageRef));
         PageList.unlockWrite(pageRef);
@@ -1048,7 +975,7 @@ public class PageListTest {
         init(pageId);
 
         PageList.unlockExclusive(pageRef);
-        assertTrue(PageList.tryWriteLock(pageRef));
+        assertTrue(PageList.tryWriteLock(pageRef, multiVersioned));
         long s = PageList.tryFlushLock(pageRef);
         PageList.unlockFlush(pageRef, s, true);
         assertTrue(PageList.isModified(pageRef));
@@ -1064,9 +991,9 @@ public class PageListTest {
         PageList.unlockExclusive(prevPageRef);
         PageList.unlockExclusive(pageRef);
         PageList.unlockExclusive(nextPageRef);
-        assertTrue(PageList.tryWriteLock(prevPageRef));
-        assertTrue(PageList.tryWriteLock(pageRef));
-        assertTrue(PageList.tryWriteLock(nextPageRef));
+        assertTrue(PageList.tryWriteLock(prevPageRef, multiVersioned));
+        assertTrue(PageList.tryWriteLock(pageRef, multiVersioned));
+        assertTrue(PageList.tryWriteLock(nextPageRef, multiVersioned));
         PageList.unlockWrite(prevPageRef);
         PageList.unlockWrite(pageRef);
         PageList.unlockWrite(nextPageRef);
@@ -1088,7 +1015,7 @@ public class PageListTest {
         PageList.unlockExclusive(prevPageRef);
         PageList.unlockExclusive(pageRef);
         PageList.unlockExclusive(nextPageRef);
-        assertTrue(PageList.tryWriteLock(pageRef));
+        assertTrue(PageList.tryWriteLock(pageRef, multiVersioned));
         PageList.unlockWrite(pageRef);
         assertFalse(PageList.isModified(prevPageRef));
         assertTrue(PageList.isModified(pageRef));
@@ -1137,7 +1064,7 @@ public class PageListTest {
 
         assertThrows(IllegalStateException.class, () -> {
             PageList.unlockExclusive(pageRef);
-            assertTrue(PageList.tryWriteLock(pageRef));
+            assertTrue(PageList.tryWriteLock(pageRef, multiVersioned));
             PageList.explicitlyMarkPageUnmodifiedUnderExclusiveLock(pageRef);
         });
     }
@@ -1149,7 +1076,7 @@ public class PageListTest {
 
         PageList.unlockExclusive(pageRef);
         assertFalse(PageList.isModified(pageRef));
-        assertTrue(PageList.tryWriteLock(pageRef));
+        assertTrue(PageList.tryWriteLock(pageRef, multiVersioned));
         PageList.unlockWrite(pageRef);
         assertTrue(PageList.isModified(pageRef));
         assertTrue(PageList.tryExclusiveLock(pageRef));
@@ -1165,7 +1092,7 @@ public class PageListTest {
         init(pageId);
 
         PageList.unlockExclusive(pageRef);
-        assertTrue(PageList.tryWriteLock(pageRef));
+        assertTrue(PageList.tryWriteLock(pageRef, multiVersioned));
         long flushStamp = PageList.unlockWriteAndTryTakeFlushLock(pageRef);
         assertThat(flushStamp).isNotEqualTo(0L);
         assertThat(PageList.tryFlushLock(pageRef)).isEqualTo(0L);
@@ -1270,22 +1197,6 @@ public class PageListTest {
 
     @ParameterizedTest(name = "pageRef = {0}")
     @MethodSource("argumentsProvider")
-    public void unlockWriteAndTryTakeFlushLockWithOverlappingWriterAndThenUnlockFlushMustNotLowerModifiedFlag(
-            int pageId) {
-        init(pageId);
-
-        PageList.unlockExclusiveAndTakeWriteLock(pageRef);
-        assertTrue(PageList.tryWriteLock(pageRef)); // two write locks, now
-        long stamp = PageList.unlockWriteAndTryTakeFlushLock(pageRef); // one flush, one write lock
-        assertThat(stamp).isNotEqualTo(0L);
-        PageList.unlockWrite(pageRef); // one flush, zero write locks
-        assertTrue(PageList.isModified(pageRef));
-        PageList.unlockFlush(pageRef, stamp, true); // flush is successful, but had one overlapping writer
-        assertTrue(PageList.isModified(pageRef)); // so it's still modified
-    }
-
-    @ParameterizedTest(name = "pageRef = {0}")
-    @MethodSource("argumentsProvider")
     public void unlockWriteAndTryTakeFlushLockAndThenUnlockFlushWithOverlappingWriterMustNotLowerModifiedFlag(
             int pageId) {
         init(pageId);
@@ -1294,7 +1205,7 @@ public class PageListTest {
         long stamp = PageList.unlockWriteAndTryTakeFlushLock(pageRef); // one flush lock
         assertThat(stamp).isNotEqualTo(0L);
         assertTrue(PageList.isModified(pageRef));
-        assertTrue(PageList.tryWriteLock(pageRef)); // one flush and one write lock
+        assertTrue(PageList.tryWriteLock(pageRef, multiVersioned)); // one flush and one write lock
         PageList.unlockFlush(pageRef, stamp, true); // flush is successful, but have one overlapping writer
         PageList.unlockWrite(pageRef); // no more locks, but a writer started within flush section ...
         assertTrue(PageList.isModified(pageRef)); // ... and overlapped unlockFlush, so it's still modified
@@ -1310,7 +1221,7 @@ public class PageListTest {
         long stamp = PageList.unlockWriteAndTryTakeFlushLock(pageRef); // one flush lock
         assertThat(stamp).isNotEqualTo(0L);
         assertTrue(PageList.isModified(pageRef));
-        assertTrue(PageList.tryWriteLock(pageRef)); // one flush and one write lock
+        assertTrue(PageList.tryWriteLock(pageRef, multiVersioned)); // one flush and one write lock
         PageList.unlockWrite(pageRef); // back to one flush lock
         PageList.unlockFlush(pageRef, stamp, true); // flush is successful, but had one overlapping writer
         assertTrue(PageList.isModified(pageRef)); // so it's still modified

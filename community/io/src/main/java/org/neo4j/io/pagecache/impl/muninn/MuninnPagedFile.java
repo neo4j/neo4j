@@ -41,6 +41,7 @@ import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.buffer.NativeIOBuffer;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
+import org.neo4j.io.pagecache.impl.muninn.versioned.VersionStorage;
 import org.neo4j.io.pagecache.monitoring.PageFileCounters;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
@@ -66,6 +67,8 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     final MuninnPageCache pageCache;
     final int filePageSize;
     final int fileReservedPageBytes;
+    final VersionStorage versionStorage;
+    final boolean versioned;
     final boolean littleEndian;
     private final PageCacheTracer pageCacheTracer;
     private final IOBufferFactory bufferFactory;
@@ -138,7 +141,8 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
      * @param databaseName an optional name of the database this file belongs to. This option associates the mapped file with a database.
      * This information is currently used only for monitoring purposes.
      * @param ioController io controller to report page file io operations
-     * @param littleEndian
+     * @param versionStorage page file old versioned pages storage
+     * @param littleEndian page file endianess
      * @throws IOException If the {@link PageSwapper} could not be created.
      */
     MuninnPagedFile(
@@ -154,12 +158,15 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
             String databaseName,
             int faultLockStriping,
             IOController ioController,
+            VersionStorage versionStorage,
             boolean littleEndian)
             throws IOException {
         super(pageCache.pages);
         this.pageCache = pageCache;
         this.filePageSize = filePageSize;
         this.fileReservedPageBytes = pageCache.pageReservedBytes();
+        this.versionStorage = versionStorage;
+        this.versioned = fileReservedPageBytes > 0;
         this.littleEndian = littleEndian;
         this.cursorFactory = new CursorFactory(this);
         this.pageCacheTracer = pageCacheTracer;
