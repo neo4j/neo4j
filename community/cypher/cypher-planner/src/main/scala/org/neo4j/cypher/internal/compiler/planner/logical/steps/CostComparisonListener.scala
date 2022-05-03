@@ -35,10 +35,10 @@ import scala.io.AnsiColor
 
 trait CostComparisonListener {
 
-  def report[X](
+  def report[X, Score: Ordering](
     projector: X => LogicalPlan,
     input: Iterable[X],
-    inputOrdering: Ordering[X],
+    inputOrdering: (X, CostModelMonitor) => Score,
     context: LogicalPlanningContext,
     resolved: => String,
     resolvedPerPlan: LogicalPlan => String = _ => "",
@@ -48,10 +48,10 @@ trait CostComparisonListener {
 
 object devNullListener extends CostComparisonListener {
 
-  override def report[X](
+  override def report[X, Score: Ordering](
     projector: X => LogicalPlan,
     input: Iterable[X],
-    inputOrdering: Ordering[X],
+    inputOrdering: (X, CostModelMonitor) => Score,
     context: LogicalPlanningContext,
     resolved: => String,
     resolvedPerPlan: LogicalPlan => String = _ => "",
@@ -79,10 +79,10 @@ object SystemOutCostLogger extends CostComparisonListener {
     ind + str.replaceAll(System.lineSeparator(), System.lineSeparator() + ind)
   }
 
-  def report[X](
+  def report[X, Score: Ordering](
     projector: X => LogicalPlan,
     input: Iterable[X],
-    inputOrdering: Ordering[X],
+    calculateScore: (X, CostModelMonitor) => Score,
     context: LogicalPlanningContext,
     resolved: => String,
     resolvedPerPlan: LogicalPlan => String = _ => "",
@@ -121,39 +121,36 @@ object SystemOutCostLogger extends CostComparisonListener {
       if (cardinality > effectiveCardinality) cyan_background(".") else "."
     }
 
-    val plansInOrder = input.toIndexedSeq.distinct.sorted(inputOrdering).map(projector)
-
-    // Update cost and effective cardinality for each subplan
-    plansInOrder.foreach(plan =>
-      context.cost.costFor(
-        plan,
-        context.input,
-        context.semanticTable,
-        context.planningAttributes.cardinalities,
-        context.planningAttributes.providedOrders,
-        monitor
-      )
-    )
-
-    if (plansInOrder.nonEmpty) {
+    if (input.nonEmpty) {
       val id = comparisonId.getAndIncrement()
       println(blue_bold(s"$id: Resolving $resolved"))
       println(s"Get best of:")
-      for ((plan, index) <- plansInOrder.zipWithIndex) {
-        val winner = if (index == 0) green(" [winner]") else ""
-        val resolvedStr = cyan(s" ${resolvedPerPlan(plan)}")
-        val header = blue(s"$index: Plan #${plan.debugId}") + winner + resolvedStr
-        val planWithCosts =
-          LogicalPlanToPlanBuilderString(plan, extra = costString(plan), planPrefixDot = planPrefixDotString(plan))
-        val hints = context.planningAttributes.solveds.get(plan.id).numHints
-        val heuristicValue = heuristic.tieBreaker(plan)
-        val extra = s"(hints: $hints, heuristic: $heuristicValue)"
 
-        println(indent(1, header))
-        println(indent(2, planWithCosts))
-        println(indent(2, extra))
-        println()
-      }
+      input
+        .to(LazyList) // working lazily as much as possible to traverse input as few times as necessary
+        .distinct // lazy via View.DistinctBy
+        .map(x =>
+          x -> calculateScore(x, monitor)
+        ) // calculate the score for each value, only once, populating `planCost` and `planEffectiveCardinality`
+        .sortBy(_._2) // sort by score, actually a strict operation under the hood so `calculateScore` actually gets called at this point
+        .map(_._1) // ditch the score
+        .map(projector) // get the LogicalPlan
+        .zipWithIndex
+        .foreach { case (plan, index) =>
+          val winner = if (index == 0) green(" [winner]") else ""
+          val resolvedStr = cyan(s" ${resolvedPerPlan(plan)}")
+          val header = blue(s"$index: Plan #${plan.debugId}") + winner + resolvedStr
+          val planWithCosts =
+            LogicalPlanToPlanBuilderString(plan, extra = costString(plan), planPrefixDot = planPrefixDotString(plan))
+          val hints = context.planningAttributes.solveds.get(plan.id).numHints
+          val heuristicValue = heuristic.tieBreaker(plan)
+          val extra = s"(hints: $hints, heuristic: $heuristicValue)"
+
+          println(indent(1, header))
+          println(indent(2, planWithCosts))
+          println(indent(2, extra))
+          println()
+        }
     }
   }
 }

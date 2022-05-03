@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.SelectorHeuristic
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
@@ -123,10 +124,10 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     var didVerify = false
     val verifyingContext = context.copy(
       costComparisonListener = new CostComparisonListener {
-        override def report[X](
+        override def report[X, Score: Ordering](
           projector: X => LogicalPlan,
           input: Iterable[X],
-          inputOrdering: Ordering[X],
+          inputOrdering: (X, CostModelMonitor) => Score,
           context: LogicalPlanningContext,
           resolved: => String,
           resolvedPerPlan: LogicalPlan => String,

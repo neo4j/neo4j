@@ -30,7 +30,6 @@ trait CandidateSelectorFactory {
 }
 
 object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
-  private val baseOrdering = implicitly[Ordering[(Int, Double, Int)]]
 
   override def apply(context: LogicalPlanningContext): CandidateSelector =
     new CandidateSelector {
@@ -42,26 +41,17 @@ object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
         resolvedPerPlan: LogicalPlan => String,
         heuristic: SelectorHeuristic
       ): Option[X] = {
-
-        val inputOrdering = new Ordering[X] {
-          override def compare(x: X, y: X): Int = {
-            val xCost = score(projector, x, heuristic, context)
-            val yCost = score(projector, y, heuristic, context)
-            baseOrdering.compare(xCost, yCost)
-          }
-        }
-
         context.costComparisonListener.report(
           projector,
           input,
-          inputOrdering,
+          (plan: X, monitor) => score(projector, plan, heuristic, context, monitor),
           context,
           resolved,
           resolvedPerPlan,
           heuristic
         )
 
-        if (input.isEmpty) None else Some(input.min(inputOrdering))
+        input.minByOption(score(projector, _, heuristic, context, CostModelMonitor.DEFAULT))
       }
     }
 
@@ -69,7 +59,8 @@ object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
     projector: X => LogicalPlan,
     input: X,
     heuristic: SelectorHeuristic,
-    context: LogicalPlanningContext
+    context: LogicalPlanningContext,
+    costModelMonitor: CostModelMonitor
   ) = {
     val costs = context.cost
     val plan = projector(input)
@@ -79,7 +70,7 @@ object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
       context.semanticTable,
       context.planningAttributes.cardinalities,
       context.planningAttributes.providedOrders,
-      CostModelMonitor.DEFAULT
+      costModelMonitor
     ).gummyBears
     val hints = context.planningAttributes.solveds.get(plan.id).numHints
     val tieBreaker = heuristic.tieBreaker(plan)
