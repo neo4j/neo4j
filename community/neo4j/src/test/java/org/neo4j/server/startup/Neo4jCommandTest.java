@@ -28,6 +28,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
+import static org.neo4j.configuration.SettingValueParsers.STRING;
 import static org.neo4j.server.startup.Bootloader.ENV_JAVA_OPTS;
 import static org.neo4j.server.startup.Bootloader.EXIT_CODE_NOT_RUNNING;
 import static org.neo4j.server.startup.Bootloader.EXIT_CODE_OK;
@@ -38,6 +39,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
@@ -49,6 +51,8 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.jar.JarOutputStream;
+import java.util.zip.ZipEntry;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
@@ -62,13 +66,16 @@ import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.configuration.connectors.HttpConnector;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.server.NeoBootstrapper;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.conditions.Conditions;
 import org.neo4j.test.extension.DisabledForRoot;
+import org.neo4j.test.jar.JarBuilder;
 import org.neo4j.time.Stopwatch;
 import picocli.CommandLine;
 import picocli.CommandLine.ExitCode;
@@ -372,10 +379,41 @@ class Neo4jCommandTest {
         }
 
         @Test
-        void shouldNotComplainOnUnknownSettingWithStrictValidation() {
-            addConf(newBuilder("apoc.export.file.enabled", BOOL, false).build(), "true");
+        void shouldComplainOnUnknownSettingWithStrictValidation() {
             addConf(GraphDatabaseSettings.strict_config_validation, "true");
+            addConf(newBuilder("foo.bar.baz", BOOL, false).build(), "true");
+            assertThat(execute("start")).isEqualTo(ExitCode.SOFTWARE);
+            assertThat(err.toString()).contains("Unrecognized setting. No declared setting with name: foo.bar.baz");
+        }
+
+        @Test
+        void shouldNotComplainOnPluginSettingWithStrictValidation() throws IOException {
+            Path maybePlugins = home.resolve("maybePlugins");
+            Files.createDirectories(maybePlugins);
+
+            // Create jar file with service loadable setting class
+            Path jarFile = maybePlugins.resolve("MyPlugin.jar");
+            try (JarOutputStream jarOut = new JarOutputStream(Files.newOutputStream(jarFile))) {
+                String fileName = MyPluginSetting.class.getName().replace('.', '/') + ".class";
+                jarOut.putNextEntry(new ZipEntry(fileName));
+                jarOut.write(JarBuilder.classCompiledBytes(fileName));
+                jarOut.closeEntry();
+                jarOut.putNextEntry(new ZipEntry("META-INF/services/" + SettingsDeclaration.class.getName()));
+                jarOut.write((MyPluginSetting.class.getName() + "\n").getBytes(StandardCharsets.UTF_8));
+                jarOut.closeEntry();
+            }
+
+            // Start with strict validation
+            addConf(GraphDatabaseSettings.strict_config_validation, "true");
+            addConf(GraphDatabaseSettings.plugin_dir, maybePlugins.toString());
+            addConf(MyPluginSetting.setting, "foo");
             assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
+            assertThat(err.toString()).isEmpty();
+        }
+
+        public static class MyPluginSetting implements SettingsDeclaration {
+            public static final Setting<String> setting =
+                    newBuilder("my.plugin.setting", STRING, "foo").build();
         }
 
         @Test

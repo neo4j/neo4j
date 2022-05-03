@@ -75,6 +75,8 @@ import org.neo4j.util.Preconditions;
 public class Config implements Configuration {
     public static final String DEFAULT_CONFIG_FILE_NAME = "neo4j.conf";
     public static final String DEFAULT_CONFIG_DIR_NAME = "conf";
+    private static final String STRICT_FAILURE_MESSAGE =
+            String.format(" Cleanup the config or disable '%s' to continue.", strict_config_validation.name());
 
     public static final class Builder {
         private final Collection<Class<? extends SettingsDeclaration>> settingsClasses = new HashSet<>();
@@ -441,15 +443,35 @@ public class Config implements Configuration {
         return Config.newBuilder().set(settingValues).build();
     }
 
+    /**
+     * Start construction of a config. Settings will be located using the current {@link ClassLoader}.
+     *
+     * @return a new builder.
+     */
     public static Builder newBuilder() {
+        return newBuilder(Builder.class.getClassLoader());
+    }
+
+    /**
+     * Start construction of a config. Settings will be located using the provided {@link ClassLoader}.
+     *
+     * @param classLoader class loader to use when searching for settings.
+     * @return a new builder.
+     */
+    public static Builder newBuilder(ClassLoader classLoader) {
         Builder builder = new Builder();
-        Services.loadAll(SettingsDeclaration.class).forEach(decl -> builder.addSettingsClass(decl.getClass()));
-        Services.loadAll(GroupSetting.class).forEach(decl -> builder.addGroupSettingClass(decl.getClass()));
-        Services.loadAll(SettingMigrator.class).forEach(builder::addMigrator);
+        Services.loadAll(classLoader, SettingsDeclaration.class)
+                .forEach(decl -> builder.addSettingsClass(decl.getClass()));
+        Services.loadAll(classLoader, GroupSetting.class)
+                .forEach(decl -> builder.addGroupSettingClass(decl.getClass()));
+        Services.loadAll(classLoader, SettingMigrator.class).forEach(builder::addMigrator);
         return builder;
     }
 
-    public static Builder emptyBuilder() {
+    /**
+     * Empty builder used for testing.
+     */
+    static Builder emptyBuilder() {
         return new Builder();
     }
 
@@ -509,12 +531,9 @@ public class Config implements Configuration {
             }
         }
 
+        // evaluate strict_config_validation setting first, as we need it when validating other settings
         boolean strict = strict_config_validation.defaultValue();
-        if (keys.remove(
-                strict_config_validation
-                        .name())) // evaluate strict_config_validation setting first, as we need it when validating
-        // other settings
-        {
+        if (keys.remove(strict_config_validation.name())) {
             evaluateSetting(
                     strict_config_validation,
                     settingValueStrings,
@@ -621,9 +640,9 @@ public class Config implements Configuration {
                         .filter(e -> key.startsWith(e.getKey() + '.'))
                         .findAny();
                 if (groupEntryOpt.isEmpty()) {
-                    String msg = format("Unrecognized setting. No declared setting with name: %s", key);
+                    String msg = format("Unrecognized setting. No declared setting with name: %s.", key);
                     if (strict) {
-                        throw new IllegalArgumentException(msg);
+                        throw new IllegalArgumentException(msg + STRICT_FAILURE_MESSAGE);
                     }
                     log.warn(msg);
                     continue;
@@ -638,7 +657,7 @@ public class Config implements Configuration {
                     String msg =
                             format("Malformed group setting name: '%s', does not match any setting in its group.", key);
                     if (strict) {
-                        throw new IllegalArgumentException(msg);
+                        throw new IllegalArgumentException(msg + STRICT_FAILURE_MESSAGE);
                     }
                     log.warn(msg);
                     continue;
@@ -652,9 +671,9 @@ public class Config implements Configuration {
                     try {
                         group = createStringInstance(groupEntry.getValue(), id);
                     } catch (IllegalArgumentException e) {
-                        String msg = format("Unrecognized setting. No declared setting with name: %s", key);
+                        String msg = format("Unrecognized setting. No declared setting with name: %s.", key);
                         if (strict) {
-                            throw new IllegalArgumentException(msg);
+                            throw new IllegalArgumentException(msg + STRICT_FAILURE_MESSAGE);
                         }
                         log.warn(msg);
                         continue;

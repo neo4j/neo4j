@@ -20,13 +20,20 @@
 package org.neo4j.server.startup;
 
 import static org.neo4j.configuration.SettingValueParsers.PATH;
+import static org.neo4j.function.Predicates.alwaysTrue;
+import static org.neo4j.function.Predicates.notNull;
 import static org.neo4j.server.startup.Bootloader.ARG_EXPAND_COMMANDS;
 import static org.neo4j.server.startup.Bootloader.DEFAULT_CONFIG_LOCATION;
 import static org.neo4j.server.startup.Bootloader.ENV_NEO4J_CONF;
 import static org.neo4j.server.startup.Bootloader.ENV_NEO4J_HOME;
 import static org.neo4j.server.startup.Bootloader.PROP_BASEDIR;
 
+import java.io.IOException;
 import java.io.PrintStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
@@ -34,6 +41,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.factory.Lists;
 import org.neo4j.configuration.BootloaderSettings;
@@ -172,10 +180,9 @@ abstract class BootloaderContext {
     private Configuration buildConfig(boolean full) {
         Path confFile = confDir().resolve(Config.DEFAULT_CONFIG_FILE_NAME);
         try {
-            Predicate<String> filter =
-                    full ? settingsDeclaredInNeo4j()::contains : settingsUsedByBootloader()::contains;
+            Predicate<String> filter = full ? alwaysTrue() : settingsUsedByBootloader()::contains;
 
-            Configuration config = Config.newBuilder()
+            Configuration config = getConfigBuilder(full)
                     .commandExpansion(expandCommands)
                     .setDefaults(overriddenDefaultsValues())
                     .set(GraphDatabaseSettings.neo4j_home, home())
@@ -199,6 +206,38 @@ abstract class BootloaderContext {
         }
     }
 
+    private Config.Builder getConfigBuilder(boolean loadPluginsSettings) {
+        if (loadPluginsSettings) {
+            // Locate plugin jar files and add them to the config class loader
+            try (Stream<Path> list = Files.list(config().get(GraphDatabaseSettings.plugin_dir))) {
+                URL[] urls = list.filter(path -> path.toString().endsWith(".jar"))
+                        .map(this::pathToURL)
+                        .filter(notNull())
+                        .toArray(URL[]::new);
+
+                if (urls.length > 0) {
+                    return Config.newBuilder(new URLClassLoader(urls, BootloaderContext.class.getClassLoader()));
+                }
+            } catch (IOException e) {
+                if (verbose) {
+                    e.printStackTrace(err);
+                }
+            }
+        }
+        return Config.newBuilder();
+    }
+
+    private URL pathToURL(Path p) {
+        try {
+            return p.toUri().toURL();
+        } catch (MalformedURLException e) {
+            if (verbose) {
+                e.printStackTrace(err);
+            }
+            return null;
+        }
+    }
+
     private Set<String> settingsUsedByBootloader() {
         // These settings are the that might be used by the bootloader minor commands (stop/status etc..)
         // Additional settings are used on the start/console path, but they use the full config anyway so not added
@@ -216,12 +255,6 @@ abstract class BootloaderContext {
                 BootloaderSettings.windows_service_name.name(),
                 BootloaderSettings.windows_tools_directory.name(),
                 BootloaderSettings.pid_file.name());
-    }
-
-    private static Set<String> settingsDeclaredInNeo4j() {
-        // We filter out any settings not declared in Neo4j jars since we can't do strict config validation otherwise
-        // E.g settings declared in plugins since the plugin directory is not on the class path for the bootloader
-        return Config.defaults().getDeclaredSettings().keySet();
     }
 
     protected abstract Map<Setting<?>, Object> overriddenDefaultsValues();

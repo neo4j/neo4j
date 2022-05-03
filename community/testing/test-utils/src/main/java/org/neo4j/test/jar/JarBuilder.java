@@ -33,8 +33,10 @@ import java.util.zip.ZipEntry;
 /**
  * Utility to create jar files containing classes from the current classpath.
  */
-public class JarBuilder {
-    public URL createJarFor(Path f, Class<?>... classesToInclude) throws IOException {
+public final class JarBuilder {
+    private JarBuilder() {}
+
+    public static URL createJarFor(Path f, Class<?>... classesToInclude) throws IOException {
         try (JarOutputStream jarOut = new JarOutputStream(Files.newOutputStream(f))) {
             for (Class<?> target : classesToInclude) {
                 String fileName = target.getName().replace('.', '/') + ".class";
@@ -46,8 +48,8 @@ public class JarBuilder {
         return f.toUri().toURL();
     }
 
-    private byte[] classCompiledBytes(String fileName) throws IOException {
-        try (InputStream in = getClass().getClassLoader().getResourceAsStream(fileName)) {
+    public static byte[] classCompiledBytes(String fileName) throws IOException {
+        try (InputStream in = JarBuilder.class.getClassLoader().getResourceAsStream(fileName)) {
             requireNonNull(in);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             while (in.available() > 0) {

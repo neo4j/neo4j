@@ -37,7 +37,6 @@ import java.util.Optional;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Utilities to load services via {@link ServiceLoader}.
@@ -53,12 +52,22 @@ public final class Services {
     /**
      * Load all available implementations of a service, if any.
      *
-     * @param service the type of the service
-     * @return all registered implementations of the SPI
+     * @param service the type of the service.
+     * @return all registered implementations of the SPI.
      */
     public static <T> Collection<T> loadAll(Class<T> service) {
+        return loadAll(Services.class.getClassLoader(), service);
+    }
+
+    /**
+     * Load all available implementations of a service, if any.
+     *
+     * @param classLoader the classloader to search from.
+     * @param service the type of the service.
+     * @return all registered implementations of the SPI.
+     */
+    public static <T> Collection<T> loadAll(ClassLoader classLoader, Class<T> service) {
         final Map<String, T> providers = new HashMap<>();
-        final ClassLoader currentCL = Services.class.getClassLoader();
         final ClassLoader contextCL = Thread.currentThread().getContextClassLoader();
 
         loadAllSafely(service, contextCL)
@@ -67,10 +76,10 @@ public final class Services {
         // in application servers, osgi and alike environments, context classloader can differ from the one that loads
         // neo4j libs;
         // in such cases we need to load services from both
-        if (currentCL != contextCL) {
+        if (classLoader != contextCL) {
             // services from context class loader have higher precedence, so we skip duplicates by comparing class
             // names.
-            loadAllSafely(service, currentCL)
+            loadAllSafely(service, classLoader)
                     .forEach(provider ->
                             providers.putIfAbsent(provider.getClass().getName(), provider));
         }
@@ -97,7 +106,7 @@ public final class Services {
         requireNonNull(key, "Service provider key is null");
         final List<T> matches = loadAll(service).stream()
                 .filter(provider -> key.equals(keyAccessor.apply(provider)))
-                .collect(Collectors.toList());
+                .toList();
 
         if (matches.size() > 1) {
             throw new RuntimeException(format("Found multiple service providers %s[%s]: %s", service, key, matches));

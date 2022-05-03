@@ -110,10 +110,9 @@ public class ProcedureJarLoaderTest {
     @Test
     void shouldLoadProcedureFromJarWithSpacesInFilename() throws Throwable {
         // Given
-        URL jar = new JarBuilder()
-                .createJarFor(
-                        testDirectory.createFile(new Random().nextInt() + " some spaces in filename.jar"),
-                        ClassWithOneProcedure.class);
+        URL jar = JarBuilder.createJarFor(
+                testDirectory.createFile(new Random().nextInt() + " some spaces in filename.jar"),
+                ClassWithOneProcedure.class);
 
         // When
         List<CallableProcedure> procedures =
@@ -428,7 +427,7 @@ public class ProcedureJarLoaderTest {
         // given
         Path fileWithSpacesInName =
                 testDirectory.createFile(new Random().nextInt() + "  some spaces in the filename" + ".jar");
-        URL theJar = new JarBuilder().createJarFor(fileWithSpacesInName, ClassWithOneProcedure.class);
+        URL theJar = JarBuilder.createJarFor(fileWithSpacesInName, ClassWithOneProcedure.class);
         corruptJar(theJar);
 
         AssertableLogProvider logProvider = new AssertableLogProvider(true);
@@ -472,7 +471,7 @@ public class ProcedureJarLoaderTest {
     }
 
     private URL createJarFor(Class<?>... targets) throws IOException {
-        return new JarBuilder().createJarFor(testDirectory.createFile(new Random().nextInt() + ".jar"), targets);
+        return JarBuilder.createJarFor(testDirectory.createFile(new Random().nextInt() + ".jar"), targets);
     }
 
     public static class Output {
