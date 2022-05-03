@@ -38,33 +38,47 @@ public final class Numbers {
     }
 
     /**
-     * Calculate smallest power of two that is bigger or equal to provided value.
+     * Calculate the smallest power of two that is greater than or equal to provided value.
      * Provided value should be positive.
-     * @param value user provided value
-     * @return smallest power of two that is bigger or equal to provided value
+     * @param value positive user provided value
+     * @return smallest power of two that is greater than or equal to provided value
      */
     public static long ceilingPowerOfTwo(long value) {
         requirePositive(value);
         if (value > MAX_POWER_OF_TWO_LONG) {
             throw new IllegalArgumentException(
-                    "Provided value " + value + " is bigger than the biggest power of two long value.");
+                    "Provided value " + value + " is larger than the largest power of two long value.");
         }
         return 1L << -Long.numberOfLeadingZeros(value - 1);
     }
 
     /**
-     * Calculate smallest power of two that is bigger or equal to provided value.
+     * Calculate the smallest power of two that is greater than or equal to provided value.
      * Provided value should be positive.
-     * @param value user provided value
-     * @return smallest power of two that is bigger or equal to provided value
+     * @param value positive user provided value
+     * @return smallest power of two that is greater than or equal to provided value
      */
     public static int ceilingPowerOfTwo(int value) {
         requirePositive(value);
         if (value > MAX_POWER_OF_TWO_INTEGER) {
             throw new IllegalArgumentException(
-                    "Provided value " + value + " is bigger than the biggest power of two long value.");
+                    "Provided value " + value + " is larget than the largest power of two long value.");
         }
         return 1 << -Integer.numberOfLeadingZeros(value - 1);
+    }
+
+    /**
+     * Calculate the largest power of two that is less than or equal to provided value.
+     * Provided value should be positive.
+     * @param value positive user provided value
+     * @return largest power of two that is smaller or equal to provided value
+     */
+    public static long floorPowerOfTwo(long value) {
+        // 1 is the smallest power of 2 for an integral value
+        if (value < 1L) {
+            throw new IllegalArgumentException("Provided value " + value + " is less than 1");
+        }
+        return 1L << log2floor(value);
     }
 
     /**

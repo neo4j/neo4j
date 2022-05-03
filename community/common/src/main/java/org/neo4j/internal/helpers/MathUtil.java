@@ -22,6 +22,7 @@ package org.neo4j.internal.helpers;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Comparator;
+import org.neo4j.util.Preconditions;
 
 public final class MathUtil {
     public static final double DEFAULT_EPSILON = 1.0E-8;
@@ -30,6 +31,78 @@ public final class MathUtil {
 
     private MathUtil() {
         throw new AssertionError();
+    }
+
+    /**
+     * Clamp the given value between the two given bounds.
+     *
+     * @param value  the value to clamp
+     * @param lowerBound the lower boundary to clamp {@code value}
+     * @param upperBound the upper boundary to clamp {@code value}
+     * @return {@code value} if {@code value} is in between the bounds, otherwise the closest bound
+     * @throws IllegalArgumentException when {@code lowerBound > upperBound}
+     */
+    public static int clamp(int value, int lowerBound, int upperBound) {
+        Preconditions.checkArgument(
+                lowerBound <= upperBound,
+                "given lower bound, %d; is greater than given upper bound, %d.",
+                lowerBound,
+                upperBound);
+        return Math.max(lowerBound, Math.min(value, upperBound));
+    }
+
+    /**
+     * Clamp the given value between the two given bounds.
+     *
+     * @param value the value to clamp
+     * @param lowerBound the lower boundary to clamp {@code value}
+     * @param upperBound the upper boundary to clamp {@code value}
+     * @return {@code value} if {@code value} is in between the bounds, otherwise the closest bound
+     * @throws IllegalArgumentException when {@code lowerBound > upperBound}
+     */
+    public static long clamp(long value, long lowerBound, long upperBound) {
+        Preconditions.checkArgument(
+                lowerBound <= upperBound,
+                "given lower bound, %d; is greater than given upper bound, %d.",
+                lowerBound,
+                upperBound);
+        return Math.max(lowerBound, Math.min(value, upperBound));
+    }
+
+    /**
+     * Clamp the given value between the two given bounds.
+     *
+     * @param value the value to clamp
+     * @param lowerBound the lower boundary to clamp {@code value}
+     * @param upperBound the upper boundary to clamp {@code value}
+     * @return {@code value} if {@code value} is in between the bounds, otherwise the closest bound
+     * @throws IllegalArgumentException when {@code lowerBound > upperBound}
+     */
+    public static float clamp(float value, float lowerBound, float upperBound) {
+        Preconditions.checkArgument(
+                lowerBound <= upperBound,
+                "given lower bound, %g; is greater than given upper bound, %g.",
+                lowerBound,
+                upperBound);
+        return Math.max(lowerBound, Math.min(value, upperBound));
+    }
+
+    /**
+     * Clamp the given value between the two given bounds.
+     *
+     * @param value the value to clamp
+     * @param lowerBound the lower boundary to clamp {@code value}
+     * @param upperBound the upper boundary to clamp {@code value}
+     * @return {@code value} if {@code value} is in between the bounds, otherwise the closest bound
+     * @throws IllegalArgumentException when {@code lowerBound > upperBound}
+     */
+    public static double clamp(double value, double lowerBound, double upperBound) {
+        Preconditions.checkArgument(
+                lowerBound <= upperBound,
+                "given lower bound, %g; is greater than given upper bound, %g.",
+                lowerBound,
+                upperBound);
+        return Math.max(lowerBound, Math.min(value, upperBound));
     }
 
     /**

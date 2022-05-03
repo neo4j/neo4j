@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.helpers;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -146,5 +147,11 @@ class NumbersTest {
         assertThrows(IllegalArgumentException.class, () -> Numbers.isPowerOfTwo(0));
         assertThrows(IllegalArgumentException.class, () -> Numbers.isPowerOfTwo(-1));
         assertThrows(IllegalArgumentException.class, () -> Numbers.isPowerOfTwo(Long.MIN_VALUE));
+    }
+
+    @Test
+    void shouldFloorPowerOfTwo() {
+        long value = 35;
+        assertThat(Numbers.floorPowerOfTwo(value)).isEqualTo(32);
     }
 }
