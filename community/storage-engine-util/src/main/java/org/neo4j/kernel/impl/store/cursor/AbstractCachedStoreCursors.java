@@ -34,7 +34,7 @@ public abstract class AbstractCachedStoreCursors implements StoreCursors {
     protected CursorContext cursorContext;
     private final int numTypes;
 
-    private PageCursor[] cursorsByType;
+    protected PageCursor[] cursorsByType;
 
     public AbstractCachedStoreCursors(CursorContext cursorContext, int numTypes) {
         this.cursorContext = cursorContext;
