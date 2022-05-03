@@ -169,7 +169,8 @@ public abstract class PropertySelection {
 
         private MultipleKeys(boolean keysOnly, int[] keys) {
             super(keysOnly);
-            this.keys = keys;
+            this.keys = keys.clone();
+            Arrays.sort(this.keys);
         }
 
         @Override
