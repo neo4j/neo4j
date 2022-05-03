@@ -19,9 +19,7 @@
  */
 package org.neo4j.configuration;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.neo4j.configuration.GraphDatabaseSettings.*;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
@@ -32,10 +30,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel;
+import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.HttpConnector;
+import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.graphdb.config.Setting;
@@ -50,6 +51,33 @@ import org.neo4j.test.utils.TestDirectory;
 class SettingMigratorsTest {
     @Inject
     private TestDirectory testDirectory;
+
+    @Test
+    void testConnectorOldFormatMigration() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(
+                confFile,
+                Arrays.asList(
+                        "dbms.connector.bolt.enabled=true",
+                        "dbms.connector.bolt.type=BOLT",
+                        "dbms.connector.http.enabled=true",
+                        "dbms.connector.https.enabled=true"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger(logProvider.getLog(Config.class));
+
+        assertTrue(config.get(BoltConnector.enabled));
+        assertTrue(config.get(HttpConnector.enabled));
+        assertTrue(config.get(HttpsConnector.enabled));
+
+        var warnConfigMatcher = assertThat(logProvider).forClass(Config.class).forLevel(WARN);
+        warnConfigMatcher
+                .containsMessages(
+                        "Use of deprecated setting 'dbms.connector.http.enabled'. It is replaced by 'server.http.enabled'.")
+                .containsMessages(
+                        "Use of deprecated setting 'dbms.connector.https.enabled'. It is replaced by 'server.https.enabled'.");
+    }
 
     @Test
     void warnOnLegacyUnsupportedSettingUsage() throws IOException {

@@ -44,13 +44,13 @@ public final class HttpConnector implements SettingsDeclaration {
 
     @Description("Address the connector should bind to")
     public static final Setting<SocketAddress> listen_address = newBuilder(
-                    "dbms.connector.http.listen_address", SOCKET_ADDRESS, new SocketAddress(DEFAULT_PORT))
+                    "server.http.listen_address", SOCKET_ADDRESS, new SocketAddress(DEFAULT_PORT))
             .setDependency(default_listen_address)
             .build();
 
     @Description("Advertised address for this connector")
     public static final Setting<SocketAddress> advertised_address = newBuilder(
-                    "dbms.connector.http.advertised_address", SOCKET_ADDRESS, new SocketAddress(DEFAULT_PORT))
+                    "server.http.advertised_address", SOCKET_ADDRESS, new SocketAddress(DEFAULT_PORT))
             .setDependency(default_advertised_address)
             .build();
 }

@@ -55,8 +55,8 @@ public final class WebContainerHelper {
 
     public static TestWebContainer createReadOnlyContainer(Path path) throws Exception {
         CommunityWebContainerBuilder builder = CommunityWebContainerBuilder.builder();
-        builder.withProperty("dbms.connector.bolt.listen_address", ":0");
-        builder.withProperty("dbms.connector.bolt.advertised_address", ":0");
+        builder.withProperty("server.bolt.listen_address", ":0");
+        builder.withProperty("server.bolt.advertised_address", ":0");
         createContainer(builder, true, path).shutdown();
         builder.withProperty(GraphDatabaseSettings.read_only_database_default.name(), "true");
         return createContainer(builder, true, path);

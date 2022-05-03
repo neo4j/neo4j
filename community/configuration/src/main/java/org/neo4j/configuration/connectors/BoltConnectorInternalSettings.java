@@ -44,26 +44,24 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration 
     @Internal
     @Description(
             "The queue size of the thread pool bound to this connector (-1 for unbounded, 0 for direct handoff, > 0 for bounded)")
-    public static final Setting<Integer> unsupported_thread_pool_queue_size = newBuilder(
-                    "internal.dbms.connector.bolt.thread_pool_queue_size", INT, 0)
-            .build();
+    public static final Setting<Integer> unsupported_thread_pool_queue_size =
+            newBuilder("internal.server.bolt.thread_pool_queue_size", INT, 0).build();
 
     @Internal
     @Description("Enable TCP keep alive probes on this connector")
-    public static final Setting<Boolean> tcp_keep_alive = newBuilder(
-                    "internal.dbms.connector.bolt.tcp_keep_alive", BOOL, true)
-            .build();
+    public static final Setting<Boolean> tcp_keep_alive =
+            newBuilder("internal.server.bolt.tcp_keep_alive", BOOL, true).build();
 
     @Internal
     @Description("The maximum time to wait for a user to finish authentication before closing the connection.")
     public static final Setting<Duration> unsupported_bolt_unauth_connection_timeout = newBuilder(
-                    "internal.dbms.connector.bolt.unauth_connection_timeout", DURATION, ofSeconds(30))
+                    "internal.server.bolt.unauth_connection_timeout", DURATION, ofSeconds(30))
             .build();
 
     @Internal
     @Description("The maximum inbound message size in bytes are allowed before a connection is authenticated.")
     public static final Setting<Long> unsupported_bolt_unauth_connection_max_inbound_bytes = newBuilder(
-                    "internal.dbms.connector.bolt.unauth_max_inbound_bytes", BYTES, ByteUnit.kibiBytes(8))
+                    "internal.server.bolt.unauth_max_inbound_bytes", BYTES, ByteUnit.kibiBytes(8))
             .build();
 
     @Internal
@@ -92,6 +90,6 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration 
     @Internal
     @Description("The maximum time to wait for the thread pool to finish processing its pending jobs and shutdown")
     public static final Setting<Duration> thread_pool_shutdown_wait_time = newBuilder(
-                    "internal.dbms.connector.bolt.thread_pool_shutdown_wait_time", DURATION, ofSeconds(5))
+                    "internal.server.bolt.thread_pool_shutdown_wait_time", DURATION, ofSeconds(5))
             .build();
 }

@@ -287,9 +287,9 @@ class GraphDatabaseSettingsTest {
                         .map(Setting::name)
                         .collect(Collectors.toList()))
                 .contains(
-                        "dbms.connector.http.enabled",
-                        "dbms.connector.https.enabled",
-                        "dbms.connector.bolt.enabled",
+                        "server.http.enabled",
+                        "server.https.enabled",
+                        "server.bolt.enabled",
                         "dbms.security.auth_enabled");
     }
 

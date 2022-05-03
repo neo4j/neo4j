@@ -37,12 +37,12 @@ import org.neo4j.util.VisibleForTesting;
 public class ConnectorDefaults {
     @VisibleForTesting
     public static final Setting<Boolean> http_enabled =
-            newBuilder("dbms.connector.http.enabled", BOOL, false).build();
+            newBuilder("server.http.enabled", BOOL, false).build();
 
     static final Setting<Boolean> https_enabled =
-            newBuilder("dbms.connector.https.enabled", BOOL, false).build();
+            newBuilder("server.https.enabled", BOOL, false).build();
     static final Setting<Boolean> bolt_enabled =
-            newBuilder("dbms.connector.bolt.enabled", BOOL, false).build();
+            newBuilder("server.bolt.enabled", BOOL, false).build();
 
     public static final Map<Setting<?>, Object> SERVER_CONNECTOR_DEFAULTS = Map.of(
             http_enabled, true,

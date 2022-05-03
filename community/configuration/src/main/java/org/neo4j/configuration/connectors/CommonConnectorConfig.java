@@ -38,5 +38,5 @@ public class CommonConnectorConfig implements SettingsDeclaration {
     @Description("Enable server OCSP stapling for bolt and http connectors.")
     @DocumentedDefaultValue("false")
     public static final Setting<Boolean> ocsp_stapling_enabled =
-            newBuilder("dbms.connector.bolt.ocsp_stapling_enabled", BOOL, false).build();
+            newBuilder("server.bolt.ocsp_stapling_enabled", BOOL, false).build();
 }

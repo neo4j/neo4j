@@ -25,6 +25,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.*;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.graphdb.config.Setting;
@@ -33,6 +34,29 @@ import org.neo4j.logging.InternalLog;
 
 public final class SettingMigrators {
     private SettingMigrators() {}
+
+    @ServiceProvider
+    public static class ConnectorMigrator implements SettingMigrator {
+
+        private static final String OLD_PREFIX = "dbms.connector";
+        private static final Pattern SUPPORTED_CONNECTOR_PATTERN = Pattern.compile("(.+)\\.(bolt|http|https)\\.(.+)");
+
+        @Override
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            List<String> connectorSettings = values.keySet().stream()
+                    .filter(key -> key.startsWith(OLD_PREFIX))
+                    .filter(key -> SUPPORTED_CONNECTOR_PATTERN.matcher(key).matches())
+                    .toList();
+            for (String connectorSetting : connectorSettings) {
+                if (connectorSetting.endsWith(".type")) {
+                    values.remove(connectorSetting);
+                } else {
+                    var newName = connectorSetting.replace("dbms.connector", "server");
+                    migrateSettingNameChange(values, log, connectorSetting, newName);
+                }
+            }
+        }
+    }
 
     @ServiceProvider
     public static class DatabaseMemoryMigrator implements SettingMigrator {
@@ -278,16 +302,16 @@ public final class SettingMigrators {
                         "causal_clustering.topology_graph.default_num_secondaries",
                         "internal.cluster.topology_graph.default_num_secondaries"),
                 new Mapping("dbms.capabilities.blocked", "internal.dbms.capabilities.blocked"),
-                new Mapping("dbms.connector.bolt.tcp_keep_alive", "internal.dbms.connector.bolt.tcp_keep_alive"),
+                new Mapping("dbms.connector.bolt.tcp_keep_alive", "internal.server.bolt.tcp_keep_alive"),
                 new Mapping(
                         "dbms.connector.bolt.unsupported_thread_pool_queue_size",
-                        "internal.dbms.connector.bolt.thread_pool_queue_size"),
+                        "internal.server.bolt.thread_pool_queue_size"),
                 new Mapping(
                         "dbms.connector.bolt.unsupported_unauth_connection_timeout",
-                        "internal.dbms.connector.bolt.unauth_connection_timeout"),
+                        "internal.server.bolt.unauth_connection_timeout"),
                 new Mapping(
                         "dbms.connector.bolt.unsupported_unauth_max_inbound_bytes",
-                        "internal.dbms.connector.bolt.unauth_max_inbound_bytes"),
+                        "internal.server.bolt.unauth_max_inbound_bytes"),
                 new Mapping("dbms.init_file", "internal.dbms.init_file"),
                 new Mapping("dbms.log_inconsistent_data_deletion", "internal.dbms.log_inconsistent_data_deletion"),
                 new Mapping("dbms.routing.driver.event_loop_count", "internal.dbms.routing.driver.event_loop_count"),
@@ -669,7 +693,7 @@ public final class SettingMigrators {
                         "internal.vm_pause_monitor.stall_alert_threshold"),
                 new Mapping(
                         "dbms.connector.bolt.unsupported_thread_pool_shutdown_wait_time",
-                        "internal.dbms.connector.bolt.thread_pool_shutdown_wait_time"),
+                        "internal.server.bolt.thread_pool_shutdown_wait_time"),
                 new Mapping("dbms.config.strict_validation", GraphDatabaseSettings.strict_config_validation.name()));
 
         @Override
