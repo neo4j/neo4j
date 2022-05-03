@@ -44,8 +44,16 @@ public class DelegatingTokenHolder extends AbstractTokenHolderBase {
     private final TokenCreator tokenCreator;
 
     public DelegatingTokenHolder(TokenCreator tokenCreator, String tokenType) {
-        super(new TokenRegistry(tokenType));
+        this(new TokenRegistry(tokenType), tokenCreator);
+    }
+
+    private DelegatingTokenHolder(TokenRegistry registry, TokenCreator tokenCreator) {
+        super(registry);
         this.tokenCreator = tokenCreator;
+    }
+
+    public DelegatingTokenHolder withTokenCreator(TokenCreator tokenCreator) {
+        return new DelegatingTokenHolder(tokenRegistry, tokenCreator);
     }
 
     /**
