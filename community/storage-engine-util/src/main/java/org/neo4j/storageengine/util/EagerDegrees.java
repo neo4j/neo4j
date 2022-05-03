@@ -177,7 +177,7 @@ public class EagerDegrees implements Degrees, Degrees.Mutator {
         return true;
     }
 
-    private static class Degree {
+    public static class Degree {
         private int outgoing;
         private int incoming;
         private int loop;
