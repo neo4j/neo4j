@@ -1334,8 +1334,11 @@ public class Operations implements Write, SchemaWrite {
 
     @Override
     public IndexDescriptor indexCreate(IndexPrototype prototype) throws KernelException {
-        if (prototype.getIndexType() == IndexType.TEXT && prototype.schema().getPropertyIds().length > 1) {
-            throw new UnsupportedOperationException("Composite indexes are not supported for TEXT index type.");
+        IndexType indexType = prototype.getIndexType();
+        if ((indexType == IndexType.TEXT || indexType == IndexType.POINT)
+                && prototype.schema().getPropertyIds().length > 1) {
+            throw new UnsupportedOperationException(
+                    "Composite indexes are not supported for " + indexType.name() + " index type.");
         }
 
         exclusiveSchemaLock(prototype.schema());
