@@ -455,7 +455,7 @@ public class EncodingIdMapper implements IdMapper {
             numberOfCollisions += detectWorker.numberOfCollisions;
         }
 
-        progress.done();
+        progress.close();
         if (numberOfCollisions > Integer.MAX_VALUE) {
             throw new InputException("Too many collisions: " + numberOfCollisions);
         }
@@ -521,7 +521,7 @@ public class EncodingIdMapper implements IdMapper {
             }
             progress.add(1);
         }
-        progress.done();
+        progress.close();
 
         // Detect input id duplicates within the same group, with source information, line number and the works
         detectDuplicateInputIds(radix, collector, progress);
@@ -614,7 +614,7 @@ public class EncodingIdMapper implements IdMapper {
             previousGroupId = groupId;
             progress.add(1);
         }
-        progress.done();
+        progress.close();
     }
 
     private static LongArray as5ByteLongArray(ByteArray byteArray) {

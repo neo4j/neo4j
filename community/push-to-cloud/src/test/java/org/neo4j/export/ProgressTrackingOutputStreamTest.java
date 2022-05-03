@@ -42,7 +42,7 @@ class ProgressTrackingOutputStreamTest {
 
         // then
         verify(progressListener).add(1);
-        verify(progressListener).done();
+        verify(progressListener).close();
         verifyNoMoreInteractions(progressListener);
     }
 
@@ -61,7 +61,7 @@ class ProgressTrackingOutputStreamTest {
 
         // then
         verify(progressListener).add(length);
-        verify(progressListener).done();
+        verify(progressListener).close();
         verifyNoMoreInteractions(progressListener);
     }
 
@@ -80,7 +80,7 @@ class ProgressTrackingOutputStreamTest {
 
         // then
         verify(progressListener).add(length);
-        verify(progressListener).done();
+        verify(progressListener).close();
         verifyNoMoreInteractions(progressListener);
     }
 
@@ -104,7 +104,7 @@ class ProgressTrackingOutputStreamTest {
         InOrder inOrder = inOrder(progressListener);
         inOrder.verify(progressListener).add(20);
         inOrder.verify(progressListener).add(7);
-        inOrder.verify(progressListener).done();
+        inOrder.verify(progressListener).close();
         verifyNoMoreInteractions(progressListener);
     }
 

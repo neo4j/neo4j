@@ -66,13 +66,13 @@ class ProgressMonitorTest {
     @Test
     void shouldReportProgressInTheSpecifiedIntervals(TestInfo testInfo) {
         // given
-        ProgressListener progressListener = factory.singlePart(testInfo.getDisplayName(), 16);
+        try (var progressListener = factory.singlePart(testInfo.getDisplayName(), 16)) {
+            // when
 
-        // when
-        for (int i = 0; i < 16; i++) {
-            progressListener.add(1);
+            for (int i = 0; i < 16; i++) {
+                progressListener.add(1);
+            }
         }
-        progressListener.done();
 
         // then
         InOrder order = inOrder(indicator);
@@ -99,7 +99,7 @@ class ProgressMonitorTest {
         for (int i = 0; i < 5; i++) {
             first.add(1);
         }
-        first.done();
+        first.close();
 
         // then
         for (int i = 0; i < 5; i++) {
@@ -111,7 +111,7 @@ class ProgressMonitorTest {
         for (int i = 0; i < 5; i++) {
             other.add(1);
         }
-        other.done();
+        other.close();
 
         // then
         for (int i = 5; i < 10; i++) {
@@ -146,13 +146,12 @@ class ProgressMonitorTest {
     @Test
     void shouldStartProcessAutomaticallyIfNotDoneBefore(TestInfo testInfo) {
         // given
-        ProgressListener progressListener = factory.singlePart(testInfo.getDisplayName(), 16);
-
-        // when
-        for (int i = 0; i < 16; i++) {
-            progressListener.add(1);
+        try (var progressListener = factory.singlePart(testInfo.getDisplayName(), 16)) {
+            // when
+            for (int i = 0; i < 16; i++) {
+                progressListener.add(1);
+            }
         }
-        progressListener.done();
 
         // then
         InOrder order = inOrder(indicator);
@@ -179,7 +178,7 @@ class ProgressMonitorTest {
         for (int i = 0; i < 5; i++) {
             first.add(1);
         }
-        first.done();
+        first.close();
 
         // then
         for (int i = 0; i < 5; i++) {
@@ -191,7 +190,7 @@ class ProgressMonitorTest {
         for (int i = 0; i < 5; i++) {
             other.add(1);
         }
-        other.done();
+        other.close();
 
         // then
         for (int i = 5; i < 10; i++) {
@@ -263,8 +262,8 @@ class ProgressMonitorTest {
         part1.add(1);
         builder.build();
         part2.add(1);
-        part1.done();
-        part2.done();
+        part1.close();
+        part2.close();
 
         // then
         InOrder order = inOrder(indicator);
@@ -311,18 +310,18 @@ class ProgressMonitorTest {
         // when
         Race race = new Race();
         race.addContestants(numberOfThreads, () -> {
-            ProgressListener local = part1.threadLocalReporter(localReportingSize);
-            for (int i = 0; i < part1ReportCount * localReportingSize; i++) {
-                local.add(1);
+            try (var local = part1.threadLocalReporter(localReportingSize)) {
+                for (int i = 0; i < part1ReportCount * localReportingSize; i++) {
+                    local.add(1);
+                }
             }
-            local.done();
         });
         race.addContestants(numberOfThreads, () -> {
-            ProgressListener local = part2.threadLocalReporter(localReportingSize);
-            for (int i = 0; i < part2ReportCount * localReportingSize; i++) {
-                local.add(1);
+            try (var local = part2.threadLocalReporter(localReportingSize)) {
+                for (int i = 0; i < part2ReportCount * localReportingSize; i++) {
+                    local.add(1);
+                }
             }
-            local.done();
         });
         race.goUnchecked();
 

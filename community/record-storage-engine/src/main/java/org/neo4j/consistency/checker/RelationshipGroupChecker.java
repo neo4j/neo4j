@@ -82,7 +82,6 @@ class RelationshipGroupChecker implements Checker {
      * Check relationship group to owner node
      */
     private void checkToOwner(LongRange nodeIdRange, CursorContextFactory contextFactory) {
-        ProgressListener localProgress = progress.threadLocalReporter();
         RelationshipGroupStore groupStore = neoStores.getRelationshipGroupStore();
         CacheAccess.Client client = context.cacheAccess.client();
         final long highId = groupStore.getHighId();
@@ -90,7 +89,8 @@ class RelationshipGroupChecker implements Checker {
         try (var cursorContext = contextFactory.create(RELATIONSHIP_GROUPS_CHECKER_TAG);
                 var storeCursors = new CachedStoreCursors(neoStores, cursorContext);
                 RecordReader<RelationshipGroupRecord> groupReader =
-                        new RecordReader<>(neoStores.getRelationshipGroupStore(), true, cursorContext)) {
+                        new RecordReader<>(neoStores.getRelationshipGroupStore(), true, cursorContext);
+                var localProgress = progress.threadLocalReporter()) {
             for (long id = 0; id < highId && !context.isCancelled(); id++) {
                 localProgress.add(1);
                 RelationshipGroupRecord record = groupReader.read(id);
@@ -124,7 +124,6 @@ class RelationshipGroupChecker implements Checker {
                 }
             }
         }
-        localProgress.done();
     }
 
     /**

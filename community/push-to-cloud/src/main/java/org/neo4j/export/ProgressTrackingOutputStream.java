@@ -92,7 +92,7 @@ class ProgressTrackingOutputStream extends OutputStream {
 
         void done() {
             done = true;
-            uploadProgress.done();
+            uploadProgress.close();
         }
 
         boolean isDone() {

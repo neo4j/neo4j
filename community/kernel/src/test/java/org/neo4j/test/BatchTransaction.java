@@ -78,7 +78,7 @@ public class BatchTransaction implements AutoCloseable {
     @Override
     public void close() {
         closeTx();
-        progressListener.done();
+        progressListener.close();
     }
 
     public int total() {

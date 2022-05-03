@@ -136,8 +136,8 @@ class NodeChecker implements Checker {
                         getLabelIndexReader(fromNodeId, toNodeId, last, cursorContext);
                 SafePropertyChainReader property = new SafePropertyChainReader(context, cursorContext);
                 SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker(
-                        context, mandatoryProperties, smallIndexes, cursorContext, storeCursors)) {
-            ProgressListener localProgress = nodeProgress.threadLocalReporter();
+                        context, mandatoryProperties, smallIndexes, cursorContext, storeCursors);
+                var localProgress = nodeProgress.threadLocalReporter()) {
             MutableIntObjectMap<Value> propertyValues = new IntObjectHashMap<>();
             CacheAccess.Client client = context.cacheAccess.client();
             long[] nextRelCacheFields =
@@ -225,7 +225,6 @@ class NodeChecker implements Checker {
                 reportRemainingLabelIndexEntries(
                         nodeLabelRangeIterator, labelIndexState, last ? Long.MAX_VALUE : toNodeId, storeCursors);
             }
-            localProgress.done();
         }
         observedCounts.incrementNodeLabel(ANY_LABEL, usedNodes);
     }

@@ -176,7 +176,7 @@ class HttpCopierTest {
         verify(postRequestedFor(urlEqualTo(signedURIPath)));
         verify(putRequestedFor(urlEqualTo(uploadLocationPath)));
         verify(postRequestedFor(urlEqualTo("/import/upload-complete")));
-        assertTrue(progressListener.doneCalled);
+        assertTrue(progressListener.closeCalled);
         // we need to add 100 extra ticks to the progress listener because of the database phases
         assertEquals(sourceLength + 100, progressListener.progress);
     }
@@ -635,7 +635,7 @@ class HttpCopierTest {
         verify(putRequestedFor(urlEqualTo(uploadLocationPath))
                 .withHeader("Content-Length", equalTo("0"))
                 .withHeader("Content-Range", equalTo("bytes */" + sourceLength)));
-        assertTrue(progressListener.doneCalled);
+        assertTrue(progressListener.closeCalled);
         // we need to add 100 extra ticks to the progress listener because of the database phases
         assertEquals(sourceLength + 100, progressListener.progress);
     }
@@ -945,7 +945,7 @@ class HttpCopierTest {
 
     private static class ControlledProgressListener extends ProgressListener.Adapter {
         long progress;
-        boolean doneCalled;
+        boolean closeCalled;
 
         @Override
         public void add(long progress) {
@@ -953,8 +953,8 @@ class HttpCopierTest {
         }
 
         @Override
-        public void done() {
-            doneCalled = true;
+        public void close() {
+            closeCalled = true;
         }
 
         @Override

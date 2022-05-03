@@ -136,7 +136,7 @@ public class EncodingIdMapperTest {
 
         // THEN
         assertEquals(IdMapper.ID_NOT_FOUND, id);
-        verify(progress, times(3)).done();
+        verify(progress, times(3)).close();
     }
 
     @ParameterizedTest(name = "processors:{0}")
@@ -234,7 +234,7 @@ public class EncodingIdMapperTest {
         assertEquals(0L, mapper.get("10", Group.GLOBAL));
         assertEquals(1L, mapper.get("9", Group.GLOBAL));
         // 7 times since SPLIT+SORT+DETECT+RESOLVE+SPLIT+SORT,DEDUPLICATE
-        verify(progress, times(7)).done();
+        verify(progress, times(7)).close();
     }
 
     @ParameterizedTest(name = "processors:{0}")

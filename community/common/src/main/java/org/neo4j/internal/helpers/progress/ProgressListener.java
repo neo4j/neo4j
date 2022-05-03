@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.helpers.progress;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -28,12 +27,13 @@ import java.util.concurrent.atomic.AtomicLong;
  * Progress objects are not thread safe, and are to be used by a single thread only. Each Progress object from a {@link
  * ProgressMonitorFactory.MultiPartBuilder} can be used from different threads.
  */
-public interface ProgressListener {
+public interface ProgressListener extends AutoCloseable {
     void add(long progress);
 
     void mark(char mark);
 
-    void done();
+    @Override
+    void close();
 
     void failed(Throwable e);
 
@@ -51,7 +51,7 @@ public interface ProgressListener {
         public void mark(char mark) {}
 
         @Override
-        public void done() {}
+        public void close() {}
 
         @Override
         public void failed(Throwable e) {}
@@ -89,7 +89,7 @@ public interface ProgressListener {
         }
 
         @Override
-        public void done() {
+        public void close() {
             reportToParent();
         }
 
@@ -133,7 +133,7 @@ public interface ProgressListener {
         }
 
         @Override
-        public void done() {
+        public void close() {
             aggregator.updateRemaining();
             aggregator.done();
         }
@@ -149,7 +149,6 @@ public interface ProgressListener {
         public final long totalCount;
 
         private final Aggregator aggregator;
-        private final AtomicBoolean started = new AtomicBoolean();
         private final AtomicLong progress = new AtomicLong();
 
         MultiPartProgressListener(Aggregator aggregator, String part, long totalCount) {
@@ -177,7 +176,7 @@ public interface ProgressListener {
         }
 
         @Override
-        public synchronized void done() {
+        public synchronized void close() {
             long delta = totalCount - progress.get();
             if (delta > 0) {
                 add(delta);

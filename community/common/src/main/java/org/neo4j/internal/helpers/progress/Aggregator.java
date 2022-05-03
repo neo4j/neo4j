@@ -60,7 +60,7 @@ final class Aggregator {
         }
 
         List<ProgressListener> progressesToClose = new ArrayList<>(states.keySet());
-        return () -> progressesToClose.forEach(ProgressListener::done);
+        return () -> progressesToClose.forEach(ProgressListener::close);
     }
 
     void update(long delta) {
@@ -100,7 +100,7 @@ final class Aggregator {
     }
 
     void done() {
-        states.keySet().forEach(ProgressListener::done);
+        states.keySet().forEach(ProgressListener::close);
     }
 
     void mark(char mark) {

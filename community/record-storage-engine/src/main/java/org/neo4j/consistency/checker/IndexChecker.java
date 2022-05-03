@@ -175,10 +175,10 @@ public abstract class IndexChecker<Record extends PrimitiveRecord> implements Ch
                 workers[i] = () -> {
                     int lastChecksum = 0;
                     int progressPart = 0;
-                    ProgressListener localCacheProgress = cacheProgress.threadLocalReporter();
                     var client = cacheAccess.client();
                     try (var context = this.context.contextFactory.create(CONSISTENCY_INDEX_CACHER_TAG);
-                            var localStoreCursors = new CachedStoreCursors(this.context.neoStores, context)) {
+                            var localStoreCursors = new CachedStoreCursors(this.context.neoStores, context);
+                            var localCacheProgress = cacheProgress.threadLocalReporter()) {
                         while (partition.hasNext() && !this.context.isCancelled()) {
                             long entityId = partition.next();
                             if (!entityIdRange.isWithinRangeExclusiveTo(entityId)) {
@@ -241,7 +241,6 @@ public abstract class IndexChecker<Record extends PrimitiveRecord> implements Ch
                             }
                         }
                     }
-                    localCacheProgress.done();
                 };
             }
 
@@ -313,8 +312,8 @@ public abstract class IndexChecker<Record extends PrimitiveRecord> implements Ch
                 RecordReader<Record> entityReader = new RecordReader<>(store(), true, cursorContext);
                 RecordReader<DynamicRecord> entityTokenReader = additionalEntityTokenReader(cursorContext);
                 SafePropertyChainReader propertyReader =
-                        new SafePropertyChainReader(noReportingContext, cursorContext)) {
-            ProgressListener localScanProgress = scanProgress.threadLocalReporter();
+                        new SafePropertyChainReader(noReportingContext, cursorContext);
+                var localScanProgress = scanProgress.threadLocalReporter()) {
             IntObjectHashMap<Value> allValues = new IntObjectHashMap<>();
             var client = cacheAccess.client();
             int numberOfIndexes = indexes.size();
@@ -420,7 +419,6 @@ public abstract class IndexChecker<Record extends PrimitiveRecord> implements Ch
                 }
                 localScanProgress.add(1);
             }
-            localScanProgress.done();
         }
     }
 

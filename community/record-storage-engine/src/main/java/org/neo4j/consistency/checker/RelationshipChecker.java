@@ -126,8 +126,8 @@ class RelationshipChecker implements Checker {
                         fromRelationshipId, toRelationshipId, checkToEndOfIndex, cursorContext);
                 SafePropertyChainReader property = new SafePropertyChainReader(context, cursorContext);
                 SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker(
-                        context, mandatoryProperties, indexes, cursorContext, storeCursors)) {
-            ProgressListener localProgress = progress.threadLocalReporter();
+                        context, mandatoryProperties, indexes, cursorContext, storeCursors);
+                var localProgress = progress.threadLocalReporter()) {
             CacheAccess.Client client = cacheAccess.client();
             MutableIntObjectMap<Value> propertyValues = new IntObjectHashMap<>();
             Iterator<EntityTokenRange> relationshipTypeRangeIterator = relationshipTypeReader.iterator();
@@ -247,7 +247,6 @@ class RelationshipChecker implements Checker {
                         checkToEndOfIndex ? Long.MAX_VALUE : toRelationshipId,
                         storeCursors);
             }
-            localProgress.done();
         }
     }
 

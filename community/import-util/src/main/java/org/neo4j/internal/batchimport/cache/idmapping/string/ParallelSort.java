@@ -82,10 +82,8 @@ public class ParallelSort {
             }
             sortWorkers.start(new SortWorker(sortBuckets[i].baseIndex, sortBuckets[i].count));
         }
-        try {
+        try (progress) {
             sortWorkers.awaitAndThrowOnError();
-        } finally {
-            progress.done();
         }
         return sortBuckets;
     }
@@ -137,7 +135,7 @@ public class ParallelSort {
                 break;
             }
         }
-        progress.done();
+        progress.close();
 
         // In the loop above where we split up radixes into buckets, we start one thread per bucket whose
         // job is to populate trackerCache and sortBuckets where each thread will not touch the same

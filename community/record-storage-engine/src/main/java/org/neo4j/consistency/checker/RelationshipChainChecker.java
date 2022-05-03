@@ -92,7 +92,6 @@ class RelationshipChainChecker implements Checker {
         AtomicBoolean end = new AtomicBoolean();
         int numberOfThreads = numberOfChainCheckers + 1;
         ThrowingRunnable[] workers = new ThrowingRunnable[numberOfThreads];
-        ProgressListener localProgress = progress.threadLocalReporter();
         ArrayBlockingQueue<BatchedRelationshipRecords>[] threadQueues = new ArrayBlockingQueue[numberOfChainCheckers];
         BatchedRelationshipRecords[] threadBatches = new BatchedRelationshipRecords[numberOfChainCheckers];
         for (int i = 0; i < numberOfChainCheckers; i++) {
@@ -106,7 +105,8 @@ class RelationshipChainChecker implements Checker {
         workers[workers.length - 1] = () -> {
             RelationshipRecord relationship = relationshipStore.newRecord();
             try (var cursorContext = context.contextFactory.create(RELATIONSHIP_CONSISTENCY_CHECKER_TAG);
-                    var cursor = relationshipStore.openPageCursorForReadingWithPrefetching(0, cursorContext)) {
+                    var cursor = relationshipStore.openPageCursorForReadingWithPrefetching(0, cursorContext);
+                    var localProgress = progress.threadLocalReporter()) {
                 int recordsPerPage = relationshipStore.getRecordsPerPage();
                 long id = direction.startingId(highId);
                 while (id >= 0 && id < highId && !context.isCancelled()) {
@@ -119,7 +119,6 @@ class RelationshipChainChecker implements Checker {
                     }
                 }
                 processLastRelationshipChecks(threadQueues, threadBatches, end);
-                localProgress.done();
             }
         };
 

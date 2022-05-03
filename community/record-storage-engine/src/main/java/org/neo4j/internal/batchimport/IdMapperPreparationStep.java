@@ -66,7 +66,7 @@ public class IdMapperPreparationStep extends LonelyProcessingStep {
             }
 
             @Override
-            public void done() { // Nothing to do
+            public void close() { // Nothing to do
             }
         });
     }
