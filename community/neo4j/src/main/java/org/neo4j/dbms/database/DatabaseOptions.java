@@ -51,4 +51,8 @@ public record DatabaseOptions(Map<Setting<?>, Object> settings, TopologyGraphDbm
 
         return new DatabaseOptions(settings, mode);
     }
+
+    public DatabaseOptions withMode(TopologyGraphDbmsModel.HostedOnMode mode) {
+        return new DatabaseOptions(settings, mode);
+    }
 }
