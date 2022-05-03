@@ -209,7 +209,7 @@ public abstract class ParallelPartitionedRelationshipCursorTestBase<G extends Ke
     @Test
     void shouldHandleRandomNumberOfPartitions() throws InterruptedException, ExecutionException {
         // given
-        int desiredNumberOfPartitions = ThreadLocalRandom.current().nextInt(NUMBER_OF_RELATIONSHIPS);
+        int desiredNumberOfPartitions = ThreadLocalRandom.current().nextInt(NUMBER_OF_RELATIONSHIPS) + 1;
         PartitionedScan<RelationshipScanCursor> scan =
                 read.allRelationshipsScan(desiredNumberOfPartitions, NULL_CONTEXT);
         ExecutorService service = Executors.newFixedThreadPool(scan.getNumberOfPartitions());

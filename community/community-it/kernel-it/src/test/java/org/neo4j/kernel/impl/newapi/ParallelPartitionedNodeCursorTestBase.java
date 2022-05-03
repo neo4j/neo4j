@@ -207,7 +207,7 @@ public abstract class ParallelPartitionedNodeCursorTestBase<G extends KernelAPIR
     @Test
     void shouldHandleRandomNumberOfPartitions() throws InterruptedException, ExecutionException {
         // given
-        int desiredNumberOfPartitions = ThreadLocalRandom.current().nextInt(NUMBER_OF_NODES);
+        int desiredNumberOfPartitions = ThreadLocalRandom.current().nextInt(NUMBER_OF_NODES) + 1;
         PartitionedScan<NodeCursor> scan = read.allNodesScan(desiredNumberOfPartitions, NULL_CONTEXT);
         ExecutorService service = Executors.newFixedThreadPool(scan.getNumberOfPartitions());
         CursorFactory cursors = testSupport.kernelToTest().cursors();
