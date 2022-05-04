@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.dbms;
 
+import static java.lang.String.format;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
@@ -134,7 +135,7 @@ public class MigrateStoreCommand extends AbstractCommand {
     }
 
     @Override
-    protected void execute() throws Exception {
+    protected void execute() {
         var databaseTracers = DatabaseTracers.EMPTY;
         var pageCacheTracer = PageCacheTracer.NULL;
         var memoryTracker = EmptyMemoryTracker.INSTANCE;
@@ -143,81 +144,90 @@ public class MigrateStoreCommand extends AbstractCommand {
         Config config = buildConfig(ctx, allowCommandExpansion);
         List<FailedMigration> failedMigrations = new ArrayList<>();
 
-        try (FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-                Log4jLogProvider logProvider = Util.configuredLogProvider(config, ctx.out())) {
-            Set<String> dbNames = getDbNames(config, fs);
-
+        try (Log4jLogProvider logProvider = Util.configuredLogProvider(config, ctx.out())) {
             InternalLog resultLog = logProvider.getLog(getClass());
-            for (String dbName : dbNames) {
 
-                resultLog.info("Starting migration for database '" + dbName + "'");
+            try (FileSystemAbstraction fs = new DefaultFileSystemAbstraction()) {
+                Set<String> dbNames = getDbNames(config, fs);
 
-                LifeSupport life = new LifeSupport();
-                String formatFamilyForDb = formatFamily;
+                for (String dbName : dbNames) {
 
-                try (JobScheduler jobScheduler = life.add(JobSchedulerFactory.createInitialisedScheduler());
-                        PageCache pageCache = createPageCache(fs, config, jobScheduler, pageCacheTracer)) {
+                    resultLog.info("Starting migration for database '" + dbName + "'");
 
-                    DatabaseLayout databaseLayout = Neo4jLayout.of(config).databaseLayout(dbName);
-                    checkDatabaseExistence(databaseLayout);
+                    LifeSupport life = new LifeSupport();
+                    String formatFamilyForDb = formatFamily;
 
-                    if (SYSTEM_DATABASE_NAME.equals(dbName)) {
-                        formatFamilyForDb = GraphDatabaseSettings.DatabaseRecordFormat.aligned.name();
+                    try (JobScheduler jobScheduler = life.add(JobSchedulerFactory.createInitialisedScheduler());
+                            PageCache pageCache = createPageCache(fs, config, jobScheduler, pageCacheTracer)) {
+
+                        DatabaseLayout databaseLayout = Neo4jLayout.of(config).databaseLayout(dbName);
+                        checkDatabaseExistence(databaseLayout);
+
+                        if (SYSTEM_DATABASE_NAME.equals(dbName)) {
+                            formatFamilyForDb = GraphDatabaseSettings.DatabaseRecordFormat.aligned.name();
+                        }
+
+                        try (Closeable ignored = LockChecker.checkDatabaseLock(databaseLayout)) {
+                            SimpleLogService logService = new SimpleLogService(logProvider);
+
+                            StorageEngineFactory currentStorageEngineFactory =
+                                    getCurrentStorageEngineFactory(fs, databaseLayout, pageCache);
+                            var indexProviderMap = getIndexProviderMap(
+                                    fs,
+                                    databaseLayout,
+                                    config,
+                                    logService,
+                                    pageCache,
+                                    jobScheduler,
+                                    life,
+                                    currentStorageEngineFactory,
+                                    pageCacheTracer,
+                                    contextFactory);
+
+                            // Add the kernel store migrator
+                            life.start();
+
+                            StoreMigrator storeMigrator = new StoreMigrator(
+                                    fs,
+                                    config,
+                                    logService,
+                                    pageCache,
+                                    databaseTracers,
+                                    jobScheduler,
+                                    databaseLayout,
+                                    currentStorageEngineFactory,
+                                    indexProviderMap,
+                                    contextFactory,
+                                    memoryTracker,
+                                    Suppliers.lazySingleton(() -> loadLogTail(
+                                            fs,
+                                            pageCache,
+                                            config,
+                                            currentStorageEngineFactory,
+                                            DatabaseTracers.EMPTY,
+                                            databaseLayout,
+                                            memoryTracker)));
+
+                            storeMigrator.migrateIfNeeded(formatFamilyForDb, forceBtreeToRange);
+                        } catch (FileLockException e) {
+                            throw new CommandFailedException(
+                                    "The database is in use. Stop database '" + dbName + "' and try again.", e);
+                        }
+                    } catch (Exception e) {
+                        resultLog.error("Failed to migrate database '" + dbName + "': " + e.getMessage());
+                        failedMigrations.add(new FailedMigration(dbName, e));
+                    } finally {
+                        life.shutdown();
                     }
-
-                    try (Closeable ignored = LockChecker.checkDatabaseLock(databaseLayout)) {
-                        SimpleLogService logService = new SimpleLogService(logProvider);
-
-                        StorageEngineFactory currentStorageEngineFactory =
-                                getCurrentStorageEngineFactory(fs, databaseLayout, pageCache);
-                        var indexProviderMap = getIndexProviderMap(
-                                fs,
-                                databaseLayout,
-                                config,
-                                logService,
-                                pageCache,
-                                jobScheduler,
-                                life,
-                                currentStorageEngineFactory,
-                                pageCacheTracer,
-                                contextFactory);
-
-                        // Add the kernel store migrator
-                        life.start();
-
-                        StoreMigrator storeMigrator = new StoreMigrator(
-                                fs,
-                                config,
-                                logService,
-                                pageCache,
-                                databaseTracers,
-                                jobScheduler,
-                                databaseLayout,
-                                currentStorageEngineFactory,
-                                indexProviderMap,
-                                contextFactory,
-                                memoryTracker,
-                                Suppliers.lazySingleton(() -> loadLogTail(
-                                        fs,
-                                        pageCache,
-                                        config,
-                                        currentStorageEngineFactory,
-                                        DatabaseTracers.EMPTY,
-                                        databaseLayout,
-                                        memoryTracker)));
-
-                        storeMigrator.migrateIfNeeded(formatFamilyForDb, forceBtreeToRange);
-                    } catch (FileLockException e) {
-                        throw new CommandFailedException(
-                                "The database is in use. Stop database '" + dbName + "' and try again.", e);
-                    }
-                } catch (Exception e) {
-                    resultLog.error("Failed to migrate database '" + dbName + "': " + e.getMessage());
-                    failedMigrations.add(new FailedMigration(dbName, e));
-                } finally {
-                    life.shutdown();
                 }
+            } catch (IOException e) {
+                throw new CommandFailedException(
+                        format(
+                                "Failed to migrate database(s): %s: %s",
+                                e.getClass().getSimpleName(), e.getMessage()),
+                        e);
             }
+
             if (failedMigrations.isEmpty()) {
                 resultLog.info("Migrate-store completed successfully");
             } else {
@@ -235,19 +245,24 @@ public class MigrateStoreCommand extends AbstractCommand {
 
     record FailedMigration(String dbName, Exception e) {}
 
-    private Set<String> getDbNames(Config config, FileSystemAbstraction fs) throws IOException {
+    private Set<String> getDbNames(Config config, FileSystemAbstraction fs) {
         if (!database.containsPattern()) {
             return Set.of(database.getDatabaseName());
         } else {
             Set<String> dbNames = MutableSetFactoryImpl.INSTANCE.empty();
             Path databasesDir = Neo4jLayout.of(config).databasesDirectory();
-            for (Path path : fs.listFiles(databasesDir)) {
-                if (fs.isDirectory(path)) {
-                    String name = path.getFileName().toString();
-                    if (database.matches(name)) {
-                        dbNames.add(name);
+            try {
+                for (Path path : fs.listFiles(databasesDir)) {
+                    if (fs.isDirectory(path)) {
+                        String name = path.getFileName().toString();
+                        if (database.matches(name)) {
+                            dbNames.add(name);
+                        }
                     }
                 }
+            } catch (IOException e) {
+                throw new CommandFailedException(
+                        format("Failed to list databases: %s: %s", e.getClass().getSimpleName(), e.getMessage()), e);
             }
             return dbNames;
         }
