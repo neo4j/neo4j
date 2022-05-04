@@ -466,6 +466,32 @@ class MultiRootGBPTreeTest {
     }
 
     @Test
+    void shouldReopenWhenRootAndDataLayoutHasDifferentFormatIdentifiers() throws IOException {
+        // given
+        var file = directory.file("other-tree");
+        var dataLayout = new SimpleLongLayout.Builder().withFixedSize(true).build();
+
+        // when/then
+        for (int i = 0; i < 2; i++) {
+            new MultiRootGBPTree<>(
+                            pageCache,
+                            file,
+                            dataLayout,
+                            NO_MONITOR,
+                            NO_HEADER_READER,
+                            NO_HEADER_WRITER,
+                            immediate(),
+                            writable(),
+                            Sets.immutable.empty(),
+                            "db",
+                            "test multi-root tree",
+                            new CursorContextFactory(PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY),
+                            multipleRoots(rootKeyLayout, (int) kibiBytes(1)))
+                    .close();
+        }
+    }
+
+    @Test
     void shouldEstimateNumberOfEntriesInTree() throws IOException {
         // given
         long[] rootIds = {1, 2, 3};

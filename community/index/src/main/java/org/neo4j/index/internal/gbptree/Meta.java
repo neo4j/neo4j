@@ -206,16 +206,15 @@ public class Meta {
     public void verify(Layout<?, ?> dataLayout, Layout<?, ?> rootLayout) {
         if (rootLayout != null) {
             Factory rootFormat = TreeNodeSelector.selectByLayout(rootLayout);
-            Factory rootFormatByLayout = TreeNodeSelector.selectByLayout(dataLayout);
-            if (rootFormatByLayout.formatIdentifier() != rootFormatIdentifier
-                    || rootFormatByLayout.formatVersion() != rootFormatVersion) {
+            if (rootFormat.formatIdentifier() != rootFormatIdentifier
+                    || rootFormat.formatVersion() != rootFormatVersion) {
                 throw new MetadataMismatchException(format(
                         "Tried to open using root layout not compatible with what tree was created with. "
                                 + "Created with formatIdentifier:%d,formatVersion:%d. Opened with formatIdentifier:%d,formatVersion%d",
                         rootFormatIdentifier,
                         rootFormatVersion,
-                        rootFormatByLayout.formatIdentifier(),
-                        rootFormatByLayout.formatVersion()));
+                        rootFormat.formatIdentifier(),
+                        rootFormat.formatVersion()));
             }
         } else {
             if (rootFormatIdentifier != UNUSED_VERSION) {
