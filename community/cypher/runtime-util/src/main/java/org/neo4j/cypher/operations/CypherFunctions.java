@@ -631,8 +631,8 @@ public final class CypherFunctions {
     public static TextValue left(AnyValue in, AnyValue endPos) {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if (in instanceof TextValue text) {
-            int len = asIntExact(endPos, () -> "Invalid input for length value in function 'left()'");
-            return text.substring(0, len);
+            final long len = asLong(endPos, () -> "Invalid input for length value in function 'left()'");
+            return text.substring(0, (int) Math.min(len, Integer.MAX_VALUE));
         } else {
             throw notAString("left", in);
         }
@@ -692,12 +692,12 @@ public final class CypherFunctions {
     public static TextValue right(AnyValue original, AnyValue length) {
         assert original != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if (original instanceof TextValue asText) {
-            int len = asIntExact(length, () -> "Invalid input for length value in function 'right()'");
+            final long len = asLong(length, () -> "Invalid input for length value in function 'right()'");
             if (len < 0) {
                 throw new IndexOutOfBoundsException("negative length");
             }
-            int startVal = asText.length() - len;
-            return asText.substring(Math.max(0, startVal));
+            final long startVal = asText.length() - len;
+            return asText.substring((int) Math.max(0, startVal));
         } else {
             throw notAString("right", original);
         }
