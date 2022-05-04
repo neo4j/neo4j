@@ -19,8 +19,6 @@
  */
 package org.neo4j.storageengine.api;
 
-import static org.neo4j.storageengine.api.StoreVersionUserStringProvider.formatVersion;
-
 import java.io.IOException;
 import java.util.Objects;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -36,13 +34,9 @@ import org.neo4j.io.pagecache.context.CursorContext;
  * TODO: The aim is to have this as the only representation of store ID and store version
  * and get rid of the 'String' and 'long' representation of store version and {@link LegacyStoreId}.
  */
-public class StoreId implements StoreVersionUserStringProvider {
+public class StoreId extends StoreVersionIdentifier {
     private final long creationTime;
     private final long random;
-    private final String storageEngineName;
-    private final String formatFamilyName;
-    private final int majorVersion;
-    private final int minorVersion;
 
     public StoreId(
             long creationTime,
@@ -51,12 +45,9 @@ public class StoreId implements StoreVersionUserStringProvider {
             String formatFamilyName,
             int majorVersion,
             int minorVersion) {
+        super(storageEngineName, formatFamilyName, majorVersion, minorVersion);
         this.creationTime = creationTime;
         this.random = random;
-        this.storageEngineName = storageEngineName;
-        this.formatFamilyName = formatFamilyName;
-        this.majorVersion = majorVersion;
-        this.minorVersion = minorVersion;
     }
 
     long getCreationTime() {
@@ -65,33 +56,6 @@ public class StoreId implements StoreVersionUserStringProvider {
 
     long getRandom() {
         return random;
-    }
-
-    public String getStorageEngineName() {
-        return storageEngineName;
-    }
-
-    public String getFormatFamilyName() {
-        return formatFamilyName;
-    }
-
-    public int getMajorVersion() {
-        return majorVersion;
-    }
-
-    public int getMinorVersion() {
-        return minorVersion;
-    }
-
-    /**
-     * End-user friendly representation of the store version part of the ID.
-     * <p>
-     * The result of this method should be used in logging, error messages and similar cases,
-     * when the store version needs to be represented to the end user.
-     */
-    @Override
-    public String getStoreVersionUserString() {
-        return formatVersion(storageEngineName, formatFamilyName, majorVersion, minorVersion);
     }
 
     public void serialize(WritableChannel channel) throws IOException {
@@ -107,10 +71,7 @@ public class StoreId implements StoreVersionUserStringProvider {
     public boolean isSameOrUpgradeSuccessor(StoreId anotherId) {
         return creationTime == anotherId.creationTime
                 && random == anotherId.random
-                && storageEngineName.equals(anotherId.storageEngineName)
-                && formatFamilyName.equals(anotherId.formatFamilyName)
-                && majorVersion == anotherId.majorVersion
-                && minorVersion <= anotherId.minorVersion;
+                && super.isSameOrUpgradeSuccessor(anotherId);
     }
 
     @Override
@@ -124,15 +85,21 @@ public class StoreId implements StoreVersionUserStringProvider {
         StoreId storeId = (StoreId) o;
         return creationTime == storeId.creationTime
                 && random == storeId.random
-                && majorVersion == storeId.majorVersion
-                && minorVersion == storeId.minorVersion
-                && storageEngineName.equals(storeId.storageEngineName)
-                && formatFamilyName.equals(storeId.formatFamilyName);
+                && getMajorVersion() == storeId.getMajorVersion()
+                && getMinorVersion() == storeId.getMinorVersion()
+                && getStorageEngineName().equals(storeId.getStorageEngineName())
+                && getFormatFamilyName().equals(storeId.getFormatFamilyName());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(creationTime, random, storageEngineName, formatFamilyName, majorVersion, minorVersion);
+        return Objects.hash(
+                creationTime,
+                random,
+                getStorageEngineName(),
+                getFormatFamilyName(),
+                getMajorVersion(),
+                getMinorVersion());
     }
 
     @Override
@@ -140,10 +107,10 @@ public class StoreId implements StoreVersionUserStringProvider {
         return "StoreId{" + "creationTime="
                 + creationTime + ", random="
                 + random + ", storageEngineName='"
-                + storageEngineName + '\'' + ", formatFamilyName='"
-                + formatFamilyName + '\'' + ", majorVersion="
-                + majorVersion + ", minorVersion="
-                + minorVersion + '}';
+                + getStorageEngineName() + '\'' + ", formatFamilyName='"
+                + getFormatFamilyName() + '\'' + ", majorVersion="
+                + getMajorVersion() + ", minorVersion="
+                + getMinorVersion() + '}';
     }
 
     public static StoreId deserialize(ReadableChannel channel) throws IOException {

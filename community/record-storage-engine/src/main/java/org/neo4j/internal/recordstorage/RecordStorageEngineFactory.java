@@ -137,6 +137,7 @@ import org.neo4j.storageengine.api.StorageFilesState;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
+import org.neo4j.storageengine.api.StoreVersionIdentifier;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.format.Index44Compatibility;
@@ -213,8 +214,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     }
 
     @Override
-    public StoreVersion versionInformation(StoreId storeId) {
-        return new RecordStoreVersion(RecordFormatSelector.selectForStoreId(storeId));
+    public StoreVersion versionInformation(StoreVersionIdentifier storeVersionIdentifier) {
+        return new RecordStoreVersion(RecordFormatSelector.selectForStoreVersionIdentifier(storeVersionIdentifier));
     }
 
     @Override

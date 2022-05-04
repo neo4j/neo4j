@@ -53,8 +53,8 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV5_0;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.service.Services;
-import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
+import org.neo4j.storageengine.api.StoreVersionIdentifier;
 
 /**
  * Selects record format that will be used in a database.
@@ -125,17 +125,17 @@ public class RecordFormatSelector {
     }
 
     /**
-     * Select record formats for provided store ID.
+     * Select record formats for provided store version identifier.
      * @throws IllegalArgumentException if format for specified store version not found
      */
-    public static RecordFormats selectForStoreId(StoreId storeId) {
+    public static RecordFormats selectForStoreVersionIdentifier(StoreVersionIdentifier storeVersionIdentifier) {
         return Iterables.stream(allFormats())
-                .filter(format -> format.majorVersion() == storeId.getMajorVersion()
-                        && format.minorVersion() == storeId.getMinorVersion()
-                        && format.getFormatFamily().name().equals(storeId.getFormatFamilyName()))
+                .filter(format -> format.majorVersion() == storeVersionIdentifier.getMajorVersion()
+                        && format.minorVersion() == storeVersionIdentifier.getMinorVersion()
+                        && format.getFormatFamily().name().equals(storeVersionIdentifier.getFormatFamilyName()))
                 .findAny()
                 .orElseThrow(() -> new IllegalArgumentException(
-                        "Unknown store version '" + storeId.getStoreVersionUserString() + "'"));
+                        "Unknown store version '" + storeVersionIdentifier.getStoreVersionUserString() + "'"));
     }
 
     /**

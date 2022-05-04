@@ -110,7 +110,7 @@ class SchemaIndexMigratorTest {
                 toVersion,
                 IndexImporterFactory.EMPTY,
                 EMPTY_LOG_TAIL);
-        migrator.moveMigratedFiles(databaseLayout, migrationLayout, "from", "to");
+        migrator.moveMigratedFiles(databaseLayout, migrationLayout, mock(StoreVersion.class), mock(StoreVersion.class));
 
         // then
         verify(fs, never()).deleteRecursively(directoryStructure.directoryForIndex(1L));

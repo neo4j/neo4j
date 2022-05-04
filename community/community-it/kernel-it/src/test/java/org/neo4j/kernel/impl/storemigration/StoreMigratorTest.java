@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -53,6 +52,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.function.Suppliers;
+import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -75,6 +75,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
+import org.neo4j.storageengine.api.StoreVersionUserStringProvider;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -265,8 +266,8 @@ class StoreMigratorTest {
                 .moveMigratedFiles(
                         any(),
                         any(),
-                        eq(Standard.LATEST_STORE_VERSION),
-                        eq(StandardFormatWithMinorVersionBump.VERSION_STRING));
+                        argThat(new VersionMatcher(StandardFormatWithMinorVersionBump.VERSION_STRING)),
+                        argThat(new VersionMatcher(PageAlignedTestFormat.WithMajorVersionBump.VERSION_STRING)));
         verify(observingParticipant)
                 .migrate(
                         any(),
@@ -280,8 +281,8 @@ class StoreMigratorTest {
                 .moveMigratedFiles(
                         any(),
                         any(),
-                        eq(StandardFormatWithMinorVersionBump.VERSION_STRING),
-                        eq(PageAlignedTestFormat.WithMajorVersionBump.VERSION_STRING));
+                        argThat(new VersionMatcher(StandardFormatWithMinorVersionBump.VERSION_STRING)),
+                        argThat(new VersionMatcher(PageAlignedTestFormat.WithMajorVersionBump.VERSION_STRING)));
         verify(observingParticipant, times(2)).cleanup(any(DatabaseLayout.class));
 
         verifyDbStartAndFormat(new PageAlignedTestFormat.WithMajorVersionBump());
@@ -359,8 +360,16 @@ class StoreMigratorTest {
         assertThatThrownBy(newStoreMigrator::upgradeIfNeeded)
                 .isInstanceOf(UnableToMigrateException.class)
                 .hasMessageContaining("A partially complete migration to "
-                        + PageAligned.LATEST_RECORD_FORMATS.storeVersion() + " found when trying to migrate to "
-                        + PageAlignedTestFormat.WithMinorVersionBump.VERSION_STRING);
+                        + userVersionString(PageAligned.LATEST_RECORD_FORMATS) + " found when trying to migrate to "
+                        + userVersionString(new PageAlignedTestFormat.WithMinorVersionBump()));
+    }
+
+    private String userVersionString(RecordFormats format) {
+        return StoreVersionUserStringProvider.formatVersion(
+                RecordStorageEngineFactory.NAME,
+                format.getFormatFamily().name(),
+                format.majorVersion(),
+                format.minorVersion());
     }
 
     public static class VersionMatcher implements ArgumentMatcher<StoreVersion> {

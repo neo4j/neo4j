@@ -37,6 +37,7 @@ import org.neo4j.memory.MemoryPools;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersionCheck;
+import org.neo4j.storageengine.api.StoreVersionIdentifier;
 import org.neo4j.time.Clocks;
 
 public class StoreVersionLoader implements AutoCloseable {
@@ -94,13 +95,14 @@ public class StoreVersionLoader implements AutoCloseable {
     }
 
     public static class Result {
-        public final String currentFormatName;
-        public final String latestFormatName;
+        public final StoreVersionIdentifier currentFormat;
+        public final StoreVersionIdentifier latestFormat;
         public final boolean migrationNeeded;
 
-        private Result(boolean migrationNeeded, String currentFormatName, String latestFormatName) {
-            this.currentFormatName = currentFormatName;
-            this.latestFormatName = latestFormatName;
+        private Result(
+                boolean migrationNeeded, StoreVersionIdentifier currentFormat, StoreVersionIdentifier latestFormat) {
+            this.currentFormat = currentFormat;
+            this.latestFormat = latestFormat;
             this.migrationNeeded = migrationNeeded;
         }
     }

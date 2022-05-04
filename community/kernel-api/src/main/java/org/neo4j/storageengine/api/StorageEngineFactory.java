@@ -109,7 +109,7 @@ public interface StorageEngineFactory {
             LogService logService,
             CursorContextFactory contextFactory);
 
-    StoreVersion versionInformation(StoreId storeId);
+    StoreVersion versionInformation(StoreVersionIdentifier storeVersionIdentifier);
 
     @Deprecated
     StoreVersion versionInformation(String storeVersion);

@@ -53,6 +53,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
+import org.neo4j.storageengine.api.StoreVersionIdentifier;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
@@ -156,9 +157,9 @@ public class StoreMigrator {
 
             var checkResult = doMigrationCheck(formatFamily, cursorContext);
 
-            internalLog.info("'" + checkResult.versionToMigrateFrom()
+            internalLog.info("'" + checkResult.versionToMigrateFrom().getStoreVersionUserString()
                     + "' has been identified as the current version of the store");
-            internalLog.info("'" + checkResult.versionToMigrateTo()
+            internalLog.info("'" + checkResult.versionToMigrateTo().getStoreVersionUserString()
                     + "' has been identified as the target version of the store migration");
 
             if (checkResult.onRequestedVersion()) {
@@ -199,9 +200,9 @@ public class StoreMigrator {
                 return;
             }
 
-            internalLog.info("'" + checkResult.versionToMigrateFrom()
+            internalLog.info("'" + checkResult.versionToMigrateFrom().getStoreVersionUserString()
                     + "' has been identified as the current version of the store");
-            internalLog.info("'" + checkResult.versionToMigrateTo()
+            internalLog.info("'" + checkResult.versionToMigrateTo().getStoreVersionUserString()
                     + "' has been identified as the target version of the store upgrade");
 
             doMigrate(
@@ -223,8 +224,8 @@ public class StoreMigrator {
     private void doMigrate(
             MigrationStructures migrationStructures,
             MigrationStatus.MigrationState migrationState,
-            String versionToMigrateFrom,
-            String versionToMigrateTo,
+            StoreVersionIdentifier versionToMigrateFrom,
+            StoreVersionIdentifier versionToMigrateTo,
             MigrationProgressMonitor progressMonitor,
             LogsAction logsAction,
             boolean forceBtreeIndexesToRange) {
@@ -235,12 +236,12 @@ public class StoreMigrator {
         var logsMigrator = new LogsMigrator(
                 fs, storageEngineFactory, databaseLayout, pageCache, config, contextFactory, logTailSupplier);
         var logsCheckResult = logsMigrator.assertCleanlyShutDown();
+        StoreVersion fromVersion = storageEngineFactory.versionInformation(versionToMigrateFrom);
+        StoreVersion toVersion = storageEngineFactory.versionInformation(versionToMigrateTo);
 
         // We don't need to migrate if we're at the phase where we have migrated successfully
         // and it's just a matter of moving over the files to the storeDir.
         if (MigrationStatus.MigrationState.migrating.isNeededFor(migrationState)) {
-            StoreVersion fromVersion = storageEngineFactory.versionInformation(versionToMigrateFrom);
-            StoreVersion toVersion = storageEngineFactory.versionInformation(versionToMigrateTo);
             cleanMigrationDirectory(migrationStructures.migrationLayout.databaseDirectory());
             MigrationStatus.MigrationState.migrating.setMigrationStatus(
                     fs, migrationStructures.migrationStateFile, versionToMigrateFrom, versionToMigrateTo);
@@ -257,11 +258,7 @@ public class StoreMigrator {
 
         if (MigrationStatus.MigrationState.moving.isNeededFor(migrationState)) {
             moveMigratedFilesToStoreDirectory(
-                    participants,
-                    migrationStructures.migrationLayout,
-                    databaseLayout,
-                    versionToMigrateFrom,
-                    versionToMigrateTo);
+                    participants, migrationStructures.migrationLayout, databaseLayout, fromVersion, toVersion);
         }
 
         progressMonitor.startTransactionLogsMigration();
@@ -286,7 +283,8 @@ public class StoreMigrator {
                     checkResult.cause());
             case UNSUPPORTED_MIGRATION_PATH -> throw new UnableToMigrateException(String.format(
                     "Store migration from '%s' to '%s' not supported",
-                    checkResult.versionToMigrateFrom(), checkResult.versionToMigrateTo()));
+                    checkResult.versionToMigrateFrom().getStoreVersionUserString(),
+                    checkResult.versionToMigrateTo().getStoreVersionUserString()));
             case UNSUPPORTED_TARGET_VERSION -> throw new UnableToMigrateException(
                     "The current store version is not supported. " + "Please migrate the store to be able to continue");
         };
@@ -305,7 +303,8 @@ public class StoreMigrator {
             case STORE_VERSION_RETRIEVAL_FAILURE -> throw new IllegalStateException(
                     "Failed to read current store version.", checkResult.cause());
             case UNSUPPORTED_TARGET_VERSION -> throw new UnableToMigrateException(String.format(
-                    "The selected target store format '%s' is no longer supported", checkResult.versionToUpgradeTo()));
+                    "The selected target store format '%s' is no longer supported",
+                    checkResult.versionToUpgradeTo().getStoreVersionUserString()));
         };
     }
 
@@ -317,7 +316,8 @@ public class StoreMigrator {
             if (state == MigrationStatus.MigrationState.moving) {
                 // If a previous migration was interrupted in the moving phase that move must be completed to have a
                 // consistent store again.
-                internalLog.info("Resuming migration in progress to '" + migrationStatus.versionToMigrateTo() + "'");
+                internalLog.info("Resuming migration in progress to '"
+                        + migrationStatus.versionToMigrateTo().getStoreVersionUserString() + "'");
                 doMigrate(
                         migrationStructures,
                         MigrationStatus.MigrationState.moving,
@@ -345,8 +345,10 @@ public class StoreMigrator {
                 var checkResult = doUpgradeCheck(cursorContext);
                 if (!migrationStatus.expectedMigration(checkResult.versionToMigrateTo)) {
                     throw new UnableToMigrateException("A partially complete migration to "
-                            + migrationStatus.versionToMigrateTo() + " found when trying to " + "migrate to "
-                            + checkResult.versionToMigrateTo + ". Complete that migration before continuing. "
+                            + migrationStatus.versionToMigrateTo().getStoreVersionUserString()
+                            + " found when trying to migrate to "
+                            + checkResult.versionToMigrateTo.getStoreVersionUserString()
+                            + ". Complete that migration before continuing. "
                             + "This can be done by running the migration tool");
                 }
 
@@ -431,8 +433,8 @@ public class StoreMigrator {
             Iterable<StoreMigrationParticipant> participants,
             DatabaseLayout migrationLayout,
             DatabaseLayout directoryLayout,
-            String versionToMigrateFrom,
-            String versionToMigrateTo) {
+            StoreVersion versionToMigrateFrom,
+            StoreVersion versionToMigrateTo) {
         try {
             for (StoreMigrationParticipant participant : participants) {
                 participant.moveMigratedFiles(
@@ -501,7 +503,10 @@ public class StoreMigrator {
 
     private record MigrationStructures(DatabaseLayout migrationLayout, Path migrationStateFile) {}
 
-    private record CheckResult(boolean onRequestedVersion, String versionToMigrateFrom, String versionToMigrateTo) {}
+    private record CheckResult(
+            boolean onRequestedVersion,
+            StoreVersionIdentifier versionToMigrateFrom,
+            StoreVersionIdentifier versionToMigrateTo) {}
 
     private interface LogsAction {
 

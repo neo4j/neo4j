@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -34,6 +35,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
+import org.neo4j.storageengine.api.StoreVersionIdentifier;
 
 public class RecordStoreVersionCheck implements StoreVersionCheck {
     private final PageCache pageCache;
@@ -90,28 +92,31 @@ public class RecordStoreVersionCheck implements StoreVersionCheck {
         if (formatToMigrateTo.onlyForMigration()) {
             return new MigrationCheckResult(
                     MigrationOutcome.UNSUPPORTED_TARGET_VERSION,
-                    formatToMigrateFrom.storeVersion(),
-                    formatToMigrateTo.storeVersion(),
+                    versionIdentifier(formatToMigrateFrom),
+                    versionIdentifier(formatToMigrateTo),
                     null);
         }
 
         if (formatToMigrateFrom.equals(formatToMigrateTo)) {
             return new MigrationCheckResult(
-                    MigrationOutcome.NO_OP, formatToMigrateFrom.storeVersion(), formatToMigrateTo.storeVersion(), null);
+                    MigrationOutcome.NO_OP,
+                    versionIdentifier(formatToMigrateFrom),
+                    versionIdentifier(formatToMigrateTo),
+                    null);
         }
 
         if (formatToMigrateFrom.getFormatFamily().isHigherThan(formatToMigrateTo.getFormatFamily())) {
             return new MigrationCheckResult(
                     MigrationOutcome.UNSUPPORTED_MIGRATION_PATH,
-                    formatToMigrateFrom.storeVersion(),
-                    formatToMigrateTo.storeVersion(),
+                    versionIdentifier(formatToMigrateFrom),
+                    versionIdentifier(formatToMigrateTo),
                     null);
         }
 
         return new MigrationCheckResult(
                 MigrationOutcome.MIGRATION_POSSIBLE,
-                formatToMigrateFrom.storeVersion(),
-                formatToMigrateTo.storeVersion(),
+                versionIdentifier(formatToMigrateFrom),
+                versionIdentifier(formatToMigrateTo),
                 null);
     }
 
@@ -130,20 +135,31 @@ public class RecordStoreVersionCheck implements StoreVersionCheck {
         if (formatToUpgradeTo.onlyForMigration()) {
             return new UpgradeCheckResult(
                     UpgradeOutcome.UNSUPPORTED_TARGET_VERSION,
-                    formatToUpgradeFrom.storeVersion(),
-                    formatToUpgradeTo.storeVersion(),
+                    versionIdentifier(formatToUpgradeFrom),
+                    versionIdentifier(formatToUpgradeTo),
                     null);
         }
 
         if (formatToUpgradeFrom.equals(formatToUpgradeTo)) {
             return new UpgradeCheckResult(
-                    UpgradeOutcome.NO_OP, formatToUpgradeFrom.storeVersion(), formatToUpgradeTo.storeVersion(), null);
+                    UpgradeOutcome.NO_OP,
+                    versionIdentifier(formatToUpgradeFrom),
+                    versionIdentifier(formatToUpgradeTo),
+                    null);
         }
 
         return new UpgradeCheckResult(
                 UpgradeOutcome.UPGRADE_POSSIBLE,
-                formatToUpgradeFrom.storeVersion(),
-                formatToUpgradeTo.storeVersion(),
+                versionIdentifier(formatToUpgradeFrom),
+                versionIdentifier(formatToUpgradeTo),
                 null);
+    }
+
+    private StoreVersionIdentifier versionIdentifier(RecordFormats format) {
+        return new StoreVersionIdentifier(
+                RecordStorageEngineFactory.NAME,
+                format.getFormatFamily().name(),
+                format.majorVersion(),
+                format.minorVersion());
     }
 }

@@ -153,7 +153,7 @@ class RecordStorageMigratorIT {
         LogService logService = NullLogService.getInstance();
         RecordStoreVersionCheck check = getVersionCheck(pageCache, databaseLayout);
 
-        String versionToMigrateFrom = getVersionToMigrateFrom(check);
+        StoreVersion versionToMigrateFrom = getVersionToMigrateFrom(check);
         MigrationProgressMonitor progressMonitor = SILENT;
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
@@ -172,8 +172,8 @@ class RecordStorageMigratorIT {
                 databaseLayout,
                 migrationLayout,
                 progressMonitor.startSection("section"),
-                getStoreVersion(versionToMigrateFrom),
-                getStoreVersion(getVersionToMigrateTo()),
+                versionToMigrateFrom,
+                getVersionToMigrateTo(),
                 EMPTY,
                 EMPTY_LOG_TAIL);
 
@@ -215,7 +215,7 @@ class RecordStorageMigratorIT {
         LogService logService = NullLogService.getInstance();
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         RecordStoreVersionCheck check = getVersionCheck(pageCache, databaseLayout);
-        String versionToMigrateFrom = getVersionToMigrateFrom(check);
+        StoreVersion versionToMigrateFrom = getVersionToMigrateFrom(check);
         CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
 
         StorageEngineFactory storageEngine = StorageEngineFactory.defaultStorageEngine();
@@ -230,13 +230,13 @@ class RecordStorageMigratorIT {
                 batchImporterFactory,
                 INSTANCE,
                 false);
-        String migrateTo = getVersionToMigrateTo();
+        StoreVersion migrateTo = getVersionToMigrateTo();
         migrator.migrate(
                 databaseLayout,
                 migrationLayout,
                 progressMonitor.startSection("section"),
-                getStoreVersion(versionToMigrateFrom),
-                getStoreVersion(migrateTo),
+                versionToMigrateFrom,
+                migrateTo,
                 EMPTY,
                 loadLogTail(databaseLayout, CONFIG, storageEngine));
         migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, migrateTo);
@@ -271,7 +271,7 @@ class RecordStorageMigratorIT {
         LogService logService = NullLogService.getInstance();
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         RecordStoreVersionCheck check = getVersionCheck(pageCache, databaseLayout);
-        String versionToMigrateFrom = getVersionToMigrateFrom(check);
+        StoreVersion versionToMigrateFrom = getVersionToMigrateFrom(check);
         CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
 
         StorageEngineFactory storageEngine = StorageEngineFactory.defaultStorageEngine();
@@ -286,13 +286,13 @@ class RecordStorageMigratorIT {
                 batchImporterFactory,
                 INSTANCE,
                 false);
-        String migrateTo = getVersionToMigrateTo();
+        StoreVersion migrateTo = getVersionToMigrateTo();
         migrator.migrate(
                 databaseLayout,
                 migrationLayout,
                 progressMonitor.startSection("section"),
-                getStoreVersion(versionToMigrateFrom),
-                getStoreVersion(migrateTo),
+                versionToMigrateFrom,
+                migrateTo,
                 EMPTY,
                 loadLogTail(databaseLayout, CONFIG, storageEngine));
         migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, migrateTo);
@@ -365,11 +365,7 @@ class RecordStorageMigratorIT {
                 versionToMigrateTo,
                 EMPTY,
                 loadLogTail(databaseLayout, config, storageEngine));
-        migrator.moveMigratedFiles(
-                migrationLayout,
-                databaseLayout,
-                versionToMigrateFrom.storeVersion(),
-                versionToMigrateTo.storeVersion());
+        migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo);
 
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout,
@@ -407,7 +403,7 @@ class RecordStorageMigratorIT {
 
         RecordStoreVersionCheck check = getVersionCheck(pageCache, databaseLayout);
 
-        String versionToMigrateFrom = getVersionToMigrateFrom(check);
+        StoreVersion versionToMigrateFrom = getVersionToMigrateFrom(check);
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
         RecordStorageMigrator migrator = new RecordStorageMigrator(
@@ -429,8 +425,8 @@ class RecordStorageMigratorIT {
                 databaseLayout,
                 migrationLayout,
                 progressMonitor.startSection("section"),
-                getStoreVersion(versionToMigrateFrom),
-                getStoreVersion(getVersionToMigrateTo()),
+                versionToMigrateFrom,
+                getVersionToMigrateTo(),
                 EMPTY,
                 logTailMetadata);
         migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, getVersionToMigrateTo());
@@ -508,7 +504,7 @@ class RecordStorageMigratorIT {
         LogService logService = NullLogService.getInstance();
         RecordStoreVersionCheck check = getVersionCheck(pageCache, databaseLayout);
 
-        String versionToMigrateFrom = getVersionToMigrateFrom(check);
+        StoreVersion versionToMigrateFrom = getVersionToMigrateFrom(check);
         MigrationProgressMonitor progressMonitor = SILENT;
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         var contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
@@ -527,8 +523,8 @@ class RecordStorageMigratorIT {
                 databaseLayout,
                 migrationLayout,
                 progressMonitor.startSection("section"),
-                getStoreVersion(versionToMigrateFrom),
-                getStoreVersion(getVersionToMigrateTo()),
+                versionToMigrateFrom,
+                getVersionToMigrateTo(),
                 EMPTY,
                 EMPTY_LOG_TAIL);
 
@@ -558,8 +554,8 @@ class RecordStorageMigratorIT {
         var fs = testDirectory.getFileSystem();
         MigrationTestUtils.prepareSampleLegacyDatabase(version, fs, databaseLayout, prepare);
         RecordStoreVersionCheck check = getVersionCheck(pageCache, databaseLayout);
-        String versionToMigrateFrom = getVersionToMigrateFrom(check);
-        String versionToMigrateTo = getVersionToMigrateTo();
+        StoreVersion versionToMigrateFrom = getVersionToMigrateFrom(check);
+        StoreVersion versionToMigrateTo = getVersionToMigrateTo();
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         var contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
 
@@ -581,8 +577,8 @@ class RecordStorageMigratorIT {
                 databaseLayout,
                 migrationLayout,
                 SILENT.startSection("section"),
-                getStoreVersion(versionToMigrateFrom),
-                getStoreVersion(versionToMigrateTo),
+                versionToMigrateFrom,
+                versionToMigrateTo,
                 EMPTY,
                 EMPTY_LOG_TAIL);
         migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo);
@@ -604,22 +600,18 @@ class RecordStorageMigratorIT {
         }
     }
 
-    private static String getVersionToMigrateFrom(RecordStoreVersionCheck check) {
+    private static StoreVersion getVersionToMigrateFrom(RecordStoreVersionCheck check) {
         StoreVersionCheck.MigrationCheckResult result = check.getAndCheckMigrationTargetVersion(null, NULL_CONTEXT);
         assertEquals(result.outcome(), MIGRATION_POSSIBLE);
-        return result.versionToMigrateFrom();
+        return StorageEngineFactory.defaultStorageEngine().versionInformation(result.versionToMigrateFrom());
     }
 
-    private static String getVersionToMigrateTo() {
-        return Standard.LATEST_NAME;
+    private static StoreVersion getVersionToMigrateTo() {
+        return new RecordStoreVersion(Standard.LATEST_RECORD_FORMATS);
     }
 
     private static RecordStoreVersionCheck getVersionCheck(PageCache pageCache, RecordDatabaseLayout layout) {
         return new RecordStoreVersionCheck(pageCache, layout, Config.defaults());
-    }
-
-    private static StoreVersion getStoreVersion(String version) {
-        return StorageEngineFactory.defaultStorageEngine().versionInformation(version);
     }
 
     private LogTailMetadata loadLogTail(DatabaseLayout layout, Config config, StorageEngineFactory engineFactory)

@@ -158,7 +158,7 @@ public class LoadCommand extends AbstractCommand {
             ctx.err()
                     .printf(
                             "The loaded database is not on a supported version (current:%s). Use the migrate-store command%n",
-                            result.currentFormatName);
+                            result.currentFormat.getStoreVersionUserString());
         }
     }
 

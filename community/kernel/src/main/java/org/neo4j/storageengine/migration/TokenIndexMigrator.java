@@ -94,8 +94,8 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant {
     public void moveMigratedFiles(
             DatabaseLayout migrationLayout,
             DatabaseLayout directoryLayout,
-            String versionToUpgradeFrom,
-            String versionToMigrateTo)
+            StoreVersion versionToUpgradeFrom,
+            StoreVersion versionToMigrateTo)
             throws IOException {
         if (moveFiles) {
             moveTokenIndexes(directoryLayout);

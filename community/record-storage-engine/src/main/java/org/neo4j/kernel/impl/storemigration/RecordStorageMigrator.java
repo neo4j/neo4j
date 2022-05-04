@@ -31,7 +31,6 @@ import static org.neo4j.internal.recordstorage.RecordStorageEngineFactory.create
 import static org.neo4j.internal.recordstorage.StoreTokens.allTokens;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
@@ -632,8 +631,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
     public void moveMigratedFiles(
             DatabaseLayout migrationLayoutArg,
             DatabaseLayout directoryLayoutArg,
-            String versionToUpgradeFrom,
-            String versionToUpgradeTo)
+            StoreVersion versionToUpgradeFrom,
+            StoreVersion versionToUpgradeTo)
             throws IOException {
         RecordDatabaseLayout directoryLayout = RecordDatabaseLayout.convert(directoryLayoutArg);
         RecordDatabaseLayout migrationLayout = RecordDatabaseLayout.convert(migrationLayoutArg);
@@ -648,7 +647,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                 true,
                 ExistingTargetStrategy.OVERWRITE);
 
-        RecordFormats oldFormat = selectForVersion(versionToUpgradeFrom);
+        RecordFormats oldFormat = ((RecordStoreVersion) versionToUpgradeFrom).getFormat();
         if (need50Migration(oldFormat)) {
             deleteBtreeIndexFiles(fileSystem, directoryLayout);
         }

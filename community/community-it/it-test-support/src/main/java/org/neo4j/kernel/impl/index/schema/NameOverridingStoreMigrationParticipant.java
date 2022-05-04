@@ -55,8 +55,8 @@ public class NameOverridingStoreMigrationParticipant implements StoreMigrationPa
     public void moveMigratedFiles(
             DatabaseLayout migrationLayout,
             DatabaseLayout directoryLayout,
-            String versionToMigrateFrom,
-            String versionToMigrateTo)
+            StoreVersion versionToMigrateFrom,
+            StoreVersion versionToMigrateTo)
             throws IOException {
         delegate.moveMigratedFiles(migrationLayout, directoryLayout, versionToMigrateFrom, versionToMigrateTo);
     }

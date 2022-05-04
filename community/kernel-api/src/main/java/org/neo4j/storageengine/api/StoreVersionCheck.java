@@ -60,7 +60,10 @@ public interface StoreVersionCheck {
     UpgradeCheckResult getAndCheckUpgradeTargetVersion(CursorContext cursorContext);
 
     record MigrationCheckResult(
-            MigrationOutcome outcome, String versionToMigrateFrom, String versionToMigrateTo, Exception cause) {}
+            MigrationOutcome outcome,
+            StoreVersionIdentifier versionToMigrateFrom,
+            StoreVersionIdentifier versionToMigrateTo,
+            Exception cause) {}
 
     enum MigrationOutcome {
         // successful outcomes:
@@ -96,7 +99,10 @@ public interface StoreVersionCheck {
     }
 
     record UpgradeCheckResult(
-            UpgradeOutcome outcome, String versionToUpgradeFrom, String versionToUpgradeTo, Exception cause) {}
+            UpgradeOutcome outcome,
+            StoreVersionIdentifier versionToUpgradeFrom,
+            StoreVersionIdentifier versionToUpgradeTo,
+            Exception cause) {}
 
     enum UpgradeOutcome {
         // successful outcomes:

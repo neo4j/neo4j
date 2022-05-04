@@ -82,8 +82,8 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant {
     public void moveMigratedFiles(
             DatabaseLayout migrationLayout,
             DatabaseLayout directoryLayout,
-            String versionToUpgradeFrom,
-            String versionToMigrateTo)
+            StoreVersion versionToUpgradeFrom,
+            StoreVersion versionToMigrateTo)
             throws IOException {
         Path schemaIndexDirectory = indexDirectoryStructure.rootDirectory();
         if (schemaIndexDirectory != null) {

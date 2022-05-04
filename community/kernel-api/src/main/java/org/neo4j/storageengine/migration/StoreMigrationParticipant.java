@@ -49,8 +49,8 @@ public interface StoreMigrationParticipant {
         public void moveMigratedFiles(
                 DatabaseLayout migrationLayout,
                 DatabaseLayout directoryLayout,
-                String versionToMigrateFrom,
-                String versionToMigrateTo) {
+                StoreVersion versionToMigrateFrom,
+                StoreVersion versionToMigrateTo) {
             // nop
         }
 
@@ -100,8 +100,8 @@ public interface StoreMigrationParticipant {
     void moveMigratedFiles(
             DatabaseLayout migrationLayout,
             DatabaseLayout directoryLayout,
-            String versionToMigrateFrom,
-            String versionToMigrateTo)
+            StoreVersion versionToMigrateFrom,
+            StoreVersion versionToMigrateTo)
             throws IOException;
 
     /**
