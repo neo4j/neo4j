@@ -46,9 +46,13 @@ object BitSetEquality {
   private def hashCode(a: Array[Long]): Int = {
     if (a == null) return 0
     var result = 1
-    for (element <- a) {
+    var i = 0
+    val len = a.length
+    while (i < len) {
+      val element = a(i)
       val elementHash = (element ^ (element >>> 32)).toInt
       result = 31 * result + elementHash
+      i += 1
     }
     result
   }
