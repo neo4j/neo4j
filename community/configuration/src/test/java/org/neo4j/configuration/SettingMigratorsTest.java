@@ -19,10 +19,23 @@
  */
 package org.neo4j.configuration;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.neo4j.configuration.GraphDatabaseSettings.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_time;
+import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_tx;
+import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_volume;
+import static org.neo4j.configuration.GraphDatabaseSettings.check_point_iops_limit;
+import static org.neo4j.configuration.GraphDatabaseSettings.check_point_policy;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
+import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
+import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
-import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
+import static org.neo4j.configuration.connectors.BoltConnectorInternalSettings.thread_pool_shutdown_wait_time;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -32,14 +45,10 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
-import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.configuration.ssl.SslPolicyConfig;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.FormattedLogFormat;
@@ -58,6 +67,7 @@ class SettingMigratorsTest {
         Files.write(
                 confFile,
                 Arrays.asList(
+                        "dbms.connector.bolt.unsupported_thread_pool_shutdown_wait_time=1s",
                         "dbms.connector.bolt.enabled=true",
                         "dbms.connector.bolt.type=BOLT",
                         "dbms.connector.http.enabled=true",
@@ -70,6 +80,7 @@ class SettingMigratorsTest {
         assertTrue(config.get(BoltConnector.enabled));
         assertTrue(config.get(HttpConnector.enabled));
         assertTrue(config.get(HttpsConnector.enabled));
+        assertEquals(Duration.ofSeconds(1), config.get(thread_pool_shutdown_wait_time));
 
         var warnConfigMatcher = assertThat(logProvider).forClass(Config.class).forLevel(WARN);
         warnConfigMatcher
@@ -265,6 +276,22 @@ class SettingMigratorsTest {
     }
 
     @Test
+    void removedSettingMigration() throws IOException {
+        var configuration = testDirectory.createFile("test.conf");
+        Files.write(configuration, List.of("causal_clustering.multi_dc_license=foo"));
+
+        var logProvider = new AssertableLogProvider();
+        var config = Config.newBuilder().fromFile(configuration).build();
+        config.setLogger(logProvider.getLog(Config.class));
+
+        assertThat(logProvider)
+                .forClass(Config.class)
+                .forLevel(WARN)
+                .containsMessages(
+                        "Setting 'causal_clustering.multi_dc_license' is removed. It no longer has any effect.");
+    }
+
+    @Test
     void logFormatMigrator() throws IOException {
         Path confFile = testDirectory.createFile("test.conf");
         Files.write(confFile, List.of("unsupported.dbms.logs.format=JSON_FORMAT"));
@@ -288,109 +315,5 @@ class SettingMigratorsTest {
                 .forClass(Config.class)
                 .forLevel(WARN)
                 .containsMessages("Unrecognized value for 'unsupported.dbms.logs.format'. Was FOO");
-    }
-
-    private static void testQueryLogMigration(Boolean oldValue, LogQueryLevel newValue) {
-        var setting = GraphDatabaseSettings.log_queries;
-        Config config = Config.newBuilder()
-                .setRaw(Map.of(setting.name(), oldValue.toString()))
-                .build();
-
-        var logProvider = new AssertableLogProvider();
-        config.setLogger(logProvider.getLog(Config.class));
-
-        assertEquals(newValue, config.get(setting));
-
-        String msg = "Use of deprecated setting value %s=%s. It is replaced by %s=%s";
-        assertThat(logProvider)
-                .forClass(Config.class)
-                .forLevel(WARN)
-                .containsMessageWithArguments(
-                        msg, setting.name(), oldValue.toString(), setting.name(), newValue.name());
-    }
-
-    private static void testAddrMigration(Setting<SocketAddress> listenAddr, Setting<SocketAddress> advertisedAddr) {
-        Config config1 =
-                Config.newBuilder().setRaw(Map.of(listenAddr.name(), "foo:111")).build();
-        Config config2 =
-                Config.newBuilder().setRaw(Map.of(listenAddr.name(), ":222")).build();
-        Config config3 = Config.newBuilder()
-                .setRaw(Map.of(listenAddr.name(), ":333", advertisedAddr.name(), "bar"))
-                .build();
-        Config config4 = Config.newBuilder()
-                .setRaw(Map.of(listenAddr.name(), "foo:444", advertisedAddr.name(), ":555"))
-                .build();
-        Config config5 = Config.newBuilder()
-                .setRaw(Map.of(listenAddr.name(), "foo", advertisedAddr.name(), "bar"))
-                .build();
-        Config config6 = Config.newBuilder()
-                .setRaw(Map.of(listenAddr.name(), "foo:666", advertisedAddr.name(), "bar:777"))
-                .build();
-
-        var logProvider = new AssertableLogProvider();
-        config1.setLogger(logProvider.getLog(Config.class));
-        config2.setLogger(logProvider.getLog(Config.class));
-        config3.setLogger(logProvider.getLog(Config.class));
-        config4.setLogger(logProvider.getLog(Config.class));
-        config5.setLogger(logProvider.getLog(Config.class));
-        config6.setLogger(logProvider.getLog(Config.class));
-
-        assertEquals(new SocketAddress("localhost", 111), config1.get(advertisedAddr));
-        assertEquals(new SocketAddress("localhost", 222), config2.get(advertisedAddr));
-        assertEquals(new SocketAddress("bar", 333), config3.get(advertisedAddr));
-        assertEquals(new SocketAddress("localhost", 555), config4.get(advertisedAddr));
-        assertEquals(new SocketAddress("bar", advertisedAddr.defaultValue().getPort()), config5.get(advertisedAddr));
-        assertEquals(new SocketAddress("bar", 777), config6.get(advertisedAddr));
-
-        String msg =
-                "Note that since you did not explicitly set the port in %s Neo4j automatically set it to %s to match %s."
-                        + " This behavior may change in the future and we recommend you to explicitly set it.";
-
-        var warnMatcher = assertThat(logProvider).forClass(Config.class).forLevel(WARN);
-        var infoMatcher = assertThat(logProvider).forClass(Config.class).forLevel(INFO);
-        infoMatcher.containsMessageWithArguments(msg, advertisedAddr.name(), 111, listenAddr.name());
-        infoMatcher.containsMessageWithArguments(msg, advertisedAddr.name(), 222, listenAddr.name());
-        warnMatcher.containsMessageWithArguments(msg, advertisedAddr.name(), 333, listenAddr.name());
-
-        warnMatcher.doesNotContainMessageWithArguments(msg, advertisedAddr.name(), 444, listenAddr.name());
-        infoMatcher.doesNotContainMessageWithArguments(msg, advertisedAddr.name(), 555, listenAddr.name());
-        warnMatcher.doesNotContainMessageWithArguments(msg, advertisedAddr.name(), 666, listenAddr.name());
-    }
-
-    private static void testMigrateSslPolicy(String oldGroupnameSetting, SslPolicyConfig policyConfig) {
-        String oldFormatSetting = "dbms.ssl.policy.foo.trust_all";
-        var config = Config.newBuilder()
-                .setRaw(Map.of(oldGroupnameSetting, "foo", oldFormatSetting, "true"))
-                .build();
-
-        var logProvider = new AssertableLogProvider();
-        config.setLogger(logProvider.getLog(Config.class));
-
-        assertTrue(config.get(policyConfig.trust_all));
-
-        assertThat(logProvider)
-                .forLevel(WARN)
-                .forClass(Config.class)
-                .containsMessageWithArguments("Use of deprecated setting '%s'.", oldGroupnameSetting)
-                .containsMessageWithArguments(
-                        "Use of deprecated setting '%s'. It is replaced by '%s'.",
-                        oldFormatSetting, policyConfig.trust_all.name());
-    }
-
-    private static void shouldRemoveAllowKeyGeneration(String toRemove, String value) {
-        var config = Config.newBuilder().setRaw(Map.of(toRemove, value)).build();
-
-        var logProvider = new AssertableLogProvider();
-        config.setLogger(logProvider.getLog(Config.class));
-
-        assertThrows(IllegalArgumentException.class, () -> config.getSetting(toRemove));
-
-        assertThat(logProvider)
-                .forLevel(WARN)
-                .forClass(Config.class)
-                .containsMessageWithArguments(
-                        "Setting %s is removed. A valid key and certificate are required "
-                                + "to be present in the key and certificate path configured in this ssl policy.",
-                        toRemove);
     }
 }

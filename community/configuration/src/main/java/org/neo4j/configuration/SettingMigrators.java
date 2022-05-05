@@ -20,7 +20,23 @@
 package org.neo4j.configuration;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.neo4j.configuration.GraphDatabaseSettings.*;
+import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_time;
+import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_tx;
+import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_volume;
+import static org.neo4j.configuration.GraphDatabaseSettings.check_point_iops_limit;
+import static org.neo4j.configuration.GraphDatabaseSettings.check_point_policy;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
+import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
+import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
+import static org.neo4j.configuration.connectors.BoltConnectorInternalSettings.thread_pool_shutdown_wait_time;
+import static org.neo4j.configuration.connectors.BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes;
+import static org.neo4j.configuration.connectors.BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout;
+import static org.neo4j.configuration.connectors.BoltConnectorInternalSettings.unsupported_thread_pool_queue_size;
 
 import java.util.Collection;
 import java.util.List;
@@ -50,6 +66,15 @@ public final class SettingMigrators {
             for (String connectorSetting : connectorSettings) {
                 if (connectorSetting.endsWith(".type")) {
                     values.remove(connectorSetting);
+                } else if (connectorSetting.equals("dbms.connector.bolt.unsupported_thread_pool_shutdown_wait_time")) {
+                    migrateSettingNameChange(values, log, connectorSetting, thread_pool_shutdown_wait_time);
+                } else if (connectorSetting.equals("dbms.connector.bolt.unsupported_thread_pool_queue_size")) {
+                    migrateSettingNameChange(values, log, connectorSetting, unsupported_thread_pool_queue_size);
+                } else if (connectorSetting.equals("dbms.connector.bolt.unsupported_unauth_connection_timeout")) {
+                    migrateSettingNameChange(values, log, connectorSetting, unsupported_bolt_unauth_connection_timeout);
+                } else if (connectorSetting.equals("dbms.connector.bolt.unsupported_unauth_max_inbound_bytes")) {
+                    migrateSettingNameChange(
+                            values, log, connectorSetting, unsupported_bolt_unauth_connection_max_inbound_bytes);
                 } else {
                     var newName = connectorSetting.replace("dbms.connector", "server");
                     migrateSettingNameChange(values, log, connectorSetting, newName);
@@ -303,15 +328,6 @@ public final class SettingMigrators {
                         "internal.cluster.topology_graph.default_num_secondaries"),
                 new Mapping("dbms.capabilities.blocked", "internal.dbms.capabilities.blocked"),
                 new Mapping("dbms.connector.bolt.tcp_keep_alive", "internal.server.bolt.tcp_keep_alive"),
-                new Mapping(
-                        "dbms.connector.bolt.unsupported_thread_pool_queue_size",
-                        "internal.server.bolt.thread_pool_queue_size"),
-                new Mapping(
-                        "dbms.connector.bolt.unsupported_unauth_connection_timeout",
-                        "internal.server.bolt.unauth_connection_timeout"),
-                new Mapping(
-                        "dbms.connector.bolt.unsupported_unauth_max_inbound_bytes",
-                        "internal.server.bolt.unauth_max_inbound_bytes"),
                 new Mapping("dbms.init_file", "internal.dbms.init_file"),
                 new Mapping("dbms.log_inconsistent_data_deletion", "internal.dbms.log_inconsistent_data_deletion"),
                 new Mapping("dbms.routing.driver.event_loop_count", "internal.dbms.routing.driver.event_loop_count"),
@@ -691,9 +707,6 @@ public final class SettingMigrators {
                 new Mapping(
                         "unsupported.vm_pause_monitor.stall_alert_threshold",
                         "internal.vm_pause_monitor.stall_alert_threshold"),
-                new Mapping(
-                        "dbms.connector.bolt.unsupported_thread_pool_shutdown_wait_time",
-                        "internal.server.bolt.thread_pool_shutdown_wait_time"),
                 new Mapping("dbms.config.strict_validation", GraphDatabaseSettings.strict_config_validation.name()));
 
         @Override
@@ -703,6 +716,57 @@ public final class SettingMigrators {
         }
 
         private record Mapping(String oldSettingName, String newSettingName) {}
+    }
+
+    @ServiceProvider
+    public static class RemovedSettingsMigrator implements SettingMigrator {
+        private static final List<String> removedSettings = List.of(
+                "causal_clustering.delete_store_before_store_copy",
+                "causal_clustering.multi_dc_license",
+                "causal_clustering.store_copy_chunk_size",
+                "dbms.allow_upgrade",
+                "dbms.record_format",
+                "dbms.backup.incremental.strategy",
+                "dbms.directories.tx_log",
+                "dbms.index.default_schema_provider",
+                "dbms.index_searcher_cache_size",
+                "dbms.logs.debug.rotation.delay",
+                "dbms.logs.user.rotation.delay",
+                "dbms.memory.pagecache.swapper",
+                "dbms.routing.driver.api",
+                "dbms.security.ldap.authentication.use_samaccountname",
+                "dbms.security.procedures.default_allowed",
+                "dbms.security.procedures.roles",
+                "dbms.security.property_level.blacklist",
+                "dbms.security.property_level.enabled",
+                "fabric.driver.api",
+                "unsupported.cypher.parser",
+                "unsupported.dbms.block_remote_alias",
+                "unsupported.dbms.memory.pagecache.warmup.legacy_profile_loader",
+                "unsupported.dbms.recovery.ignore_store_id_validation",
+                "unsupported.dbms.tokenscan.log.enabled",
+                "unsupported.dbms.tokenscan.log.prune_threshold",
+                "unsupported.dbms.tokenscan.log.rotation_threshold",
+                "unsupported.dbms.topology_graph.enable");
+
+        @Override
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            removedSettings.forEach(
+                    setting -> migrateSettingRemoval(values, log, setting, "It no longer has any effect"));
+        }
+    }
+
+    public static void migrateGroupSettingPrefixChange(
+            Map<String, String> values, InternalLog log, String oldGroupSettingPrefix, String newGroupSettingPrefix) {
+        List<String> toUpdate = values.keySet().stream()
+                .filter(s -> s.startsWith(oldGroupSettingPrefix) && !s.equals(oldGroupSettingPrefix))
+                .toList();
+        for (String oldSetting : toUpdate) {
+            String newSettingName = oldSetting.replace(oldGroupSettingPrefix, newGroupSettingPrefix);
+            log.warn("Use of deprecated setting '%s'. It is replaced by '%s'.", oldSetting, newSettingName);
+            String oldValue = values.remove(oldSetting);
+            values.put(newSettingName, oldValue);
+        }
     }
 
     public static void migrateSettingNameChange(
@@ -724,6 +788,15 @@ public final class SettingMigrators {
         if (values.containsKey(name)) {
             log.warn("Setting '%s' is removed. %s.", name, additionalDescription);
             values.remove(name);
+        }
+    }
+
+    @ServiceProvider
+    public static class GroupSettingsRenameMigrator implements SettingMigrator {
+        @Override
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateGroupSettingPrefixChange(
+                    values, log, "unsupported.dbms.db.spatial.crs", "internal.dbms.db.spatial.crs");
         }
     }
 }
