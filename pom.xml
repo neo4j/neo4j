@@ -79,7 +79,7 @@
       -XX:-OmitStackTraceInFastThrow
       -XX:+HeapDumpOnOutOfMemoryError
       -XX:+ExitOnOutOfMemoryError
-      -Djdk.nio.maxCachedBufferSize=262144
+      -Djdk.nio.maxCachedBufferSize=1024
       -Dlog4j2.disable.jmx=true
       -Dio.netty.tryReflectionSetAccessible=true
       "-XX:HeapDumpPath=target/test data"
