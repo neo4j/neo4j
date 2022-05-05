@@ -44,7 +44,7 @@ public class BootloaderSettings implements SettingsDeclaration {
     @Internal
     @Description("Path of the lib directory")
     public static final Setting<Path> windows_tools_directory = newBuilder(
-                    "internal.dbms.directories.windows_tools", PATH, Path.of("bin", "tools"))
+                    "internal.server.directories.windows_tools", PATH, Path.of("bin", "tools"))
             .setDependency(neo4j_home)
             .immutable()
             .build();
@@ -85,7 +85,7 @@ public class BootloaderSettings implements SettingsDeclaration {
     @Description("Path of the run directory. This directory holds Neo4j's runtime state, such as a pidfile when it "
             + "is running in the background. The pidfile is created when starting neo4j and removed when stopping it."
             + " It may be placed on an in-memory filesystem such as tmpfs.")
-    public static final Setting<Path> run_directory = newBuilder("dbms.directories.run", PATH, Path.of("run"))
+    public static final Setting<Path> run_directory = newBuilder("server.directories.run", PATH, Path.of("run"))
             .setDependency(neo4j_home)
             .immutable()
             .build();
@@ -93,13 +93,13 @@ public class BootloaderSettings implements SettingsDeclaration {
     @Internal
     @Description("Path of the pid file.")
     public static final Setting<Path> pid_file = newBuilder(
-                    "internal.dbms.directories.pid_file", PATH, Path.of("neo4j.pid"))
+                    "internal.server.directories.pid_file", PATH, Path.of("neo4j.pid"))
             .setDependency(run_directory)
             .immutable()
             .build();
 
     @Description("Path of the lib directory")
-    public static final Setting<Path> lib_directory = newBuilder("dbms.directories.lib", PATH, Path.of("lib"))
+    public static final Setting<Path> lib_directory = newBuilder("server.directories.lib", PATH, Path.of("lib"))
             .setDependency(neo4j_home)
             .immutable()
             .build();

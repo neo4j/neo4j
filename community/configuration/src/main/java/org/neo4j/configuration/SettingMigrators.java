@@ -20,17 +20,28 @@
 package org.neo4j.configuration;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.neo4j.configuration.BootloaderSettings.lib_directory;
+import static org.neo4j.configuration.BootloaderSettings.run_directory;
 import static org.neo4j.configuration.BootloaderSettings.windows_service_name;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_time;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_tx;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_volume;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_iops_limit;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_policy;
+import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
+import static org.neo4j.configuration.GraphDatabaseSettings.database_dumps_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.licenses_directory;
+import static org.neo4j.configuration.GraphDatabaseSettings.load_csv_file_url_root;
+import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
+import static org.neo4j.configuration.GraphDatabaseSettings.plugin_dir;
 import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
+import static org.neo4j.configuration.GraphDatabaseSettings.script_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
@@ -81,6 +92,25 @@ public final class SettingMigrators {
                     migrateSettingNameChange(values, log, connectorSetting, newName);
                 }
             }
+        }
+    }
+
+    @ServiceProvider
+    public static class DirectoriesSettingsMigrator implements SettingMigrator {
+        @Override
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.directories.neo4j_home", neo4j_home);
+            migrateSettingNameChange(values, log, "dbms.directories.data", data_directory);
+            migrateSettingNameChange(values, log, "dbms.directories.transaction.logs.root", transaction_logs_root_path);
+            migrateSettingNameChange(values, log, "dbms.directories.script.root", script_root_path);
+            migrateSettingNameChange(values, log, "dbms.directories.dumps.root", database_dumps_root_path);
+            migrateSettingNameChange(values, log, "dbms.directories.import", load_csv_file_url_root);
+            migrateSettingNameChange(values, log, "dbms.directories.plugins", plugin_dir);
+            migrateSettingNameChange(values, log, "dbms.directories.logs", logs_directory);
+            migrateSettingNameChange(values, log, "dbms.directories.licenses", licenses_directory);
+
+            migrateSettingNameChange(values, log, "dbms.directories.run", run_directory);
+            migrateSettingNameChange(values, log, "dbms.directories.lib", lib_directory);
         }
     }
 
@@ -541,11 +571,12 @@ public final class SettingMigrators {
                 new Mapping(
                         "unsupported.dbms.debug.track_tx_statement_close",
                         "internal.dbms.debug.track_tx_statement_close"),
-                new Mapping("unsupported.dbms.directories.auth", "internal.dbms.directories.auth"),
-                new Mapping("unsupported.dbms.directories.databases.root", "internal.dbms.directories.databases.root"),
-                new Mapping("unsupported.dbms.directories.pid_file", "internal.dbms.directories.pid_file"),
-                new Mapping("unsupported.dbms.directories.scripts", "internal.dbms.directories.scripts"),
-                new Mapping("unsupported.dbms.directories.windows_tools", "internal.dbms.directories.windows_tools"),
+                new Mapping("unsupported.dbms.directories.auth", "internal.server.directories.auth"),
+                new Mapping(
+                        "unsupported.dbms.directories.databases.root", "internal.server.directories.databases.root"),
+                new Mapping("unsupported.dbms.directories.pid_file", "internal.server.directories.pid_file"),
+                new Mapping("unsupported.dbms.directories.scripts", "internal.server.directories.scripts"),
+                new Mapping("unsupported.dbms.directories.windows_tools", "internal.server.directories.windows_tools"),
                 new Mapping("unsupported.dbms.discoverable_bolt_address", "internal.dbms.discoverable_bolt_address"),
                 new Mapping(
                         "unsupported.dbms.discoverable_bolt_routing_address",

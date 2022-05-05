@@ -103,7 +103,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     @Description("Root relative to which directory settings are resolved.")
     @DocumentedDefaultValue("Defaults to current working directory")
     public static final Setting<Path> neo4j_home = newBuilder(
-                    "dbms.directories.neo4j_home", PATH, Path.of("").toAbsolutePath())
+                    "server.directories.neo4j_home", PATH, Path.of("").toAbsolutePath())
             .addConstraint(ABSOLUTE_PATH)
             .immutable()
             .build();
@@ -116,21 +116,21 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     @Description("Path of the data directory. You must not configure more than one Neo4j installation to use the "
             + "same data directory.")
     public static final Setting<Path> data_directory = newBuilder(
-                    "dbms.directories.data", PATH, Path.of(DEFAULT_DATA_DIR_NAME))
+                    "server.directories.data", PATH, Path.of(DEFAULT_DATA_DIR_NAME))
             .setDependency(neo4j_home)
             .immutable()
             .build();
 
     @Description("Root location where Neo4j will store transaction logs for configured databases.")
     public static final Setting<Path> transaction_logs_root_path = newBuilder(
-                    "dbms.directories.transaction.logs.root", PATH, Path.of(DEFAULT_TX_LOGS_ROOT_DIR_NAME))
+                    "server.directories.transaction.logs.root", PATH, Path.of(DEFAULT_TX_LOGS_ROOT_DIR_NAME))
             .setDependency(data_directory)
             .immutable()
             .build();
 
     @Description("Root location where Neo4j will store scripts for configured databases.")
     public static final Setting<Path> script_root_path = newBuilder(
-                    "dbms.directories.script.root", PATH, Path.of(DEFAULT_SCRIPT_FOLDER))
+                    "server.directories.script.root", PATH, Path.of(DEFAULT_SCRIPT_FOLDER))
             .setDependency(data_directory)
             .immutable()
             .build();
@@ -138,7 +138,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     @Description(
             "Root location where Neo4j will store database dumps optionally produced when dropping said databases.")
     public static final Setting<Path> database_dumps_root_path = newBuilder(
-                    "dbms.directories.dumps.root", PATH, Path.of(DEFAULT_DUMPS_DIR_NAME))
+                    "server.directories.dumps.root", PATH, Path.of(DEFAULT_DUMPS_DIR_NAME))
             .setDependency(data_directory)
             .immutable()
             .build();
@@ -364,7 +364,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
                     + "and its subdirectories. For example the value \"import\" will only enable access to files within the 'import' folder. "
                     + "Removing this setting will disable the security feature, allowing all files in the local system to be imported. "
                     + "Setting this to an empty field will allow access to all files within the Neo4j installation folder.")
-    public static final Setting<Path> load_csv_file_url_root = newBuilder("dbms.directories.import", PATH, null)
+    public static final Setting<Path> load_csv_file_url_root = newBuilder("server.directories.import", PATH, null)
             .immutable()
             .setDependency(neo4j_home)
             .build();
@@ -451,7 +451,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     @Description("Location of the database plugin directory. Compiled Java JAR files that contain database "
             + "procedures will be loaded if they are placed in this directory.")
-    public static final Setting<Path> plugin_dir = newBuilder("dbms.directories.plugins", PATH, Path.of("plugins"))
+    public static final Setting<Path> plugin_dir = newBuilder("server.directories.plugins", PATH, Path.of("plugins"))
             .setDependency(neo4j_home)
             .immutable()
             .build();
@@ -785,7 +785,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             newBuilder("dbms.logs.user.stdout_enabled", BOOL, true).build();
 
     @Description("Path of the logs directory.")
-    public static final Setting<Path> logs_directory = newBuilder("dbms.directories.logs", PATH, Path.of("logs"))
+    public static final Setting<Path> logs_directory = newBuilder("server.directories.logs", PATH, Path.of("logs"))
             .setDependency(neo4j_home)
             .immutable()
             .build();
@@ -820,7 +820,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     @Description("Path of the licenses directory.")
     public static final Setting<Path> licenses_directory = newBuilder(
-                    "dbms.directories.licenses", PATH, Path.of(DEFAULT_LICENSES_DIR_NAME))
+                    "server.directories.licenses", PATH, Path.of(DEFAULT_LICENSES_DIR_NAME))
             .setDependency(neo4j_home)
             .immutable()
             .build();

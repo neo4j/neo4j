@@ -69,7 +69,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description("Path of the databases directory")
     public static final Setting<Path> databases_root_path = newBuilder(
-                    "internal.dbms.directories.databases.root",
+                    "internal.server.directories.databases.root",
                     PATH,
                     Path.of(GraphDatabaseSettings.DEFAULT_DATABASES_ROOT_DIR_NAME))
             .setDependency(GraphDatabaseSettings.data_directory)
@@ -426,7 +426,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description("Location of the database scripts directory.")
     public static final Setting<Path> scripts_dir = newBuilder(
-                    "internal.dbms.directories.scripts", PATH, Path.of("scripts"))
+                    "internal.server.directories.scripts", PATH, Path.of("scripts"))
             .setDependency(GraphDatabaseSettings.neo4j_home)
             .immutable()
             .build();
@@ -595,7 +595,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description("Location of the auth store repository directory")
     public static final Setting<Path> auth_store_directory = newBuilder(
-                    "internal.dbms.directories.auth", PATH, Path.of("dbms"))
+                    "internal.server.directories.auth", PATH, Path.of("dbms"))
             .immutable()
             .setDependency(GraphDatabaseSettings.data_directory)
             .build();

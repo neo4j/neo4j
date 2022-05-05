@@ -21,17 +21,28 @@ package org.neo4j.configuration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.BootloaderSettings.lib_directory;
+import static org.neo4j.configuration.BootloaderSettings.run_directory;
 import static org.neo4j.configuration.BootloaderSettings.windows_service_name;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_time;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_tx;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_volume;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_iops_limit;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_policy;
+import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
+import static org.neo4j.configuration.GraphDatabaseSettings.database_dumps_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.licenses_directory;
+import static org.neo4j.configuration.GraphDatabaseSettings.load_csv_file_url_root;
+import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
+import static org.neo4j.configuration.GraphDatabaseSettings.plugin_dir;
 import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
+import static org.neo4j.configuration.GraphDatabaseSettings.script_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
@@ -254,6 +265,42 @@ class SettingMigratorsTest {
         assertEquals(17, config.get(check_point_interval_tx));
         assertEquals(ByteUnit.mebiBytes(125), config.get(check_point_interval_volume));
         assertEquals(456, config.get(check_point_iops_limit));
+    }
+
+    @Test
+    void directoriesSettingsMigration() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(
+                confFile,
+                List.of(
+                        "dbms.directories.neo4j_home=/a",
+                        "dbms.directories.data=/b",
+                        "dbms.directories.transaction.logs.root=/c",
+                        "dbms.directories.script.root=/d",
+                        "dbms.directories.dumps.root=/e",
+                        "dbms.directories.import=/f",
+                        "dbms.directories.plugins=/g",
+                        "dbms.directories.logs=/h",
+                        "dbms.directories.licenses=/i",
+                        "dbms.directories.run=/j",
+                        "dbms.directories.lib=/k"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger(logProvider.getLog(Config.class));
+
+        assertEquals("/a", config.get(neo4j_home).toString());
+        assertEquals("/b", config.get(data_directory).toString());
+        assertEquals("/c", config.get(transaction_logs_root_path).toString());
+        assertEquals("/d", config.get(script_root_path).toString());
+        assertEquals("/e", config.get(database_dumps_root_path).toString());
+        assertEquals("/f", config.get(load_csv_file_url_root).toString());
+        assertEquals("/g", config.get(plugin_dir).toString());
+        assertEquals("/h", config.get(logs_directory).toString());
+        assertEquals("/i", config.get(licenses_directory).toString());
+
+        assertEquals("/j", config.get(run_directory).toString());
+        assertEquals("/k", config.get(lib_directory).toString());
     }
 
     @Test
