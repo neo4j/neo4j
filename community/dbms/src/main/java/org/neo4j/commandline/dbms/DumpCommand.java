@@ -35,22 +35,31 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.StringJoiner;
+import org.eclipse.collections.impl.set.mutable.MutableSetFactoryImpl;
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
-import org.neo4j.cli.Converters.DatabaseNameConverter;
+import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.commandline.Util;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.dbms.archive.DumpFormatSelector;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.internal.helpers.ArrayUtil;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.locker.FileLockException;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 
@@ -66,10 +75,11 @@ public class DumpCommand extends AbstractCommand {
 
     @Option(
             names = "--database",
-            description = "Name of the database to dump.",
+            paramLabel = "<database>",
             defaultValue = DEFAULT_DATABASE_NAME,
-            converter = DatabaseNameConverter.class)
-    protected NormalizedDatabaseName database;
+            description = "Name of the database to dump. Can contain * and ? for globbing.",
+            converter = Converters.DatabaseNamePatternConverter.class)
+    private DatabaseNamePattern database;
 
     @Option(
             names = "--to",
@@ -87,38 +97,105 @@ public class DumpCommand extends AbstractCommand {
 
     @Override
     public void execute() {
-        var databaseName = database.name();
-        var memoryTracker = EmptyMemoryTracker.INSTANCE;
+
+        boolean toStdOut = to.equals(STANDARD_OUTPUT);
+        if (database.containsPattern() && (toStdOut || !Files.isDirectory(Path.of(to)))) {
+            throw new CommandFailedException(
+                    "Globbing in database name can not be used in combination with stdout or a file as destination. "
+                            + "Specify a directory as destination or a single target database");
+        }
 
         Config config = CommandHelpers.buildConfig(ctx, allowCommandExpansion);
-        DatabaseLayout databaseLayout = Neo4jLayout.of(config).databaseLayout(databaseName);
+        InternalLog log;
+        try (Log4jLogProvider logProvider = Util.configuredLogProvider(config, ctx.out())) {
+            log = logProvider.getLog(getClass());
+            Set<String> dbNames;
+            List<FailedDump> failedDumps = new ArrayList<>();
 
-        try {
-            Validators.CONTAINS_EXISTING_DATABASE.validate(databaseLayout.databaseDirectory());
-        } catch (IllegalArgumentException e) {
-            throw new CommandFailedException("Database does not exist: " + databaseName, e);
-        }
+            try (DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction()) {
+                dbNames = getDbNames(config, fs);
 
-        try (FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction()) {
-            if (fileSystem.fileExists(databaseLayout.file(StoreMigrator.MIGRATION_DIRECTORY))) {
-                throw new CommandFailedException(
-                        "Store migration folder detected - A dump can not be taken during a store migration. Make sure "
-                                + "store migration is completed before trying again.");
+                var memoryTracker = EmptyMemoryTracker.INSTANCE;
+
+                for (String databaseName : dbNames) {
+                    try {
+                        if (!toStdOut) {
+                            log.info(format("Starting dump of database '%s'", databaseName));
+                        }
+
+                        DatabaseLayout databaseLayout = Neo4jLayout.of(config).databaseLayout(databaseName);
+
+                        try {
+                            Validators.CONTAINS_EXISTING_DATABASE.validate(databaseLayout.databaseDirectory());
+                        } catch (IllegalArgumentException e) {
+                            throw new CommandFailedException("Database does not exist: " + databaseName, e);
+                        }
+
+                        if (fs.fileExists(databaseLayout.file(StoreMigrator.MIGRATION_DIRECTORY))) {
+                            throw new CommandFailedException(
+                                    "Store migration folder detected - A dump can not be taken during a store migration. Make sure "
+                                            + "store migration is completed before trying again.");
+                        }
+
+                        try (Closeable ignored = LockChecker.checkDatabaseLock(databaseLayout)) {
+                            checkDbState(ctx.fs(), databaseLayout, config, memoryTracker, databaseName);
+                            dump(databaseLayout, databaseName);
+                        } catch (FileLockException e) {
+                            throw new CommandFailedException(
+                                    "The database is in use. Stop database '" + databaseName + "' and try again.", e);
+                        } catch (IOException e) {
+                            wrapIOException(e);
+                        } catch (CannotWriteException e) {
+                            throw new CommandFailedException("You do not have permission to dump the database.", e);
+                        }
+
+                    } catch (Exception e) {
+                        log.error("Failed to dump database '" + databaseName + "': " + e.getMessage());
+                        failedDumps.add(new FailedDump(databaseName, e));
+                    }
+                }
+            } catch (IOException e) {
+                wrapIOException(e);
             }
-        } catch (IOException e) {
-            wrapIOException(e);
-        }
 
-        try (Closeable ignored = LockChecker.checkDatabaseLock(databaseLayout)) {
-            checkDbState(ctx.fs(), databaseLayout, config, memoryTracker);
-            dump(databaseLayout, databaseName);
-        } catch (FileLockException e) {
-            throw new CommandFailedException(
-                    "The database is in use. Stop database '" + databaseName + "' and try again.", e);
-        } catch (IOException e) {
-            wrapIOException(e);
-        } catch (CannotWriteException e) {
-            throw new CommandFailedException("You do not have permission to dump the database.", e);
+            if (failedDumps.isEmpty()) {
+                if (!toStdOut) {
+                    log.info("Dump completed successfully");
+                }
+            } else {
+                StringJoiner failedDbs = new StringJoiner("', '", "Dump failed for databases: '", "'");
+                Exception exceptions = null;
+                for (FailedDump failedDump : failedDumps) {
+                    failedDbs.add(failedDump.dbName);
+                    exceptions = Exceptions.chain(exceptions, failedDump.e);
+                }
+                log.error(failedDbs.toString());
+                throw new CommandFailedException(failedDbs.toString(), exceptions);
+            }
+        }
+    }
+
+    record FailedDump(String dbName, Exception e) {}
+
+    private Set<String> getDbNames(Config config, FileSystemAbstraction fs) {
+        if (!database.containsPattern()) {
+            return Set.of(database.getDatabaseName());
+        } else {
+            Set<String> dbNames = MutableSetFactoryImpl.INSTANCE.empty();
+            Path databasesDir = Neo4jLayout.of(config).databasesDirectory();
+            try {
+                for (Path path : fs.listFiles(databasesDir)) {
+                    if (fs.isDirectory(path)) {
+                        String name = path.getFileName().toString();
+                        if (database.matches(name)) {
+                            dbNames.add(name);
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                throw new CommandFailedException("Failed to list databases", e);
+            }
+            return dbNames;
         }
     }
 
@@ -168,7 +245,8 @@ public class DumpCommand extends AbstractCommand {
             FileSystemAbstraction fs,
             DatabaseLayout databaseLayout,
             Config additionalConfiguration,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            String databaseName) {
         if (checkRecoveryState(fs, databaseLayout, additionalConfiguration, memoryTracker)) {
             throw new CommandFailedException(joinAsLines(
                     "Active logical log detected, this might be a source of inconsistencies.",

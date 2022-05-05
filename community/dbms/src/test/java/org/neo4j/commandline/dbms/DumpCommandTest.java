@@ -56,7 +56,8 @@ class DumpCommandTest {
                         + "      --verbose           Enable verbose output.%n"
                         + "      --expand-commands   Allow command expansion in config value evaluation.%n"
                         + "      --database=<database>%n"
-                        + "                          Name of the database to dump.%n"
+                        + "                          Name of the database to dump. Can contain * and ? for%n"
+                        + "                            globbing.%n"
                         + "                            Default: neo4j%n"
                         + "      --to=<path>         Destination (file or folder or '-' for stdout) of%n"
                         + "                            database dump."));

@@ -24,7 +24,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -209,7 +208,9 @@ class DumpCommandIT {
             locker.checkLock();
 
             CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> execute("foo"));
-            assertEquals("The database is in use. Stop database 'foo' and try again.", commandFailed.getMessage());
+            assertThat(commandFailed.getMessage()).isEqualTo("Dump failed for databases: 'foo'");
+            assertThat(commandFailed.getCause().getMessage())
+                    .isEqualTo("The database is in use. Stop database 'foo' and try again.");
         }
     }
 
@@ -231,7 +232,8 @@ class DumpCommandIT {
                     new byte[] {0});
         }
         CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> execute("foo"));
-        assertThat(commandFailed.getMessage())
+        assertThat(commandFailed.getMessage()).isEqualTo("Dump failed for databases: 'foo'");
+        assertThat(commandFailed.getCause().getMessage())
                 .startsWith("Active logical log detected, this might be a source of inconsistencies.");
     }
 
@@ -268,12 +270,12 @@ class DumpCommandIT {
     @DisabledForRoot
     void shouldReportAHelpfulErrorIfWeDontHaveWritePermissionsForLock() throws Exception {
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat(databaseDirectory);
-        try (FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction()) {
-            Path file = databaseLayout.databaseLockFile();
-            try (Closeable ignored = withPermissions(file, emptySet())) {
-                CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> execute("foo"));
-                assertEquals("You do not have permission to dump the database.", commandFailed.getMessage());
-            }
+        Path file = databaseLayout.databaseLockFile();
+        try (Closeable ignored = withPermissions(file, emptySet())) {
+            CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> execute("foo"));
+            assertThat(commandFailed.getMessage()).isEqualTo("Dump failed for databases: 'foo'");
+            assertThat(commandFailed.getCause().getMessage())
+                    .isEqualTo("You do not have permission to dump the database.");
         }
     }
 
@@ -312,13 +314,15 @@ class DumpCommandIT {
                 .when(dumper)
                 .dump(any(), any(), any(), any(), any());
         CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> execute("foo"));
-        assertEquals("Archive already exists: the-archive-path", commandFailed.getMessage());
+        assertThat(commandFailed.getMessage()).isEqualTo("Dump failed for databases: 'foo'");
+        assertThat(commandFailed.getCause().getMessage()).isEqualTo("Archive already exists: the-archive-path");
     }
 
     @Test
     void shouldGiveAClearMessageIfTheDatabaseDoesntExist() {
         CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> execute("bobo"));
-        assertEquals("Database does not exist: bobo", commandFailed.getMessage());
+        assertThat(commandFailed.getMessage()).isEqualTo("Dump failed for databases: 'bobo'");
+        assertThat(commandFailed.getCause().getMessage()).isEqualTo("Database does not exist: bobo");
     }
 
     @Test
@@ -327,8 +331,9 @@ class DumpCommandIT {
                 .when(dumper)
                 .dump(any(), any(), any(), any(), any());
         CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> execute("foo"));
-        assertEquals(
-                "Unable to dump database: NoSuchFileException: " + archive.getParent(), commandFailed.getMessage());
+        assertThat(commandFailed.getMessage()).isEqualTo("Dump failed for databases: 'foo'");
+        assertThat(commandFailed.getCause().getMessage())
+                .isEqualTo("Unable to dump database: NoSuchFileException: " + archive.getParent());
     }
 
     @Test
@@ -336,7 +341,9 @@ class DumpCommandIT {
             throws Exception {
         doThrow(new IOException("the-message")).when(dumper).dump(any(), any(), any(), any(), any());
         CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> execute("foo"));
-        assertEquals("Unable to dump database: IOException: the-message", commandFailed.getMessage());
+        assertThat(commandFailed.getMessage()).isEqualTo("Dump failed for databases: 'foo'");
+        assertThat(commandFailed.getCause().getMessage())
+                .isEqualTo("Unable to dump database: IOException: the-message");
     }
 
     @Test
@@ -355,6 +362,27 @@ class DumpCommandIT {
                         any(),
                         any());
         verifyNoMoreInteractions(dumper);
+    }
+
+    @Test
+    void shouldNotAllowDatabaseNameGlobbingWithStdOut() {
+        var ctx = new ExecutionContext(
+                homeDir, configDir, mock(PrintStream.class), mock(PrintStream.class), testDirectory.getFileSystem());
+        var command = new DumpCommand(ctx, dumper);
+        CommandLine.populateCommand(command, "--database=" + "foo*", "--to=-");
+        CommandFailedException commandFailed = assertThrows(CommandFailedException.class, command::execute);
+        assertThat(commandFailed.getMessage())
+                .isEqualTo("Globbing in database name can not be used in combination with stdout or a file as "
+                        + "destination. Specify a directory as destination or a single target database");
+    }
+
+    @Test
+    void shouldNotAllowDatabaseNameGlobbingWithSpecifiedFile() throws IOException {
+        Files.createFile(archive);
+        CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> execute("foo*"));
+        assertThat(commandFailed.getMessage())
+                .isEqualTo("Globbing in database name can not be used in combination with stdout or a file as "
+                        + "destination. Specify a directory as destination or a single target database");
     }
 
     private void execute(String database) {
