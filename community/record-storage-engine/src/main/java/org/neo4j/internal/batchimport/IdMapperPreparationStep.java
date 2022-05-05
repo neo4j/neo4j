@@ -54,11 +54,6 @@ public class IdMapperPreparationStep extends LonelyProcessingStep {
     protected void process() {
         idMapper.prepare(allIds, collector, new ProgressListener.Adapter() {
             @Override
-            public void started(String task) {
-                changeName(task);
-            }
-
-            @Override
             public void failed(Throwable e) {
                 issuePanic(e);
             }

@@ -21,6 +21,7 @@ package org.neo4j.internal.helpers.progress;
 
 import static java.lang.String.format;
 import static java.lang.System.lineSeparator;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -32,6 +33,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,7 +69,6 @@ class ProgressMonitorTest {
         ProgressListener progressListener = factory.singlePart(testInfo.getDisplayName(), 16);
 
         // when
-        progressListener.started();
         for (int i = 0; i < 16; i++) {
             progressListener.add(1);
         }
@@ -94,33 +96,27 @@ class ProgressMonitorTest {
         order.verifyNoMoreInteractions();
 
         // when
-        first.started();
         for (int i = 0; i < 5; i++) {
             first.add(1);
         }
         first.done();
 
         // then
-        order.verify(indicator).startPart("first", 5);
         for (int i = 0; i < 5; i++) {
             order.verify(indicator).progress(i, i + 1);
         }
-        order.verify(indicator).completePart("first");
         order.verifyNoMoreInteractions();
 
         // when
-        other.started();
         for (int i = 0; i < 5; i++) {
             other.add(1);
         }
         other.done();
 
         // then
-        order.verify(indicator).startPart("other", 5);
         for (int i = 5; i < 10; i++) {
             order.verify(indicator).progress(i, i + 1);
         }
-        order.verify(indicator).completePart("other");
         order.verify(indicator).reportResolution();
         order.verifyNoMoreInteractions();
     }
@@ -186,11 +182,9 @@ class ProgressMonitorTest {
         first.done();
 
         // then
-        order.verify(indicator).startPart("first", 5);
         for (int i = 0; i < 5; i++) {
             order.verify(indicator).progress(i, i + 1);
         }
-        order.verify(indicator).completePart("first");
         order.verifyNoMoreInteractions();
 
         // when
@@ -200,11 +194,9 @@ class ProgressMonitorTest {
         other.done();
 
         // then
-        order.verify(indicator).startPart("other", 5);
         for (int i = 5; i < 10; i++) {
             order.verify(indicator).progress(i, i + 1);
         }
-        order.verify(indicator).completePart("other");
         order.verify(indicator).reportResolution();
         order.verifyNoMoreInteractions();
     }
@@ -276,11 +268,7 @@ class ProgressMonitorTest {
 
         // then
         InOrder order = inOrder(indicator);
-        order.verify(indicator).startPart("part1", 1);
         order.verify(indicator).startProcess(2);
-        order.verify(indicator).startPart("part2", 1);
-        order.verify(indicator).completePart("part1");
-        order.verify(indicator).completePart("part2");
     }
 
     @Test
@@ -357,6 +345,31 @@ class ProgressMonitorTest {
 
         // then
         verify(indicator).progress(0, 10);
+    }
+
+    @Test
+    void shouldPrintProgressForMultipleParts(TestInfo testInfo) throws IOException {
+        // given
+        var outBuffer = new ByteArrayOutputStream();
+        var out = new OutputStreamWriter(outBuffer);
+        var builder = ProgressMonitorFactory.textual(out, false, 5, 1, 2).multipleParts(testInfo.getDisplayName());
+        var part1Total = 50;
+        var part1 = builder.progressForPart("part1", part1Total);
+        var part2Total = 100;
+        var part2 = builder.progressForPart("part2", part2Total);
+
+        // when
+        for (int i = 0; i < part1Total; i++) {
+            part1.add(1);
+        }
+        out.flush();
+        for (int i = 0; i < part2Total; i++) {
+            part2.add(1);
+        }
+
+        // then
+        out.flush();
+        assertThat(outBuffer.toString()).isEqualTo(format(".....  50%%%n..... 100%%%n"));
     }
 
     private static Indicator indicatorMock() {

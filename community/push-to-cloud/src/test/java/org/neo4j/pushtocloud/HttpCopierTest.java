@@ -948,12 +948,6 @@ class HttpCopierTest {
         boolean doneCalled;
 
         @Override
-        public void started(String task) {}
-
-        @Override
-        public void started() {}
-
-        @Override
         public void add(long progress) {
             this.progress += progress;
         }

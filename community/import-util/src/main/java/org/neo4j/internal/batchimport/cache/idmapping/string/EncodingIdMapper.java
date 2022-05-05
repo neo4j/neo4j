@@ -430,7 +430,6 @@ public class EncodingIdMapper implements IdMapper {
      * for allocating arrays to hold collision data to later sort and use to discover duplicates.
      */
     private long detectAndMarkCollisions(ProgressListener progress) {
-        progress.started("DETECT");
         long totalCount = highestSetTrackerIndex + 1;
 
         Workers<DetectWorker> workers = new Workers<>("DETECT");
@@ -494,7 +493,6 @@ public class EncodingIdMapper implements IdMapper {
             Collector collector,
             ProgressListener progress)
             throws InterruptedException {
-        progress.started("RESOLVE (~" + pessimisticNumberOfCollisions + " collisions)");
         Radix radix = radixFactory.newInstance();
         collisionNodeIdCache =
                 cacheFactory.newByteArray(pessimisticNumberOfCollisions, new byte[COLLISION_ENTRY_SIZE], memoryTracker);
@@ -590,7 +588,6 @@ public class EncodingIdMapper implements IdMapper {
         long previousEid = 0;
         int previousGroupId = -1;
         SameInputIdDetector detector = new SameInputIdDetector();
-        progress.started("DEDUPLICATE");
         for (int i = 0; i < numberOfCollisions; i++) {
             long collisionIndex = collisionTrackerCache.get(i);
             long nodeId = collisionNodeIdCache.get5ByteLong(collisionIndex, 0);

@@ -46,7 +46,7 @@ public abstract class AbstractStep<T> implements Step<T> {
     public static final ParkStrategy PARK = new ParkStrategy.Park(IS_OS_WINDOWS ? 10_000 : 500, MICROSECONDS);
 
     protected final StageControl control;
-    private volatile String name;
+    private final String name;
 
     @SuppressWarnings("rawtypes")
     protected volatile Step downstream;
@@ -214,10 +214,6 @@ public abstract class AbstractStep<T> implements Step<T> {
 
     @Override
     public void close() throws Exception { // Do nothing by default
-    }
-
-    protected void changeName(String name) {
-        this.name = name;
     }
 
     protected void resetStats() {

@@ -47,10 +47,6 @@ public abstract class Indicator {
 
     public void startProcess(long totalCount) {}
 
-    public void startPart(String part, long totalCount) {}
-
-    public void completePart(String part) {}
-
     public void failure(Throwable cause) {}
 
     static class Textual extends Indicator {

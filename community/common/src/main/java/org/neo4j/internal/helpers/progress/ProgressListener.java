@@ -29,10 +29,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * ProgressMonitorFactory.MultiPartBuilder} can be used from different threads.
  */
 public interface ProgressListener {
-    void started(String task);
-
-    void started();
-
     void add(long progress);
 
     void mark(char mark);
@@ -48,14 +44,6 @@ public interface ProgressListener {
     }
 
     class Adapter implements ProgressListener {
-        @Override
-        public void started() {
-            started(null);
-        }
-
-        @Override
-        public void started(String task) {}
-
         @Override
         public void add(long progress) {}
 
@@ -127,24 +115,15 @@ public interface ProgressListener {
 
     class SinglePartProgressListener extends Adapter {
         private final Aggregator aggregator;
-        private boolean started;
 
         SinglePartProgressListener(Indicator indicator, long totalCount) {
             this.aggregator = new Aggregator(indicator);
             aggregator.add(new Adapter() {}, totalCount);
-        }
-
-        @Override
-        public void started(String task) {
-            if (!started) {
-                started = true;
-                aggregator.initialize();
-            }
+            aggregator.initialize();
         }
 
         @Override
         public void add(long progress) {
-            started();
             aggregator.update(progress);
         }
 
@@ -177,18 +156,11 @@ public interface ProgressListener {
             this.aggregator = aggregator;
             this.part = part;
             this.totalCount = totalCount;
-        }
-
-        @Override
-        public void started(String task) {
-            if (started.compareAndSet(false, true)) {
-                aggregator.start(this);
-            }
+            aggregator.start(this);
         }
 
         @Override
         public void add(long delta) {
-            started();
             long current = progress.get();
             if (current + delta > totalCount) {
                 delta = totalCount - current;

@@ -92,7 +92,6 @@ public class BatchTransaction implements AutoCloseable {
 
     public BatchTransaction withProgress(ProgressListener progressListener) {
         this.progressListener = progressListener;
-        this.progressListener.started();
         return this;
     }
 }

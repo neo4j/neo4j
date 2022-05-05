@@ -76,7 +76,6 @@ public class ParallelSort {
         }
 
         Workers<SortWorker> sortWorkers = new Workers<>("SortWorker");
-        progress.started("SORT");
         for (int i = 0; i < threadsNeeded; i++) {
             if (sortBuckets[i].count == 0) {
                 break;
@@ -103,7 +102,6 @@ public class ParallelSort {
         long count = 0;
         long fullCount = 0;
         long[] radixIndexCount = radix.getRadixIndexCounts();
-        progress.started("SPLIT");
         for (int i = 0, threadIndex = 0; i < radixIndexCount.length && threadIndex < threads; i++) {
             if ((count + radixIndexCount[i]) > bucketSize) {
                 bucketRange[threadIndex] = count == 0 ? i : i - 1;

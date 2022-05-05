@@ -194,12 +194,6 @@ public abstract class ProcessorStep<T> extends AbstractStep<T> {
             BatchSender sender) { // Nothing to emit, subclasses might have though
     }
 
-    @Override
-    protected void changeName(String name) {
-        super.changeName(name);
-        updateCursorTracerName();
-    }
-
     private void updateCursorTracerName() {
         this.cursorTracerName = buildCursorTracerName();
     }

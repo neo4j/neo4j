@@ -84,14 +84,11 @@ final class Aggregator {
     }
 
     synchronized void start(ProgressListener.MultiPartProgressListener part) {
-        if (states.put(part, State.LIVE) == State.INIT) {
-            indicator.startPart(part.part, part.totalCount);
-        }
+        states.put(part, State.LIVE);
     }
 
     synchronized void complete(ProgressListener.MultiPartProgressListener part) {
         if (states.remove(part) != null) {
-            indicator.completePart(part.part);
             if (states.isEmpty()) {
                 updateRemaining();
             }
