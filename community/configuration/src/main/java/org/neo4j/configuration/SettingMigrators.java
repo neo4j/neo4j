@@ -20,6 +20,7 @@
 package org.neo4j.configuration;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.neo4j.configuration.BootloaderSettings.windows_service_name;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_time;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_tx;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_volume;
@@ -121,6 +122,14 @@ public final class SettingMigrators {
             migrateSettingNameChange(
                     values, log, "dbms.memory.pagecache.warmup.preload.whitelist", pagecache_warmup_prefetch_allowlist);
             migrateSettingNameChange(values, log, "dbms.security.procedures.whitelist", procedure_allowlist);
+        }
+    }
+
+    @ServiceProvider
+    public static class WindowsServiceNameSettingMigrator implements SettingMigrator {
+        @Override
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.windows_service_name", windows_service_name);
         }
     }
 

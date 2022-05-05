@@ -21,6 +21,7 @@ package org.neo4j.configuration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.BootloaderSettings.windows_service_name;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_time;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_tx;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_volume;
@@ -218,6 +219,18 @@ class SettingMigratorsTest {
                         "dbms.memory.transaction.datababase_max_size", memory_transaction_database_max_size.name());
 
         assertEquals(1073741824L, config.get(memory_transaction_database_max_size));
+    }
+
+    @Test
+    void windowsServiceNameMigration() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(confFile, List.of("dbms.windows_service_name=foo-bar"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger(logProvider.getLog(Config.class));
+
+        assertEquals("foo-bar", config.get(windows_service_name));
     }
 
     @Test
