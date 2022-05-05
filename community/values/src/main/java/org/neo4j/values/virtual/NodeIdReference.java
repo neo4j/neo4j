@@ -24,12 +24,15 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import org.neo4j.values.AnyValueWriter;
 
-public class NodeReference extends VirtualNodeValue {
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance(NodeReference.class);
+/**
+ * Reference to a node by its long id, does not contain element id as a runtime optimisation.
+ */
+public class NodeIdReference extends VirtualNodeValue {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(NodeIdReference.class);
 
     private final long id;
 
-    NodeReference(long id) {
+    NodeIdReference(long id) {
         this.id = id;
     }
 
@@ -40,7 +43,7 @@ public class NodeReference extends VirtualNodeValue {
 
     @Override
     public String getTypeName() {
-        return "NodeReference";
+        return "NodeIdReference";
     }
 
     @Override

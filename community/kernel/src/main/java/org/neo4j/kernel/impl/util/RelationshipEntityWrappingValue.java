@@ -34,6 +34,7 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.VirtualNodeReference;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -44,8 +45,8 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     private final Relationship relationship;
     private volatile TextValue type;
     private volatile MapValue properties;
-    private volatile VirtualNodeValue startNode;
-    private volatile VirtualNodeValue endNode;
+    private volatile VirtualNodeReference startNode;
+    private volatile VirtualNodeReference endNode;
 
     /**
      * Wraps a {@link Relationship}, reading out its meta data lazily, i.e. on first access of e.g. {@link #startNodeId()}.
@@ -180,13 +181,13 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     }
 
     @Override
-    public VirtualNodeValue startNode() {
-        VirtualNodeValue start = startNode;
+    public VirtualNodeReference startNode() {
+        var start = startNode;
         if (start == null) {
             synchronized (this) {
                 start = startNode;
                 if (start == null) {
-                    start = startNode = ValueUtils.fromNodeEntity(relationship.getStartNode());
+                    start = startNode = ValueUtils.asNodeReference(relationship.getStartNode());
                 }
             }
         }
@@ -194,13 +195,13 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     }
 
     @Override
-    public VirtualNodeValue endNode() {
-        VirtualNodeValue end = endNode;
+    public VirtualNodeReference endNode() {
+        var end = endNode;
         if (end == null) {
             synchronized (this) {
                 end = endNode;
                 if (end == null) {
-                    end = endNode = ValueUtils.fromNodeEntity(relationship.getEndNode());
+                    end = endNode = ValueUtils.asNodeReference(relationship.getEndNode());
                 }
             }
         }

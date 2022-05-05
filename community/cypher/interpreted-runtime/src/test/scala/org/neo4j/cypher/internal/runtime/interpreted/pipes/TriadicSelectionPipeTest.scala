@@ -19,14 +19,17 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.core.NodeEntity
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
+import org.neo4j.values.ElementIdMapper
 import org.neo4j.values.virtual.VirtualNodeValue
 
 import scala.collection.Map
@@ -164,11 +167,10 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
   }
 
   private def nodeWithId(id: Long) = {
-    new NodeEntity(null, id)
+    new NodeEntity(mockInternalTransaction(), id)
   }
 
   private def createFakeDataWith(keys: Array[String], data: (Int, List[Any])*) = {
-
     data.flatMap {
       case (x, related) =>
         related.map {
@@ -206,4 +208,10 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     }
   }
 
+  private def mockInternalTransaction(): InternalTransaction = {
+    val idMapper = mock[ElementIdMapper]
+    val mockTransaction = mock[InternalTransaction]
+    when(mockTransaction.elementIdMapper()).thenReturn(idMapper)
+    mockTransaction
+  }
 }

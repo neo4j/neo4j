@@ -273,8 +273,8 @@ public interface QuerySubject extends QuerySubscriber, Publisher<Record> {
             return VirtualValues.relationshipValue(
                     tag(r.id()),
                     r.elementId(),
-                    VirtualValues.node(tag(r.startNodeId())),
-                    VirtualValues.node(tag(r.endNodeId())),
+                    VirtualValues.node(tag(r.startNodeId()), r.startNode().elementId()),
+                    VirtualValues.node(tag(r.endNodeId()), r.endNode().elementId()),
                     r.type(),
                     r.properties());
         }

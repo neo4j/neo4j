@@ -179,7 +179,8 @@ public final class ValuePopulation {
             RelationshipScanCursor relCursor,
             PropertyCursor propertyCursor) {
         dbAccess.singleRelationship(id, relCursor);
-        final var elementId = dbAccess.elementIdMapper().relationshipElementId(id);
+        final var idMapper = dbAccess.elementIdMapper();
+        final var elementId = idMapper.relationshipElementId(id);
 
         if (!relCursor.next()) {
             // the relationship has probably been deleted, we still return it but just a bare id
@@ -187,8 +188,8 @@ public final class ValuePopulation {
                     id, elementId, MISSING_NODE, MISSING_NODE, EMPTY_STRING, EMPTY_MAP, true);
         } else {
             // Bolt doesn't require start and end node to be populated
-            VirtualNodeValue start = VirtualValues.node(relCursor.sourceNodeReference());
-            VirtualNodeValue end = VirtualValues.node(relCursor.targetNodeReference());
+            final var start = VirtualValues.node(relCursor.sourceNodeReference(), idMapper);
+            final var end = VirtualValues.node(relCursor.targetNodeReference(), idMapper);
             relCursor.properties(propertyCursor);
             return VirtualValues.relationshipValue(
                     id,

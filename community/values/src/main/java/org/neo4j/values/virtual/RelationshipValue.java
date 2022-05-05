@@ -57,6 +57,10 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
         return startNodeId;
     }
 
+    public String startNodeElementId() {
+        return startNode().elementId();
+    }
+
     @Override
     public long startNodeId(Consumer<RelationshipVisitor> consumer) {
         return startNodeId;
@@ -66,14 +70,18 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
         return endNodeId;
     }
 
+    public String endNodeElementId() {
+        return endNode().elementId();
+    }
+
     @Override
     public long endNodeId(Consumer<RelationshipVisitor> consumer) {
         return endNodeId;
     }
 
-    public abstract VirtualNodeValue startNode();
+    public abstract VirtualNodeReference startNode();
 
-    public abstract VirtualNodeValue endNode();
+    public abstract VirtualNodeReference endNode();
 
     @Override
     public long id() {
@@ -117,8 +125,8 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
 
     public static class DirectRelationshipValue extends RelationshipValue {
         private final String elementId;
-        private final VirtualNodeValue startNode;
-        private final VirtualNodeValue endNode;
+        private final VirtualNodeReference startNode;
+        private final VirtualNodeReference endNode;
         private final TextValue type;
         private final MapValue properties;
         private final boolean isDeleted;
@@ -134,8 +142,8 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
         DirectRelationshipValue(
                 long id,
                 String elementId,
-                VirtualNodeValue startNode,
-                VirtualNodeValue endNode,
+                VirtualNodeReference startNode,
+                VirtualNodeReference endNode,
                 TextValue type,
                 MapValue properties,
                 boolean isDeleted) {
@@ -152,12 +160,12 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
         }
 
         @Override
-        public VirtualNodeValue startNode() {
+        public VirtualNodeReference startNode() {
             return startNode;
         }
 
         @Override
-        public VirtualNodeValue endNode() {
+        public VirtualNodeReference endNode() {
             return endNode;
         }
 

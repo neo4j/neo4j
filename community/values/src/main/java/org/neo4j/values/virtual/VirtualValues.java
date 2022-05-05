@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
@@ -110,8 +111,16 @@ public final class VirtualValues {
         return new ErrorValue(e);
     }
 
-    public static NodeReference node(long id) {
-        return new NodeReference(id);
+    public static NodeIdReference node(long id) {
+        return new NodeIdReference(id);
+    }
+
+    public static FullNodeReference node(long id, ElementIdMapper mapper) {
+        return new FullNodeReference(id, mapper.nodeElementId(id));
+    }
+
+    public static FullNodeReference node(long id, String elementId) {
+        return new FullNodeReference(id, elementId);
     }
 
     public static RelationshipReference relationship(long id) {
@@ -197,8 +206,8 @@ public final class VirtualValues {
     public static RelationshipValue relationshipValue(
             long id,
             String elementId,
-            VirtualNodeValue startNode,
-            VirtualNodeValue endNode,
+            VirtualNodeReference startNode,
+            VirtualNodeReference endNode,
             TextValue type,
             MapValue properties) {
         return new RelationshipValue.DirectRelationshipValue(
@@ -208,8 +217,8 @@ public final class VirtualValues {
     public static RelationshipValue relationshipValue(
             long id,
             String elementId,
-            VirtualNodeValue startNode,
-            VirtualNodeValue endNode,
+            VirtualNodeReference startNode,
+            VirtualNodeReference endNode,
             TextValue type,
             MapValue properties,
             boolean isDeleted) {

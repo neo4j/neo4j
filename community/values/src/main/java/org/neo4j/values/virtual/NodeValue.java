@@ -26,7 +26,7 @@ import static org.neo4j.values.AnyValueWriter.EntityMode.REFERENCE;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextArray;
 
-public abstract class NodeValue extends VirtualNodeValue {
+public abstract class NodeValue extends VirtualNodeReference {
     private final long id;
 
     protected NodeValue(long id) {
@@ -36,8 +36,6 @@ public abstract class NodeValue extends VirtualNodeValue {
     public abstract TextArray labels();
 
     public abstract MapValue properties();
-
-    public abstract String elementId();
 
     @Override
     public <E extends Exception> void writeTo(AnyValueWriter<E> writer) throws E {

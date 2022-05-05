@@ -31,7 +31,7 @@ import org.neo4j.exceptions.ArithmeticException
 import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue
 import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.NodeReference
+import org.neo4j.values.virtual.NodeIdReference
 import org.neo4j.values.virtual.RelationshipReference
 
 import java.util.Collections
@@ -161,7 +161,7 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
     override def matchesRaw(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean = {
       rows.forall(row =>
         row.forall {
-          case _: NodeReference                   => false
+          case _: NodeIdReference                 => false
           case n: NodeEntityWrappingNodeValue     => n.isPopulated
           case _: RelationshipReference           => false
           case r: RelationshipEntityWrappingValue => r.isPopulated

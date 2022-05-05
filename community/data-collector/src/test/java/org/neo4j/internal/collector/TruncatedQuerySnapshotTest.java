@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.NodeReference;
+import org.neo4j.values.virtual.NodeIdReference;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipReference;
 import org.neo4j.values.virtual.RelationshipValue;
@@ -48,8 +48,8 @@ class TruncatedQuerySnapshotTest {
 
         // then
         AnyValue truncatedNode = x.queryParameters.get("n");
-        assertTrue(truncatedNode instanceof NodeReference);
-        assertEquals(NODE.id(), ((NodeReference) truncatedNode).id());
+        assertTrue(truncatedNode instanceof NodeIdReference);
+        assertEquals(NODE.id(), ((NodeIdReference) truncatedNode).id());
     }
 
     @Test

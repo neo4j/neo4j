@@ -67,7 +67,7 @@ public class VirtualValueTestUtil {
     }
 
     public static RelationshipValue rel(
-            long id, VirtualNodeValue start, VirtualNodeValue end, TextValue type, MapValue properties) {
+            long id, VirtualNodeReference start, VirtualNodeReference end, TextValue type, MapValue properties) {
         return relationshipValue(id, String.valueOf(id), start, end, type, properties);
     }
 

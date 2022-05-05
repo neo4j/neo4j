@@ -46,6 +46,7 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
+import org.neo4j.values.virtual.VirtualNodeReference;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
@@ -257,10 +258,15 @@ public final class ValueUtils {
         // sigh: negative ids are used as a mechanism for transferring "fake" entities from and to procedures.
         // We use it ourselves in some internal procedures, see VirtualNodeHack, and it is also used extensively
         // in apoc.
+        return asNodeReference(node);
+    }
+
+    public static VirtualNodeReference asNodeReference(Node node) {
+        // sigh, see above
         if (node.getId() < 0) {
-            return wrapNodeEntity(node);
+            return new NodeEntityWrappingNodeValue(node);
         } else {
-            return VirtualValues.node(node.getId());
+            return VirtualValues.node(node.getId(), node.getElementId());
         }
     }
 

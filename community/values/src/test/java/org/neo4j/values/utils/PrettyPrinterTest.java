@@ -56,7 +56,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.NodeReference;
+import org.neo4j.values.virtual.NodeIdReference;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.RelationshipReference;
@@ -67,7 +67,7 @@ class PrettyPrinterTest {
     @Test
     void shouldHandleNodeReference() {
         // Given
-        NodeReference node = VirtualValues.node(42L);
+        NodeIdReference node = VirtualValues.node(42L);
         PrettyPrinter printer = new PrettyPrinter();
 
         // When
