@@ -23,7 +23,9 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 import java.io.IOException;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.batchimport.ReadBehaviour;
@@ -52,6 +54,7 @@ public abstract class LenientStoreInputChunk implements InputChunk {
     protected final PageCursor cursor;
     private final CursorContext cursorContext;
     private final MutableLongSet seenPropertyRecordIds = LongSets.mutable.empty();
+    private final MutableIntSet seenPropertyKeyIds = IntSets.mutable.empty();
     private final PageCursor propertyCursor;
     private final PropertyRecord propertyRecord;
 
@@ -120,6 +123,10 @@ public abstract class LenientStoreInputChunk implements InputChunk {
             // We're detecting property record chain loops in this method, so prepare the set by clearing it
             seenPropertyRecordIds.clear();
 
+            // Detect duplicate record keys
+            seenPropertyKeyIds.clear();
+
+            long prevProp = Record.NO_PREVIOUS_PROPERTY.intValue();
             long nextProp = record.getNextProp();
             while (!Record.NO_NEXT_PROPERTY.is(nextProp)) {
                 if (!seenPropertyRecordIds.add(nextProp)) {
@@ -130,6 +137,14 @@ public abstract class LenientStoreInputChunk implements InputChunk {
                 }
 
                 propertyStore.getRecordByCursor(nextProp, propertyRecord, RecordLoad.NORMAL, propertyCursor);
+
+                // Validate back pointer to make sure chain is intact
+                if (propertyRecord.getPrevProp() != prevProp) {
+                    readBehaviour.error("%s(%d): Ignoring broken property chain.", owningEntityType, record.getId());
+                    return;
+                }
+                prevProp = propertyRecord.getId();
+
                 for (PropertyBlock propBlock : propertyRecord) {
                     propertyStore.ensureHeavy(propBlock, storeCursors);
                     String key = LenientStoreInput.getTokenByIdSafe(
@@ -137,6 +152,14 @@ public abstract class LenientStoreInputChunk implements InputChunk {
                             .name();
                     if (shouldIncludeProperty(readBehaviour, key, owningEntityTokens)) {
                         Value propertyValue = propBlock.newPropertyValue(propertyStore, storeCursors);
+
+                        if (!seenPropertyKeyIds.add(propBlock.getKeyIndexId())) {
+                            readBehaviour.error(
+                                    "%s(%d): Discarding duplicate property key %s(%d)=%s.",
+                                    owningEntityType, record.getId(), key, propBlock.getKeyIndexId(), propertyValue);
+                            continue;
+                        }
+
                         visitor.property(key, propertyValue.asObject());
                     }
                 }
