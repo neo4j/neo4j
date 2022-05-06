@@ -153,6 +153,11 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey,PointLayout
             throw new IllegalArgumentException(
                     "The '" + getProviderDescriptor().name() + "' index provider does not support uniqueness indexes: " + prototype );
         }
+        if ( prototype.schema().getPropertyIds().length != 1 )
+        {
+            throw new IllegalArgumentException( "The '" + getProviderDescriptor().name()
+                                                + "' index provider does not support composite indexes: " + prototype );
+        }
 
         IndexConfig indexConfig = prototype.getIndexConfig();
         indexConfig = completeSpatialConfiguration( indexConfig );

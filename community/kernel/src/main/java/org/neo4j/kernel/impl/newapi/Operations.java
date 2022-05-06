@@ -1355,11 +1355,15 @@ public class Operations implements Write, SchemaWrite
         }
         if ( indexType == IndexType.RANGE )
         {
-            assertRangePointTextIndexesSupported( "Failed to create RANGE index.");
+            assertRangePointTextIndexesSupported( "Failed to create RANGE index." );
         }
         if ( indexType == IndexType.POINT )
         {
-            assertRangePointTextIndexesSupported( "Failed to create POINT index.");
+            assertRangePointTextIndexesSupported( "Failed to create POINT index." );
+            if ( prototype.schema().getPropertyIds().length > 1 )
+            {
+                throw new UnsupportedOperationException( "Composite indexes are not supported for POINT index type." );
+            }
         }
         exclusiveSchemaLock( prototype.schema() );
         ktx.assertOpen();
