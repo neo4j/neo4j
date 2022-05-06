@@ -35,6 +35,11 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
         long pageRef = pinnedPageRef;
         if (pageRef != 0) {
             tracer.unpin(loadPlainCurrentPageId(), swapper);
+
+            if (multiVersioned) {
+                updateChain(pageRef);
+            }
+
             // Mark the page as dirty *after* our write access, to make sure it's dirty even if it was concurrently
             // flushed. Unlocking the write-locked page will mark it as dirty for us.
             if (eagerFlush) {
@@ -85,7 +90,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
 
     @Override
     protected boolean tryLockPage(long pageRef) {
-        return PageList.tryWriteLock(pageRef, versioned);
+        return PageList.tryWriteLock(pageRef, multiVersioned);
     }
 
     @Override
@@ -96,7 +101,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
     @Override
     protected void pinCursorToPage(PinEvent pinEvent, long pageRef, long filePageId, PageSwapper swapper)
             throws FileIsNotMappedException {
-        reset(pinEvent, pageRef);
+        init(pinEvent, pageRef);
         // Check if we've been racing with unmapping. We want to do this before
         // we make any changes to the contents of the page, because once all
         // files have been unmapped, the page cache can be closed. And when
@@ -108,7 +113,11 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
         if (updateUsage) {
             PageList.incrementUsage(pageRef);
         }
-        PageList.setLastModifiedTxId(pageRef, versionContext.committingTransactionId());
+        if (multiVersioned) {
+            copyPage(pageRef);
+        } else {
+            PageList.setLastModifiedTxId(pageRef, versionContext.committingTransactionId());
+        }
     }
 
     @Override

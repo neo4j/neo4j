@@ -102,8 +102,18 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer {
     }
 
     @Override
+    public long snapshotsLoaded() {
+        return 0;
+    }
+
+    @Override
     public double hitRatio() {
         return 0d;
+    }
+
+    @Override
+    public long copiedPages() {
+        return 0;
     }
 
     @Override
@@ -132,4 +142,7 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer {
 
     @Override
     public void merge(CursorStatisticSnapshot statisticSnapshot) {}
+
+    @Override
+    public void pageCopied(long pageRef, long version) {}
 }

@@ -141,6 +141,16 @@ public class DelegatingPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
+    public long copiedPages() {
+        return delegate.copiedPages();
+    }
+
+    @Override
+    public long snapshotsLoaded() {
+        return delegate.snapshotsLoaded();
+    }
+
+    @Override
     public long closedCursors() {
         return delegate.closedCursors();
     }
@@ -206,6 +216,11 @@ public class DelegatingPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
+    public void snapshotsLoaded(long snapshotsLoaded) {
+        delegate.snapshotsLoaded(snapshotsLoaded);
+    }
+
+    @Override
     public void merges(long merges) {
         delegate.merges(merges);
     }
@@ -229,6 +244,9 @@ public class DelegatingPageCacheTracer implements PageCacheTracer {
     public void closeCursor() {
         delegate.closeCursor();
     }
+
+    @Override
+    public void pagesCopied(long copiesCreated) {}
 
     @Override
     public void openCursor() {

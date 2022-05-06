@@ -68,7 +68,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     final int filePageSize;
     final int fileReservedPageBytes;
     final VersionStorage versionStorage;
-    final boolean versioned;
+    final boolean multiVersioned;
     final boolean littleEndian;
     private final PageCacheTracer pageCacheTracer;
     private final IOBufferFactory bufferFactory;
@@ -166,7 +166,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
         this.filePageSize = filePageSize;
         this.fileReservedPageBytes = pageCache.pageReservedBytes();
         this.versionStorage = versionStorage;
-        this.versioned = fileReservedPageBytes > 0;
+        this.multiVersioned = fileReservedPageBytes > 0;
         this.littleEndian = littleEndian;
         this.cursorFactory = new CursorFactory(this);
         this.pageCacheTracer = pageCacheTracer;

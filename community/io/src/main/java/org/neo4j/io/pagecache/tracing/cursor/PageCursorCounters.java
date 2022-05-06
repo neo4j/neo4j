@@ -94,4 +94,8 @@ public interface PageCursorCounters {
      * @return The hit ratio observed thus far.
      */
     double hitRatio();
+
+    long snapshotsLoaded();
+
+    long copiedPages();
 }

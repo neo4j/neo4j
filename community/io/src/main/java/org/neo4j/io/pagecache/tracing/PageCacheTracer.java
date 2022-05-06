@@ -181,6 +181,16 @@ public interface PageCacheTracer extends PageCacheCounters {
         }
 
         @Override
+        public long copiedPages() {
+            return 0;
+        }
+
+        @Override
+        public long snapshotsLoaded() {
+            return 0;
+        }
+
+        @Override
         public void pins(long pins) {}
 
         @Override
@@ -220,6 +230,9 @@ public interface PageCacheTracer extends PageCacheCounters {
         public void merges(long merges) {}
 
         @Override
+        public void snapshotsLoaded(long snapshotsLoaded) {}
+
+        @Override
         public void maxPages(long maxPages, long pageSize) {}
 
         @Override
@@ -233,6 +246,9 @@ public interface PageCacheTracer extends PageCacheCounters {
 
         @Override
         public void openCursor() {}
+
+        @Override
+        public void pagesCopied(long copiesCreated) {}
 
         @Override
         public String toString() {
@@ -394,4 +410,14 @@ public interface PageCacheTracer extends PageCacheCounters {
      * Page cache cursor opened
      */
     void openCursor();
+
+    /**
+     * report number of loaded page old snapshots
+     */
+    void snapshotsLoaded(long snapshotsLoaded);
+
+    /**
+     * report number of copied pages
+     */
+    void pagesCopied(long copiesCreated);
 }

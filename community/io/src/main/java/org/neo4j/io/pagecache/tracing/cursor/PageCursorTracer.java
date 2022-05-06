@@ -95,8 +95,18 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable {
         }
 
         @Override
+        public long snapshotsLoaded() {
+            return 0;
+        }
+
+        @Override
         public double hitRatio() {
             return 0d;
+        }
+
+        @Override
+        public long copiedPages() {
+            return 0;
         }
 
         @Override
@@ -123,6 +133,9 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable {
 
         @Override
         public void merge(CursorStatisticSnapshot statisticSnapshot) {}
+
+        @Override
+        public void pageCopied(long pageRef, long version) {}
     };
 
     /**
@@ -167,4 +180,6 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable {
      * @param statisticSnapshot externally collected statistic data
      */
     void merge(CursorStatisticSnapshot statisticSnapshot);
+
+    void pageCopied(long pageRef, long version);
 }

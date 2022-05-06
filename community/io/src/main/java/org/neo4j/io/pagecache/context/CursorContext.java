@@ -33,7 +33,8 @@ public class CursorContext implements AutoCloseable {
     private final VersionContext versionContext;
     private final CursorContextFactory contextFactory;
 
-    CursorContext(CursorContextFactory contextFactory, PageCursorTracer cursorTracer, VersionContext versionContext) {
+    protected CursorContext(
+            CursorContextFactory contextFactory, PageCursorTracer cursorTracer, VersionContext versionContext) {
         this.cursorTracer = requireNonNull(cursorTracer);
         this.versionContext = requireNonNull(versionContext);
         this.contextFactory = contextFactory;

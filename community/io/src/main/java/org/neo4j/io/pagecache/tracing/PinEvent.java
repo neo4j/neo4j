@@ -58,6 +58,9 @@ public interface PinEvent extends AutoCloseablePageCacheTracerEvent {
 
         @Override
         public void close() {}
+
+        @Override
+        public void snapshotsLoaded(int oldSnapshotsLoaded) {}
     };
 
     /**
@@ -87,4 +90,6 @@ public interface PinEvent extends AutoCloseablePageCacheTracerEvent {
      */
     @Override
     void close();
+
+    void snapshotsLoaded(int oldSnapshotsLoaded);
 }

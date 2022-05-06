@@ -54,6 +54,8 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     protected final LongAdder ioLimitedMillis = new LongAdder();
     protected final LongAdder openedCursors = new LongAdder();
     protected final LongAdder closedCursors = new LongAdder();
+    protected final LongAdder copiedPages = new LongAdder();
+    protected final LongAdder snapshotsLoaded = new LongAdder();
     protected final AtomicLong maxPages = new AtomicLong();
 
     private final boolean tracePageFileIndividually;
@@ -226,6 +228,16 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
+    public long copiedPages() {
+        return copiedPages.sum();
+    }
+
+    @Override
+    public long snapshotsLoaded() {
+        return snapshotsLoaded.sum();
+    }
+
+    @Override
     public void iopq(long iopq) {
         iopqPerformed.add(iopq);
     }
@@ -247,6 +259,11 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
+    public void pagesCopied(long copiesCreated) {
+        copiedPages.add(copiesCreated);
+    }
+
+    @Override
     public void pins(long pins) {
         this.pins.add(pins);
     }
@@ -264,6 +281,11 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     @Override
     public void faults(long faults) {
         this.faults.add(faults);
+    }
+
+    @Override
+    public void snapshotsLoaded(long snapshotsLoaded) {
+        this.snapshotsLoaded.add(snapshotsLoaded);
     }
 
     @Override

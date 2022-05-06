@@ -514,6 +514,16 @@ class ExecutingQueryTest {
             return 0;
         }
 
+        @Override
+        public long snapshotsLoaded() {
+            return 0;
+        }
+
+        @Override
+        public long copiedPages() {
+            return 0;
+        }
+
         public void flushes(long increment) {
             flushes += increment;
         }

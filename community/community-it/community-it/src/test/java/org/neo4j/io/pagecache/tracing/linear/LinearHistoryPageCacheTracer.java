@@ -198,6 +198,16 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
+    public long copiedPages() {
+        return 0;
+    }
+
+    @Override
+    public long snapshotsLoaded() {
+        return 0;
+    }
+
+    @Override
     public void pins(long pins) {}
 
     @Override
@@ -237,6 +247,9 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer {
     public void merges(long merges) {}
 
     @Override
+    public void snapshotsLoaded(long snapshotsLoaded) {}
+
+    @Override
     public void maxPages(long maxPages, long pageSize) {}
 
     @Override
@@ -250,4 +263,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer {
 
     @Override
     public void openCursor() {}
+
+    @Override
+    public void pagesCopied(long copiesCreated) {}
 }

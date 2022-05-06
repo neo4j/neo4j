@@ -135,4 +135,8 @@ public interface PageCacheCounters {
      * @return Total number of closed page cache cursors.
      */
     long closedCursors();
+
+    long copiedPages();
+
+    long snapshotsLoaded();
 }

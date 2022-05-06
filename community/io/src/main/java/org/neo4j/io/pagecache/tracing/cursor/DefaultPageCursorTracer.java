@@ -63,6 +63,8 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
     private long evictionExceptions;
     private long flushes;
     private long merges;
+    private long snapshotsLoaded;
+    private long copiesCreated;
 
     private final DefaultPinEvent pinTracingEvent = new DefaultPinEvent();
     private final PageFaultEvictionEvent evictionEvent = new PageFaultEvictionEvent();
@@ -107,6 +109,13 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
         this.evictionExceptions += statisticSnapshot.evictionExceptions();
         this.flushes += statisticSnapshot.flushes();
         this.merges += statisticSnapshot.merges();
+        this.snapshotsLoaded += statisticSnapshot.snapshotsLoaded();
+        this.copiesCreated += statisticSnapshot.copiedPages();
+    }
+
+    @Override
+    public void pageCopied(long pageRef, long version) {
+        copiesCreated++;
     }
 
     // When updating reporting here please check if that affects any reporting on additional available tracers
@@ -152,6 +161,12 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
         }
         if (merges > 0) {
             pageCacheTracer.merges(merges);
+        }
+        if (snapshotsLoaded > 0) {
+            pageCacheTracer.snapshotsLoaded(snapshotsLoaded);
+        }
+        if (copiesCreated > 0) {
+            pageCacheTracer.pagesCopied(copiesCreated);
         }
         reset();
     }
@@ -200,6 +215,8 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
         evictionExceptions = 0;
         flushes = 0;
         merges = 0;
+        snapshotsLoaded = 0;
+        copiesCreated = 0;
     }
 
     @Override
@@ -263,8 +280,18 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
     }
 
     @Override
+    public long snapshotsLoaded() {
+        return snapshotsLoaded;
+    }
+
+    @Override
     public double hitRatio() {
         return MathUtil.portion(hits(), faults());
+    }
+
+    @Override
+    public long copiedPages() {
+        return copiesCreated;
     }
 
     @Override
@@ -317,6 +344,11 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
         public void close() {
             pins++;
             swapperTracer.pins(1);
+        }
+
+        @Override
+        public void snapshotsLoaded(int oldSnapshotsLoaded) {
+            snapshotsLoaded += oldSnapshotsLoaded;
         }
     }
 

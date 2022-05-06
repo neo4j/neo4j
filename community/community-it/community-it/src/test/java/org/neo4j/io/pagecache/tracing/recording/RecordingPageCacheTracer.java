@@ -209,6 +209,16 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     }
 
     @Override
+    public long copiedPages() {
+        return 0;
+    }
+
+    @Override
+    public long snapshotsLoaded() {
+        return 0;
+    }
+
+    @Override
     public void pins(long pins) {
         this.pins.getAndAdd(pins);
     }
@@ -251,6 +261,9 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     public void flushes(long flushes) {}
 
     @Override
+    public void snapshotsLoaded(long snapshotsLoaded) {}
+
+    @Override
     public void merges(long merges) {}
 
     @Override
@@ -264,6 +277,9 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
 
     @Override
     public void closeCursor() {}
+
+    @Override
+    public void pagesCopied(long copiesCreated) {}
 
     @Override
     public void openCursor() {}

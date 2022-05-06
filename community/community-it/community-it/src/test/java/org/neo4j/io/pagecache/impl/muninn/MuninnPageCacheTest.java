@@ -171,6 +171,42 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     }
 
     @Test
+    void readWriteUninitialisedPage() throws IOException {
+        try (var pageCache = createPageCache(fs, 1024, new DefaultPageCacheTracer());
+                var pageFile = map(pageCache, file("a"), pageCache.pageSize())) {
+
+            try (var reader = pageFile.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                assertFalse(reader.next());
+            }
+
+            try (var reader = pageFile.io(10, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                assertFalse(reader.next());
+            }
+
+            try (var mutator = pageFile.io(20, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                assertTrue(mutator.next());
+                for (int i = 0; i < pageCache.payloadSize(); i++) {
+                    mutator.putByte((byte) 1);
+                }
+            }
+
+            try (var reader = pageFile.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                assertTrue(reader.next());
+                for (int i = 0; i < pageCache.payloadSize(); i++) {
+                    assertEquals(0, reader.getByte());
+                }
+            }
+
+            try (var reader = pageFile.io(10, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                assertTrue(reader.next());
+                for (int i = 0; i < pageCache.payloadSize(); i++) {
+                    assertEquals(0, reader.getByte());
+                }
+            }
+        }
+    }
+
+    @Test
     void countPagesToEvictOnEmptyPageCache() {
         try (var pageCache = createPageCache(fs, 1024, new DefaultPageCacheTracer())) {
             assertEquals(-1, pageCache.tryGetNumberOfPagesToEvict(10));
@@ -691,6 +727,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
 
     @Test
     void trackPageModificationTransactionId() throws Exception {
+        assumeFalse(multiVersioned);
+
         TestVersionContext versionContext = new TestVersionContext(() -> 0);
         var contextFactory =
                 new CursorContextFactory(PageCacheTracer.NULL, new SingleVersionContextSupplier(versionContext));
@@ -1269,6 +1307,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
 
     @Test
     void pageModificationTrackingNoticeWriteFromAnotherThread() throws Exception {
+        assumeFalse(multiVersioned);
+
         TestVersionContext versionContext = new TestVersionContext(() -> 0);
         var contextFactory =
                 new CursorContextFactory(PageCacheTracer.NULL, new SingleVersionContextSupplier(versionContext));
@@ -1298,6 +1338,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
 
     @Test
     void pageModificationTracksHighestModifierTransactionId() throws IOException {
+        assumeFalse(multiVersioned);
+
         TestVersionContext versionContext = new TestVersionContext(() -> 0);
         var contextFactory =
                 new CursorContextFactory(PageCacheTracer.NULL, new SingleVersionContextSupplier(versionContext));
@@ -1331,6 +1373,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
 
     @Test
     void markCursorContextDirtyWhenRepositionCursorOnItsCurrentPage() throws IOException {
+        assumeFalse(multiVersioned);
+
         TestVersionContext versionContext = new TestVersionContext(() -> 3);
         var contextFactory =
                 new CursorContextFactory(PageCacheTracer.NULL, new SingleVersionContextSupplier(versionContext));
@@ -1343,7 +1387,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 assertFalse(versionContext.isDirty());
 
                 MuninnPageCursor pageCursor = (MuninnPageCursor) cursor;
-                PageList.setLastModifiedTxId(((MuninnPageCursor) cursor).pinnedPageRef, 17);
+                PageList.setLastModifiedTxId(pageCursor.pinnedPageRef, 17);
 
                 assertTrue(cursor.next(0));
                 assertTrue(versionContext.isDirty());
@@ -1353,6 +1397,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
 
     @Test
     void markCursorContextAsDirtyWhenReadingDataFromMoreRecentTransactions() throws IOException {
+        assumeFalse(multiVersioned);
+
         TestVersionContext versionContext = new TestVersionContext(() -> 3);
         var contextFactory =
                 new CursorContextFactory(PageCacheTracer.NULL, new SingleVersionContextSupplier(versionContext));
@@ -1403,6 +1449,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
 
     @Test
     void markContextAsDirtyWhenAnyEvictedPageHaveModificationTransactionHigherThenReader() throws IOException {
+        assumeFalse(multiVersioned);
+
         TestVersionContext versionContext = new TestVersionContext(() -> 5);
         var contextFactory =
                 new CursorContextFactory(PageCacheTracer.NULL, new SingleVersionContextSupplier(versionContext));
@@ -1903,6 +1951,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
 
                     @Override
                     public void close() {}
+
+                    @Override
+                    public void snapshotsLoaded(int oldSnapshotsLoaded) {}
                 };
             }
         }

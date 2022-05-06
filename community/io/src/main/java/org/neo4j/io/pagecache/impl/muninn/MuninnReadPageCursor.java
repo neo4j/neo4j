@@ -69,7 +69,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
 
     @Override
     protected void pinCursorToPage(PinEvent pinEvent, long pageRef, long filePageId, PageSwapper swapper) {
-        reset(pinEvent, pageRef);
+        init(pinEvent, pageRef);
         if (updateUsage) {
             PageList.incrementUsage(pageRef);
         }
@@ -85,7 +85,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
         MuninnReadPageCursor cursor = this;
         do {
             long pageRef = cursor.pinnedPageRef;
-            if (pageRef != 0 && !PageList.validateReadLock(pageRef, cursor.lockStamp)) {
+            if (pageRef != 0 && isInvalidVersion(cursor, pageRef)) {
                 assertPagedFileStillMappedAndGetIdOfLastPage();
                 startRetryLinkedChain();
                 return true;
@@ -93,6 +93,13 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
             cursor = (MuninnReadPageCursor) cursor.linkedCursor;
         } while (cursor != null);
         return false;
+    }
+
+    private boolean isInvalidVersion(MuninnReadPageCursor cursor, long pageRef) {
+        return multiVersioned
+                ? (cursor.chainPreviousPointer == UNBOUND_PAGE_ADDRESS
+                        && !PageList.validateReadLock(pageRef, cursor.lockStamp))
+                : !PageList.validateReadLock(pageRef, cursor.lockStamp);
     }
 
     private void startRetryLinkedChain() throws IOException {
@@ -115,7 +122,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
         // read lock, so we need to check with page.pin that this is still
         // the page we're actually interested in:
         var filePageId = loadPlainCurrentPageId();
-        if (!PageList.isBoundTo(pageRef, pagedFile.swapperId, filePageId)) {
+        if (!PageList.isBoundTo(pageRef, pagedFile.swapperId, filePageId) || multiVersioned) {
             // This is no longer the page we're interested in, so we have
             // to redo the pinning.
             // This might in turn lead to a new optimistic lock on a

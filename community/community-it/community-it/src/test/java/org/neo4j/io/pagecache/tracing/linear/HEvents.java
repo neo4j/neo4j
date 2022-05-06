@@ -260,6 +260,9 @@ class HEvents {
         public void noFault() {}
 
         @Override
+        public void snapshotsLoaded(int oldSnapshotsLoaded) {}
+
+        @Override
         public void hit() {}
 
         @Override

@@ -31,7 +31,9 @@ public record CursorStatisticSnapshot(
         long evictions,
         long evictionExceptions,
         long flushes,
-        long merges) {
+        long merges,
+        long snapshotsLoaded,
+        long copiedPages) {
     public CursorStatisticSnapshot(PageCursorTracer cursorTracer) {
         this(
                 cursorTracer.pins(),
@@ -45,6 +47,8 @@ public record CursorStatisticSnapshot(
                 cursorTracer.evictions(),
                 cursorTracer.evictionExceptions(),
                 cursorTracer.flushes(),
-                cursorTracer.merges());
+                cursorTracer.merges(),
+                cursorTracer.snapshotsLoaded(),
+                cursorTracer.copiedPages());
     }
 }

@@ -113,8 +113,18 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
     }
 
     @Override
+    public long snapshotsLoaded() {
+        return 0;
+    }
+
+    @Override
     public double hitRatio() {
         return 0d;
+    }
+
+    @Override
+    public long copiedPages() {
+        return 0;
     }
 
     @Override
@@ -160,6 +170,9 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
             public void noFault() {}
 
             @Override
+            public void snapshotsLoaded(int oldSnapshotsLoaded) {}
+
+            @Override
             public void close() {
                 pinned(filePageId, swapper, hit);
             }
@@ -186,6 +199,9 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
 
     @Override
     public void closeCursor() {}
+
+    @Override
+    public void pageCopied(long pageRef, long version) {}
 
     @Override
     public void merge(CursorStatisticSnapshot statisticSnapshot) {}
