@@ -63,7 +63,7 @@
                         </goals>
                     </execution>
                 </executions>
-                <configuration>
+                <configuration combine.self="append">
                     <rules>
                         <bannedDependencies>
                             <excludes>

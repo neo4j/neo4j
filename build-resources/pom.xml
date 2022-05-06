@@ -72,6 +72,15 @@
                 <artifactId>spotless-maven-plugin</artifactId>
                 <version>2.21.0</version>
             </plugin>
+            <!-- Allow `mvn enforcer:enforce` to be run from the root project -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

@@ -20,11 +20,17 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +38,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.util.concurrent.Futures;
 
-public class MultiversionedPageListTest extends AbstractPageListTest {
+class MultiversionedPageListTest extends AbstractPageListTest {
 
     @BeforeEach
     void setUp() {
@@ -41,7 +47,7 @@ public class MultiversionedPageListTest extends AbstractPageListTest {
 
     @ParameterizedTest(name = "pageRef = {0}")
     @MethodSource("argumentsProvider")
-    public void onlySingleWriteLockIsSupportedForMultiVersionedPage(int pageId) {
+    void onlySingleWriteLockIsSupportedForMultiVersionedPage(int pageId) {
         init(pageId);
 
         PageList.unlockExclusive(pageRef);
@@ -51,7 +57,7 @@ public class MultiversionedPageListTest extends AbstractPageListTest {
 
     @ParameterizedTest(name = "pageRef = {0}")
     @MethodSource("argumentsProvider")
-    public void writeLocksMustBlockPreventWriteLocksInOtherThreads(int pageId) {
+    void writeLocksMustBlockPreventWriteLocksInOtherThreads(int pageId) {
         init(pageId);
 
         assertTimeoutPreemptively(TIMEOUT, () -> {
@@ -75,7 +81,7 @@ public class MultiversionedPageListTest extends AbstractPageListTest {
 
     @ParameterizedTest(name = "pageRef = {0}")
     @MethodSource("argumentsProvider")
-    public void concurrentWriteFailedLocksDoNotFailExclusiveLocks(int pageId) {
+    void concurrentWriteFailedLocksDoNotFailExclusiveLocks(int pageId) {
         init(pageId);
 
         PageList.unlockExclusive(pageRef);
@@ -87,7 +93,7 @@ public class MultiversionedPageListTest extends AbstractPageListTest {
 
     @ParameterizedTest(name = "pageRef = {0}")
     @MethodSource("argumentsProvider")
-    public void unlockExclusiveAndTakeWriteLockMustNotAllowConcurrentWriteLocks(int pageId) {
+    void unlockExclusiveAndTakeWriteLockMustNotAllowConcurrentWriteLocks(int pageId) {
         init(pageId);
 
         assertTimeoutPreemptively(TIMEOUT, () -> {
@@ -99,7 +105,7 @@ public class MultiversionedPageListTest extends AbstractPageListTest {
 
     @ParameterizedTest(name = "pageRef = {0}")
     @MethodSource("argumentsProvider")
-    public void impossibleToTakeAnotherWriteLockWhenTransitionedFromExclusiveToWriteLock(int pageId) {
+    void impossibleToTakeAnotherWriteLockWhenTransitionedFromExclusiveToWriteLock(int pageId) {
         init(pageId);
 
         PageList.unlockExclusiveAndTakeWriteLock(pageRef);
@@ -108,7 +114,7 @@ public class MultiversionedPageListTest extends AbstractPageListTest {
 
     @ParameterizedTest(name = "pageRef = {0}")
     @MethodSource("argumentsProvider")
-    public void concurrentWriteShouldBeBlocked(int pageId) throws InterruptedException, ExecutionException {
+    void concurrentWriteShouldBeBlocked(int pageId) throws InterruptedException, ExecutionException {
         init(pageId);
 
         PageList.tryWriteLock(pageRef, multiVersioned);

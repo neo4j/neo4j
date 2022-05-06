@@ -20,7 +20,10 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,11 +33,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.util.concurrent.Futures;
 
-public class MultiwriterPageListTest extends AbstractPageListTest {
+class MultiwriterPageListTest extends AbstractPageListTest {
 
     @ParameterizedTest(name = "pageRef = {0}")
     @MethodSource("argumentsProvider")
-    public void writeLocksMustNotBlockOtherWriteLocks(int pageId) {
+    void writeLocksMustNotBlockOtherWriteLocks(int pageId) {
         init(pageId);
 
         assertTimeoutPreemptively(TIMEOUT, () -> {
@@ -46,7 +49,7 @@ public class MultiwriterPageListTest extends AbstractPageListTest {
 
     @ParameterizedTest(name = "pageRef = {0}")
     @MethodSource("argumentsProvider")
-    public void writeLocksMustNotBlockOtherWriteLocksInOtherThreads(int pageId) {
+    void writeLocksMustNotBlockOtherWriteLocksInOtherThreads(int pageId) {
         init(pageId);
 
         assertTimeoutPreemptively(TIMEOUT, () -> {
@@ -68,7 +71,7 @@ public class MultiwriterPageListTest extends AbstractPageListTest {
 
     @ParameterizedTest(name = "pageRef = {0}")
     @MethodSource("argumentsProvider")
-    public void writeLockCountOverflowMustThrow(int pageId) {
+    void writeLockCountOverflowMustThrow(int pageId) {
         init(pageId);
         assertThrows(
                 IllegalMonitorStateException.class,
@@ -83,7 +86,7 @@ public class MultiwriterPageListTest extends AbstractPageListTest {
 
     @ParameterizedTest(name = "pageRef = {0}")
     @MethodSource("argumentsProvider")
-    public void concurrentWriteLocksMustFailExclusiveLocks(int pageId) {
+    void concurrentWriteLocksMustFailExclusiveLocks(int pageId) {
         init(pageId);
 
         PageList.unlockExclusive(pageRef);
@@ -95,7 +98,7 @@ public class MultiwriterPageListTest extends AbstractPageListTest {
 
     @ParameterizedTest(name = "pageRef = {0}")
     @MethodSource("argumentsProvider")
-    public void unlockExclusiveAndTakeWriteLockMustAllowConcurrentWriteLocks(int pageId) {
+    void unlockExclusiveAndTakeWriteLockMustAllowConcurrentWriteLocks(int pageId) {
         init(pageId);
 
         assertTimeoutPreemptively(TIMEOUT, () -> {
@@ -107,8 +110,7 @@ public class MultiwriterPageListTest extends AbstractPageListTest {
 
     @ParameterizedTest(name = "pageRef = {0}")
     @MethodSource("argumentsProvider")
-    public void unlockWriteAndTryTakeFlushLockWithOverlappingWriterAndThenUnlockFlushMustNotLowerModifiedFlag(
-            int pageId) {
+    void unlockWriteAndTryTakeFlushLockWithOverlappingWriterAndThenUnlockFlushMustNotLowerModifiedFlag(int pageId) {
         init(pageId);
 
         PageList.unlockExclusiveAndTakeWriteLock(pageRef);

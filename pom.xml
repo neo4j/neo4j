@@ -574,10 +574,17 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.0.0-M3</version>
+          <version>3.0.0</version>
+          <dependencies>
+            <dependency>
+              <groupId>de.skuzzle.enforcer</groupId>
+              <artifactId>restrict-imports-enforcer-rule</artifactId>
+              <version>2.0.0</version>
+            </dependency>
+          </dependencies>
           <configuration>
             <rules>
-              <dependencyConvergence/>
+<!--              <dependencyConvergence/>-->
               <evaluateBeanshell>
                 <message>Maven module has to be in a "groupId" beginning with "org.neo4j"</message>
                 <condition>{String s = "${project.groupId}"; s.startsWith("org.neo4j");}</condition>
@@ -594,11 +601,15 @@
                   <file>enterprise</file>
                 </files>
               </requireFilesDontExist>
-                <requireMavenVersion>
-                    <version>${required.maven.version}</version>
-                </requireMavenVersion>
+              <requireMavenVersion>
+                <version>${required.maven.version}</version>
+              </requireMavenVersion>
+              <RestrictImports>
+                <reason>Star imports are not allowed, please configure your editor to substitute them with fully qualified imports.</reason>
+                <bannedImport>**.'*'</bannedImport>
+              </RestrictImports>
             </rules>
-              <fail>true</fail>
+            <fail>true</fail>
           </configuration>
         </plugin>
 
