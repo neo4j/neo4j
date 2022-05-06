@@ -20,26 +20,18 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.expressions.And
-import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.ContainerIndex
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
-import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Literal
-import org.neo4j.cypher.internal.expressions.MapExpression
-import org.neo4j.cypher.internal.expressions.Not
-import org.neo4j.cypher.internal.expressions.Or
-import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.StableIdentifier
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.UnstableIdentifier
+import org.neo4j.cypher.internal.ir.helpers.LabelExpressionEvaluator.NodesToCheckOverlap
+import org.neo4j.cypher.internal.ir.helpers.LabelExpressionEvaluator.labelExpressionEvaluator
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 import scala.annotation.tailrec
@@ -110,7 +102,8 @@ trait UpdateGraph {
   }).toSet
 
   /*
-   * Finds all node properties being created with CREATE (:L)
+   * Finds all labels for each node being created
+   * CREATE (:A) CREATE (:B:C) would make a Set(Set(A), Set(B,C))
    */
   lazy val createLabels: Set[Set[LabelName]] =
     createPatterns.flatMap(_.nodes).map(_.labels.toSet).toSet ++
@@ -189,7 +182,6 @@ trait UpdateGraph {
         foreachOverlap(readQg)
 
       val checkers = Seq(
-        // TODO: Update to use label expression overlap
         deleteOverlap(_),
         removeLabelOverlap(_),
         setLabelOverlap(_),
@@ -268,7 +260,7 @@ trait UpdateGraph {
           // MATCH () CREATE/MERGE (...)?
           noLabelOrPropOverlap ||
             //MATCH (A&B|!C) CREATE (:A:B)
-            (labelsOnCurrentNode.nonEmpty && labelExpressionsOverlap(qgWithInfo, labelsToCreate, Set(currentNode.name))) || //MATCH ({prop:42}) CREATE ({prop:...})
+            (labelsOnCurrentNode.nonEmpty && labelExpressionsOverlap(qgWithInfo, labelsToCreate, NodesToCheckOverlap(None,currentNode.name))) || //MATCH ({prop:42}) CREATE ({prop:...})
             (labelsOnCurrentNode.isEmpty &&
             propertiesOnCurrentNode.exists(propertiesToCreate.overlaps)) ||
           //MATCH (n:A), (m:B) REMOVE n:B
@@ -277,90 +269,33 @@ trait UpdateGraph {
     }
   }
 
-  /*
+  /**
    * Uses an expression evaluator to figure out if we have a label overlap.
    * For example, if we have `CREATE (:A:B)` we need to solve the predicates given labels A and B (and no other labels).
    * For predicates which contains non label expressions we default to true.
    *
    * If we have multiple predicates, we will only have an overlap if all predicates are evaluated to true.
    * For example, if we have `MATCH (n) WHERE n:A AND n:B CREATE (:A)` we don't need to insert an eager since the predicate `(n:B)` will be evaluated to false.
+   *
+   * @param qgWithInfo
+   * @param possibleLabelCombinations A set of all possible combinations of Labels
+   * @param nodes                     The nodes we are checking overlaps between
+   * @return
    */
   private def labelExpressionsOverlap(
     qgWithInfo: QgWithLeafInfo,
-    labels: Set[Set[LabelName]],
-    nodes: Set[String]
+    possibleLabelCombinations: Set[Set[LabelName]],
+    nodes: NodesToCheckOverlap
   ): Boolean = {
     val predicates = qgWithInfo.queryGraph.selections.predicates.map(_.expr) ++
       qgWithInfo.queryGraph.optionalMatches.map(_.selections).flatMap(_.predicates).map(_.expr)
 
     predicates.forall { expression =>
-      labels.exists(labelToCreate =>
-        labelExpressionEvaluator(expression, nodes, labelToCreate.map(_.name)).getOrElse(true)
+      possibleLabelCombinations.exists(labels =>
+        labelExpressionEvaluator(expression, nodes, labels.map(_.name)).getOrElse(true)
       )
     }
   }
-
-  /**
-   * Evaluates a label expression given a set of nodes and labels for which "HasLabels" evaluates to true.
-   *
-   * E.g.
-   * Given
-   * labels: "A"
-   * nodes:  "x", "y"
-   *
-   * Expression            Return value      Comment
-   * (x:A)                 true
-   * (x:A&B) AND (y:A)     false             (x:B) is evaluated to false, because "B" is not a given label
-   * (x:A|B) AND (y:!B)    true
-   * x.prop = 5            None              Expression is unknown
-   * (x:A) AND (z:A)       None              z is in the given set of nodes
-   *
-   * @param labelExpression - the label expression to evaluate.
-   * @param nodes - the nodes of interest, returns None if any other node is encountered.
-   * @param labels - the labels evaluated to true, all other labels will be evaluated to false.
-   * @return - the evaluated expression value or None if the expression is unknown.
-   */
-  private def labelExpressionEvaluator(
-    labelExpression: Expression,
-    nodes: Set[String],
-    labels: Set[String]
-  ): Option[Boolean] = {
-    labelExpression match {
-      case HasLabels(Variable(node), hasLabels) if nodes.contains(node) =>
-        Some(labels.exists(hasLabels.map(_.name).contains))
-      case And(lhs, rhs) => evalBinFunc(nodes, lhs, rhs, labels, (lhs, rhs) => lhs && rhs)
-      case Or(lhs, rhs)  => evalBinFunc(nodes, lhs, rhs, labels, (lhs, rhs) => lhs || rhs)
-      case Not(expr)     => labelExpressionEvaluator(expr, nodes, labels).map(!_)
-      case Ors(exprs) =>
-        val evaluatedExprs = exprs.map(expr => labelExpressionEvaluator(expr, nodes, labels))
-        if (evaluatedExprs.contains(None)) {
-          None
-        } else {
-          Some(evaluatedExprs.flatten.contains(true))
-        }
-      case Ands(exprs) =>
-        val evaluatedExprs = exprs.map(expr => labelExpressionEvaluator(expr, nodes, labels))
-        if (evaluatedExprs.contains(None)) {
-          None
-        } else {
-          Some(!evaluatedExprs.flatten.contains(false))
-        }
-      case _ => None
-    }
-  }
-
-  private def evalBinFunc(
-    currentNode: Set[String],
-    a: Expression,
-    b: Expression,
-    labels: Set[String],
-    op: (Boolean, Boolean) => Boolean
-  ): Option[Boolean] =
-    labelExpressionEvaluator(a, currentNode, labels)
-      .flatMap(lhs =>
-        labelExpressionEvaluator(b, currentNode, labels)
-          .map(rhs => op(lhs, rhs))
-      )
 
   // if we do match delete and merge we always need to be eager
   def deleteOverlapWithMergeIn(other: UpdateGraph): Boolean =
@@ -519,7 +454,7 @@ trait UpdateGraph {
   /**
    * Checks if any unstable node can have an overlap with the deleted node.
    *
-   * Note: If the deleted node is also an unstabel node, we will always have overlap.
+   * Note: If the deleted node is also an unstable node, we will always have overlap.
    * @return the nodes which are overlapping, or None if there is no overlap
    */
   private def deleteLabelExpressionOverlap(qgWithInfo: QgWithLeafInfo)(implicit
@@ -574,8 +509,8 @@ trait UpdateGraph {
     val unstableLabels = qgWithInfo.queryGraph.allPossibleLabelsOnNode(unstableNode.name)
     val labelsInDeleteExpression = qgWithInfo.allPossibleLabelsOnNode(deletedNode.name)
     val uniqueLabels = unstableLabels ++ labelsInDeleteExpression
-    val allSubsetsOfAllLabels = uniqueLabels.subsets().toSeq
-    val nodes = Set(unstableNode.name, deletedNode.name)
+    lazy val allSubsetsOfAllLabels = uniqueLabels.subsets()
+    lazy val nodes = NodesToCheckOverlap(Some(deletedNode.name), unstableNode.name)
 
     uniqueLabels.size > 3 || // TODO question for reviewer: To many subsets to test if number of unique labels are greater than 3?
     allSubsetsOfAllLabels.isEmpty ||
