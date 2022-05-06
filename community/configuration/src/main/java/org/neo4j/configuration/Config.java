@@ -49,6 +49,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -57,6 +58,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -80,9 +82,14 @@ public class Config implements Configuration {
             String.format(" Cleanup the config or disable '%s' to continue.", strict_config_validation.name());
 
     public static final class Builder {
-        private final Collection<Class<? extends SettingsDeclaration>> settingsClasses = new HashSet<>();
-        private final Collection<Class<? extends GroupSetting>> groupSettingClasses = new HashSet<>();
-        private final Collection<SettingMigrator> settingMigrators = new HashSet<>();
+        // We use tree sets with comparators for setting classes and migrators to have
+        // some defined order in which settings classes are processed and migrators are applied
+        private final Collection<Class<? extends SettingsDeclaration>> settingsClasses =
+                new TreeSet<>(Comparator.comparing(Class::getName));
+        private final Collection<Class<? extends GroupSetting>> groupSettingClasses =
+                new TreeSet<>(Comparator.comparing(Class::getName));
+        private final Collection<SettingMigrator> settingMigrators =
+                new TreeSet<>(Comparator.comparing(o -> o.getClass().getName()));
         private final Map<String, String> settingValueStrings = new HashMap<>();
         private final Map<String, Object> settingValueObjects = new HashMap<>();
         private final Map<String, Object> overriddenDefaults = new HashMap<>();

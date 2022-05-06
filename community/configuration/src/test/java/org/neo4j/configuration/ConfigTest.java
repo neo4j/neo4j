@@ -1440,6 +1440,52 @@ class ConfigTest {
         assertThat(errorMessage).contains("does not have the correct file permissions to evaluate commands");
     }
 
+    @Test
+    void settingsLoadedInPredefinedOrder() {
+        Config config = Config.newBuilder()
+                .addSettingsClass(BSettings.class)
+                .addSettingsClass(ASettings.class)
+                .build();
+        Object actual = config.settings.get("test.setting.marker");
+        assertThat(actual.toString()).contains("bValue");
+    }
+
+    @Test
+    void migratorsAppliedInPredefinedOrder() {
+        Config config = Config.newBuilder()
+                .addMigrator(new BMigrator())
+                .addMigrator(new AMigrator())
+                .build();
+
+        assertEquals(Duration.ofSeconds(777), config.get(GraphDatabaseSettings.transaction_timeout));
+    }
+
+    private static final class AMigrator implements SettingMigrator {
+
+        @Override
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            values.put(GraphDatabaseSettings.transaction_timeout.name(), "111s");
+        }
+    }
+
+    private static final class BMigrator implements SettingMigrator {
+
+        @Override
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            values.put(GraphDatabaseSettings.transaction_timeout.name(), "777s");
+        }
+    }
+
+    private static final class ASettings implements SettingsDeclaration {
+        static final Setting<String> stringSetting =
+                newBuilder("test.setting.marker", STRING, "aValue").build();
+    }
+
+    private static final class BSettings implements SettingsDeclaration {
+        static final Setting<String> stringSetting =
+                newBuilder("test.setting.marker", STRING, "bValue").build();
+    }
+
     private static final class TestSettings implements SettingsDeclaration {
         static final Setting<String> stringSetting =
                 newBuilder("test.setting.string", STRING, "hello").build();
