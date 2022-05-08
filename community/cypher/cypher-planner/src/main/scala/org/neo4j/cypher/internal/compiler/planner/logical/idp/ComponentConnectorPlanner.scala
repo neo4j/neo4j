@@ -244,7 +244,7 @@ case class GoalBitAllocation(numComponents: Int, numOptionalMatches: Int, option
    */
   def goalIsSolvable(registry: IdRegistry[_], goal: Goal): Boolean = {
     // The original bits of the goal.
-    val originalGoalBits = registry.exlodedBitSet(goal.bitSet)
+    val originalGoalBits = registry.explodedBitSet(goal.bitSet)
     // All not-yet compacted optional match bits.
     optionalMatchesGoal(goal).bitSet
       // All dependency bits

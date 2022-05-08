@@ -84,7 +84,7 @@ class DefaultIdRegistryTest extends CypherFunSuite {
     r.explode(idsToExplode) should equal(
       subsetToCompact.flatMap(r.lookup) ++ originalIDs.flatMap(r.lookup)
     )
-    r.exlodedBitSet(idsToExplode) should equal(subsetToCompact ++ originalIDs)
+    r.explodedBitSet(idsToExplode) should equal(subsetToCompact ++ originalIDs)
   }
 
   test("multiple compactions") {
@@ -120,6 +120,6 @@ class DefaultIdRegistryTest extends CypherFunSuite {
         compact4.flatMap(r.lookup) ++
         originalIDs.flatMap(r.lookup)
     )
-    r.exlodedBitSet(idsToExplode) should equal(compact1 ++ compact2 ++ compact3 - newId1 ++ originalIDs)
+    r.explodedBitSet(idsToExplode) should equal(compact1 ++ compact2 ++ compact3 - newId1 ++ originalIDs)
   }
 }

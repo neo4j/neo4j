@@ -76,7 +76,7 @@ trait IdRegistry[I] {
    * compact, these are translated to previous bits
    * using previously recorded compaction information
    */
-  def exlodedBitSet(ids: BitSet): BitSet
+  def explodedBitSet(ids: BitSet): BitSet
 }
 
 object IdRegistry {
@@ -114,7 +114,7 @@ class DefaultIdRegistry[I] extends IdRegistry[I] {
 
   override def compact(existing: BitSet): Int = {
     val newId = registerNew()
-    compactionMap.put(newId, exlodedBitSet(existing))
+    compactionMap.put(newId, explodedBitSet(existing))
     // If parts of the existing bitsets were already compacted, we do not need this compaction information any longer
     existing.foreach(compactionMap.remove)
     newId
@@ -124,11 +124,11 @@ class DefaultIdRegistry[I] extends IdRegistry[I] {
 
   override def explode(ids: BitSet): Set[I] = {
     val builder = Set.newBuilder[I]
-    exlodedBitSet(ids).foreach(id => builder += reverseMap(id))
+    explodedBitSet(ids).foreach(id => builder += reverseMap(id))
     builder.result()
   }
 
-  override def exlodedBitSet(ids: BitSet): BitSet = {
+  override def explodedBitSet(ids: BitSet): BitSet = {
     CypherPlannerBitSetOptimizations.explodedBitSet(ids, compactionMap)
   }
 
