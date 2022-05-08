@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.time.Stopwatch
 
+import scala.collection.CypherPlannerBitSetOptimizations
 import scala.collection.immutable.BitSet
 
 /**
@@ -231,13 +232,15 @@ case class GoalBitAllocation(numComponents: Int, numOptionalMatches: Int, option
    * @param goal a goal that potentially contains bits for components and optional matches.
    * @return the largest subset of the given goal that only refers to components.
    */
-  def componentsGoal(goal: Goal): Goal = Goal(goal.bitSet.range(startComponents, startOptionals))
+  def componentsGoal(goal: Goal): Goal =
+    Goal(CypherPlannerBitSetOptimizations.range(goal.bitSet, startComponents, startOptionals))
 
   /**
    * @param goal a goal that potentially contains bits for components and optional matches.
    * @return the largest subset of the given goal that only refers to optional matches.
    */
-  def optionalMatchesGoal(goal: Goal): Goal = Goal(goal.bitSet.range(startOptionals, startCompacted))
+  def optionalMatchesGoal(goal: Goal): Goal =
+    Goal(CypherPlannerBitSetOptimizations.range(goal.bitSet, startOptionals, startCompacted))
 
   /**
    * Test whether a goal can be solved by testing if all bits have their dependant bits set as well.

@@ -19,6 +19,7 @@
  */
 package scala.collection // a workaround to access package-private members
 
+import scala.collection.BitSetOps.LogWL
 import scala.collection.BitSetOps.WordLength
 import scala.collection.immutable.BitSet
 
@@ -50,5 +51,32 @@ object CypherPlannerBitSetOptimizations {
     }
 
     BitSet.fromBitMaskNoCopy(builder.elems)
+  }
+
+  /** Adapted from [[scala.collection.BitSetOps.rangeImpl]].
+   * This version does not wrap arguments in `Option` to avoid boxing.
+   */
+  def range(coll: BitSet, from: Int, until: Int): BitSet = {
+    val a = coll.toBitMask
+    val len = a.length
+    locally {
+      val f = from
+      val w = f >> LogWL
+      val b = f & (WordLength - 1)
+      if (w >= 0) {
+        java.util.Arrays.fill(a, 0, math.min(w, len), 0)
+        if (b > 0 && w < len) a(w) &= ~((1L << b) - 1)
+      }
+    }
+    locally {
+      val u = until
+      val w = u >> LogWL
+      val b = u & (WordLength - 1)
+      if (w < len) {
+        java.util.Arrays.fill(a, math.max(w + 1, 0), len, 0)
+        if (w >= 0) a(w) &= (1L << b) - 1
+      }
+    }
+    coll.fromBitMaskNoCopy(a)
   }
 }
