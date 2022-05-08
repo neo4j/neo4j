@@ -249,10 +249,11 @@ case class GoalBitAllocation(numComponents: Int, numOptionalMatches: Int, option
     // The original bits of the goal.
     val originalGoalBits = registry.explodedBitSet(goal.bitSet)
     // All not-yet compacted optional match bits.
-    optionalMatchesGoal(goal).bitSet
+    val optionalMatchDependencyBits = optionalMatchesGoal(goal).bitSet
       // All dependency bits
       .flatMap(i => optionalMatchDependencies(i - startOptionals))
-      // Are all dependency bits included in the goal?
-      .subsetOf(originalGoalBits)
+
+    // Are all dependency bits included in the goal?
+    CypherPlannerBitSetOptimizations.subsetOf(optionalMatchDependencyBits, originalGoalBits)
   }
 }

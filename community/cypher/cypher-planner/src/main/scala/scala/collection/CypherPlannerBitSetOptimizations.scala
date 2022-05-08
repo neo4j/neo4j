@@ -79,4 +79,16 @@ object CypherPlannerBitSetOptimizations {
     }
     coll.fromBitMaskNoCopy(a)
   }
+
+  /** Adapted from Scala 2.12 `scala.collection.BitSetLike.subsetOf`. */
+  def subsetOf(subset: BitSet, superset: BitSet): Boolean = {
+    var idx = 0
+    val len = subset.nwords
+    while (idx < len) {
+      if ((subset.word(idx) & ~superset.word(idx)) != 0L)
+        return false
+      idx += 1
+    }
+    true
+  }
 }
