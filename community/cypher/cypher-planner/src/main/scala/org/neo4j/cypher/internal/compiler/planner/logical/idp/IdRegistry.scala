@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import scala.collection.CypherPlannerBitSetOptimizations
 import scala.collection.immutable.BitSet
 import scala.collection.mutable
 
@@ -128,16 +129,7 @@ class DefaultIdRegistry[I] extends IdRegistry[I] {
   }
 
   override def exlodedBitSet(ids: BitSet): BitSet = {
-    val builder = BitSet.newBuilder
-
-    def add(i: Int): Unit = {
-      compactionMap.get(i) match {
-        case Some(compacted) => compacted.foreach(builder += _)
-        case None            => builder += i
-      }
-    }
-    ids.foreach(add)
-    builder.result()
+    CypherPlannerBitSetOptimizations.explodedBitSet(ids, compactionMap)
   }
 
   override def lookup(id: Int): Option[I] =
