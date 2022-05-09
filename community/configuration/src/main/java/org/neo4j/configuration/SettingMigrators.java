@@ -61,191 +61,43 @@ import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.InternalLog;
 
 public final class SettingMigrators {
+
     private SettingMigrators() {}
 
     @ServiceProvider
-    public static class ConnectorMigrator implements SettingMigrator {
+    public static class Neo4j5_0SettingMigrator implements SettingMigrator {
 
         private static final String OLD_PREFIX = "dbms.connector";
         private static final Pattern SUPPORTED_CONNECTOR_PATTERN = Pattern.compile("(.+)\\.(bolt|http|https)\\.(.+)");
-
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            List<String> connectorSettings = values.keySet().stream()
-                    .filter(key -> key.startsWith(OLD_PREFIX))
-                    .filter(key -> SUPPORTED_CONNECTOR_PATTERN.matcher(key).matches())
-                    .toList();
-            for (String connectorSetting : connectorSettings) {
-                if (connectorSetting.endsWith(".type")) {
-                    values.remove(connectorSetting);
-                } else if (connectorSetting.equals("dbms.connector.bolt.unsupported_thread_pool_shutdown_wait_time")) {
-                    migrateSettingNameChange(values, log, connectorSetting, thread_pool_shutdown_wait_time);
-                } else if (connectorSetting.equals("dbms.connector.bolt.unsupported_thread_pool_queue_size")) {
-                    migrateSettingNameChange(values, log, connectorSetting, unsupported_thread_pool_queue_size);
-                } else if (connectorSetting.equals("dbms.connector.bolt.unsupported_unauth_connection_timeout")) {
-                    migrateSettingNameChange(values, log, connectorSetting, unsupported_bolt_unauth_connection_timeout);
-                } else if (connectorSetting.equals("dbms.connector.bolt.unsupported_unauth_max_inbound_bytes")) {
-                    migrateSettingNameChange(
-                            values, log, connectorSetting, unsupported_bolt_unauth_connection_max_inbound_bytes);
-                } else {
-                    var newName = connectorSetting.replace("dbms.connector", "server");
-                    migrateSettingNameChange(values, log, connectorSetting, newName);
-                }
-            }
-        }
-    }
-
-    @ServiceProvider
-    public static class DirectoriesSettingsMigrator implements SettingMigrator {
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migrateSettingNameChange(values, log, "dbms.directories.neo4j_home", neo4j_home);
-            migrateSettingNameChange(values, log, "dbms.directories.data", data_directory);
-            migrateSettingNameChange(values, log, "dbms.directories.transaction.logs.root", transaction_logs_root_path);
-            migrateSettingNameChange(values, log, "dbms.directories.script.root", script_root_path);
-            migrateSettingNameChange(values, log, "dbms.directories.dumps.root", database_dumps_root_path);
-            migrateSettingNameChange(values, log, "dbms.directories.import", load_csv_file_url_root);
-            migrateSettingNameChange(values, log, "dbms.directories.plugins", plugin_dir);
-            migrateSettingNameChange(values, log, "dbms.directories.logs", logs_directory);
-            migrateSettingNameChange(values, log, "dbms.directories.licenses", licenses_directory);
-
-            migrateSettingNameChange(values, log, "dbms.directories.run", run_directory);
-            migrateSettingNameChange(values, log, "dbms.directories.lib", lib_directory);
-        }
-    }
-
-    @ServiceProvider
-    public static class DatabaseMemoryMigrator implements SettingMigrator {
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migrateSettingNameChange(values, log, "dbms.tx_state.max_off_heap_memory", tx_state_max_off_heap_memory);
-            migrateSettingNameChange(
-                    values,
-                    log,
-                    "dbms.tx_state.off_heap.max_cacheable_block_size",
-                    tx_state_off_heap_max_cacheable_block_size);
-            migrateSettingNameChange(
-                    values, log, "dbms.tx_state.off_heap.block_cache_size", tx_state_off_heap_block_cache_size);
-
-            // Migrate cypher.query_max_allocations to new setting, if new settings is not configured
-            String maxAllocations = values.remove("cypher.query_max_allocations");
-            if (isNotBlank(maxAllocations)) {
-                if (!values.containsKey(memory_transaction_max_size.name())) {
-                    log.warn(
-                            "The setting cypher.query_max_allocations is removed and replaced by %s.",
-                            memory_transaction_max_size.name());
-                    values.put(memory_transaction_max_size.name(), maxAllocations);
-                } else {
-                    log.warn(
-                            "The setting cypher.query_max_allocations is removed and replaced by %s. Since both are set, %s will take "
-                                    + "precedence and the value of cypher.query_max_allocations, %s, will be ignored.",
-                            memory_transaction_max_size.name(), memory_transaction_max_size.name(), maxAllocations);
-                }
-            }
-        }
-    }
-
-    @ServiceProvider
-    public static class WhitelistSettingsMigrator implements SettingMigrator {
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migrateSettingNameChange(
-                    values, log, "dbms.memory.pagecache.warmup.preload.whitelist", pagecache_warmup_prefetch_allowlist);
-            migrateSettingNameChange(values, log, "dbms.security.procedures.whitelist", procedure_allowlist);
-        }
-    }
-
-    @ServiceProvider
-    public static class WindowsServiceNameSettingMigrator implements SettingMigrator {
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migrateSettingNameChange(values, log, "dbms.windows_service_name", windows_service_name);
-        }
-    }
-
-    /**
-     * Fix typo in setting name: datababase -> database
-     */
-    @ServiceProvider
-    public static class DatababaseMigrator implements SettingMigrator {
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migrateSettingNameChange(
-                    values, log, "dbms.memory.transaction.datababase_max_size", memory_transaction_database_max_size);
-        }
-    }
-
-    @ServiceProvider
-    public static class ReadOnlyMigration implements SettingMigrator {
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migrateSettingNameChange(values, log, "dbms.read_only", read_only_database_default);
-        }
-    }
-
-    @ServiceProvider
-    public static class RefuseToBeLeaderMigration implements SettingMigrator {
-
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            final var refuseToBeLeader = "causal_clustering.refuse_to_be_leader";
-            final var refuseToBeLeaderValue = values.get(refuseToBeLeader);
-            if (isNotBlank(refuseToBeLeaderValue)) {
-                log.warn(
-                        "The setting '" + refuseToBeLeader + "' is deprecated. Use please '%s' as a replacement",
-                        read_only_database_default.name());
-            }
-            migrateSettingNameChange(values, log, refuseToBeLeader, read_only_database_default);
-        }
-    }
-
-    @ServiceProvider
-    public static class ConnectorKeepAliveSettingsMigrator implements SettingMigrator {
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migrateSettingNameChange(
-                    values,
-                    log,
-                    "dbms.connector.bolt.connection_keep_alive_scheduling_interval",
-                    BoltConnector.connection_keep_alive_streaming_scheduling_interval);
-        }
-    }
-
-    @ServiceProvider
-    public static class CheckpointSettingsMigrator implements SettingMigrator {
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migrateSettingNameChange(values, log, "dbms.checkpoint", check_point_policy);
-            migrateSettingNameChange(values, log, "dbms.checkpoint.interval.time", check_point_interval_time);
-            migrateSettingNameChange(values, log, "dbms.checkpoint.interval.tx", check_point_interval_tx);
-            migrateSettingNameChange(values, log, "dbms.checkpoint.interval.volume", check_point_interval_volume);
-            migrateSettingNameChange(values, log, "dbms.checkpoint.iops.limit", check_point_iops_limit);
-        }
-    }
-
-    @ServiceProvider
-    public static class LogFormatMigrator implements SettingMigrator {
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            String value = values.remove("unsupported.dbms.logs.format");
-            if (isNotBlank(value)) {
-                log.warn("Use of deprecated setting 'unsupported.dbms.logs.format'.");
-                if ("STANDARD_FORMAT".equals(value)) {
-                    values.put(GraphDatabaseSettings.default_log_format.name(), FormattedLogFormat.PLAIN.name());
-                } else if ("JSON_FORMAT".equals(value)) {
-                    values.put(GraphDatabaseSettings.default_log_format.name(), FormattedLogFormat.JSON.name());
-                } else {
-                    log.warn(
-                            "Unrecognized value for 'unsupported.dbms.logs.format'. Was %s but expected STANDARD_FORMAT or JSON_FORMAT.",
-                            value);
-                }
-            }
-        }
-    }
-
-    @ServiceProvider
-    public static class InternalSettingsMigrator implements SettingMigrator {
-        private static final Collection<Mapping> legacyUnsupportedSettingsMapping = List.of(
+        private static final List<String> REMOVED_SETTINGS = List.of(
+                "causal_clustering.delete_store_before_store_copy",
+                "causal_clustering.multi_dc_license",
+                "causal_clustering.store_copy_chunk_size",
+                "dbms.allow_upgrade",
+                "dbms.record_format",
+                "dbms.backup.incremental.strategy",
+                "dbms.directories.tx_log",
+                "dbms.index.default_schema_provider",
+                "dbms.index_searcher_cache_size",
+                "dbms.logs.debug.rotation.delay",
+                "dbms.logs.user.rotation.delay",
+                "dbms.memory.pagecache.swapper",
+                "dbms.routing.driver.api",
+                "dbms.security.ldap.authentication.use_samaccountname",
+                "dbms.security.procedures.default_allowed",
+                "dbms.security.procedures.roles",
+                "dbms.security.property_level.blacklist",
+                "dbms.security.property_level.enabled",
+                "fabric.driver.api",
+                "unsupported.cypher.parser",
+                "unsupported.dbms.block_remote_alias",
+                "unsupported.dbms.memory.pagecache.warmup.legacy_profile_loader",
+                "unsupported.dbms.recovery.ignore_store_id_validation",
+                "unsupported.dbms.tokenscan.log.enabled",
+                "unsupported.dbms.tokenscan.log.prune_threshold",
+                "unsupported.dbms.tokenscan.log.rotation_threshold",
+                "unsupported.dbms.topology_graph.enable");
+        private static final Collection<Mapping> LEGACY_UNSUPPORTED_SETTINGS_MAPPING = List.of(
                 new Mapping(
                         "causal_clustering.akka_actor_system_restarter.initial_delay",
                         "internal.cluster.akka_actor_system_restarter.initial_delay"),
@@ -751,48 +603,181 @@ public final class SettingMigrators {
 
         @Override
         public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            legacyUnsupportedSettingsMapping.forEach(mapping ->
+            cleanupRemovedSettings(values, defaultValues, log);
+
+            migrateUnsupportedSettingsToInternal(values, defaultValues, log);
+
+            migrateDirectoriesChanges(values, defaultValues, log);
+            migrateLogFormat(values, defaultValues, log);
+            migrateConnectors(values, defaultValues, log);
+            migrateDatabaseMemorySettings(values, defaultValues, log);
+            migrateWhitelistSettings(values, defaultValues, log);
+            migrateWindowsServiceName(values, defaultValues, log);
+            migrateGroupSpatialSettings(values, defaultValues, log);
+            migrateCheckpointSettings(values, defaultValues, log);
+            migrateKeepAliveSetting(values, defaultValues, log);
+            migrateRefuseToBeALeader(values, defaultValues, log);
+            migrateReadOnlySetting(values, defaultValues, log);
+            migrateDatabaseMaxSize(values, defaultValues, log);
+        }
+
+        private static void migrateUnsupportedSettingsToInternal(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            LEGACY_UNSUPPORTED_SETTINGS_MAPPING.forEach(mapping ->
                     migrateSettingNameChange(values, log, mapping.oldSettingName(), mapping.newSettingName()));
         }
 
         private record Mapping(String oldSettingName, String newSettingName) {}
-    }
 
-    @ServiceProvider
-    public static class RemovedSettingsMigrator implements SettingMigrator {
-        private static final List<String> removedSettings = List.of(
-                "causal_clustering.delete_store_before_store_copy",
-                "causal_clustering.multi_dc_license",
-                "causal_clustering.store_copy_chunk_size",
-                "dbms.allow_upgrade",
-                "dbms.record_format",
-                "dbms.backup.incremental.strategy",
-                "dbms.directories.tx_log",
-                "dbms.index.default_schema_provider",
-                "dbms.index_searcher_cache_size",
-                "dbms.logs.debug.rotation.delay",
-                "dbms.logs.user.rotation.delay",
-                "dbms.memory.pagecache.swapper",
-                "dbms.routing.driver.api",
-                "dbms.security.ldap.authentication.use_samaccountname",
-                "dbms.security.procedures.default_allowed",
-                "dbms.security.procedures.roles",
-                "dbms.security.property_level.blacklist",
-                "dbms.security.property_level.enabled",
-                "fabric.driver.api",
-                "unsupported.cypher.parser",
-                "unsupported.dbms.block_remote_alias",
-                "unsupported.dbms.memory.pagecache.warmup.legacy_profile_loader",
-                "unsupported.dbms.recovery.ignore_store_id_validation",
-                "unsupported.dbms.tokenscan.log.enabled",
-                "unsupported.dbms.tokenscan.log.prune_threshold",
-                "unsupported.dbms.tokenscan.log.rotation_threshold",
-                "unsupported.dbms.topology_graph.enable");
-
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            removedSettings.forEach(
+        private static void cleanupRemovedSettings(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            REMOVED_SETTINGS.forEach(
                     setting -> migrateSettingRemoval(values, log, setting, "It no longer has any effect"));
+        }
+
+        private static void migrateDirectoriesChanges(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.directories.neo4j_home", neo4j_home);
+            migrateSettingNameChange(values, log, "dbms.directories.data", data_directory);
+            migrateSettingNameChange(values, log, "dbms.directories.transaction.logs.root", transaction_logs_root_path);
+            migrateSettingNameChange(values, log, "dbms.directories.script.root", script_root_path);
+            migrateSettingNameChange(values, log, "dbms.directories.dumps.root", database_dumps_root_path);
+            migrateSettingNameChange(values, log, "dbms.directories.import", load_csv_file_url_root);
+            migrateSettingNameChange(values, log, "dbms.directories.plugins", plugin_dir);
+            migrateSettingNameChange(values, log, "dbms.directories.logs", logs_directory);
+            migrateSettingNameChange(values, log, "dbms.directories.licenses", licenses_directory);
+
+            migrateSettingNameChange(values, log, "dbms.directories.run", run_directory);
+            migrateSettingNameChange(values, log, "dbms.directories.lib", lib_directory);
+        }
+
+        private static void migrateLogFormat(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            String value = values.remove("unsupported.dbms.logs.format");
+            if (isNotBlank(value)) {
+                log.warn("Use of deprecated setting 'unsupported.dbms.logs.format'.");
+                if ("STANDARD_FORMAT".equals(value)) {
+                    values.put(GraphDatabaseSettings.default_log_format.name(), FormattedLogFormat.PLAIN.name());
+                } else if ("JSON_FORMAT".equals(value)) {
+                    values.put(GraphDatabaseSettings.default_log_format.name(), FormattedLogFormat.JSON.name());
+                } else {
+                    log.warn(
+                            "Unrecognized value for 'unsupported.dbms.logs.format'. Was %s but expected STANDARD_FORMAT or JSON_FORMAT.",
+                            value);
+                }
+            }
+        }
+
+        private static void migrateConnectors(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            List<String> connectorSettings = values.keySet().stream()
+                    .filter(key -> key.startsWith(OLD_PREFIX))
+                    .filter(key -> SUPPORTED_CONNECTOR_PATTERN.matcher(key).matches())
+                    .toList();
+            for (String connectorSetting : connectorSettings) {
+                if (connectorSetting.endsWith(".type")) {
+                    values.remove(connectorSetting);
+                } else if (connectorSetting.equals("dbms.connector.bolt.unsupported_thread_pool_shutdown_wait_time")) {
+                    migrateSettingNameChange(values, log, connectorSetting, thread_pool_shutdown_wait_time);
+                } else if (connectorSetting.equals("dbms.connector.bolt.unsupported_thread_pool_queue_size")) {
+                    migrateSettingNameChange(values, log, connectorSetting, unsupported_thread_pool_queue_size);
+                } else if (connectorSetting.equals("dbms.connector.bolt.unsupported_unauth_connection_timeout")) {
+                    migrateSettingNameChange(values, log, connectorSetting, unsupported_bolt_unauth_connection_timeout);
+                } else if (connectorSetting.equals("dbms.connector.bolt.unsupported_unauth_max_inbound_bytes")) {
+                    migrateSettingNameChange(
+                            values, log, connectorSetting, unsupported_bolt_unauth_connection_max_inbound_bytes);
+                } else {
+                    var newName = connectorSetting.replace("dbms.connector", "server");
+                    migrateSettingNameChange(values, log, connectorSetting, newName);
+                }
+            }
+        }
+
+        private static void migrateDatabaseMemorySettings(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.tx_state.max_off_heap_memory", tx_state_max_off_heap_memory);
+            migrateSettingNameChange(
+                    values,
+                    log,
+                    "dbms.tx_state.off_heap.max_cacheable_block_size",
+                    tx_state_off_heap_max_cacheable_block_size);
+            migrateSettingNameChange(
+                    values, log, "dbms.tx_state.off_heap.block_cache_size", tx_state_off_heap_block_cache_size);
+
+            // Migrate cypher.query_max_allocations to new setting, if new settings is not configured
+            String maxAllocations = values.remove("cypher.query_max_allocations");
+            if (isNotBlank(maxAllocations)) {
+                if (!values.containsKey(memory_transaction_max_size.name())) {
+                    log.warn(
+                            "The setting cypher.query_max_allocations is removed and replaced by %s.",
+                            memory_transaction_max_size.name());
+                    values.put(memory_transaction_max_size.name(), maxAllocations);
+                } else {
+                    log.warn(
+                            "The setting cypher.query_max_allocations is removed and replaced by %s. Since both are set, %s will take "
+                                    + "precedence and the value of cypher.query_max_allocations, %s, will be ignored.",
+                            memory_transaction_max_size.name(), memory_transaction_max_size.name(), maxAllocations);
+                }
+            }
+        }
+
+        private static void migrateWhitelistSettings(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(
+                    values, log, "dbms.memory.pagecache.warmup.preload.whitelist", pagecache_warmup_prefetch_allowlist);
+            migrateSettingNameChange(values, log, "dbms.security.procedures.whitelist", procedure_allowlist);
+        }
+
+        private static void migrateWindowsServiceName(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.windows_service_name", windows_service_name);
+        }
+
+        private static void migrateGroupSpatialSettings(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateGroupSettingPrefixChange(
+                    values, log, "unsupported.dbms.db.spatial.crs", "internal.dbms.db.spatial.crs");
+        }
+
+        private static void migrateCheckpointSettings(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.checkpoint", check_point_policy);
+            migrateSettingNameChange(values, log, "dbms.checkpoint.interval.time", check_point_interval_time);
+            migrateSettingNameChange(values, log, "dbms.checkpoint.interval.tx", check_point_interval_tx);
+            migrateSettingNameChange(values, log, "dbms.checkpoint.interval.volume", check_point_interval_volume);
+            migrateSettingNameChange(values, log, "dbms.checkpoint.iops.limit", check_point_iops_limit);
+        }
+
+        private static void migrateKeepAliveSetting(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(
+                    values,
+                    log,
+                    "dbms.connector.bolt.connection_keep_alive_scheduling_interval",
+                    BoltConnector.connection_keep_alive_streaming_scheduling_interval);
+        }
+
+        private static void migrateRefuseToBeALeader(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            final var refuseToBeLeader = "causal_clustering.refuse_to_be_leader";
+            final var refuseToBeLeaderValue = values.get(refuseToBeLeader);
+            if (isNotBlank(refuseToBeLeaderValue)) {
+                log.warn(
+                        "The setting '" + refuseToBeLeader + "' is deprecated. Use please '%s' as a replacement",
+                        read_only_database_default.name());
+            }
+            migrateSettingNameChange(values, log, refuseToBeLeader, read_only_database_default);
+        }
+
+        private static void migrateReadOnlySetting(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.read_only", read_only_database_default);
+        }
+
+        private static void migrateDatabaseMaxSize(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(
+                    values, log, "dbms.memory.transaction.datababase_max_size", memory_transaction_database_max_size);
         }
     }
 
@@ -828,15 +813,6 @@ public final class SettingMigrators {
         if (values.containsKey(name)) {
             log.warn("Setting '%s' is removed. %s.", name, additionalDescription);
             values.remove(name);
-        }
-    }
-
-    @ServiceProvider
-    public static class GroupSettingsRenameMigrator implements SettingMigrator {
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migrateGroupSettingPrefixChange(
-                    values, log, "unsupported.dbms.db.spatial.crs", "internal.dbms.db.spatial.crs");
         }
     }
 }
