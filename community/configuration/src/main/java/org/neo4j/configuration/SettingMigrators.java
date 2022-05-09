@@ -28,8 +28,16 @@ import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_volume;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_iops_limit;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_policy;
+import static org.neo4j.configuration.GraphDatabaseSettings.cypher_hints_error;
+import static org.neo4j.configuration.GraphDatabaseSettings.cypher_lenient_create_relationship;
+import static org.neo4j.configuration.GraphDatabaseSettings.cypher_min_replan_interval;
+import static org.neo4j.configuration.GraphDatabaseSettings.cypher_parser_version;
+import static org.neo4j.configuration.GraphDatabaseSettings.cypher_planner;
+import static org.neo4j.configuration.GraphDatabaseSettings.cypher_render_plan_descriptions;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.database_dumps_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.forbid_exhaustive_shortestpath;
+import static org.neo4j.configuration.GraphDatabaseSettings.forbid_shortestpath_common_nodes;
 import static org.neo4j.configuration.GraphDatabaseSettings.licenses_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.load_csv_file_url_root;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
@@ -39,6 +47,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
 import static org.neo4j.configuration.GraphDatabaseSettings.plugin_dir;
 import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
+import static org.neo4j.configuration.GraphDatabaseSettings.query_statistics_divergence_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
 import static org.neo4j.configuration.GraphDatabaseSettings.script_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
@@ -619,6 +628,7 @@ public final class SettingMigrators {
             migrateRefuseToBeALeader(values, defaultValues, log);
             migrateReadOnlySetting(values, defaultValues, log);
             migrateDatabaseMaxSize(values, defaultValues, log);
+            migrateCypherNamespace(values, defaultValues, log);
         }
 
         private static void migrateUnsupportedSettingsToInternal(
@@ -778,6 +788,23 @@ public final class SettingMigrators {
                 Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
             migrateSettingNameChange(
                     values, log, "dbms.memory.transaction.datababase_max_size", memory_transaction_database_max_size);
+        }
+
+        private static void migrateCypherNamespace(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "cypher.default_language_version", cypher_parser_version);
+            migrateSettingNameChange(
+                    values, log, "cypher.forbid_exhaustive_shortestpath", forbid_exhaustive_shortestpath);
+            migrateSettingNameChange(
+                    values, log, "cypher.forbid_shortestpath_common_nodes", forbid_shortestpath_common_nodes);
+            migrateSettingNameChange(values, log, "cypher.hints_error", cypher_hints_error);
+            migrateSettingNameChange(
+                    values, log, "cypher.lenient_create_relationship", cypher_lenient_create_relationship);
+            migrateSettingNameChange(values, log, "cypher.min_replan_interval", cypher_min_replan_interval);
+            migrateSettingNameChange(values, log, "cypher.planner", cypher_planner);
+            migrateSettingNameChange(values, log, "cypher.render_plan_description", cypher_render_plan_descriptions);
+            migrateSettingNameChange(
+                    values, log, "cypher.statistics_divergence_threshold", query_statistics_divergence_threshold);
         }
     }
 

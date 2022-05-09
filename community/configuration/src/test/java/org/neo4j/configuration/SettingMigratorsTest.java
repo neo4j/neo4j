@@ -29,8 +29,16 @@ import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_volume;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_iops_limit;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_policy;
+import static org.neo4j.configuration.GraphDatabaseSettings.cypher_hints_error;
+import static org.neo4j.configuration.GraphDatabaseSettings.cypher_lenient_create_relationship;
+import static org.neo4j.configuration.GraphDatabaseSettings.cypher_min_replan_interval;
+import static org.neo4j.configuration.GraphDatabaseSettings.cypher_parser_version;
+import static org.neo4j.configuration.GraphDatabaseSettings.cypher_planner;
+import static org.neo4j.configuration.GraphDatabaseSettings.cypher_render_plan_descriptions;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.database_dumps_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.forbid_exhaustive_shortestpath;
+import static org.neo4j.configuration.GraphDatabaseSettings.forbid_shortestpath_common_nodes;
 import static org.neo4j.configuration.GraphDatabaseSettings.licenses_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.load_csv_file_url_root;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
@@ -40,6 +48,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
 import static org.neo4j.configuration.GraphDatabaseSettings.plugin_dir;
 import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
+import static org.neo4j.configuration.GraphDatabaseSettings.query_statistics_divergence_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
 import static org.neo4j.configuration.GraphDatabaseSettings.script_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
@@ -375,5 +384,36 @@ class SettingMigratorsTest {
                 .forClass(Config.class)
                 .forLevel(WARN)
                 .containsMessages("Unrecognized value for 'unsupported.dbms.logs.format'. Was FOO");
+    }
+
+    @Test
+    void migrateCypherSettingsIntoDbmsNamespace() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(
+                confFile,
+                List.of(
+                        "cypher.default_language_version=4.4",
+                        "cypher.forbid_exhaustive_shortestpath=true",
+                        "cypher.forbid_shortestpath_common_nodes=false",
+                        "cypher.hints_error=true",
+                        "cypher.lenient_create_relationship=false",
+                        "cypher.min_replan_interval=11s",
+                        "cypher.planner=COST",
+                        "cypher.render_plan_description=true",
+                        " cypher.statistics_divergence_threshold=0.42"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger(logProvider.getLog(Config.class));
+
+        assertEquals(GraphDatabaseSettings.CypherParserVersion.V_44, config.get(cypher_parser_version));
+        assertEquals(true, config.get(forbid_exhaustive_shortestpath));
+        assertEquals(false, config.get(forbid_shortestpath_common_nodes));
+        assertEquals(true, config.get(cypher_hints_error));
+        assertEquals(false, config.get(cypher_lenient_create_relationship));
+        assertEquals(Duration.ofSeconds(11), config.get(cypher_min_replan_interval));
+        assertEquals(GraphDatabaseSettings.CypherPlanner.COST, config.get(cypher_planner));
+        assertEquals(true, config.get(cypher_render_plan_descriptions));
+        assertEquals(0.42, config.get(query_statistics_divergence_threshold), 0.01);
     }
 }

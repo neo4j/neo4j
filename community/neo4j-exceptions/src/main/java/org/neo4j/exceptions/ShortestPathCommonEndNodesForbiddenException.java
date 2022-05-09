@@ -25,7 +25,7 @@ public class ShortestPathCommonEndNodesForbiddenException extends CypherExecutio
                     + "perform a shortestPath search after a cartesian product that might have the same start and end nodes for some\n"
                     + "of the rows passed to shortestPath. If you would rather not experience this exception, and can accept the\n"
                     + "possibility of missing results for those rows, disable this in the Neo4j configuration by setting\n"
-                    + "`cypher.forbid_shortestpath_common_nodes` to false. If you cannot accept missing results, and really want the\n"
+                    + "`dbms.cypher.forbid_shortestpath_common_nodes` to false. If you cannot accept missing results, and really want the\n"
                     + "shortestPath between two common nodes, then re-write the query using a standard Cypher variable length pattern\n"
                     + "expression followed by ordering by path length and limiting to one result.";
 

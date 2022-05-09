@@ -173,12 +173,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
 
     @Internal
     @Description("Large databases might change slowly, and so to prevent queries from never being replanned "
-            + "the divergence threshold set by cypher.statistics_divergence_threshold is configured to "
+            + "the divergence threshold set by dbms.cypher.statistics_divergence_threshold is configured to "
             + "shrink over time. "
             + "The algorithm used to manage this change is set by internal.cypher.replan_algorithm "
             + "and will cause the threshold to reach the value set here once the time since the previous "
             + "replanning has reached internal.cypher.target_replan_interval. "
-            + "Setting this value to higher than the cypher.statistics_divergence_threshold will cause the "
+            + "Setting this value to higher than the dbms.cypher.statistics_divergence_threshold will cause the "
             + "threshold to not decay over time.")
     public static final Setting<Double> query_statistics_divergence_target = newBuilder(
                     "internal.cypher.statistics_divergence_target", DOUBLE, 0.10)
@@ -212,12 +212,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
 
     @Internal
     @Description("Large databases might change slowly, and to prevent queries from never being replanned "
-            + "the divergence threshold set by cypher.statistics_divergence_threshold is configured to "
+            + "the divergence threshold set by dbms.cypher.statistics_divergence_threshold is configured to "
             + "shrink over time. The algorithm used to manage this change is set by "
             + "internal.cypher.replan_algorithm and will cause the threshold to reach "
             + "the value set by internal.cypher.statistics_divergence_target once the time since the "
             + "previous replanning has reached the value set here. Setting this value to less than the "
-            + "value of cypher.min_replan_interval will cause the threshold to not decay over time.")
+            + "value of dbms.cypher.min_replan_interval will cause the threshold to not decay over time.")
     public static final Setting<Duration> cypher_replan_interval_target = newBuilder(
                     "internal.cypher.target_replan_interval", DURATION, Duration.ofHours(7))
             .build();
@@ -231,7 +231,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
 
     @Internal
     @Description("Large databases might change slowly, and to prevent queries from never being replanned "
-            + "the divergence threshold set by cypher.statistics_divergence_threshold is configured to "
+            + "the divergence threshold set by dbms.cypher.statistics_divergence_threshold is configured to "
             + "shrink over time using the algorithm set here. This will cause the threshold to reach "
             + "the value set by internal.cypher.statistics_divergence_target once the time since the "
             + "previous replanning has reached the value set in internal.cypher.target_replan_interval. "

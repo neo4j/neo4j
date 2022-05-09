@@ -425,7 +425,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       execute(logicalQuery, runtime, inputValues(Array[Any](null)))
     ) should have message
       "Failed to create relationship `r`, node `n` is missing. If you prefer to simply ignore rows where a relationship node is missing, " +
-      "set 'cypher.lenient_create_relationship = true' in neo4j.conf"
+      "set 'dbms.cypher.lenient_create_relationship = true' in neo4j.conf"
   }
 
   test("should fail to create relationship if start node is missing") {
@@ -442,7 +442,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       execute(logicalQuery, runtime, inputValues(Array[Any](null)))
     ) should have message
       "Failed to create relationship `r`, node `n` is missing. If you prefer to simply ignore rows where a relationship node is missing, " +
-      "set 'cypher.lenient_create_relationship = true' in neo4j.conf"
+      "set 'dbms.cypher.lenient_create_relationship = true' in neo4j.conf"
   }
 
   test("should fail to create relationship if end node is missing") {
@@ -459,7 +459,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       execute(logicalQuery, runtime, inputValues(Array[Any](null)))
     ) should have message
       "Failed to create relationship `r`, node `m` is missing. If you prefer to simply ignore rows where a relationship node is missing, " +
-      "set 'cypher.lenient_create_relationship = true' in neo4j.conf"
+      "set 'dbms.cypher.lenient_create_relationship = true' in neo4j.conf"
   }
 
   test("should create node with similarly named labels") {

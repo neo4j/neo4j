@@ -259,12 +259,16 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     @Description("If set to `true` a textual representation of the plan description will be rendered on the "
             + "server for all queries running with `EXPLAIN` or `PROFILE`. This allows clients such as the neo4j "
             + "browser and Cypher shell to show a more detailed plan description.")
-    public static final Setting<Boolean> cypher_render_plan_descriptions =
-            newBuilder("cypher.render_plan_description", BOOL, false).dynamic().build();
+    public static final Setting<Boolean> cypher_render_plan_descriptions = newBuilder(
+                    "dbms.cypher.render_plan_description", BOOL, false)
+            .dynamic()
+            .build();
 
     @Description("Set this to specify the default parser (language version).")
     public static final Setting<CypherParserVersion> cypher_parser_version = newBuilder(
-                    "cypher.default_language_version", ofEnum(CypherParserVersion.class), CypherParserVersion.DEFAULT)
+                    "dbms.cypher.default_language_version",
+                    ofEnum(CypherParserVersion.class),
+                    CypherParserVersion.DEFAULT)
             .build();
 
     public enum CypherPlanner {
@@ -274,13 +278,13 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     @Description("Set this to specify the default planner for the default language version.")
     public static final Setting<CypherPlanner> cypher_planner = newBuilder(
-                    "cypher.planner", ofEnum(CypherPlanner.class), CypherPlanner.DEFAULT)
+                    "dbms.cypher.planner", ofEnum(CypherPlanner.class), CypherPlanner.DEFAULT)
             .build();
 
     @Description("Set this to specify the behavior when Cypher planner or runtime hints cannot be fulfilled. "
             + "If true, then non-conformance will result in an error, otherwise only a warning is generated.")
     public static final Setting<Boolean> cypher_hints_error =
-            newBuilder("cypher.hints_error", BOOL, false).build();
+            newBuilder("dbms.cypher.hints_error", BOOL, false).build();
 
     @Description("This setting is associated with performance optimization. Set this to `true` in situations where "
             + "it is preferable to have any queries using the 'shortestPath' function terminate as soon as "
@@ -297,8 +301,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "which means that Neo4j will never consider using the exhaustive search for shortestPath queries. "
             + "However, please note that if no paths are found, an error will be thrown at run time, which will "
             + "need to be handled by the application.")
-    public static final Setting<Boolean> forbid_exhaustive_shortestpath =
-            newBuilder("cypher.forbid_exhaustive_shortestpath", BOOL, false).build();
+    public static final Setting<Boolean> forbid_exhaustive_shortestpath = newBuilder(
+                    "dbms.cypher.forbid_exhaustive_shortestpath", BOOL, false)
+            .build();
 
     @Description("This setting is associated with performance optimization. The shortest path algorithm does not "
             + "work when the start and end nodes are the same. With this setting set to `false` no path will "
@@ -309,15 +314,16 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "set this to `false`. If you cannot accept missing results, and really want the shortestPath "
             + "between two common nodes, then re-write the query using a standard Cypher variable length pattern "
             + "expression followed by ordering by path length and limiting to one result.")
-    public static final Setting<Boolean> forbid_shortestpath_common_nodes =
-            newBuilder("cypher.forbid_shortestpath_common_nodes", BOOL, true).build();
+    public static final Setting<Boolean> forbid_shortestpath_common_nodes = newBuilder(
+                    "dbms.cypher.forbid_shortestpath_common_nodes", BOOL, true)
+            .build();
 
     @Description(
             "Set this to change the behavior for Cypher create relationship when the start or end node is missing. "
                     + "By default this fails the query and stops execution, but by setting this flag the create operation is "
                     + "simply not performed and execution continues.")
     public static final Setting<Boolean> cypher_lenient_create_relationship =
-            newBuilder("cypher.lenient_create_relationship", BOOL, false).build();
+            newBuilder("dbms.cypher.lenient_create_relationship", BOOL, false).build();
 
     @Description("The number of cached Cypher query execution plans per database. "
             + "The max number of query plans that can be kept in cache is the `number of databases` * `dbms.query_cache_size`. "
@@ -333,24 +339,25 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "This means that a value of `0.75` requires the database to "
             + "quadruple in size before query replanning. A value of `0` means that the query will be "
             + "replanned as soon as there is any change in statistics and the replan interval has elapsed.\n\n"
-            + "This interval is defined by `cypher.min_replan_interval` and defaults to 10s. After this interval, the "
+            + "This interval is defined by `dbms.cypher.min_replan_interval` and defaults to 10s. After this interval, the "
             + "divergence threshold will slowly start to decline, reaching 10% after about 7h. This will "
             + "ensure that long running databases will still get query replanning on even modest changes, "
             + "while not replanning frequently unless the changes are very large.")
     public static final Setting<Double> query_statistics_divergence_threshold = newBuilder(
-                    "cypher.statistics_divergence_threshold", DOUBLE, 0.75)
+                    "dbms.cypher.statistics_divergence_threshold", DOUBLE, 0.75)
             .addConstraint(range(0.0, 1.0))
             .build();
 
     @Description("The minimum time between possible cypher query replanning events. After this time, the graph "
             + "statistics will be evaluated, and if they have changed by more than the value set by "
-            + "cypher.statistics_divergence_threshold, the query will be replanned. If the statistics have "
+            + "dbms.cypher.statistics_divergence_threshold, the query will be replanned. If the statistics have "
             + "not changed sufficiently, the same interval will need to pass before the statistics will be "
             + "evaluated again. Each time they are evaluated, the divergence threshold will be reduced slightly "
             + "until it reaches 10% after 7h, so that even moderately changing databases will see query replanning "
             + "after a sufficiently long time interval.")
-    public static final Setting<Duration> cypher_min_replan_interval =
-            newBuilder("cypher.min_replan_interval", DURATION, ofSeconds(10)).build();
+    public static final Setting<Duration> cypher_min_replan_interval = newBuilder(
+                    "dbms.cypher.min_replan_interval", DURATION, ofSeconds(10))
+            .build();
 
     @Description("Determines if Cypher will allow using file URLs when loading data using `LOAD CSV`. Setting this "
             + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system.")
