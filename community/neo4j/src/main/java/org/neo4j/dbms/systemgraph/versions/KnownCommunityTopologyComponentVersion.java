@@ -35,12 +35,11 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
+import org.neo4j.logging.NullLog;
 
 public abstract class KnownCommunityTopologyComponentVersion extends KnownSystemComponentVersion {
     KnownCommunityTopologyComponentVersion(ComponentVersion componentVersion) {
-        // TODO we do not have access to the security log here should we send in the neo4j log instead?
-        super(componentVersion, CommunitySecurityLog.NULL_LOG);
+        super(componentVersion, NullLog.getInstance());
     }
 
     /**

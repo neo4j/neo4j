@@ -30,7 +30,6 @@ import java.time.Clock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.cypher.internal.security.SecureHasher;
@@ -38,8 +37,9 @@ import org.neo4j.dbms.database.DefaultSystemGraphComponent;
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.SystemGraphInitializer;
-import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
+import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
@@ -165,8 +165,8 @@ class UserSecurityGraphInitializationIT {
 
         var systemGraphComponents = new SystemGraphComponents();
         systemGraphComponents.register(new DefaultSystemGraphComponent(config, Clock.systemUTC()));
-        systemGraphComponents.register(
-                new UserSecurityGraphComponent(Mockito.mock(AbstractSecurityLog.class), initialPassword, config));
+        systemGraphComponents.register(new UserSecurityGraphComponent(
+                initialPassword, config, NullLogProvider.getInstance(), CommunitySecurityLog.NULL_LOG));
 
         var systemGraphSupplier = SystemGraphRealmHelper.makeSystemSupplier(dbManager);
         systemGraphInitializer = new DefaultSystemGraphInitializer(systemGraphSupplier, systemGraphComponents);

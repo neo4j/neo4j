@@ -30,6 +30,7 @@ import org.neo4j.dbms.database.ComponentVersion;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.kernel.impl.security.User;
+import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.string.UTF8;
 
@@ -38,8 +39,11 @@ public abstract class SupportedCommunitySecurityComponentVersion extends KnownCo
     private final SecureHasher secureHasher;
 
     SupportedCommunitySecurityComponentVersion(
-            ComponentVersion componentVersion, AbstractSecurityLog securityLog, UserRepository userRepository) {
-        super(componentVersion, securityLog);
+            ComponentVersion componentVersion,
+            UserRepository userRepository,
+            Log debugLog,
+            AbstractSecurityLog securityLog) {
+        super(componentVersion, debugLog, securityLog);
         this.userRepository = userRepository;
         this.secureHasher = new SecureHasher();
     }
@@ -53,7 +57,7 @@ public abstract class SupportedCommunitySecurityComponentVersion extends KnownCo
         Optional<User> initialUser = getInitialUser();
         if (initialUser.isPresent()) {
             User user = initialUser.get();
-            securityLog.info(String.format("Setting up initial user from `auth.ini` file: %s", user.name()));
+            debugLog.info(String.format("Setting up initial user from `auth.ini` file: %s", user.name()));
             addUser(
                     tx,
                     INITIAL_USER_NAME,
@@ -63,7 +67,7 @@ public abstract class SupportedCommunitySecurityComponentVersion extends KnownCo
         } else {
             SystemGraphCredential credential =
                     SystemGraphCredential.createCredentialForPassword(UTF8.encode(INITIAL_PASSWORD), secureHasher);
-            securityLog.info(String.format("Setting up initial user from defaults: %s", INITIAL_USER_NAME));
+            debugLog.info(String.format("Setting up initial user from defaults: %s", INITIAL_USER_NAME));
             addUser(tx, INITIAL_USER_NAME, credential, true, false);
         }
     }
@@ -74,15 +78,15 @@ public abstract class SupportedCommunitySecurityComponentVersion extends KnownCo
         if (initialUser.isPresent()) {
             updateInitialUserPassword(tx, initialUser.get());
         } else {
-            securityLog.debug("Not updating initial user password: No initial user found in `auth.ini`");
+            debugLog.debug("Not updating initial user password: No initial user found in `auth.ini`");
         }
     }
 
     private Optional<User> getInitialUser() throws Exception {
         userRepository.start();
-        securityLog.debug("Opened `auth.ini` file to find the initial user");
+        debugLog.debug("Opened `auth.ini` file to find the initial user");
         if (userRepository.numberOfUsers() == 0) {
-            securityLog.debug("Not updating initial user password: No initial user found in `auth.ini`");
+            debugLog.debug("Not updating initial user password: No initial user found in `auth.ini`");
         }
         if (userRepository.numberOfUsers() == 1) {
             // In alignment with InternalFlatFileRealm we only allow the INITIAL_USER_NAME here for now
@@ -90,14 +94,14 @@ public abstract class SupportedCommunitySecurityComponentVersion extends KnownCo
             User initialUser = userRepository.getUserByName(INITIAL_USER_NAME);
             if (initialUser == null) {
                 String errorMessage = "Invalid `auth.ini` file: the user in the file is not named " + INITIAL_USER_NAME;
-                securityLog.error(errorMessage);
+                debugLog.error(errorMessage);
                 throw new IllegalStateException(errorMessage);
             }
-            securityLog.debug("Valid `auth.ini` file: found initial user");
+            debugLog.debug("Valid `auth.ini` file: found initial user");
             return Optional.of(initialUser);
         } else if (userRepository.numberOfUsers() > 1) {
             String errorMessage = "Invalid `auth.ini` file: the file contains more than one user";
-            securityLog.error(errorMessage);
+            debugLog.error(errorMessage);
             throw new IllegalStateException(errorMessage);
         }
         return Optional.empty();

@@ -23,6 +23,7 @@ import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVe
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
+import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.UserRepository;
 
 /**
@@ -32,10 +33,11 @@ public class CommunitySecurityComponentVersion_3_43D4 extends SupportedCommunity
     private final KnownCommunitySecurityComponentVersion previous;
 
     public CommunitySecurityComponentVersion_3_43D4(
+            Log debugLog,
             AbstractSecurityLog securityLog,
             UserRepository userRepository,
             KnownCommunitySecurityComponentVersion previous) {
-        super(COMMUNITY_SECURITY_43D4, securityLog, userRepository);
+        super(COMMUNITY_SECURITY_43D4, userRepository, debugLog, securityLog);
         this.previous = previous;
     }
 

@@ -37,6 +37,7 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
+import org.neo4j.logging.Log;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion;
 import org.neo4j.string.UTF8;
 
@@ -44,9 +45,12 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
     public static final Label USER_LABEL = Label.label("User");
     public static final String USER_ID = "id";
     private final SecureHasher secureHasher = new SecureHasher();
+    private final AbstractSecurityLog securityLog;
 
-    KnownCommunitySecurityComponentVersion(ComponentVersion componentVersion, AbstractSecurityLog securityLog) {
-        super(componentVersion, securityLog);
+    KnownCommunitySecurityComponentVersion(
+            ComponentVersion componentVersion, Log debugLog, AbstractSecurityLog securityLog) {
+        super(componentVersion, debugLog);
+        this.securityLog = securityLog;
     }
 
     boolean componentNotInVersionNode(Transaction tx) {
@@ -63,8 +67,10 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
             boolean suspended) {
         // NOTE: If username already exists we will violate a constraint
         securityLog.info(String.format(
-                "Creating new user '%s' (passwordChangeRequired=%b, suspended=%b)",
-                username, passwordChangeRequired, suspended));
+                "CREATE USER %s PASSWORD ****** CHANGE %s%s",
+                username,
+                passwordChangeRequired ? "REQUIRED" : "NOT REQUIRED",
+                suspended ? " SET STATUS SUSPENDED" : ""));
         Node node = tx.createNode(USER_LABEL);
         node.setProperty("name", username);
         node.setProperty("credentials", credentials.serialize());
@@ -83,7 +89,7 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
         // the default password.
         List<Node> users = Iterators.asList(tx.findNodes(USER_LABEL));
         if (users.size() == 0) {
-            securityLog.warn(String.format(
+            debugLog.warn(String.format(
                     "Unable to update missing initial user password from `auth.ini` file: %s", initialUser.name()));
         } else if (users.size() == 1) {
             Node user = users.get(0);
@@ -91,14 +97,14 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
                 SystemGraphCredential currentCredentials = SystemGraphCredential.deserialize(
                         user.getProperty("credentials").toString(), secureHasher);
                 if (currentCredentials.matchesPassword(UTF8.encode(INITIAL_PASSWORD))) {
-                    securityLog.info(String.format(
+                    debugLog.info(String.format(
                             "Updating initial user password from `auth.ini` file: %s", initialUser.name()));
                     user.setProperty("credentials", initialUser.credentials().serialize());
                     user.setProperty("passwordChangeRequired", initialUser.passwordChangeRequired());
                 }
             }
         } else {
-            securityLog.error(String.format(
+            debugLog.error(String.format(
                     "Multiple users matching initial user password from `auth.ini` file: %s", initialUser.name()));
         }
     }

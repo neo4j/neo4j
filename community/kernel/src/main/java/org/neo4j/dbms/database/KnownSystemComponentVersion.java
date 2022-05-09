@@ -23,7 +23,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
+import org.neo4j.logging.Log;
 
 /**
  * Version of a system graph component.
@@ -40,14 +40,14 @@ public abstract class KnownSystemComponentVersion {
     protected final String componentVersionProperty;
     public final int version;
     public final String description;
-    protected final AbstractSecurityLog securityLog;
+    protected final Log debugLog;
 
-    protected KnownSystemComponentVersion(ComponentVersion componentVersion, AbstractSecurityLog securityLog) {
+    protected KnownSystemComponentVersion(ComponentVersion componentVersion, Log debugLog) {
         this.componentVersion = componentVersion;
         this.componentVersionProperty = componentVersion.getComponentName();
         this.version = componentVersion.getVersion();
         this.description = componentVersion.getDescription();
-        this.securityLog = securityLog;
+        this.debugLog = debugLog;
     }
 
     public boolean isCurrent() {
@@ -75,7 +75,7 @@ public abstract class KnownSystemComponentVersion {
         String message = String.format(
                 "System graph version %d for component '%s' in '%s' is not supported",
                 version, componentVersionProperty, description);
-        securityLog.error(message);
+        debugLog.error(message);
         return new UnsupportedOperationException(message);
     }
 
@@ -103,10 +103,10 @@ public abstract class KnownSystemComponentVersion {
         Node versionNode = findOrCreateVersionNode(tx);
         var oldVersion = versionNode.getProperty(componentVersionProperty, null);
         if (oldVersion != null) {
-            securityLog.info(String.format(
+            debugLog.info(String.format(
                     "Upgrading '%s' version property from %s to %d", componentVersionProperty, oldVersion, newVersion));
         } else {
-            securityLog.info(String.format("Setting version for '%s' to %d", componentVersionProperty, newVersion));
+            debugLog.info(String.format("Setting version for '%s' to %d", componentVersionProperty, newVersion));
         }
         versionNode.setProperty(componentVersionProperty, newVersion);
     }

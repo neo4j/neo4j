@@ -24,6 +24,7 @@ import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVe
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
+import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.UserRepository;
 
 /**
@@ -33,10 +34,11 @@ public class CommunitySecurityComponentVersion_4_50 extends SupportedCommunitySe
     private final KnownCommunitySecurityComponentVersion previous;
 
     public CommunitySecurityComponentVersion_4_50(
+            Log debugLog,
             AbstractSecurityLog securityLog,
             UserRepository userRepository,
             KnownCommunitySecurityComponentVersion previous) {
-        super(COMMUNITY_SECURITY_50, securityLog, userRepository);
+        super(COMMUNITY_SECURITY_50, userRepository, debugLog, securityLog);
         this.previous = previous;
     }
 

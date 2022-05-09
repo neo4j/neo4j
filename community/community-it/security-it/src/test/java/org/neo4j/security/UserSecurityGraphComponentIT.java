@@ -73,6 +73,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion;
@@ -111,7 +112,10 @@ class UserSecurityGraphComponentIT {
         DependencyResolver resolver = system.getDependencyResolver();
         authManager = resolver.resolveDependency(AuthManager.class);
         userSecurityGraphComponent = new UserSecurityGraphComponent(
-                CommunitySecurityLog.NULL_LOG, new InMemoryUserRepository(), Config.defaults());
+                new InMemoryUserRepository(),
+                Config.defaults(),
+                NullLogProvider.getInstance(),
+                CommunitySecurityLog.NULL_LOG);
 
         // remove DBMS runtime component as it is not a subject of this test
         systemGraphComponents = resolver.resolveDependency(SystemGraphComponents.class);

@@ -23,14 +23,16 @@ import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVe
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
+import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.UserRepository;
 
 /**
  * This is the UserSecurityComponent version for Neo4j 4.0
  */
 public class CommunitySecurityComponentVersion_1_40 extends SupportedCommunitySecurityComponentVersion {
-    public CommunitySecurityComponentVersion_1_40(AbstractSecurityLog securityLog, UserRepository userRepository) {
-        super(COMMUNITY_SECURITY_40, securityLog, userRepository);
+    public CommunitySecurityComponentVersion_1_40(
+            Log debugLog, AbstractSecurityLog securityLog, UserRepository userRepository) {
+        super(COMMUNITY_SECURITY_40, userRepository, debugLog, securityLog);
     }
 
     @Override

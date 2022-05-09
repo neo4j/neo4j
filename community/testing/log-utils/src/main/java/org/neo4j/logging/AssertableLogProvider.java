@@ -51,7 +51,7 @@ public class AssertableLogProvider extends AbstractLogProvider<InternalLog> {
         }
     }
 
-    Queue<LogCall> getLogCalls() {
+    public Queue<LogCall> getLogCalls() {
         return logCalls;
     }
 

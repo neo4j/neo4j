@@ -23,10 +23,11 @@ import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVe
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
+import org.neo4j.logging.NullLog;
 
 public class NoCommunitySecurityComponentVersion extends KnownCommunitySecurityComponentVersion {
     public NoCommunitySecurityComponentVersion() {
-        super(COMMUNITY_SECURITY_UNKNOWN_VERSION, CommunitySecurityLog.NULL_LOG);
+        super(COMMUNITY_SECURITY_UNKNOWN_VERSION, NullLog.getInstance(), CommunitySecurityLog.NULL_LOG);
     }
 
     @Override

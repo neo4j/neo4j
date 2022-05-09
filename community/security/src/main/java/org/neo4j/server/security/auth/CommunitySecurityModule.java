@@ -43,13 +43,13 @@ import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
 import org.neo4j.time.Clocks;
 
 public class CommunitySecurityModule extends SecurityModule {
-    private final InternalLogProvider logProvider;
+    private final InternalLogProvider debugLogProvider;
     private final Config config;
     private final Dependencies globalDependencies;
     private BasicSystemGraphRealm authManager;
 
     public CommunitySecurityModule(LogService logService, Config config, Dependencies globalDependencies) {
-        this.logProvider = logService.getUserLogProvider();
+        this.debugLogProvider = logService.getInternalLogProvider();
         this.config = config;
         this.globalDependencies = globalDependencies;
     }
@@ -71,7 +71,7 @@ public class CommunitySecurityModule extends SecurityModule {
 
         registerProcedure(
                 globalDependencies.resolveDependency(GlobalProcedures.class),
-                logProvider.getLog(getClass()),
+                debugLogProvider.getLog(getClass()),
                 AuthProcedures.class,
                 null);
     }
@@ -104,14 +104,14 @@ public class CommunitySecurityModule extends SecurityModule {
     }
 
     public static UserSecurityGraphComponent createSecurityComponent(
-            AbstractSecurityLog securityLog,
             Config config,
             FileSystemAbstraction fileSystem,
-            InternalLogProvider logProvider) {
+            InternalLogProvider logProvider,
+            AbstractSecurityLog securityLog) {
         UserRepository initialUserRepository =
                 CommunitySecurityModule.getInitialUserRepository(config, logProvider, fileSystem);
 
-        return new UserSecurityGraphComponent(securityLog, initialUserRepository, config);
+        return new UserSecurityGraphComponent(initialUserRepository, config, logProvider, securityLog);
     }
 
     public static AuthenticationStrategy createAuthenticationStrategy(Config config) {

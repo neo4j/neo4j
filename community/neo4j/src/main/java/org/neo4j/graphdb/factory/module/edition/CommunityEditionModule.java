@@ -87,7 +87,6 @@ import org.neo4j.server.config.AuthConfigProvider;
 import org.neo4j.server.rest.repr.CommunityAuthConfigProvider;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.systemgraph.CommunityDefaultDatabaseResolver;
-import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
 import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.time.SystemNanoClock;
 
@@ -268,12 +267,11 @@ public class CommunityEditionModule extends StandaloneEditionModule implements D
     private void setupSecurityGraphInitializer(GlobalModule globalModule) {
         Config config = globalModule.getGlobalConfig();
         FileSystemAbstraction fileSystem = globalModule.getFileSystem();
-        InternalLogProvider logProvider = globalModule.getLogService().getUserLogProvider();
-        AbstractSecurityLog securityLog =
-                new CommunitySecurityLog(logProvider.getLog(UserSecurityGraphComponent.class));
+        InternalLogProvider logProvider = globalModule.getLogService().getInternalLogProvider();
+        AbstractSecurityLog securityLog = new CommunitySecurityLog(logProvider.getLog(CommunitySecurityModule.class));
 
         var communityComponent =
-                CommunitySecurityModule.createSecurityComponent(securityLog, config, fileSystem, logProvider);
+                CommunitySecurityModule.createSecurityComponent(config, fileSystem, logProvider, securityLog);
 
         Dependencies dependencies = globalModule.getGlobalDependencies();
         SystemGraphComponents systemGraphComponents = dependencies.resolveDependency(SystemGraphComponents.class);

@@ -32,7 +32,7 @@ import org.neo4j.dbms.database.DefaultSystemGraphInitializer
 import org.neo4j.dbms.database.SystemGraphComponents
 import org.neo4j.dbms.systemgraph.CommunityTopologyGraphComponent
 import org.neo4j.exceptions.SyntaxException
-import org.neo4j.internal.kernel.api.security.AbstractSecurityLog
+import org.neo4j.internal.kernel.api.security.CommunitySecurityLog
 import org.neo4j.logging.NullLogProvider
 import org.neo4j.server.security.auth.InMemoryUserRepository
 import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper
@@ -707,9 +707,10 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     systemGraphComponents.register(new DefaultSystemGraphComponent(config, Clock.systemUTC))
     systemGraphComponents.register(new CommunityTopologyGraphComponent(config, NullLogProvider.getInstance()))
     systemGraphComponents.register(new UserSecurityGraphComponent(
-      mock[AbstractSecurityLog],
       new InMemoryUserRepository,
-      config
+      config,
+      NullLogProvider.getInstance(),
+      CommunitySecurityLog.NULL_LOG
     ))
 
     val databaseContextProvider =
