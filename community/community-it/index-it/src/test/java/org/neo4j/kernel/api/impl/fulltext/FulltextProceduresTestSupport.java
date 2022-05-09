@@ -41,6 +41,8 @@ import java.util.stream.Stream;
 import org.eclipse.collections.api.iterator.MutableLongIterator;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.provider.Arguments;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Entity;
@@ -57,6 +59,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Level;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
+import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
@@ -66,6 +69,7 @@ import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DbmsExtension(configurationCallback = "configure")
 class FulltextProceduresTestSupport {
     static final String SCORE = "score";
@@ -88,8 +92,8 @@ class FulltextProceduresTestSupport {
     @Inject
     DbmsController controller;
 
-    final AtomicBoolean trapPopulation = new AtomicBoolean();
-    final Barrier.Control populationScanFinished = new Barrier.Control();
+    AtomicBoolean trapPopulation;
+    Barrier.Control populationScanFinished;
 
     @ExtensionCallback
     void configure(TestDatabaseManagementServiceBuilder builder) {
@@ -105,6 +109,13 @@ class FulltextProceduresTestSupport {
         monitors.addMonitorListener(trappingMonitor);
         builder.setMonitors(monitors);
         builder.setConfig(GraphDatabaseSettings.store_internal_log_level, Level.DEBUG);
+    }
+
+    @BeforeEach
+    void beforeEach() {
+        trapPopulation = new AtomicBoolean();
+        populationScanFinished = new Barrier.Control();
+        GraphDatabaseServiceCleaner.cleanDatabaseContent(db);
     }
 
     static void assertNoIndexSeeks(Result result) {
