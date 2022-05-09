@@ -45,6 +45,7 @@ import static org.neo4j.internal.recordstorage.RecordBuilders.to;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.impl.api.FlatRelationshipModifications;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.LockTracer;

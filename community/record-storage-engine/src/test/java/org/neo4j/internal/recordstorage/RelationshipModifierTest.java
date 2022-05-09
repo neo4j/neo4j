@@ -27,15 +27,15 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.helpers.ArrayUtil.indexOf;
 import static org.neo4j.internal.helpers.collection.Iterables.asSet;
 import static org.neo4j.internal.recordstorage.Command.GroupDegreeCommand.combinedKeyOnGroupAndDirection;
-import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.creations;
-import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.deletions;
-import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.modifications;
-import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.relationship;
-import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.relationships;
-import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.singleCreate;
-import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.singleDelete;
 import static org.neo4j.internal.recordstorage.RecordAccess.LoadMonitor.NULL_MONITOR;
 import static org.neo4j.internal.recordstorage.RelationshipChainVisitor.relationshipCollector;
+import static org.neo4j.kernel.impl.api.FlatRelationshipModifications.creations;
+import static org.neo4j.kernel.impl.api.FlatRelationshipModifications.deletions;
+import static org.neo4j.kernel.impl.api.FlatRelationshipModifications.modifications;
+import static org.neo4j.kernel.impl.api.FlatRelationshipModifications.relationship;
+import static org.neo4j.kernel.impl.api.FlatRelationshipModifications.relationships;
+import static org.neo4j.kernel.impl.api.FlatRelationshipModifications.singleCreate;
+import static org.neo4j.kernel.impl.api.FlatRelationshipModifications.singleDelete;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.isNull;
 import static org.neo4j.lock.LockTracer.NONE;
@@ -76,8 +76,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.IdSequence;
-import org.neo4j.internal.recordstorage.FlatRelationshipModifications.RelationshipData;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.impl.api.FlatRelationshipModifications.RelationshipData;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -423,17 +423,17 @@ class RelationshipModifierTest {
             Collection<RelationshipData> relationships, long node, Boolean firstInChain) {
         Stream<RelationshipData> stream = relationships.stream().filter(isFreeToLock());
         if (firstInChain != null) {
-            stream = stream.filter(rel -> store.loadRelationship(rel.id).isFirstInChain(node) == firstInChain);
+            stream = stream.filter(rel -> store.loadRelationship(rel.id()).isFirstInChain(node) == firstInChain);
         }
         return stream.findFirst().orElse(null);
     }
 
     private Predicate<RelationshipData> isFreeToLock() {
         return rel -> {
-            if (relationshipIsLocked(rel.id)) {
+            if (relationshipIsLocked(rel.id())) {
                 return false;
             }
-            RelationshipRecord record = store.loadRelationship(rel.id);
+            RelationshipRecord record = store.loadRelationship(rel.id());
             return (record.isFirstInFirstChain() || !relationshipIsLocked(record.getFirstPrevRel()))
                     && (isNull(record.getFirstNextRel()) || !relationshipIsLocked(record.getFirstNextRel()))
                     && (record.isFirstInSecondChain() || !relationshipIsLocked(record.getSecondPrevRel()))
