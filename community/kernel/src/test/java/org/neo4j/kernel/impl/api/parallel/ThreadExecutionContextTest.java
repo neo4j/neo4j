@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
@@ -51,8 +52,10 @@ class ThreadExecutionContextTest {
         var storageEngine = mock(StorageEngine.class);
         var storeCursors = mock(StoreCursors.class);
         when(storageEngine.createStorageCursors(any())).thenReturn(storeCursors);
+        var monitor = mock(IndexMonitor.class);
 
-        try (var executionContext = new ThreadExecutionContext(ktx, contextFactory, storageEngine, Config.defaults())) {
+        try (var executionContext =
+                new ThreadExecutionContext(ktx, contextFactory, storageEngine, Config.defaults(), monitor)) {
             executionContext.complete();
         }
 

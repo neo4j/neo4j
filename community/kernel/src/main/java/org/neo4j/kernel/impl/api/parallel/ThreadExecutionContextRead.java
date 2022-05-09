@@ -23,6 +23,8 @@ import java.io.Closeable;
 import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -45,15 +47,18 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
 import org.neo4j.kernel.impl.newapi.ReadSupport;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageEngineIndexingBehaviour;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.values.storable.Value;
 
-public class ThreadExecutionContextRead implements Read, Closeable {
+public class ThreadExecutionContextRead implements Read, Closeable, QueryContext {
     private final ThreadExecutionContext context;
     private final Read read;
     private final StorageReader reader;
@@ -376,5 +381,37 @@ public class ThreadExecutionContextRead implements Read, Closeable {
         pooledCursors.assertClosed();
         pooledCursors.release();
         reader.close();
+    }
+
+    // -------------------------------------------------------------------------
+    // QueryContext
+    @Override
+    public Read getRead() {
+        return read;
+    }
+
+    @Override
+    public CursorFactory cursors() {
+        return pooledCursors;
+    }
+
+    @Override
+    public ReadableTransactionState getTransactionStateOrNull() {
+        return null;
+    }
+
+    @Override
+    public CursorContext cursorContext() {
+        return context.cursorContext();
+    }
+
+    @Override
+    public MemoryTracker memoryTracker() {
+        return EmptyMemoryTracker.INSTANCE;
+    }
+
+    @Override
+    public IndexMonitor monitor() {
+        return context.monitor();
     }
 }

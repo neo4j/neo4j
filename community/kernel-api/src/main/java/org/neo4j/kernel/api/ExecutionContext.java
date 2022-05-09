@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -56,6 +57,11 @@ public interface ExecutionContext extends AutoCloseable {
      * @return execution context store cursors.
      */
     StoreCursors storeCursors();
+
+    /**
+     * @return the query execution context of this execution context
+     */
+    QueryContext queryContext();
 
     /**
      * Mark execution context as completed and prepare any data that needs to be reported back to owning transaction.

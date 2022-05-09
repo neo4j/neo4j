@@ -23,6 +23,8 @@ import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 import java.lang.invoke.VarHandle;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -41,12 +43,14 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     private final CursorContext ktxContext;
     private final ThreadExecutionContextRead contextRead;
     private final StoreCursors storageCursors;
+    private final IndexMonitor monitor;
 
     public ThreadExecutionContext(
             KernelTransactionImplementation ktx,
             CursorContextFactory contextFactory,
             StorageEngine storageEngine,
-            Config config) {
+            Config config,
+            IndexMonitor monitor) {
         this.cursorTracer = new ExecutionContextCursorTracer(PageCacheTracer.NULL, TRANSACTION_EXECUTION_TAG);
         this.ktxContext = ktx.cursorContext();
         this.context = contextFactory.create(cursorTracer);
@@ -59,6 +63,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
                 storageCursors,
                 config,
                 storageEngine.indexingBehaviour());
+        this.monitor = monitor;
     }
 
     @Override
@@ -90,6 +95,15 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     @Override
     public StoreCursors storeCursors() {
         return storageCursors;
+    }
+
+    @Override
+    public QueryContext queryContext() {
+        return contextRead;
+    }
+
+    IndexMonitor monitor() {
+        return monitor;
     }
 
     @Override
