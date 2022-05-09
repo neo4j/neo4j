@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
+import static java.io.OutputStream.nullOutputStream;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -55,7 +56,6 @@ import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.batchimport.staging.HumanUnderstandableExecutionMonitor.ImportStage;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
-import org.neo4j.io.NullOutputStream;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -92,7 +92,7 @@ class HumanUnderstandableExecutionMonitorIT {
         // given
         CapturingMonitor progress = new CapturingMonitor();
         HumanUnderstandableExecutionMonitor monitor =
-                new HumanUnderstandableExecutionMonitor(progress, new PrintStream(NullOutputStream.NULL_OUTPUT_STREAM));
+                new HumanUnderstandableExecutionMonitor(progress, new PrintStream(nullOutputStream()));
         IdType idType = IdType.INTEGER;
         Input input = new DataGeneratorInput(
                 NODE_COUNT,
@@ -143,7 +143,7 @@ class HumanUnderstandableExecutionMonitorIT {
     void shouldStartFromNonFirstStage() {
         // given
         HumanUnderstandableExecutionMonitor monitor = new HumanUnderstandableExecutionMonitor(
-                HumanUnderstandableExecutionMonitor.NO_MONITOR, new PrintStream(NullOutputStream.NULL_OUTPUT_STREAM));
+                HumanUnderstandableExecutionMonitor.NO_MONITOR, new PrintStream(nullOutputStream()));
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency(Input.knownEstimates(10, 10, 10, 10, 10, 10, 10));
         BatchingNeoStores neoStores = mock(BatchingNeoStores.class);

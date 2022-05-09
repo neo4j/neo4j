@@ -28,6 +28,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.put;
 import static com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
+import static java.io.OutputStream.nullOutputStream;
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_ACCEPTED;
 import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
@@ -45,7 +46,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
 import static org.neo4j.pushtocloud.HttpCopier.ERROR_REASON_EXCEEDS_MAX_SIZE;
 import static org.neo4j.pushtocloud.HttpCopier.ERROR_REASON_UNSUPPORTED_INDEXES;
 import static org.neo4j.pushtocloud.HttpCopier.HTTP_RESUME_INCOMPLETE;
@@ -115,7 +115,7 @@ class HttpCopierTest {
         wireMock = new WireMockServer(TEST_PORT);
         wireMock.start();
         Path dir = directory.homePath();
-        PrintStream out = new PrintStream(NULL_OUTPUT_STREAM);
+        PrintStream out = new PrintStream(nullOutputStream());
         ctx = new ExecutionContext(dir, dir, out, out, fs);
     }
 

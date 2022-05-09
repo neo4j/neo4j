@@ -19,11 +19,11 @@
  */
 package org.neo4j.internal.batchimport.input;
 
+import static java.io.OutputStream.nullOutputStream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.batchimport.input.BadCollector.COLLECT_ALL;
 import static org.neo4j.internal.batchimport.input.BadCollector.UNLIMITED_TOLERANCE;
-import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
 import static org.neo4j.test.OtherThreadExecutor.command;
 
 import java.io.ByteArrayOutputStream;
@@ -111,7 +111,7 @@ class BadCollectorTest {
     @Test
     void shouldCollectUnlimitedNumberOfBadEntriesIfToldTo() {
         // GIVEN
-        try (BadCollector collector = new BadCollector(NULL_OUTPUT_STREAM, UNLIMITED_TOLERANCE, COLLECT_ALL)) {
+        try (BadCollector collector = new BadCollector(nullOutputStream(), UNLIMITED_TOLERANCE, COLLECT_ALL)) {
             // WHEN
             int count = 10_000;
             for (int i = 0; i < count; i++) {
@@ -145,7 +145,7 @@ class BadCollectorTest {
         BlockableMonitor monitor = new BlockableMonitor();
         try (OtherThreadExecutor t2 = new OtherThreadExecutor("T2");
                 BadCollector badCollector = new BadCollector(
-                        NULL_OUTPUT_STREAM, UNLIMITED_TOLERANCE, COLLECT_ALL, backPressureThreshold, false, monitor)) {
+                        nullOutputStream(), UNLIMITED_TOLERANCE, COLLECT_ALL, backPressureThreshold, false, monitor)) {
             try (monitor) {
                 for (int i = 0; i < backPressureThreshold; i++) {
                     badCollector.collectDuplicateNode(i, i, "group");

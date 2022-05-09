@@ -19,13 +19,13 @@
  */
 package org.neo4j.internal.batchimport.input;
 
+import static java.io.OutputStream.nullOutputStream;
 import static org.neo4j.internal.batchimport.input.BadCollector.BAD_RELATIONSHIPS;
 import static org.neo4j.internal.batchimport.input.BadCollector.COLLECT_ALL;
 import static org.neo4j.internal.batchimport.input.BadCollector.DEFAULT_BACK_PRESSURE_THRESHOLD;
 import static org.neo4j.internal.batchimport.input.BadCollector.DUPLICATE_NODES;
 import static org.neo4j.internal.batchimport.input.BadCollector.EXTRA_COLUMNS;
 import static org.neo4j.internal.batchimport.input.BadCollector.NO_MONITOR;
-import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
 
 import java.io.OutputStream;
 import java.util.function.Function;
@@ -41,7 +41,7 @@ public class Collectors {
     }
 
     public static Collector silentBadCollector(long tolerance, int collect) {
-        return badCollector(NULL_OUTPUT_STREAM, tolerance, collect);
+        return badCollector(nullOutputStream(), tolerance, collect);
     }
 
     public static Collector badCollector(OutputStream out, long unlimitedTolerance) {

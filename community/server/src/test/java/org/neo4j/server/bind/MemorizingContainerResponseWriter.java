@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.bind;
 
+import static java.io.OutputStream.nullOutputStream;
 import static javax.ws.rs.core.Response.Status;
-import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
 
 import java.io.OutputStream;
 import java.util.concurrent.TimeUnit;
@@ -37,7 +37,7 @@ public class MemorizingContainerResponseWriter implements ContainerResponseWrite
             throws ContainerException {
         status = Status.fromStatusCode(responseContext.getStatus());
         entity = responseContext.getEntity();
-        return NULL_OUTPUT_STREAM;
+        return nullOutputStream();
     }
 
     @Override
