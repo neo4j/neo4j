@@ -116,7 +116,7 @@ public enum Group {
     PANIC_SERVICE("PanicService"),
     CLUSTER_STATUS_CHECK_SERVICE("ClusterStatusService"),
     TOPOLOGY_LOGGER("TopologyLogger"),
-    TOPOLOGY_GRAPH_UPDATER("TopologyGraphUpdater"),
+    TOPOLOGY_MAINTENANCE("TopologyMaintenance"),
     TOPOLOGY_GRAPH_WRITE_SUPPORT("TopologyGraphWriteSupport"),
     CONNECTIVITY_CHECKS("ConnectivityChecks"),
 
