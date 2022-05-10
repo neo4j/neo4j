@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext
-import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext.Create
 import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext.Match
 import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext.Merge
 import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext.name
@@ -54,11 +53,7 @@ import org.neo4j.cypher.internal.expressions.SymbolicName
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.DeprecatedRepeatedRelVarInPatternExpression
-import org.neo4j.cypher.internal.util.Foldable.FoldableAny
-import org.neo4j.cypher.internal.util.Foldable.SkipChildren
-import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.UnboundedShortestPathNotification
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTMap
@@ -72,7 +67,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     semanticCheckFold(pattern.patternParts)(declareVariables(ctx)) chain
       semanticCheckFold(pattern.patternParts)(checkElementPredicates(ctx)) chain
       semanticCheckFold(pattern.patternParts)(check(ctx)) chain
-      ensureNoSelfReferenceToVariableInPattern(ctx, pattern) chain
       ensureNoDuplicateRelationships(pattern)
 
   def check(ctx: SemanticContext, pattern: RelationshipsPattern): SemanticCheck =
@@ -119,46 +113,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         Where.checkExpression(predicate)
       }
     }
-
-  private def ensureNoSelfReferenceToVariableInPattern(ctx: SemanticContext, pattern: Pattern): SemanticCheck = {
-    state =>
-      ctx match {
-        case Create =>
-          val errors = getSelfReferenceVariableInPattern(pattern, state)
-            .map(variable =>
-              SemanticError(
-                state.errorMessageProvider.createSelfReferenceError(
-                  variable.name,
-                  state.symbolTypes(variable.name).toShortString
-                ),
-                variable.position
-              )
-            ).toSeq
-
-          SemanticCheckResult(state, errors)
-        case _ => SemanticCheckResult.success(state)
-      }
-  }
-
-  private def getSelfReferenceVariableInPattern(pattern: Pattern, state: SemanticState): Set[LogicalVariable] = {
-    val allSymbolDefinitions = state.currentScope.scope.allSymbolDefinitions
-
-    def findAllVariables(e: Any): Set[LogicalVariable] = e.folder.findAllByClass[LogicalVariable].toSet
-    def isDefinition(variable: LogicalVariable): Boolean =
-      allSymbolDefinitions(variable.name).map(_.use).contains(Ref(variable))
-
-    pattern.patternParts.flatMap { patternParts =>
-      val (declaredVariables, referencedVariables) =
-        patternParts.folder.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
-          case NodePattern(maybeVariable, _, maybeProperties, _) => acc =>
-              SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
-          case RelationshipPattern(maybeVariable, _, _, maybeProperties, _, _) => acc =>
-              SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
-          case NamedPatternPart(variable, _) => acc => TraverseChildren((acc._1 + variable, acc._2))
-        }
-      referencedVariables.filter(declaredVariables)
-    }.toSet
-  }
 
   def declareVariables(ctx: SemanticContext)(part: PatternPart): SemanticCheck =
     part match {
