@@ -1957,7 +1957,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     url <- if (targetName.nonEmpty) some(_nameAsEither) else const(None)
     username <- option(_nameAsEither)
     password <- option(_password)
-    driverSettings <- option(_optionalMapAsEither)
+    // All four are not allowed to be None
+    driverSettings <-
+      if (url.isEmpty && username.isEmpty && password.isEmpty) some(_optionalMapAsEither)
+      else option(_optionalMapAsEither)
   } yield AlterRemoteDatabaseAlias(aliasName, targetName, ifExists, url, username, password, driverSettings)(pos)
 
   def _showAliases: Gen[ShowAliases] = for {
