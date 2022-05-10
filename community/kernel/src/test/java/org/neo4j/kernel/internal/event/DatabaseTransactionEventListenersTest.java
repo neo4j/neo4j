@@ -93,7 +93,7 @@ class DatabaseTransactionEventListenersTest {
         // given
         var db = mock(GraphDatabaseFacade.class);
         var dbListeners = new DatabaseTransactionEventListeners(
-                db, new GlobalTransactionEventListeners(), DatabaseIdFactory.from("db", UUID.randomUUID()));
+                db, new DefaultGlobalTransactionEventListeners(), DatabaseIdFactory.from("db", UUID.randomUUID()));
         var firstSuccessfulListener = mock(TransactionEventListener.class);
         var secondFailingListener = mock(TransactionEventListener.class);
         var thirdSuccessfulListener = mock(TransactionEventListener.class);
@@ -120,7 +120,7 @@ class DatabaseTransactionEventListenersTest {
         // given
         var db = mock(GraphDatabaseFacade.class);
         var dbListeners = new DatabaseTransactionEventListeners(
-                db, new GlobalTransactionEventListeners(), DatabaseIdFactory.from("db", UUID.randomUUID()));
+                db, new DefaultGlobalTransactionEventListeners(), DatabaseIdFactory.from("db", UUID.randomUUID()));
         TransactionEventListener<?> firstSuccessfulListener = mock(TransactionEventListener.class);
         TransactionEventListener<?> secondFailingListener = mock(TransactionEventListener.class);
         TransactionEventListener<?> thirdSuccessfulListener = mock(TransactionEventListener.class);
@@ -148,7 +148,7 @@ class DatabaseTransactionEventListenersTest {
         // given
         var db = mock(GraphDatabaseFacade.class);
         var dbListeners = new DatabaseTransactionEventListeners(
-                db, new GlobalTransactionEventListeners(), DatabaseIdFactory.from("db", UUID.randomUUID()));
+                db, new DefaultGlobalTransactionEventListeners(), DatabaseIdFactory.from("db", UUID.randomUUID()));
         TransactionEventListener<?> firstSuccessfulListener = mock(TransactionEventListener.class);
         TransactionEventListener<?> secondFailingListener = mock(TransactionEventListener.class);
         TransactionEventListener<?> thirdSuccessfulListener = mock(TransactionEventListener.class);
@@ -181,7 +181,7 @@ class DatabaseTransactionEventListenersTest {
     private void shouldCloseTxSnapshot(
             BiConsumer<DatabaseTransactionEventListeners, TransactionListenersState> txAction) {
         // Given
-        GlobalTransactionEventListeners globalListeners = new GlobalTransactionEventListeners();
+        GlobalTransactionEventListeners globalListeners = new DefaultGlobalTransactionEventListeners();
         NamedDatabaseId databaseId = DatabaseIdFactory.from("foo", UUID.randomUUID());
         DatabaseTransactionEventListeners listeners =
                 new DatabaseTransactionEventListeners(mock(GraphDatabaseFacade.class), globalListeners, databaseId);

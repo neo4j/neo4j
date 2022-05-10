@@ -88,6 +88,7 @@ import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.kernel.internal.Version;
+import org.neo4j.kernel.internal.event.DefaultGlobalTransactionEventListeners;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.internal.locker.FileLockerService;
 import org.neo4j.kernel.internal.locker.GlobalLockerService;
@@ -267,7 +268,7 @@ public class GlobalModule {
         }
         globalDependencies.satisfyDependencies(databaseEventListeners);
 
-        transactionEventListeners = new GlobalTransactionEventListeners();
+        transactionEventListeners = createGlobalTransactionEventListeners();
         globalDependencies.satisfyDependency(transactionEventListeners);
 
         connectorPortRegister = new ConnectorPortRegister();
@@ -353,6 +354,10 @@ public class GlobalModule {
             globalConfig.addListener(store_internal_log_level, (before, after) -> provider.updateLogLevel(after));
         }
         return globalLife.add(logService);
+    }
+
+    protected GlobalTransactionEventListeners createGlobalTransactionEventListeners() {
+        return new DefaultGlobalTransactionEventListeners();
     }
 
     private JobScheduler createJobScheduler() {

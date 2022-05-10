@@ -49,6 +49,9 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.function.Suppliers;
+import org.neo4j.graphdb.event.DatabaseEventListenerAdapter;
+import org.neo4j.graphdb.facade.SystemDbUpgrader;
+import org.neo4j.graphdb.factory.module.edition.migration.MigrationEditionModuleFactory;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.ByteUnit;
@@ -136,110 +139,115 @@ public class MigrateStoreCommand extends AbstractCommand {
 
     @Override
     protected void execute() {
+        Config config = buildConfig(ctx, allowCommandExpansion);
+        try (Log4jLogProvider logProvider = Util.configuredLogProvider(config, ctx.out());
+                Log4jLogProvider systemDbStartupLogProvider =
+                        createSystemDbStartupLogProvider(config, ctx, logProvider)) {
+            migrateStore(config, logProvider);
+            if (SYSTEM_DATABASE_NAME.equals(database.getDatabaseName())) {
+                upgradeSystemDb(config, logProvider, systemDbStartupLogProvider);
+            }
+        }
+    }
+
+    private void migrateStore(Config config, Log4jLogProvider logProvider) {
         var databaseTracers = DatabaseTracers.EMPTY;
         var pageCacheTracer = PageCacheTracer.NULL;
         var memoryTracker = EmptyMemoryTracker.INSTANCE;
         var contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
 
-        Config config = buildConfig(ctx, allowCommandExpansion);
         List<FailedMigration> failedMigrations = new ArrayList<>();
 
-        try (Log4jLogProvider logProvider = Util.configuredLogProvider(config, ctx.out())) {
-            InternalLog resultLog = logProvider.getLog(getClass());
+        InternalLog resultLog = logProvider.getLog(getClass());
+        try (FileSystemAbstraction fs = new DefaultFileSystemAbstraction()) {
+            Set<String> dbNames = getDbNames(config, fs);
 
-            try (FileSystemAbstraction fs = new DefaultFileSystemAbstraction()) {
-                Set<String> dbNames = getDbNames(config, fs);
+            for (String dbName : dbNames) {
 
-                for (String dbName : dbNames) {
+                resultLog.info("Starting migration for database '" + dbName + "'");
 
-                    resultLog.info("Starting migration for database '" + dbName + "'");
+                LifeSupport life = new LifeSupport();
+                String formatFamilyForDb = formatFamily;
 
-                    LifeSupport life = new LifeSupport();
-                    String formatFamilyForDb = formatFamily;
+                try (JobScheduler jobScheduler = life.add(JobSchedulerFactory.createInitialisedScheduler());
+                        PageCache pageCache = createPageCache(fs, config, jobScheduler, pageCacheTracer)) {
 
-                    try (JobScheduler jobScheduler = life.add(JobSchedulerFactory.createInitialisedScheduler());
-                            PageCache pageCache = createPageCache(fs, config, jobScheduler, pageCacheTracer)) {
+                    DatabaseLayout databaseLayout = Neo4jLayout.of(config).databaseLayout(dbName);
+                    checkDatabaseExistence(databaseLayout);
 
-                        DatabaseLayout databaseLayout = Neo4jLayout.of(config).databaseLayout(dbName);
-                        checkDatabaseExistence(databaseLayout);
-
-                        if (SYSTEM_DATABASE_NAME.equals(dbName)) {
-                            formatFamilyForDb = GraphDatabaseSettings.DatabaseRecordFormat.aligned.name();
-                        }
-
-                        try (Closeable ignored = LockChecker.checkDatabaseLock(databaseLayout)) {
-                            SimpleLogService logService = new SimpleLogService(logProvider);
-
-                            StorageEngineFactory currentStorageEngineFactory =
-                                    getCurrentStorageEngineFactory(fs, databaseLayout, pageCache);
-                            var indexProviderMap = getIndexProviderMap(
-                                    fs,
-                                    databaseLayout,
-                                    config,
-                                    logService,
-                                    pageCache,
-                                    jobScheduler,
-                                    life,
-                                    currentStorageEngineFactory,
-                                    pageCacheTracer,
-                                    contextFactory);
-
-                            // Add the kernel store migrator
-                            life.start();
-
-                            StoreMigrator storeMigrator = new StoreMigrator(
-                                    fs,
-                                    config,
-                                    logService,
-                                    pageCache,
-                                    databaseTracers,
-                                    jobScheduler,
-                                    databaseLayout,
-                                    currentStorageEngineFactory,
-                                    indexProviderMap,
-                                    contextFactory,
-                                    memoryTracker,
-                                    Suppliers.lazySingleton(() -> loadLogTail(
-                                            fs,
-                                            pageCache,
-                                            config,
-                                            currentStorageEngineFactory,
-                                            DatabaseTracers.EMPTY,
-                                            databaseLayout,
-                                            memoryTracker)));
-
-                            storeMigrator.migrateIfNeeded(formatFamilyForDb, forceBtreeToRange);
-                        } catch (FileLockException e) {
-                            throw new CommandFailedException(
-                                    "The database is in use. Stop database '" + dbName + "' and try again.", e);
-                        }
-                    } catch (Exception e) {
-                        resultLog.error("Failed to migrate database '" + dbName + "': " + e.getMessage());
-                        failedMigrations.add(new FailedMigration(dbName, e));
-                    } finally {
-                        life.shutdown();
+                    if (SYSTEM_DATABASE_NAME.equals(dbName)) {
+                        formatFamilyForDb = GraphDatabaseSettings.DatabaseRecordFormat.aligned.name();
                     }
-                }
-            } catch (IOException e) {
-                throw new CommandFailedException(
-                        format(
-                                "Failed to migrate database(s): %s: %s",
-                                e.getClass().getSimpleName(), e.getMessage()),
-                        e);
-            }
 
-            if (failedMigrations.isEmpty()) {
-                resultLog.info("Migrate-store completed successfully");
-            } else {
-                StringJoiner failedDbs = new StringJoiner("', '", "Migrate-store failed for databases: '", "'");
-                Exception exceptions = null;
-                for (FailedMigration failedMigration : failedMigrations) {
-                    failedDbs.add(failedMigration.dbName);
-                    exceptions = Exceptions.chain(exceptions, failedMigration.e);
+                    try (Closeable ignored = LockChecker.checkDatabaseLock(databaseLayout)) {
+                        SimpleLogService logService = new SimpleLogService(logProvider);
+
+                        StorageEngineFactory currentStorageEngineFactory =
+                                getCurrentStorageEngineFactory(fs, databaseLayout, pageCache);
+                        var indexProviderMap = getIndexProviderMap(
+                                fs,
+                                databaseLayout,
+                                config,
+                                logService,
+                                pageCache,
+                                jobScheduler,
+                                life,
+                                currentStorageEngineFactory,
+                                pageCacheTracer,
+                                contextFactory);
+
+                        // Add the kernel store migrator
+                        life.start();
+
+                        StoreMigrator storeMigrator = new StoreMigrator(
+                                fs,
+                                config,
+                                logService,
+                                pageCache,
+                                databaseTracers,
+                                jobScheduler,
+                                databaseLayout,
+                                currentStorageEngineFactory,
+                                indexProviderMap,
+                                contextFactory,
+                                memoryTracker,
+                                Suppliers.lazySingleton(() -> loadLogTail(
+                                        fs,
+                                        pageCache,
+                                        config,
+                                        currentStorageEngineFactory,
+                                        DatabaseTracers.EMPTY,
+                                        databaseLayout,
+                                        memoryTracker)));
+
+                        storeMigrator.migrateIfNeeded(formatFamilyForDb, forceBtreeToRange);
+                    } catch (FileLockException e) {
+                        throw new CommandFailedException(
+                                "The database is in use. Stop database '" + dbName + "' and try again.", e);
+                    }
+                } catch (Exception e) {
+                    resultLog.error("Failed to migrate database '" + dbName + "': " + e.getMessage());
+                    failedMigrations.add(new FailedMigration(dbName, e));
+                } finally {
+                    life.shutdown();
                 }
-                resultLog.error(failedDbs.toString());
-                throw new CommandFailedException(failedDbs.toString(), exceptions);
             }
+        } catch (IOException e) {
+            throw new CommandFailedException(
+                    format("Failed to migrate database(s): %s: %s", e.getClass().getSimpleName(), e.getMessage()), e);
+        }
+
+        if (failedMigrations.isEmpty()) {
+            resultLog.info("Migrate-store completed successfully");
+        } else {
+            StringJoiner failedDbs = new StringJoiner("', '", "Migrate-store failed for databases: '", "'");
+            Exception exceptions = null;
+            for (FailedMigration failedMigration : failedMigrations) {
+                failedDbs.add(failedMigration.dbName);
+                exceptions = Exceptions.chain(exceptions, failedMigration.e);
+            }
+            resultLog.error(failedDbs.toString());
+            throw new CommandFailedException(failedDbs.toString(), exceptions);
         }
     }
 
@@ -266,6 +274,39 @@ public class MigrateStoreCommand extends AbstractCommand {
             }
             return dbNames;
         }
+    }
+
+    private static void upgradeSystemDb(
+            Config config, Log4jLogProvider logProvider, Log4jLogProvider systemDbStartupLogProvider) {
+        try {
+            var editionModuleFactory = loadEditionModuleFactory();
+            SystemDbUpgrader.upgrade(
+                    editionModuleFactory,
+                    config,
+                    logProvider,
+                    systemDbStartupLogProvider,
+                    new DatabaseEventListenerAdapter());
+        } catch (Exception e) {
+            throw new CommandFailedException(e.getMessage(), e);
+        }
+    }
+
+    private static Log4jLogProvider createSystemDbStartupLogProvider(
+            Config config, ExecutionContext ctx, Log4jLogProvider logProvider) {
+        if (config.get(GraphDatabaseSettings.store_internal_log_level) == Level.DEBUG) {
+            return logProvider;
+        }
+        var errorLevelConfig = Config.newBuilder()
+                .fromConfig(config)
+                .set(GraphDatabaseSettings.store_internal_log_level, Level.ERROR)
+                .build();
+        return Util.configuredLogProvider(errorLevelConfig, ctx.out());
+    }
+
+    private static MigrationEditionModuleFactory loadEditionModuleFactory() {
+        var editionModuleFactory = Services.loadByPriority(MigrationEditionModuleFactory.class);
+        return editionModuleFactory.orElseThrow(() -> new IllegalStateException(
+                "Could not find any implementations of " + MigrationEditionModuleFactory.class));
     }
 
     private LogTailMetadata loadLogTail(

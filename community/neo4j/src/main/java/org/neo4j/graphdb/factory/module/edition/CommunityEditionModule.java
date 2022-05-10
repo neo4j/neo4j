@@ -238,6 +238,10 @@ public class CommunityEditionModule extends StandaloneEditionModule implements D
                 () -> new DefaultSystemGraphInitializer(systemSupplier, systemGraphComponents));
         globalModule.getGlobalDependencies().satisfyDependency(initializer);
         globalModule.getGlobalLife().add(initializer);
+        registerDefaultDatabaseInitializer(globalModule);
+    }
+
+    protected void registerDefaultDatabaseInitializer(GlobalModule globalModule) {
         globalModule.getGlobalLife().add(defaultDatabaseInitializer);
     }
 

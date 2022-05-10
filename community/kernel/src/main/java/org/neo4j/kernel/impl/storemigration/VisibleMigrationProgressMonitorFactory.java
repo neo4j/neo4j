@@ -29,53 +29,21 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.util.VisibleForTesting;
 
-class VisibleMigrationProgressMonitorFactory {
+public class VisibleMigrationProgressMonitorFactory {
     static MigrationProgressMonitor forMigration(InternalLog log) {
         return forMigration(log, Clock.systemUTC());
     }
 
     @VisibleForTesting
     static MigrationProgressMonitor forMigration(InternalLog log, Clock clock) {
-        return new MigrationProgressMonitor() {
-            static final String MESSAGE_STARTED = "Starting migration of database";
-            static final String MESSAGE_COMPLETED = "Successfully finished migration of database";
-            static final String TX_LOGS_MIGRATION_STARTED = "Starting transaction logs migration.";
-            static final String TX_LOGS_MIGRATION_COMPLETED = "Transaction logs migration completed.";
-            private static final String MESSAGE_COMPLETED_WITH_DURATION = MESSAGE_COMPLETED + ", took %s";
-
-            private int numStages;
-            private int currentStage;
-            private long startTime;
-
-            @Override
-            public void started(int numStages) {
-                this.numStages = numStages;
-                log.info(MESSAGE_STARTED);
-                startTime = clock.millis();
-            }
-
-            @Override
-            public ProgressReporter startSection(String name) {
-                log.info(format("Migrating %s (%d/%d):", name, ++currentStage, numStages));
-                return new LogProgressReporter(log);
-            }
-
-            @Override
-            public void completed() {
-                long time = clock.millis() - startTime;
-                log.info(MESSAGE_COMPLETED_WITH_DURATION, duration(time));
-            }
-
-            @Override
-            public void startTransactionLogsMigration() {
-                log.info(TX_LOGS_MIGRATION_STARTED);
-            }
-
-            @Override
-            public void completeTransactionLogsMigration() {
-                log.info(TX_LOGS_MIGRATION_COMPLETED);
-            }
-        };
+        return new MigrationProgressMonitorImpl(
+                log,
+                clock,
+                "Migrating",
+                "Starting migration of database",
+                "Successfully finished migration of database",
+                "Starting transaction logs migration.",
+                "Transaction logs migration completed.");
     }
 
     static MigrationProgressMonitor forUpgrade(InternalLog log) {
@@ -84,45 +52,85 @@ class VisibleMigrationProgressMonitorFactory {
 
     @VisibleForTesting
     static MigrationProgressMonitor forUpgrade(InternalLog log, Clock clock) {
-        return new MigrationProgressMonitor() {
-            static final String MESSAGE_STARTED = "Starting upgrade of database";
-            static final String MESSAGE_COMPLETED = "Successfully finished upgrade of database";
-            static final String TX_LOGS_UPGRADE_STARTED = "Starting transaction logs upgrade.";
-            static final String TX_LOGS_UPGRADE_COMPLETED = "Transaction logs upgrade completed.";
-            private static final String MESSAGE_COMPLETED_WITH_DURATION = MESSAGE_COMPLETED + ", took %s";
+        return new MigrationProgressMonitorImpl(
+                log,
+                clock,
+                "Upgrading",
+                "Starting upgrade of database",
+                "Successfully finished upgrade of database",
+                "Starting transaction logs upgrade.",
+                "Transaction logs upgrade completed.");
+    }
 
-            private int numStages;
-            private int currentStage;
-            private long startTime;
+    public static MigrationProgressMonitor forSystemUpgrade(InternalLog log) {
+        var clock = Clock.systemUTC();
+        return new MigrationProgressMonitorImpl(
+                log,
+                clock,
+                "Upgrading",
+                "Starting upgrade of system database",
+                "Successfully finished upgrade of system database",
+                "Starting transaction logs upgrade.",
+                "Transaction logs upgrade completed.");
+    }
 
-            @Override
-            public void started(int numStages) {
-                this.numStages = numStages;
-                log.info(MESSAGE_STARTED);
-                startTime = clock.millis();
-            }
+    private static class MigrationProgressMonitorImpl implements MigrationProgressMonitor {
+        private final InternalLog log;
+        private final Clock clock;
+        private final String operation;
+        private final String messageStarted;
+        private final String txLogsUpgradeStarted;
+        private final String txLogsUpgradeCompleted;
+        private final String messageCompletedWithDuration;
 
-            @Override
-            public ProgressReporter startSection(String name) {
-                log.info(format("Upgrading %s (%d/%d):", name, ++currentStage, numStages));
-                return new LogProgressReporter(log);
-            }
+        private int numStages;
+        private int currentStage;
+        private long startTime;
 
-            @Override
-            public void completed() {
-                long time = clock.millis() - startTime;
-                log.info(MESSAGE_COMPLETED_WITH_DURATION, duration(time));
-            }
+        MigrationProgressMonitorImpl(
+                InternalLog log,
+                Clock clock,
+                String operation,
+                String messageStarted,
+                String messageCompleted,
+                String txLogsUpgradeStarted,
+                String txLogsUpgradeCompleted) {
+            this.log = log;
+            this.clock = clock;
+            this.operation = operation;
+            this.messageStarted = messageStarted;
+            this.txLogsUpgradeStarted = txLogsUpgradeStarted;
+            this.txLogsUpgradeCompleted = txLogsUpgradeCompleted;
+            this.messageCompletedWithDuration = messageCompleted + ", took %s";
+        }
 
-            @Override
-            public void startTransactionLogsMigration() {
-                log.info(TX_LOGS_UPGRADE_STARTED);
-            }
+        @Override
+        public void started(int numStages) {
+            this.numStages = numStages;
+            log.info(messageStarted);
+            startTime = clock.millis();
+        }
 
-            @Override
-            public void completeTransactionLogsMigration() {
-                log.info(TX_LOGS_UPGRADE_COMPLETED);
-            }
-        };
+        @Override
+        public ProgressReporter startSection(String name) {
+            log.info(format("%s %s (%d/%d):", operation, name, ++currentStage, numStages));
+            return new LogProgressReporter(log);
+        }
+
+        @Override
+        public void completed() {
+            long time = clock.millis() - startTime;
+            log.info(messageCompletedWithDuration, duration(time));
+        }
+
+        @Override
+        public void startTransactionLogsMigration() {
+            log.info(txLogsUpgradeStarted);
+        }
+
+        @Override
+        public void completeTransactionLogsMigration() {
+            log.info(txLogsUpgradeCompleted);
+        }
     }
 }

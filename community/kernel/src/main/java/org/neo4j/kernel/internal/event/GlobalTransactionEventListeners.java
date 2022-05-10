@@ -19,42 +19,21 @@
  */
 package org.neo4j.kernel.internal.event;
 
-import static java.lang.String.format;
-import static java.util.Objects.requireNonNull;
-
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import org.neo4j.graphdb.event.TransactionEventListener;
 
-public class GlobalTransactionEventListeners {
-    private final ConcurrentHashMap<String, List<TransactionEventListener<?>>> globalTransactionEventListeners =
-            new ConcurrentHashMap<>();
-
+public interface GlobalTransactionEventListeners {
     /**
      * Registers {@code listener} as a listener for transaction events which
      * are generated from different places in the lifecycle of each
      * transaction.
      *
      * @param databaseName name of the database to listener transactions
-     * @param listener the listener to receive events about different states
-     *                in transaction life cycles.
+     * @param listener     the listener to receive events about different states
+     *                     in transaction life cycles.
      */
-    public void registerTransactionEventListener(String databaseName, TransactionEventListener<?> listener) {
-        requireNonNull(databaseName, "Database name is required.");
-        requireNonNull(listener, "Transaction event listener is required.");
-        globalTransactionEventListeners.compute(databaseName, (s, transactionEventListeners) -> {
-            List<TransactionEventListener<?>> listeners =
-                    transactionEventListeners != null ? transactionEventListeners : new CopyOnWriteArrayList<>();
-            if (listeners.contains(listener)) {
-                return listeners;
-            }
-            listeners.add(listener);
-            return listeners;
-        });
-    }
+    void registerTransactionEventListener(String databaseName, TransactionEventListener<?> listener);
 
     /**
      * Unregisters {@code listener} from the list of transaction event listeners.
@@ -63,28 +42,25 @@ public class GlobalTransactionEventListeners {
      * to calling this method an {@link IllegalStateException} will be thrown.
      *
      * @param databaseName name of the database to listener transactions
-     * @param listener the listener to receive events about different states
-     *                in transaction life cycles.
+     * @param listener     the listener to receive events about different states
+     *                     in transaction life cycles.
      * @throws IllegalStateException if {@code listener} wasn't registered prior
      *                               to calling this method.
      */
-    public void unregisterTransactionEventListener(String databaseName, TransactionEventListener<?> listener) {
-        requireNonNull(databaseName);
-        requireNonNull(listener);
-        globalTransactionEventListeners.compute(databaseName, (s, transactionEventListeners) -> {
-            if (transactionEventListeners == null || !transactionEventListeners.remove(listener)) {
-                throw new IllegalStateException(format(
-                        "Transaction event listener `%s` is not registered as listener for database `%s`.",
-                        listener, databaseName));
-            }
-            if (transactionEventListeners.isEmpty()) {
-                return null;
-            }
-            return transactionEventListeners;
-        });
-    }
+    void unregisterTransactionEventListener(String databaseName, TransactionEventListener<?> listener);
 
-    public Collection<TransactionEventListener<?>> getDatabaseTransactionEventListeners(String databaseName) {
-        return globalTransactionEventListeners.getOrDefault(databaseName, Collections.emptyList());
-    }
+    Collection<TransactionEventListener<?>> getDatabaseTransactionEventListeners(String databaseName);
+
+    GlobalTransactionEventListeners NULL = new GlobalTransactionEventListeners() {
+        @Override
+        public void registerTransactionEventListener(String databaseName, TransactionEventListener<?> listener) {}
+
+        @Override
+        public void unregisterTransactionEventListener(String databaseName, TransactionEventListener<?> listener) {}
+
+        @Override
+        public Collection<TransactionEventListener<?>> getDatabaseTransactionEventListeners(String databaseName) {
+            return Collections.emptyList();
+        }
+    };
 }
