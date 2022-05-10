@@ -32,13 +32,11 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
-import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -205,13 +203,13 @@ public class TokenIndexProvider extends IndexProvider {
 
     private static class TokenIndexCapability implements IndexCapability {
         @Override
-        public IndexOrderCapability orderCapability(ValueCategory... valueCategories) {
-            return IndexOrderCapability.BOTH_FULLY_SORTED;
+        public boolean supportsOrdering() {
+            return true;
         }
 
         @Override
-        public IndexValueCapability valueCapability(ValueCategory... valueCategories) {
-            return IndexValueCapability.YES;
+        public boolean supportsReturningValues() {
+            return true;
         }
 
         @Override

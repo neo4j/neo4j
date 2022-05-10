@@ -22,10 +22,8 @@ package org.neo4j.kernel.api.impl.fulltext;
 import java.util.Arrays;
 import org.neo4j.internal.schema.IndexBehaviour;
 import org.neo4j.internal.schema.IndexCapability;
-import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
-import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
 
@@ -42,13 +40,13 @@ class FulltextIndexCapability implements IndexCapability {
     }
 
     @Override
-    public IndexOrderCapability orderCapability(ValueCategory... valueCategories) {
-        return IndexOrderCapability.NONE;
+    public boolean supportsOrdering() {
+        return false;
     }
 
     @Override
-    public IndexValueCapability valueCapability(ValueCategory... valueCategories) {
-        return IndexValueCapability.NO;
+    public boolean supportsReturningValues() {
+        return false;
     }
 
     @Override

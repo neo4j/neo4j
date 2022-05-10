@@ -32,13 +32,11 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
-import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -198,13 +196,13 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey, RangeLayou
 
     private static class RangeIndexCapability implements IndexCapability {
         @Override
-        public IndexOrderCapability orderCapability(ValueCategory... valueCategories) {
-            return IndexOrderCapability.BOTH_FULLY_SORTED;
+        public boolean supportsOrdering() {
+            return true;
         }
 
         @Override
-        public IndexValueCapability valueCapability(ValueCategory... valueCategories) {
-            return IndexValueCapability.YES;
+        public boolean supportsReturningValues() {
+            return true;
         }
 
         @Override

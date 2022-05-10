@@ -20,19 +20,15 @@
 package org.neo4j.kernel.api.impl.schema;
 
 import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
-import static org.neo4j.internal.schema.IndexOrderCapability.NONE;
-import static org.neo4j.internal.schema.IndexValueCapability.NO;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
-import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -74,13 +70,13 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider {
 
     public static class TextIndexCapability implements IndexCapability {
         @Override
-        public IndexOrderCapability orderCapability(ValueCategory... valueCategories) {
-            return NONE;
+        public boolean supportsOrdering() {
+            return false;
         }
 
         @Override
-        public IndexValueCapability valueCapability(ValueCategory... valueCategories) {
-            return NO;
+        public boolean supportsReturningValues() {
+            return false;
         }
 
         @Override

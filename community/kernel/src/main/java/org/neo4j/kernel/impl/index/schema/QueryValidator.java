@@ -25,9 +25,7 @@ import java.util.Arrays;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
-import org.neo4j.values.storable.ValueCategory;
 
 class QueryValidator {
     static void validateOrder(IndexCapability capability, IndexOrder indexOrder, PropertyIndexQuery... predicates) {
@@ -35,15 +33,8 @@ class QueryValidator {
             return;
         }
 
-        final var valueCategories = new ValueCategory[predicates.length];
-        for (int i = 0; i < predicates.length; i++) {
-            valueCategories[i] = predicates[i].valueGroup().category();
-        }
-
-        final var orderCapability = capability.orderCapability(valueCategories);
-        if (indexOrder == IndexOrder.ASCENDING && !orderCapability.supportsAsc()
-                || indexOrder == IndexOrder.DESCENDING && !orderCapability.supportsDesc()) {
-            invalidOrder(indexOrder, orderCapability, predicates);
+        if (!capability.supportsOrdering()) {
+            invalidOrder(indexOrder, predicates);
         }
     }
 
@@ -109,14 +100,10 @@ class QueryValidator {
         }
     }
 
-    private static void invalidOrder(
-            IndexOrder indexOrder, IndexOrderCapability orderCapability, PropertyIndexQuery... predicates) {
+    private static void invalidOrder(IndexOrder indexOrder, PropertyIndexQuery... predicates) {
         throw new UnsupportedOperationException(format(
-                "Tried to query index with unsupported order %s. For query %s supports ascending: %b, supports descending: %b.",
-                indexOrder,
-                Arrays.toString(predicates),
-                orderCapability.supportsAsc(),
-                orderCapability.supportsDesc()));
+                "Tried to query index with unsupported order %s. For query %s supports ascending: false, supports descending: false.",
+                indexOrder, Arrays.toString(predicates)));
     }
 
     private static void invalidQuerySingular(IndexQueryType type, PropertyIndexQuery... predicates) {

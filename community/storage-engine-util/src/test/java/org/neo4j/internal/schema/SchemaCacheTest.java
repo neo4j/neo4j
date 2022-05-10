@@ -637,13 +637,13 @@ class SchemaCacheTest {
     void shouldCompleteConfigurationOfIndexesAddedToCache() {
         IndexCapability capability = new IndexCapability() {
             @Override
-            public IndexOrderCapability orderCapability(ValueCategory... valueCategories) {
-                return IndexOrderCapability.NONE;
+            public boolean supportsOrdering() {
+                return false;
             }
 
             @Override
-            public IndexValueCapability valueCapability(ValueCategory... valueCategories) {
-                return IndexValueCapability.NO;
+            public boolean supportsReturningValues() {
+                return false;
             }
 
             @Override

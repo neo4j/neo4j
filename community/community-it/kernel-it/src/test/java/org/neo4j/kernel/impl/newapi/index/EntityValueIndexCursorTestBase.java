@@ -54,8 +54,6 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.ValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.internal.schema.IndexOrderCapability;
-import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
@@ -65,8 +63,6 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueCategory;
-import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & ValueIndexCursor>
@@ -375,8 +371,6 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         boolean needsValues = indexParams.indexProvidesStringValues();
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
-        IndexValueCapability stringCapability =
-                index.reference().getCapability().valueCapability(ValueCategory.TEXT);
         try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -389,7 +383,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             assertFoundEntitiesAndValue(
                     cursor,
                     uniqueIds,
-                    stringCapability,
+                    index.reference().getCapability().supportsReturningValues(),
                     needsValues,
                     strTwo1,
                     strTwo2,
@@ -407,8 +401,6 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         boolean needsValues = indexParams.indexProvidesStringValues();
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
-        IndexValueCapability stringCapability =
-                index.reference().getCapability().valueCapability(ValueCategory.TEXT);
         try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -419,7 +411,14 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             // then
             assertThat(cursor.numberOfProperties()).isEqualTo(1);
             assertFoundEntitiesAndValue(
-                    cursor, uniqueIds, stringCapability, needsValues, strOne, strThree1, strThree2, strThree3);
+                    cursor,
+                    uniqueIds,
+                    index.reference().getCapability().supportsReturningValues(),
+                    needsValues,
+                    strOne,
+                    strThree1,
+                    strThree2,
+                    strThree3);
         }
     }
 
@@ -431,8 +430,6 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         boolean needsValues = indexParams.indexProvidesStringValues();
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
-        IndexValueCapability stringCapability =
-                index.reference().getCapability().valueCapability(ValueCategory.TEXT);
         try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -446,7 +443,14 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
 
             // then
             assertThat(cursor.numberOfProperties()).isEqualTo(1);
-            assertFoundEntitiesAndValue(cursor, uniqueIds, stringCapability, needsValues, strOne, strTwo1, strTwo2);
+            assertFoundEntitiesAndValue(
+                    cursor,
+                    uniqueIds,
+                    index.reference().getCapability().supportsReturningValues(),
+                    needsValues,
+                    strOne,
+                    strTwo1,
+                    strTwo2);
         }
     }
 
@@ -457,8 +461,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         IndexQueryConstraints constraints = unordered(needsValues);
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
-        IndexValueCapability stringCapability =
-                index.reference().getCapability().valueCapability(ValueCategory.TEXT);
+        boolean supportsValues = index.reference().getCapability().supportsReturningValues();
         try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -469,14 +472,14 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             // then
 
             assertFoundEntitiesAndValue(
-                    cursor, uniqueIds, stringCapability, needsValues, strOne, strThree1, strThree2, strThree3);
+                    cursor, uniqueIds, supportsValues, needsValues, strOne, strThree1, strThree2, strThree3);
 
             // when
             entityParams.entityIndexSeek(
                     tx, index, cursor, constraints, PropertyIndexQuery.range(prop, "one", true, "three", false));
 
             // then
-            assertFoundEntitiesAndValue(cursor, uniqueIds, stringCapability, needsValues, strOne);
+            assertFoundEntitiesAndValue(cursor, uniqueIds, supportsValues, needsValues, strOne);
 
             // when
             entityParams.entityIndexSeek(
@@ -484,7 +487,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
 
             // then
             assertFoundEntitiesAndValue(
-                    cursor, uniqueIds, stringCapability, needsValues, strThree1, strThree2, strThree3);
+                    cursor, uniqueIds, supportsValues, needsValues, strThree1, strThree2, strThree3);
 
             // when
             entityParams.entityIndexSeek(
@@ -492,7 +495,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
 
             // then
             assertFoundEntitiesAndValue(
-                    cursor, uniqueIds, stringCapability, needsValues, strThree1, strThree2, strThree3);
+                    cursor, uniqueIds, supportsValues, needsValues, strThree1, strThree2, strThree3);
 
             // when
             entityParams.entityIndexSeek(
@@ -502,7 +505,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             assertFoundEntitiesAndValue(
                     cursor,
                     uniqueIds,
-                    stringCapability,
+                    supportsValues,
                     needsValues,
                     strOne,
                     strThree1,
@@ -520,8 +523,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         IndexQueryConstraints constraints = unordered(needsValues);
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
-        IndexValueCapability numberCapability =
-                index.reference().getCapability().valueCapability(ValueCategory.NUMBER);
+        boolean supportsValues = index.reference().getCapability().supportsReturningValues();
         try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -530,28 +532,28 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
                     tx, index, cursor, constraints, PropertyIndexQuery.range(prop, 5, true, 12, true));
 
             // then
-            assertFoundEntitiesAndValue(cursor, uniqueIds, numberCapability, needsValues, num5, num6, num12a, num12b);
+            assertFoundEntitiesAndValue(cursor, uniqueIds, supportsValues, needsValues, num5, num6, num12a, num12b);
 
             // when
             entityParams.entityIndexSeek(
                     tx, index, cursor, constraints, PropertyIndexQuery.range(prop, 5, true, 12, false));
 
             // then
-            assertFoundEntitiesAndValue(cursor, uniqueIds, numberCapability, needsValues, num5, num6);
+            assertFoundEntitiesAndValue(cursor, uniqueIds, supportsValues, needsValues, num5, num6);
 
             // when
             entityParams.entityIndexSeek(
                     tx, index, cursor, constraints, PropertyIndexQuery.range(prop, 5, false, 12, true));
 
             // then
-            assertFoundEntitiesAndValue(cursor, uniqueIds, numberCapability, needsValues, num6, num12a, num12b);
+            assertFoundEntitiesAndValue(cursor, uniqueIds, supportsValues, needsValues, num6, num12a, num12b);
 
             // when
             entityParams.entityIndexSeek(
                     tx, index, cursor, constraints, PropertyIndexQuery.range(prop, 5, false, 12, false));
 
             // then
-            assertFoundEntitiesAndValue(cursor, uniqueIds, numberCapability, needsValues, num6);
+            assertFoundEntitiesAndValue(cursor, uniqueIds, supportsValues, needsValues, num6);
         }
     }
 
@@ -562,8 +564,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         IndexQueryConstraints constraints = unordered(needsValues);
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
-        IndexValueCapability temporalCapability =
-                index.reference().getCapability().valueCapability(ValueCategory.TEMPORAL);
+        boolean supportsValues = index.reference().getCapability().supportsReturningValues();
         try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -577,7 +578,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
                             prop, DateValue.date(1986, 11, 18), true, DateValue.date(1989, 3, 24), true));
 
             // then
-            assertFoundEntitiesAndValue(cursor, uniqueIds, temporalCapability, needsValues, date86, date891, date892);
+            assertFoundEntitiesAndValue(cursor, uniqueIds, supportsValues, needsValues, date86, date891, date892);
 
             // when
             entityParams.entityIndexSeek(
@@ -589,7 +590,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
                             prop, DateValue.date(1986, 11, 18), true, DateValue.date(1989, 3, 24), false));
 
             // then
-            assertFoundEntitiesAndValue(cursor, uniqueIds, temporalCapability, needsValues, date86);
+            assertFoundEntitiesAndValue(cursor, uniqueIds, supportsValues, needsValues, date86);
 
             // when
             entityParams.entityIndexSeek(
@@ -601,7 +602,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
                             prop, DateValue.date(1986, 11, 18), false, DateValue.date(1989, 3, 24), true));
 
             // then
-            assertFoundEntitiesAndValue(cursor, uniqueIds, temporalCapability, needsValues, date891, date892);
+            assertFoundEntitiesAndValue(cursor, uniqueIds, supportsValues, needsValues, date891, date892);
 
             // when
             entityParams.entityIndexSeek(
@@ -613,7 +614,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
                             prop, DateValue.date(1986, 11, 18), false, DateValue.date(1989, 3, 24), false));
 
             // then
-            assertFoundEntitiesAndValue(cursor, uniqueIds, temporalCapability, needsValues);
+            assertFoundEntitiesAndValue(cursor, uniqueIds, supportsValues, needsValues);
         }
     }
 
@@ -624,8 +625,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         IndexQueryConstraints constraints = unordered(needsValues);
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
-        IndexValueCapability capability =
-                index.reference().getCapability().valueCapability(ValueGroup.BOOLEAN.category());
+        boolean supportsValues = index.reference().getCapability().supportsReturningValues();
         try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -633,13 +633,13 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             entityParams.entityIndexSeek(tx, index, cursor, constraints, PropertyIndexQuery.exact(prop, false));
 
             // then
-            assertFoundEntitiesAndValue(cursor, 1, uniqueIds, capability, needsValues);
+            assertFoundEntitiesAndValue(cursor, 1, uniqueIds, supportsValues, needsValues);
 
             // when
             entityParams.entityIndexSeek(tx, index, cursor, constraints, PropertyIndexQuery.exact(prop, true));
 
             // then
-            assertFoundEntitiesAndValue(cursor, 1, uniqueIds, capability, needsValues);
+            assertFoundEntitiesAndValue(cursor, 1, uniqueIds, supportsValues, needsValues);
         }
     }
 
@@ -650,8 +650,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         IndexQueryConstraints constraints = unordered(needsValues);
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
-        IndexValueCapability capability =
-                index.reference().getCapability().valueCapability(ValueGroup.TEXT_ARRAY.category());
+        boolean supportsValues = index.reference().getCapability().supportsReturningValues();
         try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -661,7 +660,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             }));
 
             // then
-            assertFoundEntitiesAndValue(cursor, 1, uniqueIds, capability, needsValues);
+            assertFoundEntitiesAndValue(cursor, 1, uniqueIds, supportsValues, needsValues);
 
             // when
             entityParams.entityIndexSeek(tx, index, cursor, constraints, PropertyIndexQuery.exact(prop, new String[] {
@@ -669,7 +668,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             }));
 
             // then
-            assertFoundEntitiesAndValue(cursor, 1, uniqueIds, capability, needsValues);
+            assertFoundEntitiesAndValue(cursor, 1, uniqueIds, supportsValues, needsValues);
         }
     }
 
@@ -677,8 +676,6 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
     void shouldPerformIndexScan() throws Exception {
         // given
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
-        IndexValueCapability wildcardCapability =
-                index.reference().getCapability().valueCapability(ValueCategory.UNKNOWN);
         try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -688,7 +685,11 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             // then
             assertThat(cursor.numberOfProperties()).isEqualTo(1);
             assertFoundEntitiesAndValue(
-                    cursor, TOTAL_ENTITY_COUNT, uniqueIds, wildcardCapability, indexParams.indexProvidesAllValues());
+                    cursor,
+                    TOTAL_ENTITY_COUNT,
+                    uniqueIds,
+                    index.reference().getCapability().supportsReturningValues(),
+                    indexParams.indexProvidesAllValues());
         }
     }
 
@@ -698,10 +699,9 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         boolean needsValues = indexParams.indexProvidesNumericValues();
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
-        IndexOrderCapability orderCapabilities =
-                index.reference().getCapability().orderCapability(ValueCategory.NUMBER);
+
         try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
-            if (orderCapabilities.supportsAsc()) {
+            if (index.reference().getCapability().supportsOrdering()) {
                 // when
                 entityParams.entityIndexSeek(
                         tx,
@@ -712,8 +712,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
 
                 // then
                 assertFoundEntitiesInOrder(cursor, IndexOrder.ASCENDING);
-            }
-            if (orderCapabilities.supportsDesc()) {
+
                 // when
                 entityParams.entityIndexSeek(
                         tx,
@@ -734,10 +733,9 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         boolean needsValues = indexParams.indexProvidesStringValues();
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
-        IndexOrderCapability orderCapabilities =
-                index.reference().getCapability().orderCapability(ValueCategory.TEXT);
+
         try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
-            if (orderCapabilities.supportsAsc()) {
+            if (index.reference().getCapability().supportsOrdering()) {
                 // when
                 entityParams.entityIndexSeek(
                         tx,
@@ -748,8 +746,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
 
                 // then
                 assertFoundEntitiesInOrder(cursor, IndexOrder.ASCENDING);
-            }
-            if (orderCapabilities.supportsDesc()) {
+
                 // when
                 entityParams.entityIndexSeek(
                         tx,
@@ -770,10 +767,9 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         boolean needsValues = indexParams.indexProvidesTemporalValues();
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
-        IndexOrderCapability orderCapabilities =
-                index.reference().getCapability().orderCapability(ValueCategory.TEMPORAL);
+
         try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
-            if (orderCapabilities.supportsAsc()) {
+            if (index.reference().getCapability().supportsOrdering()) {
                 // when
                 entityParams.entityIndexSeek(
                         tx,
@@ -785,8 +781,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
 
                 // then
                 assertFoundEntitiesInOrder(cursor, IndexOrder.ASCENDING);
-            }
-            if (orderCapabilities.supportsDesc()) {
+
                 // when
                 entityParams.entityIndexSeek(
                         tx,
@@ -808,10 +803,9 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         boolean needsValues = indexParams.indexProvidesSpatialValues();
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
-        IndexOrderCapability orderCapabilities =
-                index.reference().getCapability().orderCapability(ValueCategory.TEXT_ARRAY);
+
         try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
-            if (orderCapabilities.supportsAsc()) {
+            if (index.reference().getCapability().supportsOrdering()) {
                 // when
                 entityParams.entityIndexSeek(
                         tx,
@@ -827,8 +821,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
 
                 // then
                 assertFoundEntitiesInOrder(cursor, IndexOrder.ASCENDING);
-            }
-            if (orderCapabilities.supportsDesc()) {
+
                 // when
                 entityParams.entityIndexSeek(
                         tx,
@@ -854,10 +847,9 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         boolean needsValues = false;
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
-        IndexOrderCapability orderCapabilities =
-                index.reference().getCapability().orderCapability(ValueCategory.UNKNOWN);
+
         try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
-            if (orderCapabilities.supportsAsc()) {
+            if (index.reference().getCapability().supportsOrdering()) {
                 // when
                 entityParams.entityIndexSeek(
                         tx,
@@ -868,8 +860,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
 
                 // then
                 assertFoundEntitiesInOrder(cursor, IndexOrder.ASCENDING);
-            }
-            if (orderCapabilities.supportsDesc()) {
+
                 // when
                 entityParams.entityIndexSeek(
                         tx,
@@ -891,8 +882,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
 
         int prop = token.propertyKey(EVER_PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(WHAT_EVER_INDEX_NAME));
-        assertEquals(
-                IndexValueCapability.YES, index.reference().getCapability().valueCapability(ValueCategory.GEOMETRY));
+        assertTrue(index.reference().getCapability().supportsReturningValues());
 
         try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
@@ -905,7 +895,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             assertFoundEntitiesAndValue(
                     cursor,
                     uniqueIds,
-                    index.reference().getCapability().valueCapability(ValueCategory.GEOMETRY),
+                    index.reference().getCapability().supportsReturningValues(),
                     true,
                     whateverPoint);
         }
@@ -917,8 +907,8 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         assumeTrue(indexParams.indexProvidesAllValues());
 
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(WHAT_EVER_INDEX_NAME));
-        IndexValueCapability valueCapability = index.reference().getCapability().valueCapability(ValueCategory.UNKNOWN);
-        assertEquals(IndexValueCapability.YES, valueCapability);
+        boolean supportsValues = index.reference().getCapability().supportsReturningValues();
+        assertTrue(supportsValues);
 
         try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
@@ -927,7 +917,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             entityParams.entityIndexSeek(tx, index, cursor, unorderedValues(), PropertyIndexQuery.allEntries());
 
             // then
-            assertFoundEntitiesAndValue(cursor, uniqueIds, valueCapability, true, entitiesOfAllPropertyTypes);
+            assertFoundEntitiesAndValue(cursor, uniqueIds, supportsValues, true, entitiesOfAllPropertyTypes);
         }
     }
 
@@ -938,8 +928,8 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
 
         int prop = token.propertyKey(EVER_PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(WHAT_EVER_INDEX_NAME));
-        IndexValueCapability valueCapability = index.reference().getCapability().valueCapability(ValueCategory.UNKNOWN);
-        assertEquals(IndexValueCapability.YES, valueCapability);
+        boolean supportsValues = index.reference().getCapability().supportsReturningValues();
+        assertTrue(supportsValues);
 
         try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
@@ -948,7 +938,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             entityParams.entityIndexSeek(tx, index, cursor, unorderedValues(), PropertyIndexQuery.exists(prop));
 
             // then
-            assertFoundEntitiesAndValue(cursor, uniqueIds, valueCapability, true, entitiesOfAllPropertyTypes);
+            assertFoundEntitiesAndValue(cursor, uniqueIds, supportsValues, true, entitiesOfAllPropertyTypes);
         }
     }
 
@@ -989,7 +979,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             ENTITY_VALUE_INDEX_CURSOR cursor,
             int expectedCount,
             MutableLongSet uniqueIds,
-            IndexValueCapability expectValue,
+            boolean expectValue,
             boolean indexProvidesValues) {
         uniqueIds.clear();
         for (int i = 0; i < expectedCount; i++) {
@@ -998,7 +988,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             assertTrue(uniqueIds.add(reference), "all entities are unique");
 
             // Assert has value capability
-            if (IndexValueCapability.YES.equals(expectValue)) {
+            if (expectValue) {
                 assertTrue(
                         cursor.hasValue(),
                         "Value capability said index would have value for " + expectValue + ", but didn't");
@@ -1038,7 +1028,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
     private void assertFoundEntitiesAndValue(
             ENTITY_VALUE_INDEX_CURSOR cursor,
             MutableLongSet uniqueIds,
-            IndexValueCapability expectValue,
+            boolean expectValue,
             boolean indexProvidesValues,
             long... expected) {
         assertFoundEntitiesAndValue(cursor, expected.length, uniqueIds, expectValue, indexProvidesValues);
@@ -1113,8 +1103,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         // Given
         boolean needsValues = indexParams.indexProvidesAllValues();
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
-        IndexValueCapability wildcardCapability =
-                index.reference().getCapability().valueCapability(ValueCategory.UNKNOWN);
+        boolean supportsValues = index.reference().getCapability().supportsReturningValues();
         try (KernelTransaction tx = beginTransaction();
                 var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
@@ -1122,12 +1111,12 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             // when
             entityParams.entityIndexScan(tx, index, cursor, unordered(needsValues));
             assertThat(cursor.numberOfProperties()).isEqualTo(1);
-            assertFoundEntitiesAndValue(cursor, TOTAL_ENTITY_COUNT, uniqueIds, wildcardCapability, needsValues);
+            assertFoundEntitiesAndValue(cursor, TOTAL_ENTITY_COUNT, uniqueIds, supportsValues, needsValues);
 
             // then
             entityParams.entityDelete(tx, strOne);
             entityParams.entityIndexScan(tx, index, cursor, unordered(needsValues));
-            assertFoundEntitiesAndValue(cursor, TOTAL_ENTITY_COUNT - 1, uniqueIds, wildcardCapability, needsValues);
+            assertFoundEntitiesAndValue(cursor, TOTAL_ENTITY_COUNT - 1, uniqueIds, supportsValues, needsValues);
         }
     }
 

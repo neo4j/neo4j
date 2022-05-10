@@ -43,7 +43,6 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -130,13 +129,10 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
         IndexReadSession index = read.indexReadSession(tx.schemaRead().indexGetForName(INDEX_NAME));
         for (int i = 0; i < N_ITERATIONS; i++) {
             ValueType type = randomValues.among(targetedTypes);
-            IndexOrderCapability order = index.reference().getCapability().orderCapability(type.valueGroup.category());
-            if (order.supportsAsc()) {
-                expectResultInOrder(randomValues, type, prop, index, IndexOrder.ASCENDING);
-            }
-            if (order.supportsDesc()) {
-                expectResultInOrder(randomValues, type, prop, index, IndexOrder.DESCENDING);
-            }
+
+            expectResultInOrder(randomValues, type, prop, index, IndexOrder.ASCENDING);
+
+            expectResultInOrder(randomValues, type, prop, index, IndexOrder.DESCENDING);
         }
     }
 

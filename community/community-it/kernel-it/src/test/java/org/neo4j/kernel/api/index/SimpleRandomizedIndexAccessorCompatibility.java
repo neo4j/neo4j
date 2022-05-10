@@ -37,7 +37,6 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueType;
@@ -132,17 +131,13 @@ abstract class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorC
             List<Long> expectedIds = expectedIds(sortedValues, from, to, fromInclusive, toInclusive);
 
             // Depending on order capabilities we verify ids or order and ids.
-            IndexOrderCapability indexOrders = descriptor
-                    .getCapability()
-                    .orderCapability(predicate.valueGroup().category());
-            if (indexOrders.supportsAsc()) {
+            if (descriptor.getCapability().supportsOrdering()) {
                 List<Long> actualIds = assertInOrder(IndexOrder.ASCENDING, predicate);
                 actualIds.sort(Long::compare);
                 // then
                 assertThat(actualIds).isEqualTo(expectedIds);
-            }
-            if (indexOrders.supportsDesc()) {
-                List<Long> actualIds = assertInOrder(IndexOrder.DESCENDING, predicate);
+
+                actualIds = assertInOrder(IndexOrder.DESCENDING, predicate);
                 actualIds.sort(Long::compare);
                 // then
                 assertThat(actualIds).isEqualTo(expectedIds);

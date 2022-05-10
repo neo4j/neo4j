@@ -23,7 +23,6 @@ import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
@@ -50,7 +49,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
-import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -109,7 +107,7 @@ abstract class Read
             throws IndexNotApplicableKernelException {
         ktx.assertOpen();
         DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
-        validateConstraints(constraints, indexSession, query);
+        validateConstraints(constraints, indexSession);
 
         if (indexSession.reference.schema().entityType() != EntityType.NODE) {
             throw new IndexNotApplicableKernelException("Node index seek can not be performed on index: "
@@ -147,7 +145,7 @@ abstract class Read
             throws IndexNotApplicableKernelException {
         ktx.assertOpen();
         DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
-        validateConstraints(constraints, indexSession, query);
+        validateConstraints(constraints, indexSession);
         if (indexSession.reference.schema().entityType() != EntityType.RELATIONSHIP) {
             throw new IndexNotApplicableKernelException("Relationship index seek can not be performed on index: "
                     + index.reference().userDescription(ktx.tokenRead()));
@@ -506,20 +504,12 @@ abstract class Read
         ((DefaultPropertyCursor) cursor).initRelationship(relationshipReference, reference, selection, this, ktx);
     }
 
-    private void validateConstraints(
-            IndexQueryConstraints constraints, DefaultIndexReadSession indexSession, PropertyIndexQuery[] query) {
-        if (constraints.needsValues() && !supportsValueCapability(indexSession.reference(), query)) {
+    private void validateConstraints(IndexQueryConstraints constraints, DefaultIndexReadSession indexSession) {
+        if (constraints.needsValues()
+                && !indexSession.reference().getCapability().supportsReturningValues()) {
             throw new UnsupportedOperationException(format(
                     "%s index has no value capability", indexSession.reference().getIndexType()));
         }
-    }
-
-    private boolean supportsValueCapability(IndexDescriptor index, PropertyIndexQuery[] query) {
-        final var capability = index.getCapability();
-        return Arrays.stream(query)
-                .map(PropertyIndexQuery::valueCategory)
-                .map(capability::valueCapability)
-                .noneMatch(IndexValueCapability.NO::equals);
     }
 
     private <C extends Cursor> PartitionedScan<C> propertyIndexScan(

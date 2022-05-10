@@ -20,7 +20,6 @@
 package org.neo4j.consistency.checker;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,12 +27,9 @@ import java.util.concurrent.ConcurrentMap;
 import org.neo4j.common.EntityType;
 import org.neo4j.consistency.checker.ParallelExecution.ThrowingRunnable;
 import org.neo4j.consistency.checking.index.IndexAccessors;
-import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.values.storable.ValueCategory;
 
 /**
  * Calculates index sizes in parallel and caches the sizes
@@ -113,10 +109,7 @@ class IndexSizes {
     }
 
     static boolean hasValues(IndexDescriptor index) {
-        IndexCapability capabilities = index.getCapability();
-        ValueCategory[] categories = new ValueCategory[index.schema().getPropertyIds().length];
-        Arrays.fill(categories, ValueCategory.UNKNOWN);
-        return capabilities.valueCapability(categories) == IndexValueCapability.YES
+        return index.getCapability().supportsReturningValues()
                 && !index.schema().isFulltextSchemaDescriptor();
     }
 

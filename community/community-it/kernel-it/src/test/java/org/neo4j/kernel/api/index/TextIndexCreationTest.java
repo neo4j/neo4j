@@ -19,16 +19,11 @@
  */
 package org.neo4j.kernel.api.index;
 
-import static java.util.Arrays.stream;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.schema.IndexOrderCapability.NONE;
-import static org.neo4j.internal.schema.IndexValueCapability.NO;
 
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
@@ -46,7 +41,6 @@ import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.values.storable.ValueCategory;
 
 @ImpermanentDbmsExtension
 public class TextIndexCreationTest {
@@ -111,14 +105,8 @@ public class TextIndexCreationTest {
         assertThat(index.getIndexType()).isEqualTo(IndexType.TEXT);
         assertThat(index.getCapability().behaviours()).isEmpty();
         assertThat(index.schema().getPropertyIds()).isEqualTo(propertyIds);
-        assertThat(stream(ValueCategory.values())
-                        .map(value -> index.getCapability().orderCapability(value))
-                        .collect(toSet()))
-                .isEqualTo(Set.of(NONE));
-        assertThat(stream(ValueCategory.values())
-                        .map(value -> index.getCapability().valueCapability(value))
-                        .collect(toSet()))
-                .isEqualTo(Set.of(NO));
+        assertThat(index.getCapability().supportsOrdering()).isFalse();
+        assertThat(index.getCapability().supportsReturningValues()).isFalse();
     }
 
     private void createTextIndex(String name, SchemaDescriptor schema) throws Exception {

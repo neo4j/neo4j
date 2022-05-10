@@ -30,7 +30,6 @@ import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -40,12 +39,10 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
@@ -180,27 +177,17 @@ abstract class CompositeRandomizedIndexAccessorCompatibility extends IndexAccess
                 PropertyIndexQuery[] predicates = new PropertyIndexQuery[] {
                     exact(100, booleanValue), PropertyIndexQuery.range(101, from, fromInclusive, to, toInclusive)
                 };
-                ValueCategory[] valueCategories = getValueCategories(predicates);
-                IndexOrderCapability indexOrders = descriptor.getCapability().orderCapability(valueCategories);
-                if (indexOrders.supportsAsc()) {
-                    List<Long> actualIds = assertInOrder(IndexOrder.ASCENDING, predicates);
-                    actualIds.sort(Long::compare);
-                    // then
-                    assertThat(actualIds, equalTo(expectedIds));
-                }
-                if (indexOrders.supportsDesc()) {
-                    List<Long> actualIds = assertInOrder(IndexOrder.DESCENDING, predicates);
-                    actualIds.sort(Long::compare);
-                    // then
-                    assertThat(actualIds, equalTo(expectedIds));
-                }
-            }
-        }
 
-        static ValueCategory[] getValueCategories(PropertyIndexQuery[] predicates) {
-            return Arrays.stream(predicates)
-                    .map(iq -> iq.valueGroup().category())
-                    .toArray(ValueCategory[]::new);
+                List<Long> actualIds = assertInOrder(IndexOrder.ASCENDING, predicates);
+                actualIds.sort(Long::compare);
+                // then
+                assertThat(actualIds, equalTo(expectedIds));
+
+                actualIds = assertInOrder(IndexOrder.DESCENDING, predicates);
+                actualIds.sort(Long::compare);
+                // then
+                assertThat(actualIds, equalTo(expectedIds));
+            }
         }
 
         static List<Long> expectedIds(

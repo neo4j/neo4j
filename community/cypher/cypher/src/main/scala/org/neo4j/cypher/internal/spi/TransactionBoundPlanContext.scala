@@ -37,7 +37,6 @@ import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundReadTokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
-import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext.typeToValueCategory
 import org.neo4j.cypher.internal.spi.procsHelpers.asCypherProcedureSignature
 import org.neo4j.cypher.internal.spi.procsHelpers.asCypherType
 import org.neo4j.cypher.internal.spi.procsHelpers.asCypherValue
@@ -54,14 +53,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.schema
 import org.neo4j.internal.schema.ConstraintDescriptor
-import org.neo4j.internal.schema.IndexOrderCapability.ASC_FULLY_SORTED
-import org.neo4j.internal.schema.IndexOrderCapability.ASC_PARTIALLY_SORTED
-import org.neo4j.internal.schema.IndexOrderCapability.BOTH_FULLY_SORTED
-import org.neo4j.internal.schema.IndexOrderCapability.BOTH_PARTIALLY_SORTED
-import org.neo4j.internal.schema.IndexOrderCapability.DESC_FULLY_SORTED
-import org.neo4j.internal.schema.IndexOrderCapability.DESC_PARTIALLY_SORTED
-import org.neo4j.internal.schema.IndexOrderCapability.NONE
-import org.neo4j.internal.schema.IndexValueCapability
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.kernel.api.KernelTransaction
@@ -322,28 +313,18 @@ class TransactionBoundPlanContext(
           val properties = reference.schema.getPropertyIds.map(PropertyKeyId)
           val isUnique = reference.isUnique
           val behaviours = reference.getCapability.behaviours().map(kernelToCypher).toSet
-          val orderCapability: OrderCapability = tps => {
-            // The Kernel index order gives additional information if all values are sorted, or if there can be geometry values which are not sorted.
-            // From Cyphers perspective, using the Kernel API, fully and partially sorted are the same, since geometry values which come out of order
-            // from the index are sorted in DefaultNodeValueIndexCursor.
-            reference.getCapability.orderCapability(tps.map(typeToValueCategory): _*) match {
-              case BOTH_FULLY_SORTED     => IndexOrderCapability.BOTH
-              case BOTH_PARTIALLY_SORTED => IndexOrderCapability.BOTH
-              case ASC_FULLY_SORTED      => IndexOrderCapability.ASC
-              case ASC_PARTIALLY_SORTED  => IndexOrderCapability.ASC
-              case DESC_FULLY_SORTED     => IndexOrderCapability.DESC
-              case DESC_PARTIALLY_SORTED => IndexOrderCapability.DESC
-              case NONE                  => IndexOrderCapability.NONE
+          val orderCapability: OrderCapability = _ =>
+            if (reference.getCapability.supportsOrdering()) {
+              IndexOrderCapability.BOTH
+            } else {
+              IndexOrderCapability.NONE
             }
-          }
-          val valueCapability: ValueCapability = tps => {
-            reference.getCapability.valueCapability(tps.map(typeToValueCategory): _*) match {
-              // As soon as the kernel provides an array of IndexValueCapability, this mapping can change
-              case IndexValueCapability.YES     => tps.map(_ => CanGetValue)
-              case IndexValueCapability.PARTIAL => tps.map(_ => DoNotGetValue)
-              case IndexValueCapability.NO      => tps.map(_ => DoNotGetValue)
+          val valueCapability: ValueCapability = tps =>
+            if (reference.getCapability.supportsReturningValues()) {
+              tps.map(_ => CanGetValue)
+            } else {
+              tps.map(_ => DoNotGetValue)
             }
-          }
           if (behaviours.contains(EventuallyConsistent)) {
             // Ignore eventually consistent indexes. Those are for explicit querying via procedures.
             None

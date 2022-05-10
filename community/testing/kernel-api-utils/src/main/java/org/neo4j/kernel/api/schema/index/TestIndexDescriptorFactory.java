@@ -23,12 +23,10 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
-import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.util.Preconditions;
@@ -92,13 +90,13 @@ public class TestIndexDescriptorFactory {
 
         private static final IndexCapability CAPABILITY = new IndexCapability() {
             @Override
-            public IndexOrderCapability orderCapability(ValueCategory... valueCategories) {
-                return IndexOrderCapability.NONE;
+            public boolean supportsOrdering() {
+                return false;
             }
 
             @Override
-            public IndexValueCapability valueCapability(ValueCategory... valueCategories) {
-                return IndexValueCapability.NO;
+            public boolean supportsReturningValues() {
+                return false;
             }
 
             @Override

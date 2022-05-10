@@ -45,7 +45,6 @@ import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
-import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -231,7 +230,7 @@ class IndexSizesTest {
 
     private IndexCapability yes() {
         IndexCapability capabilityWithValue = mock(IndexCapability.class);
-        when(capabilityWithValue.valueCapability(any())).thenReturn(IndexValueCapability.YES);
+        when(capabilityWithValue.supportsReturningValues()).thenReturn(true);
         return capabilityWithValue;
     }
 

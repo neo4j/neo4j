@@ -63,7 +63,6 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.annotations.documented.ReporterFactories;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -764,11 +763,8 @@ abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibili
                     case OPEN_START -> range(100, null, false, Values.of(objects[objects.length - 1]), true);
                 };
 
-        IndexOrderCapability indexOrders = orderCapability(range);
-        if (order == IndexOrder.ASCENDING) {
-            assumeTrue(indexOrders.supportsAsc(), "Assume support for order " + order);
-        } else if (order == IndexOrder.DESCENDING) {
-            assumeTrue(indexOrders.supportsDesc(), "Assume support for order " + order);
+        if (order == IndexOrder.ASCENDING || order == IndexOrder.DESCENDING) {
+            assumeTrue(descriptor.getCapability().supportsOrdering(), "Assume support for order " + order);
         }
 
         List<ValueIndexEntryUpdate<?>> additions =

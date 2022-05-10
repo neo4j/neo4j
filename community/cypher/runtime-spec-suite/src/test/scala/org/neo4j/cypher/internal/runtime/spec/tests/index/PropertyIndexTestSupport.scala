@@ -25,7 +25,6 @@ import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.schema.IndexCapability
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType
-import org.neo4j.internal.schema.IndexValueCapability
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider
 import org.neo4j.kernel.impl.index.schema.PointIndexProvider
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
@@ -119,17 +118,14 @@ class IndexInTest(
 
   def querySupport(query: IndexQueryType): Seq[ValueType] = valueTypeSupportByQuery(query)
 
-  def provideValueSupport(query: IndexQueryType): Seq[ValueType] = {
-    querySupport(query).filter(v => capability.valueCapability(v.valueGroup.category()) == IndexValueCapability.YES)
-  }
+  def provideValueSupport(query: IndexQueryType): Seq[ValueType] =
+    if (capability.supportsReturningValues) querySupport(query) else Seq.empty
 
-  def orderAscSupport(query: IndexQueryType): Seq[ValueType] = {
-    querySupport(query).filter(v => capability.orderCapability(v.valueGroup.category()).supportsAsc())
-  }
+  def orderAscSupport(query: IndexQueryType): Seq[ValueType] =
+    if (capability.supportsOrdering) querySupport(query) else Seq.empty
 
-  def orderDescSupport(query: IndexQueryType): Seq[ValueType] = {
-    querySupport(query).filter(v => capability.orderCapability(v.valueGroup.category()).supportsDesc())
-  }
+  def orderDescSupport(query: IndexQueryType): Seq[ValueType] =
+    if (capability.supportsOrdering) querySupport(query) else Seq.empty
 }
 
 object IndexInTest {

@@ -35,30 +35,14 @@ public interface IndexCapability {
     IndexBehaviour[] BEHAVIOURS_NONE = new IndexBehaviour[0];
 
     /**
-     * What possible orderings is this index capable to provide for a query on given combination of {@link ValueCategory}.
-     * Ordering of ValueCategory correspond to ordering of related {@link SchemaDescriptor#getPropertyIds()}.
-     *
-     * @param valueCategories Ordered array of {@link ValueCategory ValueCategories} for which index should be queried. Note that valueCategory
-     * must correspond to related {@link SchemaDescriptor#getPropertyIds()}. A {@code null} value in the array
-     * ({@code new ValueCategory[]{null}}) is interpreted as a wildcard for any {@link ValueCategory}. Note that this is not the same as
-     * {@code order(null)} which is undefined.
-     * @return {@link IndexOrder} array containing all possible orderings for provided value categories or empty array if no explicit
-     * ordering is possible or if length of {@code valueCategories} and {@link SchemaDescriptor#getPropertyIds()} differ.
+     * Is this index capable of ordering the values (both ascending and descending).
      */
-    IndexOrderCapability orderCapability(ValueCategory... valueCategories);
+    boolean supportsOrdering();
 
     /**
-     * Is the index capable of providing values for a query on given combination of {@link ValueCategory}.
-     * Ordering of ValueCategory correspond to ordering of {@link SchemaDescriptor#getPropertyIds()}.
-     *
-     * @param valueCategories Ordered array of {@link ValueCategory ValueCategories} for which index should be queried. Note that valueCategory
-     * must correspond to related {@link SchemaDescriptor#getPropertyIds()}. {@link ValueCategory#UNKNOWN} can be used as a wildcard for
-     * any {@link ValueCategory}. Behaviour is undefined for empty {@code null} array and {@code null} values in array.
-     * @return {@link IndexValueCapability#YES} if index is capable of providing values for query on provided array of value categories,
-     * {@link IndexValueCapability#NO} if not or {@link IndexValueCapability#PARTIAL} for some results. If length of
-     * {@code valueCategories} and {@link SchemaDescriptor#getPropertyIds()} differ {@link IndexValueCapability#NO} is returned.
+     * Is the index capable of providing values.
      */
-    IndexValueCapability valueCapability(ValueCategory... valueCategories);
+    boolean supportsReturningValues();
 
     /**
      * Checks whether the index can accept values for a given combination of {@link ValueCategory}.
@@ -128,13 +112,13 @@ public interface IndexCapability {
 
     IndexCapability NO_CAPABILITY = new IndexCapability() {
         @Override
-        public IndexOrderCapability orderCapability(ValueCategory... valueCategories) {
-            return IndexOrderCapability.NONE;
+        public boolean supportsOrdering() {
+            return false;
         }
 
         @Override
-        public IndexValueCapability valueCapability(ValueCategory... valueCategories) {
-            return IndexValueCapability.NO;
+        public boolean supportsReturningValues() {
+            return false;
         }
 
         @Override

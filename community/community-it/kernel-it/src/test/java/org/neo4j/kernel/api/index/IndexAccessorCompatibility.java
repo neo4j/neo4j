@@ -43,7 +43,6 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -54,7 +53,6 @@ import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
@@ -168,14 +166,6 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
             prevValues = values;
         }
         return seenIds;
-    }
-
-    IndexOrderCapability orderCapability(PropertyIndexQuery... predicates) {
-        ValueCategory[] categories = new ValueCategory[predicates.length];
-        for (int i = 0; i < predicates.length; i++) {
-            categories[i] = predicates[i].valueGroup().category();
-        }
-        return descriptor.getCapability().orderCapability(categories);
     }
 
     private static void assertLessThanOrEqualTo(Value[] o1, Value[] o2) {

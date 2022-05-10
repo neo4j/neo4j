@@ -73,7 +73,6 @@ import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
@@ -1023,11 +1022,8 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
         Object baseValue = 1; // Todo use random value instead
         PropertyIndexQuery exact = exact(100, baseValue);
         PropertyIndexQuery range = range(200, Values.of(o0), true, Values.of(o5), true);
-        IndexOrderCapability indexOrders = orderCapability(exact, range);
-        if (order == IndexOrder.ASCENDING) {
-            assumeTrue(indexOrders.supportsAsc(), "Assume support for order " + order);
-        } else if (order == IndexOrder.DESCENDING) {
-            assumeTrue(indexOrders.supportsDesc(), "Assume support for order " + order);
+        if (order == IndexOrder.ASCENDING || order == IndexOrder.DESCENDING) {
+            assumeTrue(descriptor.getCapability().supportsOrdering(), "Assume support for order " + order);
         }
 
         updateAndCommit(asList(

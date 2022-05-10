@@ -33,13 +33,11 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
-import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -197,14 +195,14 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey, PointLayou
 
     private static class PointIndexCapability implements IndexCapability {
         @Override
-        public IndexOrderCapability orderCapability(ValueCategory... valueCategories) {
-            return IndexOrderCapability.NONE;
+        public boolean supportsOrdering() {
+            return false;
         }
 
         @Override
-        public IndexValueCapability valueCapability(ValueCategory... valueCategories) {
+        public boolean supportsReturningValues() {
             // The point index has values for all the queries it supports.
-            return IndexValueCapability.YES;
+            return true;
         }
 
         @Override

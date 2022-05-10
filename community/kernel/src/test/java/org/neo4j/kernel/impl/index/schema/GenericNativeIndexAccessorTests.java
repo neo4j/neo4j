@@ -40,14 +40,12 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
@@ -263,13 +261,9 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>> 
         try (var reader = accessor.newValueReader()) {
             PropertyIndexQuery.AllEntriesPredicate supportedQuery = PropertyIndexQuery.allEntries();
 
-            IndexOrderCapability supportedOrders = indexCapability().orderCapability(ValueCategory.UNKNOWN);
-            if (supportedOrders.supportsAsc()) {
-                expectIndexOrder(allValues, reader, IndexOrder.ASCENDING, supportedQuery);
-            }
-            if (supportedOrders.supportsDesc()) {
-                expectIndexOrder(allValues, reader, IndexOrder.DESCENDING, supportedQuery);
-            }
+            expectIndexOrder(allValues, reader, IndexOrder.ASCENDING, supportedQuery);
+
+            expectIndexOrder(allValues, reader, IndexOrder.DESCENDING, supportedQuery);
         }
     }
 
