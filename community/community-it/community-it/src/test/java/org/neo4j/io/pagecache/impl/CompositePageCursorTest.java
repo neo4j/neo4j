@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.io.pagecache.PageCache.RESERVED_BYTES;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.nio.ByteOrder;
@@ -38,21 +37,26 @@ import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.StubPageCursor;
 
-class CompositePageCursorTest {
+public class CompositePageCursorTest {
     private static final int PAYLOAD_SIZE = 16;
-    private static final int PAGE_SIZE = PAYLOAD_SIZE + RESERVED_BYTES;
+    private final int PAGE_SIZE = PAYLOAD_SIZE + getReservedBytes();
     private StubPageCursor first;
     private StubPageCursor second;
     private final byte[] bytes = new byte[4];
 
-    private static StubPageCursor generatePage(int initialPageId, int pageSize, int initialValue) {
+    private StubPageCursor generatePage(int initialPageId, int pageSize, int initialValue) {
+        int reservedBytes = getReservedBytes();
         // TODO little-endian format CompositeCursor doesn't support little-endian stores yet
         var cursor = new StubPageCursor(
-                initialPageId, ByteBuffers.allocate(pageSize, ByteOrder.BIG_ENDIAN, INSTANCE), RESERVED_BYTES);
-        for (int i = 0; i < pageSize - RESERVED_BYTES; i++) {
+                initialPageId, ByteBuffers.allocate(pageSize, ByteOrder.BIG_ENDIAN, INSTANCE), reservedBytes);
+        for (int i = 0; i < pageSize - reservedBytes; i++) {
             cursor.putByte(i, (byte) (initialValue + i));
         }
         return cursor;
+    }
+
+    protected int getReservedBytes() {
+        return 0;
     }
 
     @BeforeEach
