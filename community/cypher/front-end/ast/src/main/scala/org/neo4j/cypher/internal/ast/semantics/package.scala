@@ -63,14 +63,14 @@ package object semantics {
   implicit def optionSemanticChecking[A](option: Option[A]): OptionSemanticChecking[A] =
     new OptionSemanticChecking(option)
 
-  implicit def traversableOnceSemanticChecking[A](traversable: IterableOnce[A]): TraversableOnceSemanticChecking[A] =
-    new TraversableOnceSemanticChecking(traversable)
+  implicit def iterableOnceSemanticChecking[A](iterable: IterableOnce[A]): IterableOnceSemanticChecking[A] =
+    new IterableOnceSemanticChecking(iterable)
 
   // Allows calling semanticCheck on an optional SemanticCheckable object
   implicit def semanticCheckableOption[A <: SemanticCheckable](option: Option[A]): SemanticCheckableOption[A] =
     new SemanticCheckableOption(option)
 
-  // Allows calling semanticCheck on a traversable sequence of SemanticCheckable objects
-  implicit def semanticCheckableTraversableOnce[A <: SemanticCheckable](traversable: IterableOnce[A])
-    : SemanticCheckableTraversableOnce[A] = new SemanticCheckableTraversableOnce(traversable)
+  // Allows calling semanticCheck on a iterable sequence of SemanticCheckable objects
+  implicit def semanticCheckableIterableOnce[A <: SemanticCheckable](iterable: IterableOnce[A])
+    : SemanticCheckableIterableOnce[A] = new SemanticCheckableIterableOnce(iterable)
 }

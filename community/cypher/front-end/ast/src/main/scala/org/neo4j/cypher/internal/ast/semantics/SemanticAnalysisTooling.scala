@@ -36,17 +36,17 @@ import org.neo4j.cypher.internal.util.symbols.TypeSpec
 trait SemanticAnalysisTooling {
 
   def semanticCheckFold[A](
-    traversable: Iterable[A]
+    iterable: Iterable[A]
   )(
     f: A => SemanticCheck
   ): SemanticCheck = {
-    traversable.foldLeft(SemanticCheck.success) {
+    iterable.foldLeft(SemanticCheck.success) {
       (accCheck, o: A) => accCheck chain f(o)
     }
   }
 
-  def semanticCheck[A <: SemanticCheckable](traversable: IterableOnce[A]): SemanticCheck = {
-    traversable.iterator.foldLeft(SemanticCheck.success) {
+  def semanticCheck[A <: SemanticCheckable](iterable: IterableOnce[A]): SemanticCheck = {
+    iterable.iterator.foldLeft(SemanticCheck.success) {
       (accCheck: SemanticCheck, o: A) => accCheck chain o.semanticCheck
     }
   }
@@ -202,14 +202,14 @@ trait SemanticAnalysisTooling {
     else
       check
 
-  def unionOfTypes(traversable: IterableOnce[Expression]): TypeGenerator = (state: SemanticState) =>
-    TypeSpec.union(traversable.map(types(_)(state)).toSeq: _*)
+  def unionOfTypes(iterable: IterableOnce[Expression]): TypeGenerator = (state: SemanticState) =>
+    TypeSpec.union(iterable.iterator.map(types(_)(state)).toSeq: _*)
 
-  def leastUpperBoundsOfTypes(traversable: IterableOnce[Expression]): TypeGenerator =
-    if (traversable.isEmpty)
+  def leastUpperBoundsOfTypes(iterable: IterableOnce[Expression]): TypeGenerator =
+    if (iterable.iterator.isEmpty)
       _ => CTAny.invariant
     else
-      (state: SemanticState) => traversable.map { types(_)(state) } reduce { _ leastUpperBounds _ }
+      (state: SemanticState) => iterable.iterator.map { types(_)(state) } reduce { _ leastUpperBounds _ }
 
   def withScopedState(check: => SemanticCheck): SemanticCheck =
     SemanticAnalysisTooling.pushStateScope chain
@@ -223,14 +223,14 @@ trait SemanticAnalysisTooling {
     try {
       long.value.isInstanceOf[Long]
     } catch {
-      case e: java.lang.NumberFormatException => false
+      case _: java.lang.NumberFormatException => false
     }
 
   def validNumber(double: DoubleLiteral): Boolean =
     try {
       double.value.isInstanceOf[Double]
     } catch {
-      case e: java.lang.NumberFormatException => false
+      case _: java.lang.NumberFormatException => false
     }
 
   def ensureDefined(v: LogicalVariable): SemanticState => Either[SemanticError, SemanticState] =

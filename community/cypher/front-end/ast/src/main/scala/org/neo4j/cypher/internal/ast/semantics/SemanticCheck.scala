@@ -187,10 +187,10 @@ class OptionSemanticChecking[A](val option: Option[A]) extends AnyVal {
     option.fold(SemanticCheck.success)(check)
 }
 
-class TraversableOnceSemanticChecking[A](val traversable: IterableOnce[A]) extends AnyVal {
+class IterableOnceSemanticChecking[A](val iterable: IterableOnce[A]) extends AnyVal {
 
   def foldSemanticCheck(check: A => SemanticCheck): SemanticCheck = {
-    traversable.iterator.foldLeft(SemanticCheck.success) {
+    iterable.iterator.foldLeft(SemanticCheck.success) {
       (accCheck, o) => accCheck chain check(o)
     }
   }
@@ -208,6 +208,6 @@ class SemanticCheckableOption[A <: SemanticCheckable](val option: Option[A]) ext
   def semanticCheck: SemanticCheck = option.fold(SemanticCheck.success) { _.semanticCheck }
 }
 
-class SemanticCheckableTraversableOnce[A <: SemanticCheckable](val traversable: IterableOnce[A]) extends AnyVal {
-  def semanticCheck: SemanticCheck = traversable.foldSemanticCheck { _.semanticCheck }
+class SemanticCheckableIterableOnce[A <: SemanticCheckable](val iterable: IterableOnce[A]) extends AnyVal {
+  def semanticCheck: SemanticCheck = iterable.foldSemanticCheck { _.semanticCheck }
 }

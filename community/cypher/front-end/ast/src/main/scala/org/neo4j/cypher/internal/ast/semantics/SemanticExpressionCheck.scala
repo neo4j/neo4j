@@ -744,16 +744,16 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
   }
 
   /**
-   * Build a semantic check over a traversable of expressions.
+   * Build a semantic check over a iterable of expressions.
    */
-  def simple(traversable: Iterable[Expression]): SemanticCheck = check(SemanticContext.Simple, traversable, Seq())
+  def simple(iterable: Iterable[Expression]): SemanticCheck = check(SemanticContext.Simple, iterable, Seq())
 
   def check(
     ctx: SemanticContext,
-    traversable: Iterable[Expression],
+    iterable: Iterable[Expression],
     parents: Seq[Expression]
   ): SemanticCheck =
-    semanticCheckFold(traversable)(expr => check(ctx, expr, parents))
+    semanticCheckFold(iterable)(expr => check(ctx, expr, parents))
 
   /**
    * Build a semantic check over an optional expression.
