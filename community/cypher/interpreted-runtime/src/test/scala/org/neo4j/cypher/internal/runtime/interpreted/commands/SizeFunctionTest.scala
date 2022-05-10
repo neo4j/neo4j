@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
+import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toListValue
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toPathValue
@@ -64,7 +65,7 @@ class SizeFunctionTest extends CypherFunSuite {
 
   test("size cannot be used on paths") {
     // given
-    val p = PathImpl(mock[Node], mock[Relationship], mock[Node])
+    val p = PathImpl(mockNode(), mock[Relationship], mockNode())
     val m = CypherRow.from("p" -> p)
     val sizeFunction = SizeFunction(Variable("p"))
 
@@ -81,5 +82,11 @@ class SizeFunctionTest extends CypherFunSuite {
     // when/then
     val e = intercept[CypherTypeException](sizeFunction.apply(m, QueryStateHelper.empty))
     e.getMessage should be("Invalid input for function 'size()': Expected a String or List, got: Int(33)")
+  }
+
+  private def mockNode() = {
+    val node = mock[Node]
+    when(node.getElementId).thenReturn("dummy")
+    node
   }
 }

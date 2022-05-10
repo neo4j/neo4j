@@ -67,6 +67,7 @@ class PropertiesFunctionTest extends CypherFunSuite {
   test("should map nodes to maps") {
     val node = mock[Node]
     when(node.getId).thenReturn(0)
+    when(node.getElementId).thenReturn("dummy")
     val value = map(Array("a", "b"), Array(stringValue("x"), stringValue("y")))
     when(query.nodeAsMap(0, state.cursors.nodeCursor, state.cursors.propertyCursor)).thenReturn(value)
 

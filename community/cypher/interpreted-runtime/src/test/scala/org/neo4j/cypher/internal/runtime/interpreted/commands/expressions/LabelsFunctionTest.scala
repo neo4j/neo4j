@@ -37,6 +37,7 @@ class LabelsFunctionTest extends CypherFunSuite {
     // GIVEN
     val node = mock[Node]
     when(node.getId).thenReturn(1337L)
+    when(node.getElementId).thenReturn("1337")
     val queryContext = mock[QueryContext]
     val state = QueryStateHelper.emptyWith(query = queryContext)
     when(queryContext.getLabelsForNode(1337L, state.cursors.nodeCursor)).thenReturn(list(stringValue("bambi")))

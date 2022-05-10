@@ -48,6 +48,7 @@ trait PipeTestSupport {
   def newMockedNode(id: Int): Node = {
     val node = mock[Node]
     when(node.getId).thenReturn(id)
+    when(node.getElementId).thenReturn(id.toString)
     node
   }
 

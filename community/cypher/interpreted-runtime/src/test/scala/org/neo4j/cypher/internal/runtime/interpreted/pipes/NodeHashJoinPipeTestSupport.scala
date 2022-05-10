@@ -60,6 +60,7 @@ trait NodeHashJoinPipeTestSupport extends CypherFunSuite {
   protected def newMockedNode(id: Int) = {
     val node = mock[Node]
     when(node.getId).thenReturn(id)
+    when(node.getElementId).thenReturn(id.toString)
     when(node.toString).thenReturn(s"MockedNode($id)")
     node
   }

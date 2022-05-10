@@ -86,6 +86,7 @@ class ContainerIndexTest extends CypherFunSuite {
   test("handles node lookup") {
     val node = mock[Node]
     when(node.getId).thenReturn(0)
+    when(node.getElementId).thenReturn("dummy")
     implicit val expression = literal(node)
     val nodeCursor = state.cursors.nodeCursor
     val propertyCursor = state.cursors.propertyCursor

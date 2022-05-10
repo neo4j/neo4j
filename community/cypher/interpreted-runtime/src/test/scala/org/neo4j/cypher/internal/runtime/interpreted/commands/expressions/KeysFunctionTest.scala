@@ -41,6 +41,7 @@ class KeysFunctionTest extends CypherFunSuite {
     // GIVEN
 
     val node = mock[Node]
+    when(node.getElementId).thenReturn("dummy")
 
     val queryContext = mock[QueryContext]
     val state = QueryStateHelper.emptyWith(query = queryContext)
@@ -65,6 +66,8 @@ class KeysFunctionTest extends CypherFunSuite {
   test("test without Property Keys ") {
     // GIVEN
     val node = mock[Node]
+    when(node.getElementId).thenReturn("dummy")
+
     val queryContext = mock[QueryContext]
     val state = QueryStateHelper.emptyWith(query = queryContext)
     when(queryContext.nodePropertyIds(node.getId, state.cursors.nodeCursor, state.cursors.propertyCursor)).thenReturn(

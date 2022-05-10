@@ -81,6 +81,7 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
   private def nodeMock(id: Long) = {
     val node = mock[Node]
     when(node.getId).thenReturn(id)
+    when(node.getElementId).thenReturn(id.toString)
     node
   }
 }

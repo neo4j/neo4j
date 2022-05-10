@@ -136,6 +136,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
   private def newMockedNode(id: Int) = {
     val node = mock[Node]
     when(node.getId).thenReturn(id)
+    when(node.getElementId).thenReturn(id.toString)
     when(node.toString).thenReturn("node - " + id.toString)
     node
   }

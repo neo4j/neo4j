@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -68,7 +67,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
   private def relationshipValue(id: Long): RelationshipValue = {
     val r = mock[RelationshipValue]
-    Mockito.when(r.id).thenReturn(id)
+    when(r.id).thenReturn(id)
     r
   }
 
@@ -77,14 +76,14 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val resourceManager = new ResourceManager(monitor)
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
     val nodeCursor = mock[NodeCursor]
-    Mockito.when(nodeCursor.next()).thenReturn(true, false)
-    Mockito.when(state.query.nodeCursor()).thenReturn(nodeCursor)
+    when(nodeCursor.next()).thenReturn(true, false)
+    when(state.query.nodeCursor()).thenReturn(nodeCursor)
     val rels = relationshipIterator
-    Mockito.when(state.query.getRelationshipsForIds(any[Long], any[SemanticDirection], any[Array[Int]])).thenReturn(
+    when(state.query.getRelationshipsForIds(any[Long], any[SemanticDirection], any[Array[Int]])).thenReturn(
       rels
     )
 
-    Mockito.when(state.query.relationshipById(any[Long], any[Long], any[Long], any[Int])).thenAnswer(
+    when(state.query.relationshipById(any[Long], any[Long], any[Long], any[Int])).thenAnswer(
       (invocation: InvocationOnMock) => relationshipValue(invocation.getArgument[Long](0))
     )
 
@@ -112,14 +111,14 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val resourceManager = new ResourceManager(monitor)
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
     val nodeCursor = mock[NodeCursor]
-    Mockito.when(nodeCursor.next()).thenReturn(true, false)
-    Mockito.when(state.query.nodeCursor()).thenReturn(nodeCursor)
+    when(nodeCursor.next()).thenReturn(true, false)
+    when(state.query.nodeCursor()).thenReturn(nodeCursor)
     val rels = relationshipIterator
-    Mockito.when(state.query.getRelationshipsForIds(any[Long], any[SemanticDirection], any[Array[Int]])).thenReturn(
+    when(state.query.getRelationshipsForIds(any[Long], any[SemanticDirection], any[Array[Int]])).thenReturn(
       rels
     )
 
-    Mockito.when(state.query.relationshipById(any[Long], any[Long], any[Long], any[Int])).thenAnswer(
+    when(state.query.relationshipById(any[Long], any[Long], any[Long], any[Int])).thenAnswer(
       (invocation: InvocationOnMock) => relationshipValue(invocation.getArgument[Long](0))
     )
 
@@ -146,6 +145,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
   private def newMockedNode(id: Int): Node = {
     val node = mock[Node]
     when(node.getId).thenReturn(id)
+    when(node.getElementId).thenReturn(id.toString)
     when(node.toString).thenReturn("node - " + id.toString)
     node
   }

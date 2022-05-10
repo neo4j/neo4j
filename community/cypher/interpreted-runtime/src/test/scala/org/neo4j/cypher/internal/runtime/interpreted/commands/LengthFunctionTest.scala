@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
+import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toListValue
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toStringValue
@@ -37,7 +38,7 @@ class LengthFunctionTest extends CypherFunSuite {
 
   test("length can be used on paths") {
     // given
-    val p = PathImpl(mock[Node], mock[Relationship], mock[Node])
+    val p = PathImpl(mockNode(), mock[Relationship], mockNode())
     val m = CypherRow.from("p" -> ValueUtils.fromPath(p))
     val lengthFunction = LengthFunction(Variable("p"))
 
@@ -70,5 +71,11 @@ class LengthFunctionTest extends CypherFunSuite {
     // when/then
     val e = intercept[CypherTypeException](lengthFunction.apply(m, QueryStateHelper.empty))
     e.getMessage should be("Invalid input for function 'length()': Expected a Path, got: String(\"it was the\")")
+  }
+
+  private def mockNode() = {
+    val node = mock[Node]
+    when(node.getElementId).thenReturn("dummy")
+    node
   }
 }

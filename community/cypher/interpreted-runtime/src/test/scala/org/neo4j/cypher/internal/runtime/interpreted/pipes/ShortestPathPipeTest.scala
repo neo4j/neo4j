@@ -57,6 +57,7 @@ class ShortestPathPipeTest extends CypherFunSuite {
       relIterator = None
     )
     val n1 = mock[Node]
+    when(n1.getElementId).thenReturn("dummy")
     when(n1.getRelationships).thenReturn(Iterables.emptyResourceIterable[Relationship]())
     val input = new FakePipe(Seq.fill(10)(Map("start" -> n1, "end" -> n1)))
     val pipe = ShortestPathPipe(input, ShortestPathExpression(shortestPath))()

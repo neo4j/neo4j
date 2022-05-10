@@ -19,7 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.Mockito.when
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
@@ -210,6 +213,9 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
 
   private def mockInternalTransaction(): InternalTransaction = {
     val idMapper = mock[ElementIdMapper]
+    when(idMapper.nodeElementId(anyLong())).thenAnswer(new Answer[String] {
+      override def answer(invocationOnMock: InvocationOnMock): String = invocationOnMock.getArgument(0).toString
+    })
     val mockTransaction = mock[InternalTransaction]
     when(mockTransaction.elementIdMapper()).thenReturn(idMapper)
     mockTransaction

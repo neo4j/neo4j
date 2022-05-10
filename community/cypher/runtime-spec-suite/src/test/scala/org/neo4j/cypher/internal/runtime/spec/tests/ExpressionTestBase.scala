@@ -119,6 +119,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     // given
     given { tx.createNode(label("Label")) }
     val node = mock[Node]
+    when(node.getElementId).thenReturn("dummy")
     when(node.getId).thenReturn(1337L)
 
     // when
@@ -380,6 +381,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     given { nodePropertyGraph(1, { case i: Int => Map("prop" -> i) }, "Label") }
     val node = mock[Node]
     when(node.getId).thenReturn(1337L)
+    when(node.getElementId).thenReturn("dummy")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -728,6 +730,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     given { tx.createNode(label("Label")) }
     val node = mock[Node]
     when(node.getId).thenReturn(1337L)
+    when(node.getElementId).thenReturn("dummy")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
