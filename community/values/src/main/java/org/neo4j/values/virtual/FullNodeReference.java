@@ -23,16 +23,27 @@ import static java.lang.String.format;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.ElementIdMapper;
 
 public class FullNodeReference extends VirtualNodeReference {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance(FullNodeReference.class);
 
     private final long id;
-    private final String elementId;
+    private final ElementIdMapper elementIdMapper;
+    private String elementId;
 
     FullNodeReference(long id, String elementId) {
+        assert elementId != null;
         this.id = id;
         this.elementId = elementId;
+        this.elementIdMapper = null;
+    }
+
+    FullNodeReference(long id, ElementIdMapper elementIdMapper) {
+        assert elementIdMapper != null;
+        this.id = id;
+        this.elementId = null;
+        this.elementIdMapper = elementIdMapper;
     }
 
     @Override
@@ -57,6 +68,9 @@ public class FullNodeReference extends VirtualNodeReference {
 
     @Override
     public String elementId() {
+        if (elementId == null) {
+            elementId = elementIdMapper.nodeElementId(id);
+        }
         return elementId;
     }
 

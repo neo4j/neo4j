@@ -116,7 +116,7 @@ public final class VirtualValues {
     }
 
     public static FullNodeReference node(long id, ElementIdMapper mapper) {
-        return new FullNodeReference(id, mapper.nodeElementId(id));
+        return new FullNodeReference(id, mapper);
     }
 
     public static FullNodeReference node(long id, String elementId) {
