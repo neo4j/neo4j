@@ -26,7 +26,7 @@ import java.nio.ByteOrder;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreIdSerialization;
 
 /**
  * Write the transaction log file header.
@@ -36,8 +36,8 @@ import org.neo4j.storageengine.api.LegacyStoreId;
  *  log version    7 bytes
  *  log format     1 bytes
  *  last committed 8 bytes
- *  store id       24 bytes
- *  reserved       24 bytes
+ *  store id       64 bytes
+ *  reserved       48 bytes
  * </pre>
  *
  * Byte order is big-endian
@@ -55,10 +55,10 @@ public class LogHeaderWriter {
             var buffer = scopedBuffer.getBuffer();
             buffer.putLong(encodeLogVersion(logHeader.getLogVersion(), logHeader.getLogFormatVersion()));
             buffer.putLong(logHeader.getLastCommittedTxId());
-            LegacyStoreId storeId = logHeader.getStoreId();
-            buffer.putLong(storeId.getCreationTime());
-            buffer.putLong(storeId.getRandomId());
-            buffer.putLong(storeId.getStoreVersion());
+            StoreIdSerialization.serializeWithFixedSize(logHeader.getStoreId(), buffer);
+            buffer.putLong(0 /* reserved */);
+            buffer.putLong(0 /* reserved */);
+            buffer.putLong(0 /* reserved */);
             buffer.putLong(0 /* reserved */);
             buffer.putLong(0 /* reserved */);
             buffer.putLong(0 /* reserved */);

@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.recovery.RecoveryStartInformationProvider.Monitor;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
 class RecoveryStartInformationProviderTest {
@@ -57,7 +56,7 @@ class RecoveryStartInformationProviderTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        var logHeader = new LogHeader(0, 1, LegacyStoreId.UNKNOWN);
+        var logHeader = new LogHeader(0, 1, null);
         when(logFile.extractHeader(0)).thenReturn(logHeader);
         when(logFiles.getLogFile()).thenReturn(logFile);
     }
@@ -93,7 +92,7 @@ class RecoveryStartInformationProviderTest {
                 .thenReturn(new LogTailInformation(
                         new CheckpointInfo(
                                 txPosition,
-                                LegacyStoreId.UNKNOWN,
+                                null,
                                 checkpointPosition,
                                 afterCheckpointPosition,
                                 readerPostPosition,
@@ -105,7 +104,7 @@ class RecoveryStartInformationProviderTest {
                         false,
                         currentLogVersion,
                         LATEST.version(),
-                        LegacyStoreId.UNKNOWN,
+                        null,
                         dbmsRepo));
 
         // when

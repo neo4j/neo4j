@@ -45,7 +45,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.storageengine.api.CommandReaderFactory;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -174,12 +174,13 @@ class LogFilesBuilderTest {
                 .set(neo4j_home, testDirectory.homePath())
                 .set(transaction_logs_root_path, customLogDirectory.toAbsolutePath())
                 .build();
+        var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         LogFiles logFiles = builder(DatabaseLayout.of(config), fileSystem)
                 .withRotationThreshold(ByteUnit.mebiBytes(1))
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())
                 .withCommandReaderFactory(CommandReaderFactory.NO_COMMANDS)
-                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withStoreId(storeId)
                 .build();
         logFiles.init();
         logFiles.start();

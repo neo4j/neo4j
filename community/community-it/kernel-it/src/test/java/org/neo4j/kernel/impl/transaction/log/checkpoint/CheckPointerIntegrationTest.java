@@ -251,7 +251,7 @@ class CheckPointerIntegrationTest {
             getCheckPointer(databaseAPI).forceCheckPoint(new SimpleTriggerInfo("test"));
             var checkpointInfos = checkPointsInTxLog(databaseAPI);
             TransactionId lastCheckpointTxId =
-                    checkpointInfos.get(checkpointInfos.size() - 1).getTransactionId();
+                    checkpointInfos.get(checkpointInfos.size() - 1).transactionId();
             assertEquals(lastClosedTxId, lastCheckpointTxId);
         } finally {
             managementService.shutdown();

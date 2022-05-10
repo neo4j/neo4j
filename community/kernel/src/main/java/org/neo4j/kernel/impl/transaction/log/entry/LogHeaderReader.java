@@ -39,7 +39,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.StoreIdSerialization;
 
 public final class LogHeaderReader {
     private LogHeaderReader() {}
@@ -110,7 +111,7 @@ public final class LogHeaderReader {
                     return null;
                 }
                 long previousCommittedTx = buffer.getLong();
-                return new LogHeader(logFormatVersion, logVersion, previousCommittedTx, LOG_HEADER_SIZE_3_5);
+                return new LogHeader(logFormatVersion, logVersion, previousCommittedTx, null, LOG_HEADER_SIZE_3_5);
             }
             case LOG_VERSION_4_0 -> {
                 if (!safeRead(
@@ -122,11 +123,13 @@ public final class LogHeaderReader {
                     return null;
                 }
                 long previousCommittedTx = buffer.getLong();
-                LegacyStoreId storeId = new LegacyStoreId(buffer.getLong(), buffer.getLong(), buffer.getLong());
+                buffer.getLong(); // legacy creation time
+                buffer.getLong(); // legacy random
+                buffer.getLong(); // legacy store version
                 buffer.getLong(); // legacy upgrade time
                 buffer.getLong(); // legacy upgrade tx id
                 buffer.getLong(); // reserved
-                return new LogHeader(logFormatVersion, logVersion, previousCommittedTx, storeId, LOG_HEADER_SIZE_4_0);
+                return new LogHeader(logFormatVersion, logVersion, previousCommittedTx, null, LOG_HEADER_SIZE_4_0);
             }
             case LOG_VERSION_5_0 -> {
                 if (!safeRead(
@@ -138,9 +141,10 @@ public final class LogHeaderReader {
                     return null;
                 }
                 long previousCommittedTx = buffer.getLong();
-                long creationTime = buffer.getLong();
-                long randomId = buffer.getLong();
-                LegacyStoreId storeId = new LegacyStoreId(creationTime, randomId, buffer.getLong());
+                StoreId storeId = StoreIdSerialization.deserializeWithFixedSize(buffer);
+                buffer.getLong(); // reserved
+                buffer.getLong(); // reserved
+                buffer.getLong(); // reserved
                 buffer.getLong(); // reserved
                 buffer.getLong(); // reserved
                 buffer.getLong(); // reserved

@@ -58,9 +58,9 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.InternalLogProvider;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -94,12 +94,13 @@ class ReversedSingleFileTransactionCursorTest {
     void setUp() throws IOException {
         LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
         SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
+        var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         logFiles = LogFilesBuilder.builder(databaseLayout, fs)
                 .withRotationThreshold(ByteUnit.mebiBytes(10))
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withCommandReaderFactory(new TestCommandReaderFactory())
-                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withStoreId(storeId)
                 .build();
         life.add(logFiles);
         logFile = logFiles.getLogFile();

@@ -44,8 +44,8 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -55,6 +55,7 @@ class VersionAwareLogEntryReaderIT {
     // Magic number represents number of bytes that log file is actually using (in form of header size + payload)
     // to be able to check that its like that or to update manually you can disable pre-allocation + some manual checks.
     private static final long END_OF_DATA_OFFSET = CURRENT_FORMAT_LOG_HEADER_SIZE + 3443L;
+    private static final StoreId STORE_ID = new StoreId(4, 5, "engine-1", "format-1", 1, 2);
 
     @Inject
     private FileSystemAbstraction fs;
@@ -84,7 +85,7 @@ class VersionAwareLogEntryReaderIT {
                 .withStorageEngineFactory(storageEngineFactory)
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())
-                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withStoreId(STORE_ID)
                 .build();
         try (Lifespan lifespan = new Lifespan(logFiles)) {
             getLastReadablePosition(logFiles);
@@ -102,7 +103,7 @@ class VersionAwareLogEntryReaderIT {
                 .withStorageEngineFactory(storageEngineFactory)
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())
-                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withStoreId(STORE_ID)
                 .build();
         try (Lifespan lifespan = new Lifespan(logFiles)) {
 
@@ -119,7 +120,7 @@ class VersionAwareLogEntryReaderIT {
                 .withStorageEngineFactory(storageEngineFactory)
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())
-                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withStoreId(STORE_ID)
                 .build();
         try (Lifespan lifespan = new Lifespan(logFiles)) {
             getLastReadablePosition(logFiles);

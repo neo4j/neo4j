@@ -45,8 +45,8 @@ import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -54,6 +54,9 @@ import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
 class DetachedCheckpointLogEntryParserV50Test {
+
+    private static final StoreId TEST_STORE_ID = new StoreId(1, 1, "engine-1", "format-1", 1, 1);
+
     @Inject
     private FileSystemAbstraction fs;
 
@@ -81,7 +84,7 @@ class DetachedCheckpointLogEntryParserV50Test {
                 assertEquals(DETACHED_CHECK_POINT_V5_0, checkpointV50.getType());
                 assertEquals(KernelVersion.V5_0, checkpointV50.getVersion());
                 assertEquals(new LogPosition(1, 2), checkpointV50.getLogPosition());
-                assertEquals(new LegacyStoreId(3, 4, 5), checkpointV50.getStoreId());
+                assertEquals(TEST_STORE_ID, checkpointV50.getStoreId());
                 assertEquals(new TransactionId(100, 101, 102), checkpointV50.getTransactionId());
             }
         }
@@ -117,12 +120,11 @@ class DetachedCheckpointLogEntryParserV50Test {
 
     private static void writeCheckpoint(WritableChecksumChannel channel, KernelVersion kernelVersion, String reason)
             throws IOException {
-        var storeId = new LegacyStoreId(3, 4, 5);
         var logPosition = new LogPosition(1, 2);
         var transactionId = new TransactionId(100, 101, 102);
 
         writeCheckPointEntry(
-                channel, kernelVersion, transactionId, logPosition, Instant.ofEpochMilli(1), storeId, reason);
+                channel, kernelVersion, transactionId, logPosition, Instant.ofEpochMilli(1), TEST_STORE_ID, reason);
     }
 
     private static void writeCheckPointEntry(
@@ -131,7 +133,7 @@ class DetachedCheckpointLogEntryParserV50Test {
             TransactionId transactionId,
             LogPosition logPosition,
             Instant checkpointTime,
-            LegacyStoreId storeId,
+            StoreId storeId,
             String reason)
             throws IOException {
         new DetachedCheckpointLogEntryWriter(channel, () -> kernelVersion)

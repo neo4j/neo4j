@@ -63,7 +63,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.monitoring.PanicEventGenerator;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -72,6 +72,7 @@ import org.neo4j.test.utils.TestDirectory;
 @Isolated
 class TransactionLogChannelAllocatorIT {
     private static final long ROTATION_THRESHOLD = ByteUnit.mebiBytes(25);
+    private static final StoreId STORE_ID = new StoreId(1, 1, "engine-1", "format-1", 1, 1);
 
     @Inject
     private TestDirectory testDirectory;
@@ -94,7 +95,7 @@ class TransactionLogChannelAllocatorIT {
     void rawChannelDoesNotTryToAdviseOnFileContent() throws IOException {
         Path path = fileHelper.getLogFileForVersion(1);
         try (var storeChannel = fileSystem.write(path)) {
-            writeLogHeader(storeChannel, new LogHeader(CURRENT_LOG_FORMAT_VERSION, 1, 1, 1), INSTANCE);
+            writeLogHeader(storeChannel, new LogHeader(CURRENT_LOG_FORMAT_VERSION, 1, 1, STORE_ID, 1), INSTANCE);
         }
 
         var logHeaderCache = new LogHeaderCache(10);
@@ -111,7 +112,7 @@ class TransactionLogChannelAllocatorIT {
     void defaultChannelTryToAdviseOnFileContent() throws IOException {
         Path path = fileHelper.getLogFileForVersion(1);
         try (StoreChannel storeChannel = fileSystem.write(path)) {
-            writeLogHeader(storeChannel, new LogHeader(CURRENT_LOG_FORMAT_VERSION, 1, 1, 1), INSTANCE);
+            writeLogHeader(storeChannel, new LogHeader(CURRENT_LOG_FORMAT_VERSION, 1, 1, STORE_ID, 1), INSTANCE);
         }
 
         var logHeaderCache = new LogHeaderCache(10);
@@ -220,7 +221,7 @@ class TransactionLogChannelAllocatorIT {
                 fileSystem,
                 logProvider,
                 DatabaseTracers.EMPTY,
-                () -> LegacyStoreId.UNKNOWN,
+                () -> STORE_ID,
                 nativeAccess,
                 INSTANCE,
                 new Monitors(),

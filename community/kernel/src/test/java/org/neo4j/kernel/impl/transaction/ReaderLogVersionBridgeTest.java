@@ -47,6 +47,8 @@ import org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
+import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.StoreIdSerialization;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -77,6 +79,8 @@ class ReaderLogVersionBridgeTest {
         when(channel.getLogFormatVersion()).thenReturn(CURRENT_LOG_FORMAT_VERSION);
         when(fs.fileExists(any(Path.class))).thenReturn(true);
         when(fs.read(any(Path.class))).thenReturn(newStoreChannel);
+
+        byte[] serializedStoreId = getSerializedStoreId();
         when(newStoreChannel.read(ArgumentMatchers.<ByteBuffer>any())).then(new Answer<>() {
             private int count;
 
@@ -90,13 +94,14 @@ class ReaderLogVersionBridgeTest {
                 }
                 if (count == 2) {
                     buffer.putLong(42);
-                    buffer.putLong(1);
-                    buffer.putLong(2);
-                    buffer.putLong(3);
-                    buffer.putLong(4);
-                    buffer.putLong(5);
+                    buffer.put(serializedStoreId);
                     buffer.putLong(0); // reserved
-                    return Long.BYTES * 7;
+                    buffer.putLong(0); // reserved
+                    buffer.putLong(0); // reserved
+                    buffer.putLong(0); // reserved
+                    buffer.putLong(0); // reserved
+                    buffer.putLong(0); // reserved
+                    return Long.BYTES * 15;
                 }
                 throw new AssertionError("Should only be called twice.");
             }
@@ -151,6 +156,13 @@ class ReaderLogVersionBridgeTest {
         // then
         assertEquals(channel, result);
         verify(channel, never()).close();
+    }
+
+    private byte[] getSerializedStoreId() throws IOException {
+        var storeId = new StoreId(1, 1, "engine-1", "format-1", 1, 1);
+        ByteBuffer buffer = ByteBuffer.allocate(StoreIdSerialization.MAX_STORE_ID_LENGTH);
+        StoreIdSerialization.serializeWithFixedSize(storeId, buffer);
+        return buffer.array();
     }
 
     private LogFiles prepareLogFiles() throws IOException {

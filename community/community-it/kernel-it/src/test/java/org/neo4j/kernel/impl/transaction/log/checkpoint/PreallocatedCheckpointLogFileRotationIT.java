@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.kernel.impl.transaction.log.entry.DetachedCheckpointLogEntryWriter.RECORD_LENGTH_BYTES;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent.NULL;
 
 import java.io.IOException;
@@ -66,25 +68,22 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
         LogPosition logPosition = new LogPosition(1000, 12345);
         var transactionId = new TransactionId(100, 101, 102);
         var reason = "checkpoint in preallocated file";
-        for (int i = 0; i < 32; i++) {
-            checkpointAppender.checkPoint(NULL, transactionId, logPosition, Instant.now(), reason);
+
+        for (int fileCount = 1; fileCount < 6; fileCount++) {
+            for (int i = CURRENT_FORMAT_LOG_HEADER_SIZE; i < ROTATION_THRESHOLD; i += RECORD_LENGTH_BYTES) {
+                assertThat(checkpointFile.getDetachedCheckpointFiles())
+                        .hasSize(fileCount)
+                        .allMatch(this::sizeEqualsToPreallocatedFile);
+                checkpointAppender.checkPoint(NULL, transactionId, logPosition, Instant.now(), reason);
+            }
         }
 
-        assertThat(checkpointFile.getDetachedCheckpointFiles()).hasSize(7).allMatch(this::sizeEqualsToPreallocatedFile);
-
-        checkpointAppender.checkPoint(NULL, transactionId, logPosition, Instant.now(), reason);
-        assertThat(checkpointFile.getDetachedCheckpointFiles()).hasSize(7).allMatch(this::sizeEqualsToPreallocatedFile);
-
-        checkpointAppender.checkPoint(NULL, transactionId, logPosition, Instant.now(), reason);
-        assertThat(checkpointFile.getDetachedCheckpointFiles()).hasSize(7).allMatch(this::sizeEqualsToPreallocatedFile);
-
-        checkpointAppender.checkPoint(NULL, transactionId, logPosition, Instant.now(), reason);
-        assertThat(checkpointFile.getDetachedCheckpointFiles()).hasSize(8).allMatch(this::sizeEqualsToPreallocatedFile);
+        assertThat(checkpointFile.getDetachedCheckpointFiles()).hasSize(6).allMatch(this::sizeEqualsToPreallocatedFile);
     }
 
     private boolean sizeEqualsToPreallocatedFile(Path path) {
         try {
-            return Files.size(path) == ROTATION_THRESHOLD;
+            return Files.size(path) < ROTATION_THRESHOLD + RECORD_LENGTH_BYTES;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

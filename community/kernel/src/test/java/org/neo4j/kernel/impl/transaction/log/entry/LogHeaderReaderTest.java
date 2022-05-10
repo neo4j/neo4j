@@ -38,7 +38,8 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.StoreIdSerialization;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -59,13 +60,19 @@ class LogHeaderReaderTest {
 
     private long expectedLogVersion;
     private long expectedTxId;
-    private LegacyStoreId expectedStoreId;
+    private StoreId expectedStoreId;
 
     @BeforeEach
     void setUp() {
         expectedLogVersion = random.nextLong(0, LOG_VERSION_MASK);
         expectedTxId = random.nextLong();
-        expectedStoreId = new LegacyStoreId(random.nextLong(), random.nextLong(), random.nextLong());
+        expectedStoreId = new StoreId(
+                random.nextLong(),
+                random.nextLong(),
+                "engine-" + random.nextInt(0, 255),
+                "format-" + random.nextInt(0, 255),
+                random.nextInt(0, 127),
+                random.nextInt(0, 127));
     }
 
     @Test
@@ -79,7 +86,8 @@ class LogHeaderReaderTest {
 
         var result = readLogHeader(channel, true, null, INSTANCE);
 
-        assertThat(result).isEqualTo(new LogHeader(oldVersion, expectedLogVersion, expectedTxId, LOG_HEADER_SIZE_3_5));
+        assertThat(result)
+                .isEqualTo(new LogHeader(oldVersion, expectedLogVersion, expectedTxId, null, LOG_HEADER_SIZE_3_5));
     }
 
     @Test
@@ -87,9 +95,10 @@ class LogHeaderReaderTest {
         var buffer = ByteBuffers.allocate(CURRENT_FORMAT_LOG_HEADER_SIZE, ByteOrder.BIG_ENDIAN, INSTANCE);
         buffer.putLong(encodeLogVersion(expectedLogVersion, CURRENT_LOG_FORMAT_VERSION));
         buffer.putLong(expectedTxId);
-        buffer.putLong(expectedStoreId.getCreationTime());
-        buffer.putLong(expectedStoreId.getRandomId());
-        buffer.putLong(expectedStoreId.getStoreVersion());
+        StoreIdSerialization.serializeWithFixedSize(expectedStoreId, buffer);
+        buffer.putLong(0); // reserved
+        buffer.putLong(0); // reserved
+        buffer.putLong(0); // reserved
         buffer.putLong(0); // reserved
         buffer.putLong(0); // reserved
         buffer.putLong(0); // reserved
@@ -125,9 +134,7 @@ class LogHeaderReaderTest {
         var buffer = ByteBuffers.allocate(CURRENT_FORMAT_LOG_HEADER_SIZE, ByteOrder.BIG_ENDIAN, INSTANCE);
         buffer.putLong(encodeLogVersion(expectedLogVersion, CURRENT_LOG_FORMAT_VERSION));
         buffer.putLong(expectedTxId);
-        buffer.putLong(expectedStoreId.getCreationTime());
-        buffer.putLong(expectedStoreId.getRandomId());
-        buffer.putLong(expectedStoreId.getStoreVersion());
+        StoreIdSerialization.serializeWithFixedSize(expectedStoreId, buffer);
 
         try (var stream = fileSystem.openAsOutputStream(file, false)) {
             stream.write(buffer.array());

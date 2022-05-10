@@ -50,11 +50,11 @@ public class StoreId extends StoreVersionIdentifier {
         this.random = random;
     }
 
-    long getCreationTime() {
+    public long getCreationTime() {
         return creationTime;
     }
 
-    long getRandom() {
+    public long getRandom() {
         return random;
     }
 

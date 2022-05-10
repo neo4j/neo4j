@@ -36,7 +36,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.KernelVersionRepository;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -104,7 +104,7 @@ class DetachedCheckpointLogEntryWriterTest {
 
     private static void writeCheckpoint(DetachedCheckpointLogEntryWriter checkpointLogEntryWriter, String reason)
             throws IOException {
-        var storeId = new LegacyStoreId(3, 4, 5);
+        var storeId = new StoreId(3, 4, "engine-1", "format-1", 11, 22);
         var transactionId = new TransactionId(7, 8, 9);
         LogPosition logPosition = new LogPosition(1, 2);
         checkpointLogEntryWriter.writeCheckPointEntry(

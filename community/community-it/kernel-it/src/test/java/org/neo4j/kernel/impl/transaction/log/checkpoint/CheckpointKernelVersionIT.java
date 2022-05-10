@@ -52,6 +52,6 @@ public class CheckpointKernelVersionIT {
 
         List<CheckpointInfo> checkpointInfos = logFiles.getCheckpointFile().reachableCheckpoints();
         assertThat(checkpointInfos).hasSize(1);
-        assertThat(checkpointInfos.get(0).getVersion()).isEqualTo(KernelVersion.V5_0);
+        assertThat(checkpointInfos.get(0).version()).isEqualTo(KernelVersion.V5_0);
     }
 }

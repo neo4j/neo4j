@@ -59,7 +59,7 @@ import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
 import org.neo4j.kernel.recovery.LogTailScannerMonitor;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
 
 public class DetachedLogTailScanner {
     static final long NO_TRANSACTION_ID = -1;
@@ -102,7 +102,7 @@ public class DetachedLogTailScanner {
                 return noCheckpointLogTail(logFile, highestLogVersion, lowestLogVersion);
             }
             var checkpoint = lastAccessibleCheckpoint.get();
-            verifyCheckpointPosition(checkpoint.getChannelPositionAfterCheckpoint());
+            verifyCheckpointPosition(checkpoint.channelPositionAfterCheckpoint());
             // found checkpoint pointing to existing position in existing log file
             if (isValidCheckpoint(logFile, checkpoint)) {
                 return validCheckpointLogTail(logFile, highestLogVersion, lowestLogVersion, checkpoint);
@@ -134,7 +134,7 @@ public class DetachedLogTailScanner {
     private LogTailInformation validCheckpointLogTail(
             LogFile logFile, long highestLogVersion, long lowestLogVersion, CheckpointInfo checkpoint)
             throws IOException {
-        var entries = getFirstTransactionIdAfterCheckpoint(logFile, checkpoint.getTransactionLogPosition());
+        var entries = getFirstTransactionIdAfterCheckpoint(logFile, checkpoint.transactionLogPosition());
         return new LogTailInformation(
                 checkpoint,
                 entries.isPresent(),
@@ -170,7 +170,7 @@ public class DetachedLogTailScanner {
      * Otherwise, checkpoint is not considered valid, and we need to recover.
      */
     private boolean isValidCheckpoint(LogFile logFile, CheckpointInfo checkpointInfo) throws IOException {
-        LogPosition logPosition = checkpointInfo.getTransactionLogPosition();
+        LogPosition logPosition = checkpointInfo.transactionLogPosition();
         long logVersion = logPosition.getLogVersion();
         if (!logFile.versionExists(logVersion)) {
             return false;
@@ -180,9 +180,10 @@ public class DetachedLogTailScanner {
             return false;
         }
         LogHeader logHeader = logFile.extractHeader(logVersion);
-        LegacyStoreId headerStoreId = logHeader.getStoreId();
-        return LegacyStoreId.UNKNOWN.equals(headerStoreId)
-                || headerStoreId.equalsIgnoringVersion(checkpointInfo.storeId());
+        StoreId headerStoreId = logHeader.getStoreId();
+        return headerStoreId == null
+                || headerStoreId.isSameOrUpgradeSuccessor(checkpointInfo.storeId())
+                || checkpointInfo.storeId().isSameOrUpgradeSuccessor(headerStoreId);
     }
 
     private StartCommitEntries getFirstTransactionIdAfterCheckpoint(LogFile logFile, LogPosition logPosition)

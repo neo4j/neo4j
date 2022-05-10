@@ -38,6 +38,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.KibiByte;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
+import static org.neo4j.kernel.impl.transaction.log.entry.DetachedCheckpointLogEntryWriter.RECORD_LENGTH_BYTES;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
@@ -103,9 +104,9 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -126,6 +127,7 @@ class TransactionLogsRecoveryTest {
     private TestDirectory testDirectory;
 
     private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
+    private final StoreId storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
     private final TransactionIdStore transactionIdStore =
             new SimpleTransactionIdStore(5L, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0);
     private final int logVersion = 0;
@@ -411,7 +413,7 @@ class TransactionLogsRecoveryTest {
 
         assertEquals(marker.getByteOffset(), Files.size(file));
         assertEquals(
-                CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */,
+                CURRENT_FORMAT_LOG_HEADER_SIZE + RECORD_LENGTH_BYTES /* one checkpoint */,
                 ((DetachedCheckpointAppender) logFiles.getCheckpointFile().getCheckpointAppender())
                         .getCurrentPosition());
 
@@ -421,7 +423,7 @@ class TransactionLogsRecoveryTest {
                     Files.size(logFiles.getCheckpointFile().getCurrentFile()));
         } else {
             assertEquals(
-                    CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */,
+                    CURRENT_FORMAT_LOG_HEADER_SIZE + RECORD_LENGTH_BYTES /* one checkpoint */,
                     Files.size(logFiles.getCheckpointFile().getCurrentFile()));
         }
     }
@@ -457,7 +459,7 @@ class TransactionLogsRecoveryTest {
 
         assertEquals(marker.getByteOffset(), Files.size(file));
         assertEquals(
-                CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */,
+                CURRENT_FORMAT_LOG_HEADER_SIZE + RECORD_LENGTH_BYTES /* one checkpoint */,
                 Files.size(logFiles.getCheckpointFile().getCurrentFile()));
     }
 
@@ -664,7 +666,7 @@ class TransactionLogsRecoveryTest {
                 var writableLogChannel = new PositionAwarePhysicalFlushableChecksumChannel(
                         versionedStoreChannel,
                         new HeapScopedBuffer(toIntExact(KibiByte.toBytes(1)), ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
-            writeLogHeader(versionedStoreChannel, new LogHeader(logVersion, 2L, LegacyStoreId.UNKNOWN), INSTANCE);
+            writeLogHeader(versionedStoreChannel, new LogHeader(logVersion, 2L, storeId), INSTANCE);
             writableLogChannel.beginChecksum();
             Consumer<LogPositionMarker> consumer = marker -> {
                 try {
@@ -683,7 +685,7 @@ class TransactionLogsRecoveryTest {
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withCommandReaderFactory(new TestCommandReaderFactory())
-                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withStoreId(storeId)
                 .withConfig(Config.newBuilder()
                         .set(GraphDatabaseInternalSettings.fail_on_corrupted_log_files, false)
                         .build())

@@ -40,7 +40,7 @@ public final class RecoveryHelpers {
         var checkpointFile = logFiles.getCheckpointFile();
         Optional<CheckpointInfo> latestCheckpoint = checkpointFile.findLatestCheckpoint();
         latestCheckpoint.ifPresent(checkpointInfo -> {
-            LogPosition entryPosition = checkpointInfo.getCheckpointEntryPosition();
+            LogPosition entryPosition = checkpointInfo.checkpointEntryPosition();
             try (StoreChannel storeChannel = fs.write(checkpointFile.getCurrentFile())) {
                 storeChannel.truncate(entryPosition.getByteOffset());
             } catch (IOException e) {

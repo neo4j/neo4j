@@ -76,7 +76,7 @@ public class LogVersions {
     /**
      * 5.0 log header byte size
      */
-    public static final int LOG_HEADER_SIZE_5_0 = 64;
+    public static final int LOG_HEADER_SIZE_5_0 = 128;
 
     /**
      * Current and latest log format version

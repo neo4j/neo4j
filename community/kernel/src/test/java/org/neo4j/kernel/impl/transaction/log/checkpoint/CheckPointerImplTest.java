@@ -63,8 +63,8 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.time.Clocks;
 import org.neo4j.util.concurrent.BinaryLatch;
@@ -85,7 +85,7 @@ class CheckPointerImplTest {
     private final long transactionId = 42L;
     private final LogPosition logPosition = new LogPosition(16L, 233L);
     private final Clock clock = Clocks.fakeClock();
-    private final LegacyStoreId storeId = new LegacyStoreId(1, 2, 3);
+    private final StoreId storeId = new StoreId(1, 1, "engine-1", "format-1", 1, 1);
 
     @Test
     void shouldNotFlushIfItIsNotNeeded() throws Throwable {

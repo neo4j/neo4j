@@ -47,8 +47,8 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.storageengine.api.KernelVersionRepository;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
@@ -91,7 +91,7 @@ class DetachedCheckpointLogFileTest {
         TransactionId transactionId = new TransactionId(1, 2, 3);
         checkpointFile.getCheckpointAppender().checkPoint(NULL, transactionId, logPosition, Instant.now(), "detached");
         CheckpointInfo lastCheckPoint = ((LogTailInformation) buildLogFiles().getTailMetadata()).lastCheckPoint;
-        assertThat(lastCheckPoint.getTransactionLogPosition()).isEqualTo(logPosition);
+        assertThat(lastCheckPoint.transactionLogPosition()).isEqualTo(logPosition);
     }
 
     @Test
@@ -101,7 +101,7 @@ class DetachedCheckpointLogFileTest {
                 new LogPosition(logVersionRepository.getCurrentLogVersion(), CURRENT_FORMAT_LOG_HEADER_SIZE);
         TransactionId transactionId = new TransactionId(5, 6, 7);
         checkpointFile.getCheckpointAppender().checkPoint(NULL, transactionId, logPosition2, Instant.now(), "detached");
-        assertThat(checkpointFile.findLatestCheckpoint().orElseThrow().getTransactionLogPosition())
+        assertThat(checkpointFile.findLatestCheckpoint().orElseThrow().transactionLogPosition())
                 .isEqualTo(logPosition2);
     }
 
@@ -122,22 +122,23 @@ class DetachedCheckpointLogFileTest {
 
         List<CheckpointInfo> reachableCheckpoints = checkpointFile.reachableCheckpoints();
         assertThat(reachableCheckpoints.size()).isEqualTo(2);
-        assertThat(reachableCheckpoints.get(0).getTransactionLogPosition()).isEqualTo(logPosition);
-        assertThat(reachableCheckpoints.get(1).getTransactionLogPosition()).isEqualTo(logPosition1);
+        assertThat(reachableCheckpoints.get(0).transactionLogPosition()).isEqualTo(logPosition);
+        assertThat(reachableCheckpoints.get(1).transactionLogPosition()).isEqualTo(logPosition1);
         List<CheckpointInfo> detachedCheckpoints = checkpointFile.getReachableDetachedCheckpoints();
         assertThat(detachedCheckpoints.size()).isEqualTo(2);
-        assertThat(detachedCheckpoints.get(0).getTransactionLogPosition()).isEqualTo(logPosition);
-        assertThat(detachedCheckpoints.get(1).getTransactionLogPosition()).isEqualTo(logPosition1);
+        assertThat(detachedCheckpoints.get(0).transactionLogPosition()).isEqualTo(logPosition);
+        assertThat(detachedCheckpoints.get(1).transactionLogPosition()).isEqualTo(logPosition1);
     }
 
     private LogFiles buildLogFiles() throws IOException {
+        var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         return LogFilesBuilder.builder(databaseLayout, fileSystem)
                 .withRotationThreshold(rotationThreshold)
                 .withTransactionIdStore(transactionIdStore)
                 .withDatabaseHealth(databaseHealth)
                 .withLogVersionRepository(logVersionRepository)
                 .withCommandReaderFactory(new TestCommandReaderFactory())
-                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withStoreId(storeId)
                 .withKernelVersionProvider(versionProvider)
                 .build();
     }

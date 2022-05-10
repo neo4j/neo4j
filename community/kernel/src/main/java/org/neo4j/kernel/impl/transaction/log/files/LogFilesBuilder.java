@@ -54,9 +54,9 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.KernelVersionRepository;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdProvider;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
@@ -94,7 +94,7 @@ public class LogFilesBuilder {
     private DatabaseHealth databaseHealth;
     private Clock clock;
     private Monitors monitors;
-    private LegacyStoreId storeId;
+    private StoreId storeId;
     private NativeAccess nativeAccess;
     private KernelVersionRepository kernelVersionRepository;
     private LogTailMetadata externalLogTail;
@@ -217,7 +217,7 @@ public class LogFilesBuilder {
         return this;
     }
 
-    public LogFilesBuilder withStoreId(LegacyStoreId storeId) {
+    public LogFilesBuilder withStoreId(StoreId storeId) {
         this.storeId = storeId;
         return this;
     }
@@ -263,7 +263,7 @@ public class LogFilesBuilder {
             config = Config.defaults();
         }
         requireNonNull(fileSystem);
-        Supplier<LegacyStoreId> storeIdSupplier = getStoreId();
+        Supplier<StoreId> storeIdSupplier = getStoreId();
         LogVersionRepositoryProvider logVersionRepositorySupplier = getLogVersionRepositoryProvider();
         LastCommittedTransactionIdProvider lastCommittedIdSupplier = lastCommittedIdProvider();
         LongSupplier committingTransactionIdSupplier = committingIdSupplier();
@@ -519,7 +519,7 @@ public class LogFilesBuilder {
         }
     }
 
-    private Supplier<LegacyStoreId> getStoreId() {
+    private Supplier<StoreId> getStoreId() {
         if (storeId != null) {
             return () -> storeId;
         }

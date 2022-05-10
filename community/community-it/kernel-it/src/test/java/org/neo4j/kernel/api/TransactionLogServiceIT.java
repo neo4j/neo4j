@@ -549,7 +549,7 @@ class TransactionLogServiceIT {
                 .hasMessage(
                         "Log position requested to be used for restore belongs to the log file that was already appended by "
                                 + "transaction and cannot be restored. "
-                                + "Last closed position: LogPosition{logVersion=0, byteOffset=3398}, requested restore: LogPosition{logVersion=-1, byteOffset=100}");
+                                + "Last closed position: LogPosition{logVersion=0, byteOffset=3462}, requested restore: LogPosition{logVersion=-1, byteOffset=100}");
     }
 
     @Test

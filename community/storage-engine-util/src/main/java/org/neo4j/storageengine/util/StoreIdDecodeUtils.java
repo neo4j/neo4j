@@ -33,7 +33,7 @@ public class StoreIdDecodeUtils {
 
     public static String decodeId(StoreIdProvider storeIdProvider) throws NoSuchAlgorithmException {
         var externalStoreId = storeIdProvider.getExternalStoreId();
-        var storeId = storeIdProvider.getStoreId();
+        var storeId = storeIdProvider.getLegacyStoreId();
         var storeIdString = externalStoreId.isPresent()
                 ? externalStoreId.get().toString()
                 : format("%d%d%d", storeId.getCreationTime(), storeId.getRandomId(), storeId.getStoreVersion());

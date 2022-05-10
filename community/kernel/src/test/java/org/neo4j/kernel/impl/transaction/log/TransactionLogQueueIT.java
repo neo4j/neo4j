@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
@@ -158,12 +158,13 @@ class TransactionLogQueueIT {
     private LogFiles buildLogFiles(
             SimpleLogVersionRepository logVersionRepository, SimpleTransactionIdStore transactionIdStore)
             throws IOException {
+        var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         return LogFilesBuilder.builder(databaseLayout, fileSystem)
                 .withLogVersionRepository(logVersionRepository)
                 .withRotationThreshold(ByteUnit.mebiBytes(1))
                 .withTransactionIdStore(transactionIdStore)
                 .withCommandReaderFactory(new TestCommandReaderFactory())
-                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withStoreId(storeId)
                 .build();
     }
 }

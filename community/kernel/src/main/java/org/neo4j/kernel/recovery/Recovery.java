@@ -31,7 +31,6 @@ import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.scheduler.Group.INDEX_CLEANUP;
 import static org.neo4j.scheduler.Group.INDEX_CLEANUP_WORK;
-import static org.neo4j.storageengine.api.LegacyStoreId.UNKNOWN;
 import static org.neo4j.storageengine.api.StorageEngineFactory.selectStorageEngine;
 import static org.neo4j.time.Clocks.systemClock;
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
@@ -122,13 +121,13 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.RecoveryState;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageFilesState;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.Clocks;
 import org.neo4j.token.DelegatingTokenHolder;
@@ -559,7 +558,7 @@ public final class Recovery {
                 .build();
 
         boolean failOnCorruptedLogFiles = config.get(GraphDatabaseInternalSettings.fail_on_corrupted_log_files);
-        validateStoreId(logTailMetadata, storageEngine.getStoreId());
+        validateStoreId(logTailMetadata, storageEngine.retrieveStoreId());
 
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         PhysicalLogicalTransactionStore transactionStore = new PhysicalLogicalTransactionStore(
@@ -664,11 +663,14 @@ public final class Recovery {
         return DatabaseIdFactory.from(databaseLayout.getDatabaseName(), uuid);
     }
 
-    public static void validateStoreId(LogTailMetadata tailMetadata, LegacyStoreId storeId) {
-        LegacyStoreId txStoreId = tailMetadata.getStoreId();
-        if (!UNKNOWN.equals(txStoreId) && !storeId.equalsIgnoringVersion(txStoreId)) {
-            throw new RuntimeException(
-                    "Mismatching store id. Store StoreId: " + storeId + ". Transaction log StoreId: " + txStoreId);
+    public static void validateStoreId(LogTailMetadata tailMetadata, StoreId storeId) {
+        var optionalTxStoreId = tailMetadata.getStoreId();
+        if (optionalTxStoreId.isPresent()) {
+            var txStoreId = optionalTxStoreId.get();
+            if (!storeId.isSameOrUpgradeSuccessor(txStoreId) && !txStoreId.isSameOrUpgradeSuccessor(storeId)) {
+                throw new RuntimeException(
+                        "Mismatching store id. Store StoreId: " + storeId + ". Transaction log StoreId: " + txStoreId);
+            }
         }
     }
 

@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_keep_threshold;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold;
 import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.kernel.impl.transaction.log.entry.DetachedCheckpointLogEntryWriter.RECORD_LENGTH_BYTES;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent.NULL;
 
@@ -70,13 +71,13 @@ public class CheckpointLogFileRotationIT {
             checkpointAppender.checkPoint(NULL, transactionId, logPosition, Instant.now(), reason);
         }
         var matchedFiles = checkpointFile.getDetachedCheckpointFiles();
-        assertThat(matchedFiles).hasSize(22);
+        assertThat(matchedFiles).hasSize(27);
         for (var fileWithCheckpoints : matchedFiles) {
             assertThat(fileWithCheckpoints).satisfies(new Condition<>() {
                 @Override
                 public boolean matches(Path file) {
                     long length = file.toFile().length();
-                    return length == kibiBytes(1) || length == CURRENT_FORMAT_LOG_HEADER_SIZE;
+                    return length < ROTATION_THRESHOLD + RECORD_LENGTH_BYTES;
                 }
             });
         }
@@ -89,7 +90,9 @@ public class CheckpointLogFileRotationIT {
         LogPosition logPosition = new LogPosition(1000, 12345);
         var transactionId = new TransactionId(100, 101, 102);
         var reason = "checkpoint for rotation test";
-        for (int i = 0; i < 4; i++) {
+        for (int i = CURRENT_FORMAT_LOG_HEADER_SIZE + RECORD_LENGTH_BYTES;
+                i < ROTATION_THRESHOLD;
+                i += RECORD_LENGTH_BYTES) {
             checkpointAppender.checkPoint(NULL, transactionId, logPosition, Instant.now(), reason);
         }
         assertThat(checkpointFile.getDetachedCheckpointFiles()).hasSize(1);
@@ -102,7 +105,7 @@ public class CheckpointLogFileRotationIT {
         LogPosition logPosition = new LogPosition(1000, 12345);
         var transactionId = new TransactionId(100, 101, 102);
         var reason = "checkpoint for rotation test";
-        for (int i = 0; i < 5; i++) {
+        for (int i = CURRENT_FORMAT_LOG_HEADER_SIZE; i < ROTATION_THRESHOLD; i += RECORD_LENGTH_BYTES) {
             checkpointAppender.checkPoint(NULL, transactionId, logPosition, Instant.now(), reason);
         }
         Path[] matchedFiles = checkpointFile.getDetachedCheckpointFiles();

@@ -596,7 +596,7 @@ class MetaDataStoreTest {
     void regenerateSetExternalStoreId() {
         UUID externalStoreId = UUID.randomUUID();
         try (MetaDataStore store = newMetaDataStore()) {
-            store.regenerateMetadata(store.getStoreId(), externalStoreId, NULL_CONTEXT);
+            store.regenerateMetadata(store.getLegacyStoreId(), externalStoreId, NULL_CONTEXT);
         }
 
         try (MetaDataStore store = newMetaDataStore()) {
@@ -791,7 +791,7 @@ class MetaDataStoreTest {
         store.getRandomNumber();
         store.getLatestConstraintIntroducingTx();
         store.getExternalStoreId();
-        store.getStoreId();
+        store.getLegacyStoreId();
         // getDatabaseIdUuid actually reads from store, but must not refresh fields
         store.getDatabaseIdUuid(NULL_CONTEXT);
     }
@@ -802,7 +802,7 @@ class MetaDataStoreTest {
         // an older version)
         try (var metaDataStore = newMetaDataStore()) {
             metaDataStore.regenerateMetadata(
-                    metaDataStore.getStoreId(), MetaDataStore.NOT_INITIALIZED_UUID, NULL_CONTEXT);
+                    metaDataStore.getLegacyStoreId(), MetaDataStore.NOT_INITIALIZED_UUID, NULL_CONTEXT);
         }
         try (var store = newMetaDataStore()) {
             var numCommitted = new AtomicLong();

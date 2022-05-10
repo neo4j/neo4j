@@ -38,7 +38,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.StoreIdSerialization;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -59,14 +60,20 @@ class LogHeaderWriterTest {
 
     private long expectedLogVersion;
     private long expectedTxId;
-    private LegacyStoreId expectedStoreId;
+    private StoreId expectedStoreId;
     private LogHeader logHeader;
 
     @BeforeEach
     void setUp() {
         expectedLogVersion = random.nextLong(0, LOG_VERSION_MASK);
         expectedTxId = random.nextLong(0, Long.MAX_VALUE);
-        expectedStoreId = new LegacyStoreId(random.nextLong(), random.nextLong(), random.nextLong());
+        expectedStoreId = new StoreId(
+                random.nextLong(),
+                random.nextLong(),
+                "engine-" + random.nextInt(0, 255),
+                "format-" + random.nextInt(0, 255),
+                random.nextInt(0, 127),
+                random.nextInt(0, 127));
         logHeader = new LogHeader(expectedLogVersion, expectedTxId, expectedStoreId);
     }
 
@@ -101,7 +108,7 @@ class LogHeaderWriterTest {
         long txId = result.getLong();
         assertEquals(expectedTxId, txId);
 
-        LegacyStoreId storeId = new LegacyStoreId(result.getLong(), result.getLong(), result.getLong());
+        StoreId storeId = StoreIdSerialization.deserializeWithFixedSize(result);
         assertEquals(expectedStoreId, storeId);
     }
 }

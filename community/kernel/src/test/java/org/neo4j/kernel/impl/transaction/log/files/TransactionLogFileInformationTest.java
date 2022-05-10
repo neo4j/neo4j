@@ -37,12 +37,14 @@ import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.storageengine.api.StoreId;
 
 class TransactionLogFileInformationTest {
     private final LogFiles logFiles = mock(TransactionLogFiles.class);
     private final LogFile logFile = mock(TransactionLogFile.class);
     private final LogHeaderCache logHeaderCache = mock(LogHeaderCache.class);
     private final TransactionLogFilesContext context = mock(TransactionLogFilesContext.class);
+    private final StoreId storeId = new StoreId(1, 1, "engine-1", "format-1", 1, 1);
 
     @BeforeEach
     void setUp() {
@@ -57,8 +59,8 @@ class TransactionLogFileInformationTest {
         long version = 10L;
         when(logHeaderCache.getLogHeader(version)).thenReturn(null);
         when(logFiles.getLogFile().versionExists(version)).thenReturn(true);
-        LogHeader expectedHeader =
-                new LogHeader((byte) -1 /*ignored*/, -1L /*ignored*/, expected - 1L, CURRENT_FORMAT_LOG_HEADER_SIZE);
+        LogHeader expectedHeader = new LogHeader(
+                (byte) -1 /*ignored*/, -1L /*ignored*/, expected - 1L, storeId, CURRENT_FORMAT_LOG_HEADER_SIZE);
         when(logFiles.getLogFile().extractHeader(version)).thenReturn(expectedHeader);
 
         long firstCommittedTxId = info.getFirstEntryId(version);
@@ -72,8 +74,8 @@ class TransactionLogFileInformationTest {
         long expected = 5;
 
         long version = 10L;
-        LogHeader expectedHeader =
-                new LogHeader((byte) -1 /*ignored*/, -1L /*ignored*/, expected - 1L, CURRENT_FORMAT_LOG_HEADER_SIZE);
+        LogHeader expectedHeader = new LogHeader(
+                (byte) -1 /*ignored*/, -1L /*ignored*/, expected - 1L, storeId, CURRENT_FORMAT_LOG_HEADER_SIZE);
         when(logHeaderCache.getLogHeader(version)).thenReturn(expectedHeader);
 
         long firstCommittedTxId = info.getFirstEntryId(version);
@@ -89,8 +91,8 @@ class TransactionLogFileInformationTest {
         when(logFile.getHighestLogVersion()).thenReturn(version);
         when(logHeaderCache.getLogHeader(version)).thenReturn(null);
         when(logFile.versionExists(version)).thenReturn(true);
-        LogHeader expectedHeader =
-                new LogHeader((byte) -1 /*ignored*/, -1L /*ignored*/, expected - 1L, CURRENT_FORMAT_LOG_HEADER_SIZE);
+        LogHeader expectedHeader = new LogHeader(
+                (byte) -1 /*ignored*/, -1L /*ignored*/, expected - 1L, storeId, CURRENT_FORMAT_LOG_HEADER_SIZE);
         when(logFile.extractHeader(version)).thenReturn(expectedHeader);
         when(logFile.hasAnyEntries(version)).thenReturn(true);
 
@@ -108,8 +110,8 @@ class TransactionLogFileInformationTest {
         when(logFile.getHighestLogVersion()).thenReturn(version);
         when(logFile.versionExists(version)).thenReturn(true);
 
-        LogHeader expectedHeader =
-                new LogHeader((byte) -1 /*ignored*/, -1L /*ignored*/, expected - 1L, CURRENT_FORMAT_LOG_HEADER_SIZE);
+        LogHeader expectedHeader = new LogHeader(
+                (byte) -1 /*ignored*/, -1L /*ignored*/, expected - 1L, storeId, CURRENT_FORMAT_LOG_HEADER_SIZE);
         when(logHeaderCache.getLogHeader(version)).thenReturn(expectedHeader);
         when(logFile.hasAnyEntries(version)).thenReturn(true);
 
@@ -137,7 +139,7 @@ class TransactionLogFileInformationTest {
                 .thenReturn(new LogEntryStart(1, 1, 1, new byte[] {}, LogPosition.UNSPECIFIED));
         var fileInfo = new TransactionLogFileInformation(logFiles, logHeaderCache, context, () -> logEntryReader);
 
-        var expectedHeader = new LogHeader((byte) 1, 2, 3, 4);
+        var expectedHeader = new LogHeader((byte) 1, 2, 3, storeId, 4);
         when(logFile.extractHeader(anyLong())).thenReturn(expectedHeader);
         when(logFile.getRawReader(any())).thenReturn(readableLogChannel);
 

@@ -85,9 +85,9 @@ import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.ExternalStoreId;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -309,15 +309,16 @@ class RecordStorageMigratorIT {
                 loadLogTail(databaseLayout, CONFIG, storageEngine));
         try (NeoStores neoStores = storeFactory.openAllNeoStores()) {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-            LegacyStoreId storeId = metaDataStore.getStoreId();
-            assertNotEquals(1155255428148939479L, storeId.getRandomId());
-            assertEquals(Standard.LATEST_STORE_VERSION, StoreVersion.versionLongToString(storeId.getStoreVersion()));
+            StoreId storeId = metaDataStore.getStoreId();
+            assertNotEquals(1155255428148939479L, storeId.getRandom());
+            RecordStoreVersion storeVersion = (RecordStoreVersion) storageEngine.versionInformation(storeId);
+            assertEquals(Standard.LATEST_NAME, storeVersion.getFormat().name());
         }
     }
 
     @Test
     void keepIdsOnUpgrade() throws IOException, KernelException {
-        LegacyStoreId storeId;
+        StoreId storeId;
         ExternalStoreId externalStoreId;
         UUID databaseUUID = UUID.randomUUID();
         DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
@@ -379,10 +380,11 @@ class RecordStorageMigratorIT {
                 loadLogTail(databaseLayout, config, storageEngine));
         try (NeoStores neoStores = storeFactory.openAllNeoStores()) {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-            LegacyStoreId newStoreId = metaDataStore.getStoreId();
+            StoreId newStoreId = metaDataStore.getStoreId();
             // Store version should be updated, and the rest should be as before
-            assertEquals(toFormat.storeVersion(), StoreVersion.versionLongToString(newStoreId.getStoreVersion()));
-            assertEquals(storeId.getRandomId(), newStoreId.getRandomId());
+            RecordStoreVersion storeVersion = (RecordStoreVersion) storageEngine.versionInformation(newStoreId);
+            assertEquals(toFormat.name(), storeVersion.getFormat().name());
+            assertEquals(storeId.getRandom(), newStoreId.getRandom());
             assertEquals(
                     databaseUUID, metaDataStore.getDatabaseIdUuid(NULL_CONTEXT).orElseThrow());
             assertEquals(externalStoreId, metaDataStore.getExternalStoreId().orElseThrow());

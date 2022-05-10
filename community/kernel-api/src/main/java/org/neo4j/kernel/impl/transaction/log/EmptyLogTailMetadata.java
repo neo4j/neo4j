@@ -22,8 +22,9 @@ package org.neo4j.kernel.impl.transaction.log;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 
+import java.util.Optional;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
 public class EmptyLogTailMetadata implements LogTailMetadata {
@@ -50,8 +51,8 @@ public class EmptyLogTailMetadata implements LogTailMetadata {
     }
 
     @Override
-    public LegacyStoreId getStoreId() {
-        return LegacyStoreId.UNKNOWN;
+    public Optional<StoreId> getStoreId() {
+        return Optional.empty();
     }
 
     @Override
@@ -75,7 +76,7 @@ public class EmptyLogTailMetadata implements LogTailMetadata {
     }
 
     @Override
-    public CheckpointInfo getLastCheckPoint() {
-        return null;
+    public Optional<CheckpointInfo> getLastCheckPoint() {
+        return Optional.empty();
     }
 }

@@ -23,8 +23,9 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
+import java.util.Optional;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
 public interface LogTailMetadata {
@@ -40,7 +41,7 @@ public interface LogTailMetadata {
 
     long getLogVersion();
 
-    LegacyStoreId getStoreId();
+    Optional<StoreId> getStoreId();
 
     boolean logsMissing();
 
@@ -50,5 +51,5 @@ public interface LogTailMetadata {
 
     boolean hasUnreadableBytesInCheckpointLogs();
 
-    CheckpointInfo getLastCheckPoint();
+    Optional<CheckpointInfo> getLastCheckPoint();
 }

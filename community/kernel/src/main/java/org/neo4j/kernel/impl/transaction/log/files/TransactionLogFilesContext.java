@@ -36,7 +36,7 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.KernelVersionRepository;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
 
 public class TransactionLogFilesContext {
     private final AtomicLong rotationThreshold;
@@ -53,7 +53,7 @@ public class TransactionLogFilesContext {
     private final MemoryTracker memoryTracker;
     private final Monitors monitors;
     private final boolean failOnCorruptedLogFiles;
-    private final Supplier<LegacyStoreId> storeId;
+    private final Supplier<StoreId> storeId;
     private final DatabaseHealth databaseHealth;
     private final KernelVersionRepository kernelVersionRepository;
     private final Clock clock;
@@ -73,7 +73,7 @@ public class TransactionLogFilesContext {
             FileSystemAbstraction fileSystem,
             InternalLogProvider logProvider,
             DatabaseTracers databaseTracers,
-            Supplier<LegacyStoreId> storeId,
+            Supplier<StoreId> storeId,
             NativeAccess nativeAccess,
             MemoryTracker memoryTracker,
             Monitors monitors,
@@ -153,7 +153,7 @@ public class TransactionLogFilesContext {
         return databaseTracers;
     }
 
-    public LegacyStoreId getStoreId() {
+    public StoreId getStoreId() {
         return storeId.get();
     }
 

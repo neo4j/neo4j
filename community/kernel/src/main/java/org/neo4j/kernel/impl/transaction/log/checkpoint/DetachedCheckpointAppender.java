@@ -31,7 +31,6 @@ import java.time.Instant;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.kernel.impl.transaction.UnclosableChannel;
-import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
@@ -52,8 +51,8 @@ import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.monitoring.Health;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
 public class DetachedCheckpointAppender extends LifecycleAdapter implements CheckpointAppender {
@@ -63,7 +62,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     private final TransactionLogFilesContext context;
     private final Health databaseHealth;
     private final LogRotation logRotation;
-    private LegacyStoreId storeId;
+    private StoreId storeId;
     private PositionAwarePhysicalFlushableChecksumChannel writer;
     private DetachedCheckpointLogEntryWriter checkpointWriter;
     private NativeScopedBuffer buffer;
@@ -111,12 +110,12 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
             // away
             return;
         }
-        CheckpointInfo lastCheckPoint = tailMetadata.getLastCheckPoint();
-        if (lastCheckPoint == null) {
+        var lastCheckPoint = tailMetadata.getLastCheckPoint();
+        if (lastCheckPoint.isEmpty()) {
             channel.position(lastReadablePosition());
             return;
         }
-        LogPosition channelPosition = lastCheckPoint.getChannelPositionAfterCheckpoint();
+        LogPosition channelPosition = lastCheckPoint.get().channelPositionAfterCheckpoint();
         if (channelPosition.getLogVersion() != expectedVersion) {
             throw new IllegalStateException("Expected version of checkpoint log " + expectedVersion
                     + ", does not match to found tail version " + channelPosition.getLogVersion());

@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
+import java.util.Optional;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
 public class LogTailInformation implements LogTailMetadata {
@@ -34,7 +35,7 @@ public class LogTailInformation implements LogTailMetadata {
     public final long currentLogVersion;
     public final byte latestLogEntryVersion;
     private final boolean recordAfterCheckpoint;
-    private final LegacyStoreId storeId;
+    private final StoreId storeId;
     private final DbmsRuntimeRepository dbmsRuntimeRepository;
 
     public LogTailInformation(
@@ -51,7 +52,7 @@ public class LogTailInformation implements LogTailMetadata {
                 filesNotFound,
                 currentLogVersion,
                 latestLogEntryVersion,
-                LegacyStoreId.UNKNOWN,
+                null,
                 dbmsRuntimeRepository);
     }
 
@@ -62,7 +63,7 @@ public class LogTailInformation implements LogTailMetadata {
             boolean filesNotFound,
             long currentLogVersion,
             byte latestLogEntryVersion,
-            LegacyStoreId storeId,
+            StoreId storeId,
             DbmsRuntimeRepository dbmsRuntimeRepository) {
         this.lastCheckPoint = lastCheckPoint;
         this.firstTxIdAfterLastCheckPoint = firstTxIdAfterLastCheckPoint;
@@ -87,8 +88,8 @@ public class LogTailInformation implements LogTailMetadata {
     public boolean hasUnreadableBytesInCheckpointLogs() {
         return lastCheckPoint != null
                 && !lastCheckPoint
-                        .getChannelPositionAfterCheckpoint()
-                        .equals(lastCheckPoint.getCheckpointFilePostReadPosition());
+                        .channelPositionAfterCheckpoint()
+                        .equals(lastCheckPoint.checkpointFilePostReadPosition());
     }
 
     @Override
@@ -97,13 +98,13 @@ public class LogTailInformation implements LogTailMetadata {
     }
 
     @Override
-    public LegacyStoreId getStoreId() {
-        return storeId;
+    public Optional<StoreId> getStoreId() {
+        return Optional.ofNullable(storeId);
     }
 
     @Override
-    public CheckpointInfo getLastCheckPoint() {
-        return lastCheckPoint;
+    public Optional<CheckpointInfo> getLastCheckPoint() {
+        return Optional.ofNullable(lastCheckPoint);
     }
 
     @Override
@@ -120,7 +121,7 @@ public class LogTailInformation implements LogTailMetadata {
         if (lastCheckPoint == null) {
             return EMPTY_LOG_TAIL.getCheckpointLogVersion();
         }
-        return lastCheckPoint.getChannelPositionAfterCheckpoint().getLogVersion();
+        return lastCheckPoint.channelPositionAfterCheckpoint().getLogVersion();
     }
 
     @Override
@@ -130,7 +131,7 @@ public class LogTailInformation implements LogTailMetadata {
             // version that is defined in the system
             return dbmsRuntimeRepository.getVersion().kernelVersion();
         }
-        return lastCheckPoint.getVersion();
+        return lastCheckPoint.version();
     }
 
     @Override
@@ -143,7 +144,7 @@ public class LogTailInformation implements LogTailMetadata {
         if (lastCheckPoint == null) {
             return EMPTY_LOG_TAIL.getLastCommittedTransaction();
         }
-        return lastCheckPoint.getTransactionId();
+        return lastCheckPoint.transactionId();
     }
 
     @Override
@@ -151,6 +152,6 @@ public class LogTailInformation implements LogTailMetadata {
         if (lastCheckPoint == null) {
             return EMPTY_LOG_TAIL.getLastTransactionLogPosition();
         }
-        return lastCheckPoint.getTransactionLogPosition();
+        return lastCheckPoint.transactionLogPosition();
     }
 }

@@ -23,19 +23,22 @@ import static java.lang.Math.min;
 import static org.neo4j.internal.helpers.Numbers.safeCastIntToShort;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_0;
 import static org.neo4j.kernel.impl.transaction.log.entry.v50.DetachedCheckpointLogEntryParserV5_0.MAX_DESCRIPTION_LENGTH;
+import static org.neo4j.storageengine.api.StoreIdSerialization.MAX_STORE_ID_LENGTH;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.KernelVersionRepository;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.StoreIdSerialization;
 import org.neo4j.storageengine.api.TransactionId;
 
 public class DetachedCheckpointLogEntryWriter {
-    static final int RECORD_LENGTH_BYTES = 192;
+    public static final int RECORD_LENGTH_BYTES = 232;
     private final KernelVersionRepository kernelVersionProvider;
     protected final WritableChecksumChannel channel;
 
@@ -49,11 +52,13 @@ public class DetachedCheckpointLogEntryWriter {
             TransactionId transactionId,
             LogPosition logPosition,
             Instant checkpointTime,
-            LegacyStoreId storeId,
+            StoreId storeId,
             String reason)
             throws IOException {
         channel.beginChecksum();
         writeLogEntryHeader(kernelVersionProvider.kernelVersion(), DETACHED_CHECK_POINT_V5_0, channel);
+        byte[] storeIdBuffer = new byte[MAX_STORE_ID_LENGTH];
+        StoreIdSerialization.serializeWithFixedSize(storeId, ByteBuffer.wrap(storeIdBuffer));
         byte[] reasonBytes = reason.getBytes();
         short length = safeCastIntToShort(min(reasonBytes.length, MAX_DESCRIPTION_LENGTH));
         byte[] descriptionBytes = new byte[MAX_DESCRIPTION_LENGTH];
@@ -61,9 +66,7 @@ public class DetachedCheckpointLogEntryWriter {
         channel.putLong(logPosition.getLogVersion())
                 .putLong(logPosition.getByteOffset())
                 .putLong(checkpointTime.toEpochMilli())
-                .putLong(storeId.getCreationTime())
-                .putLong(storeId.getRandomId())
-                .putLong(storeId.getStoreVersion())
+                .put(storeIdBuffer, storeIdBuffer.length)
                 .putLong(transactionId.transactionId())
                 .putInt(transactionId.checksum())
                 .putLong(transactionId.commitTimestamp())

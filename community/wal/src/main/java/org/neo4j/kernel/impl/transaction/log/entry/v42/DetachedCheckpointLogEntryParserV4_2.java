@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParser;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
 import org.neo4j.storageengine.api.CommandReaderFactory;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
 
 public class DetachedCheckpointLogEntryParserV4_2 extends LogEntryParser {
     public static final int MAX_DESCRIPTION_LENGTH = 120;
@@ -49,7 +49,7 @@ public class DetachedCheckpointLogEntryParserV4_2 extends LogEntryParser {
         long logVersion = channel.getLong();
         long byteOffset = channel.getLong();
         long checkpointTimeMillis = channel.getLong();
-        LegacyStoreId storeId = new LegacyStoreId(channel.getLong(), channel.getLong(), channel.getLong());
+        StoreId storeId = constructStoreIdFromLegacyInfo(channel.getLong(), channel.getLong(), channel.getLong());
         channel.getLong(); // legacy upgrade time
         channel.getLong(); // legacy upgrade tx id
         short reasonBytesLength = channel.getShort();
@@ -59,5 +59,9 @@ public class DetachedCheckpointLogEntryParserV4_2 extends LogEntryParser {
         channel.endChecksumAndValidate();
         return new LogEntryDetachedCheckpointV4_2(
                 version, new LogPosition(logVersion, byteOffset), checkpointTimeMillis, storeId, reason);
+    }
+
+    private StoreId constructStoreIdFromLegacyInfo(long creationTime, long randomId, long storeVersion) {
+        return new StoreId(creationTime, randomId, "legacy", "legacy", 1, 1);
     }
 }

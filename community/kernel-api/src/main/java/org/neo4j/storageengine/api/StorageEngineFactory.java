@@ -97,6 +97,14 @@ public interface StorageEngineFactory {
             throws IOException;
 
     /**
+     * TODO:
+     * This is a very temporary method, because there are some chicken and egg problems when gradually converting
+     * uses of {@link LegacyStoreId} to {@link StoreId}.
+     * Please, use this method only when there is no other way how to get {@link StoreId}.
+     */
+    StoreId convertLegacyStoreId(LegacyStoreId legacyStoreId);
+
+    /**
      * Returns a {@link StoreVersionCheck} which can provide both configured and existing store versions
      * and means of checking upgradability between them.
      * @return StoreVersionCheck to check store version as well as upgradability to other versions.

@@ -700,7 +700,8 @@ public class Database extends LifecycleAdapter {
     private void checkStoreId(LogTailMetadata tailMetadata, CursorContextFactory contextFactory) throws IOException {
         try (var cursorContext = contextFactory.create(STORE_ID_VALIDATOR_TAG)) {
             validateStoreId(
-                    tailMetadata, storageEngineFactory.storeId(fs, databaseLayout, databasePageCache, cursorContext));
+                    tailMetadata,
+                    storageEngineFactory.retrieveStoreId(fs, databaseLayout, databasePageCache, cursorContext));
         }
     }
 

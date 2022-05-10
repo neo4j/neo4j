@@ -54,8 +54,8 @@ import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpointV4_2;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.storageengine.api.CommandReaderFactory;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -74,7 +74,7 @@ class DetachedCheckpointLogEntryParserV42Test {
     @Test
     void parseDetachedCheckpointRecord() throws IOException {
         KernelVersion version = KernelVersion.V4_3_D4;
-        var storeId = new LegacyStoreId(4, 5, 6);
+        var storeId = new StoreId(4, 5, "legacy", "legacy", 1, 1);
         var channel = new InMemoryClosableChannel();
         int checkpointMillis = 3;
         String checkpointDescription = "checkpoint";
@@ -87,8 +87,8 @@ class DetachedCheckpointLogEntryParserV42Test {
                 .putLong(checkpoint.getLogPosition().getByteOffset())
                 .putLong(checkpointMillis)
                 .putLong(storeId.getCreationTime())
-                .putLong(storeId.getRandomId())
-                .putLong(storeId.getStoreVersion())
+                .putLong(storeId.getRandom())
+                .putLong(123)
                 .putLong(0) // legacy upgrade timestamp
                 .putLong(0) // legacy upgrade tx id
                 .putShort((short) checkpointDescription.getBytes().length)
@@ -140,7 +140,7 @@ class DetachedCheckpointLogEntryParserV42Test {
 
     private static void writeCheckpoint(WritableChecksumChannel channel, KernelVersion kernelVersion, String reason)
             throws IOException {
-        var storeId = new LegacyStoreId(3, 4, 5);
+        var storeId = new StoreId(4, 5, "engine-1", "format-1", 1, 2);
         var logPosition = new LogPosition(1, 2);
 
         writeCheckPointEntry(channel, kernelVersion, logPosition, Instant.ofEpochMilli(1), storeId, reason);
@@ -151,7 +151,7 @@ class DetachedCheckpointLogEntryParserV42Test {
             KernelVersion kernelVersion,
             LogPosition logPosition,
             Instant checkpointTime,
-            LegacyStoreId storeId,
+            StoreId storeId,
             String reason)
             throws IOException {
         channel.beginChecksum();
@@ -164,8 +164,8 @@ class DetachedCheckpointLogEntryParserV42Test {
                 .putLong(logPosition.getByteOffset())
                 .putLong(checkpointTime.toEpochMilli())
                 .putLong(storeId.getCreationTime())
-                .putLong(storeId.getRandomId())
-                .putLong(storeId.getStoreVersion())
+                .putLong(storeId.getRandom())
+                .putLong(123)
                 .putLong(0)
                 .putLong(0);
         channel.putShort(length).put(descriptionBytes, descriptionBytes.length);

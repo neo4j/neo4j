@@ -60,6 +60,7 @@ import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.util.HighestTransactionId;
@@ -347,7 +348,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     @Override
     public void setDatabaseIdUuid(UUID uuid, CursorContext cursorContext) {
         assertNotClosed();
-        generateMetadataFile(getStoreId(), externalStoreUUID, uuid, cursorContext);
+        generateMetadataFile(getLegacyStoreId(), externalStoreUUID, uuid, cursorContext);
         readMetadataFile(cursorContext);
     }
 
@@ -372,8 +373,13 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     }
 
     @Override
-    public LegacyStoreId getStoreId() {
+    public LegacyStoreId getLegacyStoreId() {
         return new LegacyStoreId(getCreationTime(), getRandomNumber(), getStoreVersion());
+    }
+
+    @Override
+    public StoreId getStoreId() {
+        return LegacyMetadataHandler.storeIdFromLegacyMetadata(getCreationTime(), getRandomNumber(), getStoreVersion());
     }
 
     @Override

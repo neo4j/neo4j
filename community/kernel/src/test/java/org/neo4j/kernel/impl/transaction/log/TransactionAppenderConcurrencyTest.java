@@ -78,7 +78,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.Race;
@@ -90,6 +90,7 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 @EphemeralNeo4jLayoutExtension
 @ExtendWith(LifeExtension.class)
 public class TransactionAppenderConcurrencyTest {
+    private static final StoreId STORE_ID = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
     private static ExecutorService executor;
     private static ThreadPoolJobScheduler jobScheduler;
 
@@ -145,7 +146,7 @@ public class TransactionAppenderConcurrencyTest {
                 .withTransactionIdStore(transactionIdStore)
                 .withDatabaseHealth(databaseHealth)
                 .withCommandReaderFactory(new TestCommandReaderFactory())
-                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withStoreId(STORE_ID)
                 .build();
         life.add(logFiles);
         var appender = life.add(createTransactionAppender(databaseHealth, logFiles, jobScheduler));
@@ -187,7 +188,7 @@ public class TransactionAppenderConcurrencyTest {
                 .withTransactionIdStore(transactionIdStore)
                 .withDatabaseHealth(databaseHealth)
                 .withCommandReaderFactory(new TestCommandReaderFactory())
-                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withStoreId(STORE_ID)
                 .build();
         life.add(logFiles);
         var appender = life.add(createTransactionAppender(databaseHealth, logFiles, jobScheduler));

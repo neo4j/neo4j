@@ -45,8 +45,8 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.PanicEventGenerator;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
@@ -111,21 +111,21 @@ class CheckpointLogFileTest {
         checkpointAppender.checkPoint(NULL, firstTransactionId, firstLogPosition, Instant.now(), "test");
         assertEquals(
                 firstLogPosition,
-                checkpointFile.findLatestCheckpoint().orElseThrow().getTransactionLogPosition());
+                checkpointFile.findLatestCheckpoint().orElseThrow().transactionLogPosition());
 
         var secondLogPosition = new LogPosition(2, 3);
         var secondTransactionId = new TransactionId(2, 3, 4);
         checkpointAppender.checkPoint(NULL, secondTransactionId, secondLogPosition, Instant.now(), "test");
         assertEquals(
                 secondLogPosition,
-                checkpointFile.findLatestCheckpoint().orElseThrow().getTransactionLogPosition());
+                checkpointFile.findLatestCheckpoint().orElseThrow().transactionLogPosition());
 
         var thirdLogPosition = new LogPosition(3, 4);
         var thirdTransactionId = new TransactionId(3, 4, 5);
         checkpointAppender.checkPoint(NULL, thirdTransactionId, thirdLogPosition, Instant.now(), "test");
         assertEquals(
                 thirdLogPosition,
-                checkpointFile.findLatestCheckpoint().orElseThrow().getTransactionLogPosition());
+                checkpointFile.findLatestCheckpoint().orElseThrow().transactionLogPosition());
 
         var checkpointInfos = checkpointFile.reachableCheckpoints();
         assertThat(checkpointInfos).hasSize(3);
@@ -185,13 +185,14 @@ class CheckpointLogFileTest {
     }
 
     private LogFiles buildLogFiles() throws IOException {
+        var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         return LogFilesBuilder.builder(databaseLayout, fileSystem)
                 .withRotationThreshold(rotationThreshold)
                 .withTransactionIdStore(transactionIdStore)
                 .withDatabaseHealth(databaseHealth)
                 .withLogVersionRepository(logVersionRepository)
                 .withCommandReaderFactory(new TestCommandReaderFactory())
-                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withStoreId(storeId)
                 .build();
     }
 }

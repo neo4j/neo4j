@@ -20,8 +20,10 @@
 package org.neo4j.kernel.impl.transaction.log.entry.v50;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.neo4j.storageengine.api.StoreIdSerialization.MAX_STORE_ID_LENGTH;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.neo4j.io.fs.ReadableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -30,7 +32,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParser;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
 import org.neo4j.storageengine.api.CommandReaderFactory;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.StoreIdSerialization;
 import org.neo4j.storageengine.api.TransactionId;
 
 public class DetachedCheckpointLogEntryParserV5_0 extends LogEntryParser {
@@ -50,7 +53,9 @@ public class DetachedCheckpointLogEntryParserV5_0 extends LogEntryParser {
         long logVersion = channel.getLong();
         long byteOffset = channel.getLong();
         long checkpointTimeMillis = channel.getLong();
-        LegacyStoreId storeId = new LegacyStoreId(channel.getLong(), channel.getLong(), channel.getLong());
+        byte[] storeIdBuffer = new byte[MAX_STORE_ID_LENGTH];
+        channel.get(storeIdBuffer, storeIdBuffer.length);
+        StoreId storeId = StoreIdSerialization.deserializeWithFixedSize(ByteBuffer.wrap(storeIdBuffer));
         var transactionId = new TransactionId(channel.getLong(), channel.getInt(), channel.getLong());
         short reasonBytesLength = channel.getShort();
         byte[] bytes = new byte[MAX_DESCRIPTION_LENGTH];

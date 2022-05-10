@@ -97,6 +97,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
+import org.neo4j.kernel.impl.store.LegacyMetadataHandler;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
@@ -188,13 +189,13 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 cursorContext);
         assertMetaDataFieldPresent(random, RANDOM_NUMBER, databaseLayout);
 
-        return new StoreId(
-                creationTime,
-                random,
-                NAME,
-                recordFormat.getFormatFamily().name(),
-                recordFormat.majorVersion(),
-                recordFormat.minorVersion());
+        return LegacyMetadataHandler.storeIdFromLegacyMetadata(creationTime, random, version);
+    }
+
+    @Override
+    public StoreId convertLegacyStoreId(LegacyStoreId legacyStoreId) {
+        return LegacyMetadataHandler.storeIdFromLegacyMetadata(
+                legacyStoreId.getCreationTime(), legacyStoreId.getRandomId(), legacyStoreId.getStoreVersion());
     }
 
     private void assertMetaDataFieldPresent(long value, MetaDataStore.Position field, DatabaseLayout databaseLayout) {

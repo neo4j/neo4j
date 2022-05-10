@@ -108,6 +108,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -629,6 +630,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
 
     @Override
     public LegacyStoreId getStoreId() {
+        return neoStores.getMetaDataStore().getLegacyStoreId();
+    }
+
+    @Override
+    public StoreId retrieveStoreId() {
         return neoStores.getMetaDataStore().getStoreId();
     }
 

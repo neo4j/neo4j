@@ -342,7 +342,7 @@ class RelationshipTypeIndexIT {
                 try (StoreChannel storeChannel =
                         fs.write(logFiles.getCheckpointFile().getCurrentFile())) {
                     storeChannel.truncate(
-                            latestCheckpoint.get().getCheckpointEntryPosition().getByteOffset());
+                            latestCheckpoint.get().checkpointEntryPosition().getByteOffset());
                 }
             }
         } catch (IOException e) {

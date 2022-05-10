@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfoFactory;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.InternalLog;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
 class TransactionRangeDiagnosticsTest {
@@ -110,7 +110,7 @@ class TransactionRangeDiagnosticsTest {
         long txLogHighVersion = 10;
         long checkpointLogLowVersion = 0;
         long checkpointLogHighVersion = 3;
-        LegacyStoreId storeId = new LegacyStoreId(12345);
+        StoreId storeId = new StoreId(12345, 56789, "engine-1", "format-1", 1, 1);
         LogPosition checkpointLogPosition = new LogPosition(checkpointLogHighVersion, 34);
         LogPosition afterCheckpointLogPosition = new LogPosition(checkpointLogHighVersion, 36);
         LogPosition readerPostPosition = new LogPosition(checkpointLogHighVersion, 36);
@@ -203,7 +203,11 @@ class TransactionRangeDiagnosticsTest {
                 when(transactionLogs.versionExists(version)).thenReturn(true);
                 when(transactionLogs.extractHeader(version))
                         .thenReturn(new LogHeader(
-                                KernelVersion.LATEST.version(), version, headerTxId, CURRENT_FORMAT_LOG_HEADER_SIZE));
+                                KernelVersion.LATEST.version(),
+                                version,
+                                headerTxId,
+                                new StoreId(12345, 56789, "engine-1", "format-1", 1, 1),
+                                CURRENT_FORMAT_LOG_HEADER_SIZE));
             }
         };
     }

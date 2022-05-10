@@ -42,8 +42,8 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -92,12 +92,13 @@ class TransactionLogFileRotateAndReadRaceIT {
                 .set(GraphDatabaseSettings.logical_log_rotation_threshold, ByteUnit.kibiBytes(128))
                 .build();
 
+        var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(new SimpleTransactionIdStore())
                 .withCommandReaderFactory(new TestCommandReaderFactory())
                 .withConfig(cfg)
-                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withStoreId(storeId)
                 .build();
         life.add(logFiles);
         LogFile logFile = logFiles.getLogFile();

@@ -25,20 +25,16 @@ import java.util.Objects;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.AbstractLogEntry;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
 
 public class LogEntryDetachedCheckpointV4_2 extends AbstractLogEntry {
     private final LogPosition logPosition;
     private final long checkpointTime;
-    private final LegacyStoreId storeId;
+    private final StoreId storeId;
     private final String reason;
 
     public LogEntryDetachedCheckpointV4_2(
-            KernelVersion version,
-            LogPosition logPosition,
-            long checkpointMillis,
-            LegacyStoreId storeId,
-            String reason) {
+            KernelVersion version, LogPosition logPosition, long checkpointMillis, StoreId storeId, String reason) {
         super(version, DETACHED_CHECK_POINT);
         this.logPosition = logPosition;
         this.checkpointTime = checkpointMillis;
@@ -66,7 +62,7 @@ public class LogEntryDetachedCheckpointV4_2 extends AbstractLogEntry {
         return Objects.hash(logPosition, checkpointTime, storeId, reason);
     }
 
-    public LegacyStoreId getStoreId() {
+    public StoreId getStoreId() {
         return storeId;
     }
 

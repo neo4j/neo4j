@@ -47,7 +47,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.util.concurrent.Futures;
@@ -119,11 +119,12 @@ public class Runner implements Callable<Long> {
     private LogFiles createLogFiles(TransactionIdStore transactionIdStore, FileSystemAbstraction fileSystemAbstraction)
             throws IOException {
         SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
+        var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         return LogFilesBuilder.builder(databaseLayout, fileSystemAbstraction)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
                 .withCommandReaderFactory(new TestCommandReaderFactory())
-                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withStoreId(storeId)
                 .build();
     }
 }

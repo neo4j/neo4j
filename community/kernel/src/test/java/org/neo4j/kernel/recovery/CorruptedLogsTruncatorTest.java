@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.kernel.impl.transaction.log.entry.DetachedCheckpointLogEntryWriter.RECORD_LENGTH_BYTES;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.recovery.CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -59,7 +60,7 @@ import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -92,12 +93,13 @@ class CorruptedLogsTruncatorTest {
         databaseDirectory = testDirectory.homePath();
         logVersionRepository = new SimpleLogVersionRepository();
         transactionIdStore = new SimpleTransactionIdStore();
+        var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(databaseDirectory, fs)
                 .withRotationThreshold(SINGLE_LOG_FILE_SIZE)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withCommandReaderFactory(new TestCommandReaderFactory())
-                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withStoreId(storeId)
                 .withConfig(Config.newBuilder()
                         .set(
                                 GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold,
@@ -259,7 +261,7 @@ class CorruptedLogsTruncatorTest {
                         Instant.now(),
                         "within okay transactions");
         /* Write checkpoints that should be truncated. Write enough to get them get them in two files. */
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 4; i++) {
             checkpointFile
                     .getCheckpointAppender()
                     .checkPoint(
@@ -282,7 +284,7 @@ class CorruptedLogsTruncatorTest {
         assertEquals(byteOffset, Files.size(highestCorrectLogFile));
         assertThat(checkpointFile.getDetachedCheckpointFiles()).hasSize(1);
         assertEquals(
-                CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */,
+                CURRENT_FORMAT_LOG_HEADER_SIZE + RECORD_LENGTH_BYTES /* one checkpoint */,
                 Files.size(checkpointFile.getDetachedCheckpointFiles()[0]));
 
         Path corruptedLogsDirectory = databaseDirectory.resolve(CORRUPTED_TX_LOGS_BASE_NAME);
@@ -305,7 +307,9 @@ class CorruptedLogsTruncatorTest {
             checkEntryNameAndSize(
                     zipFile, TransactionLogFilesHelper.DEFAULT_NAME + "." + lastFileIndex, highestLogFileLength);
             checkEntryNameAndSize(
-                    zipFile, TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX + ".0", 192 * 4 /* checkpoints */);
+                    zipFile,
+                    TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX + ".0",
+                    RECORD_LENGTH_BYTES * 3 /* 3 checkpoints */);
             if (NativeAccessProvider.getNativeAccess().isAvailable()) {
                 // whole file is corrupted in above scenario and its preallocated
                 checkEntryNameAndSize(
@@ -316,7 +320,7 @@ class CorruptedLogsTruncatorTest {
                 checkEntryNameAndSize(
                         zipFile,
                         TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX + ".1",
-                        CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */);
+                        CURRENT_FORMAT_LOG_HEADER_SIZE + RECORD_LENGTH_BYTES /* one checkpoint */);
             }
         }
     }

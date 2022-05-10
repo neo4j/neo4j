@@ -24,7 +24,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LO
 
 import java.util.Objects;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
 
 public class LogHeader {
     /**
@@ -35,19 +35,14 @@ public class LogHeader {
     private final byte logFormatVersion;
     private final long logVersion;
     private final long lastCommittedTxId;
-    private final LegacyStoreId storeId;
+    private final StoreId storeId;
     private final LogPosition startPosition;
 
-    public LogHeader(long logVersion, long lastCommittedTxId, LegacyStoreId storeId) {
+    public LogHeader(long logVersion, long lastCommittedTxId, StoreId storeId) {
         this(CURRENT_LOG_FORMAT_VERSION, logVersion, lastCommittedTxId, storeId, CURRENT_FORMAT_LOG_HEADER_SIZE);
     }
 
-    public LogHeader(byte logFormatVersion, long logVersion, long lastCommittedTxId, long headerSize) {
-        this(logFormatVersion, logVersion, lastCommittedTxId, LegacyStoreId.UNKNOWN, headerSize);
-    }
-
-    public LogHeader(
-            byte logFormatVersion, long logVersion, long lastCommittedTxId, LegacyStoreId storeId, long headerSize) {
+    public LogHeader(byte logFormatVersion, long logVersion, long lastCommittedTxId, StoreId storeId, long headerSize) {
         this.logFormatVersion = logFormatVersion;
         this.logVersion = logVersion;
         this.lastCommittedTxId = lastCommittedTxId;
@@ -80,7 +75,7 @@ public class LogHeader {
         return lastCommittedTxId;
     }
 
-    public LegacyStoreId getStoreId() {
+    public StoreId getStoreId() {
         return storeId;
     }
 

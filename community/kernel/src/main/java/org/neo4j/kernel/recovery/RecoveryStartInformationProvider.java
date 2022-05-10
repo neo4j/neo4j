@@ -95,7 +95,7 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
 
         if (!logTailInformation.isRecoveryRequired()) {
             monitor.noCommitsAfterLastCheckPoint(
-                    lastCheckPoint != null ? lastCheckPoint.getTransactionLogPosition() : null);
+                    lastCheckPoint != null ? lastCheckPoint.transactionLogPosition() : null);
             return NO_RECOVERY_REQUIRED;
         }
         if (logTailInformation.logsMissing()) {
@@ -115,10 +115,10 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
                         new LogPosition(INITIAL_LOG_VERSION, CURRENT_FORMAT_LOG_HEADER_SIZE),
                         txIdAfterLastCheckPoint);
             }
-            LogPosition transactionLogPosition = lastCheckPoint.getTransactionLogPosition();
+            LogPosition transactionLogPosition = lastCheckPoint.transactionLogPosition();
             monitor.commitsAfterLastCheckPoint(transactionLogPosition, txIdAfterLastCheckPoint);
             return createRecoveryInformation(
-                    transactionLogPosition, lastCheckPoint.getCheckpointEntryPosition(), txIdAfterLastCheckPoint);
+                    transactionLogPosition, lastCheckPoint.checkpointEntryPosition(), txIdAfterLastCheckPoint);
         } else {
             throw new UnderlyingStorageException(
                     "Fail to determine recovery information Log tail info: " + logTailInformation);

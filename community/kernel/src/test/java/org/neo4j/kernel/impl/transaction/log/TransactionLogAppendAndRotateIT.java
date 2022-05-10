@@ -71,9 +71,9 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.Race;
@@ -112,13 +112,14 @@ class TransactionLogAppendAndRotateIT {
         // GIVEN
         LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
         Monitors monitors = new Monitors();
+        var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fileSystem)
                 .withLogVersionRepository(logVersionRepository)
                 .withRotationThreshold(ByteUnit.mebiBytes(1))
                 .withMonitors(monitors)
                 .withTransactionIdStore(new SimpleTransactionIdStore())
                 .withCommandReaderFactory(new TestCommandReaderFactory())
-                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withStoreId(storeId)
                 .build();
         life.add(logFiles);
         final AtomicBoolean end = new AtomicBoolean();

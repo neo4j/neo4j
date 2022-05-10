@@ -89,6 +89,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DetachedCheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.impl.transaction.log.entry.DetachedCheckpointLogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionException;
@@ -104,11 +105,11 @@ import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdProvider;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.RandomSupport;
@@ -120,7 +121,7 @@ import org.neo4j.test.extension.RandomExtension;
 @Neo4jLayoutExtension
 @ExtendWith(RandomExtension.class)
 class RecoveryCorruptedTransactionLogIT {
-    private static final int CHECKPOINT_RECORD_SIZE = 192;
+    private static final int CHECKPOINT_RECORD_SIZE = DetachedCheckpointLogEntryWriter.RECORD_LENGTH_BYTES;
 
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
@@ -383,7 +384,7 @@ class RecoveryCorruptedTransactionLogIT {
                         "Fail to recover all transactions. Any later transactions after position LogPosition{logVersion=0, "
                                 + "byteOffset=" + txOffsetAfterStart + "} are unreadable and will be truncated.");
 
-        logFiles = buildDefaultLogFiles(LegacyStoreId.UNKNOWN);
+        logFiles = buildDefaultLogFiles(new StoreId(4, 5, "engine-1", "format-1", 1, 2));
         assertEquals(0, logFiles.getLogFile().getHighestLogVersion());
         if (NativeAccessProvider.getNativeAccess().isAvailable()) {
             assertEquals(
@@ -880,7 +881,7 @@ class RecoveryCorruptedTransactionLogIT {
         }
     }
 
-    private static LegacyStoreId getStoreId(GraphDatabaseAPI database) {
+    private static StoreId getStoreId(GraphDatabaseAPI database) {
         return database.getDependencyResolver()
                 .resolveDependency(StoreIdProvider.class)
                 .getStoreId();
@@ -894,7 +895,7 @@ class RecoveryCorruptedTransactionLogIT {
         CheckpointFile checkpointFile = logFiles.getCheckpointFile();
         var checkpoint = checkpointFile.findLatestCheckpoint();
         if (checkpoint.isPresent()) {
-            LogPosition logPosition = checkpoint.get().getCheckpointEntryPosition();
+            LogPosition logPosition = checkpoint.get().checkpointEntryPosition();
             try (StoreChannel storeChannel =
                     fileSystem.write(checkpointFile.getDetachedCheckpointFileForVersion(logPosition.getLogVersion()))) {
                 storeChannel.truncate(logPosition.getByteOffset());
@@ -906,7 +907,7 @@ class RecoveryCorruptedTransactionLogIT {
         CheckpointFile checkpointFile = logFiles.getCheckpointFile();
         var checkpoint = checkpointFile.findLatestCheckpoint();
         if (checkpoint.isPresent()) {
-            LogPosition logPosition = checkpoint.get().getChannelPositionAfterCheckpoint();
+            LogPosition logPosition = checkpoint.get().channelPositionAfterCheckpoint();
             try (StoreChannel storeChannel =
                     fileSystem.write(checkpointFile.getDetachedCheckpointFileForVersion(logPosition.getLogVersion()))) {
                 storeChannel.position(logPosition.getByteOffset() + 300);
@@ -919,7 +920,7 @@ class RecoveryCorruptedTransactionLogIT {
         CheckpointFile checkpointFile = logFiles.getCheckpointFile();
         var checkpoint = checkpointFile.findLatestCheckpoint();
         if (checkpoint.isPresent()) {
-            LogPosition logPosition = checkpoint.get().getChannelPositionAfterCheckpoint();
+            LogPosition logPosition = checkpoint.get().channelPositionAfterCheckpoint();
             try (StoreChannel storeChannel =
                     fileSystem.write(checkpointFile.getDetachedCheckpointFileForVersion(logPosition.getLogVersion()))) {
                 storeChannel.position(logPosition.getByteOffset());
@@ -952,7 +953,7 @@ class RecoveryCorruptedTransactionLogIT {
         CheckpointFile checkpointFile = logFiles.getCheckpointFile();
         var checkpoint = checkpointFile.findLatestCheckpoint();
         if (checkpoint.isPresent()) {
-            LogPosition logPosition = checkpoint.get().getChannelPositionAfterCheckpoint();
+            LogPosition logPosition = checkpoint.get().channelPositionAfterCheckpoint();
             try (StoreChannel storeChannel =
                     fileSystem.write(checkpointFile.getDetachedCheckpointFileForVersion(logPosition.getLogVersion()))) {
                 storeChannel.truncate(logPosition.getByteOffset() - bytesToTrim);
@@ -1067,7 +1068,7 @@ class RecoveryCorruptedTransactionLogIT {
         LogFiles internalLogFiles = LogFilesBuilder.builder(databaseLayout, fileSystem)
                 .withLogVersionRepository(versionRepository)
                 .withTransactionIdStore(new SimpleTransactionIdStore())
-                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withStoreId(new StoreId(4, 5, "engine-1", "format-1", 1, 2))
                 .withStorageEngineFactory(StorageEngineFactory.defaultStorageEngine())
                 .build();
         try (Lifespan lifespan = new Lifespan(internalLogFiles)) {
@@ -1093,7 +1094,7 @@ class RecoveryCorruptedTransactionLogIT {
         return metaDataStore.getLastClosedTransaction().logPosition().getByteOffset();
     }
 
-    private LogFiles buildDefaultLogFiles(LegacyStoreId storeId) throws IOException {
+    private LogFiles buildDefaultLogFiles(StoreId storeId) throws IOException {
         return LogFilesBuilder.builder(databaseLayout, fileSystem)
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())

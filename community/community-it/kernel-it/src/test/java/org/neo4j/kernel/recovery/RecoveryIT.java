@@ -49,13 +49,13 @@ import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.recovery.Recovery.context;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 import static org.neo4j.kernel.recovery.RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile;
 import static org.neo4j.kernel.recovery.facade.RecoveryCriteria.ALL;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.storageengine.api.StorageEngineFactory.defaultStorageEngine;
 
 import java.io.IOException;
@@ -1074,21 +1074,21 @@ class RecoveryIT {
         appender.checkPoint(
                 LogCheckPointEvent.NULL,
                 transactionId,
-                new LogPosition(0, BASE_TX_LOG_BYTE_OFFSET),
+                new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE),
                 Instant.now(),
                 "test1");
         appender.rotate();
         appender.checkPoint(
                 LogCheckPointEvent.NULL,
                 transactionId,
-                new LogPosition(0, BASE_TX_LOG_BYTE_OFFSET),
+                new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE),
                 Instant.now(),
                 "test2");
         appender.rotate();
         appender.checkPoint(
                 LogCheckPointEvent.NULL,
                 transactionId,
-                new LogPosition(0, BASE_TX_LOG_BYTE_OFFSET),
+                new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE),
                 Instant.now(),
                 "test3");
 
@@ -1575,7 +1575,7 @@ class RecoveryIT {
             CheckpointInfo checkpointInfo = logFiles.getCheckpointFile()
                     .getReachableDetachedCheckpoints()
                     .get(0);
-            assertThat(checkpointInfo.getReason()).contains("missing logs");
+            assertThat(checkpointInfo.reason()).contains("missing logs");
         } finally {
             managementService.shutdown();
         }

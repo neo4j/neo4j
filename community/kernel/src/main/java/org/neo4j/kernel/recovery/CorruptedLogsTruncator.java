@@ -109,7 +109,7 @@ public class CorruptedLogsTruncator {
                 transactionLogFile::getLogFileForVersion);
 
         if (corruptCheckpoint.isPresent()) {
-            LogPosition checkpointPosition = corruptCheckpoint.get().getCheckpointEntryPosition();
+            LogPosition checkpointPosition = corruptCheckpoint.get().checkpointEntryPosition();
             CheckpointFile checkpointFile = logFiles.getCheckpointFile();
 
             truncateFilesFromVersion(
@@ -159,7 +159,7 @@ public class CorruptedLogsTruncator {
                     transactionLogFile::getLogFileForVersion);
 
             if (corruptCheckpoint.isPresent()) {
-                LogPosition checkpointPosition = corruptCheckpoint.get().getCheckpointEntryPosition();
+                LogPosition checkpointPosition = corruptCheckpoint.get().checkpointEntryPosition();
                 CheckpointFile checkpointFile = logFiles.getCheckpointFile();
 
                 copyLogsContent(
@@ -269,7 +269,7 @@ public class CorruptedLogsTruncator {
             long recoveredTransactionLogVersion, long recoveredTransactionOffset) throws IOException {
         List<CheckpointInfo> detachedCheckpoints = logFiles.getCheckpointFile().getReachableDetachedCheckpoints();
         for (CheckpointInfo checkpoint : detachedCheckpoints) {
-            LogPosition transactionLogPosition = checkpoint.getTransactionLogPosition();
+            LogPosition transactionLogPosition = checkpoint.transactionLogPosition();
             long logVersion = transactionLogPosition.getLogVersion();
             if (logVersion > recoveredTransactionLogVersion
                     || (logVersion == recoveredTransactionLogVersion

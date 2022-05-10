@@ -63,8 +63,8 @@ import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
@@ -101,11 +101,12 @@ class DetachedLogTailScannerTest {
     }
 
     LogFiles createLogFiles() throws IOException {
+        var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         return LogFilesBuilder.activeFilesBuilder(databaseLayout, fs, pageCache)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withCommandReaderFactory(new TestCommandReaderFactory())
-                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withStoreId(storeId)
                 .withLogProvider(logProvider)
                 .withConfig(Config.defaults(fail_on_corrupted_log_files, false))
                 .build();
@@ -120,11 +121,12 @@ class DetachedLogTailScannerTest {
 
     @Test
     void includeWrongPositionInException() throws Exception {
+        var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         var testTogFiles = LogFilesBuilder.activeFilesBuilder(databaseLayout, fs, pageCache)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withCommandReaderFactory(new TestCommandReaderFactory())
-                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withStoreId(storeId)
                 .withLogProvider(logProvider)
                 .withConfig(Config.defaults(fail_on_corrupted_log_files, true))
                 .build();

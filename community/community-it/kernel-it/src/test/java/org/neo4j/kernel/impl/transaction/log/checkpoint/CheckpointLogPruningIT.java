@@ -63,8 +63,8 @@ public class CheckpointLogPruningIT {
         var matchedFiles = checkpointFile.getDetachedCheckpointFiles();
         assertThat(matchedFiles).hasSize(2);
         assertThat(matchedFiles)
-                .areAtLeastOne(fileNameCondition("checkpoint.20"))
-                .areAtLeastOne(fileNameCondition("checkpoint.21"));
+                .areAtLeastOne(fileNameCondition("checkpoint.25"))
+                .areAtLeastOne(fileNameCondition("checkpoint.26"));
     }
 
     @Test
@@ -72,7 +72,7 @@ public class CheckpointLogPruningIT {
         var checkpointFile = logFiles.getCheckpointFile();
 
         var reason = "checkpoint for rotation test";
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 7; i++) {
             checkPointer.forceCheckPoint(new SimpleTriggerInfo(reason));
         }
         var matchedFiles = checkpointFile.getDetachedCheckpointFiles();

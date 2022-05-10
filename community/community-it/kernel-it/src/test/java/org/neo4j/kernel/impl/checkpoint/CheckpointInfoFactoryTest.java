@@ -38,8 +38,8 @@ import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
 import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.memory.EmptyMemoryTracker;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -60,7 +60,7 @@ class CheckpointInfoFactoryTest {
     @Test
     void checkpointInfoOfDetachedCheckpoint42Entry() throws IOException, URISyntaxException {
         var logPosition = new LogPosition(0, 48820);
-        var storeId = new LegacyStoreId(1645458406002L, 3689108786886031620L, 3471768636287762695L);
+        var storeId = new StoreId(1645458406002L, 3689108786886031620L, "legacy", "legacy", 1, 1);
         LogPosition position = new LogPosition(0, 448);
         LogPosition positionAfterCheckpoint = new LogPosition(0, 640);
         LogPosition postReaderPosition = new LogPosition(0, 640);
@@ -76,20 +76,20 @@ class CheckpointInfoFactoryTest {
                         DatabaseTracers.EMPTY)
                 .getTailMetadata(databaseLayout, EmptyMemoryTracker.INSTANCE);
 
-        var checkpointInfo = tailMetadata.getLastCheckPoint();
+        var checkpointInfo = tailMetadata.getLastCheckPoint().get();
 
-        assertEquals(logPosition, checkpointInfo.getTransactionLogPosition());
+        assertEquals(logPosition, checkpointInfo.transactionLogPosition());
         assertEquals(storeId, checkpointInfo.storeId());
-        assertEquals(position, checkpointInfo.getCheckpointEntryPosition());
-        assertEquals(positionAfterCheckpoint, checkpointInfo.getChannelPositionAfterCheckpoint());
-        assertEquals(postReaderPosition, checkpointInfo.getCheckpointFilePostReadPosition());
-        assertEquals(transactionId, checkpointInfo.getTransactionId());
+        assertEquals(position, checkpointInfo.checkpointEntryPosition());
+        assertEquals(positionAfterCheckpoint, checkpointInfo.channelPositionAfterCheckpoint());
+        assertEquals(postReaderPosition, checkpointInfo.checkpointFilePostReadPosition());
+        assertEquals(transactionId, checkpointInfo.transactionId());
     }
 
     @Test
     void checkpointInfoOfDetachedCheckpoint50Entry() {
         var logPosition = new LogPosition(0, 1);
-        var storeId = new LegacyStoreId(3, 4, 5);
+        var storeId = new StoreId(4, 5, "engine-1", "format-1", 1, 2);
         LogPosition position = new LogPosition(1, 2);
         LogPosition positionAfterCheckpoint = new LogPosition(3, 4);
         LogPosition postReaderPosition = new LogPosition(5, 6);
@@ -103,12 +103,12 @@ class CheckpointInfoFactoryTest {
                 null,
                 null);
 
-        assertEquals(logPosition, checkpointInfo.getTransactionLogPosition());
+        assertEquals(logPosition, checkpointInfo.transactionLogPosition());
         assertEquals(storeId, checkpointInfo.storeId());
-        assertEquals(position, checkpointInfo.getCheckpointEntryPosition());
-        assertEquals(transactionId, checkpointInfo.getTransactionId());
-        assertEquals(positionAfterCheckpoint, checkpointInfo.getChannelPositionAfterCheckpoint());
-        assertEquals(postReaderPosition, checkpointInfo.getCheckpointFilePostReadPosition());
+        assertEquals(position, checkpointInfo.checkpointEntryPosition());
+        assertEquals(transactionId, checkpointInfo.transactionId());
+        assertEquals(positionAfterCheckpoint, checkpointInfo.channelPositionAfterCheckpoint());
+        assertEquals(postReaderPosition, checkpointInfo.checkpointFilePostReadPosition());
     }
 
     private void prepareTestResources() throws IOException, URISyntaxException {

@@ -75,8 +75,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
@@ -87,6 +87,9 @@ import org.neo4j.util.concurrent.Futures;
 @Neo4jLayoutExtension
 @ExtendWith(LifeExtension.class)
 class TransactionLogFileTest {
+
+    private static final StoreId STORE_ID = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
+
     @Inject
     private TestDirectory testDirectory;
 
@@ -158,7 +161,7 @@ class TransactionLogFileTest {
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
                 .withCommandReaderFactory(new TestCommandReaderFactory())
-                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withStoreId(STORE_ID)
                 .withNativeAccess(capturingNativeAccess)
                 .build();
 
@@ -664,7 +667,7 @@ class TransactionLogFileTest {
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
                 .withCommandReaderFactory(new TestCommandReaderFactory())
-                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withStoreId(STORE_ID)
                 .build();
     }
 
@@ -681,7 +684,7 @@ class TransactionLogFileTest {
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
                 .withCommandReaderFactory(new TestCommandReaderFactory())
-                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withStoreId(STORE_ID)
                 .withNativeAccess(capturingNativeAccess)
                 .build();
 
@@ -694,8 +697,7 @@ class TransactionLogFileTest {
     private void createFile(Path filePath, long version, long lastCommittedTxId) throws IOException {
         var filesHelper = new TransactionLogFilesHelper(fileSystem, filePath);
         try (StoreChannel storeChannel = fileSystem.write(filesHelper.getLogFileForVersion(version))) {
-            LogHeaderWriter.writeLogHeader(
-                    storeChannel, new LogHeader(version, lastCommittedTxId, LegacyStoreId.UNKNOWN), INSTANCE);
+            LogHeaderWriter.writeLogHeader(storeChannel, new LogHeader(version, lastCommittedTxId, STORE_ID), INSTANCE);
         }
     }
 
