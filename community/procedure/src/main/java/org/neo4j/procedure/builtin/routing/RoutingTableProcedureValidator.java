@@ -27,6 +27,4 @@ public interface RoutingTableProcedureValidator
     void isValidForServerSideRouting( DatabaseReference.Internal databaseReference ) throws ProcedureException;
 
     void isValidForClientSideRouting( DatabaseReference.Internal databaseReference ) throws ProcedureException;
-
-    void assertDatabaseExists( DatabaseReference databaseReference ) throws ProcedureException;
 }

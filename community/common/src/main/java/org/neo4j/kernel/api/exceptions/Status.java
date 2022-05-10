@@ -496,6 +496,7 @@ public interface Status
         DatabaseNotFound( ClientError, "The request referred to a database that does not exist." ),
         ExistingAliasFound( ClientError, "The request referred to a database with an alias." ),
         ExistingDatabaseFound( ClientError, "The request referred to a database that already exists." ),
+        IllegalAliasChain( ClientError, "An illegal chain of aliases has been detected. This request cannot be executed." ),
         DatabaseLimitReached( DatabaseError, "The limit to number of databases has been reached." ),
         UnableToStartDatabase( DatabaseError, "Unable to start database." ),
         Unknown( DatabaseError, "Unknown database management error" );

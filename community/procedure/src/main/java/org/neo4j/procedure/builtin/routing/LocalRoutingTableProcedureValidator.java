@@ -21,17 +21,15 @@ package org.neo4j.procedure.builtin.routing;
 
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.database.DatabaseReference;
-import org.neo4j.kernel.database.DatabaseReferenceRepository;
 
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
 
-public class LocalRoutingTableProcedureValidator extends BaseRoutingTableProcedureValidator
+public class LocalRoutingTableProcedureValidator implements RoutingTableProcedureValidator
 {
     private final DatabaseAvailabilityChecker databaseAvailabilityChecker;
 
-    public LocalRoutingTableProcedureValidator( DatabaseAvailabilityChecker databaseAvailabilityChecker, DatabaseReferenceRepository databaseReferenceRepo )
+    public LocalRoutingTableProcedureValidator( DatabaseAvailabilityChecker databaseAvailabilityChecker )
     {
-        super( databaseReferenceRepo );
         this.databaseAvailabilityChecker = databaseAvailabilityChecker;
     }
 

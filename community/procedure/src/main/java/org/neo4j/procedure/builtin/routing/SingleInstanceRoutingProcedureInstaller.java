@@ -23,7 +23,6 @@ import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.logging.LogProvider;
 
@@ -55,7 +54,7 @@ public final class SingleInstanceRoutingProcedureInstaller extends AbstractRouti
     @Override
     public GetRoutingTableProcedure createProcedure( List<String> namespace )
     {
-        LocalRoutingTableProcedureValidator validator = new LocalRoutingTableProcedureValidator( databaseAvailabilityChecker, databaseReferenceRepo );
+        LocalRoutingTableProcedureValidator validator = new LocalRoutingTableProcedureValidator( databaseAvailabilityChecker );
         SingleAddressRoutingTableProvider routingTableProvider = new SingleAddressRoutingTableProvider(
                 portRegister, RoutingOption.ROUTE_WRITE_AND_READ, config, logProvider, ttlFromConfig( config ) );
 

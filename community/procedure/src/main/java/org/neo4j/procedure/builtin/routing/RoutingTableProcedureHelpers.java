@@ -30,6 +30,7 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
+import static org.neo4j.kernel.api.exceptions.Status.Database.IllegalAliasChain;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 class RoutingTableProcedureHelpers
