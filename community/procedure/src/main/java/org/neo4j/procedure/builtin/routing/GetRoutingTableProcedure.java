@@ -56,6 +56,7 @@ import static org.neo4j.procedure.builtin.routing.ParameterNames.CONTEXT;
 import static org.neo4j.procedure.builtin.routing.ParameterNames.DATABASE;
 import static org.neo4j.procedure.builtin.routing.ParameterNames.SERVERS;
 import static org.neo4j.procedure.builtin.routing.ParameterNames.TTL;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public final class GetRoutingTableProcedure implements CallableProcedure
 {
@@ -156,7 +157,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure
     {
         var arg = input[1];
         final String databaseName;
-        if ( arg == Values.NO_VALUE )
+        if ( arg == NO_VALUE )
         {
             databaseName = defaultDatabaseName;
         }
@@ -176,7 +177,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure
     private static MapValue extractRoutingContext( AnyValue[] input )
     {
         var arg = input[0];
-        if ( arg == Values.NO_VALUE )
+        if ( arg == NO_VALUE )
         {
             return MapValue.EMPTY;
         }
@@ -249,10 +250,12 @@ public final class GetRoutingTableProcedure implements CallableProcedure
         var refIsAlias = databaseReference instanceof DatabaseReference.External;
 
         var sourceAlias = routingContext.get( FROM_ALIAS_KEY );
-        if ( refIsAlias && sourceAlias != null )
+        var sourceAliasIsPresent = sourceAlias != null && sourceAlias != NO_VALUE;
+        if ( refIsAlias && sourceAliasIsPresent )
         {
-            throw new ProcedureException( IllegalAliasChain, "Unable to provide a routing table for the database '" + databaseReference.alias() +
-                                                             "' because the request came from another alias '" + sourceAlias + "' and alias chains " +
+            var sourceAliasString = ((TextValue) sourceAlias).stringValue();
+            throw new ProcedureException( IllegalAliasChain, "Unable to provide a routing table for the database '" + databaseReference.alias().name() +
+                                                             "' because the request came from another alias '" + sourceAliasString + "' and alias chains " +
                                                              "are not permitted." );
         }
     }

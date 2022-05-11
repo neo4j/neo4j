@@ -123,17 +123,28 @@ public final class Exceptions
      */
     public static Optional<Throwable> findCauseOrSuppressed( Throwable e, Predicate<Throwable> predicate )
     {
+        return findCauseOrSuppressed( e, Throwable.class, predicate );
+    }
+
+    /**
+     * Searches the entire exception hierarchy of causes and suppressed exceptions against the given predicate.
+     *
+     * @param e exception to start searching from.
+     * @return the first exception found matching the predicate.
+     */
+    public static <T extends Throwable> Optional<T> findCauseOrSuppressed( Throwable e, Class<T> type, Predicate<T> predicate )
+    {
         if ( e == null )
         {
             return Optional.empty();
         }
-        if ( predicate.test( e ) )
+        if ( test( type, predicate, e ) )
         {
-            return Optional.of( e );
+            return Optional.of( type.cast( e ) );
         }
         if ( e.getCause() != null && e.getCause() != e )
         {
-            Optional<Throwable> cause = findCauseOrSuppressed( e.getCause(), predicate );
+            Optional<T> cause = findCauseOrSuppressed( e.getCause(), type, predicate );
             if ( cause.isPresent() )
             {
                 return cause;
@@ -147,7 +158,7 @@ public final class Exceptions
                 {
                     continue;
                 }
-                Optional<Throwable> cause = findCauseOrSuppressed( suppressed, predicate );
+                Optional<T> cause = findCauseOrSuppressed( suppressed, type, predicate );
                 if ( cause.isPresent() )
                 {
                     return cause;
@@ -155,6 +166,11 @@ public final class Exceptions
             }
         }
         return Optional.empty();
+    }
+
+    private static <T> boolean test( Class<T> type, Predicate<T> predicate, Object o )
+    {
+        return type.isInstance( o ) && predicate.test( type.cast( o ) );
     }
 
     public static StackTraceElement[] getPartialStackTrace( int from, int to )
