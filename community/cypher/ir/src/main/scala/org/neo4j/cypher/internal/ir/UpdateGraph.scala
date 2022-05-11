@@ -248,24 +248,31 @@ trait UpdateGraph {
 
     val relevantNodes = qgWithInfo.nonArgumentPatternNodes(semanticTable) intersect qgWithInfo.leafPatternNodes
     updatesNodes && relevantNodes.exists { currentNode =>
-      currentNode match {
+      lazy val labelsOnCurrentNode = qgWithInfo.allKnownUnstableNodeLabelsFor(currentNode)
+      lazy val labelsToRemove = labelsToRemoveFromOtherNodes(currentNode.name)
+      val unstableIdentifierNeedsEager = currentNode match {
         case _: StableIdentifier => false
         case _: UnstableIdentifier =>
-          val labelsOnCurrentNode = qgWithInfo.allKnownUnstableNodeLabelsFor(currentNode)
           val propertiesOnCurrentNode = qgWithInfo.allKnownUnstablePropertiesFor(currentNode)
-          lazy val labelsToRemove = labelsToRemoveFromOtherNodes(currentNode.name)
-
           val noLabelOrPropOverlap = labelsOnCurrentNode.isEmpty && propertiesOnCurrentNode.isEmpty && tailCreatesNodes
 
           // MATCH () CREATE/MERGE (...)?
           noLabelOrPropOverlap ||
-            //MATCH (A&B|!C) CREATE (:A:B)
-            (labelsOnCurrentNode.nonEmpty && labelExpressionsOverlap(qgWithInfo, labelsToCreate, NodesToCheckOverlap(None,currentNode.name))) || //MATCH ({prop:42}) CREATE ({prop:...})
-            (labelsOnCurrentNode.isEmpty &&
-            propertiesOnCurrentNode.exists(propertiesToCreate.overlaps)) ||
-          //MATCH (n:A), (m:B) REMOVE n:B
-          //MATCH (n:A), (m:A) REMOVE m:A
-          (labelsToRemove intersect labelsOnCurrentNode).nonEmpty}
+          // MATCH (A&B|!C) CREATE (:A:B)
+          (labelsOnCurrentNode.nonEmpty && labelExpressionsOverlap(
+            qgWithInfo,
+            labelsToCreate,
+            NodesToCheckOverlap(None, currentNode.name)
+          )) ||
+          // MATCH ({prop:42}) CREATE ({prop:...})
+          (labelsOnCurrentNode.isEmpty && propertiesOnCurrentNode.exists(propertiesToCreate.overlaps))
+      }
+
+      unstableIdentifierNeedsEager ||
+      // MATCH (n:A), (m:B) REMOVE n:B
+      // MATCH (n:A), (m:A) REMOVE m:A
+      (labelsToRemove intersect labelsOnCurrentNode).nonEmpty
+
     }
   }
 
