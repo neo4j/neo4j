@@ -125,7 +125,8 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   val logProvider: AssertableLogProvider = new AssertableLogProvider()
   val debugOptions: CypherDebugOptions = CypherDebugOptions.default
   val isParallel: Boolean = runtime.name.toLowerCase == "parallel"
-  val runOnlySafeScenarios: Boolean = !System.getenv().containsKey("RUN_EXPERIMENTAL")
+  // val runOnlySafeScenarios: Boolean = !System.getenv().containsKey("RUN_EXPERIMENTAL")
+  val runOnlySafeScenarios: Boolean = false
 
   protected def restartDB(): Unit = {
     managementService = edition.newGraphManagementService()

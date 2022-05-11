@@ -29,7 +29,7 @@ object DebugSupport {
   final val DEBUG_QUERIES = false
   final val DEBUG_TRACKER = false
   final val DEBUG_LOCKS = false
-  final val DEBUG_ERROR_HANDLING = false
+  final val DEBUG_ERROR_HANDLING_ = true
   final val DEBUG_CURSORS = false
   final val DEBUG_BUFFERS = false
   final val DEBUG_SCHEDULING = false
@@ -46,7 +46,7 @@ object DebugSupport {
   final val QUERIES = new DebugLog(DEBUG_QUERIES, "")
   final val TRACKER = new DebugLog(DEBUG_TRACKER, Yellow)
   final val LOCKS = new DebugLog(DEBUG_LOCKS, Blue)
-  final val ERROR_HANDLING = new DebugLog(DEBUG_ERROR_HANDLING, Red)
+  final val ERROR_HANDLING = new DebugLog(DEBUG_ERROR_HANDLING_, Red)
   final val CURSORS = new DebugLog(DEBUG_CURSORS, "")
   final val BUFFERS = new DebugLog(DEBUG_BUFFERS, Magenta)
   final val SCHEDULING = new DebugLog(DEBUG_SCHEDULING, Cyan)
