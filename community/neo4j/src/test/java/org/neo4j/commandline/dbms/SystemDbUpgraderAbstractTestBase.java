@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.dbms;
 
+import static java.lang.Boolean.FALSE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
@@ -30,14 +31,17 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.event.DatabaseEventContext;
 import org.neo4j.graphdb.event.DatabaseEventListenerAdapter;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.facade.SystemDbUpgrader;
 import org.neo4j.graphdb.factory.module.edition.migration.MigrationEditionModuleFactory;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.Unzip;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 
@@ -48,14 +52,13 @@ public abstract class SystemDbUpgraderAbstractTestBase {
 
     @Test
     void shouldOnlyStartSystemDb() throws Exception {
-        var homeDirectory = databaseLayout.homeDirectory();
-        Unzip.unzip(SystemDbUpgraderAbstractTestBase.class, "AF5.0.0_V5.0_empty.zip", homeDirectory);
+        createDatabase();
 
         var editionFactory = migrationEditionModuleFactory();
         var eventListener = new StartedDatabaseEventListener();
         SystemDbUpgrader.upgrade(
                 editionFactory,
-                getConfig(homeDirectory),
+                getConfig(databaseLayout.homeDirectory()),
                 NullLogProvider.getInstance(),
                 NullLogProvider.getInstance(),
                 eventListener);
@@ -66,6 +69,14 @@ public abstract class SystemDbUpgraderAbstractTestBase {
         return Config.newBuilder()
                 .set(GraphDatabaseSettings.neo4j_home, homeDirectory)
                 .build();
+    }
+
+    private void createDatabase() {
+        DatabaseManagementService dbms = new DatabaseManagementServiceBuilder(databaseLayout.homeDirectory())
+                .setConfig(BoltConnector.enabled, FALSE)
+                .setConfig(GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes(8))
+                .build();
+        dbms.shutdown();
     }
 
     protected abstract MigrationEditionModuleFactory migrationEditionModuleFactory();
