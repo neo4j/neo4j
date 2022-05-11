@@ -43,6 +43,8 @@ import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.extension.Inject;
@@ -57,6 +59,7 @@ class FileUserRepositoryTest {
     @Inject
     private TestDirectory testDirectory;
 
+    private final MemoryTracker memoryTracker = EmptyMemoryTracker.INSTANCE;
     private final InternalLogProvider logProvider = NullLogProvider.getInstance();
     private Path authFile;
 
@@ -68,7 +71,7 @@ class FileUserRepositoryTest {
     @Test
     void shouldStoreAndRetrieveUsersByName() throws Exception {
         // Given
-        FileUserRepository users = new FileUserRepository(fs, authFile, logProvider);
+        FileUserRepository users = new FileUserRepository(fs, authFile, logProvider, memoryTracker);
         User user = new User.Builder("jake", LegacyCredential.INACCESSIBLE)
                 .withRequiredPasswordChange(true)
                 .build();
@@ -84,13 +87,13 @@ class FileUserRepositoryTest {
     @Test
     void shouldPersistUserWithoutId() throws Throwable {
         // Given
-        FileUserRepository users = new FileUserRepository(fs, authFile, logProvider);
+        FileUserRepository users = new FileUserRepository(fs, authFile, logProvider, memoryTracker);
         User user = new User.Builder("jake", LegacyCredential.INACCESSIBLE)
                 .withRequiredPasswordChange(true)
                 .build();
         users.create(user);
 
-        users = new FileUserRepository(fs, authFile, logProvider);
+        users = new FileUserRepository(fs, authFile, logProvider, memoryTracker);
         users.start();
 
         // When
@@ -103,14 +106,14 @@ class FileUserRepositoryTest {
     @Test
     void shouldNotPersistIdForUserWithValidId() throws Throwable {
         // Given
-        FileUserRepository users = new FileUserRepository(fs, authFile, logProvider);
+        FileUserRepository users = new FileUserRepository(fs, authFile, logProvider, memoryTracker);
         User user = new User.Builder("jake", LegacyCredential.INACCESSIBLE)
                 .withId("id")
                 .withRequiredPasswordChange(true)
                 .build();
         users.create(user);
 
-        users = new FileUserRepository(fs, authFile, logProvider);
+        users = new FileUserRepository(fs, authFile, logProvider, memoryTracker);
         users.start();
 
         // When
@@ -126,7 +129,7 @@ class FileUserRepositoryTest {
     @Test
     void shouldNotAllowComplexNames() throws Exception {
         // Given
-        FileUserRepository users = new FileUserRepository(fs, authFile, logProvider);
+        FileUserRepository users = new FileUserRepository(fs, authFile, logProvider, memoryTracker);
 
         // When
         users.assertValidUsername("neo4j");
@@ -171,7 +174,7 @@ class FileUserRepositoryTest {
             }
         };
 
-        FileUserRepository users = new FileUserRepository(crashingFileSystem, authFile, logProvider);
+        FileUserRepository users = new FileUserRepository(crashingFileSystem, authFile, logProvider, memoryTracker);
         users.start();
         User user = new User.Builder("jake", LegacyCredential.INACCESSIBLE)
                 .withRequiredPasswordChange(true)
@@ -201,7 +204,7 @@ class FileUserRepositoryTest {
                                 + "A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n"));
 
         // When
-        FileUserRepository users = new FileUserRepository(fs, authFile, logProvider);
+        FileUserRepository users = new FileUserRepository(fs, authFile, logProvider, memoryTracker);
 
         var e = assertThrows(IllegalStateException.class, users::start);
         assertThat(e.getMessage()).startsWith("Failed to read authentication file: ");
@@ -218,7 +221,7 @@ class FileUserRepositoryTest {
     @Test
     void shouldProvideUserByUsernameEvenIfMidSetUsers() throws Throwable {
         // Given
-        FileUserRepository users = new FileUserRepository(fs, authFile, logProvider);
+        FileUserRepository users = new FileUserRepository(fs, authFile, logProvider, memoryTracker);
         users.create(new User.Builder("oskar", LegacyCredential.forPassword("hidden")).build());
         DoubleLatch latch = new DoubleLatch(2);
 

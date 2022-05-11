@@ -274,8 +274,12 @@ public class CommunityEditionModule extends StandaloneEditionModule implements D
         InternalLogProvider logProvider = globalModule.getLogService().getInternalLogProvider();
         AbstractSecurityLog securityLog = new CommunitySecurityLog(logProvider.getLog(CommunitySecurityModule.class));
 
-        var communityComponent =
-                CommunitySecurityModule.createSecurityComponent(config, fileSystem, logProvider, securityLog);
+        var communityComponent = CommunitySecurityModule.createSecurityComponent(
+                config,
+                fileSystem,
+                logProvider,
+                securityLog,
+                globalModule.getOtherMemoryPool().getPoolMemoryTracker());
 
         Dependencies dependencies = globalModule.getGlobalDependencies();
         SystemGraphComponents systemGraphComponents = dependencies.resolveDependency(SystemGraphComponents.class);

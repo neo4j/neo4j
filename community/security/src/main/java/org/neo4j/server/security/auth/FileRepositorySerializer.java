@@ -19,10 +19,8 @@
  */
 package org.neo4j.server.security.auth;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-import static org.apache.commons.io.IOUtils.readLines;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -34,6 +32,8 @@ import java.util.Collection;
 import java.util.List;
 import org.neo4j.cypher.internal.security.FormatException;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemUtils;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.string.UTF8;
 
 public abstract class FileRepositorySerializer<S> {
@@ -45,10 +45,9 @@ public abstract class FileRepositorySerializer<S> {
         }
     }
 
-    private static List<String> readFromFile(FileSystemAbstraction fs, Path path) throws IOException {
-        try (var reader = fs.openAsReader(path, UTF_8)) {
-            return readLines(reader);
-        }
+    private static List<String> readFromFile(FileSystemAbstraction fs, Path path, MemoryTracker memoryTracker)
+            throws IOException {
+        return FileSystemUtils.readLines(fs, path, memoryTracker);
     }
 
     public void saveRecordsToFile(FileSystemAbstraction fileSystem, Path recordsFile, Collection<S> records)
@@ -75,9 +74,9 @@ public abstract class FileRepositorySerializer<S> {
         return directory.resolve(n + "_" + recordsFile.getFileName() + ".tmp");
     }
 
-    public List<S> loadRecordsFromFile(FileSystemAbstraction fileSystem, Path recordsFile)
+    public List<S> loadRecordsFromFile(FileSystemAbstraction fileSystem, Path recordsFile, MemoryTracker memoryTracker)
             throws IOException, FormatException {
-        return deserializeRecords(readFromFile(fileSystem, recordsFile));
+        return deserializeRecords(readFromFile(fileSystem, recordsFile, memoryTracker));
     }
 
     public byte[] serialize(Collection<S> records) {

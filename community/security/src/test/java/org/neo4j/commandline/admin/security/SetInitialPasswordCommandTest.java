@@ -35,6 +35,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.string.UTF8;
@@ -128,8 +129,8 @@ class SetInitialPasswordCommandTest {
 
     private void assertAuthIniFile(String password) throws Throwable {
         assertTrue(fileSystem.fileExists(authInitFile));
-        FileUserRepository userRepository =
-                new FileUserRepository(fileSystem, authInitFile, NullLogProvider.getInstance());
+        FileUserRepository userRepository = new FileUserRepository(
+                fileSystem, authInitFile, NullLogProvider.getInstance(), EmptyMemoryTracker.INSTANCE);
         userRepository.start();
         User neo4j = userRepository.getUserByName(AuthManager.INITIAL_USER_NAME);
         assertNotNull(neo4j);

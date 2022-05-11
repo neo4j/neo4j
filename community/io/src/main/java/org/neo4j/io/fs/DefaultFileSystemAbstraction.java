@@ -27,17 +27,10 @@ import static java.nio.file.StandardOpenOption.WRITE;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Writer;
 import java.nio.channels.FileChannel;
-import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
@@ -81,16 +74,6 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
     @Override
     public InputStream openAsInputStream(Path fileName) throws IOException {
         return new BufferedInputStream(openFileInputStream(fileName));
-    }
-
-    @Override
-    public Reader openAsReader(Path fileName, Charset charset) throws IOException {
-        return new BufferedReader(new InputStreamReader(openFileInputStream(fileName), charset));
-    }
-
-    @Override
-    public Writer openAsWriter(Path fileName, Charset charset, boolean append) throws IOException {
-        return new BufferedWriter(new OutputStreamWriter(openFileOutputStream(fileName, append), charset));
     }
 
     @Override

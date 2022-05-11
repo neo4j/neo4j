@@ -147,7 +147,8 @@ public class StoreMigrator {
         this.logTailSupplier = logTailSupplier;
     }
 
-    public void migrateIfNeeded(String formatFamily, boolean forceBtreeIndexesToRange) throws UnableToMigrateException {
+    public void migrateIfNeeded(String formatFamily, boolean forceBtreeIndexesToRange)
+            throws UnableToMigrateException, IOException {
         checkStoreExists();
 
         try (var cursorContext = contextFactory.create(STORE_UPGRADE_TAG)) {
@@ -179,7 +180,7 @@ public class StoreMigrator {
         }
     }
 
-    public void upgradeIfNeeded() throws UnableToMigrateException {
+    public void upgradeIfNeeded() throws UnableToMigrateException, IOException {
         if (!storageEngineFactory.storageExists(fs, databaseLayout, pageCache)) {
             // upgrade is invoked on database start up and before new databases are initialised,
             // so the database store not existing is a perfectly valid scenario.
@@ -228,7 +229,8 @@ public class StoreMigrator {
             StoreVersionIdentifier versionToMigrateTo,
             MigrationProgressMonitor progressMonitor,
             LogsAction logsAction,
-            boolean forceBtreeIndexesToRange) {
+            boolean forceBtreeIndexesToRange)
+            throws IOException {
         var participants = getStoreMigrationParticipants(forceBtreeIndexesToRange);
         // One or more participants would like to do migration
         progressMonitor.started(participants.size());
@@ -244,7 +246,11 @@ public class StoreMigrator {
         if (MigrationStatus.MigrationState.migrating.isNeededFor(migrationState)) {
             cleanMigrationDirectory(migrationStructures.migrationLayout.databaseDirectory());
             MigrationStatus.MigrationState.migrating.setMigrationStatus(
-                    fs, migrationStructures.migrationStateFile, versionToMigrateFrom, versionToMigrateTo);
+                    fs,
+                    migrationStructures.migrationStateFile,
+                    versionToMigrateFrom,
+                    versionToMigrateTo,
+                    memoryTracker);
             migrateToIsolatedDirectory(
                     participants,
                     databaseLayout,
@@ -253,7 +259,11 @@ public class StoreMigrator {
                     toVersion,
                     progressMonitor);
             MigrationStatus.MigrationState.moving.setMigrationStatus(
-                    fs, migrationStructures.migrationStateFile, versionToMigrateFrom, versionToMigrateTo);
+                    fs,
+                    migrationStructures.migrationStateFile,
+                    versionToMigrateFrom,
+                    versionToMigrateTo,
+                    memoryTracker);
         }
 
         if (MigrationStatus.MigrationState.moving.isNeededFor(migrationState)) {
@@ -308,9 +318,9 @@ public class StoreMigrator {
         };
     }
 
-    private void finishInterruptedMigration(MigrationStructures migrationStructures) {
+    private void finishInterruptedMigration(MigrationStructures migrationStructures) throws IOException {
         MigrationStatus migrationStatus =
-                MigrationStatus.readMigrationStatus(fs, migrationStructures.migrationStateFile);
+                MigrationStatus.readMigrationStatus(fs, migrationStructures.migrationStateFile, memoryTracker);
         if (migrationStatus.migrationInProgress()) {
             MigrationStatus.MigrationState state = migrationStatus.state();
             if (state == MigrationStatus.MigrationState.moving) {
@@ -336,9 +346,10 @@ public class StoreMigrator {
         }
     }
 
-    private void finishInterruptedUpgrade(CursorContext cursorContext, MigrationStructures migrationStructures) {
+    private void finishInterruptedUpgrade(CursorContext cursorContext, MigrationStructures migrationStructures)
+            throws IOException {
         MigrationStatus migrationStatus =
-                MigrationStatus.readMigrationStatus(fs, migrationStructures.migrationStateFile);
+                MigrationStatus.readMigrationStatus(fs, migrationStructures.migrationStateFile, memoryTracker);
         if (migrationStatus.migrationInProgress()) {
             MigrationStatus.MigrationState state = migrationStatus.state();
             if (state == MigrationStatus.MigrationState.moving) {

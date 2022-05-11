@@ -27,8 +27,9 @@ import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TA
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.UncheckedIOException;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.function.Supplier;
@@ -48,6 +49,7 @@ import org.neo4j.internal.batchimport.input.csv.CsvInput;
 import org.neo4j.internal.batchimport.input.csv.DataFactories;
 import org.neo4j.internal.batchimport.input.csv.DataFactory;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
+import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -135,18 +137,18 @@ class ImportPanicIT {
 
     private Path nodeCsvFileWithBrokenEntries() throws IOException {
         Path file = testDirectory.file("broken-node-data.csv");
-        try (PrintWriter writer =
-                new PrintWriter(testDirectory.getFileSystem().openAsWriter(file, StandardCharsets.UTF_8, false))) {
-            writer.println(":ID,name");
+        try (Writer writer = new StringWriter()) {
+            writer.write(":ID,name" + System.lineSeparator());
             int numberOfLines = BUFFER_SIZE * 10;
             int brokenLine = random.nextInt(numberOfLines);
             for (int i = 0; i < numberOfLines; i++) {
                 if (i == brokenLine) {
-                    writer.println(i + ",\"broken\"line");
+                    writer.write(i + ",\"broken\"line" + System.lineSeparator());
                 } else {
-                    writer.println(i + ",name" + i);
+                    writer.write(i + ",name" + i + System.lineSeparator());
                 }
             }
+            FileSystemUtils.writeString(testDirectory.getFileSystem(), file, writer.toString(), INSTANCE);
         }
         return file;
     }

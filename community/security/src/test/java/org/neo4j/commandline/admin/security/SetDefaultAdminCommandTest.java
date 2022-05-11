@@ -34,6 +34,7 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -99,8 +100,8 @@ class SetDefaultAdminCommandTest {
     @SuppressWarnings("SameParameterValue")
     private void assertAdminIniFile(String username) throws Throwable {
         assertTrue(fileSystem.fileExists(adminIniFile));
-        FileUserRepository userRepository =
-                new FileUserRepository(fileSystem, adminIniFile, NullLogProvider.getInstance());
+        FileUserRepository userRepository = new FileUserRepository(
+                fileSystem, adminIniFile, NullLogProvider.getInstance(), EmptyMemoryTracker.INSTANCE);
         userRepository.start();
         assertThat(userRepository.getAllUsernames()).contains(username);
     }

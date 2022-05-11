@@ -32,6 +32,7 @@ import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.io.fs.FileSystemUtils.writeString;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
@@ -40,8 +41,8 @@ import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.Writer;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -238,21 +239,23 @@ class CsvInputBatchImportIT {
 
     private Path relationshipDataAsFile(List<InputEntity> relationshipData) throws IOException {
         Path file = testDirectory.file("relationships.csv");
-        try (Writer writer = fileSystem.openAsWriter(file, StandardCharsets.UTF_8, false)) {
+        try (var stringWriter = new StringWriter()) {
             // Header
-            println(writer, ":start_id,:end_id,:type");
-
+            println(stringWriter, ":start_id,:end_id,:type");
             // Data
             for (InputEntity relationship : relationshipData) {
-                println(writer, relationship.startId() + "," + relationship.endId() + "," + relationship.stringType);
+                println(
+                        stringWriter,
+                        relationship.startId() + "," + relationship.endId() + "," + relationship.stringType);
             }
+            writeString(fileSystem, file, stringWriter.toString(), INSTANCE);
         }
         return file;
     }
 
     private Path nodeDataAsFile(List<InputEntity> nodeData) throws IOException {
         Path file = testDirectory.file("nodes.csv");
-        try (Writer writer = fileSystem.openAsWriter(file, StandardCharsets.UTF_8, false)) {
+        try (StringWriter writer = new StringWriter()) {
             // Header
             println(
                     writer,
@@ -271,6 +274,7 @@ class CsvInputBatchImportIT {
                 }
                 println(writer, sb.toString());
             }
+            writeString(fileSystem, file, writer.toString(), INSTANCE);
         }
         return file;
     }

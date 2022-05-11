@@ -34,6 +34,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.string.UTF8;
@@ -65,11 +66,13 @@ public class SetInitialPasswordCommand extends AbstractCommand implements Passwo
         FileSystemAbstraction fileSystem = ctx.fs();
 
         Path file = CommunitySecurityModule.getInitialUserRepositoryFile(config);
+        var memoryTracker = EmptyMemoryTracker.INSTANCE;
         if (fileSystem.fileExists(file)) {
             fileSystem.deleteFile(file);
         }
 
-        FileUserRepository userRepository = new FileUserRepository(fileSystem, file, NullLogProvider.getInstance());
+        FileUserRepository userRepository =
+                new FileUserRepository(fileSystem, file, NullLogProvider.getInstance(), memoryTracker);
         try {
             userRepository.start();
             userRepository.create(

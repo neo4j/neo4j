@@ -740,7 +740,8 @@ public class Database extends LifecycleAdapter {
      * and <em>before</em> it is {@link #start() started}.
      */
     private void upgradeStore(
-            DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker) {
+            DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker)
+            throws IOException {
         IndexProviderMap indexProviderMap = databaseDependencies.resolveDependency(IndexProviderMap.class);
         var logTailSupplier = Suppliers.lazySingleton(() -> {
             try {

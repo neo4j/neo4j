@@ -25,11 +25,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.fs.FileSystemUtils.readLines;
+import static org.neo4j.io.fs.FileSystemUtils.readString;
+import static org.neo4j.io.fs.FileSystemUtils.writeString;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.List;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
+import org.neo4j.io.ByteUnit;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.ScopedMemoryTracker;
+import org.neo4j.memory.ThreadSafePeakMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.utils.TestDirectory;
 
@@ -85,10 +95,9 @@ abstract class FileSystemUtilsTest {
     void shouldCheckSizeOfFile() throws Exception {
         Path file = testDirectory.createFile("a");
 
-        try (var fileWriter = fs.openAsWriter(file, UTF_8, false)) {
-            fileWriter.append('a');
+        try (StoreChannel storeChannel = fs.write(file)) {
+            storeChannel.writeAll(ByteBuffer.wrap(new byte[] {1}));
         }
-
         assertThat(FileSystemUtils.size(fs, file)).isEqualTo(1L);
     }
 
@@ -98,11 +107,12 @@ abstract class FileSystemUtilsTest {
         Path file1 = dir.resolve("file1");
         Path file2 = dir.resolve("file2");
 
-        try (var fileWriter = fs.openAsWriter(file1, UTF_8, false)) {
-            fileWriter.append('a').append('b');
+        try (StoreChannel storeChannel = fs.write(file1)) {
+            storeChannel.writeAll(ByteBuffer.wrap(new byte[] {1, 2}));
         }
-        try (var fileWriter = fs.openAsWriter(file2, UTF_8, false)) {
-            fileWriter.append('a');
+
+        try (StoreChannel storeChannel = fs.write(file2)) {
+            storeChannel.writeAll(ByteBuffer.wrap(new byte[] {1}));
         }
 
         assertThat(FileSystemUtils.size(fs, dir)).isEqualTo(3L);
@@ -113,5 +123,50 @@ abstract class FileSystemUtilsTest {
         var dir = testDirectory.directory("dir");
         var file = dir.resolve("file");
         assertThat(FileSystemUtils.size(fs, file)).isZero();
+    }
+
+    @Test
+    void writeStringIntoAFile() throws IOException {
+        Path file = testDirectory.file("lila");
+        String data = RandomStringUtils.random((int) ByteUnit.kibiBytes(117));
+        writeString(fs, file, data, EmptyMemoryTracker.INSTANCE);
+
+        assertEquals(data, readString(fs, file, EmptyMemoryTracker.INSTANCE));
+    }
+
+    @Test
+    void writeMultiLineStringIntoAFile() throws IOException {
+        Path file = testDirectory.file("fry");
+        int numberOfLines = 100;
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < numberOfLines; i++) {
+            builder.append(i).append(System.lineSeparator());
+        }
+        var data = builder.toString();
+        writeString(fs, file, data, EmptyMemoryTracker.INSTANCE);
+
+        List<String> lines = readLines(fs, file, EmptyMemoryTracker.INSTANCE);
+        assertEquals(100, lines.size());
+        for (int i = 0; i < numberOfLines; i++) {
+            assertEquals(i + "", lines.get(i));
+        }
+    }
+
+    @Test
+    void trackMemoryDuringFileWritingAndReading() throws IOException {
+        Path file = testDirectory.file("lila");
+        String data = RandomStringUtils.random((int) ByteUnit.kibiBytes(117));
+
+        var writePeakTracker = new ThreadSafePeakMemoryTracker();
+        var writeMemoryTracker = new ScopedMemoryTracker(writePeakTracker);
+        writeString(fs, file, data, writeMemoryTracker);
+        assertEquals(0, writeMemoryTracker.usedNativeMemory());
+        assertEquals(data.getBytes(UTF_8).length, writePeakTracker.peakMemoryUsage());
+
+        var readPeakTracker = new ThreadSafePeakMemoryTracker();
+        var readMemoryTracker = new ScopedMemoryTracker(readPeakTracker);
+        assertEquals(data, readString(fs, file, readMemoryTracker));
+        assertEquals(0, readMemoryTracker.usedNativeMemory());
+        assertEquals(data.getBytes(UTF_8).length, readPeakTracker.peakMemoryUsage());
     }
 }

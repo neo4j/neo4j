@@ -28,7 +28,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.Exceptions;
@@ -221,7 +220,7 @@ public class StoreFileListing implements FileStoreProviderRegistry {
     private void gatherIdFiles(List<StoreFileMetadata> targetFiles) {
         targetFiles.addAll(idGeneratorFactory.listIdFiles().stream()
                 .map(file -> new StoreFileMetadata(file, 0))
-                .collect(Collectors.toList()));
+                .toList());
     }
 
     private void gatherStorageFiles(

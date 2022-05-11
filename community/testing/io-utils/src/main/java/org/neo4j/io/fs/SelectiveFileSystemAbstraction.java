@@ -22,9 +22,6 @@ package org.neo4j.io.fs;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Reader;
-import java.io.Writer;
-import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryStream;
 import java.nio.file.OpenOption;
@@ -69,16 +66,6 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction {
     @Override
     public InputStream openAsInputStream(Path fileName) throws IOException {
         return chooseFileSystem(fileName).openAsInputStream(fileName);
-    }
-
-    @Override
-    public Reader openAsReader(Path fileName, Charset charset) throws IOException {
-        return chooseFileSystem(fileName).openAsReader(fileName, charset);
-    }
-
-    @Override
-    public Writer openAsWriter(Path fileName, Charset charset, boolean append) throws IOException {
-        return chooseFileSystem(fileName).openAsWriter(fileName, charset, append);
     }
 
     @Override

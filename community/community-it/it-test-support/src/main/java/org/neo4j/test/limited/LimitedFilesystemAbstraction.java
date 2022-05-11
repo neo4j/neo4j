@@ -23,13 +23,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Writer;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -60,16 +54,6 @@ public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstractio
     @Override
     public InputStream openAsInputStream(Path fileName) throws IOException {
         return new ChannelInputStream(read(fileName), INSTANCE);
-    }
-
-    @Override
-    public Reader openAsReader(Path fileName, Charset charset) throws IOException {
-        return new InputStreamReader(openAsInputStream(fileName), charset);
-    }
-
-    @Override
-    public Writer openAsWriter(Path fileName, Charset charset, boolean append) throws IOException {
-        return new OutputStreamWriter(openAsOutputStream(fileName, append), StandardCharsets.UTF_8);
     }
 
     @Override

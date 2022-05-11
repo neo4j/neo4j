@@ -19,10 +19,17 @@
  */
 package org.neo4j.io.fs;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
+import java.util.List;
 import org.apache.commons.lang3.ArrayUtils;
+import org.neo4j.io.memory.NativeScopedBuffer;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * This class consists exclusively of static methods that operate on files, directories, or other types of files.
@@ -47,6 +54,76 @@ public final class FileSystemUtils {
             fs.mkdirs(file.getParent());
         }
         return fs.openAsOutputStream(file, append);
+    }
+
+    /**
+     * Writes provided string into a file denoted by the {@code path} using provided file system.
+     *
+     * The semantics of how this file is opened for write is the same as underlying file system {@link FileSystemAbstraction#write(Path)} call.
+     * Write will happen using intermediate direct byte buffer which will be created and released during this call.
+     * Byte buffer is always little endian.
+     * @param fs user provided file system.
+     * @param path the path to the file to write.
+     * @param value string value to write.
+     * @param memoryTracker tracker where allocated direct byte buffer will be tracked.
+     * @throws IOException on I/O error opening/creating/writing the file.
+     */
+    public static void writeString(FileSystemAbstraction fs, Path path, String value, MemoryTracker memoryTracker)
+            throws IOException {
+        try (StoreChannel storeChannel = fs.write(path)) {
+            byte[] data = value.getBytes(UTF_8);
+            try (var scopedBuffer = new NativeScopedBuffer(data.length, ByteOrder.LITTLE_ENDIAN, memoryTracker)) {
+                ByteBuffer buffer = scopedBuffer.getBuffer();
+                buffer.put(data);
+                buffer.flip();
+                storeChannel.writeAll(buffer);
+            }
+        }
+    }
+
+    /**
+     * Read string from a file denoted by the {@code path} using provided file system.
+     *
+     * The semantics of how this file is opened for read is the same as underlying file system {@link FileSystemAbstraction#read(Path)} call.
+     * Read will happen using intermediate direct byte buffer which will be created and released during this call.
+     * Byte buffer is always little endian.
+     * @param fs user provided file system.
+     * @param path the path to the file to read.
+     * @param memoryTracker tracker where allocated direct byte buffer will be tracked.
+     * @throws IOException on I/O error opening/creating/writing the file.
+     */
+    public static String readString(FileSystemAbstraction fs, Path path, MemoryTracker memoryTracker)
+            throws IOException {
+        if (!fs.fileExists(path)) {
+            return null;
+        }
+        long fileSize = fs.getFileSize(path);
+        try (StoreChannel reader = fs.read(path);
+                var scopedBuffer = new NativeScopedBuffer(fileSize, ByteOrder.LITTLE_ENDIAN, memoryTracker)) {
+            ByteBuffer buffer = scopedBuffer.getBuffer();
+            reader.readAll(buffer);
+            buffer.flip();
+            var data = new byte[(int) fileSize];
+            buffer.get(data);
+            return new String(data);
+        }
+    }
+
+    /**
+     * Read strings from a file denoted by the {@code path} using provided file system.
+     *
+     * The semantics of how this file is opened for read is the same as underlying file system {@link FileSystemAbstraction#read(Path)} call.
+     * Read will happen using intermediate direct byte buffer which will be created and released during this call.
+     * Byte buffer is always little endian.
+     * @param fs user provided file system.
+     * @param path the path to the file to read.
+     * @param memoryTracker tracker where allocated direct byte buffer will be tracked.
+     * @throws IOException on I/O error opening/creating/writing the file.
+     */
+    public static List<String> readLines(FileSystemAbstraction fs, Path path, MemoryTracker memoryTracker)
+            throws IOException {
+        var string = readString(fs, path, memoryTracker);
+        return string != null ? string.lines().toList() : null;
     }
 
     /**

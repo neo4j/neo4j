@@ -23,10 +23,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Reader;
-import java.io.Writer;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
@@ -109,41 +105,6 @@ public interface FileSystemAbstraction extends Closeable {
      * @throws IOException on I/O error or if the file doesn't exist.
      */
     InputStream openAsInputStream(Path fileName) throws IOException;
-
-    /**
-     * Opens a file denoted by the {@code fileName} and returns a {@link Reader} to read from it.
-     * This call is similar to e.g. {@link #openAsInputStream(Path)}, but with a different way of reading the file, more suited for textual reading,
-     * rather than binary reading.
-     *
-     * @param fileName the path to the file to open.
-     * @param charset the {@link Charset} to use to transform read bytes into characters. Common charsets include:
-     * <ul>
-     *     <li>{@link StandardCharsets#UTF_8}: a ubiquitous, generic and common charset</li>
-     *     <li>{@link StandardCharsets#ISO_8859_1} a charset mostly geared towards western languages</li>
-     *     <li>{@link Charset#defaultCharset()}: the JVMs, and often OSs currently configured default charset</li>
-     * </ul>
-     *
-     * @return a {@link Reader} capable of reading textual data from the file denoted by {@code fileName}.
-     * @throws IOException on I/O error of if the file doesn't exist.
-     */
-    Reader openAsReader(Path fileName, Charset charset) throws IOException;
-
-    /**
-     * Opens a file denoted by the {@code fileName} and returns a {@link Writer} to write textual data to it.
-     * The semantics of how this file is opened is the equivalence of:
-     * <ul>
-     *     <li>if {@code append=false}: {@link StandardOpenOption#CREATE}, {@link StandardOpenOption#TRUNCATE_EXISTING}
-     *     and {@link StandardOpenOption#WRITE}</li>
-     *     <li>if {@code append=true}: {@link StandardOpenOption#CREATE} and {@link StandardOpenOption#APPEND}</li>
-     * </ul>
-     *
-     * @param fileName the path to the file to open.
-     * @param append if {@code false} truncates the file to zero length, otherwise if {@code true} sets the position at the end of the
-     * existing file so that written data gets appended at the end of the file.
-     * @return an {@link Writer} capable of writing textual data to the file denoted by {@code fileName}.
-     * @throws IOException on I/O error opening/creating the file.
-     */
-    Writer openAsWriter(Path fileName, Charset charset, boolean append) throws IOException;
 
     /**
      * Convenience method for calling {@link #open(Path, Set)} with the open options:

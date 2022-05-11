@@ -28,6 +28,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * Stores user auth data. In memory, but backed by persistent storage so changes to this repository will survive
@@ -40,12 +41,15 @@ public class FileUserRepository extends AbstractUserRepository implements FileRe
     // TODO: We could improve concurrency by using a ReadWriteLock
 
     private final InternalLog log;
+    private final MemoryTracker memoryTracker;
 
     private final UserSerialization serialization = new UserSerialization();
 
-    public FileUserRepository(FileSystemAbstraction fileSystem, Path path, InternalLogProvider logProvider) {
+    public FileUserRepository(
+            FileSystemAbstraction fileSystem, Path path, InternalLogProvider logProvider, MemoryTracker memoryTracker) {
         this.fileSystem = fileSystem;
         this.authFile = path;
+        this.memoryTracker = memoryTracker;
         this.log = logProvider.getLog(getClass());
     }
 
@@ -69,7 +73,7 @@ public class FileUserRepository extends AbstractUserRepository implements FileRe
             try {
                 log.debug("Reading users from %s", authFile);
                 readTime = fileSystem.lastModifiedTime(authFile);
-                readUsers = serialization.loadRecordsFromFile(fileSystem, authFile);
+                readUsers = serialization.loadRecordsFromFile(fileSystem, authFile, memoryTracker);
             } catch (FormatException e) {
                 log.error("Failed to read authentication file \"%s\" (%s)", authFile.toAbsolutePath(), e.getMessage());
                 throw new IllegalStateException("Failed to read authentication file: " + authFile);

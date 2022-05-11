@@ -28,8 +28,10 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.LegacyCredential;
@@ -56,10 +58,13 @@ public class SetDefaultAdminCommand extends AbstractCommand {
         try {
             Path adminIniFile =
                     CommunitySecurityModule.getInitialUserRepositoryFile(config).resolveSibling(ADMIN_INI);
-            if (ctx.fs().fileExists(adminIniFile)) {
-                ctx.fs().deleteFile(adminIniFile);
+            FileSystemAbstraction fs = ctx.fs();
+            var memoryTracher = EmptyMemoryTracker.INSTANCE;
+            if (fs.fileExists(adminIniFile)) {
+                fs.deleteFile(adminIniFile);
             }
-            UserRepository admins = new FileUserRepository(ctx.fs(), adminIniFile, NullLogProvider.getInstance());
+            UserRepository admins =
+                    new FileUserRepository(fs, adminIniFile, NullLogProvider.getInstance(), memoryTracher);
             admins.init();
             admins.start();
             admins.create(new User.Builder(username, LegacyCredential.INACCESSIBLE).build());

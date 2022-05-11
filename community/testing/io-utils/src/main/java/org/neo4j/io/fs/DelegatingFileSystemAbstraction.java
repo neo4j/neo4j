@@ -22,9 +22,6 @@ package org.neo4j.io.fs;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Reader;
-import java.io.Writer;
-import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryStream;
 import java.nio.file.OpenOption;
@@ -156,11 +153,6 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction {
     }
 
     @Override
-    public Writer openAsWriter(Path fileName, Charset charset, boolean append) throws IOException {
-        return delegate.openAsWriter(fileName, charset, append);
-    }
-
-    @Override
     public Path[] listFiles(Path directory) throws IOException {
         return delegate.listFiles(directory);
     }
@@ -173,11 +165,6 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction {
     @Override
     public OutputStream openAsOutputStream(Path fileName, boolean append) throws IOException {
         return delegate.openAsOutputStream(fileName, append);
-    }
-
-    @Override
-    public Reader openAsReader(Path fileName, Charset charset) throws IOException {
-        return delegate.openAsReader(fileName, charset);
     }
 
     @Override

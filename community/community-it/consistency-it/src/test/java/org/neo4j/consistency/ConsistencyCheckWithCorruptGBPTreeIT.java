@@ -20,8 +20,6 @@
 package org.neo4j.consistency;
 
 import static java.lang.String.format;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.commons.io.IOUtils.readLines;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -78,6 +76,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
@@ -92,6 +91,7 @@ import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -816,20 +816,18 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
     private static void assertResultContainsMessage(
             FileSystemAbstraction fs, ConsistencyCheckService.Result result, String expectedMessage)
             throws IOException {
-        try (var reader = fs.openAsReader(result.reportFile(), UTF_8)) {
-            var lines = readLines(reader);
-            boolean reportContainExpectedMessage = false;
-            for (String line : lines) {
-                if (line.contains(expectedMessage)) {
-                    reportContainExpectedMessage = true;
-                    break;
-                }
+        List<String> lines = FileSystemUtils.readLines(fs, result.reportFile(), EmptyMemoryTracker.INSTANCE);
+        boolean reportContainExpectedMessage = false;
+        for (String line : lines) {
+            if (line.contains(expectedMessage)) {
+                reportContainExpectedMessage = true;
+                break;
             }
-            String errorMessage = format(
-                    "Expected consistency report to contain message `%s'. Real result was: %s%n",
-                    expectedMessage, String.join(System.lineSeparator(), lines));
-            assertTrue(reportContainExpectedMessage, errorMessage);
         }
+        String errorMessage = format(
+                "Expected consistency report to contain message `%s'. Real result was: %s%n",
+                expectedMessage, String.join(System.lineSeparator(), lines));
+        assertTrue(reportContainExpectedMessage, errorMessage);
     }
 
     private ConsistencyCheckService.Result runConsistencyCheck(InternalLogProvider logProvider)

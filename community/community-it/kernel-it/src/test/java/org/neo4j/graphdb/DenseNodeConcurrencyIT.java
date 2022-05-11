@@ -31,10 +31,8 @@ import static org.neo4j.kernel.impl.store.record.Record.isNull;
 import static org.neo4j.test.OtherThreadExecutor.command;
 import static org.neo4j.test.Race.throwing;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -76,6 +74,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -87,6 +86,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
@@ -846,11 +846,10 @@ class DenseNodeConcurrencyIT {
     }
 
     private String consistencyCheckReportAsString(ConsistencyCheckService.Result result) {
-        try (BufferedReader reader =
-                new BufferedReader(fs.openAsReader(result.reportFile(), Charset.defaultCharset()))) {
+        try {
             StringBuilder builder = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
+            var lines = FileSystemUtils.readLines(fs, result.reportFile(), EmptyMemoryTracker.INSTANCE);
+            for (String line : lines) {
                 builder.append(format("%s%n", line));
             }
             return builder.toString();

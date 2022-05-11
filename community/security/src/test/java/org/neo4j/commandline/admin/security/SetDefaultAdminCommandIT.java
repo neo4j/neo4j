@@ -33,6 +33,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.server.security.auth.FileUserRepository;
 import picocli.CommandLine;
 
@@ -74,8 +75,8 @@ class SetDefaultAdminCommandIT {
     private void assertAdminIniFile(String username) throws Throwable {
         Path adminIniFile = homeDir.resolve("data").resolve("dbms").resolve(SetDefaultAdminCommand.ADMIN_INI);
         Assertions.assertTrue(fileSystem.fileExists(adminIniFile));
-        FileUserRepository userRepository =
-                new FileUserRepository(fileSystem, adminIniFile, NullLogProvider.getInstance());
+        FileUserRepository userRepository = new FileUserRepository(
+                fileSystem, adminIniFile, NullLogProvider.getInstance(), EmptyMemoryTracker.INSTANCE);
         userRepository.start();
         assertThat(userRepository.getAllUsernames()).contains(username);
         userRepository.stop();

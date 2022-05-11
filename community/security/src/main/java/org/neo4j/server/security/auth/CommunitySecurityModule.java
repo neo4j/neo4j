@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
@@ -94,8 +95,11 @@ public class CommunitySecurityModule extends SecurityModule {
     private static final String INITIAL_USER_STORE_FILENAME = "auth.ini";
 
     private static FileUserRepository getInitialUserRepository(
-            Config config, InternalLogProvider logProvider, FileSystemAbstraction fileSystem) {
-        return new FileUserRepository(fileSystem, getInitialUserRepositoryFile(config), logProvider);
+            Config config,
+            InternalLogProvider logProvider,
+            FileSystemAbstraction fileSystem,
+            MemoryTracker memoryTracker) {
+        return new FileUserRepository(fileSystem, getInitialUserRepositoryFile(config), logProvider, memoryTracker);
     }
 
     public static Path getInitialUserRepositoryFile(Config config) {
@@ -107,9 +111,10 @@ public class CommunitySecurityModule extends SecurityModule {
             Config config,
             FileSystemAbstraction fileSystem,
             InternalLogProvider logProvider,
-            AbstractSecurityLog securityLog) {
+            AbstractSecurityLog securityLog,
+            MemoryTracker memoryTracker) {
         UserRepository initialUserRepository =
-                CommunitySecurityModule.getInitialUserRepository(config, logProvider, fileSystem);
+                CommunitySecurityModule.getInitialUserRepository(config, logProvider, fileSystem, memoryTracker);
 
         return new UserSecurityGraphComponent(initialUserRepository, config, logProvider, securityLog);
     }

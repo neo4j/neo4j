@@ -22,10 +22,6 @@ package org.neo4j.adversaries.fs;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Reader;
-import java.io.UnsupportedEncodingException;
-import java.io.Writer;
-import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
@@ -115,18 +111,6 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction {
     public Path[] listFiles(Path directory, DirectoryStream.Filter<Path> filter) throws IOException {
         adversary.injectFailure(NotDirectoryException.class, SecurityException.class);
         return delegate.listFiles(directory, filter);
-    }
-
-    @Override
-    public Writer openAsWriter(Path fileName, Charset charset, boolean append) throws IOException {
-        adversary.injectFailure(UnsupportedEncodingException.class, NoSuchFileException.class, SecurityException.class);
-        return new AdversarialWriter(delegate.openAsWriter(fileName, charset, append), adversary);
-    }
-
-    @Override
-    public Reader openAsReader(Path fileName, Charset charset) throws IOException {
-        adversary.injectFailure(UnsupportedEncodingException.class, NoSuchFileException.class, SecurityException.class);
-        return new AdversarialReader(delegate.openAsReader(fileName, charset), adversary);
     }
 
     @Override

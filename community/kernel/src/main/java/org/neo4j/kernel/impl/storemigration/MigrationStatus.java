@@ -19,18 +19,21 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.commons.io.IOUtils.lineIterator;
-
 import java.io.IOException;
-import java.io.Writer;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.List;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemUtils;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StoreVersionIdentifier;
 
 public record MigrationStatus(
         MigrationState state, StoreVersionIdentifier versionToMigrateFrom, StoreVersionIdentifier versionToMigrateTo) {
+
+    public MigrationStatus() {
+        this(null, null, null);
+    }
+
     public enum MigrationState {
         migrating,
         moving;
@@ -43,7 +46,9 @@ public record MigrationStatus(
                 FileSystemAbstraction fs,
                 Path stateFile,
                 StoreVersionIdentifier versionToMigrateFrom,
-                StoreVersionIdentifier versionToMigrateTo) {
+                StoreVersionIdentifier versionToMigrateTo,
+                MemoryTracker memoryTracker)
+                throws IOException {
             if (fs.fileExists(stateFile)) {
                 try {
                     fs.truncate(stateFile, 0);
@@ -52,16 +57,12 @@ public record MigrationStatus(
                 }
             }
 
-            try (Writer writer = fs.openAsWriter(stateFile, UTF_8, false)) {
-                writer.write(name());
-                writer.write('\n');
-                writer.write(serializeStoreVersionIdentifier(versionToMigrateFrom));
-                writer.write('\n');
-                writer.write(serializeStoreVersionIdentifier(versionToMigrateTo));
-                writer.flush();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            String status = name()
+                    + '\n'
+                    + serializeStoreVersionIdentifier(versionToMigrateFrom)
+                    + '\n'
+                    + serializeStoreVersionIdentifier(versionToMigrateTo);
+            FileSystemUtils.writeString(fs, stateFile, status, memoryTracker);
         }
     }
 
@@ -73,24 +74,23 @@ public record MigrationStatus(
         return state != null;
     }
 
-    public static MigrationStatus readMigrationStatus(FileSystemAbstraction fs, Path stateFile) {
-        return readFromFile(fs, stateFile);
+    public static MigrationStatus readMigrationStatus(
+            FileSystemAbstraction fs, Path stateFile, MemoryTracker memoryTracker) throws IOException {
+        return readFromFile(fs, stateFile, memoryTracker);
     }
 
-    private static MigrationStatus readFromFile(FileSystemAbstraction fs, Path path) {
-        try (var reader = fs.openAsReader(path, UTF_8)) {
-            var lineIterator = lineIterator(reader);
-            String state = lineIterator.next().trim();
-            StoreVersionIdentifier versionToMigrateFrom =
-                    parseStoreVersionIdentifier(lineIterator.next().trim());
-            StoreVersionIdentifier versionToMigrateTo =
-                    parseStoreVersionIdentifier(lineIterator.next().trim());
-            return new MigrationStatus(MigrationState.valueOf(state), versionToMigrateFrom, versionToMigrateTo);
-        } catch (NoSuchFileException e) {
-            return new MigrationStatus(null, null, null);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+    private static MigrationStatus readFromFile(FileSystemAbstraction fs, Path path, MemoryTracker memoryTracker)
+            throws IOException {
+        List<String> lines = FileSystemUtils.readLines(fs, path, memoryTracker);
+        if (lines == null || lines.isEmpty()) {
+            return new MigrationStatus();
         }
+        String state = lines.get(0).trim();
+        StoreVersionIdentifier versionToMigrateFrom =
+                parseStoreVersionIdentifier(lines.get(1).trim());
+        StoreVersionIdentifier versionToMigrateTo =
+                parseStoreVersionIdentifier(lines.get(2).trim());
+        return new MigrationStatus(MigrationState.valueOf(state), versionToMigrateFrom, versionToMigrateTo);
     }
 
     private static String serializeStoreVersionIdentifier(StoreVersionIdentifier storeVersionIdentifier) {
