@@ -33,6 +33,7 @@ import java.nio.file.Path;
 import java.util.concurrent.Callable;
 import org.neo4j.cli.Converters.ByteUnitConverter;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.CharSeekers;
 import org.neo4j.csv.reader.Configuration;
@@ -50,15 +51,18 @@ import org.neo4j.internal.batchimport.input.csv.Header;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.index.schema.DefaultIndexProvidersAccess;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.util.Preconditions;
 import picocli.CommandLine;
 
 /**
@@ -79,8 +83,16 @@ import picocli.CommandLine;
         name = "quick-import",
         description = "Imports a rather silly data set of an arbitrary size and shape into a database, quickly.")
 public class QuickImport implements Callable<Void> {
-    @CommandLine.Option(names = "--into", description = "Target database directory")
+    @CommandLine.Option(
+            names = "--home",
+            description = "Home directory. The database will be imported into <into>/data/databases/<database>")
     private Path dir;
+
+    @CommandLine.Option(
+            names = "--database",
+            description = "Target database directory",
+            defaultValue = GraphDatabaseSettings.DEFAULT_DATABASE_NAME)
+    private String databaseName;
 
     @CommandLine.Option(
             names = "--nodes",
@@ -183,6 +195,25 @@ public class QuickImport implements Callable<Void> {
     @CommandLine.Option(names = "--storage-engine", description = "Which storage engine the target database should be")
     private String storageEngine;
 
+    @CommandLine.Option(
+            names = "--relationship-distribution",
+            description = "How (un)evenly relationships are distributed between nodes."
+                    + " A value of 1 means evenly, e.g. 0.2 means 20% of the nodes gets 80% of the relationships",
+            defaultValue = "1")
+    private float relationshipDistribution;
+
+    @CommandLine.Option(
+            names = "--start-node-id",
+            description = "Node input IDs to start from. QuickImport generates node input IDs as simple"
+                    + " longs normally starting from 0, but this can be changed with this option.",
+            defaultValue = "0")
+    private long startNodeInputId;
+
+    @CommandLine.Option(
+            names = "--incremental",
+            description = "Incremental import. The header need to be in a certain format for this to work")
+    private boolean incremental;
+
     public static void main(String[] args) {
         System.exit(new CommandLine(new QuickImport()).execute(args));
     }
@@ -233,40 +264,88 @@ public class QuickImport implements Callable<Void> {
         DataGeneratorInput.DataDistribution dataDistribution = DataGeneratorInput.data(nodeCount, relationshipCount)
                 .withLabelCount(labelCount)
                 .withRelationshipTypeCount(relationshipTypeCount)
+                .withStartNodeId(startNodeInputId)
+                .withRelationshipDistribution(relationshipDistribution)
                 .withFactorBadNodeData(factorBadNodeData)
                 .withFactorBadRelationshipData(factorBadRelationshipData);
         Input input = new DataGeneratorInput(dataDistribution, idType, randomSeed, nodeHeader, relationshipHeader);
 
+        System.out.println("Seed " + randomSeed);
         try (FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
                 Lifespan life = new Lifespan()) {
-            BatchImporter consumer;
-            if (toCsv) {
-                consumer = new CsvOutput(dir, nodeHeader, relationshipHeader, config);
-            } else {
-                System.out.println("Seed " + randomSeed);
-                final JobScheduler jobScheduler = life.add(createScheduler());
-                StorageEngineFactory storageEngineFactory = storageEngine != null
-                        ? StorageEngineFactory.selectStorageEngine(storageEngine)
-                        : StorageEngineFactory.defaultStorageEngine();
-                consumer = storageEngineFactory.batchImporter(
-                        DatabaseLayout.ofFlat(dir),
+            var jobScheduler = life.add(createScheduler());
+            var storageEngineFactory = storageEngine != null
+                    ? StorageEngineFactory.selectStorageEngine(storageEngine)
+                    : StorageEngineFactory.defaultStorageEngine();
+            var databaseLayout = Neo4jLayout.of(dir).databaseLayout(databaseName);
+            var logService = new SimpleLogService(logging, logging);
+            var indexImporterFactory = new IndexImporterFactoryImpl();
+            var logFilesInitializer = TransactionLogInitializer.getLogFilesInitializer();
+            if (incremental) {
+                Preconditions.checkArgument(!toCsv, "--to-csv not supported in incremental import");
+                var indexProviders = life.add(new DefaultIndexProvidersAccess(
+                        storageEngineFactory,
+                        fileSystem,
+                        dbConfig,
+                        jobScheduler,
+                        logService,
+                        PageCacheTracer.NULL,
+                        NULL_CONTEXT_FACTORY));
+                var logTailMetadata = LogFilesBuilder.logFilesBasedOnlyBuilder(
+                                databaseLayout.getTransactionLogsDirectory(), fileSystem)
+                        .withStorageEngineFactory(storageEngineFactory)
+                        .build()
+                        .getTailMetadata();
+                var importer = storageEngineFactory.incrementalBatchImporter(
+                        databaseLayout,
                         fileSystem,
                         PageCacheTracer.NULL,
                         importConfig,
-                        new SimpleLogService(logging, logging),
+                        logService,
                         System.out,
                         verbose,
                         EMPTY,
+                        logTailMetadata,
                         dbConfig,
                         NO_MONITOR,
                         jobScheduler,
                         Collector.EMPTY,
-                        TransactionLogInitializer.getLogFilesInitializer(),
-                        new IndexImporterFactoryImpl(),
+                        logFilesInitializer,
+                        indexImporterFactory,
                         INSTANCE,
-                        NULL_CONTEXT_FACTORY);
+                        NULL_CONTEXT_FACTORY,
+                        indexProviders);
+                System.out.println("==== Incremental PREPARE ====");
+                importer.prepare(input);
+                System.out.println("==== Incremental BUILD ====");
+                importer.build(input);
+                System.out.println("==== Incremental MERGE ====");
+                importer.merge();
+            } else {
+                BatchImporter consumer;
+                if (toCsv) {
+                    consumer = new CsvOutput(dir, nodeHeader, relationshipHeader, config);
+                } else {
+                    consumer = storageEngineFactory.batchImporter(
+                            DatabaseLayout.ofFlat(dir),
+                            fileSystem,
+                            PageCacheTracer.NULL,
+                            importConfig,
+                            new SimpleLogService(logging, logging),
+                            System.out,
+                            verbose,
+                            EMPTY,
+                            dbConfig,
+                            NO_MONITOR,
+                            jobScheduler,
+                            Collector.EMPTY,
+                            TransactionLogInitializer.getLogFilesInitializer(),
+                            new IndexImporterFactoryImpl(),
+                            INSTANCE,
+                            NULL_CONTEXT_FACTORY);
+                }
+                consumer.doImport(input);
             }
-            consumer.doImport(input);
         }
         return null;
     }

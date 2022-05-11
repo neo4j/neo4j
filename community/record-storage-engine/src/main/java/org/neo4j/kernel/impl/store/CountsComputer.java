@@ -64,6 +64,24 @@ public class CountsComputer implements CountsBuilder {
         this(
                 stores,
                 stores.getMetaDataStore().getLastCommittedTransactionId(),
+                pageCache,
+                contextFactory,
+                databaseLayout,
+                memoryTracker,
+                log);
+    }
+
+    public CountsComputer(
+            NeoStores stores,
+            long lastCommittedTransactionId,
+            PageCache pageCache,
+            CursorContextFactory contextFactory,
+            DatabaseLayout databaseLayout,
+            MemoryTracker memoryTracker,
+            InternalLog log) {
+        this(
+                stores,
+                lastCommittedTransactionId,
                 stores.getNodeStore(),
                 stores.getRelationshipStore(),
                 (int) stores.getLabelTokenStore().getHighId(),

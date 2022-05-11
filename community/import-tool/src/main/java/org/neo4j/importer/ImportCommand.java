@@ -323,6 +323,18 @@ public class ImportCommand extends AbstractCommand {
                     "Automatically skip accidental header lines in subsequent files in file groups with more than one file")
     private boolean autoSkipHeaders;
 
+    @Option(
+            names = "--mode",
+            defaultValue = "initial",
+            showDefaultValue = ALWAYS,
+            hidden = true,
+            description = "Mode of import. For an initial import into a non-existent database use 'initial' (also the"
+                    + " default. For incremental import into an existing database use 'incremental' (which requires "
+                    + "the database to be stopped. For semi-online incremental import run 'incremental_prepare' (on "
+                    + "stopped database) followed by 'incremental_build' (on a potentially running database) and "
+                    + "finally 'incremental_merge' (on stopped database)")
+    private CsvImporter.ImportMode mode;
+
     public ImportCommand(ExecutionContext ctx) {
         super(ctx);
     }
@@ -357,7 +369,8 @@ public class ImportCommand extends AbstractCommand {
                     .withNormalizeTypes(normalizeTypes)
                     .withVerbose(verbose)
                     .withAutoSkipHeaders(autoSkipHeaders)
-                    .withForce(force);
+                    .withForce(force)
+                    .withMode(mode);
 
             nodes.forEach(n -> importerBuilder.addNodeFiles(n.key, n.files));
 

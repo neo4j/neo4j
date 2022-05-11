@@ -76,9 +76,13 @@ import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.index.schema.DefaultIndexProvidersAccess;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.kernel.internal.Version;
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.PrefixedLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
@@ -87,6 +91,7 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.util.Preconditions;
 
 class CsvImporter implements Importer {
     static final String DEFAULT_REPORT_FILE_NAME = "import.report";
@@ -115,6 +120,7 @@ class CsvImporter implements Importer {
     private final CursorContextFactory contextFactory;
     private final MemoryTracker memoryTracker;
     private final boolean force;
+    private final ImportMode mode;
 
     private CsvImporter(Builder b) {
         this.databaseLayout = requireNonNull(b.databaseLayout);
@@ -141,6 +147,7 @@ class CsvImporter implements Importer {
         this.stdOut = requireNonNull(b.stdOut);
         this.stdErr = requireNonNull(b.stdErr);
         this.force = b.force;
+        this.mode = b.mode;
     }
 
     @Override
@@ -177,6 +184,8 @@ class CsvImporter implements Importer {
     private void doImport(Input input, Collector badCollector) {
         boolean success = false;
 
+        printOverview();
+
         Path internalLogFile = databaseConfig.get(store_internal_log_path);
         try (JobScheduler jobScheduler = createInitialisedScheduler();
                 OutputStream outputStream =
@@ -185,30 +194,72 @@ class CsvImporter implements Importer {
                         databaseConfig, outputStream, databaseConfig.get(store_internal_log_format))) {
             // Let the storage engine factory be configurable in the tool later on...
             StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
-            BatchImporter importer = storageEngineFactory.batchImporter(
-                    databaseLayout,
-                    fileSystem,
-                    pageCacheTracer,
-                    importConfig,
-                    new SimpleLogService(
-                            NullLogProvider.getInstance(),
-                            new PrefixedLogProvider(logProvider, databaseLayout.getDatabaseName())),
-                    stdOut,
-                    verbose,
-                    AdditionalInitialIds.EMPTY,
-                    databaseConfig,
-                    new PrintingImportLogicMonitor(stdOut, stdErr),
-                    jobScheduler,
-                    badCollector,
-                    TransactionLogInitializer.getLogFilesInitializer(),
-                    new IndexImporterFactoryImpl(),
-                    memoryTracker,
-                    contextFactory);
+            var logService = new SimpleLogService(
+                    NullLogProvider.getInstance(),
+                    new PrefixedLogProvider(logProvider, databaseLayout.getDatabaseName()));
+            if (mode != ImportMode.initial) {
+                try (Lifespan life = new Lifespan()) {
+                    var indexProviders = life.add(new DefaultIndexProvidersAccess(
+                            storageEngineFactory,
+                            fileSystem,
+                            databaseConfig,
+                            jobScheduler,
+                            new SimpleLogService(logProvider),
+                            pageCacheTracer,
+                            contextFactory));
+                    var logTailMetaData = readLogTailMetaData(storageEngineFactory, logProvider);
+                    var importer = storageEngineFactory.incrementalBatchImporter(
+                            databaseLayout,
+                            fileSystem,
+                            pageCacheTracer,
+                            importConfig,
+                            logService,
+                            stdOut,
+                            verbose,
+                            AdditionalInitialIds.EMPTY,
+                            logTailMetaData,
+                            databaseConfig,
+                            new PrintingImportLogicMonitor(stdOut, stdErr),
+                            jobScheduler,
+                            badCollector,
+                            TransactionLogInitializer.getLogFilesInitializer(),
+                            new IndexImporterFactoryImpl(),
+                            memoryTracker,
+                            contextFactory,
+                            indexProviders);
+                    switch (mode) {
+                        case incremental_prepare -> importer.prepare(input);
+                        case incremental_build -> importer.build(input);
+                        case incremental_merge -> importer.merge();
+                        case incremental -> {
+                            importer.prepare(input);
+                            importer.build(input);
+                            importer.merge();
+                        }
+                        default -> throw new IllegalArgumentException("Unknown import mode " + mode);
+                    }
+                }
+            } else {
+                BatchImporter importer = storageEngineFactory.batchImporter(
+                        databaseLayout,
+                        fileSystem,
+                        pageCacheTracer,
+                        importConfig,
+                        logService,
+                        stdOut,
+                        verbose,
+                        AdditionalInitialIds.EMPTY,
+                        databaseConfig,
+                        new PrintingImportLogicMonitor(stdOut, stdErr),
+                        jobScheduler,
+                        badCollector,
+                        TransactionLogInitializer.getLogFilesInitializer(),
+                        new IndexImporterFactoryImpl(),
+                        memoryTracker,
+                        contextFactory);
 
-            printOverview(databaseLayout.databaseDirectory(), nodeFiles, relationshipFiles, importConfig, stdOut);
-
-            importer.doImport(input);
-
+                importer.doImport(input);
+            }
             success = true;
         } catch (Exception e) {
             throw andPrintError("Import error", e, verbose, stdErr);
@@ -230,6 +281,19 @@ class CsvImporter implements Importer {
                         + "start at your own risk or delete the store manually");
             }
         }
+    }
+
+    private LogTailMetadata readLogTailMetaData(StorageEngineFactory storageEngineFactory, Log4jLogProvider logProvider)
+            throws IOException {
+        return switch (mode) {
+            case incremental, incremental_prepare, incremental_merge -> {
+                yield LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fileSystem)
+                        .withStorageEngineFactory(storageEngineFactory)
+                        .build()
+                        .getTailMetadata();
+            }
+            default -> LogTailMetadata.EMPTY_LOG_TAIL;
+        };
     }
 
     /**
@@ -295,25 +359,21 @@ class CsvImporter implements Importer {
         }
     }
 
-    private static void printOverview(
-            Path storeDir,
-            Map<Set<String>, List<Path[]>> nodesFiles,
-            Map<String, List<Path[]>> relationshipsFiles,
-            Configuration configuration,
-            PrintStream out) {
-        out.println("Neo4j version: " + Version.getNeo4jVersion());
-        out.println("Importing the contents of these files into " + storeDir + ":");
-        printInputFiles("Nodes", nodesFiles, out);
-        printInputFiles("Relationships", relationshipsFiles, out);
-        out.println();
-        out.println("Available resources:");
-        printIndented("Total machine memory: " + bytesToString(OsBeanUtil.getTotalPhysicalMemory()), out);
-        printIndented("Free machine memory: " + bytesToString(OsBeanUtil.getFreePhysicalMemory()), out);
-        printIndented("Max heap memory : " + bytesToString(Runtime.getRuntime().maxMemory()), out);
-        printIndented("Processors: " + configuration.maxNumberOfProcessors(), out);
-        printIndented("Configured max memory: " + bytesToString(configuration.maxMemoryUsage()), out);
-        printIndented("High-IO: " + configuration.highIO(), out);
-        out.println();
+    private void printOverview() {
+        stdOut.println("Neo4j version: " + Version.getNeo4jVersion());
+        stdOut.println("Importing the contents of these files into " + databaseLayout.databaseDirectory() + ":");
+        stdOut.println("Import mode: " + mode);
+        printInputFiles("Nodes", nodeFiles, stdOut);
+        printInputFiles("Relationships", relationshipFiles, stdOut);
+        stdOut.println();
+        stdOut.println("Available resources:");
+        printIndented("Total machine memory: " + bytesToString(OsBeanUtil.getTotalPhysicalMemory()), stdOut);
+        printIndented("Free machine memory: " + bytesToString(OsBeanUtil.getFreePhysicalMemory()), stdOut);
+        printIndented("Max heap memory : " + bytesToString(Runtime.getRuntime().maxMemory()), stdOut);
+        printIndented("Processors: " + importConfig.maxNumberOfProcessors(), stdOut);
+        printIndented("Configured max memory: " + bytesToString(importConfig.maxMemoryUsage()), stdOut);
+        printIndented("High-IO: " + importConfig.highIO(), stdOut);
+        stdOut.println();
     }
 
     private static void printInputFiles(String name, Map<?, List<Path[]>> inputFiles, PrintStream out) {
@@ -416,6 +476,7 @@ class CsvImporter implements Importer {
         private PrintStream stdOut = System.out;
         private PrintStream stdErr = System.err;
         private boolean force;
+        private ImportMode mode = ImportMode.initial;
 
         Builder withDatabaseLayout(DatabaseLayout databaseLayout) {
             this.databaseLayout = RecordDatabaseLayout.convert(databaseLayout);
@@ -535,8 +596,38 @@ class CsvImporter implements Importer {
             return this;
         }
 
+        Builder withMode(ImportMode mode) {
+            this.mode = mode;
+            return this;
+        }
+
         CsvImporter build() {
+            Preconditions.checkState(
+                    !(force && mode != ImportMode.initial), "--force doesn't work with --mode=%s", mode);
             return new CsvImporter(this);
         }
+    }
+
+    enum ImportMode {
+        /**
+         * Initial import into an empty or non-existent database.
+         */
+        initial,
+        /**
+         * Prepares an incremental import. This requires target database to be offline.
+         */
+        incremental_prepare,
+        /**
+         * Builds the incremental import. The is disjoint from the target database state.
+         */
+        incremental_build,
+        /**
+         * Merges the incremental import into the target database. This requires target database to be offline.
+         */
+        incremental_merge,
+        /**
+         * Performs a full incremental import including all steps involved.
+         */
+        incremental;
     }
 }

@@ -23,6 +23,7 @@ import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.internal.batchimport.SchemaMonitor.NO_MONITOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
@@ -34,13 +35,11 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.batchimport.AffectedSchemaMonitors.AffectedSchema;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
@@ -57,7 +56,6 @@ import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.internal.NullLogService;
-import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -106,7 +104,7 @@ class NodeImporterTest {
     }
 
     @Test
-    void shouldHandleLargeAmountsOfLabels() throws IOException {
+    void shouldHandleLargeAmountsOfLabels() {
         // given
         IdMapper idMapper = mock(IdMapper.class);
         int numberOfLabels = 50;
@@ -133,7 +131,7 @@ class NodeImporterTest {
     }
 
     @Test
-    void tracePageCacheAccessOnNodeImport() throws IOException {
+    void tracePageCacheAccessOnNodeImport() {
         // given
         int numberOfLabels = 50;
         long nodeId = 0;
@@ -170,47 +168,24 @@ class NodeImporterTest {
     @Test
     void shouldTrackAffectedSchema() throws KernelException {
         // given
-        var schemaMonitors = new AffectedSchemaMonitors();
+        var schemaMonitor = mock(SchemaMonitor.class);
 
         // when
-        var race = new Race().withEndCondition(() -> false);
-        race.addContestant(
-                () -> {
-                    try (var importer = new NodeImporter(
-                            stores,
-                            mock(IdMapper.class),
-                            new DataImporter.Monitor(),
-                            NULL_CONTEXT_FACTORY,
-                            INSTANCE,
-                            schemaMonitors.get())) {
-                        importNode(importer, 0, Map.of("key", "value"), "label1");
-                        importNode(importer, 1, Map.of("key2", "value2", "key3", "value3"), "label1", "label2");
-                    }
-                },
-                1);
-        race.addContestant(
-                () -> {
-                    try (var importer = new NodeImporter(
-                            stores,
-                            mock(IdMapper.class),
-                            new DataImporter.Monitor(),
-                            NULL_CONTEXT_FACTORY,
-                            INSTANCE,
-                            schemaMonitors.get())) {
-                        importNode(importer, 0, Map.of("key", "value"), "label2");
-                        importNode(importer, 1, Map.of("key2", "value2", "key3", "value3"), "label1");
-                    }
-                },
-                1);
-        race.goUnchecked();
+        try (var importer = new NodeImporter(
+                stores,
+                mock(IdMapper.class),
+                new DataImporter.Monitor(),
+                NULL_CONTEXT_FACTORY,
+                INSTANCE,
+                schemaMonitor)) {
+            importNode(importer, 1, Map.of("key2", "value2", "key3", "value3"), "label1", "label2");
+        }
 
         // then
-        assertThat(schemaMonitors.getAffectedSchema())
-                .isEqualTo(Set.of(
-                        new AffectedSchema(labelIds("label1"), keyIds("key")),
-                        new AffectedSchema(labelIds("label1", "label2"), keyIds("key2", "key3")),
-                        new AffectedSchema(labelIds("label2"), keyIds("key")),
-                        new AffectedSchema(labelIds("label1"), keyIds("key2", "key3"))));
+        verify(schemaMonitor).propertyToken(keyIds("key2")[0]);
+        verify(schemaMonitor).propertyToken(keyIds("key3")[0]);
+        verify(schemaMonitor).entityTokens(labelIds("label1", "label2"));
+        verify(schemaMonitor).endOfEntity();
     }
 
     private int[] labelIds(String... labels) throws KernelException {

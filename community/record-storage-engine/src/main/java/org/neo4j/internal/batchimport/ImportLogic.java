@@ -96,11 +96,11 @@ public class ImportLogic implements Closeable {
 
     private final Path databaseDirectory;
     private final String databaseName;
-    private final BatchingNeoStores neoStore;
+    protected final BatchingNeoStores neoStore;
     private final Configuration config;
     private final Config dbConfig;
     private final InternalLog log;
-    private final CursorContextFactory contextFactory;
+    protected final CursorContextFactory contextFactory;
     private final IndexImporterFactory indexImporterFactory;
     private final MemoryTracker memoryTracker;
     private final ExecutionMonitor executionMonitor;
@@ -119,7 +119,7 @@ public class ImportLogic implements Closeable {
     private final Map<Class<?>, Object> accessibleState = new HashMap<>();
 
     // components which may get assigned and unassigned in some methods
-    private NodeRelationshipCache nodeRelationshipCache;
+    protected NodeRelationshipCache nodeRelationshipCache;
     private NodeLabelsCache nodeLabelsCache;
     private long startTime;
     private NumberArrayFactory numberArrayFactory;
@@ -205,7 +205,7 @@ public class ImportLogic implements Closeable {
         executionMonitor.initialize(dependencies);
     }
 
-    private IdMapper instantiateIdMapper(Input input) {
+    protected IdMapper instantiateIdMapper(Input input) {
         return switch (input.idType()) {
             case STRING -> IdMappers.strings(numberArrayFactory, input.groups(), memoryTracker);
             case INTEGER -> IdMappers.longs(numberArrayFactory, input.groups(), memoryTracker);

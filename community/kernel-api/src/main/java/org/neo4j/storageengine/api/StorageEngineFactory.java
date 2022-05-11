@@ -46,6 +46,7 @@ import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.BatchImporter;
+import org.neo4j.internal.batchimport.IncrementalBatchImporter;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.batchimport.Monitor;
 import org.neo4j.internal.batchimport.ReadBehaviour;
@@ -62,6 +63,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.api.index.IndexProvidersAccess;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.lock.LockService;
@@ -362,6 +364,26 @@ public interface StorageEngineFactory {
             boolean compactNodeIdSpace,
             CursorContextFactory contextFactory,
             LogTailMetadata logTailMetadata);
+
+    IncrementalBatchImporter incrementalBatchImporter(
+            DatabaseLayout databaseLayout,
+            FileSystemAbstraction fileSystem,
+            PageCacheTracer pageCacheTracer,
+            org.neo4j.internal.batchimport.Configuration config,
+            LogService logService,
+            PrintStream progressOutput,
+            boolean verboseProgressOutput,
+            AdditionalInitialIds additionalInitialIds,
+            LogTailMetadata logTailMetadata,
+            Config dbConfig,
+            Monitor monitor,
+            JobScheduler jobScheduler,
+            Collector badCollector,
+            LogFilesInitializer logFilesInitializer,
+            IndexImporterFactory indexImporterFactory,
+            MemoryTracker memoryTracker,
+            CursorContextFactory contextFactory,
+            IndexProvidersAccess indexProvidersAccess);
 
     /**
      * Calculates the optimal amount of memory that this consistency checker would want to have to perform optimally in terms of fitting
