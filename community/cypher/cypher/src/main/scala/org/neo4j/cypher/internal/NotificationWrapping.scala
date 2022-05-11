@@ -189,11 +189,6 @@ object NotificationWrapping {
         graphdb.InputPosition.empty,
         NotificationDetail.Factory.message("Error from code generation", msg)
       )
-    case DeprecatedRepeatedRelVarInPatternExpression(pos, relName) =>
-      NotificationCode.REPEATED_REL_IN_PATTERN_EXPRESSION.notification(
-        pos.withOffset(offset).asInputPosition,
-        NotificationDetail.Factory.repeatedRel(relName)
-      )
     case DeprecatedCoercionOfListToBoolean(pos) =>
       NotificationCode.DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN.notification(pos.withOffset(offset).asInputPosition)
     case SubqueryVariableShadowing(pos, varName) =>

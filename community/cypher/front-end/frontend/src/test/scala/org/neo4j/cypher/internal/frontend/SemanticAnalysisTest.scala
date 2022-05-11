@@ -1189,17 +1189,17 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
   test("Should not allow repeating rel variable in pattern") {
     val query = "MATCH ()-[r]-()-[r]-() RETURN r AS r"
-    expectErrorMessagesFrom(query, Set("Cannot use the same relationship variable 'r' for multiple patterns"))
+    expectErrorMessagesFrom(query, Set("Cannot use the same relationship variable 'r' for multiple relationships"))
   }
 
-  test("Should warn about repeated rel variable in pattern expression") {
+  test("Should not allow repeated rel variable in pattern expression") {
     val query = normalizeNewLines("MATCH ()-[r]-() RETURN size( ()-[r]-()-[r]-() ) AS size")
-    expectNotificationsFrom(query, Set(DeprecatedRepeatedRelVarInPatternExpression(InputPosition(33, 1, 34), "r")))
+    expectErrorMessagesFrom(query, Set("Cannot use the same relationship variable 'r' for multiple relationships"))
   }
 
-  test("Should warn about repeated rel variable in pattern comprehension") {
+  test("Should not allow repeated rel variable in pattern comprehension") {
     val query = "MATCH ()-[r]-() RETURN [ ()-[r]-()-[r]-() | r ] AS rs"
-    expectNotificationsFrom(query, Set(DeprecatedRepeatedRelVarInPatternExpression(InputPosition(29, 1, 30), "r")))
+    expectErrorMessagesFrom(query, Set("Cannot use the same relationship variable 'r' for multiple relationships"))
   }
 
   test("Should type check predicates in FilteringExpression") {

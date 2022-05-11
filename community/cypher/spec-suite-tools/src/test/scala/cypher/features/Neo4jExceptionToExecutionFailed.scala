@@ -226,9 +226,9 @@ object Neo4jExceptionToExecutionFailed {
       UNDEFINED_VARIABLE
     else if (msg.matches(semanticError("Type mismatch: .+ defined with conflicting type .+ \\(expected .+\\)")))
       VARIABLE_TYPE_CONFLICT
-    else if (msg.matches(semanticError("Cannot use the same relationship variable '.+' for multiple patterns")))
+    else if (msg.matches(semanticError("Cannot use the same relationship variable '.+' for multiple relationships")))
       RELATIONSHIP_UNIQUENESS_VIOLATION
-    else if (msg.matches(semanticError("Cannot use the same relationship identifier '.+' for multiple patterns")))
+    else if (msg.matches(semanticError("Cannot use the same relationship identifier '.+' for multiple relationships")))
       RELATIONSHIP_UNIQUENESS_VIOLATION
     else if (msg.matches(semanticError("Variable length relationships cannot be used in ((CREATE)|(MERGE))")))
       CREATING_VAR_LENGTH

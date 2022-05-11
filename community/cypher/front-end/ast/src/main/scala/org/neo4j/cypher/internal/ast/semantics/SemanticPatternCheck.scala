@@ -66,13 +66,13 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       semanticCheckFold(pattern.patternParts)(checkElementPredicates(ctx)) chain
       semanticCheckFold(pattern.patternParts)(check(ctx)) chain
       ensureNoSelfReferenceToVariableInPattern(ctx, pattern) chain
-      ensureNoDuplicateRelationships(pattern, error = true)
+      ensureNoDuplicateRelationships(pattern)
 
   def check(ctx: SemanticContext, pattern: RelationshipsPattern): SemanticCheck =
     declareVariables(ctx, pattern.element) chain
       checkElementPredicates(ctx, pattern.element) chain
       check(ctx, pattern.element) chain
-      ensureNoDuplicateRelationships(pattern, error = false)
+      ensureNoDuplicateRelationships(pattern)
 
   def checkElementPredicates(ctx: SemanticContext)(part: PatternPart): SemanticCheck =
     checkElementPredicates(ctx, part.element)
@@ -377,18 +377,14 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
    * Traverse the sub-tree at astNode. Warn or fail if any duplicate relationships are found at that sub-tree.
    *
    * @param astNode the sub-tree to traverse.
-   * @param error if true return an error, otherwise a warning.
    */
-  private def ensureNoDuplicateRelationships(astNode: ASTNode, error: Boolean): SemanticCheck = {
-    def perDuplicate(name: String, pos: InputPosition): SemanticCheck =
-      if (error)
-        SemanticError(s"Cannot use the same relationship variable '$name' for multiple patterns", pos)
-      else
-        state =>
-          SemanticCheckResult(state.addNotification(DeprecatedRepeatedRelVarInPatternExpression(pos, name)), Seq.empty)
-
+  private def ensureNoDuplicateRelationships(astNode: ASTNode): SemanticCheck = {
     RelationshipChain.findDuplicateRelationships(astNode).foldSemanticCheck {
-      duplicate => perDuplicate(duplicate.name, duplicate.position)
+      duplicate =>
+        SemanticError(
+          s"Cannot use the same relationship variable '${duplicate.name}' for multiple relationships",
+          duplicate.position
+        )
     }
   }
 
