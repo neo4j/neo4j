@@ -23,6 +23,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.neo4j.configuration.BootloaderSettings.lib_directory;
 import static org.neo4j.configuration.BootloaderSettings.run_directory;
 import static org.neo4j.configuration.BootloaderSettings.windows_service_name;
+import static org.neo4j.configuration.GraphDatabaseSettings.bookmark_ready_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_time;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_tx;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_volume;
@@ -43,6 +44,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.licenses_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.load_csv_file_url_root;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
+import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_transactions;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
@@ -53,8 +55,14 @@ import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
 import static org.neo4j.configuration.GraphDatabaseSettings.query_statistics_divergence_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
 import static org.neo4j.configuration.GraphDatabaseSettings.script_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.track_query_allocation;
+import static org.neo4j.configuration.GraphDatabaseSettings.track_query_cpu_time;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_log_buffer_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_monitor_check_interval;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_memory_allocation;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
@@ -635,6 +643,7 @@ public final class SettingMigrators {
             migrateDatabaseMaxSize(values, defaultValues, log);
             migrateCypherNamespace(values, defaultValues, log);
             migrateTxStateAndLogsSettings(values, defaultValues, log);
+            migrateTransactionAndTrackingSettings(values, defaultValues, log);
         }
 
         private void migrateTxStateAndLogsSettings(
@@ -644,6 +653,20 @@ public final class SettingMigrators {
             migrateSettingNameChange(values, log, "dbms.tx_log.rotation.retention_policy", keep_logical_logs);
             migrateSettingNameChange(values, log, "dbms.tx_log.rotation.size", logical_log_rotation_threshold);
             migrateSettingNameChange(values, log, "dbms.tx_state.memory_allocation", tx_state_memory_allocation);
+        }
+
+        private void migrateTransactionAndTrackingSettings(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.track_query_allocation", track_query_allocation);
+            migrateSettingNameChange(values, log, "dbms.track_query_cpu_time", track_query_cpu_time);
+            migrateSettingNameChange(values, log, "dbms.transaction.bookmark_ready_timeout", bookmark_ready_timeout);
+            migrateSettingNameChange(values, log, "dbms.transaction.concurrent.maximum", max_concurrent_transactions);
+            migrateSettingNameChange(
+                    values, log, "dbms.transaction.monitor.check.interval", transaction_monitor_check_interval);
+            migrateSettingNameChange(
+                    values, log, "dbms.transaction.sampling.percentage", transaction_sampling_percentage);
+            migrateSettingNameChange(values, log, "dbms.transaction.timeout", transaction_timeout);
+            migrateSettingNameChange(values, log, "dbms.transaction.tracing.level", transaction_tracing_level);
         }
 
         private static void migrateUnsupportedSettingsToInternal(

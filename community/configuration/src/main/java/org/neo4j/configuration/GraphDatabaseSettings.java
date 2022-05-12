@@ -394,19 +394,17 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "Calling `dbms.listQueries` will display the time. "
             + "This can also be logged in the query log by using `dbms.logs.query.time_logging_enabled`.")
     public static final Setting<Boolean> track_query_cpu_time =
-            newBuilder("dbms.track_query_cpu_time", BOOL, false).dynamic().build();
+            newBuilder("db.track_query_cpu_time", BOOL, false).dynamic().build();
 
     @Description("Enables or disables tracking of how many bytes are allocated by the execution of a query. "
             + "If enabled, calling `dbms.listQueries` will display the allocated bytes. "
             + "This can also be logged in the query log by using `dbms.logs.query.allocation_logging_enabled`.")
     public static final Setting<Boolean> track_query_allocation =
-            newBuilder("dbms.track_query_allocation", BOOL, true).dynamic().build();
+            newBuilder("db.track_query_allocation", BOOL, true).dynamic().build();
 
     @Description("The maximum number of concurrently running transactions. If set to 0, limit is disabled.")
-    public static final Setting<Integer> max_concurrent_transactions = newBuilder(
-                    "dbms.transaction.concurrent.maximum", INT, 1000)
-            .dynamic()
-            .build();
+    public static final Setting<Integer> max_concurrent_transactions =
+            newBuilder("db.transaction.concurrent.maximum", INT, 1000).dynamic().build();
 
     public enum TransactionTracingLevel {
         DISABLED,
@@ -416,7 +414,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     @Description("Transaction creation tracing level.")
     public static final Setting<TransactionTracingLevel> transaction_tracing_level = newBuilder(
-                    "dbms.transaction.tracing.level",
+                    "db.transaction.tracing.level",
                     ofEnum(TransactionTracingLevel.class),
                     TransactionTracingLevel.DISABLED)
             .dynamic()
@@ -424,7 +422,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     @Description("Transaction sampling percentage.")
     public static final Setting<Integer> transaction_sampling_percentage = newBuilder(
-                    "dbms.transaction.sampling.percentage", INT, 5)
+                    "db.transaction.sampling.percentage", INT, 5)
             .dynamic()
             .addConstraint(range(1, 100))
             .build();
@@ -432,7 +430,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     // @see Status.Transaction#TransactionTimedOut
     @Description("The maximum time interval of a transaction within which it should be completed.")
     public static final Setting<Duration> transaction_timeout = newBuilder(
-                    "dbms.transaction.timeout", DURATION, Duration.ZERO)
+                    "db.transaction.timeout", DURATION, Duration.ZERO)
             .dynamic()
             .build();
 
@@ -447,7 +445,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     @Description("Configures the time interval between transaction monitor checks. Determines how often "
             + "monitor thread will check transaction for timeout.")
     public static final Setting<Duration> transaction_monitor_check_interval = newBuilder(
-                    "dbms.transaction.monitor.check.interval", DURATION, ofSeconds(2))
+                    "db.transaction.monitor.check.interval", DURATION, ofSeconds(2))
             .build();
 
     @Description("The maximum amount of time to wait for running transactions to complete before allowing "
@@ -863,7 +861,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     @Description("Log allocated bytes for the executed queries being logged. "
             + "The logged number is cumulative over the duration of the query, "
             + "i.e. for memory intense or long-running queries the value may be larger "
-            + "than the current memory allocation. Requires `dbms.track_query_allocation=true`")
+            + "than the current memory allocation. Requires `db.track_query_allocation=true`")
     public static final Setting<Boolean> log_queries_allocation_logging_enabled = newBuilder(
                     "dbms.logs.query.allocation_logging_enabled", BOOL, true)
             .dynamic()
@@ -998,7 +996,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     @Description("The maximum amount of time to wait for the database state represented by the bookmark.")
     public static final Setting<Duration> bookmark_ready_timeout = newBuilder(
-                    "dbms.transaction.bookmark_ready_timeout", DURATION, ofSeconds(30))
+                    "db.transaction.bookmark_ready_timeout", DURATION, ofSeconds(30))
             .addConstraint(min(ofSeconds(1)))
             .dynamic()
             .build();

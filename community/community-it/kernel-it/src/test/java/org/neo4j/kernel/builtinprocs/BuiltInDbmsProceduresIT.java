@@ -120,7 +120,7 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest {
         assertEquals(1, config.size());
         assertArrayEquals(
                 new AnyValue[] {
-                    stringValue("dbms.transaction.timeout"),
+                    stringValue("db.transaction.timeout"),
                     stringValue("The maximum time interval of a transaction within which it should be completed."),
                     stringValue("0s"),
                     Values.TRUE

@@ -122,7 +122,7 @@ public interface Status {
                         + "transaction was rolled back although it may have looked like it was going to be committed"),
         TransactionTimedOut(
                 ClientError,
-                "The transaction has not completed within the specified timeout (dbms.transaction.timeout). You may want to retry with a longer "
+                "The transaction has not completed within the specified timeout (db.transaction.timeout). You may want to retry with a longer "
                         + "timeout."),
         InvalidBookmark(
                 ClientError,
@@ -168,7 +168,7 @@ public interface Status {
         MaximumTransactionLimitReached(
                 TransientError,
                 "Unable to start new transaction since the maximum number of concurrently executing transactions is "
-                        + "reached (dbms.transaction.concurrent.maximum). "
+                        + "reached (db.transaction.concurrent.maximum). "
                         + "You can retry at a later time or consider increasing allowed maximum of concurrent transactions."),
         Interrupted(TransientError, "Interrupted while waiting."),
         @Deprecated // Non-specific Status for migrating legacy exceptions.

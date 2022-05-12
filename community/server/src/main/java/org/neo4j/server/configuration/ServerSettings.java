@@ -84,7 +84,7 @@ public class ServerSettings implements SettingsDeclaration {
 
     @Description(
             "If execution time limiting is enabled in the database, this configures the maximum request execution time. "
-                    + "Please use dbms.transaction.timeout instead.")
+                    + "Please use db.transaction.timeout instead.")
     @Internal
     @Deprecated
     public static final Setting<Duration> webserver_limit_execution_time =

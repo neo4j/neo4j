@@ -26,6 +26,8 @@ import static org.neo4j.configuration.BootloaderSettings.lib_directory;
 import static org.neo4j.configuration.BootloaderSettings.run_directory;
 import static org.neo4j.configuration.BootloaderSettings.windows_service_name;
 import static org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation.ON_HEAP;
+import static org.neo4j.configuration.GraphDatabaseSettings.TransactionTracingLevel.SAMPLE;
+import static org.neo4j.configuration.GraphDatabaseSettings.bookmark_ready_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_time;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_tx;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_volume;
@@ -46,6 +48,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.licenses_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.load_csv_file_url_root;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
+import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_transactions;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
@@ -56,8 +59,14 @@ import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
 import static org.neo4j.configuration.GraphDatabaseSettings.query_statistics_divergence_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
 import static org.neo4j.configuration.GraphDatabaseSettings.script_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.track_query_allocation;
+import static org.neo4j.configuration.GraphDatabaseSettings.track_query_cpu_time;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_log_buffer_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_monitor_check_interval;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_memory_allocation;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
@@ -445,5 +454,34 @@ class SettingMigratorsTest {
         assertEquals("3 days", config.get(keep_logical_logs));
         assertEquals(ByteUnit.mebiBytes(34), config.get(logical_log_rotation_threshold));
         assertEquals(ON_HEAP, config.get(tx_state_memory_allocation));
+    }
+
+    @Test
+    void migrateTransactionAndMonitoringSettings() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(
+                confFile,
+                List.of(
+                        "dbms.track_query_allocation=false",
+                        "dbms.track_query_cpu_time=true",
+                        "dbms.transaction.bookmark_ready_timeout=100s",
+                        "dbms.transaction.concurrent.maximum=17",
+                        "dbms.transaction.monitor.check.interval=4s",
+                        "dbms.transaction.sampling.percentage=78",
+                        "dbms.transaction.timeout=10s",
+                        "dbms.transaction.tracing.level=SAMPLE"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger(logProvider.getLog(Config.class));
+
+        assertFalse(config.get(track_query_allocation));
+        assertTrue(config.get(track_query_cpu_time));
+        assertEquals(Duration.ofSeconds(100), config.get(bookmark_ready_timeout));
+        assertEquals(17, config.get(max_concurrent_transactions));
+        assertEquals(Duration.ofSeconds(4), config.get(transaction_monitor_check_interval));
+        assertEquals(78, config.get(transaction_sampling_percentage));
+        assertEquals(Duration.ofSeconds(10), config.get(transaction_timeout));
+        assertEquals(SAMPLE, config.get(transaction_tracing_level));
     }
 }
