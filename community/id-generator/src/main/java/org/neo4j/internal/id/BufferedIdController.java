@@ -23,6 +23,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -49,6 +51,8 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     private final String databaseName;
     private final InternalLog log;
     private JobHandle<?> jobHandle;
+    private volatile boolean running;
+    private final Lock maintenanceLock = new ReentrantLock();
 
     public BufferedIdController(
             BufferingIdGeneratorFactory bufferingIdGeneratorFactory,
@@ -71,6 +75,7 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     @Override
     public void start() throws Exception {
         bufferingIdGeneratorFactory.start();
+        running = true;
         var monitoringParams = JobMonitoringParams.systemJob(databaseName, "ID generator maintenance");
         jobHandle =
                 scheduler.scheduleRecurring(Group.STORAGE_MAINTENANCE, monitoringParams, this::maintenance, 1, SECONDS);
@@ -78,9 +83,12 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
 
     @Override
     public void stop() throws Exception {
+        running = false;
         if (jobHandle != null) {
             jobHandle.cancel();
             jobHandle = null;
+            maintenanceLock.lock();
+            maintenanceLock.unlock();
         }
         bufferingIdGeneratorFactory.stop();
     }
@@ -92,10 +100,17 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
 
     @Override
     public void maintenance() {
-        try (var cursorContext = contextFactory.create(BUFFERED_ID_CONTROLLER)) {
-            bufferingIdGeneratorFactory.maintenance(cursorContext);
-        } catch (Throwable t) {
-            log.error("Exception when performing id maintenance", t);
+        maintenanceLock.lock();
+        try {
+            if (running) {
+                try (var cursorContext = contextFactory.create(BUFFERED_ID_CONTROLLER)) {
+                    bufferingIdGeneratorFactory.maintenance(cursorContext);
+                } catch (Throwable t) {
+                    log.error("Exception when performing id maintenance", t);
+                }
+            }
+        } finally {
+            maintenanceLock.unlock();
         }
     }
 
