@@ -117,7 +117,15 @@ public interface StorageEngineFactory {
             LogService logService,
             CursorContextFactory contextFactory);
 
-    StoreVersion versionInformation(StoreVersionIdentifier storeVersionIdentifier);
+    /**
+     * Finds and returns a store version representation identified by the submitted identifier.
+     * <p>
+     * A store version does not need to be found if the submitted identifier
+     * does not correspond to anything known to these binaries.
+     * This can generally happen in cluster-related operations when store version identifiers are sent
+     * between cluster members that can be on different versions of the binaries.
+     */
+    Optional<StoreVersion> versionInformation(StoreVersionIdentifier storeVersionIdentifier);
 
     @Deprecated
     StoreVersion versionInformation(String storeVersion);
@@ -230,6 +238,16 @@ public interface StorageEngineFactory {
             PageCache pageCache,
             CursorContextFactory contextFactory,
             LegacyStoreId storeId,
+            UUID externalStoreId)
+            throws IOException;
+
+    void resetMetadata(
+            FileSystemAbstraction fs,
+            DatabaseLayout databaseLayout,
+            Config config,
+            PageCache pageCache,
+            CursorContextFactory contextFactory,
+            StoreId storeId,
             UUID externalStoreId)
             throws IOException;
 

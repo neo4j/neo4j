@@ -166,7 +166,7 @@ public class DbmsDiagnosticsManager {
                     StorageEngine storageEngine = databaseResolver.resolveDependency(StorageEngine.class);
 
                     DiagnosticsManager.dump(
-                            new VersionDiagnostics(dbmsInfo, database.getStoreId()), log, stringJoiner::add);
+                            new VersionDiagnostics(dbmsInfo, database.getLegacyStoreId()), log, stringJoiner::add);
                     DiagnosticsManager.dump(
                             new StoreFilesDiagnostics(storageEngineFactory, fs, database.getDatabaseLayout()),
                             log,

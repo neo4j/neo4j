@@ -175,8 +175,6 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 databaseLayout.getDatabaseName(),
                 cursorContext);
         assertMetaDataFieldPresent(version, STORE_VERSION, databaseLayout);
-        String versionString = StoreVersion.versionLongToString(version);
-        RecordFormats recordFormat = RecordFormatSelector.selectForVersion(versionString);
 
         long creationTime = MetaDataStore.getRecord(
                 pageCache, databaseLayout.metadataStore(), TIME, databaseLayout.getDatabaseName(), cursorContext);
@@ -217,8 +215,9 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     }
 
     @Override
-    public StoreVersion versionInformation(StoreVersionIdentifier storeVersionIdentifier) {
-        return new RecordStoreVersion(RecordFormatSelector.selectForStoreVersionIdentifier(storeVersionIdentifier));
+    public Optional<StoreVersion> versionInformation(StoreVersionIdentifier storeVersionIdentifier) {
+        var maybeRecordFormat = RecordFormatSelector.selectForStoreVersionIdentifier(storeVersionIdentifier);
+        return maybeRecordFormat.map(RecordStoreVersion::new);
     }
 
     @Override
@@ -394,6 +393,25 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 var cursorContext = contextFactory.create("resetMetadata")) {
             metadataProvider.regenerateMetadata(storeId, externalStoreId, cursorContext);
         }
+    }
+
+    @Override
+    public void resetMetadata(
+            FileSystemAbstraction fs,
+            DatabaseLayout databaseLayout,
+            Config config,
+            PageCache pageCache,
+            CursorContextFactory contextFactory,
+            StoreId storeId,
+            UUID externalStoreId)
+            throws IOException {
+        RecordFormats recordFormat = RecordFormatSelector.selectForStoreVersionIdentifier(storeId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Unknown store version '" + storeId.getStoreVersionUserString() + "'"));
+        long version = StoreVersion.versionStringToLong(recordFormat.storeVersion());
+        LegacyStoreId legacyStoreId = new LegacyStoreId(storeId.getCreationTime(), storeId.getRandom(), version);
+
+        resetMetadata(fs, databaseLayout, config, pageCache, contextFactory, legacyStoreId, externalStoreId);
     }
 
     @Override

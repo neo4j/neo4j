@@ -156,7 +156,8 @@ public class StoreInfoCommand extends AbstractCommand {
                 throw new CommandFailedException(
                         format("Could not find version metadata in store '%s'", databaseLayout.databaseDirectory()));
             }
-            var versionInformation = storageEngineFactory.versionInformation(storeId);
+            var versionInformation =
+                    storageEngineFactory.versionInformation(storeId).orElseThrow();
             var logTail = getLogTail(fs, databaseLayout, pageCache, config, memoryTracker, storageEngineFactory);
             var recoveryRequired =
                     checkRecoveryState(fs, pageCache, databaseLayout, config, memoryTracker, storageEngineFactory);

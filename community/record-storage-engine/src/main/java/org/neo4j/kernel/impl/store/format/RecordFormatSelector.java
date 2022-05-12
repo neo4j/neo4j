@@ -126,16 +126,14 @@ public class RecordFormatSelector {
 
     /**
      * Select record formats for provided store version identifier.
-     * @throws IllegalArgumentException if format for specified store version not found
      */
-    public static RecordFormats selectForStoreVersionIdentifier(StoreVersionIdentifier storeVersionIdentifier) {
+    public static Optional<RecordFormats> selectForStoreVersionIdentifier(
+            StoreVersionIdentifier storeVersionIdentifier) {
         return Iterables.stream(allFormats())
                 .filter(format -> format.majorVersion() == storeVersionIdentifier.getMajorVersion()
                         && format.minorVersion() == storeVersionIdentifier.getMinorVersion()
                         && format.getFormatFamily().name().equals(storeVersionIdentifier.getFormatFamilyName()))
-                .findAny()
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Unknown store version '" + storeVersionIdentifier.getStoreVersionUserString() + "'"));
+                .findAny();
     }
 
     /**

@@ -183,6 +183,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.SystemNanoClock;
@@ -1074,8 +1075,13 @@ public class Database extends LifecycleAdapter {
         return internalLogProvider;
     }
 
-    public LegacyStoreId getStoreId() {
+    @Deprecated
+    public LegacyStoreId getLegacyStoreId() {
         return storageEngine.getStoreId();
+    }
+
+    public StoreId getStoreId() {
+        return storageEngine.retrieveStoreId();
     }
 
     public DatabaseLayout getDatabaseLayout() {

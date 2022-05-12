@@ -62,7 +62,8 @@ public class AlignedRecordFormatIT {
     void databaseCanBeStartedWithAlignedFormat() {
         StoreId storeId = storeIdProvider.getStoreId();
         var storageEngineFactory = database.getDependencyResolver().resolveDependency(StorageEngineFactory.class);
-        var storeVersion = (RecordStoreVersion) storageEngineFactory.versionInformation(storeId);
+        var storeVersion = (RecordStoreVersion)
+                storageEngineFactory.versionInformation(storeId).orElseThrow();
 
         assertEquals(
                 PageAligned.LATEST_RECORD_FORMATS.name(),

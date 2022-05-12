@@ -238,8 +238,10 @@ public class StoreMigrator {
         var logsMigrator = new LogsMigrator(
                 fs, storageEngineFactory, databaseLayout, pageCache, config, contextFactory, logTailSupplier);
         var logsCheckResult = logsMigrator.assertCleanlyShutDown();
-        StoreVersion fromVersion = storageEngineFactory.versionInformation(versionToMigrateFrom);
-        StoreVersion toVersion = storageEngineFactory.versionInformation(versionToMigrateTo);
+        StoreVersion fromVersion =
+                storageEngineFactory.versionInformation(versionToMigrateFrom).orElseThrow();
+        StoreVersion toVersion =
+                storageEngineFactory.versionInformation(versionToMigrateTo).orElseThrow();
 
         // We don't need to migrate if we're at the phase where we have migrated successfully
         // and it's just a matter of moving over the files to the storeDir.

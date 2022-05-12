@@ -62,7 +62,7 @@ public class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory {
                 unrecoverableFiles,
                 recoverableFiles,
                 lastCommittedTransactionId,
-                database.getStoreId(),
+                database.getLegacyStoreId(),
                 checkpointMutex);
         return Optional.of(snapshot);
     }

@@ -360,7 +360,7 @@ class StoreInfoCommandTest {
         when(storageEngineFactory.retrieveStoreId(any(), any(), any(), any())).thenReturn(storeId);
         StoreVersion storeVersion1 = mockedStoreVersion(storeVersion, introducedInVersion, storeVersion2);
 
-        when(storageEngineFactory.versionInformation(storeId)).thenReturn(storeVersion1);
+        when(storageEngineFactory.versionInformation(storeId)).thenReturn(Optional.of(storeVersion1));
         when(transactionIdStore.getLastCommittedTransactionId()).thenReturn(lastCommittedTxId);
     }
 

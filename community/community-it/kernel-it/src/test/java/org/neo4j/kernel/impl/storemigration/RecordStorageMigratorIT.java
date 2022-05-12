@@ -311,7 +311,8 @@ class RecordStorageMigratorIT {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
             StoreId storeId = metaDataStore.getStoreId();
             assertNotEquals(1155255428148939479L, storeId.getRandom());
-            RecordStoreVersion storeVersion = (RecordStoreVersion) storageEngine.versionInformation(storeId);
+            RecordStoreVersion storeVersion = (RecordStoreVersion)
+                    storageEngine.versionInformation(storeId).orElseThrow();
             assertEquals(Standard.LATEST_NAME, storeVersion.getFormat().name());
         }
     }
@@ -382,7 +383,8 @@ class RecordStorageMigratorIT {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
             StoreId newStoreId = metaDataStore.getStoreId();
             // Store version should be updated, and the rest should be as before
-            RecordStoreVersion storeVersion = (RecordStoreVersion) storageEngine.versionInformation(newStoreId);
+            RecordStoreVersion storeVersion = (RecordStoreVersion)
+                    storageEngine.versionInformation(newStoreId).orElseThrow();
             assertEquals(toFormat.name(), storeVersion.getFormat().name());
             assertEquals(storeId.getRandom(), newStoreId.getRandom());
             assertEquals(
@@ -605,7 +607,9 @@ class RecordStorageMigratorIT {
     private static StoreVersion getVersionToMigrateFrom(RecordStoreVersionCheck check) {
         StoreVersionCheck.MigrationCheckResult result = check.getAndCheckMigrationTargetVersion(null, NULL_CONTEXT);
         assertEquals(result.outcome(), MIGRATION_POSSIBLE);
-        return StorageEngineFactory.defaultStorageEngine().versionInformation(result.versionToMigrateFrom());
+        return StorageEngineFactory.defaultStorageEngine()
+                .versionInformation(result.versionToMigrateFrom())
+                .orElseThrow();
     }
 
     private static StoreVersion getVersionToMigrateTo() {
