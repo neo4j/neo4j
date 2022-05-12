@@ -56,15 +56,23 @@ package org.neo4j.cypher.internal.util
 object PredicateOrdering extends Ordering[(CostPerRow, Selectivity)] {
 
   override def compare(predicate0: (CostPerRow, Selectivity), predicate1: (CostPerRow, Selectivity)): Int = {
-    costFor(predicate0, predicate1).compare(costFor(predicate1, predicate0))
+    val cost01 = costFor(predicate0, predicate1)
+    val cost10 = costFor(predicate1, predicate0)
+    compareWithTolerance(cost01, cost10)
+  }
+
+  private def compareWithTolerance(a: Double, b: Double): Int = {
+    if (math.abs(a - b) <= 0.000001) 0
+    else if (a < b) -1
+    else 1
   }
 
   /**
    * The cost per row for evaluating first predicate0 and then predicate1.
    */
-  private def costFor(predicate0: (CostPerRow, Selectivity), predicate1: (CostPerRow, Selectivity)): CostPerRow =
+  private def costFor(predicate0: (CostPerRow, Selectivity), predicate1: (CostPerRow, Selectivity)): Double =
     (predicate0, predicate1) match {
-      case ((c0, Selectivity(s0)), (c1, _)) =>
+      case ((CostPerRow(c0), Selectivity(s0)), (CostPerRow(c1), _)) =>
         // predicate0 needs to be evaluated on all rows.
         // predicate1 only on those where predicate0==true
         c0 + c1 * s0
