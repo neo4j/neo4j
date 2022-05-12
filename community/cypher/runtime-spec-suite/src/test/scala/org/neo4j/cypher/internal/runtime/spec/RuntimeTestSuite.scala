@@ -292,6 +292,11 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   ): (RecordingRuntimeResult, InternalPlanDescription) =
     runtimeTestSupport.executeAndExplain(logicalQuery, runtime, input)
 
+  def countRows(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT], input: InputValues = NO_INPUT): Long = {
+    val (result, _) = runtimeTestSupport.executeAndContextNonRecording(logicalQuery, runtime, input)
+    result.awaitAll()
+  }
+
   def printQueryProfile(
     fileName: String,
     maxAllocatedMemory: Long,
