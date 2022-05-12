@@ -64,7 +64,7 @@ public class NoOpensIT {
         runTest(
                 GraphDatabaseSettings.tx_state_memory_allocation,
                 OFF_HEAP,
-                "dbms.tx_state.memory_allocation is set to OFF_HEAP but unsafe access to java.nio.DirectByteBuffer is not available."
+                "db.tx_state.memory_allocation is set to OFF_HEAP but unsafe access to java.nio.DirectByteBuffer is not available."
                         + " Defaulting to ON_HEAP.");
     }
 

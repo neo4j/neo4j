@@ -533,7 +533,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "check-point process all the time. "
             + "The second is the 'volumetric' check-point policy, which makes a best-effort at check-pointing "
             + "often enough so that the database doesn't get too far behind on deleting old transaction logs in "
-            + "accordance with the 'dbms.tx_log.rotation.retention_policy' setting.")
+            + "accordance with the 'db.tx_log.rotation.retention_policy' setting.")
     public static final Setting<CheckpointPolicy> check_point_policy = newBuilder(
                     "db.checkpoint", ofEnum(CheckpointPolicy.class), CheckpointPolicy.PERIODIC)
             .build();
@@ -614,7 +614,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
                     + "For example, \"10 days\" will prune logical logs that only contain transactions older than 10 days."
                     + "Alternatively, \"100k txs\" will keep the 100k latest transactions from each database and prune any older transactions.")
     public static final Setting<String> keep_logical_logs = newBuilder(
-                    "dbms.tx_log.rotation.retention_policy", STRING, "7 days")
+                    "db.tx_log.rotation.retention_policy", STRING, "7 days")
             .dynamic()
             .addConstraint(SettingConstraints.matches(
                     "^(true|keep_all|false|keep_none|(\\d+[KkMmGg]?( (files|size|txs|entries|hours|days))))$",
@@ -627,7 +627,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     @Description("Specifies at which file size the logical log will auto-rotate. Minimum accepted value is 128 KiB. ")
     public static final Setting<Long> logical_log_rotation_threshold = newBuilder(
-                    "dbms.tx_log.rotation.size", BYTES, mebiBytes(250))
+                    "db.tx_log.rotation.size", BYTES, mebiBytes(250))
             .addConstraint(min(kibiBytes(128)))
             .dynamic()
             .build();
@@ -643,7 +643,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "runtime with 8 cpus will have buffer size of 1MB 512KB; "
             + "runtime with 12 cpus will have buffer size of 2MB.")
     public static final Setting<Long> transaction_log_buffer_size = newBuilder(
-                    "dbms.tx_log.buffer.size",
+                    "db.tx_log.buffer.size",
                     LONG,
                     ByteUnit.kibiBytes(Math.min((getRuntime().availableProcessors() / 4) + 1, 8) * 512L))
             .addConstraint(min(kibiBytes(128)))
@@ -651,7 +651,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     @Description("Specify if Neo4j should try to preallocate logical log file in advance.")
     public static final Setting<Boolean> preallocate_logical_logs =
-            newBuilder("dbms.tx_log.preallocate", BOOL, true).dynamic().build();
+            newBuilder("db.tx_log.preallocate", BOOL, true).dynamic().build();
 
     @Description("Specify if Neo4j should try to preallocate store files as they grow.")
     public static final Setting<Boolean> preallocate_store_files =
@@ -1049,12 +1049,12 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     @Description("Defines whether memory for transaction state should be allocated on- or off-heap. "
             + "Note that for small transactions you can gain up to 25% write speed by setting it to `ON_HEAP`.")
     public static final Setting<TransactionStateMemoryAllocation> tx_state_memory_allocation = newBuilder(
-                    "dbms.tx_state.memory_allocation", ofEnum(TransactionStateMemoryAllocation.class), ON_HEAP)
+                    "db.tx_state.memory_allocation", ofEnum(TransactionStateMemoryAllocation.class), ON_HEAP)
             .build();
 
     @Description(
             "The maximum amount of off-heap memory that can be used to store transaction state data; it's a total amount of memory "
-                    + "shared across all active transactions. Zero means 'unlimited'. Used when dbms.tx_state.memory_allocation is set to 'OFF_HEAP'.")
+                    + "shared across all active transactions. Zero means 'unlimited'. Used when db.tx_state.memory_allocation is set to 'OFF_HEAP'.")
     public static final Setting<Long> tx_state_max_off_heap_memory = newBuilder(
                     "dbms.memory.off_heap.max_size", BYTES, BYTES.parse("2G"))
             .addConstraint(min(0L))

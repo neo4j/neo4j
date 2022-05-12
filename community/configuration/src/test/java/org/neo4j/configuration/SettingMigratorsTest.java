@@ -20,10 +20,12 @@
 package org.neo4j.configuration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.BootloaderSettings.lib_directory;
 import static org.neo4j.configuration.BootloaderSettings.run_directory;
 import static org.neo4j.configuration.BootloaderSettings.windows_service_name;
+import static org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation.ON_HEAP;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_time;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_tx;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_volume;
@@ -39,20 +41,25 @@ import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.database_dumps_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.forbid_exhaustive_shortestpath;
 import static org.neo4j.configuration.GraphDatabaseSettings.forbid_shortestpath_common_nodes;
+import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.licenses_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.load_csv_file_url_root;
+import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
 import static org.neo4j.configuration.GraphDatabaseSettings.plugin_dir;
+import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
 import static org.neo4j.configuration.GraphDatabaseSettings.query_statistics_divergence_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
 import static org.neo4j.configuration.GraphDatabaseSettings.script_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_log_buffer_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_memory_allocation;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
@@ -415,5 +422,28 @@ class SettingMigratorsTest {
         assertEquals(GraphDatabaseSettings.CypherPlanner.COST, config.get(cypher_planner));
         assertEquals(true, config.get(cypher_render_plan_descriptions));
         assertEquals(0.42, config.get(query_statistics_divergence_threshold), 0.01);
+    }
+
+    @Test
+    void migrateTxLogsAndStateSettings() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(
+                confFile,
+                List.of(
+                        "dbms.tx_log.buffer.size=134072",
+                        "dbms.tx_log.preallocate=false",
+                        "dbms.tx_log.rotation.retention_policy=3 days",
+                        "dbms.tx_log.rotation.size=34mb",
+                        "dbms.tx_state.memory_allocation=ON_HEAP"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger(logProvider.getLog(Config.class));
+
+        assertEquals(ByteUnit.bytes(134072), config.get(transaction_log_buffer_size));
+        assertFalse(config.get(preallocate_logical_logs));
+        assertEquals("3 days", config.get(keep_logical_logs));
+        assertEquals(ByteUnit.mebiBytes(34), config.get(logical_log_rotation_threshold));
+        assertEquals(ON_HEAP, config.get(tx_state_memory_allocation));
     }
 }

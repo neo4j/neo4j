@@ -38,20 +38,25 @@ import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.database_dumps_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.forbid_exhaustive_shortestpath;
 import static org.neo4j.configuration.GraphDatabaseSettings.forbid_shortestpath_common_nodes;
+import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.licenses_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.load_csv_file_url_root;
+import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
 import static org.neo4j.configuration.GraphDatabaseSettings.plugin_dir;
+import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
 import static org.neo4j.configuration.GraphDatabaseSettings.query_statistics_divergence_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
 import static org.neo4j.configuration.GraphDatabaseSettings.script_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_log_buffer_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_memory_allocation;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
 import static org.neo4j.configuration.connectors.BoltConnectorInternalSettings.thread_pool_shutdown_wait_time;
@@ -629,6 +634,16 @@ public final class SettingMigrators {
             migrateReadOnlySetting(values, defaultValues, log);
             migrateDatabaseMaxSize(values, defaultValues, log);
             migrateCypherNamespace(values, defaultValues, log);
+            migrateTxStateAndLogsSettings(values, defaultValues, log);
+        }
+
+        private void migrateTxStateAndLogsSettings(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.tx_log.buffer.size", transaction_log_buffer_size);
+            migrateSettingNameChange(values, log, "dbms.tx_log.preallocate", preallocate_logical_logs);
+            migrateSettingNameChange(values, log, "dbms.tx_log.rotation.retention_policy", keep_logical_logs);
+            migrateSettingNameChange(values, log, "dbms.tx_log.rotation.size", logical_log_rotation_threshold);
+            migrateSettingNameChange(values, log, "dbms.tx_state.memory_allocation", tx_state_memory_allocation);
         }
 
         private static void migrateUnsupportedSettingsToInternal(
