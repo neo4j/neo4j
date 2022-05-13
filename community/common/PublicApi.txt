@@ -29,6 +29,7 @@ org.neo4j.kernel.api.exceptions.Status.Database::DatabaseNotFound org.neo4j.kern
 org.neo4j.kernel.api.exceptions.Status.Database::DatabaseUnavailable org.neo4j.kernel.api.exceptions.Status.Database public static final
 org.neo4j.kernel.api.exceptions.Status.Database::ExistingAliasFound org.neo4j.kernel.api.exceptions.Status.Database public static final
 org.neo4j.kernel.api.exceptions.Status.Database::ExistingDatabaseFound org.neo4j.kernel.api.exceptions.Status.Database public static final
+org.neo4j.kernel.api.exceptions.Status.Database::IllegalAliasChain org.neo4j.kernel.api.exceptions.Status.Database public static final
 org.neo4j.kernel.api.exceptions.Status.Database::UnableToStartDatabase org.neo4j.kernel.api.exceptions.Status.Database public static final
 org.neo4j.kernel.api.exceptions.Status.Database::Unknown org.neo4j.kernel.api.exceptions.Status.Database public static final
 org.neo4j.kernel.api.exceptions.Status.Database::code() org.neo4j.kernel.api.exceptions.Status.Code public
