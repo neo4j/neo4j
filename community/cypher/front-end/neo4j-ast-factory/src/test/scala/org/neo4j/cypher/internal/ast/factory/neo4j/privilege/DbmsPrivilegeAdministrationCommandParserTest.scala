@@ -58,7 +58,10 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
       ("SHOW PRIVILEGE", ast.ShowPrivilegeAction),
       ("ASSIGN PRIVILEGE", ast.AssignPrivilegeAction),
       ("REMOVE PRIVILEGE", ast.RemovePrivilegeAction),
-      ("PRIVILEGE MANAGEMENT", ast.AllPrivilegeActions)
+      ("PRIVILEGE MANAGEMENT", ast.AllPrivilegeActions),
+      ("SHOW SERVER", ast.ShowServerAction),
+      ("SHOW SERVERS", ast.ShowServerAction),
+      ("SERVER MANAGEMENT", ast.ServerManagementAction)
     ).foreach {
       case (privilege: String, action: ast.DbmsAction) =>
         test(s"$command $privilege ON DBMS $preposition role") {
@@ -285,6 +288,8 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
            |  "INDEXES"
            |  "PRIVILEGE"
            |  "ROLE"
+           |  "SERVER"
+           |  "SERVERS"
            |  "TRANSACTION"
            |  "TRANSACTIONS"
            |  "USER" (line 1, column ${offset + 6} (offset: ${offset + 5}))""".stripMargin

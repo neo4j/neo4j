@@ -162,6 +162,8 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SEC;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SECOND;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SECONDS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SEEK;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SERVER;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SERVERS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SET;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SHORTEST_PATH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SHOW;
@@ -349,6 +351,8 @@ public class IdentifierTokens {
             SECOND,
             SECONDS,
             SEEK,
+            SERVER,
+            SERVERS,
             SET,
             SHORTEST_PATH,
             SHOW,

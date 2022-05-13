@@ -79,6 +79,8 @@ public enum ActionType {
     EXECUTE_PROCEDURE,
     EXECUTE_BOOSTED_PROCEDURE,
     EXECUTE_ADMIN_PROCEDURE,
+    SERVER_SHOW,
+    SERVER_MANAGEMENT,
 
     // Graph actions
     GRAPH_ALL,

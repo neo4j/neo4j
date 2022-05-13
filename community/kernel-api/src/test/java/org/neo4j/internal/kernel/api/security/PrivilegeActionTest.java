@@ -64,6 +64,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.REMOVE_ROLE
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.RENAME_ROLE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.RENAME_USER;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ROLE_MANAGEMENT;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SERVER_MANAGEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_DATABASE_ACCESS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_LABEL;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_PASSWORDS;
@@ -76,6 +77,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_CONSTR
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_INDEX;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_PRIVILEGE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_ROLE;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_SERVER;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_TRANSACTION;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_USER;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.START_DATABASE;
@@ -127,7 +129,9 @@ class PrivilegeActionTest {
                         ALIAS_MANAGEMENT,
                         PRIVILEGE_MANAGEMENT,
                         EXECUTE_ADMIN,
-                        IMPERSONATE));
+                        IMPERSONATE,
+                        SERVER_MANAGEMENT));
+        expected.put(SERVER_MANAGEMENT, Set.of(SHOW_SERVER));
     }
 
     @Test

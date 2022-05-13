@@ -1827,7 +1827,15 @@ class PrettifierIT extends CypherFunSuite {
           s"$action impersonate (*) on dbms $preposition role, $$paramrole" ->
             s"$action IMPERSONATE (*) ON DBMS $preposition role, $$paramrole",
           s"$action impersonate (foo,bar) on dbms $preposition role" ->
-            s"$action IMPERSONATE (foo, bar) ON DBMS $preposition role"
+            s"$action IMPERSONATE (foo, bar) ON DBMS $preposition role",
+          s"$action server management on dbms $preposition role" ->
+            s"$action SERVER MANAGEMENT ON DBMS $preposition role",
+          s"$action server management on dbms $preposition role, $$paramrole" ->
+            s"$action SERVER MANAGEMENT ON DBMS $preposition role, $$paramrole",
+          s"$action show server on dbms $preposition role" ->
+            s"$action SHOW SERVERS ON DBMS $preposition role",
+          s"$action show servers on dbms $preposition role, $$paramrole" ->
+            s"$action SHOW SERVERS ON DBMS $preposition role, $$paramrole"
         )
     }
   }

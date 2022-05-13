@@ -102,6 +102,10 @@ abstract class DbmsAction(override val name: String) extends AdministrationActio
 
 case object AllDbmsAction extends DbmsAction("ALL DBMS PRIVILEGES")
 
+case object ServerManagementAction extends DbmsAction("SERVER MANAGEMENT")
+
+case object ShowServerAction extends DbmsAction("SHOW SERVERS")
+
 case object ImpersonateUserAction extends DbmsAction("IMPERSONATE")
 
 case object ExecuteProcedureAction extends DbmsAction("EXECUTE PROCEDURE")

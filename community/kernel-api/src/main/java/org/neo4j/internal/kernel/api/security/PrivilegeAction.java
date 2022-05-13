@@ -98,6 +98,8 @@ public enum PrivilegeAction {
     /** Execute @Admin procedure with elevated access */
     EXECUTE_ADMIN,
 
+    SHOW_SERVER,
+
     // Some grouping actions that represent super-sets of other actions
 
     ADMIN {
@@ -350,13 +352,22 @@ public enum PrivilegeAction {
                     || PRIVILEGE_MANAGEMENT.satisfies(action)
                     || EXECUTE_ADMIN == action
                     || IMPERSONATE == action
+                    || SERVER_MANAGEMENT.satisfies(action)
                     || this == action;
+        }
+    },
+
+    /** Privileges for enabling/deallocating/dropping/showing servers in a cluster */
+    SERVER_MANAGEMENT {
+        @Override
+        public boolean satisfies(PrivilegeAction action) {
+            return SHOW_SERVER.satisfies(action) || this == action;
         }
     };
 
     /**
-     * @return true if this action satisfies the specified action. For example any broad-scope action satisfies many other actions, but a narrow scope action
-     * satisfies only itself.
+     * @return true if this action satisfies the specified action.
+     * For example any broad-scope action satisfies many other actions, but a narrow scope action satisfies only itself.
      */
     public boolean satisfies(PrivilegeAction action) {
         return this == action;

@@ -69,6 +69,7 @@ import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
 import org.neo4j.cypher.internal.ast.RenameRoleAction
 import org.neo4j.cypher.internal.ast.RenameUserAction
+import org.neo4j.cypher.internal.ast.ServerManagementAction
 import org.neo4j.cypher.internal.ast.SetDatabaseAccessAction
 import org.neo4j.cypher.internal.ast.SetLabelAction
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
@@ -80,6 +81,7 @@ import org.neo4j.cypher.internal.ast.ShowConstraintAction
 import org.neo4j.cypher.internal.ast.ShowIndexAction
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowRoleAction
+import org.neo4j.cypher.internal.ast.ShowServerAction
 import org.neo4j.cypher.internal.ast.ShowTransactionAction
 import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
@@ -174,6 +176,9 @@ object ActionMapper {
     case ExecuteBoostedFunctionAction => security.PrivilegeAction.EXECUTE_BOOSTED
 
     case ImpersonateUserAction => security.PrivilegeAction.IMPERSONATE
+
+    case ShowServerAction       => security.PrivilegeAction.SHOW_SERVER
+    case ServerManagementAction => security.PrivilegeAction.SERVER_MANAGEMENT
 
     case AllDbmsAction => security.PrivilegeAction.DBMS_ACTIONS
 

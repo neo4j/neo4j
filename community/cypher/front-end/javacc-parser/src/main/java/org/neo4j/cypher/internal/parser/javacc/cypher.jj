@@ -496,6 +496,8 @@ TOKEN [IGNORE_CASE] :
     | < SECOND: "SECOND">
     | < SECONDS: "SECONDS">
     | < SEEK: "SEEK" >
+    | < SERVER: "SERVER" >
+    | < SERVERS: "SERVERS" >
     | < SET: "SET" >
     | < SHORTEST_PATH: "shortestPath" >
     | < SHOW: "SHOW">
@@ -4795,6 +4797,7 @@ PRIVILEGE_TYPE showPrivilege(Token start):
                 | <PRIVILEGE> { action = astFactory.privilegeAction( ActionType.PRIVILEGE_SHOW ); }
                 | <ROLE> { action = astFactory.privilegeAction( ActionType.ROLE_SHOW ); }
                 | <USER> { action = astFactory.privilegeAction( ActionType.USER_SHOW ); }
+                | (<SERVER> | <SERVERS>) { action = astFactory.privilegeAction( ActionType.SERVER_SHOW ); }
             ) <ON> <DBMS> { privilege = astFactory.dbmsPrivilege( pos(start), action, astFactory.allQualifier() ); }
         )
     ) { return privilege; }
@@ -4915,6 +4918,7 @@ PRIVILEGE_TYPE dbmsPrivilege(Token start):
             <ROLE> { action = astFactory.privilegeAction( ActionType.ROLE_RENAME ); }
             | <USER> { action = astFactory.privilegeAction( ActionType.USER_RENAME ); }
         )
+        | <SERVER> <MANAGEMENT> { action = astFactory.privilegeAction( ActionType.SERVER_MANAGEMENT ); }
         | <USER> <MANAGEMENT> { action = astFactory.privilegeAction( ActionType.USER_ALL ); }
         | <IMPERSONATE> { qualifier = astFactory.allUsersQualifier(); }
             ( <LPAREN> (<TIMES> | qualifiers=SymbolicNameOrStringParameterList() { qualifier = astFactory.userQualifier(qualifiers); } ) <RPAREN> )?
@@ -5702,6 +5706,8 @@ Token UnescapedSymbolicNameString() :
         | t=<SECOND>
         | t=<SECONDS>
         | t=<SEEK>
+        | t=<SERVER>
+        | t=<SERVERS>
         | t=<SET>
         | t=<SHORTEST_PATH>
         | t=<SHOW>
