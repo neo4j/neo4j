@@ -45,6 +45,7 @@ object QueryRenderer {
 
     override def apply(ctx: ExpressionStringifier)(expression: Expression): String = expression match {
       case p: ParameterFromSlot => ctx.apply(Parameter(p.name, p.parameterType)(p.position))
+      case _                    => throw new IllegalStateException("Expected type: ParameterFromSlot")
     }
   }
 

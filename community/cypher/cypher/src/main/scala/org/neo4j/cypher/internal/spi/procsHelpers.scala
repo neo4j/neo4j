@@ -99,6 +99,7 @@ object procsHelpers {
     case Neo4jTypes.NTGeometry      => CTGeometry
     case Neo4jTypes.NTMap           => CTMap
     case Neo4jTypes.NTAny           => CTAny
+    case t => throw new IllegalArgumentException(s"Could not find a valid mapping for the type $t")
   }
 
   def asCypherProcedureSignature(

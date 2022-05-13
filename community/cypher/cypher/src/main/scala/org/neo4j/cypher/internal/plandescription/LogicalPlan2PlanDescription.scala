@@ -2022,15 +2022,14 @@ case class LogicalPlan2PlanDescription(
         NodeIndexSeek.PLAN_DESCRIPTION_INDEX_SEEK_NAME
       }
     valueExpr match {
-      case _: ExistenceQueryExpression[expressions.Expression] => NodeIndexSeek.PLAN_DESCRIPTION_INDEX_SCAN_NAME
+      case _: ExistenceQueryExpression[expressions.Expression] =>
+        NodeIndexSeek.PLAN_DESCRIPTION_INDEX_SCAN_NAME
       case _: RangeQueryExpression[expressions.Expression] =>
         if (unique) NodeIndexSeek.PLAN_DESCRIPTION_UNIQUE_INDEX_SEEK_RANGE_NAME
         else NodeIndexSeek.PLAN_DESCRIPTION_INDEX_SEEK_RANGE_NAME
       case e: CompositeQueryExpression[expressions.Expression] =>
         findName(e.exactOnly)
-      case _: SingleQueryExpression[org.neo4j.cypher.internal.expressions.Expression] =>
-        findName()
-      case _: ManyQueryExpression[org.neo4j.cypher.internal.expressions.Expression] =>
+      case _ =>
         findName()
     }
   }
@@ -2083,6 +2082,8 @@ case class LogicalPlan2PlanDescription(
           val pur = prettyPoint(ur)
           val propertyKeyName = asPrettyString(propertyKeys.head.name)
           pretty"point.withinBBox($propertyKeyName, $pll, $pur)"
+        case _ =>
+          throw new IllegalStateException("The expression did not confomr to the expected type RangeQueryExpression")
       }
 
     case e: SingleQueryExpression[expressions.Expression] =>
@@ -2202,7 +2203,7 @@ case class LogicalPlan2PlanDescription(
   }
 
   private def eagernessReasonInfo(reasons: ListSet[EagernessReason.Reason]): Seq[PrettyString] = {
-    reasons.toSeq.filterNot(_ == EagernessReason.Unknown).map {
+    reasons.toSeq.collect {
       case EagernessReason.UpdateStrategyEager => pretty"updateStrategy=eager"
       case EagernessReason.LabelReadSetConflict(label) =>
         pretty"read/set conflict for label: ${asPrettyString(label)}"

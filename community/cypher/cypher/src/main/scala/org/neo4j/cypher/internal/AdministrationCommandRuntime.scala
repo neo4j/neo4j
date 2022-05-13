@@ -97,7 +97,6 @@ object AdministrationCommandRuntime {
   )
 
   private[internal] def getPasswordExpression(
-    userNameParameter: Option[expressions.Expression],
     password: expressions.Expression,
     isEncryptedPassword: Boolean,
     otherParams: Array[String]
@@ -121,6 +120,8 @@ object AdministrationCommandRuntime {
           )
         }
         PasswordExpression(hashedPwKey, Values.NO_VALUE, passwordByteKey, Values.NO_VALUE, convertPasswordParameters)
+
+      case _ => throw new IllegalStateException(s"Internal error when processing password.")
     }
 
   private[internal] def getValidPasswordParameter(params: MapValue, passwordParameter: String): Array[Byte] = {
@@ -183,7 +184,7 @@ object AdministrationCommandRuntime {
       passwordChangeRequiredKey,
       suspendedKey
     ) ++ homeDatabaseFields.map(_.nameKey)
-    val credentials = getPasswordExpression(userName.toOption, password, isEncryptedPassword, nonPasswordParameterNames)
+    val credentials = getPasswordExpression(password, isEncryptedPassword, nonPasswordParameterNames)
     val homeDatabaseCypher = homeDatabaseFields.map(ddf => s", homeDatabase: $$`${ddf.nameKey}`").getOrElse("")
     val mapValueConverter: (Transaction, MapValue) => MapValue = (tx, p) => {
       val newHomeDatabaseFields = homeDatabaseFields.map(_.nameConverter(tx, userNameFields.nameConverter(tx, p)))
@@ -258,9 +259,8 @@ object AdministrationCommandRuntime {
       case SetHomeDatabaseAction(name) => getNameFields("homeDatabase", name, s => new NormalizedDatabaseName(s).name())
     }
     val nonPasswordParameterNames = Array(userNameFields.nameKey) ++ homeDatabaseFields.map(_.nameKey)
-    val maybePw = password.map(p =>
-      getPasswordExpression(userName.toOption, p, isEncryptedPassword.getOrElse(false), nonPasswordParameterNames)
-    )
+    val maybePw =
+      password.map(p => getPasswordExpression(p, isEncryptedPassword.getOrElse(false), nonPasswordParameterNames))
     val params = Seq(
       maybePw -> "credentials",
       requirePasswordChange -> "passwordChangeRequired",

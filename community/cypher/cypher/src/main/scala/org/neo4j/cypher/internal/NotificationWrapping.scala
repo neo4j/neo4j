@@ -204,6 +204,7 @@ object NotificationWrapping {
             pos.withOffset(offset).asInputPosition
           )
       }
+    case _ => throw new IllegalStateException("Missing mapping for notification detail.")
   }
 
   implicit private class ConvertibleCompilerInputPosition(pos: InputPosition) {

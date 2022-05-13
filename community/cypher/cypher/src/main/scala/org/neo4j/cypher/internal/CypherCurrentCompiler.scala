@@ -84,6 +84,7 @@ import org.neo4j.values.virtual.MapValue
 
 import java.util.function.Supplier
 
+import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
 /**
@@ -219,32 +220,40 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
   }
 
   private def buildCompilerInfo(logicalPlan: LogicalPlan, plannerName: PlannerName, runtimeName: RuntimeName) = {
-    val (lookupIndexes, schemaIndexes) = logicalPlan.indexUsage().partition(_.isInstanceOf[SchemaIndexLookupUsage])
-    val schemaIndexUsage = schemaIndexes.collect {
+    val schemaIndexUsage = ListBuffer.empty[SchemaIndexUsage]
+    val relationshipTypeIndexUsage = ListBuffer.empty[RelationshipTypeIndexUsage]
+    val lookupIndexUsage = ListBuffer.empty[LookupIndexUsage]
+
+    logicalPlan.indexUsage().foreach {
       case SchemaLabelIndexUsage(identifier, labelId, label, propertyKeys) =>
-        new SchemaIndexUsage(
+        schemaIndexUsage.addOne(new SchemaIndexUsage(
           identifier,
           labelId,
           label,
           propertyKeys.map(_.nameId.id).toArray,
           propertyKeys.map(_.name): _*
-        )
-    }.asJava
-    val relationshipTypeIndexUsage = schemaIndexes.collect {
+        ))
+
       case SchemaRelationshipIndexUsage(identifier, relTypeId, relType, propertyKeys) =>
-        new RelationshipTypeIndexUsage(
+        relationshipTypeIndexUsage.addOne(new RelationshipTypeIndexUsage(
           identifier,
           relTypeId,
           relType,
           propertyKeys.map(_.nameId.id).toArray,
           propertyKeys.map(_.name).toArray
-        )
-    }.asJava
-    val lookupIndexUsage = lookupIndexes.map {
-      case SchemaIndexLookupUsage(identifier, entityType) => new LookupIndexUsage(identifier, entityType)
-    }.asJava
+        ))
 
-    new CompilerInfo(plannerName.name, runtimeName.name, schemaIndexUsage, relationshipTypeIndexUsage, lookupIndexUsage)
+      case SchemaIndexLookupUsage(identifier, entityType) =>
+        lookupIndexUsage.addOne(new LookupIndexUsage(identifier, entityType))
+    }
+
+    new CompilerInfo(
+      plannerName.name,
+      runtimeName.name,
+      schemaIndexUsage.asJava,
+      relationshipTypeIndexUsage.asJava,
+      lookupIndexUsage.asJava
+    )
   }
 
   private def getQueryType(planState: CachableLogicalPlanState): InternalQueryType = {

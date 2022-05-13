@@ -61,7 +61,10 @@ object AdministrationShowCommandUtils {
   private def getScope(previousScope: List[String], clause: Option[ProjectionClause]): List[String] = {
     def aliasSymbolsWhereNecessary(r: ReturnItems, symbols: List[String]): List[String] = {
       symbols.map(s =>
-        r.items.find { case AliasedReturnItem(Variable(name), _) => name == s } match {
+        r.items.find {
+          case AliasedReturnItem(Variable(name), _) => name == s
+          case _                                    => false
+        } match {
           case Some(AliasedReturnItem(_, Variable(alias))) => alias
           case _                                           => s
         }

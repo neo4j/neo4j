@@ -56,7 +56,7 @@ case class SetOwnPasswordExecutionPlanner(
 
   def planSetOwnPassword(newPassword: Expression, currentPassword: Expression): ExecutionPlan = {
     val usernameKey = internalKey("username")
-    val newPw = getPasswordExpression(None, newPassword, isEncryptedPassword = false, Array(usernameKey))
+    val newPw = getPasswordExpression(newPassword, isEncryptedPassword = false, Array(usernameKey))
     val (currentKeyBytes, currentValueBytes, currentConverterBytes) = getPasswordFieldsCurrent(currentPassword)
     def currentUser(p: MapValue): String = p.get(usernameKey).asInstanceOf[TextValue].stringValue()
     val query =
@@ -137,6 +137,7 @@ case class SetOwnPasswordExecutionPlanner(
           params.updatedWith(renamedParameter, Values.byteArray(encodedPassword))
         }
         (renamedParameter, Values.NO_VALUE, convertPasswordParameters)
+      case _ => throw new IllegalStateException(s"Internal error when processing password.")
     }
   }
 }

@@ -34,6 +34,8 @@ import org.neo4j.time.FakeClock
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.SECONDS
 
+import scala.language.implicitConversions
+
 class PlanStalenessCallerTest extends CypherFunSuite {
 
   private val divergenceCalculators =

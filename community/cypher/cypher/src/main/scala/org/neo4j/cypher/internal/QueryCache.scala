@@ -385,19 +385,22 @@ object QueryCache {
 
     override def equals(obj: Any): Boolean = {
       obj match {
-        case other: ParameterTypeMap =>
+        case other: ParameterTypeMap if resultMap.size == other.resultMap.size =>
           val otherMap = other.resultMap
-          if (resultMap.size() == otherMap.size()) {
-            otherMap.forEach((otherKey, otherValue) => {
-              val value = resultMap.get(otherKey)
-              if (!otherValue.equals(value)) {
-                return false
-              }
-            })
-            true
-          } else {
-            false
+          val entries = otherMap.entrySet.iterator()
+          var stillEqual = true
+
+          while (entries.hasNext && stillEqual) {
+            val entry = entries.next()
+            val otherKey = entry.getKey
+            val otherValue = entry.getValue
+            val value = resultMap.get(otherKey)
+            stillEqual = otherValue.equals(value)
           }
+
+          stillEqual
+        case _ =>
+          false
       }
     }
 

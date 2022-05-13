@@ -60,6 +60,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPla
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
+import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SensitiveLiteral
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
@@ -494,7 +495,7 @@ case class CypherPlanner(
         names += name
         writer.writeTo(extractor)
         mapBuilder.add(name, extractor.value)
-      case Parameter(name, _) =>
+      case ExplicitParameter(name, _) =>
         names += name
     }
     (names.distinct, mapBuilder.build())

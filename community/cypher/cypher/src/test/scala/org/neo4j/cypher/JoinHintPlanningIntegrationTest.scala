@@ -96,8 +96,8 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
       return None
     }
 
-    val firstNodeName = findFirstNodeName(elements).getOrElse(return None)
-    val lastNodeName = findFirstNodeName(elements.reverse).getOrElse(return None)
+    val firstNodeName = findFirstNodeName(elements).getOrElse(None)
+    val lastNodeName = findFirstNodeName(elements.reverse).getOrElse(None)
 
     var joinNodeName: String = null
     do {

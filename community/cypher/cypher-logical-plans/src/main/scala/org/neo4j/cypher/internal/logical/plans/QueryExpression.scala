@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-trait QueryExpression[+T] {
+sealed trait QueryExpression[+T] {
 
   def expressions: Seq[T]
 

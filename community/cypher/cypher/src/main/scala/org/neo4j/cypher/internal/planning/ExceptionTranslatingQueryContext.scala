@@ -455,7 +455,7 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
 
   override def logProvider: InternalLogProvider = translateException(tokenNameLookup, inner.logProvider)
 
-  override def providedLanguageFunctions(): Seq[FunctionInformation] =
+  override def providedLanguageFunctions: Seq[FunctionInformation] =
     translateException(tokenNameLookup, inner.providedLanguageFunctions)
 
   override def entityTransformer: EntityTransformer = translateException(tokenNameLookup, inner.entityTransformer)

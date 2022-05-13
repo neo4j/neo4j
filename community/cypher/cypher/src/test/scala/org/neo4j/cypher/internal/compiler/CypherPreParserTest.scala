@@ -33,6 +33,8 @@ import org.scalatest.prop.TableFor2
 
 import java.util.List
 
+import scala.language.implicitConversions
+
 class CypherPreParserTest extends CypherFunSuite with TableDrivenPropertyChecks {
 
   private def version(ver: String) = PreParserOption(CypherVersion.name, ver)

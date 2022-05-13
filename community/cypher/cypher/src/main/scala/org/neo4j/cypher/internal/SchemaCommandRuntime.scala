@@ -52,7 +52,6 @@ import org.neo4j.cypher.internal.procs.SuccessResult
 import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.SCHEMA_WRITE
-import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.graphdb.schema.IndexType.POINT
@@ -370,9 +369,6 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
       case Uniqueness                    => c => c.isUniquenessConstraint
       case NodeKey                       => c => c.isNodeKeyConstraint
     }
-
-  implicit private def labelToId(ctx: QueryContext)(label: LabelName): LabelId =
-    LabelId(ctx.getOrCreateLabelId(label.name))
 
   implicit private def propertyToId(ctx: QueryContext)(property: PropertyKeyName): PropertyKeyId =
     PropertyKeyId(ctx.getOrCreatePropertyKeyId(property.name))
