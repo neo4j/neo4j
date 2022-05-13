@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 import org.neo4j.graphdb.schema.IndexType
 
 class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -48,7 +49,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
     plan should beLike {
       case ProduceResult(
           Selection(
-            Ands(Seq(
+            Ands(SetExtractor(
               HasLabels(Variable("n"), Seq(LabelName("N"))),
               HasTypes(Variable("r"), Seq(RelTypeName("R"))),
               HasLabelsOrTypes(Variable("v"), Seq(LabelOrRelTypeName("V")))
@@ -70,7 +71,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
     plan should beLike {
       case ProduceResult(
           Selection(
-            Ands(Seq(
+            Ands(SetExtractor(
               HasLabels(Variable("n"), Seq(LabelName("N")))
             )),
             _
@@ -91,7 +92,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
     plan should beLike {
       case ProduceResult(
           Selection(
-            Ands(Seq(
+            Ands(SetExtractor(
               HasLabels(Variable("n"), Seq(LabelName("N"))),
               HasTypes(Variable("r"), Seq(RelTypeName("R"))),
               HasLabels(Variable("m"), Seq(LabelName("M")))
@@ -113,7 +114,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
     plan should beLike {
       case ProduceResult(
           Selection(
-            Ands(Seq(
+            Ands(SetExtractor(
               HasLabels(Variable("n"), Seq(LabelName("N")))
             )),
             _
@@ -133,7 +134,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
     plan should beLike {
       case ProduceResult(
           Selection(
-            Ands(Seq(
+            Ands(SetExtractor(
               HasLabels(Variable("n"), Seq(LabelName("N"))),
               HasTypes(Variable("r"), Seq(RelTypeName("R"))),
               HasLabels(Variable("m"), Seq(LabelName("M")))
@@ -159,7 +160,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
           Apply(
             _,
             Selection(
-              Ands(Seq(
+              Ands(SetExtractor(
                 HasLabels(Variable("n"), Seq(LabelName("N"))),
                 HasTypes(Variable("r"), Seq(RelTypeName("R"))),
                 HasLabelsOrTypes(Variable("v"), Seq(LabelOrRelTypeName("V")))
@@ -184,7 +185,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
     plan should beLike {
       case ProduceResult(
           Selection(
-            Ands(Seq(
+            Ands(SetExtractor(
               HasLabels(Variable("n2"), Seq(LabelName("N"))),
               HasTypes(Variable("r2"), Seq(RelTypeName("R"))),
               HasLabelsOrTypes(Variable("v2"), Seq(LabelOrRelTypeName("V")))
@@ -207,7 +208,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
     plan should beLike {
       case ProduceResult(
           Selection(
-            Ands(Seq(
+            Ands(SetExtractor(
               HasLabelsOrTypes(Variable("n"), Seq(LabelOrRelTypeName("N"))),
               HasLabelsOrTypes(Variable("r"), Seq(LabelOrRelTypeName("R"))),
               HasLabelsOrTypes(Variable("v"), Seq(LabelOrRelTypeName("V")))

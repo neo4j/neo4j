@@ -34,6 +34,8 @@ import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 
+import scala.collection.immutable.ListSet
+
 case class expandSolverStep(qg: QueryGraph)
     extends IDPSolverStep[NodeConnection, LogicalPlan, LogicalPlanningContext] {
 
@@ -139,9 +141,9 @@ object expandSolverStep {
         val availablePredicates: collection.Seq[Expression] =
           qg.selections.predicatesGiven(availableSymbols + patternRel.name + otherSide)
         val (
-          nodePredicates: Seq[VariablePredicate],
-          relationshipPredicates: Seq[VariablePredicate],
-          solvedPredicates: Seq[Expression]
+          nodePredicates: ListSet[VariablePredicate],
+          relationshipPredicates: ListSet[VariablePredicate],
+          solvedPredicates: ListSet[Expression]
         ) =
           extractPredicates(
             availablePredicates,

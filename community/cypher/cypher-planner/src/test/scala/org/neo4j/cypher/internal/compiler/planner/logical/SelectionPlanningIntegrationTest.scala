@@ -33,7 +33,10 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.PredicateOrdering
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 import org.scalatest.Inside
+
+import scala.collection.immutable.ListSet
 
 class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     with LogicalPlanningIntegrationTestSupport with Inside {
@@ -76,7 +79,7 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
       // But unapply takes the order into account for [[Ands]].
       case Selection(
-          Ands(Seq(
+          Ands(SetExtractor(
             `nParam`,
             `nProp`,
             `nFooBar`,
@@ -107,7 +110,7 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
       // But unapply takes the order into account for [[Ands]].
       case Selection(
-          Ands(Seq(
+          Ands(SetExtractor(
             `nPropChain`, // more selective, but needs to access deeply nested property
             `nProp`
           )),
@@ -133,7 +136,7 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       // But unapply takes the order into account for [[Ands]].
       case Projection(
           Selection(
-            Ands(Seq(
+            Ands(SetExtractor(
               `nPropFoo`, // more selective
               `nPropBar` // is cached, but needs ro read from store
             )),
@@ -154,14 +157,12 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       .build()
       .plan("MATCH (n:N) WHERE n.bar IS NOT NULL WITH n AS nn WHERE nn.foo = 2 AND nn.bar > 2 RETURN nn.bar")
 
-    val noArgs = Set.empty[String]
-
     plan.stripProduceResults should beLike {
       // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
       // But unapply takes the order into account for [[Ands]].
       case Projection(
           Selection(
-            Ands(Seq(
+            Ands(SetExtractor(
               `nPropBar`, // is cached and does not need to read from store
               `nPropFoo` // more selective
             )),
@@ -191,10 +192,10 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     plans.foreach { plan =>
       plan should beLike {
         // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
-        // But unapply takes the order into account for [[Ands]].
+        // But SetExtractor.unapply takes the order into account for [[Ands]].
         case Projection(
             Selection(
-              Ands(Seq(
+              Ands(SetExtractor(
                 `nPropFoo1`, // more selective
                 `nPropFoo2`
               )),
@@ -221,7 +222,7 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
 
     inside(plan) {
       case Selection(Ands(predicates), _) =>
-        predicates.length shouldBe 5
+        predicates.size shouldBe 5
         predicates.last shouldBe lessThan(
           prop("n", "otherProp"),
           prop("n", "yetAnotherProp")

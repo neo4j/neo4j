@@ -40,6 +40,8 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.util.InputPosition
 
+import scala.collection.immutable.ListSet
+
 case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable: SemanticTable)
     extends ListSupport {
 
@@ -154,7 +156,7 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
       plannerQuery
         .amendQueryGraph(_.mapSelections {
           case Selections(predicates) =>
-            val newPredicates = groupInequalityPredicates(predicates.toSeq).toSet
+            val newPredicates = groupInequalityPredicates(ListSet.from(predicates))
             Selections(newPredicates)
         })
         .updateTail(groupInequalities)
@@ -221,17 +223,21 @@ object PlannerQueryBuilder {
         acc + (name -> (pred -> relTypes))
 
       // WHERE r:REL OR r:OTHER_REL
-      case (acc, pred @ Predicate(_, Ors(HasTypes(Variable(name), headRelTypes) +: exprs))) =>
-        val tailRelTypesOnTheSameVariable = exprs.collect {
-          case HasTypes(Variable(`name`), relTypes) => relTypes
-        }.toSeq
+      case (acc, pred @ Predicate(_, ors: Ors)) =>
+        ors.exprs.head match {
+          case HasTypes(Variable(name), _) =>
+            val relTypesOnTheSameVariable = ors.exprs.flatMap {
+              case HasTypes(Variable(`name`), relTypes) => relTypes
+              case _                                    => ListSet.empty
+            }
 
-        // all predicates must refer to the same variable to be equivalent to [r:A|B|C]
-        if (tailRelTypesOnTheSameVariable.length == exprs.length) {
-          val oredRelTypes = (headRelTypes +: tailRelTypesOnTheSameVariable).flatten
-          acc + (name -> (pred -> oredRelTypes))
-        } else {
-          acc
+            // all predicates must refer to the same variable to be equivalent to [r:A|B|C]
+            if (relTypesOnTheSameVariable.size == ors.exprs.size) {
+              acc + (name -> (pred -> relTypesOnTheSameVariable.toSeq))
+            } else {
+              acc
+            }
+          case _ => acc
         }
 
       case (acc, _) =>

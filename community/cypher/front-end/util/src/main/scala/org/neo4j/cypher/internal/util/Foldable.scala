@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.util
 import org.neo4j.cypher.internal.util.Foldable.Folder
 
 import scala.annotation.tailrec
+import scala.collection.immutable.ListSet
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
@@ -36,16 +37,29 @@ object Foldable {
 
     def reverseTreeChildren: Iterator[AnyRef] = that match {
       case s: collection.Seq[_] => s.reverseIterator.asInstanceOf[Iterator[AnyRef]]
-      case s: Set[_]            => s.iterator.asInstanceOf[Iterator[AnyRef]]
-      case m: Map[_, _]         => m.iterator.asInstanceOf[Iterator[AnyRef]]
-      case p: Product           => reverseProductIterator(p)
-      case _                    => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
+      // For list sets, the order matters. However, they are otherwise matched as Sets and therefore not reversed.
+      // Therefore, we need to handle them separately.
+      case s: ListSet[_] => reverseListSetIterator(s).asInstanceOf[Iterator[AnyRef]]
+      case s: Set[_]     => s.iterator.asInstanceOf[Iterator[AnyRef]]
+      case m: Map[_, _]  => m.iterator.asInstanceOf[Iterator[AnyRef]]
+      case p: Product    => reverseProductIterator(p)
+      case _             => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
+    }
+
+    def reverseListSetIterator[A](listSet: ListSet[A]): Iterator[A] = {
+      var values = listSet
+      val reversed = List.newBuilder[A]
+      while (values.nonEmpty) {
+        reversed.addOne(values.last)
+        values = values.init
+      }
+      reversed.result().iterator
     }
 
     private def reverseProductIterator(p: Product) = new Iterator[AnyRef] {
       private var c: Int = p.productArity - 1
-      def hasNext = c >= 0
-      def next() = { val result = p.productElement(c).asInstanceOf[AnyRef]; c -= 1; result }
+      override def hasNext: Boolean = c >= 0
+      override def next(): AnyRef = { val result = p.productElement(c).asInstanceOf[AnyRef]; c -= 1; result }
     }
   }
 

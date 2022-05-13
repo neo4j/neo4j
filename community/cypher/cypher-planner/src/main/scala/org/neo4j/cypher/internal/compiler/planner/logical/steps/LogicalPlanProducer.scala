@@ -750,9 +750,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     dir: SemanticDirection,
     to: String,
     pattern: PatternRelationship,
-    relationshipPredicates: Seq[VariablePredicate],
-    nodePredicates: Seq[VariablePredicate],
-    solvedPredicates: Seq[Expression],
+    relationshipPredicates: ListSet[VariablePredicate],
+    nodePredicates: ListSet[VariablePredicate],
+    solvedPredicates: ListSet[Expression],
     mode: ExpansionMode,
     context: LogicalPlanningContext
   ): LogicalPlan = pattern.length match {
@@ -761,7 +761,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
       val solved = solveds.get(source.id).asSinglePlannerQuery.amendQueryGraph(_
         .addPatternRelationship(pattern)
-        .addPredicates(solvedPredicates: _*))
+        .addPredicates(solvedPredicates.toSeq: _*))
 
       val solver = SubqueryExpressionSolver.solverFor(source, context)
 
@@ -794,8 +794,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
           relName = pattern.name,
           length = l,
           mode = mode,
-          nodePredicates = rewrittenNodePredicates,
-          relationshipPredicates = rewrittenRelationshipPredicates
+          nodePredicates = rewrittenNodePredicates.toSeq,
+          relationshipPredicates = rewrittenRelationshipPredicates.toSeq
         ),
         solved,
         providedOrders.get(source.id).fromLeft,

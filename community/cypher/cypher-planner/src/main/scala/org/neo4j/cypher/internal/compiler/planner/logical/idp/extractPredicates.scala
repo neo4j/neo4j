@@ -33,12 +33,14 @@ import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 
+import scala.collection.immutable.ListSet
+
 object extractPredicates {
 
   // Using type predicates to make this more readable.
-  type NodePredicates = List[VariablePredicate]
-  type RelationshipPredicates = List[VariablePredicate]
-  type SolvedPredicates = List[Expression] // for marking predicates as solved
+  type NodePredicates = ListSet[VariablePredicate]
+  type RelationshipPredicates = ListSet[VariablePredicate]
+  type SolvedPredicates = ListSet[Expression] // for marking predicates as solved
 
   def apply(
     availablePredicates: collection.Seq[Expression],
@@ -55,7 +57,7 @@ object extractPredicates {
     During the folding, we also accumulate the original predicate, which we can mark as solved by this plan.
      */
     val seed: (NodePredicates, RelationshipPredicates, SolvedPredicates) =
-      (List.empty, List.empty, List.empty)
+      (ListSet.empty, ListSet.empty, ListSet.empty)
 
     /**
      * Checks if an inner predicate depends on the path (i.e. the original start node or relationship). In that case
@@ -75,7 +77,7 @@ object extractPredicates {
       case ((n, e, s), p @ AllRelationships(variable, `originalRelationshipName`, innerPredicate))
         if !innerPredicate.dependencies.exists(_.name == targetNodeName) =>
         val predicate = VariablePredicate(variable, innerPredicate)
-        (n, e :+ predicate, s :+ p)
+        (n, e + predicate, s + p)
 
       // MATCH p = (a)-[x*]->(b) WHERE ALL(r in relationships(p) WHERE r.prop > 5)
       case (
@@ -83,7 +85,7 @@ object extractPredicates {
           p @ AllRelationshipsInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate)
         ) if !pathDependent(innerPredicate) =>
         val predicate = VariablePredicate(variable, innerPredicate)
-        (n, e :+ predicate, s :+ p)
+        (n, e + predicate, s + p)
 
       // MATCH p = ()-[*]->() WHERE NONE(r in relationships(p) WHERE <innerPredicate>)
       case (
@@ -91,19 +93,19 @@ object extractPredicates {
           p @ NoRelationshipInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate)
         ) if !pathDependent(innerPredicate) =>
         val predicate = VariablePredicate(variable, Not(innerPredicate)(innerPredicate.position))
-        (n, e :+ predicate, s :+ p)
+        (n, e + predicate, s + p)
 
       // MATCH p = ()-[*]->() WHERE ALL(r in nodes(p) WHERE <innerPredicate>)
       case ((n, e, s), p @ AllNodesInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate))
         if !pathDependent(innerPredicate) =>
         val predicate = VariablePredicate(variable, innerPredicate)
-        (n :+ predicate, e, s :+ p)
+        (n + predicate, e, s + p)
 
       // MATCH p = ()-[*]->() WHERE NONE(r in nodes(p) WHERE <innerPredicate>)
       case ((n, e, s), p @ NoNodeInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate))
         if !pathDependent(innerPredicate) =>
         val predicate = VariablePredicate(variable, Not(innerPredicate)(innerPredicate.position))
-        (n :+ predicate, e, s :+ p)
+        (n + predicate, e, s + p)
 
       case (acc, _) =>
         acc

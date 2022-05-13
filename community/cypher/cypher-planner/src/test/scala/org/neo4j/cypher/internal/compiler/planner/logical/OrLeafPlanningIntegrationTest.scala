@@ -800,6 +800,50 @@ class OrLeafPlanningIntegrationTest
     ))
   }
 
+  test("should handle same relationship type disjunction") {
+    val planner = plannerConfig()
+      .setRelationshipCardinality("(:L)-[:REL1]->()", 4)
+      .build()
+
+    val plan = planner.plan(
+      """MATCH (a:L)-[:REL1|REL1]->(b)
+        |RETURN b""".stripMargin
+    )
+
+    // we should not plan a union distinct
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("b")
+        .expandAll("(a)-[anon_0:REL1|REL1]->(b)")
+        .nodeByLabelScan("a", "L")
+        .build()
+    )
+  }
+
+  test("should handle query with complex but essentially false selection") {
+    val planner = plannerConfig()
+      .build()
+
+    // this should not throw
+    val plan = planner.plan(
+      """MATCH (n:L)
+        |WHERE (n.a AND (NOT ((n.a OR n.a) AND false))) XOR n.a
+        |RETURN n""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n")
+        .filter(
+          "not cacheNFromStore[n.a]",
+          "CoerceToPredicate(cacheNFromStore[n.a])",
+          "not cacheNFromStore[n.a] OR cacheNFromStore[n.a]"
+        )
+        .nodeByLabelScan("n", "L")
+        .build()
+    )
+  }
+
   test("should work with index disjunction of conjunctions") {
     val cfg = plannerConfig()
       .addNodeIndex("L", Seq("p1"), 0.5, 0.5)

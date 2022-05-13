@@ -40,6 +40,8 @@ import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.topDown
 
+import scala.collection.immutable.ListSet
+
 case class simplifyPredicates(semanticState: SemanticState) extends Rewriter {
   private val T = True()(null)
   private val F = False()(null)
@@ -78,20 +80,15 @@ case class simplifyPredicates(semanticState: SemanticState) extends Rewriter {
         simplifyToInnerExpression(p, nonFalse.head)
       else
         Ors(nonFalse)(p.position)
-    case p @ Ors(conditions) =>
-      val distinctConditions = conditions.distinct
-      if (distinctConditions eq conditions) p else p.copy(distinctConditions)(p.position)
-    case p @ Ands(conditions) =>
-      val distinctConditions = conditions.distinct
-      if (distinctConditions eq conditions) p else p.copy(distinctConditions)(p.position)
-
     // technically, this is not simplification but it helps addressing the separate predicates in the conjunction
     case all @ AllIterablePredicate(fs @ FilterScope(variable, Some(Ands(preds))), expression) =>
-      val predicates = preds.map { predicate =>
+      val predicates: ListSet[Expression] = preds.map { predicate =>
         AllIterablePredicate(FilterScope(variable, Some(predicate))(fs.position), expression)(all.position)
       }
       Ands(predicates)(all.position)
-    case expression => expression
+    case p @ Not(True())  => False()(p.position)
+    case p @ Not(False()) => True()(p.position)
+    case expression       => expression
   }
 
   private def simplifyToInnerExpression(outerExpression: BooleanExpression, innerExpression: Expression) = {

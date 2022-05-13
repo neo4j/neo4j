@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.planner
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
-import org.scalactic.Prettifier
 
 trait LogicalPlanTestOps {
 

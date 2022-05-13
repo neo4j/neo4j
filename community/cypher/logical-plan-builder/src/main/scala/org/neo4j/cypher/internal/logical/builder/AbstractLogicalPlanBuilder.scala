@@ -574,7 +574,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def optionalExpandAll(pattern: String, predicate: Option[String] = None): IMPL =
     optionalExpandAll(
       patternParser.parse(pattern),
-      predicate.map(parseExpression).map(p => Ands(Seq(p))(p.position))
+      predicate.map(parseExpression).map(p => Ands(ListSet(p))(p.position))
     )
 
   private def optionalExpandAll(pattern: PatternParser.Pattern, predicate: Option[Expression]): IMPL = {
@@ -609,7 +609,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val p = patternParser.parse(pattern)
     p.length match {
       case SimplePatternLength =>
-        val pred = predicate.map(parseExpression).map(p => Ands(Seq(p))(p.position))
+        val pred = predicate.map(parseExpression).map(p => Ands(ListSet(p))(p.position))
         appendAtCurrentIndent(UnaryOperator(lp =>
           OptionalExpand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandInto, pred)(_)
         ))

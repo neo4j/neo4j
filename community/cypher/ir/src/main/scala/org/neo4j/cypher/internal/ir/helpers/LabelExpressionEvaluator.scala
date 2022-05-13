@@ -71,10 +71,10 @@ object LabelExpressionEvaluator {
       case Or(lhs, rhs)  => TailRecOption.tailcall(evalBinFunc(nodes, lhs, rhs, labels, (lhs, rhs) => lhs || rhs))
       case Not(expr)     => TailRecOption.tailcall(labelExpressionEvaluator(expr, nodes, labels)).map(!_)
       case Ors(exprs) =>
-        TailRecOption.traverse(exprs)(expr => labelExpressionEvaluator(expr, nodes, labels))
+        TailRecOption.traverse(exprs.toSeq)(expr => labelExpressionEvaluator(expr, nodes, labels))
           .map(_.contains(true))
       case Ands(exprs) =>
-        TailRecOption.traverse(exprs)(expr => labelExpressionEvaluator(expr, nodes, labels))
+        TailRecOption.traverse(exprs.toSeq)(expr => labelExpressionEvaluator(expr, nodes, labels))
           .map(!_.contains(false))
       case Xor(lhs, rhs)       => evalBinFunc(nodes, lhs, rhs, labels, (lhs, rhs) => lhs ^ rhs)
       case Equals(lhs, rhs)    => evalBinFunc(nodes, lhs, rhs, labels, (lhs, rhs) => lhs == rhs)

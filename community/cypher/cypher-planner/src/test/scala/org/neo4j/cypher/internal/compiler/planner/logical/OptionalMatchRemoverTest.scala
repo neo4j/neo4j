@@ -789,7 +789,15 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       val original = getTheWholePlannerQueryFrom(originalQuery.stripMargin, actualGen)
 
       val result = removeGeneratedNamesAndParamsOnTree(original.endoRewrite(fixedPoint(rewriter(actualGen))))
-      assert(result === expected, "\nWas not rewritten correctly\n" + originalQuery)
+      assert(
+        result === expected,
+        s"""$originalQuery
+           |Was not rewritten correctly:
+           |  Expected:
+           |$expected
+           |  But got:
+           |$result""".stripMargin
+      )
     }
 
     def is_not_rewritten(): Unit = {

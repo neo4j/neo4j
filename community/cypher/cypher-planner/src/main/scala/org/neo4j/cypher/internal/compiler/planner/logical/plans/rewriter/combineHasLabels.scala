@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 
+import scala.collection.immutable.ListSet
+
 /**
  * Optimisation that combines multiple has label predicates, like
  * `n:SomeLabel OR n:OtherLabel` into the specialised `HasAnyLabel` expression.
@@ -39,26 +41,27 @@ case object combineHasLabels extends Rewriter {
   )
 
   private def rewrite(ors: Ors): Expression = {
-    val (lonelyHasLabels, nonRewritable) = ors.exprs.partition {
-      case HasLabels(_, labels) if labels.size == 1 => true
-      case _                                        => false
+    val (lonelyHasLabels, nonRewritable) = ors.exprs.partitionMap {
+      case hasLabels @ HasLabels(_, labels) if labels.size == 1 => Left(hasLabels)
+      case expression                                           => Right(expression)
     }
 
-    val rewrittenHasLabels = lonelyHasLabels
-      .map { case hasLabels: HasLabels => hasLabels }
-      .groupBy(_.expression).toSeq
-      .map {
-        case (_, Seq(singleHasLabels)) => singleHasLabels
-        case (entity, hasLabels) => HasAnyLabel(entity, hasLabels.flatMap(_.labels).distinct.toSeq)(entity.position)
-      }
+    val rewrittenHasLabels = ListSet.from(
+      lonelyHasLabels
+        .groupBy(_.expression)
+        .map {
+          case (_, singleHasLabels) if singleHasLabels.size == 1 => singleHasLabels.head
+          case (entity, hasLabels) => HasAnyLabel(entity, hasLabels.flatMap(_.labels).toSeq)(entity.position)
+        }
+    )
 
     if (rewrittenHasLabels.size == lonelyHasLabels.size) {
       ors
     } else {
       val predicates = nonRewritable ++ rewrittenHasLabels
       predicates match {
-        case Seq(singlePredicate) => singlePredicate
-        case manyPredicates       => Ors(manyPredicates)(ors.position)
+        case singlePredicate if singlePredicate.size == 1 => singlePredicate.head
+        case manyPredicates                               => Ors(manyPredicates)(ors.position)
       }
     }
   }

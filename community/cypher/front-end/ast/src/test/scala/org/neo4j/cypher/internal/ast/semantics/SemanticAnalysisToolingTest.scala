@@ -89,7 +89,7 @@ class SemanticAnalysisToolingTest extends CypherFunSuite with AstConstructionTes
     val checkResult = SemanticExpressionCheck.check(SemanticContext.Simple, expression).apply(SemanticState.clean)
 
     // Then
-    checkResult.state.typeTable.get(varExpr).get.expected should be(Some(CTBoolean.covariant))
+    checkResult.state.typeTable(varExpr).expected should be(Some(CTBoolean.covariant))
   }
 
   test("withState should work") {

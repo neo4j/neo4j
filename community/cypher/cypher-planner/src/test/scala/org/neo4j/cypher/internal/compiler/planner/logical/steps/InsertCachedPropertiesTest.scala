@@ -1024,8 +1024,10 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     val builderTable = builder.getSemanticTable
     val initialTable = builderTable
-      .copy(types = builderTable.types
-        .updated(nProp1, ExpressionTypeInfo(CTInteger)))
+      .copy(types =
+        builderTable.types
+          .updated(nProp1, ExpressionTypeInfo(CTInteger))
+      )
 
     val plan = builder.build()
     val (newPlan, _) = replace(plan, initialTable)
@@ -1208,9 +1210,8 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
         from: LogicalPlanState,
         context: PlannerContext,
         s: Selection
-      ): Seq[Expression] = {
-        s.predicate.exprs.sortBy(_.folder.treeCount { case _: Property => true }).toSeq
-      }
+      ): Seq[Expression] =
+        s.predicate.exprs.toSeq.sortBy(_.folder.treeCount { case _: Property => true })
     }
 
     val plannerContext = mock[PlannerContext]

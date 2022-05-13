@@ -31,6 +31,8 @@ import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 
+import scala.collection.immutable.ListSet
+
 /**
  * This transforms
  *
@@ -43,9 +45,9 @@ import org.neo4j.cypher.internal.util.topDown
  * i.e it groups inequalities by property lookup and collects each group of inequalities into
  * an instance of AndedPropertyInequalities
  */
-object groupInequalityPredicates extends (collection.Seq[Predicate] => collection.Seq[Predicate]) {
+object groupInequalityPredicates extends (ListSet[Predicate] => ListSet[Predicate]) {
 
-  override def apply(inputPredicates: collection.Seq[Predicate]): collection.Seq[Predicate] = {
+  override def apply(inputPredicates: ListSet[Predicate]): ListSet[Predicate] = {
 
     // categorize predicates according to whether they contain an inequality on a property or not
     val (propertyInequalities, otherPredicates) = inputPredicates.partition {

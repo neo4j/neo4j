@@ -1209,7 +1209,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
         .apply()
         .|.nodeIndexOperator("x:Honey(prop < 20)", getValue = _ => DoNotGetValue, indexType = IndexType.RANGE)
         .apply()
-        .|.nodeIndexOperator("x:Honey(prop <= 20)", getValue = { case "prop" => GetValue }, indexType = IndexType.RANGE)
+        .|.nodeIndexOperator("x:Honey(prop <= 20)", getValue = Map("prop" -> GetValue), indexType = IndexType.RANGE)
         .apply()
         .|.nodeIndexOperator(
           "x:Honey(prop = 10, prop2 = '20')",

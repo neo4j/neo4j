@@ -150,6 +150,17 @@ class LiteralReplacementTest extends CypherFunSuite {
     )
   }
 
+  test("should extract in the correct order from Ands") {
+    assertRewrite(
+      "MATCH (n) WHERE 10 < n.prop < 20 RETURN n",
+      "MATCH (n) WHERE $`  AUTOINT0` < n.prop < $`  AUTOINT1` RETURN n",
+      Map(
+        "  AUTOINT0" -> 10,
+        "  AUTOINT1" -> 20
+      )
+    )
+  }
+
   private def assertDoesNotRewrite(query: String): Unit = {
     assertRewrite(query, query, Map.empty)
   }

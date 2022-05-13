@@ -48,6 +48,8 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.util.InputPosition
 
+import scala.collection.immutable.ListSet
+
 object OrLeafPlanner {
 
   /**
@@ -93,7 +95,7 @@ object OrLeafPlanner {
    */
   case class DisjunctionForOneVariable(
     variableName: String,
-    predicates: collection.Seq[DistributablePredicate],
+    predicates: Iterable[DistributablePredicate],
     interestingOrderCandidates: Seq[InterestingOrderCandidate]
   ) {
     override def toString: String = predicates.mkString(" OR ")
@@ -120,7 +122,7 @@ object OrLeafPlanner {
    */
   final case object WhereClausePredicateKind extends PredicateKind {
 
-    private def variableIfAllEqualHasLabelsOrRelTypes(expressions: collection.Seq[Expression]): Option[Expression] = {
+    private def variableIfAllEqualHasLabelsOrRelTypes(expressions: Iterable[Expression]): Option[Expression] = {
       expressions.headOption
         .collect {
           case HasLabels(variable, _) => variable
@@ -231,7 +233,7 @@ object OrLeafPlanner {
   final case object InlinedRelationshipTypePredicateKind extends PredicateKind {
 
     override def findDisjunctions(qg: QueryGraph): Seq[DisjunctionForOneVariable] = qg.patternRelationships.collect {
-      case PatternRelationship(name, _, _, types, SimplePatternLength) if types.length > 1 =>
+      case PatternRelationship(name, _, _, types, SimplePatternLength) if types.distinct.length > 1 =>
         val interestingOrderCandidates = for {
           // ASC before DESC because it is slightly cheaper
           indexOrder <- Seq(Asc(_, Map.empty), Desc(_, Map.empty))
@@ -239,7 +241,7 @@ object OrLeafPlanner {
 
         DisjunctionForOneVariable(
           name,
-          types.map(InlinedRelationshipTypePredicate(name, _)),
+          ListSet.from(types.map(InlinedRelationshipTypePredicate(name, _))),
           interestingOrderCandidates
         )
     }.toSeq
@@ -399,38 +401,42 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
     }
 
     def mergePlansWithUnion(plans: Array[LogicalPlan], joinedSolvedQueryGraph: QueryGraph): LogicalPlan = {
-      // Determines if we can plan OrderedUnion
-      val maybeSortColumn = Option(context.planningAttributes.providedOrders(plans.head.id))
-        // We only support a sorted union if the plans are sorted by a single column.
-        .filter(_.columns.size == 1)
-        // All plans must be ordered by the same thing.
-        .filter(head => plans.tail.map(p => context.planningAttributes.providedOrders(p.id)).forall(_ == head))
-        .flatMap(_.columns.headOption)
-        // The only sort column must be by a variable. Convert to a logical plan ColumnOrder.
-        .collect {
-          case ordering.ColumnOrder.Asc(v @ Variable(varName), _)  => (v, logical.plans.Ascending(varName))
-          case ordering.ColumnOrder.Desc(v @ Variable(varName), _) => (v, logical.plans.Descending(varName))
-        }
+      plans match {
+        case Array(singlePlan) => singlePlan
+        case _                 =>
+          // Determines if we can plan OrderedUnion
+          val maybeSortColumn = Option(context.planningAttributes.providedOrders(plans.head.id))
+            // We only support a sorted union if the plans are sorted by a single column.
+            .filter(_.columns.size == 1)
+            // All plans must be ordered by the same thing.
+            .filter(head => plans.tail.map(p => context.planningAttributes.providedOrders(p.id)).forall(_ == head))
+            .flatMap(_.columns.headOption)
+            // The only sort column must be by a variable. Convert to a logical plan ColumnOrder.
+            .collect {
+              case ordering.ColumnOrder.Asc(v @ Variable(varName), _)  => (v, logical.plans.Ascending(varName))
+              case ordering.ColumnOrder.Desc(v @ Variable(varName), _) => (v, logical.plans.Descending(varName))
+            }
 
-      // Join the plans with Union
-      val unionPlan = plans.reduce[LogicalPlan] {
-        case (p1, p2) =>
-          maybeSortColumn match {
-            case Some((_, sortColumn)) =>
-              context.logicalPlanProducer.planOrderedUnion(p1, p2, List(), Seq(sortColumn), context)
-            case None => context.logicalPlanProducer.planUnion(p1, p2, List(), context)
+          // Join the plans with Union
+          val unionPlan = plans.reduce[LogicalPlan] {
+            case (p1, p2) =>
+              maybeSortColumn match {
+                case Some((_, sortColumn)) =>
+                  context.logicalPlanProducer.planOrderedUnion(p1, p2, List(), Seq(sortColumn), context)
+                case None => context.logicalPlanProducer.planUnion(p1, p2, List(), context)
+              }
           }
-      }
 
-      // Plan a single Distinct on top
-      val orPlan = maybeSortColumn match {
-        case Some((sortVariable, _)) =>
-          context.logicalPlanProducer.planOrderedDistinctForUnion(unionPlan, Seq(sortVariable), context)
-        case None => context.logicalPlanProducer.planDistinctForUnion(unionPlan, context)
-      }
+          // Plan a single Distinct on top
+          val orPlan = maybeSortColumn match {
+            case Some((sortVariable, _)) =>
+              context.logicalPlanProducer.planOrderedDistinctForUnion(unionPlan, Seq(sortVariable), context)
+            case None => context.logicalPlanProducer.planDistinctForUnion(unionPlan, context)
+          }
 
-      // Update solved with the joinedSolvedQueryGraph
-      context.logicalPlanProducer.updateSolvedForOr(orPlan, joinedSolvedQueryGraph, context)
+          // Update solved with the joinedSolvedQueryGraph
+          context.logicalPlanProducer.updateSolvedForOr(orPlan, joinedSolvedQueryGraph, context)
+      }
     }
 
     for {
@@ -438,7 +444,7 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
       disjunction <- predicateKind.findDisjunctions(qg)
       // Maximum number of predicates on a single variable after which we give up trying to plan a distinct union to avoid stack overflow errors.
       // It was introduced after a query with > 7k types in a single relationship pattern landed us in trouble.
-      if disjunction.predicates.length <= context.predicatesAsUnionMaxSize
+      if disjunction.predicates.size <= context.predicatesAsUnionMaxSize
       plansPerExpression = findPlansPerPredicate(disjunction)
       // We can only solve the whole OR. If one predicate didn't yield any plan, we have to give up.
       if plansPerExpression.forall(_.nonEmpty)
@@ -446,6 +452,7 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
       combinations = combine(plansPerExpression)
       plans <- combinations
       if plans.nonEmpty
-    } yield mergePlansWithUnion(plans, computeJoinedSolvedQueryGraph(plans, disjunction))
+      distinctPlans = plans.distinct
+    } yield mergePlansWithUnion(distinctPlans, computeJoinedSolvedQueryGraph(distinctPlans, disjunction))
   }
 }

@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
@@ -31,6 +30,8 @@ import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+
+import scala.collection.immutable.ListSet
 
 class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -53,11 +54,11 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
       extractPredicates(Seq(rewrittenPredicate), "r", "n", "  UNNAMED0")
 
     nodePredicates shouldBe empty
-    relationshipPredicates shouldBe List(VariablePredicate(
+    relationshipPredicates shouldBe ListSet(VariablePredicate(
       varFor("  FRESHID15"),
       propEquality("  FRESHID15", "prop", 42)
     ))
-    solvedPredicates shouldBe List(rewrittenPredicate)
+    solvedPredicates shouldBe ListSet(rewrittenPredicate)
   }
 
   test("(n)-[x*]->(m) WHERE ALL(r in x WHERE  r.prop < 4)") {
@@ -80,8 +81,8 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
       extractPredicates(Seq(rewrittenPredicate), "x", "n", "m")
 
     nodePredicates shouldBe empty
-    relationshipPredicates shouldBe List(VariablePredicate(varFor("r"), propLessThan("r", "prop", 4)))
-    solvedPredicates shouldBe List(rewrittenPredicate)
+    relationshipPredicates shouldBe ListSet(VariablePredicate(varFor("r"), propLessThan("r", "prop", 4)))
+    solvedPredicates shouldBe ListSet(rewrittenPredicate)
   }
 
   test(
@@ -121,9 +122,9 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
       extractPredicates(Seq(rewrittenRelPredicate, rewrittenNodePredicate), "x", "n", "o")
 
-    nodePredicates shouldBe List(VariablePredicate(varFor("m"), isNotNull(prop("m", "prop"))))
-    relationshipPredicates shouldBe List(VariablePredicate(varFor("r"), not(propLessThan("r", "prop", 4))))
-    solvedPredicates shouldBe List(rewrittenRelPredicate, rewrittenNodePredicate)
+    nodePredicates shouldBe ListSet(VariablePredicate(varFor("m"), isNotNull(prop("m", "prop"))))
+    relationshipPredicates shouldBe ListSet(VariablePredicate(varFor("r"), not(propLessThan("r", "prop", 4))))
+    solvedPredicates shouldBe ListSet(rewrittenRelPredicate, rewrittenNodePredicate)
   }
 
   test("p = (n)-[r*1]->(m) WHERE ALL (x IN nodes(p) WHERE x.prop = n.prop") {
@@ -143,9 +144,9 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
       extractPredicates(Seq(rewrittenPredicate), "r", "n", "m")
 
-    nodePredicates shouldBe List(VariablePredicate(varFor("x"), equals(prop("x", "prop"), prop("n", "prop"))))
+    nodePredicates shouldBe ListSet(VariablePredicate(varFor("x"), equals(prop("x", "prop"), prop("n", "prop"))))
     relationshipPredicates shouldBe empty
-    solvedPredicates shouldBe List(rewrittenPredicate)
+    solvedPredicates shouldBe ListSet(rewrittenPredicate)
   }
 
   test("p = (n)-[r*1]->(m) WHERE ALL (x IN nodes(p) WHERE length(p) = 1)") {
@@ -300,9 +301,9 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
       extractPredicates(rewrittenPredicates, "r", "a", "b")
 
     nodePredicates shouldBe empty
-    relationshipPredicates shouldBe Seq(
+    relationshipPredicates shouldBe ListSet(
       VariablePredicate(varFor("x"), equals(prop("x", "aProp"), prop("a", "prop")))
     )
-    solvedPredicates shouldBe Seq(solvableAllPredicate)
+    solvedPredicates shouldBe ListSet(solvableAllPredicate)
   }
 }

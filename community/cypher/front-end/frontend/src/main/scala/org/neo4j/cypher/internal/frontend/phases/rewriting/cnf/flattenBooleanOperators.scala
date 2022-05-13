@@ -29,12 +29,14 @@ import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.inSequence
 
+import scala.collection.immutable.ListSet
+
 case object flattenBooleanOperators extends Rewriter with CnfPhase {
   def apply(that: AnyRef): AnyRef = instance.apply(that)
 
   private val firstStep: Rewriter = Rewriter.lift {
-    case p @ And(lhs, rhs) => Ands(Seq(lhs, rhs))(p.position)
-    case p @ Or(lhs, rhs)  => Ors(Seq(lhs, rhs))(p.position)
+    case p @ And(lhs, rhs) => Ands(ListSet(lhs, rhs))(p.position)
+    case p @ Or(lhs, rhs)  => Ors(ListSet(lhs, rhs))(p.position)
   }
 
   private val secondStep: Rewriter = Rewriter.lift {

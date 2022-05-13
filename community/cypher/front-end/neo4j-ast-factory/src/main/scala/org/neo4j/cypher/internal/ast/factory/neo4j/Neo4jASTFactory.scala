@@ -959,7 +959,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
   override def and(p: InputPosition, lhs: Expression, rhs: Expression): Expression = And(lhs, rhs)(p)
 
-  override def ands(exprs: util.List[Expression]): Expression = Ands(exprs.asScala.toList)(exprs.get(0).position)
+  override def ands(exprs: util.List[Expression]): Expression = Ands(exprs.asScala)(exprs.get(0).position)
 
   override def not(p: InputPosition, e: Expression): Expression = Not(e)(p)
 

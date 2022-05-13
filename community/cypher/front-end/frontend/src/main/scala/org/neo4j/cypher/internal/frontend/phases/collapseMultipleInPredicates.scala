@@ -38,7 +38,7 @@ case object InPredicatesCollapsed extends StepSequencer.Condition
  * These can later be turned into index lookups or node-by-id ops.
  *
  * Example:
- * MATCH (n) WHERE n.prop IN [1,2,3] OR n.prop IN [4,5,6] RETURN n.prop
+ * MATCH (n) WHERE n.prop IN [1,2,3] OR n.prop IN [4,5,6]
  * -> MATCH (n) WHERE n.prop IN [1,2,3,4,5,6]
  */
 case object collapseMultipleInPredicates extends StatementRewriter with StepSequencer.Step
@@ -48,10 +48,11 @@ case object collapseMultipleInPredicates extends StatementRewriter with StepSequ
   override def instance(from: BaseState, context: BaseContext): Rewriter = bottomUp(
     rewriter = Rewriter.lift {
       case predicate @ Ors(booleanExpressions) =>
-        val (expressionsToRewrite: Seq[Expression], nonRewritable: Seq[Expression]) = booleanExpressions.partition {
-          case In(_, _: ListLiteral) => true
-          case _                     => false
-        }
+        val (expressionsToRewrite, nonRewritable) =
+          booleanExpressions.partition {
+            case In(_, _: ListLiteral) => true
+            case _                     => false
+          }
 
         // We regroup the expressions by their left hand side
         val insByLhs = expressionsToRewrite.flatMap {
@@ -69,9 +70,9 @@ case object collapseMultipleInPredicates extends StatementRewriter with StepSequ
         // Return the original non-rewritten expressions together with our new ones
         val allNewExpressions = nonRewritable ++ reorderedInExpressions
         allNewExpressions match {
-          case head :: Nil if !reorderedInExpressions.isEmpty =>
+          case exprs if exprs.size == 1 && reorderedInExpressions.nonEmpty =>
             // we only have one element from reorderedInExpressions
-            head
+            exprs.head
           case l => Ors(l)(predicate.position)
         }
     },

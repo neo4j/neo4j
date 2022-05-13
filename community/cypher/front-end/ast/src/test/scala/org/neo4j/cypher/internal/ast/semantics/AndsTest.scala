@@ -18,8 +18,11 @@ package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.DummyExpression
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
+
+import scala.collection.immutable.ListSet
 
 class AndsTest extends SemanticFunSuite {
 
@@ -27,7 +30,7 @@ class AndsTest extends SemanticFunSuite {
     val dummyExpr1 = DummyExpression(CTBoolean, DummyPosition(1))
     val dummyExpr2 = DummyExpression(CTBoolean, DummyPosition(2))
     val dummyExpr3 = DummyExpression(CTBoolean, DummyPosition(3))
-    val ands = Ands(Seq(dummyExpr1, dummyExpr2, dummyExpr3))(pos)
+    val ands = Ands(ListSet[Expression](dummyExpr1, dummyExpr2, dummyExpr3))(pos)
     val result = SemanticExpressionCheck.simple(ands)(SemanticState.clean)
 
     result.errors shouldBe empty

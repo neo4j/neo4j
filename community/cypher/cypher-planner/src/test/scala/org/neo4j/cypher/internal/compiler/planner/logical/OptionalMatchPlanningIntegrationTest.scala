@@ -60,6 +60,8 @@ import org.scalatest.Inside
 
 import java.lang.Boolean.FALSE
 
+import scala.collection.immutable.ListSet
+
 class OptionalMatchIDPPlanningIntegrationTest
     extends OptionalMatchPlanningIntegrationTest(QueryGraphSolverWithIDPConnectComponents)
 
@@ -340,7 +342,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         ) =>
         args should equal(Set("r", "a1"))
         val predicate = equals(varFor("a1"), varFor("a2"))
-        predicates.exprs should equal(Seq(predicate))
+        predicates.exprs should equal(ListSet(predicate))
     }
   }
 
@@ -406,7 +408,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         "m",
         "r",
         ExpandAll,
-        Some(Ands.create(Seq(hasLabels("m", "Y"), equals(prop("m", "prop"), literalInt(42)))))
+        Some(Ands.create(ListSet(hasLabels("m", "Y"), equals(prop("m", "prop"), literalInt(42)))))
       )
     )
   }
@@ -621,9 +623,9 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       s"""MATCH (a: A)
          |WITH a, 1 AS horizon
          |MATCH (b: B)
-         |// all nodes coming in as arguments to the optional expand will be seen as join nodes 
+         |// all nodes coming in as arguments to the optional expand will be seen as join nodes
          |// (this fails to plan a hash join because "a" is seen as a join node and a comes from the outer scope.)
-         |OPTIONAL MATCH (b)--(c{foo:a.prop}) 
+         |OPTIONAL MATCH (b)--(c{foo:a.prop})
          |USING JOIN ON b
          |RETURN a.name, b.name""".stripMargin
 

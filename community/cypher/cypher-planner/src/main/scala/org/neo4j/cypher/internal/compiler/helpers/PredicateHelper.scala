@@ -36,6 +36,8 @@ import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.util.symbols
 import org.neo4j.exceptions.InternalException
 
+import scala.collection.immutable.ListSet
+
 object PredicateHelper {
 
   /**
@@ -48,7 +50,7 @@ object PredicateHelper {
     Ands(predicates.map(coerceToPredicate))(predicates.map(coerceToPredicate).head.position)
   }
 
-  def coercePredicates(predicates: Seq[Expression]): Expression = Ands.create(predicates.map(coerceToPredicate))
+  def coercePredicates(predicates: ListSet[Expression]): Expression = Ands.create(predicates.map(coerceToPredicate))
 
   def coerceToPredicate(predicate: Expression): Expression = predicate match {
     case e: ListComprehension => GreaterThan(

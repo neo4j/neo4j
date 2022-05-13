@@ -1,0 +1,55 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.cypher.internal.ir.helpers
+
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.ir.Predicate
+import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
+import org.scalatest.FunSuite
+import org.scalatest.Matchers.convertToAnyShouldWrapper
+import org.scalatest.Matchers.equal
+
+class ExpressionConvertersTest extends FunSuite with AstConstructionTestSupport {
+
+  test("should convert predicates in the right order") {
+    val expression = Ands(Seq(
+      hasLabels(varFor("n"), "L", "N"),
+      hasTypes("m", "P"),
+      propGreaterThan("n", "prop", 42),
+      hasLabels(varFor("o"), "L", "N"),
+      hasTypes("p", "P"),
+      propGreaterThan("o", "prop", 42)
+    ))(pos)
+
+    expression.asPredicates should equal(
+      Set(
+        Predicate(Set("n"), hasLabels("n", "L")),
+        Predicate(Set("n"), hasLabels("n", "N")),
+        Predicate(Set("m"), hasTypes("m", "P")),
+        Predicate(Set("n"), propGreaterThan("n", "prop", 42)),
+        Predicate(Set("o"), hasLabels("o", "L")),
+        Predicate(Set("o"), hasLabels("o", "N")),
+        Predicate(Set("p"), hasTypes("p", "P")),
+        Predicate(Set("o"), propGreaterThan("o", "prop", 42))
+      )
+    )
+  }
+}

@@ -339,7 +339,7 @@ class IndexPlanningIntegrationTest
   private def plannerBaseConfigForDistancePredicateTests(): StatisticsBackedLogicalPlanningConfigurationBuilder =
     plannerBuilder()
       .setAllNodesCardinality(100)
-      .setLabelCardinality("Place", 50)
+      .setLabelCardinality("Place", 40)
       .setLabelCardinality("Preference", 50)
       .setRelationshipCardinality("(:Place)-[]->()", 20)
       .setRelationshipCardinality("(:Place)-[]->(:Preference)", 20)

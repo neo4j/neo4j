@@ -46,6 +46,8 @@ import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 
+import scala.collection.immutable.ListSet
+
 object ExpressionConverters {
 
   private def normalizer(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) =
@@ -125,12 +127,12 @@ object ExpressionConverters {
 
   implicit class PredicateConverter(val predicate: Expression) extends AnyVal {
 
-    def asPredicates: Set[Predicate] = {
-      asPredicates(Set.empty)
+    def asPredicates: ListSet[Predicate] = {
+      asPredicates(ListSet.empty)
     }
 
-    def asPredicates(outerScope: Set[String]): Set[Predicate] = {
-      predicate.folder.treeFold(Set.empty[Predicate]) {
+    def asPredicates(outerScope: Set[String]): ListSet[Predicate] = {
+      predicate.folder.treeFold(ListSet.empty[Predicate]) {
         // n:Label
         case p @ HasLabels(Variable(name), labels) =>
           acc =>

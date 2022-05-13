@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
+import scala.collection.immutable.ListSet
+
 class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val n_prop1 = prop("n", "prop1")
@@ -36,26 +38,26 @@ class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionT
   private val m_prop2 = prop("m", "prop2")
 
   test("Should handle single predicate") {
-    groupInequalityPredicates(Seq(pred(lessThan(n_prop1, literalInt(1))))).toSet should equal(Set(anded(
+    groupInequalityPredicates(ListSet(pred(lessThan(n_prop1, literalInt(1))))).toSet should equal(Set(anded(
       n_prop1,
       lessThan(n_prop1, literalInt(1))
     )))
-    groupInequalityPredicates(Seq(pred(lessThanOrEqual(n_prop1, literalInt(1))))).toSet should equal(Set(anded(
+    groupInequalityPredicates(ListSet(pred(lessThanOrEqual(n_prop1, literalInt(1))))).toSet should equal(Set(anded(
       n_prop1,
       lessThanOrEqual(n_prop1, literalInt(1))
     )))
-    groupInequalityPredicates(Seq(pred(greaterThan(n_prop1, literalInt(1))))).toSet should equal(Set(anded(
+    groupInequalityPredicates(ListSet(pred(greaterThan(n_prop1, literalInt(1))))).toSet should equal(Set(anded(
       n_prop1,
       greaterThan(n_prop1, literalInt(1))
     )))
-    groupInequalityPredicates(Seq(pred(greaterThanOrEqual(n_prop1, literalInt(1))))).toSet should equal(Set(anded(
+    groupInequalityPredicates(ListSet(pred(greaterThanOrEqual(n_prop1, literalInt(1))))).toSet should equal(Set(anded(
       n_prop1,
       greaterThanOrEqual(n_prop1, literalInt(1))
     )))
   }
 
   test("Should group by lhs property") {
-    groupInequalityPredicates(Seq(
+    groupInequalityPredicates(ListSet(
       pred(lessThan(n_prop1, literalInt(1))),
       pred(lessThanOrEqual(n_prop1, literalInt(2))),
       pred(lessThan(m_prop1, literalInt(3))),
@@ -69,7 +71,7 @@ class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionT
   }
 
   test("Should keep other predicates when encountering both inequality and other predicates") {
-    groupInequalityPredicates(Seq(
+    groupInequalityPredicates(ListSet(
       pred(lessThan(n_prop1, literalInt(1))),
       pred(equals(n_prop1, literalInt(1)))
     )).toSet should equal(Set(
@@ -79,7 +81,7 @@ class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionT
   }
 
   test("Should keep other predicates when encountering only other predicates") {
-    groupInequalityPredicates(Seq(
+    groupInequalityPredicates(ListSet(
       pred(equals(n_prop1, literalInt(1))),
       pred(equals(m_prop2, literalInt(2)))
     )).toSet should equal(Set(
@@ -89,7 +91,7 @@ class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionT
   }
 
   test("Should not group inequalities on non-property lookups") {
-    groupInequalityPredicates(Seq(
+    groupInequalityPredicates(ListSet(
       pred(lessThan(varFor("x"), literalInt(1))),
       pred(greaterThanOrEqual(varFor("x"), literalInt(1)))
     )).toSet should equal(Set(
@@ -99,7 +101,7 @@ class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionT
   }
 
   test("Should group inside an Ands") {
-    groupInequalityPredicates(Seq(
+    groupInequalityPredicates(ListSet(
       pred(equals(n_prop1, literalInt(1))),
       pred(ors(ands(
         lessThan(m_prop1, literalInt(3)),
@@ -118,7 +120,7 @@ class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionT
   }
 
   test("Should group inside an Ands and squash if only one expression remains") {
-    groupInequalityPredicates(Seq(
+    groupInequalityPredicates(ListSet(
       pred(equals(n_prop1, literalInt(1))),
       pred(ors(ands(
         lessThan(m_prop1, literalInt(3)),

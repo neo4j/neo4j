@@ -22,6 +22,8 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTString
 
+import scala.collection.immutable.ListSet
+
 case class And(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression
     with BinaryOperatorExpression {
 
@@ -32,7 +34,7 @@ case class And(lhs: Expression, rhs: Expression)(val position: InputPosition) ex
 
 object Ands {
 
-  def create(exprs: collection.Seq[Expression]): Expression = {
+  def create(exprs: ListSet[Expression]): Expression = {
     val size = exprs.size
     if (size == 0)
       True()(InputPosition.NONE)
@@ -40,6 +42,10 @@ object Ands {
       exprs.head
     else
       Ands(exprs)(exprs.head.position)
+  }
+
+  def apply(exprs: Iterable[Expression])(position: InputPosition): Ands = {
+    Ands(ListSet.from(exprs))(position)
   }
 }
 
@@ -49,11 +55,9 @@ object Ands {
  * but equals and hashCode are overridden to get set semantics for comparison
  * (we assume set semantics when tracking solved expressions during planing)
  */
-case class Ands(exprs: collection.Seq[Expression])(val position: InputPosition) extends BooleanExpression
+case class Ands(exprs: ListSet[Expression])(val position: InputPosition) extends BooleanExpression
     with MultiOperatorExpression {
   override def canonicalOperatorSymbol = "AND"
-
-  private val exprSet = exprs.toSet
 
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector.fill(exprs.size)(CTBoolean), outputType = CTBoolean)
@@ -61,12 +65,12 @@ case class Ands(exprs: collection.Seq[Expression])(val position: InputPosition) 
 
   override def equals(other: Any): Boolean =
     other match {
-      case that: Ands => (that canEqual this) && (exprSet == that.exprSet)
+      case that: Ands => (that canEqual this) && (exprs == that.exprs)
       case _          => false
     }
 
   override def hashCode(): Int =
-    31 * exprSet.hashCode()
+    31 * exprs.hashCode()
 }
 
 case class Or(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression
@@ -77,17 +81,22 @@ case class Or(lhs: Expression, rhs: Expression)(val position: InputPosition) ext
   )
 }
 
+object Ors {
+
+  def apply(exprs: Seq[Expression])(position: InputPosition): Ors = {
+    Ors(ListSet.from(exprs))(position)
+  }
+}
+
 /**
  * Disjunction of multiple expressions.
  * The order of expressions is retained as a Seq (was previously a Set),
  * but equals and hashCode are overridden to get set semantics for comparison
  * (we assume set semantics when tracking solved expressions during planing)
  */
-case class Ors(exprs: collection.Seq[Expression])(val position: InputPosition) extends BooleanExpression
+case class Ors(exprs: ListSet[Expression])(val position: InputPosition) extends BooleanExpression
     with MultiOperatorExpression {
   override def canonicalOperatorSymbol = "OR"
-
-  private val exprSet = exprs.toSet
 
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector.fill(exprs.size)(CTBoolean), outputType = CTBoolean)
@@ -95,12 +104,12 @@ case class Ors(exprs: collection.Seq[Expression])(val position: InputPosition) e
 
   override def equals(other: Any): Boolean =
     other match {
-      case that: Ors => (that canEqual this) && (exprSet == that.exprSet)
+      case that: Ors => (that canEqual this) && (that.exprs == exprs)
       case _         => false
     }
 
   override def hashCode(): Int =
-    31 * exprSet.hashCode()
+    31 * exprs.hashCode()
 }
 
 case class Xor(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression
