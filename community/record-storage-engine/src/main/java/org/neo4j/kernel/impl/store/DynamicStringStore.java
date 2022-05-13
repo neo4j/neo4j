@@ -48,7 +48,6 @@ public class DynamicStringStore extends AbstractDynamicStore {
             InternalLogProvider logProvider,
             int dataSizeFromConfiguration,
             RecordFormat<DynamicRecord> recordFormat,
-            String storeVersion,
             DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
             ImmutableSet<OpenOption> openOptions) {
@@ -63,7 +62,6 @@ public class DynamicStringStore extends AbstractDynamicStore {
                 TYPE_DESCRIPTOR,
                 dataSizeFromConfiguration,
                 recordFormat,
-                storeVersion,
                 readOnlyChecker,
                 databaseName,
                 openOptions);

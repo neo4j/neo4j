@@ -68,7 +68,6 @@ public abstract class TokenStore<RECORD extends TokenRecord> extends CommonAbstr
             DynamicStringStore nameStore,
             String typeDescriptor,
             RecordFormat<RECORD> recordFormat,
-            String storeVersion,
             DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
             CursorType cursorType,
@@ -85,7 +84,6 @@ public abstract class TokenStore<RECORD extends TokenRecord> extends CommonAbstr
                 typeDescriptor,
                 recordFormat,
                 NO_STORE_HEADER_FORMAT,
-                storeVersion,
                 readOnlyChecker,
                 databaseName,
                 openOptions);

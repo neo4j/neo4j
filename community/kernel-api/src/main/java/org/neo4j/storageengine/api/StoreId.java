@@ -20,6 +20,7 @@
 package org.neo4j.storageengine.api;
 
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.util.Objects;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadableChannel;
@@ -35,6 +36,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
  * and get rid of the 'String' and 'long' representation of store version and {@link LegacyStoreId}.
  */
 public class StoreId extends StoreVersionIdentifier {
+
     private final long creationTime;
     private final long random;
 
@@ -48,6 +50,17 @@ public class StoreId extends StoreVersionIdentifier {
         super(storageEngineName, formatFamilyName, majorVersion, minorVersion);
         this.creationTime = creationTime;
         this.random = random;
+    }
+
+    public static StoreId generateNew(
+            String storageEngineName, String formatFamilyName, int majorVersion, int minorVersion) {
+        return new StoreId(
+                System.currentTimeMillis(),
+                new SecureRandom().nextLong(),
+                storageEngineName,
+                formatFamilyName,
+                majorVersion,
+                minorVersion);
     }
 
     public long getCreationTime() {

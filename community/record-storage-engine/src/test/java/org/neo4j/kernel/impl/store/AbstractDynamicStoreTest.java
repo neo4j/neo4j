@@ -253,7 +253,6 @@ class AbstractDynamicStoreTest {
                         "test",
                         BLOCK_SIZE,
                         formats.dynamic(),
-                        formats.storeVersion(),
                         DatabaseReadOnlyChecker.writable(),
                         DEFAULT_DATABASE_NAME,
                         immutable.of(PageCacheOpenOptions.BIG_ENDIAN)) {

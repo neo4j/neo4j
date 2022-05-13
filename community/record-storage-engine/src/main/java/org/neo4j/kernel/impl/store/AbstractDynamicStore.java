@@ -81,7 +81,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
             String typeDescriptor,
             int dataSizeFromConfiguration,
             RecordFormat<DynamicRecord> recordFormat,
-            String storeVersion,
             DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
             ImmutableSet<OpenOption> openOptions) {
@@ -96,7 +95,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
                 typeDescriptor,
                 recordFormat,
                 new DynamicStoreHeaderFormat(dataSizeFromConfiguration, recordFormat),
-                storeVersion,
                 readOnlyChecker,
                 databaseName,
                 openOptions);

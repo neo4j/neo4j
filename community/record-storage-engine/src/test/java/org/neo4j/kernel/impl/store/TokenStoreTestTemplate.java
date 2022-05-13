@@ -103,7 +103,6 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord> {
                 logProvider,
                 TokenStore.NAME_STORE_BLOCK_SIZE,
                 formats.dynamic(),
-                formats.storeVersion(),
                 writable(),
                 DEFAULT_DATABASE_NAME,
                 immutable.empty());

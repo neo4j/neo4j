@@ -57,7 +57,6 @@ public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGrou
                 TYPE_DESCRIPTOR,
                 recordFormats.relationshipGroup(),
                 new IntStoreHeaderFormat(config.get(GraphDatabaseSettings.dense_node_threshold)),
-                recordFormats.storeVersion(),
                 readOnlyChecker,
                 databaseName,
                 openOptions);

@@ -86,7 +86,6 @@ public class NodeStore extends CommonAbstractStore<NodeRecord, NoStoreHeader> {
                 TYPE_DESCRIPTOR,
                 recordFormats.node(),
                 NO_STORE_HEADER_FORMAT,
-                recordFormats.storeVersion(),
                 readOnlyChecker,
                 databaseName,
                 openOptions);

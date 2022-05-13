@@ -63,7 +63,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreIdUsage;
 import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreRecords;
-import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreVersions;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaState;
@@ -595,7 +594,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     public void dumpDiagnostics(InternalLog errorLog, DiagnosticsLogger diagnosticsLog) {
         DiagnosticsManager.dump(new NeoStoreIdUsage(neoStores), errorLog, diagnosticsLog);
         DiagnosticsManager.dump(new NeoStoreRecords(neoStores), errorLog, diagnosticsLog);
-        DiagnosticsManager.dump(new NeoStoreVersions(neoStores), errorLog, diagnosticsLog);
     }
 
     @Override

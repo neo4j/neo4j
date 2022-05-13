@@ -64,7 +64,6 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord> {
                 nameStore,
                 TYPE_DESCRIPTOR,
                 recordFormats.propertyKeyToken(),
-                recordFormats.storeVersion(),
                 readOnlyChecker,
                 databaseName,
                 PROPERTY_KEY_TOKEN_CURSOR,

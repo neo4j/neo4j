@@ -129,7 +129,6 @@ public class DynamicArrayStore extends AbstractDynamicStore {
                 TYPE_DESCRIPTOR,
                 dataSizeFromConfiguration,
                 recordFormats.dynamic(),
-                recordFormats.storeVersion(),
                 readOnlyChecker,
                 databaseName,
                 openOptions);

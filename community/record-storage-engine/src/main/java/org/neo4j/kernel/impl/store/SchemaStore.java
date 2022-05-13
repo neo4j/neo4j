@@ -125,7 +125,6 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord, IntStoreHeade
                 TYPE_DESCRIPTOR,
                 recordFormats.schema(),
                 getStoreHeaderFormat(),
-                recordFormats.storeVersion(),
                 readOnlyChecker,
                 databaseName,
                 openOptions);

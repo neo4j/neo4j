@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
@@ -48,6 +49,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -118,6 +120,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     private final AtomicLong logVersion = new AtomicLong();
     private final AtomicLong checkpointLogVersion = new AtomicLong();
     private final AtomicLong lastCommittingTx = new AtomicLong(NOT_INITIALIZED);
+    private final Supplier<StoreId> storeIdFactory;
     private volatile long latestConstraintIntroducingTxId;
     private volatile KernelVersion kernelVersion;
 
@@ -137,11 +140,11 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
             PageCache pageCache,
             InternalLogProvider logProvider,
             RecordFormat<MetaDataRecord> recordFormat,
-            String storeVersion,
             DatabaseReadOnlyChecker readOnlyChecker,
             LogTailMetadata logTailMetadata,
             String databaseName,
-            ImmutableSet<OpenOption> openOptions) {
+            ImmutableSet<OpenOption> openOptions,
+            Supplier<StoreId> storeIdFactory) {
         super(
                 file,
                 null,
@@ -153,7 +156,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
                 TYPE_DESCRIPTOR,
                 recordFormat,
                 NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT,
-                storeVersion,
                 readOnlyChecker,
                 databaseName,
                 openOptions);
@@ -161,6 +163,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         checkpointLogVersion.set(logTailMetadata.getCheckpointLogVersion());
         kernelVersion = logTailMetadata.getKernelVersion();
         logVersion.set(logTailMetadata.getLogVersion());
+        this.storeIdFactory = storeIdFactory;
         var lastCommittedTx = logTailMetadata.getLastCommittedTransaction();
         lastCommittingTx.set(lastCommittedTx.transactionId());
         highestCommittedTransaction.set(
@@ -177,8 +180,15 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     @Override
     protected void initialiseNewStoreFile(CursorContext cursorContext) throws IOException {
         super.initialiseNewStoreFile(cursorContext);
-        LegacyStoreId storeId = new LegacyStoreId(StoreVersion.versionStringToLong(storeVersion));
-        generateMetadataFile(storeId, UUID.randomUUID(), NOT_INITIALIZED_UUID, cursorContext);
+        StoreId storeId = storeIdFactory.get();
+        // TODO: this is am ugly temporary solution until the new Store ID is stored in meta data store
+        var format =
+                RecordFormatSelector.selectForStoreVersionIdentifier(storeId).orElseThrow();
+        LegacyStoreId legacyStoreId = new LegacyStoreId(
+                storeId.getCreationTime(),
+                storeId.getRandom(),
+                StoreVersion.versionStringToLong(format.storeVersion()));
+        generateMetadataFile(legacyStoreId, UUID.randomUUID(), NOT_INITIALIZED_UUID, cursorContext);
     }
 
     @Override

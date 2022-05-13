@@ -63,7 +63,6 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord> {
                 nameStore,
                 TYPE_DESCRIPTOR,
                 recordFormats.labelToken(),
-                recordFormats.storeVersion(),
                 readOnlyChecker,
                 databaseName,
                 LABEL_TOKEN_CURSOR,

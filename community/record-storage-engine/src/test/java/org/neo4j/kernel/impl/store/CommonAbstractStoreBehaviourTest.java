@@ -438,7 +438,6 @@ class CommonAbstractStoreBehaviourTest {
                     "T",
                     format,
                     format,
-                    "XYZ",
                     DatabaseReadOnlyChecker.writable(),
                     DEFAULT_DATABASE_NAME,
                     immutable.empty());

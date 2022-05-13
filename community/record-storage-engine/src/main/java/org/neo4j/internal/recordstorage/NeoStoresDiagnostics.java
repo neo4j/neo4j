@@ -24,16 +24,6 @@ import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.kernel.impl.store.NeoStores;
 
 public abstract class NeoStoresDiagnostics extends NamedDiagnosticsProvider {
-    public static class NeoStoreVersions extends NeoStoresDiagnostics {
-        NeoStoreVersions(NeoStores nodeStores) {
-            super(nodeStores, "Store versions");
-        }
-
-        @Override
-        protected void dump(NeoStores neoStores, DiagnosticsLogger logger) {
-            neoStores.logVersions(logger);
-        }
-    }
 
     public static class NeoStoreIdUsage extends NeoStoresDiagnostics {
 

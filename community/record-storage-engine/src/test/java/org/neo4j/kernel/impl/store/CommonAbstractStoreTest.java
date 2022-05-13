@@ -264,21 +264,6 @@ class CommonAbstractStoreTest {
                 .containsMessages(format("%s[%s]: used=0 high=0", TheStore.TYPE_DESCRIPTOR, storeFile.getFileName()));
     }
 
-    @Test
-    public void shouldIncludeFileNameInStoreVersionPrintout() {
-        // given
-        TheStore store = newStore();
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-
-        // when
-        store.logVersions(logProvider.getLog(TheStore.class)::info);
-
-        // then
-        LogAssertions.assertThat(logProvider)
-                .containsMessages(
-                        format("%s[%s] %s", TheStore.TYPE_DESCRIPTOR, storeFile.getFileName(), TheStore.STORE_VERSION));
-    }
-
     private TheStore newStore() {
         InternalLogProvider log = NullLogProvider.getInstance();
         TheStore store = new TheStore(
@@ -324,7 +309,6 @@ class CommonAbstractStoreTest {
                     TYPE_DESCRIPTOR,
                     recordFormat,
                     NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT,
-                    STORE_VERSION,
                     writable(),
                     DEFAULT_DATABASE_NAME,
                     openOptions);

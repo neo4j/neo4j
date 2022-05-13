@@ -40,6 +40,7 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.internal.recordstorage.RecordIdType;
+import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -52,6 +53,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.logging.InternalLogProvider;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
 /**
@@ -367,10 +369,6 @@ public class NeoStores implements AutoCloseable {
         visitStores(CommonAbstractStore::checkStoreOk);
     }
 
-    public void logVersions(DiagnosticsLogger msgLog) {
-        visitStores(store -> store.logVersions(msgLog));
-    }
-
     public void logIdUsage(DiagnosticsLogger msgLog) {
         try (var cursorContext = contextFactory.create(ID_USAGE_LOGGER_TAG)) {
             visitStores(store -> store.logIdUsage(msgLog, cursorContext));
@@ -580,11 +578,15 @@ public class NeoStores implements AutoCloseable {
                         pageCache,
                         logProvider,
                         recordFormats.metaData(),
-                        recordFormats.storeVersion(),
                         readOnlyChecker,
                         logTailMetadata,
                         layout.getDatabaseName(),
-                        openOptions),
+                        openOptions,
+                        () -> StoreId.generateNew(
+                                RecordStorageEngineFactory.NAME,
+                                recordFormats.getFormatFamily().name(),
+                                recordFormats.majorVersion(),
+                                recordFormats.minorVersion())),
                 contextFactory);
     }
 
@@ -609,7 +611,6 @@ public class NeoStores implements AutoCloseable {
                         logProvider,
                         blockSize,
                         recordFormats.dynamic(),
-                        recordFormats.storeVersion(),
                         readOnlyChecker,
                         layout.getDatabaseName(),
                         openOptions),

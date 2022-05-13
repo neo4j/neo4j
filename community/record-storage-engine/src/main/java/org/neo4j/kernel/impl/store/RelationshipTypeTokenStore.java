@@ -64,7 +64,6 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
                 nameStore,
                 TYPE_DESCRIPTOR,
                 recordFormats.relationshipTypeToken(),
-                recordFormats.storeVersion(),
                 readOnlyChecker,
                 databaseName,
                 REL_TYPE_TOKEN_CURSOR,

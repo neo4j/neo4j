@@ -81,7 +81,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     protected final IdType idType;
     protected final IdGeneratorFactory idGeneratorFactory;
     protected final InternalLog log;
-    protected final String storeVersion;
     protected final RecordFormat<RECORD> recordFormat;
     final Path storageFile;
     private final Path idFile;
@@ -127,7 +126,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
             String typeDescriptor,
             RecordFormat<RECORD> recordFormat,
             StoreHeaderFormat<HEADER> storeHeaderFormat,
-            String storeVersion,
             DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
             ImmutableSet<OpenOption> openOptions) {
@@ -140,7 +138,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
         this.typeDescriptor = typeDescriptor;
         this.recordFormat = recordFormat;
         this.storeHeaderFormat = storeHeaderFormat;
-        this.storeVersion = storeVersion;
         this.databaseName = databaseName;
         this.openOptions = openOptions;
         this.readOnlyChecker = readOnlyChecker;
@@ -714,11 +711,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
 
     public IdType getIdType() {
         return idType;
-    }
-
-    void logVersions(DiagnosticsLogger logger) {
-        logger.log(
-                String.format("%s[%s] %s", getTypeDescriptor(), getStorageFile().getFileName(), storeVersion));
     }
 
     void logIdUsage(DiagnosticsLogger logger, CursorContext cursorContext) {

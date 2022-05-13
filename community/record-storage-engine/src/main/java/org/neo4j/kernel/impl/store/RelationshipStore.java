@@ -61,7 +61,6 @@ public class RelationshipStore extends CommonAbstractStore<RelationshipRecord, N
                 TYPE_DESCRIPTOR,
                 recordFormats.relationship(),
                 NO_STORE_HEADER_FORMAT,
-                recordFormats.storeVersion(),
                 readOnlyChecker,
                 databaseName,
                 openOptions);

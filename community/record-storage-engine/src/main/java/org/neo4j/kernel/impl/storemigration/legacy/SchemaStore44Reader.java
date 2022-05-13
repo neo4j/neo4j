@@ -440,7 +440,6 @@ public class SchemaStore44Reader implements AutoCloseable {
                     TYPE_DESCRIPTOR,
                     recordFormats.schema(),
                     VALID_STORE_HEADER,
-                    recordFormats.storeVersion(),
                     readOnlyChecker,
                     databaseName,
                     openOptions);

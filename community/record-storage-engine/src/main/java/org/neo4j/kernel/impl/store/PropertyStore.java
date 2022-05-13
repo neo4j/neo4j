@@ -185,7 +185,6 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
                 TYPE_DESCRIPTOR,
                 recordFormats.property(),
                 NO_STORE_HEADER_FORMAT,
-                recordFormats.storeVersion(),
                 readOnlyChecker,
                 databaseName,
                 openOptions);
