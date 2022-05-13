@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -137,7 +138,7 @@ trait FragmentTestUtils {
   val frontend: FabricFrontEnd = FabricFrontEnd(cypherConfig, monitors, signatures, cacheFactory)
 
   def pipeline(query: String): frontend.Pipeline =
-    frontend.Pipeline(frontend.preParsing.preParse(query), params)
+    frontend.Pipeline(frontend.preParsing.preParse(query), params, CancellationChecker.NeverCancelled)
 
   def fragment(query: String): Fragment = {
     val state = pipeline(query).parseAndPrepare.process()

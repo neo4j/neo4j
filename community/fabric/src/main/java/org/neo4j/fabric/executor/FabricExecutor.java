@@ -121,7 +121,9 @@ public class FabricExecutor {
                     .getTransactionInfo()
                     .getSessionDatabaseId()
                     .name();
-            FabricPlanner.PlannerInstance plannerInstance = planner.instance(statement, parameters, defaultGraphName);
+
+            FabricPlanner.PlannerInstance plannerInstance =
+                    planner.instance(statement, parameters, defaultGraphName, fabricTransaction.cancellationChecker());
             UseEvaluation.Instance useEvaluator = useEvaluation.instance(statement);
             FabricPlan plan = plannerInstance.plan();
             Fragment query = plan.query();

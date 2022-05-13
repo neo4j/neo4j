@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.fabric.cache.FabricQueryCache
 import org.neo4j.fabric.config.FabricConfig
@@ -55,19 +56,32 @@ case class FabricPlanner(
     if (name.isPresent) Some(name.get().name()) else None
   }
 
-  def instance(queryString: String, queryParams: MapValue, defaultGraphName: String): PlannerInstance = {
+  def instance(
+    queryString: String,
+    queryParams: MapValue,
+    defaultGraphName: String
+  ): PlannerInstance =
+    instance(queryString, queryParams, defaultGraphName, CancellationChecker.NeverCancelled)
+
+  def instance(
+    queryString: String,
+    queryParams: MapValue,
+    defaultGraphName: String,
+    cancellationChecker: CancellationChecker
+  ): PlannerInstance = {
     val query = frontend.preParsing.preParse(queryString)
-    PlannerInstance(query, queryParams, defaultGraphName, fabricContextName)
+    PlannerInstance(query, queryParams, defaultGraphName, fabricContextName, cancellationChecker)
   }
 
   case class PlannerInstance(
     query: PreParsedQuery,
     queryParams: MapValue,
     defaultContextName: String,
-    fabricContextName: Option[String]
+    fabricContextName: Option[String],
+    cancellationChecker: CancellationChecker
   ) {
 
-    private lazy val pipeline = frontend.Pipeline(query, queryParams)
+    private lazy val pipeline = frontend.Pipeline(query, queryParams, cancellationChecker)
 
     lazy val plan: FabricPlan = {
       val plan = queryCache.computeIfAbsent(

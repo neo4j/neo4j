@@ -93,7 +93,8 @@ case class FabricFrontEnd(
 
   case class Pipeline(
     query: PreParsedQuery,
-    params: MapValue
+    params: MapValue,
+    cancellationChecker: CancellationChecker
   ) {
 
     def traceStart(): CompilationTracer.QueryCompilationEvent =
@@ -105,7 +106,7 @@ case class FabricFrontEnd(
       query.rawStatement,
       Some(query.options.offset),
       WrappedMonitors(kernelMonitors),
-      CancellationChecker.NeverCancelled
+      cancellationChecker
     )
 
     private val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator

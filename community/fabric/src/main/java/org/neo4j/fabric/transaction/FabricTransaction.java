@@ -22,6 +22,7 @@ package org.neo4j.fabric.transaction;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import org.neo4j.cypher.internal.util.CancellationChecker;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
@@ -64,4 +65,6 @@ public interface FabricTransaction {
 
         NamedDatabaseId getSessionDatabaseId();
     }
+
+    CancellationChecker cancellationChecker();
 }

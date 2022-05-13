@@ -34,6 +34,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.neo4j.cypher.internal.util.CancellationChecker;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.executor.Exceptions;
@@ -442,6 +443,11 @@ public class FabricTransactionImpl
         }
 
         markForTermination(reason);
+    }
+
+    @Override
+    public CancellationChecker cancellationChecker() {
+        return this::checkTransactionOpenForStatementExecution;
     }
 
     private FabricException multipleWriteError(Location attempt) {
