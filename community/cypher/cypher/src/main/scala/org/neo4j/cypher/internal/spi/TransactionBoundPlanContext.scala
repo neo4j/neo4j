@@ -45,8 +45,6 @@ import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
-import org.neo4j.cypher.internal.util.symbols
-import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.exceptions.KernelException
 import org.neo4j.internal.kernel.api.InternalIndexState
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
@@ -57,7 +55,6 @@ import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.logging.InternalLog
-import org.neo4j.values.storable.ValueCategory
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.ListHasAsScala
@@ -118,28 +115,6 @@ object TransactionBoundPlanContext {
         threadSafe = fcn.threadSafe()
       ))
     }
-  }
-
-  /**
-   * Translate a Cypher Type to a ValueCategory that IndexReference can handle
-   */
-  private def typeToValueCategory(in: CypherType): ValueCategory = in match {
-    case _: symbols.IntegerType |
-      _: symbols.FloatType =>
-      ValueCategory.NUMBER
-
-    case _: symbols.StringType =>
-      ValueCategory.TEXT
-
-    case _: symbols.GeometryType | _: symbols.PointType =>
-      ValueCategory.GEOMETRY
-
-    case _: symbols.DateTimeType | _: symbols.LocalDateTimeType | _: symbols.DateType | _: symbols.TimeType | _: symbols.LocalTimeType | _: symbols.DurationType =>
-      ValueCategory.TEMPORAL
-
-    // For everything else, we don't know
-    case _ =>
-      ValueCategory.UNKNOWN
   }
 }
 

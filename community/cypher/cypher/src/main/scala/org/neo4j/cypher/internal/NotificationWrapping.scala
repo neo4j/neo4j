@@ -48,7 +48,6 @@ import org.neo4j.cypher.internal.util.DeprecatedAmbiguousGroupingNotification
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
-import org.neo4j.cypher.internal.util.DeprecatedRepeatedRelVarInPatternExpression
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
