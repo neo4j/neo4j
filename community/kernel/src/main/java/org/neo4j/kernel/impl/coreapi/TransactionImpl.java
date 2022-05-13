@@ -28,6 +28,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceItera
 import static org.neo4j.internal.helpers.collection.Iterators.filter;
 import static org.neo4j.internal.helpers.collection.Iterators.firstOrDefault;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
 import static org.neo4j.kernel.impl.newapi.CursorPredicates.nodeMatchProperties;
 import static org.neo4j.kernel.impl.newapi.CursorPredicates.relationshipMatchProperties;
@@ -66,8 +67,11 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.internal.helpers.collection.AbstractResourceIterable;
+import org.neo4j.internal.kernel.api.CloseListener;
+import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -82,6 +86,7 @@ import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.ValueIndexCursor;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
@@ -434,6 +439,19 @@ public class TransactionImpl extends EntityValidationTransactionImpl {
         PropertyIndexQuery query = getIndexQuery(value, searchMode, propertyId);
         IndexDescriptor index = findUsableMatchingIndex(
                 transaction, SchemaDescriptors.forLabel(labelId, propertyId), IndexType.TEXT, query);
+
+        // We didn't find an index, but we might be able to used RANGE and filtering - let's see
+        if (index == IndexDescriptor.NO_INDEX
+                && (searchMode == StringSearchMode.SUFFIX || searchMode == StringSearchMode.CONTAINS)) {
+            PropertyIndexQuery.RangePredicate<?> allStringQuery =
+                    PropertyIndexQuery.range(propertyId, (String) null, false, null, false);
+            index = findUsableMatchingIndex(
+                    transaction, SchemaDescriptors.forLabel(labelId, propertyId), allStringQuery);
+            if (index != IndexDescriptor.NO_INDEX && index.getCapability().supportsReturningValues()) {
+                return nodesByLabelAndPropertyWithFiltering(transaction, labelId, allStringQuery, index, query);
+            }
+        }
+
         return nodesByLabelAndProperty(transaction, labelId, query, index);
     }
 
@@ -518,6 +536,19 @@ public class TransactionImpl extends EntityValidationTransactionImpl {
         PropertyIndexQuery query = getIndexQuery(template, searchMode, propertyId);
         IndexDescriptor index = findUsableMatchingIndex(
                 transaction, SchemaDescriptors.forRelType(typeId, propertyId), IndexType.TEXT, query);
+
+        // We didn't find an index, but we might be able to used RANGE and filtering - let's see
+        if (index == IndexDescriptor.NO_INDEX
+                && (searchMode == StringSearchMode.SUFFIX || searchMode == StringSearchMode.CONTAINS)) {
+            PropertyIndexQuery.RangePredicate<?> allStringQuery =
+                    PropertyIndexQuery.range(propertyId, (String) null, false, null, false);
+            index = findUsableMatchingIndex(
+                    transaction, SchemaDescriptors.forRelType(typeId, propertyId), allStringQuery);
+            if (index != IndexDescriptor.NO_INDEX && index.getCapability().supportsReturningValues()) {
+                return relationshipsByTypeAndPropertyWithFiltering(transaction, typeId, allStringQuery, index, query);
+            }
+        }
+
         return relationshipsByTypeAndProperty(transaction, typeId, query, index);
     }
 
@@ -799,6 +830,32 @@ public class TransactionImpl extends EntityValidationTransactionImpl {
         return getNodesByLabelAndPropertyWithoutPropertyIndex(transaction, labelId, query);
     }
 
+    private ResourceIterator<Node> nodesByLabelAndPropertyWithFiltering(
+            KernelTransaction transaction,
+            int labelId,
+            PropertyIndexQuery query,
+            IndexDescriptor index,
+            PropertyIndexQuery originalQuery) {
+        Read read = transaction.dataRead();
+        try {
+            NodeValueIndexCursor cursor = transaction
+                    .cursors()
+                    .allocateNodeValueIndexCursor(transaction.cursorContext(), transaction.memoryTracker());
+            IndexReadSession indexSession = read.indexReadSession(index);
+            read.nodeIndexSeek(transaction.queryContext(), indexSession, cursor, unorderedValues(), query);
+
+            return new TrackedCursorIterator<>(
+                    new FilteringCursor<>(cursor, originalQuery),
+                    c -> cursor.nodeReference(),
+                    c -> newNodeEntity(cursor.nodeReference()),
+                    coreApiResourceTracker);
+        } catch (KernelException e) {
+            // weird at this point but ignore and fallback to a label scan
+        }
+
+        return getNodesByLabelAndPropertyWithoutPropertyIndex(transaction, labelId, query);
+    }
+
     private ResourceIterator<Relationship> relationshipsByTypeAndProperty(
             KernelTransaction transaction, int typeId, PropertyIndexQuery query, IndexDescriptor index) {
         Read read = transaction.dataRead();
@@ -820,6 +877,33 @@ public class TransactionImpl extends EntityValidationTransactionImpl {
             } catch (KernelException e) {
                 // weird at this point but ignore and fallback to a type scan
             }
+        }
+
+        return getRelationshipsByTypeAndPropertyWithoutPropertyIndex(transaction, typeId, query);
+    }
+
+    private ResourceIterator<Relationship> relationshipsByTypeAndPropertyWithFiltering(
+            KernelTransaction transaction,
+            int typeId,
+            PropertyIndexQuery query,
+            IndexDescriptor index,
+            PropertyIndexQuery originalQuery) {
+        Read read = transaction.dataRead();
+        try {
+
+            var cursor = transaction
+                    .cursors()
+                    .allocateRelationshipValueIndexCursor(transaction.cursorContext(), transaction.memoryTracker());
+            IndexReadSession indexSession = read.indexReadSession(index);
+            read.relationshipIndexSeek(transaction.queryContext(), indexSession, cursor, unorderedValues(), query);
+
+            return new TrackedCursorIterator<>(
+                    new FilteringCursor<>(cursor, originalQuery),
+                    value -> cursor.relationshipReference(),
+                    c -> newRelationshipEntity(cursor.relationshipReference()),
+                    coreApiResourceTracker);
+        } catch (KernelException e) {
+            // weird at this point but ignore and fallback to a type scan
         }
 
         return getRelationshipsByTypeAndPropertyWithoutPropertyIndex(transaction, typeId, query);
@@ -1322,5 +1406,69 @@ public class TransactionImpl extends EntityValidationTransactionImpl {
 
     private static void checkRelationshipType(RelationshipType type) {
         checkArgument(type != null, "Relationship type can not be null");
+    }
+
+    private static class FilteringCursor<CURSOR extends Cursor & ValueIndexCursor> implements Cursor {
+
+        private final CURSOR originalCursor;
+        private final PropertyIndexQuery filteringQuery;
+
+        public FilteringCursor(CURSOR originalCursor, PropertyIndexQuery filteringQuery) {
+            this.originalCursor = originalCursor;
+            this.filteringQuery = filteringQuery;
+        }
+
+        @Override
+        public void close() {
+            originalCursor.close();
+        }
+
+        @Override
+        public void closeInternal() {
+            originalCursor.closeInternal();
+        }
+
+        @Override
+        public boolean isClosed() {
+            return originalCursor.isClosed();
+        }
+
+        @Override
+        public void setCloseListener(CloseListener closeListener) {
+            originalCursor.setCloseListener(closeListener);
+        }
+
+        @Override
+        public void setToken(int token) {
+            originalCursor.setToken(token);
+        }
+
+        @Override
+        public int getToken() {
+            return originalCursor.getToken();
+        }
+
+        @Override
+        public boolean next() {
+            boolean next;
+            boolean acceptsValue;
+
+            do {
+                next = originalCursor.next();
+                acceptsValue = next && filteringQuery.acceptsValue(originalCursor.propertyValue(0));
+            } while (next && !acceptsValue);
+
+            return next;
+        }
+
+        @Override
+        public void setTracer(KernelReadTracer tracer) {
+            originalCursor.setTracer(tracer);
+        }
+
+        @Override
+        public void removeTracer() {
+            originalCursor.removeTracer();
+        }
     }
 }

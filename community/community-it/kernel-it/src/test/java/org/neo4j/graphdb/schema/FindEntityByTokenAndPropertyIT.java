@@ -929,7 +929,8 @@ public class FindEntityByTokenAndPropertyIT {
         RANGE(
                 IndexType.RANGE,
                 Predicates.alwaysTrue(),
-                mode -> mode == StringSearchMode.EXACT || mode == StringSearchMode.PREFIX,
+                // Suffix and contains not supported natively in the index but core API can use it and do the filtering
+                Predicates.alwaysTrue(),
                 true),
         TEXT(
                 IndexType.TEXT,

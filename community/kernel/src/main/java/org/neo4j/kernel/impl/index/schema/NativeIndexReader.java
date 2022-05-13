@@ -114,7 +114,6 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
             AccessMode accessMode,
             IndexQueryConstraints constraints,
             PropertyIndexQuery... predicates) {
-        context.monitor().queried(descriptor);
         validateQuery(constraints, predicates);
         context.monitor().queried(descriptor);
 

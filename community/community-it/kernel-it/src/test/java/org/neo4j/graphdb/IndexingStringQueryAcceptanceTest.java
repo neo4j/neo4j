@@ -195,13 +195,8 @@ public class IndexingStringQueryAcceptanceTest {
         Stream.Builder<Arguments> builder = Stream.builder();
         for (DataSet dataSet : dataSets) {
             for (IndexingMode indexingMode : indexingModes) {
-                // Skip the unsupported datasets for RANGE index.
-                if (!(indexingMode == IndexingMode.PROPERTY_RANGE
-                        && (dataSet.searchMode == StringSearchMode.SUFFIX
-                                || dataSet.searchMode == StringSearchMode.CONTAINS))) {
-                    for (EntityControl entityControl : entityControls) {
-                        builder.add(arguments(dataSet, indexingMode, entityControl));
-                    }
+                for (EntityControl entityControl : entityControls) {
+                    builder.add(arguments(dataSet, indexingMode, entityControl));
                 }
             }
         }

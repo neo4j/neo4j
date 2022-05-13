@@ -428,7 +428,7 @@ public class TextIndexIT {
                 .build();
     }
 
-    private static class IndexAccessMonitor extends IndexMonitor.MonitorAdapter {
+    static class IndexAccessMonitor extends IndexMonitor.MonitorAdapter {
         private final Map<org.neo4j.internal.schema.IndexType, Integer> counts = new HashMap<>();
 
         @Override
