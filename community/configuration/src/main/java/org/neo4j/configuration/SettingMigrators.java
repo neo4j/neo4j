@@ -118,7 +118,8 @@ public final class SettingMigrators {
                 "unsupported.dbms.tokenscan.log.enabled",
                 "unsupported.dbms.tokenscan.log.prune_threshold",
                 "unsupported.dbms.tokenscan.log.rotation_threshold",
-                "unsupported.dbms.topology_graph.enable");
+                "unsupported.dbms.topology_graph.enable",
+                "unsupported.dbms.uris.rest");
         private static final Collection<Mapping> LEGACY_UNSUPPORTED_SETTINGS_MAPPING = List.of(
                 new Mapping(
                         "causal_clustering.akka_actor_system_restarter.initial_delay",
@@ -607,7 +608,6 @@ public final class SettingMigrators {
                 new Mapping("unsupported.dbms.uris.db", "internal.dbms.uris.db"),
                 new Mapping("unsupported.dbms.uris.dbms", "internal.dbms.uris.dbms"),
                 new Mapping("unsupported.dbms.uris.management", "internal.dbms.uris.management"),
-                new Mapping("unsupported.dbms.uris.rest", "internal.dbms.uris.rest"),
                 new Mapping(
                         "unsupported.dbms.use_old_token_index_location", "internal.dbms.use_old_token_index_location"),
                 new Mapping("unsupported.dbms.wadl_generation_enabled", "internal.dbms.wadl_generation_enabled"),

@@ -37,7 +37,6 @@ import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.modules.AuthorizationModule;
 import org.neo4j.server.modules.DBMSModule;
-import org.neo4j.server.modules.LegacyTransactionModule;
 import org.neo4j.server.modules.Neo4jBrowserModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
@@ -78,7 +77,6 @@ public class CommunityNeoWebServer extends AbstractNeoWebServer {
 
             if (enabledModules.contains(ConfigurableServerModules.TRANSACTIONAL_ENDPOINTS)) {
                 serverModules.add(new TransactionModule(webServer, config, clock));
-                serverModules.add(new LegacyTransactionModule(webServer, config, clock));
             }
             if (enabledModules.contains(ConfigurableServerModules.UNMANAGED_EXTENSIONS)) {
                 serverModules.add(new ThirdPartyJAXRSModule(webServer, config, userLogProvider));

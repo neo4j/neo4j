@@ -23,7 +23,6 @@ import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 import java.util.Arrays;
@@ -42,6 +41,9 @@ import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.SharedWebContainerTestBase;
 
 public class AbstractRestFunctionalTestBase extends SharedWebContainerTestBase implements GraphHolder {
+    protected final HTTP.Builder http = HTTP.withBaseUri(container().getBaseUri());
+    protected static final String TX_ENDPOINT = "db/neo4j/tx";
+
     @RegisterExtension
     TestData<Map<String, Node>> data = TestData.producedThrough(GraphDescription.createGraphFor(this));
 
@@ -118,7 +120,7 @@ public class AbstractRestFunctionalTestBase extends SharedWebContainerTestBase i
                             .map(unquoted -> format("'%s'", unquoted))
                             .collect(joining(",")) + "]";
         }
-        return POST(
+        return HTTP.POST(
                 txCommitUri(),
                 quotedJson(format("{'statements': [{'statement': '%s'%s}]}", query, resultDataContents)));
     }
@@ -134,5 +136,21 @@ public class AbstractRestFunctionalTestBase extends SharedWebContainerTestBase i
 
     protected static void assertHasTxLocation(HTTP.Response begin, String txUri) {
         assertThat(begin.location()).matches(format("http://localhost:\\d+/%s/\\d+", txUri));
+    }
+
+    public HTTP.Response POST(String uri) {
+        return http.request("POST", uri);
+    }
+
+    public HTTP.Response POST(String uri, HTTP.RawPayload payload) {
+        return http.request("POST", uri, payload);
+    }
+
+    public HTTP.Response POST(String uri, HTTP.RawPayload payload, Map<String, String> headers) {
+        return http.request("POST", uri, payload, headers);
+    }
+
+    public HTTP.Response DELETE(String uri) {
+        return http.request("DELETE", uri);
     }
 }

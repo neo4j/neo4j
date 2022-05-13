@@ -49,9 +49,8 @@ import java.util.concurrent.Future;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -63,16 +62,15 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.server.rest.ParameterizedTransactionEndpointsTestBase;
+import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.web.XForwardUtil;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.Response;
 
-public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
+public class TransactionIT extends AbstractRestFunctionalTestBase {
     private ExecutorService executors;
-    private String txUri;
 
     @BeforeEach
     public void setUp() {
@@ -84,21 +82,19 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         executors.shutdown();
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void begin__execute__commit(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void begin__execute__commit() throws Exception {
 
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin
-        Response begin = POST(txUri);
+        Response begin = POST(TX_ENDPOINT);
 
         assertThat(begin.status()).isEqualTo(201);
-        assertHasTxLocation(begin, txUri);
+        assertHasTxLocation(begin, TX_ENDPOINT);
 
         String commitResource = begin.stringFromContent("commit");
-        assertThat(commitResource).matches(format("http://localhost:\\d+/%s/\\d+/commit", txUri));
+        assertThat(commitResource).matches(format("http://localhost:\\d+/%s/\\d+/commit", TX_ENDPOINT));
         assertThat(begin.get("transaction").get("expires").asText()).satisfies(validRFCTimestamp());
 
         // execute
@@ -113,18 +109,16 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(countNodes()).isEqualTo(nodesInDatabaseBeforeTransaction + 1);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void begin__execute__rollback(String txUri) {
-        this.txUri = txUri;
+    @Test
+    public void begin__execute__rollback() {
 
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin
-        Response begin = POST(txUri);
+        Response begin = POST(TX_ENDPOINT);
 
         assertThat(begin.status()).isEqualTo(201);
-        assertHasTxLocation(begin, txUri);
+        assertHasTxLocation(begin, TX_ENDPOINT);
 
         // execute
         POST(begin.location(), quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"));
@@ -136,18 +130,16 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(countNodes()).isEqualTo(nodesInDatabaseBeforeTransaction);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void begin__execute_and_commit(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void begin__execute_and_commit() throws Exception {
 
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin
-        Response begin = POST(txUri);
+        Response begin = POST(TX_ENDPOINT);
 
         assertThat(begin.status()).isEqualTo(201);
-        assertHasTxLocation(begin, txUri);
+        assertHasTxLocation(begin, TX_ENDPOINT);
 
         String commitResource = begin.stringFromContent("commit");
         assertThat(commitResource).isEqualTo(begin.location() + "/commit");
@@ -160,15 +152,13 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(countNodes()).isEqualTo(nodesInDatabaseBeforeTransaction + 1);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void begin_and_execute__commit(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void begin_and_execute__commit() throws Exception {
 
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin and execute
-        Response begin = POST(txUri, quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"));
+        Response begin = POST(TX_ENDPOINT, quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"));
 
         String commitResource = begin.stringFromContent("commit");
 
@@ -179,10 +169,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(countNodes()).isEqualTo(nodesInDatabaseBeforeTransaction + 1);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void begin_and_execute__commit_with_badly_escaped_statement(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void begin_and_execute__commit_with_badly_escaped_statement() throws Exception {
 
         long nodesInDatabaseBeforeTransaction = countNodes();
         String json = "{ \"statements\": [ { \"statement\": \"LOAD CSV WITH HEADERS FROM "
@@ -191,7 +179,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
 
         // begin and execute
         // given statement is badly escaped and it is a client error, thus tx is rolled back at once
-        Response begin = POST(txUri, quotedJson(json));
+        Response begin = POST(TX_ENDPOINT, quotedJson(json));
 
         String commitResource = begin.stringFromContent("commit");
 
@@ -207,13 +195,11 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(countNodes()).isEqualTo(nodesInDatabaseBeforeTransaction);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void begin__execute__commit__execute(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void begin__execute__commit__execute() throws Exception {
 
         // begin
-        Response begin = POST(txUri);
+        Response begin = POST(TX_ENDPOINT);
         String commitResource = begin.stringFromContent("commit");
 
         // execute
@@ -229,10 +215,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(execute2).satisfies(hasErrors(Status.Transaction.TransactionNotFound));
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void begin_and_execute_and_commit(String txUri) {
-        this.txUri = txUri;
+    @Test
+    public void begin_and_execute_and_commit() {
 
         long nodesInDatabaseBeforeTransaction = countNodes();
 
@@ -245,10 +229,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(countNodes()).isEqualTo(nodesInDatabaseBeforeTransaction + 1);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void begin_and_execute_and_commit_with_badly_escaped_statement(String txUri) {
-        this.txUri = txUri;
+    @Test
+    public void begin_and_execute_and_commit_with_badly_escaped_statement() {
 
         long nodesInDatabaseBeforeTransaction = countNodes();
         String json = "{ \"statements\": [ { \"statement\": \"LOAD CSV WITH HEADERS FROM "
@@ -263,10 +245,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
     }
 
     @Disabled("USING PERIODIC COMMIT has been removed and the HTTP api does not accept CALL IN TRANSACTIONS")
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void begin_and_execute_periodic_commit_and_commit(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void begin_and_execute_periodic_commit_and_commit() throws Exception {
 
         int nodes = 11;
         int batch = 2;
@@ -298,10 +278,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
     }
 
     @Disabled("USING PERIODIC COMMIT has been removed and the HTTP api does not accept CALL IN TRANSACTIONS")
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void begin_and_execute_periodic_commit_that_returns_data_and_commit(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void begin_and_execute_periodic_commit_that_returns_data_and_commit() throws Exception {
 
         int nodes = 11;
         int batchSize = 2;
@@ -339,11 +317,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
     }
 
     @Disabled("USING PERIODIC COMMIT has been removed and the HTTP api does not accept CALL IN TRANSACTIONS")
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void begin_and_execute_periodic_commit_followed_by_another_statement_and_commit(String txUri)
-            throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void begin_and_execute_periodic_commit_followed_by_another_statement_and_commit() throws Exception {
 
         withCSVFile(1, url -> {
             // begin and execute and commit
@@ -357,10 +332,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         });
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void begin_and_execute_invalid_query_and_commit(String txUri) {
-        this.txUri = txUri;
+    @Test
+    public void begin_and_execute_invalid_query_and_commit() {
 
         // begin and execute and commit
         Response response =
@@ -371,10 +344,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
     }
 
     @Disabled("USING PERIODIC COMMIT has been removed and the HTTP api does not accept CALL IN TRANSACTIONS")
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void begin_and_execute_multiple_periodic_commit_last_and_commit(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void begin_and_execute_multiple_periodic_commit_last_and_commit() throws Exception {
 
         withCSVFile(1, url -> {
             // begin and execute and commit
@@ -388,15 +359,13 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         });
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void begin__execute_multiple__commit(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void begin__execute_multiple__commit() throws Exception {
 
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin
-        Response begin = POST(txUri);
+        Response begin = POST(TX_ENDPOINT);
 
         String commitResource = begin.stringFromContent("commit");
 
@@ -411,15 +380,13 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(countNodes()).isEqualTo(nodesInDatabaseBeforeTransaction + 2);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void begin__execute__execute__commit(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void begin__execute__execute__commit() throws Exception {
 
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin
-        Response begin = POST(txUri);
+        Response begin = POST(TX_ENDPOINT);
 
         String commitResource = begin.stringFromContent("commit");
 
@@ -435,11 +402,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(countNodes()).isEqualTo(nodesInDatabaseBeforeTransaction + 2);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void begin_create_two_nodes_delete_one(String txUri) throws Exception {
-        this.txUri = txUri;
-
+    @Test
+    public void begin_create_two_nodes_delete_one() throws Exception {
         /*
          * This issue was reported from the community. It resulted in a refactoring of the interaction
          * between TxManager and TransactionContexts.
@@ -476,16 +440,14 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(countNodes()).isEqualTo(nodesInDatabaseBeforeTransaction + 1);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void begin__rollback__commit(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void begin__rollback__commit() throws Exception {
 
         // begin
-        Response begin = POST(txUri);
+        Response begin = POST(TX_ENDPOINT);
 
         assertThat(begin.status()).isEqualTo(201);
-        assertHasTxLocation(begin, txUri);
+        assertHasTxLocation(begin, TX_ENDPOINT);
         String commitResource = begin.stringFromContent("commit");
 
         // terminate
@@ -498,16 +460,14 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(commit.status()).isEqualTo(404);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void begin__rollback__execute(String txUri) {
-        this.txUri = txUri;
+    @Test
+    public void begin__rollback__execute() {
 
         // begin
-        Response begin = POST(txUri);
+        Response begin = POST(TX_ENDPOINT);
 
         assertThat(begin.status()).isEqualTo(201);
-        assertHasTxLocation(begin, txUri);
+        assertHasTxLocation(begin, TX_ENDPOINT);
 
         // terminate
         Response interrupt = DELETE(begin.location());
@@ -519,16 +479,14 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(execute.status()).isEqualTo(404);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
+    @Test
     @Timeout(30)
-    public void begin__execute__rollback_concurrently(String txUri) throws Exception {
-        this.txUri = txUri;
+    public void begin__execute__rollback_concurrently() throws Exception {
 
         // begin
-        final Response begin = POST(txUri);
+        final Response begin = POST(TX_ENDPOINT);
         assertThat(begin.status()).isEqualTo(201);
-        assertHasTxLocation(begin, txUri);
+        assertHasTxLocation(begin, TX_ENDPOINT);
 
         Label sharedLockLabel = Label.label("sharedLock");
         POST(
@@ -574,10 +532,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(execute2).satisfies(hasErrors(Status.Transaction.TransactionNotFound));
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void status_codes_should_appear_in_response(String txUri) {
-        this.txUri = txUri;
+    @Test
+    public void status_codes_should_appear_in_response() {
 
         Response response =
                 POST(transactionCommitUri(), quotedJson("{ 'statements': [ { 'statement': 'RETURN $n' } ] }"));
@@ -586,37 +542,33 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(response).satisfies(hasErrors(Status.Statement.ParameterMissing));
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void should_return_location_correctly_in_response(String txUri) throws JsonParseException {
-        this.txUri = txUri;
+    @Test
+    public void should_return_location_correctly_in_response() throws JsonParseException {
 
         // begin
-        var begin = POST(txUri);
+        var begin = POST(TX_ENDPOINT);
         assertThat(begin.status()).isEqualTo(201);
-        assertHasTxLocation(begin, txUri);
+        assertHasTxLocation(begin, TX_ENDPOINT);
 
         // run
         var txId = extractTxId(begin);
-        var response =
-                POST(format("%s/%s", txUri, txId), quotedJson("{ 'statements': [ { 'statement': 'RETURN 1' } ] }"));
+        var response = POST(
+                format("%s/%s", TX_ENDPOINT, txId), quotedJson("{ 'statements': [ { 'statement': 'RETURN 1' } ] }"));
         System.out.println(response);
         assertThat(response.status()).isEqualTo(200);
-        assertThat(response.get("commit").toString()).contains(txUri);
+        assertThat(response.get("commit").toString()).contains(TX_ENDPOINT);
 
         // commit
-        var commit = POST(format("%s/%s/commit", txUri, txId));
+        var commit = POST(format("%s/%s/commit", TX_ENDPOINT, txId));
         System.out.println(commit);
         assertThat(commit.status()).isEqualTo(200);
-        assertThat(commit.get("commit").toString()).contains(txUri);
+        assertThat(commit.get("commit").toString()).contains(TX_ENDPOINT);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
+    @Test
     @Timeout(30)
-    public void executing_single_statement_in_new_transaction_and_failing_to_read_the_output_should_interrupt(
-            String txUri) throws Exception {
-        this.txUri = txUri;
+    public void executing_single_statement_in_new_transaction_and_failing_to_read_the_output_should_interrupt()
+            throws Exception {
 
         // given
         long initialNodes = countNodes();
@@ -633,7 +585,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
                         "{ 'statements': [ { 'statement': 'UNWIND range(0, 9999) AS i CREATE (n {i: i}) RETURN n' } ] "
                                 + "}")
                 .get();
-        out.print(format("POST /%s/commit HTTP/1.1\r\n", txUri));
+        out.print(format("POST /%s/commit HTTP/1.1\r\n", TX_ENDPOINT));
         out.print("Host: localhost:7474\r\n");
         out.print("Content-type: application/json; charset=utf-8\r\n");
         out.print("Content-length: " + output.getBytes().length + "\r\n");
@@ -669,10 +621,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertEquals(1, additionalRollBacks);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void should_include_graph_format_when_requested(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void should_include_graph_format_when_requested() throws Exception {
 
         long initialData = countNodes("Foo");
 
@@ -706,10 +656,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertTrue(labels.size() > 0, "some labels");
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void should_serialize_collect_correctly(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void should_serialize_collect_correctly() throws Exception {
 
         // given
         POST(transactionCommitUri(), singleStatement("CREATE (n:Foo)"));
@@ -730,10 +678,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(response.get("errors").size()).isEqualTo(0);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void shouldSerializeMapsCorrectlyInRowsFormat(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void shouldSerializeMapsCorrectlyInRowsFormat() throws Exception {
 
         Response response = POST(
                 transactionCommitUri(),
@@ -753,10 +699,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(response.get("errors").size()).isEqualTo(0);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void shouldSerializeMapsCorrectlyInRestFormat(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void shouldSerializeMapsCorrectlyInRestFormat() throws Exception {
 
         Response response = POST(
                 transactionCommitUri(),
@@ -777,10 +721,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(response.get("errors").size()).isEqualTo(0);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void shouldHandleMapParametersCorrectly(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void shouldHandleMapParametersCorrectly() throws Exception {
 
         Response response = POST(
                 transactionCommitUri(),
@@ -801,10 +743,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(response.get("errors").size()).isEqualTo(0);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void restFormatNodesShouldHaveSensibleUris(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void restFormatNodesShouldHaveSensibleUris() throws Exception {
 
         // given
         final String hostname = "localhost";
@@ -846,10 +786,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
                 hostname);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void restFormattedNodesShouldHaveSensibleUrisWhenUsingXForwardHeader(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void restFormattedNodesShouldHaveSensibleUrisWhenUsingXForwardHeader() throws Exception {
 
         // given
         final String hostname = "dummy.example.org";
@@ -892,10 +830,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
                 hostname);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void correctStatusCodeWhenUsingHintWithoutAnyIndex(String txUri) {
-        this.txUri = txUri;
+    @Test
+    public void correctStatusCodeWhenUsingHintWithoutAnyIndex() {
 
         // begin and execute and commit
         Response begin = POST(
@@ -905,13 +841,11 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(begin).satisfies(hasErrors(Status.Request.Schema.IndexNotFound));
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void transaction_not_in_response_on_failure(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void transaction_not_in_response_on_failure() throws Exception {
 
         // begin
-        Response begin = POST(txUri);
+        Response begin = POST(TX_ENDPOINT);
 
         String commitResource = begin.stringFromContent("commit");
 
@@ -933,10 +867,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(commit.status()).isEqualTo(404);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void shouldWorkWhenHittingTheASTCacheInCypher(String txUri) throws JsonParseException {
-        this.txUri = txUri;
+    @Test
+    public void shouldWorkWhenHittingTheASTCacheInCypher() throws JsonParseException {
 
         // give a cached plan
         Response response =
@@ -953,16 +885,14 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(response.get("errors").size()).isEqualTo(0);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void writeSettingsBeginAndCommit(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void writeSettingsBeginAndCommit() throws Exception {
 
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin and execute
         Response begin = POST(
-                txUri,
+                TX_ENDPOINT,
                 quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"),
                 Map.of(ACCESS_MODE_HEADER, "WRITE"));
 
@@ -975,10 +905,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(countNodes()).isEqualTo(nodesInDatabaseBeforeTransaction + 1);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void shouldErrorWhenWriteAttemptedWithReadSetting(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void shouldErrorWhenWriteAttemptedWithReadSetting() throws Exception {
 
         // begin and execute and commit
         Response begin = POST(
@@ -990,14 +918,12 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(begin).satisfies(hasErrors(Status.Statement.Request.Invalid));
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void readSettingsBeginAndCommit(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void readSettingsBeginAndCommit() throws Exception {
 
         // begin and execute
         Response begin = POST(
-                txUri,
+                TX_ENDPOINT,
                 quotedJson("{'statements': [ { 'statement': 'MATCH (n) RETURN n' } ] }"),
                 Map.of(ACCESS_MODE_HEADER, "READ"));
 
@@ -1009,21 +935,19 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(commit.status()).isEqualTo(200);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void beginWithSettingsOnlyAndThenExecuteCommit(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void beginWithSettingsOnlyAndThenExecuteCommit() throws Exception {
 
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin
-        Response begin = POST(txUri, quotedJson(""), Map.of(ACCESS_MODE_HEADER, "WRITE"));
+        Response begin = POST(TX_ENDPOINT, quotedJson(""), Map.of(ACCESS_MODE_HEADER, "WRITE"));
 
         assertThat(begin.status()).isEqualTo(201);
-        assertHasTxLocation(begin, txUri);
+        assertHasTxLocation(begin, TX_ENDPOINT);
 
         String commitResource = begin.stringFromContent("commit");
-        assertThat(commitResource).matches(format("http://localhost:\\d+/%s/\\d+/commit", txUri));
+        assertThat(commitResource).matches(format("http://localhost:\\d+/%s/\\d+/commit", TX_ENDPOINT));
         assertThat(begin.get("transaction").get("expires").asText()).satisfies(validRFCTimestamp());
 
         // execute
@@ -1038,19 +962,17 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(countNodes()).isEqualTo(nodesInDatabaseBeforeTransaction + 1);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void shouldIgnoreAccessModeHeaderOnSecondRequest(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void shouldIgnoreAccessModeHeaderOnSecondRequest() throws Exception {
 
         // begin
-        Response begin = POST(txUri, quotedJson(""), Map.of(ACCESS_MODE_HEADER, "READ"));
+        Response begin = POST(TX_ENDPOINT, quotedJson(""), Map.of(ACCESS_MODE_HEADER, "READ"));
 
         assertThat(begin.status()).isEqualTo(201);
-        assertHasTxLocation(begin, txUri);
+        assertHasTxLocation(begin, TX_ENDPOINT);
 
         String commitResource = begin.stringFromContent("commit");
-        assertThat(commitResource).matches(format("http://localhost:\\d+/%s/\\d+/commit", txUri));
+        assertThat(commitResource).matches(format("http://localhost:\\d+/%s/\\d+/commit", TX_ENDPOINT));
         assertThat(begin.get("transaction").get("expires").asText()).satisfies(validRFCTimestamp());
 
         // execute
@@ -1062,24 +984,22 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase {
         assertThat(execute).satisfies(hasErrors(Status.Request.Invalid));
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void shouldErrorWithInvalidAccessModeHeader(String txUri) throws Exception {
-        this.txUri = txUri;
+    @Test
+    public void shouldErrorWithInvalidAccessModeHeader() throws Exception {
 
         // begin
-        Response begin = POST(txUri, quotedJson(""), Map.of(ACCESS_MODE_HEADER, "INVALID!"));
+        Response begin = POST(TX_ENDPOINT, quotedJson(""), Map.of(ACCESS_MODE_HEADER, "INVALID!"));
 
         assertThat(begin.status()).isEqualTo(200);
         assertThat(begin).satisfies(hasErrors(Status.Request.InvalidFormat));
     }
 
     private String transactionCommitUri() {
-        return format("%s/commit", txUri);
+        return format("%s/commit", TX_ENDPOINT);
     }
 
     private String databaseName() {
-        return txUri.split("/")[1]; // either data or neo4j
+        return TX_ENDPOINT.split("/")[1]; // either data or neo4j
     }
 
     private void assertPath(JsonNode jsonURIString, String path, String hostname) {

@@ -33,23 +33,21 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.server.rest.ParameterizedTransactionEndpointsTestBase;
+import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.test.server.HTTP;
 
 /**
  * Tests for error messages and graceful handling of problems with the transactional endpoint.
  */
-public class TransactionErrorIT extends ParameterizedTransactionEndpointsTestBase {
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void begin__commit_with_invalid_cypher(String txUri) throws Exception {
+public class TransactionErrorIT extends AbstractRestFunctionalTestBase {
+    @Test
+    public void begin__commit_with_invalid_cypher() throws Exception {
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin
-        HTTP.Response response = POST(txUri, quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"));
+        HTTP.Response response = POST(TX_ENDPOINT, quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"));
         String commitResource = response.stringFromContent("commit");
 
         // commit with invalid cypher
@@ -62,13 +60,12 @@ public class TransactionErrorIT extends ParameterizedTransactionEndpointsTestBas
         assertThat(countNodes()).isEqualTo(nodesInDatabaseBeforeTransaction);
     }
 
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void begin__commit_with_malformed_json(String txUri) throws Exception {
+    @Test
+    public void begin__commit_with_malformed_json() throws Exception {
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin
-        HTTP.Response begin = POST(txUri, quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"));
+        HTTP.Response begin = POST(TX_ENDPOINT, quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"));
         String commitResource = begin.stringFromContent("commit");
 
         // commit with malformed json
@@ -81,9 +78,8 @@ public class TransactionErrorIT extends ParameterizedTransactionEndpointsTestBas
     }
 
     @Disabled("USING PERIODIC COMMIT has been removed and the HTTP api does not accept CALL IN TRANSACTIONS")
-    @ParameterizedTest
-    @MethodSource("argumentsProvider")
-    public void begin_and_execute_periodic_commit_that_fails(String txUri) throws Exception {
+    @Test
+    public void begin_and_execute_periodic_commit_that_fails() throws Exception {
         Path file = Files.createTempFile("begin_and_execute_periodic_commit_that_fails", ".csv")
                 .toAbsolutePath();
         try {
@@ -100,7 +96,7 @@ public class TransactionErrorIT extends ParameterizedTransactionEndpointsTestBas
 
             // begin and execute and commit
             HTTP.RawPayload payload = quotedJson("{ 'statements': [ { 'statement': '" + query + "' } ] }");
-            HTTP.Response response = POST(txUri + "/commit", payload);
+            HTTP.Response response = POST(TX_ENDPOINT + "/commit", payload);
 
             assertThat(response.status()).isEqualTo(200);
             assertThat(response).satisfies(hasErrors(Status.Statement.ArithmeticError));

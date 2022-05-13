@@ -19,7 +19,6 @@
  */
 package org.neo4j.server;
 
-import static java.net.http.HttpClient.newBuilder;
 import static java.net.http.HttpClient.newHttpClient;
 import static java.net.http.HttpResponse.BodyHandlers.discarding;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
@@ -35,7 +34,6 @@ import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -150,35 +148,6 @@ class WebContainerConfigIT extends ExclusiveWebContainerTestBase {
         var discoveryResponse = newHttpClient().send(discoveryRequest, ofString());
         assertEquals(200, txResponse.statusCode());
         assertThat(discoveryResponse.body()).contains(dbUri);
-    }
-
-    @Test
-    void shouldPickupRelativeUrisForRestApi() throws Exception {
-        var dbUri = "a/different/rest/api/path";
-
-        testWebContainer = serverOnRandomPorts()
-                .usingDataDir(
-                        testDirectory.directory(methodName).toAbsolutePath().toString())
-                .withRelativeRestApiPath("/" + dbUri)
-                .build();
-
-        var uri = testWebContainer.getBaseUri() + dbUri + "/transaction/commit";
-        var txRequest = HttpRequest.newBuilder(URI.create(uri))
-                .header(ACCEPT, APPLICATION_JSON)
-                .header(CONTENT_TYPE, APPLICATION_JSON)
-                .POST(HttpRequest.BodyPublishers.ofString("{ 'statements': [ { 'statement': 'CREATE ()' } ] }"))
-                .build();
-        var txResponse =
-                newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build().send(txRequest, discarding());
-        System.out.println(txResponse);
-        assertEquals(200, txResponse.statusCode());
-
-        // however this legacy url should not be inside the discovery service.
-        var discoveryRequest =
-                HttpRequest.newBuilder(testWebContainer.getBaseUri()).GET().build();
-        var discoveryResponse = newHttpClient().send(discoveryRequest, ofString());
-        assertEquals(200, txResponse.statusCode());
-        assertThat(discoveryResponse.body()).doesNotContain(dbUri);
     }
 
     @Test

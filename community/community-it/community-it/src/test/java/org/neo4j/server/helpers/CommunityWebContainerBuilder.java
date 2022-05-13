@@ -61,7 +61,6 @@ public class CommunityWebContainerBuilder {
     private String maxThreads;
     private String dataDir;
     private String dbUri = "/db";
-    private String restUri = "/db/data";
     private final Map<String, String> thirdPartyPackages = new HashMap<>();
     private final Properties arbitraryProperties = new Properties();
 
@@ -127,9 +126,7 @@ public class CommunityWebContainerBuilder {
     }
 
     public Map<String, String> createConfiguration(Path temporaryFolder) {
-        Map<String, String> properties = stringMap(
-                ServerSettings.db_api_path.name(), dbUri,
-                ServerSettings.rest_api_path.name(), restUri);
+        Map<String, String> properties = stringMap(ServerSettings.db_api_path.name(), dbUri);
 
         addDefaultRelativeProperties(properties, temporaryFolder);
 
@@ -211,11 +208,6 @@ public class CommunityWebContainerBuilder {
 
     public CommunityWebContainerBuilder withRelativeDatabaseApiPath(String uri) {
         this.dbUri = getPath(uri);
-        return this;
-    }
-
-    public CommunityWebContainerBuilder withRelativeRestApiPath(String uri) {
-        this.restUri = getPath(uri);
         return this;
     }
 

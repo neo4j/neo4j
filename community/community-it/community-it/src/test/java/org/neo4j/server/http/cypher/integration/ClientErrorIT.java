@@ -22,11 +22,10 @@ package org.neo4j.server.http.cypher.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.containsNoErrors;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.hasErrors;
-import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -55,8 +54,8 @@ public class ClientErrorIT extends AbstractRestFunctionalTestBase {
                         Status.Request.InvalidFormat));
     }
 
-    @BeforeAll
-    public static void prepareDatabase() {
+    @BeforeEach
+    public void prepareDatabase() {
         POST(txCommitUri(), quotedJson("{'statements': [{'statement': 'CREATE INDEX FOR (n:Book) ON (n.name)'}]}"));
 
         POST(

@@ -226,12 +226,6 @@ public class ServerSettings implements SettingsDeclaration {
             newBuilder("clients.allow_telemetry", BOOL, true).build();
 
     @Internal
-    @Description("The legacy data endpoint. This is kept for back-compatibility purpose.")
-    public static final Setting<URI> rest_api_path = newBuilder(
-                    "internal.dbms.uris.rest", NORMALIZED_RELATIVE_URI, NORMALIZED_RELATIVE_URI.parse("/db/data"))
-            .build();
-
-    @Internal
     @Description("The legacy manage endpoint. This is kept for back-compatibility purpose.")
     public static final Setting<URI> management_api_path = newBuilder(
                     "internal.dbms.uris.management",
