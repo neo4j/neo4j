@@ -155,9 +155,13 @@ public interface TopologyGraphDbmsModel {
     Label INSTANCE_LABEL = Label.label("Instance");
     Label REMOVED_INSTANCE_LABEL = Label.label("RemovedInstance");
     String INSTANCE_UUID_PROPERTY = "uuid";
+    String INSTANCE_NAME_PROPERTY = "name";
     String INSTANCE_STATUS_PROPERTY = "status";
     String INSTANCE_DISCOVERED_AT_PROPERTY = "discovered_at";
     String INSTANCE_MODE_PROPERTY = "mode";
+    String INSTANCE_ALLOWED_DATABASES = "allowedDatabases";
+    String INSTANCE_DENIED_DATABASES = "deniedDatabases";
+    String INSTANCE_MODE_CONSTRAINT = "modeConstraint";
     String REMOVED_INSTANCE_REMOVED_AT_PROPERTY = "removed_at";
     String REMOVED_INSTANCE_ALIASES_PROPERTY = "aliases";
 
