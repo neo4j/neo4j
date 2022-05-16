@@ -96,6 +96,15 @@ class UTF8StringValueTest {
     }
 
     @Test
+    void shouldRtrimTruncatedByteString() {
+        byte[] bytes = "A\r\rB".getBytes(UTF_8);
+        assertSame(utf8Value(bytes, 0, 1).rtrim(), stringValue("A"));
+        assertSame(utf8Value(bytes, 1, 1).rtrim(), Values.EMPTY_STRING);
+        assertSame(utf8Value(bytes, 2, 1).rtrim(), Values.EMPTY_STRING);
+        assertSame(utf8Value(bytes, 3, 1).rtrim(), stringValue("B"));
+    }
+
+    @Test
     void shouldCompareTo() {
         for (String string1 : STRINGS) {
             for (String string2 : STRINGS) {
