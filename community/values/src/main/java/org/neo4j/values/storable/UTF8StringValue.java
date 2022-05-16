@@ -263,7 +263,7 @@ public final class UTF8StringValue extends StringValue {
         if (startIndex >= values.length) {
             return StringValue.EMPTY;
         }
-        return new UTF8StringValue(values, startIndex, values.length - startIndex);
+        return new UTF8StringValue(values, startIndex, byteLength - (startIndex - offset));
     }
 
     @Override
