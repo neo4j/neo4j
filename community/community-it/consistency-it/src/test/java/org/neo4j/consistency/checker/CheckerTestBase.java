@@ -35,6 +35,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -93,6 +94,7 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -460,6 +462,12 @@ class CheckerTestBase {
             relationshipStore.updateRecord(relationship, storeCursor, CursorContext.NULL_CONTEXT, storeCursors);
         }
         return id;
+    }
+
+    void markAsDeletedId(CommonAbstractStore store, long id) {
+        try (var marker = store.getIdGenerator().marker(NULL_CONTEXT)) {
+            marker.markDeleted(id);
+        }
     }
 
     long relationshipGroup(long id, long next, long owningNode, int type, long firstOut, long firstIn, long firstLoop) {

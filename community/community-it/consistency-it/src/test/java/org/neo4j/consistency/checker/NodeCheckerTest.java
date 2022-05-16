@@ -318,6 +318,23 @@ class NodeCheckerTest extends CheckerTestBase {
         expect(NodeConsistencyReport.class, NodeConsistencyReport::illegalLabel);
     }
 
+    @Test
+    void shouldReportNodeWithIdForReuse() throws Exception {
+        // Given
+        long nodeId;
+        try (AutoCloseable ignored = tx()) {
+            nodeId = node(nodeStore.nextId(NULL_CONTEXT), NULL, NULL, label1);
+        }
+
+        markAsDeletedId(nodeStore, nodeId);
+
+        // when
+        check();
+
+        // then
+        expect(NodeConsistencyReport.class, NodeConsistencyReport::idIsFreed);
+    }
+
     // invalidLength of dynamic label record: (impossible, right?)
 
     private void check() throws Exception {

@@ -137,18 +137,27 @@ class NodeChecker implements Checker {
                 SafePropertyChainReader property = new SafePropertyChainReader(context, cursorContext);
                 SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker(
                         context, mandatoryProperties, smallIndexes, cursorContext, storeCursors);
-                var localProgress = nodeProgress.threadLocalReporter()) {
+                var localProgress = nodeProgress.threadLocalReporter();
+                var freeIdsIterator =
+                        context.neoStores.getNodeStore().getIdGenerator().freeIdsIterator(fromNodeId, toNodeId)) {
             MutableIntObjectMap<Value> propertyValues = new IntObjectHashMap<>();
             CacheAccess.Client client = context.cacheAccess.client();
             long[] nextRelCacheFields =
                     new long[] {-1, -1, 1 /*inUse*/, 0, 0, 1 /*note that this needs to be checked*/, 0, 0};
             Iterator<EntityTokenRange> nodeLabelRangeIterator = labelIndexReader.iterator();
             EntityTokenIndexCheckState labelIndexState = new EntityTokenIndexCheckState(null, fromNodeId - 1);
+            long nextFreeId = NULL_REFERENCE.longValue();
             for (long nodeId = fromNodeId; nodeId < toNodeId && !context.isCancelled(); nodeId++) {
                 localProgress.add(1);
                 NodeRecord nodeRecord = nodeReader.read(nodeId);
                 if (!nodeRecord.inUse()) {
                     continue;
+                }
+                while (nextFreeId < nodeId && freeIdsIterator.hasNext()) {
+                    nextFreeId = freeIdsIterator.next();
+                }
+                if (nodeId == nextFreeId) {
+                    reporter.forNode(nodeRecord).idIsFreed();
                 }
 
                 // Cache nextRel

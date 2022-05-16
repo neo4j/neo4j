@@ -82,6 +82,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -245,6 +246,34 @@ public class FullCheckIntegrationTest {
                 tx.create(new NodeRecord(next.node()).initialize(false, -1, false, next.relationship(), 0));
             }
         });
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on(stats).verify(RecordType.NODE, 1).andThatsAllFolks();
+    }
+
+    @Test
+    void shouldReportNodeIdMismatch() throws Exception {
+        MutableLong id = new MutableLong();
+        // given
+        fixture.apply(new GraphStoreFixture.Transaction() {
+            @Override
+            protected void transactionData(
+                    GraphStoreFixture.TransactionDataBuilder tx, GraphStoreFixture.IdGenerator next) {
+                long node = next.node();
+                id.setValue(node);
+                tx.create(new NodeRecord(node).initialize(true, -1, false, -1, 0));
+            }
+        });
+        try (var marker = fixture.directStoreAccess()
+                .nativeStores()
+                .getNodeStore()
+                .getIdGenerator()
+                .marker(NULL_CONTEXT)) {
+            marker.markDeleted(id.longValue());
+        }
 
         // when
         ConsistencySummaryStatistics stats = check();

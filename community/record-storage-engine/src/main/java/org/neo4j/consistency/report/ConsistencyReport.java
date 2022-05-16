@@ -104,6 +104,9 @@ public interface ConsistencyReport {
 
         @Documented("There is another entity in the unique index with the same property value(s).")
         void uniqueIndexNotUnique(IndexDescriptor index, Object[] propertyValues, long duplicateEntityId);
+
+        @Documented("The referenced record is in use but the id is up for reuse in the id file.")
+        void idIsFreed();
     }
 
     interface NeoStoreConsistencyReport extends PrimitiveConsistencyReport {}
