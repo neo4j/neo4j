@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.compiler.planner.AttributeComparisonStrategy
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
@@ -41,8 +43,11 @@ import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
-    with AstConstructionTestSupport {
+class IndexPlanningIntegrationTest
+    extends CypherFunSuite
+    with LogicalPlanningIntegrationTestSupport
+    with AstConstructionTestSupport
+    with LogicalPlanningAttributesTestSupport {
 
   private def plannerBaseConfigForIndexOnLabelPropTests(): StatisticsBackedLogicalPlanningConfigurationBuilder =
     plannerBuilder()
@@ -1744,5 +1749,51 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         }
       }
     }
+  }
+
+  test("should calculate node index scan cardinality correctly with multiple predicates") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 1000)
+      .addNodeIndex("A", Seq("prop"), 0.5, 0.1, indexType = IndexType.RANGE)
+      .build()
+
+    val query =
+      """MATCH (a:A)
+        |WHERE a.prop CONTAINS 'hello' AND a.prop CONTAINS 'world'
+        |RETURN a
+        |""".stripMargin
+
+    val planState = cfg.planState(query)
+    val expected = cfg.planBuilder()
+      .produceResults("a")
+      .filter("cacheNFromStore[a.prop] CONTAINS 'hello'", "cacheNFromStore[a.prop] CONTAINS 'world'")
+      .nodeIndexOperator("a:A(prop)").withCardinality(500)
+
+    planState should
+      haveSamePlanAndCardinalitiesAsBuilder(expected, AttributeComparisonStrategy.ComparingProvidedAttributesOnly)
+  }
+
+  test("should calculate relationship index scan cardinality correctly with multiple predicates") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]->()", 1000)
+      .addRelationshipIndex("REL", Seq("prop"), 0.5, 0.1, indexType = IndexType.RANGE)
+      .build()
+
+    val query =
+      """MATCH (a)-[r:REL]->(b)
+        |WHERE r.prop CONTAINS 'hello' AND r.prop CONTAINS 'world'
+        |RETURN r
+        |""".stripMargin
+
+    val planState = cfg.planState(query)
+    val expected = cfg.planBuilder()
+      .produceResults("r")
+      .filter("cacheRFromStore[r.prop] CONTAINS 'hello'", "cacheRFromStore[r.prop] CONTAINS 'world'")
+      .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)").withCardinality(500)
+
+    planState should
+      haveSamePlanAndCardinalitiesAsBuilder(expected, AttributeComparisonStrategy.ComparingProvidedAttributesOnly)
   }
 }

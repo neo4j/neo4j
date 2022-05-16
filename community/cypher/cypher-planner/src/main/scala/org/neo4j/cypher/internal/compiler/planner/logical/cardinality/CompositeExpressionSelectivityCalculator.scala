@@ -121,10 +121,16 @@ case class CompositeExpressionSelectivityCalculator(
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
   ): Selectivity = {
 
+    // The selections we get for cardinality estimation might contain partial predicates.
+    // These are not recognized by the Leaf planners, so let's unwrap them.
+    val unwrappedSelections = selections.endoRewrite(unwrapPartialPredicates)
+
     // Used when we can conclude that no composite index influences the result
     def fallback: Selectivity = {
       val simpleSelectivities =
-        selections.flatPredicates.map(singleExpressionSelectivityCalculator(_, labelInfo, relTypeInfo)(semanticTable))
+        unwrappedSelections
+          .flatPredicates
+          .map(singleExpressionSelectivityCalculator(_, labelInfo, relTypeInfo)(semanticTable))
       combiner.andTogetherSelectivities(simpleSelectivities).getOrElse(Selectivity.ONE)
     }
 
@@ -146,10 +152,6 @@ case class CompositeExpressionSelectivityCalculator(
       // But since we would only use them to solve label/rel type predicates, there is no need to use composite index selectivity.
       return fallback
     }
-
-    // The selections we get for cardinality estimation might contain partial predicates.
-    // These are not recognized by the Leaf planners, so let's unwrap them.
-    val unwrappedSelections = selections.endoRewrite(unwrapPartialPredicates)
 
     val queryGraphs = getQueryGraphs(labelInfo, relTypeInfo, unwrappedSelections)
 
