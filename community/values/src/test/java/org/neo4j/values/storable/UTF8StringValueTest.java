@@ -80,6 +80,16 @@ class UTF8StringValueTest
     }
 
     @Test
+    void shouldLtrimTruncatedByteString()
+    {
+        String string = "abcdefghijklmnoprqstuvwxyz";
+        byte[] bytes = string.getBytes(UTF_8);
+        assertSame(utf8Value(bytes, 0, 4).ltrim(), stringValue("abcd"));
+        assertSame(utf8Value(bytes, 5, 4).ltrim(), stringValue("fghi"));
+    }
+
+
+    @Test
     void shouldSubstring()
     {
         String string = "ü";
