@@ -87,6 +87,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
@@ -402,6 +403,68 @@ class IndexedIdGeneratorTest {
 
         // then
         assertThrows(IdCapacityExceededException.class, () -> idGenerator.nextId(NULL_CONTEXT));
+    }
+
+    @Test
+    void shouldIterateOverFreeIds() throws IOException {
+        // given
+        open();
+        idGenerator.start(freeIds(10, 20, 30, IDS_PER_ENTRY + 10, 10 * IDS_PER_ENTRY + 10), NULL_CONTEXT);
+        // when/then
+        try (PrimitiveLongResourceIterator freeIds = idGenerator.freeIdsIterator()) {
+            assertEquals(10L, freeIds.next());
+            assertEquals(20L, freeIds.next());
+            assertEquals(30L, freeIds.next());
+            assertEquals(IDS_PER_ENTRY + 10L, freeIds.next());
+            assertEquals(10 * IDS_PER_ENTRY + 10L, freeIds.next());
+            assertFalse(freeIds.hasNext());
+        }
+    }
+
+    @Test
+    void shouldHandleNoFreeIdsInIterator() throws IOException {
+        // given
+        open();
+        idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
+        // when/then
+        try (PrimitiveLongResourceIterator freeIds = idGenerator.freeIdsIterator()) {
+            assertFalse(freeIds.hasNext());
+        }
+    }
+
+    @Test
+    void shouldIterateOverFreeIdsWithLimits() throws IOException {
+        // given
+        open();
+        idGenerator.start(freeIds(10, 20, 30), NULL_CONTEXT);
+        // when/then
+        // simple cases
+        try (PrimitiveLongResourceIterator freeIds = idGenerator.freeIdsIterator(5, 15)) {
+            assertEquals(10L, freeIds.next());
+            assertFalse(freeIds.hasNext());
+        }
+        try (PrimitiveLongResourceIterator freeIds = idGenerator.freeIdsIterator(15, 35)) {
+            assertEquals(20L, freeIds.next());
+            assertEquals(30L, freeIds.next());
+            assertFalse(freeIds.hasNext());
+        }
+        // edge cases inclusiveFrom exclusiveTo
+        try (PrimitiveLongResourceIterator freeIds = idGenerator.freeIdsIterator(0, 10)) {
+            assertFalse(freeIds.hasNext());
+        }
+        try (PrimitiveLongResourceIterator freeIds = idGenerator.freeIdsIterator(10, 20)) {
+            assertEquals(10L, freeIds.next());
+            assertFalse(freeIds.hasNext());
+        }
+        // looking for only one id
+        try (PrimitiveLongResourceIterator freeIds = idGenerator.freeIdsIterator(10, 10)) {
+            assertTrue(freeIds.hasNext());
+            assertEquals(10L, freeIds.next());
+            assertFalse(freeIds.hasNext());
+        }
+        try (PrimitiveLongResourceIterator freeIds = idGenerator.freeIdsIterator(15, 15)) {
+            assertFalse(freeIds.hasNext());
+        }
     }
 
     @Test

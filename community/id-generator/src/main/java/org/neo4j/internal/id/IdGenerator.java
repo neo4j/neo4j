@@ -22,6 +22,8 @@ package org.neo4j.internal.id;
 import java.io.Closeable;
 import java.io.IOException;
 import org.neo4j.annotations.documented.ReporterFactory;
+import org.neo4j.collection.PrimitiveLongResourceCollections;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
@@ -105,6 +107,25 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
      * @return {@link IdType} of this generator.
      */
     IdType idType();
+
+    /**
+     * Allows iteration over free ids in the generator, see {@link #freeIdsIterator(long, long)}
+     * @throws IOException
+     */
+    default PrimitiveLongResourceIterator freeIdsIterator() throws IOException {
+        return PrimitiveLongResourceCollections.emptyIterator();
+    }
+
+    /**
+     * Allows iteration over free (incl deleted) ids in the generator, up to highId. Items are return in sorted order
+     * @param fromIdInclusive The id to start from (inclusive)
+     * @param toIdExclusive The id to end at (exclusive)
+     * @return A resource iterator. Not that this needs to be closed!
+     * @throws IOException
+     */
+    default PrimitiveLongResourceIterator freeIdsIterator(long fromIdInclusive, long toIdExclusive) throws IOException {
+        return PrimitiveLongResourceCollections.emptyIterator();
+    }
 
     interface Marker extends AutoCloseable {
         default void markUsed(long id) {
@@ -214,6 +235,17 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         @Override
         public IdType idType() {
             return delegate.idType();
+        }
+
+        @Override
+        public PrimitiveLongResourceIterator freeIdsIterator() throws IOException {
+            return delegate.freeIdsIterator();
+        }
+
+        @Override
+        public PrimitiveLongResourceIterator freeIdsIterator(long fromIdInclusive, long toIdExclusive)
+                throws IOException {
+            return delegate.freeIdsIterator(fromIdInclusive, toIdExclusive);
         }
 
         @Override

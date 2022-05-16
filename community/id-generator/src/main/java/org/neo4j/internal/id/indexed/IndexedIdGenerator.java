@@ -43,6 +43,8 @@ import java.util.function.LongSupplier;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
+import org.neo4j.collection.PrimitiveLongResourceCollections;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
@@ -51,6 +53,7 @@ import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdGenerator;
@@ -62,6 +65,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.util.Preconditions;
 
 /**
  * At the heart of this free-list sits a {@link GBPTree}, containing all deleted and freed ids. The tree is used as a bit-set and since it's
@@ -284,6 +288,7 @@ public class IndexedIdGenerator implements IdGenerator {
     private final IdRangeMerger recoveryMerger;
     private final DatabaseReadOnlyChecker readOnlyChecker;
     private final PageCacheTracer pageCacheTracer;
+    private final CursorContextFactory contextFactory;
 
     private final Monitor monitor;
     private final boolean strictlyPrioritizeFreelist;
@@ -307,6 +312,7 @@ public class IndexedIdGenerator implements IdGenerator {
             PageCacheTracer tracer) {
         this.path = path;
         this.readOnlyChecker = readOnlyChecker;
+        this.contextFactory = contextFactory;
         this.pageCacheTracer = tracer;
         int cacheCapacity = idType.highActivity() && allowLargeIdCaches ? LARGE_CACHE_CAPACITY : SMALL_CACHE_CAPACITY;
         this.idType = idType;
@@ -768,6 +774,61 @@ public class IndexedIdGenerator implements IdGenerator {
             }
             System.out.println(header);
         }
+    }
+
+    public PrimitiveLongResourceIterator freeIdsIterator() throws IOException {
+        return freeIdsIterator(0, getHighId());
+    }
+
+    public PrimitiveLongResourceIterator freeIdsIterator(long fromIdInclusive, long toIdExclusive) throws IOException {
+        Preconditions.checkArgument(fromIdInclusive <= toIdExclusive, "From Id needs to be lesser than toId");
+        long fromRange = fromIdInclusive / idsPerEntry;
+        long toRange = (toIdExclusive / idsPerEntry) + 1;
+        CursorContext context = contextFactory.create("FreeIdIterator");
+        Seeker<IdRangeKey, IdRange> scanner = tree.seek(new IdRangeKey(fromRange), new IdRangeKey(toRange), context);
+
+        return new PrimitiveLongResourceCollections.AbstractPrimitiveLongBaseResourceIterator(
+                () -> closeAllUnchecked(scanner, context)) {
+
+            private IdRangeKey currentKey;
+            private IdRange currentRange;
+            private int nextIndex = (int) (fromIdInclusive % idsPerEntry);
+            private boolean reachedEnd;
+
+            @Override
+            protected boolean fetchNext() {
+                try {
+                    while (!reachedEnd) {
+                        if (currentRange == null) {
+                            if (!scanner.next()) {
+                                reachedEnd = true;
+                                return false;
+                            }
+                            if (nextIndex == idsPerEntry) {
+                                nextIndex = 0;
+                            }
+                            currentRange = scanner.value();
+                            currentKey = scanner.key();
+                        }
+                        while (nextIndex < idsPerEntry) {
+                            int index = nextIndex++;
+                            long id = currentKey.getIdRangeIdx() * idsPerEntry + index;
+                            if (id >= toIdExclusive && id > fromIdInclusive) {
+                                return false;
+                            }
+                            if (!IdRange.IdState.USED.equals(currentRange.getState(index))) {
+                                return next(id);
+                            }
+                        }
+                        currentRange = null;
+                    }
+
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+                return false;
+            }
+        };
     }
 
     @Override
