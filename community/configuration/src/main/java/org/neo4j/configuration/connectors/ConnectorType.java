@@ -41,7 +41,7 @@ public enum ConnectorType {
         for (ConnectorType value : values()) {
             if (value.code == code) return value;
         }
-        throw new IllegalArgumentException("Invlaid code for ConnectorType: " + code);
+        throw new IllegalArgumentException("Invalid code for ConnectorType: " + code);
     }
 
     public String description() {
