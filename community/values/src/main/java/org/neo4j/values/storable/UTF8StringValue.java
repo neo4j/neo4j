@@ -525,23 +525,14 @@ public final class UTF8StringValue extends StringValue {
     }
 
     private static int codePoint(byte[] bytes, byte currentByte, int i, int bytesNeeded) {
-        int codePoint;
-        switch (bytesNeeded) {
-            case 2:
-                codePoint = (currentByte << 4) | (bytes[i + 1] & HIGH_BIT_MASK);
-                break;
-            case 3:
-                codePoint = (currentByte << 9) | ((bytes[i + 1] & HIGH_BIT_MASK) << 6) | (bytes[i + 2] & HIGH_BIT_MASK);
-                break;
-            case 4:
-                codePoint = (currentByte << 14)
-                        | ((bytes[i + 1] & HIGH_BIT_MASK) << 12)
-                        | ((bytes[i + 2] & HIGH_BIT_MASK) << 6)
-                        | (bytes[i + 3] & HIGH_BIT_MASK);
-                break;
-            default:
-                throw new IllegalArgumentException("Malformed UTF8 value");
-        }
-        return codePoint;
+        return switch (bytesNeeded) {
+            case 2 -> (currentByte << 4) | (bytes[i + 1] & HIGH_BIT_MASK);
+            case 3 -> (currentByte << 9) | ((bytes[i + 1] & HIGH_BIT_MASK) << 6) | (bytes[i + 2] & HIGH_BIT_MASK);
+            case 4 -> (currentByte << 14)
+                    | ((bytes[i + 1] & HIGH_BIT_MASK) << 12)
+                    | ((bytes[i + 2] & HIGH_BIT_MASK) << 6)
+                    | (bytes[i + 3] & HIGH_BIT_MASK);
+            default -> throw new IllegalArgumentException("Malformed UTF8 value");
+        };
     }
 }
