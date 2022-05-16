@@ -52,6 +52,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.ConsistencyCheckState;
+import org.neo4j.index.internal.gbptree.RootLayer.TreeRootsVisitor;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCache;
@@ -1223,8 +1224,8 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         }
     }
 
-    public void visitAllRoots(Consumer<ROOT_KEY> visitor, CursorContext cursorContext) throws IOException {
-        rootLayer.visitAllDataTreeRoots(visitor, cursorContext);
+    public void visitAllRoots(CursorContext cursorContext, TreeRootsVisitor<ROOT_KEY> visitor) throws IOException {
+        rootLayer.visitAllDataTreeRoots(cursorContext, visitor);
     }
 
     @VisibleForTesting

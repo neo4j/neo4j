@@ -23,7 +23,6 @@ import static org.neo4j.index.internal.gbptree.InternalTreeLogic.DEFAULT_SPLIT_R
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.function.Consumer;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -137,11 +136,13 @@ abstract class RootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> implements TreeRootExch
 
     /**
      * Visits keys for all existing root mappings.
-     * @param visitor called for each existing root mapping.
+     *
      * @param cursorContext the {@link CursorContext}.
+     * @param visitor       called for each existing root mapping.
      * @throws IOException on I/O error.
      */
-    abstract void visitAllDataTreeRoots(Consumer<ROOT_KEY> visitor, CursorContext cursorContext) throws IOException;
+    abstract void visitAllDataTreeRoots(CursorContext cursorContext, TreeRootsVisitor<ROOT_KEY> visitor)
+            throws IOException;
 
     /**
      * Performs unsafe operations directly on the underlying pages.
@@ -178,5 +179,15 @@ abstract class RootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> implements TreeRootExch
             return 0;
         }
         return DEFAULT_SPLIT_RATIO;
+    }
+
+    @FunctionalInterface
+    public interface TreeRootsVisitor<ROOT_KEY> {
+        /**
+         *
+         * @param root the root of the tree to visit
+         * @return <code>true</code> to terminate the iteration, <code>false</code> to continue.
+         */
+        boolean accept(ROOT_KEY root);
     }
 }

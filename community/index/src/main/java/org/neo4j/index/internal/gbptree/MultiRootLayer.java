@@ -37,7 +37,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-import java.util.function.Consumer;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.neo4j.index.internal.gbptree.RootMappingLayout.RootMappingValue;
 import org.neo4j.io.pagecache.PageCursor;
@@ -336,10 +335,13 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         return abs(dataRootKey.hashCode()) % rootMappingCache.length();
     }
 
-    void visitAllDataTreeRoots(Consumer<ROOT_KEY> visitor, CursorContext cursorContext) throws IOException {
+    @Override
+    void visitAllDataTreeRoots(CursorContext cursorContext, TreeRootsVisitor<ROOT_KEY> visitor) throws IOException {
         try (Seeker<ROOT_KEY, RootMappingValue> seek = allRootsSeek(cursorContext)) {
             while (seek.next()) {
-                visitor.accept(rootLayout.copyKey(seek.key()));
+                if (visitor.accept(rootLayout.copyKey(seek.key()))) {
+                    break;
+                }
             }
         }
     }

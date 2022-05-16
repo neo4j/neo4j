@@ -530,6 +530,25 @@ class MultiRootGBPTreeTest {
         }
     }
 
+    @Test
+    void shouldAbortDuringVisitAllDataTreeRoots() throws IOException {
+        // given
+        final var externalId1 = 123456;
+        final var externalId2 = 654321;
+        tree.create(rootKeyLayout.key(externalId1), NULL_CONTEXT);
+        tree.create(rootKeyLayout.key(externalId2), NULL_CONTEXT);
+
+        // when
+        final var roots = LongSets.mutable.empty();
+        tree.visitAllRoots(NULL_CONTEXT, key -> {
+            roots.add(rootKeyLayout.keySeed(key));
+            return true;
+        });
+
+        // then
+        assertThat(roots.toImmutable()).isEqualTo(LongSets.immutable.of(externalId1));
+    }
+
     private void deleteRootContents(long key) throws IOException {
         List<RawBytes> keys = new ArrayList<>();
         try (var seek = allSeek(key)) {
@@ -614,7 +633,10 @@ class MultiRootGBPTreeTest {
 
     private LongSet allExternalRoots() throws IOException {
         MutableLongSet set = LongSets.mutable.empty();
-        tree.visitAllRoots(key -> set.add(rootKeyLayout.keySeed(key)), NULL_CONTEXT);
+        tree.visitAllRoots(NULL_CONTEXT, key -> {
+            set.add(rootKeyLayout.keySeed(key));
+            return false;
+        });
         return set;
     }
 
