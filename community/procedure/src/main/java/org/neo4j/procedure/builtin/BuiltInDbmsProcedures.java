@@ -61,6 +61,7 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponents;
+import org.neo4j.fabric.executor.FabricExecutor;
 import org.neo4j.fabric.executor.FabricStatementLifecycles;
 import org.neo4j.fabric.transaction.FabricTransaction;
 import org.neo4j.fabric.transaction.TransactionManager;
@@ -228,7 +229,13 @@ public class BuiltInDbmsProcedures {
     public Stream<StringResult> clearAllQueryCaches() {
         QueryExecutionEngine queryExecutionEngine =
                 graph.getDependencyResolver().resolveDependency(QueryExecutionEngine.class);
-        long numberOfClearedQueries = queryExecutionEngine.clearQueryCaches() - 1; // this query itself does not count
+        FabricExecutor fabricExecutor = graph.getDependencyResolver().resolveDependency(FabricExecutor.class);
+
+        // we subtract 1 because the query "CALL db.queryClearCaches()" is compiled and thus populates the caches by 1
+        long numberOfClearedQueries = Math.max(
+                        queryExecutionEngine.clearQueryCaches(),
+                        fabricExecutor.clearQueryCachesForDatabase(graph.databaseName()))
+                - 1;
 
         String result = numberOfClearedQueries == 0
                 ? "Query cache already empty."
