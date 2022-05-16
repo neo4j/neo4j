@@ -48,7 +48,7 @@ class PageBytesReserveIT {
     private TestDirectory testDirectory;
 
     public static IntStream reservedBytes() {
-        return IntStream.of(8, 16, 24, 32, 40, 48, 64);
+        return IntStream.of(24, 32, 40, 48, 64, 128);
     }
 
     @ParameterizedTest

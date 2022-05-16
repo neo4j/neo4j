@@ -34,6 +34,7 @@ Apache Software License, Version 2.0
   IPAddress
   Java Native Access
   Jettison
+  LZ4 and xxHash
   Scala Compiler
   Scalap
 

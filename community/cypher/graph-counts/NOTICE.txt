@@ -33,6 +33,7 @@ Apache Software License, Version 2.0
   json4s-core
   json4s-native
   json4s-scalap
+  LZ4 and xxHash
 
 BSD - Scala License
   Scala Library

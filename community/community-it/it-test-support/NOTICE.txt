@@ -79,6 +79,7 @@ Apache Software License, Version 2.0
   Jetty :: XML utilities
   jPowerShell
   jProcesses
+  LZ4 and xxHash
   magnolia
   mercator
   Netty/Buffer

@@ -65,6 +65,7 @@ public abstract class MuninnPageCursor extends PageCursor {
     private static final int SIZE_OF_INT = Integer.BYTES;
     private static final int SIZE_OF_LONG = Long.BYTES;
     protected static final int POINTER_OFFSET = Long.BYTES;
+    public static final int CHECKSUM_OFFSET = Long.BYTES * 2;
 
     private final long victimPage;
     protected final PageCursorTracer tracer;
@@ -205,6 +206,10 @@ public abstract class MuninnPageCursor extends PageCursor {
 
     protected long getPageVersion() {
         return getLongAt(pointer, littleEndian);
+    }
+
+    protected long getPageChecksum() {
+        return getLongAt(pointer + CHECKSUM_OFFSET, littleEndian);
     }
 
     @Override

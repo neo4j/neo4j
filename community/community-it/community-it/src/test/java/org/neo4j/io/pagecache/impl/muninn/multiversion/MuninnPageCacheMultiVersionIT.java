@@ -253,7 +253,7 @@ public class MuninnPageCacheMultiVersionIT extends PageCacheTestSupport<MuninnPa
     @Test
     void contextIsNotMarkedAsDirtyInMultiVersionedCase() throws IOException {
         try (MuninnPageCache pageCache = createPageCache(fs, 2, PageCacheTracer.NULL);
-                PagedFile pagedFile = map(pageCache, file("a"), 8);
+                PagedFile pagedFile = map(pageCache, file("a"), 32);
                 var cursorContext = contextFactory.create("contextIsNotMarkedAsDirtyInMultiVersionedCase")) {
             VersionContext versionContext = cursorContext.getVersionContext();
             versionContext.initWrite(7);

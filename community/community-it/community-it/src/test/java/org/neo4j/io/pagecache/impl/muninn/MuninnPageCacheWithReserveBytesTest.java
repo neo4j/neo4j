@@ -51,8 +51,8 @@ public class MuninnPageCacheWithReserveBytesTest extends MuninnPageCacheTest {
             Path fileA = existingFile("a");
             Path fileB = existingFile("b");
 
-            generateFileWithRecords(fileA, 1, 16, recordsPerFilePage, reservedBytes);
-            generateFileWithRecords(fileB, 1, 16, recordsPerFilePage, reservedBytes);
+            generateFileWithRecords(fileA, 1, 16, recordsPerFilePage, reservedBytes, filePageSize);
+            generateFileWithRecords(fileB, 1, 16, recordsPerFilePage, reservedBytes, filePageSize);
 
             try (PagedFile pfA = map(fileA, filePageSize);
                     PagedFile pfB = map(fileB, filePageSize);

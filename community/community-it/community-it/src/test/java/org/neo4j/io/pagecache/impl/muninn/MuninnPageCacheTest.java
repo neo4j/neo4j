@@ -398,7 +398,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
             for (int i = 0; i < iterations; i++) {
                 writeInitialDataTo(file("a" + i), reservedBytes);
                 try (var cursorContext = contextFactory.create("countOpenedAndClosedCursors");
-                        PagedFile pagedFile = map(pageCache, file("a" + i), 8)) {
+                        PagedFile pagedFile = map(pageCache, file("a" + i), 8 + reservedBytes)) {
                     try (PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, cursorContext)) {
                         assertEquals(i * 3 + 1, defaultPageCacheTracer.openedCursors());
                         assertEquals(i * 3, defaultPageCacheTracer.closedCursors());
@@ -433,7 +433,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
             for (int i = 0; i < iterations; i++) {
                 writeInitialDataTo(file("a" + i), reservedBytes);
                 try (var cursorContext = contextFactory.create("countOpenedAndClosedCursors");
-                        PagedFile pagedFile = map(pageCache, file("a" + i), 8)) {
+                        PagedFile pagedFile = map(pageCache, file("a" + i), 8 + reservedBytes)) {
                     try (PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, cursorContext)) {
                         cursor.openLinkedCursor(1);
                         assertEquals(i * 7 + 2, defaultPageCacheTracer.openedCursors());
@@ -472,7 +472,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         long initialFlushes = defaultPageCacheTracer.flushes();
         try (MuninnPageCache pageCache = createPageCache(fs, 2, defaultPageCacheTracer)) {
             try (var cursorContext = contextFactory.create("shouldBeAbleToSetDeleteOnCloseFileAfterItWasMapped");
-                    PagedFile pagedFile = map(pageCache, fileForDeletion, 8)) {
+                    PagedFile pagedFile = map(pageCache, fileForDeletion, 8 + reservedBytes)) {
                 try (PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, cursorContext)) {
                     assertTrue(cursor.next());
                     cursor.putLong(0L);
@@ -492,7 +492,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 new RecordingPageCursorTracer(tracer, "ableToEvictAllPageInAPageCache");
         var contextFactory = new CursorContextFactory(tracer, EMPTY);
         try (MuninnPageCache pageCache = createPageCache(fs, 2, blockCacheFlush(tracer));
-                PagedFile pagedFile = map(pageCache, file("a"), 8);
+                PagedFile pagedFile = map(pageCache, file("a"), 8 + reservedBytes);
                 CursorContext context = contextFactory.create(recordingCursor)) {
             try (PageCursor cursor = pagedFile.io(0, PF_SHARED_READ_LOCK, context)) {
                 assertTrue(cursor.next());
@@ -513,7 +513,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         var contextFactory = new CursorContextFactory(tracer, EMPTY);
 
         try (MuninnPageCache pageCache = createPageCache(fs, 10, blockCacheFlush(tracer));
-                PagedFile pagedFile = map(pageCache, file("a"), 8)) {
+                PagedFile pagedFile = map(pageCache, file("a"), 8 + reservedBytes)) {
             try (PageCursor cursor = pagedFile.io(0, PF_SHARED_READ_LOCK, contextFactory.create(recordingTracer))) {
                 assertTrue(cursor.next());
             }
@@ -617,7 +617,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         var contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
 
         try (MuninnPageCache pageCache = createPageCache(fs, 2, cacheTracer);
-                PagedFile pagedFile = map(pageCache, file("a"), 8)) {
+                PagedFile pagedFile = map(pageCache, file("a"), 8 + reservedBytes)) {
             CursorContext cursorContext = contextFactory.create(pageCursorTracer);
             try (var readCursor = pagedFile.io(0, PF_SHARED_READ_LOCK, cursorContext)) {
                 assertTrue(readCursor.next()); // first pin
@@ -1428,7 +1428,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         var contextFactory =
                 new CursorContextFactory(PageCacheTracer.NULL, new SingleVersionContextSupplier(versionContext));
         try (MuninnPageCache pageCache = createPageCache(fs, 2, PageCacheTracer.NULL);
-                PagedFile pagedFile = map(pageCache, file("a"), 8);
+                PagedFile pagedFile = map(pageCache, file("a"), 8 + reservedBytes);
                 CursorContext cursorContext =
                         contextFactory.create("doNotMarkCursorContextAsDirtyWhenReadingDataFromOlderTransactions")) {
             versionContext.initWrite(17);
@@ -1566,7 +1566,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
             };
 
             try (MuninnPageCache pageCache = createPageCache(fs, 2, PageCacheTracer.NULL);
-                    PagedFile pagedFile = map(pageCache, file("a"), 8)) {
+                    PagedFile pagedFile = map(pageCache, file("a"), 8 + reservedBytes)) {
                 // The basic idea is that this loop, which will encounter a lot of page faults, must not block forever
                 // even
                 // though the eviction thread is unable to flush any dirty pages because the file system throws
@@ -1606,7 +1606,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
             };
 
             try (MuninnPageCache pageCache = createPageCache(fs, 10, PageCacheTracer.NULL);
-                    PagedFile pagedFile = map(pageCache, file("a"), 8)) {
+                    PagedFile pagedFile = map(pageCache, file("a"), 8 + reservedBytes)) {
                 try (PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                     assertTrue(cursor.next()); // Page 0 is now dirty, but flushing it will throw an exception.
                 }
@@ -1685,7 +1685,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     @Test
     void transientCursorShouldNotUpdateUsageCounter() throws IOException {
         try (MuninnPageCache pageCache = createPageCache(fs, 40, PageCacheTracer.NULL);
-                PagedFile pagedFile = map(pageCache, file("a"), 8)) {
+                PagedFile pagedFile = map(pageCache, file("a"), 8 + reservedBytes)) {
             PageList pages = pageCache.pages;
             long zeroPageRef = pages.deref(0);
 
@@ -1716,7 +1716,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         try (var pageCache = createPageCache(fs, 1024, new DefaultPageCacheTracer())) {
             Path file = existingFile("a");
             writeInitialDataTo(file, reservedBytes);
-            try (PagedFile pagedFile = map(pageCache, file, 8)) {
+            try (PagedFile pagedFile = map(pageCache, file, 8 + reservedBytes)) {
                 try (PageCursor readCursor = pagedFile.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
                     // Given
                     assertThat(readCursor.next(0)).isTrue();
@@ -2045,20 +2045,24 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         public PageSwapper createPageSwapper(
                 Path file,
                 int filePageSize,
+                int reservedPageBytes,
                 PageEvictionCallback onEviction,
                 boolean createIfNotExist,
                 boolean useDirectIO,
                 boolean preallocateStoreFiles,
+                boolean checksumPages,
                 IOController ioController,
                 SwapperSet swappers)
                 throws IOException {
             return new DelegatingPageSwapper(super.createPageSwapper(
                     file,
                     filePageSize,
+                    reservedPageBytes,
                     onEviction,
                     createIfNotExist,
                     useDirectIO,
                     preallocateStoreFiles,
+                    checksumPages,
                     ioController,
                     swappers)) {
                 @Override

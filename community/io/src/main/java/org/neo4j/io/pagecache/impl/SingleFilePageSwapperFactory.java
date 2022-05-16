@@ -53,10 +53,12 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory {
     public PageSwapper createPageSwapper(
             Path file,
             int filePageSize,
+            int reservedPageBytes,
             PageEvictionCallback onEviction,
             boolean createIfNotExist,
             boolean useDirectIO,
             boolean preallocateStoreFiles,
+            boolean checksumPages,
             IOController ioController,
             SwapperSet swappers)
             throws IOException {
@@ -67,9 +69,11 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory {
                 file,
                 fs,
                 filePageSize,
+                reservedPageBytes,
                 onEviction,
                 useDirectIO,
                 preallocateStoreFiles,
+                checksumPages,
                 ioController,
                 swappers,
                 pageCacheTracer.createFileSwapperTracer(),

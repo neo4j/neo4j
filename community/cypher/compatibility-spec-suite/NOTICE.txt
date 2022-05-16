@@ -54,6 +54,7 @@ Apache Software License, Version 2.0
   Jettison
   jPowerShell
   jProcesses
+  LZ4 and xxHash
   magnolia
   mercator
   openCypher TCK Features and Graphs

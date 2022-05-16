@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -45,11 +46,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.mem.MemoryAllocator;
@@ -61,6 +64,7 @@ import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.util.concurrent.Futures;
 
 @TestDirectoryExtension
+@Isolated
 public abstract class PageSwapperTest {
     @Inject
     protected TestDirectory testDir;
@@ -71,26 +75,36 @@ public abstract class PageSwapperTest {
 
     protected static final PageEvictionCallback NO_CALLBACK = filePageId -> {};
 
-    private static final int cachePageSize = 32;
+    public static int RESERVED_BYTES;
+    public static int PAYLOAD_SIZE;
+    public static int cachePageSize;
     private final ConcurrentLinkedQueue<PageSwapper> openedSwappers = new ConcurrentLinkedQueue<>();
     private final MemoryAllocator mman =
             MemoryAllocator.createAllocator(KibiByte.toBytes(32), new LocalMemoryTracker());
     private final SwapperSet swapperSet = new SwapperSet();
+    private boolean checksumPages;
 
     protected abstract PageSwapperFactory swapperFactory(FileSystemAbstraction fileSystem);
 
     protected abstract void mkdirs(Path dir) throws IOException;
 
+    @BeforeAll
+    static void beforeAll() {
+        RESERVED_BYTES = 0;
+        PAYLOAD_SIZE = 32;
+        cachePageSize = PAYLOAD_SIZE + RESERVED_BYTES;
+    }
+
     @BeforeEach
     @AfterEach
     void clearStrayInterrupts() {
+        checksumPages = RESERVED_BYTES > 0;
         Thread.interrupted();
     }
 
     @AfterEach
     void closeOpenedPageSwappers() throws Exception {
         Exception exception = null;
-        PageSwapperFactory factory;
         PageSwapper swapper;
 
         while ((swapper = openedSwappers.poll()) != null) {
@@ -517,7 +531,7 @@ public abstract class PageSwapperTest {
         assertThat(swapper.getLastPageId()).isEqualTo(10L);
 
         swapper.close();
-        swapper = createSwapper(factory, file, cachePageSize(), NO_CALLBACK, false, false, true);
+        swapper = createSwapper(factory, file, PAYLOAD_SIZE, NO_CALLBACK, false, false, true);
         clear(page);
         read(swapper, 10, page);
         assertThat(getInt(page, 0)).isEqualTo(0xcafebabe);
@@ -530,7 +544,7 @@ public abstract class PageSwapperTest {
         assertThat(swapper.getLastPageId()).isEqualTo(-1L);
 
         swapper.close();
-        swapper = createSwapper(factory, file, cachePageSize(), NO_CALLBACK, false, false, true);
+        swapper = createSwapper(factory, file, PAYLOAD_SIZE, NO_CALLBACK, false, false, true);
         clear(page);
         read(swapper, 10, page);
         assertThat(getInt(page, 0)).isEqualTo(0);
@@ -555,23 +569,29 @@ public abstract class PageSwapperTest {
         putInt(pageC, 0, 4);
         putInt(pageD, 0, 5);
 
-        write(swapper, 1, new long[] {pageA, pageB, pageC, pageD}, new int[] {4, 4, 4, 4}, 4, 4);
+        write(
+                swapper,
+                1,
+                new long[] {pageA, pageB, pageC, pageD},
+                new int[] {4 + RESERVED_BYTES, 4 + RESERVED_BYTES, 4 + RESERVED_BYTES, 4 + RESERVED_BYTES},
+                4,
+                4);
 
         long result = createPage(4);
 
         read(swapper, 0, result);
         assertThat(getInt(result, 0)).isEqualTo(0);
         putInt(result, 0, 0);
-        assertThat(read(swapper, 1, result)).isEqualTo(4L);
+        assertThat(read(swapper, 1, result)).isEqualTo(4L + RESERVED_BYTES);
         assertThat(getInt(result, 0)).isEqualTo(2);
         putInt(result, 0, 0);
-        assertThat(read(swapper, 2, result)).isEqualTo(4L);
+        assertThat(read(swapper, 2, result)).isEqualTo(4L + RESERVED_BYTES);
         assertThat(getInt(result, 0)).isEqualTo(3);
         putInt(result, 0, 0);
-        assertThat(read(swapper, 3, result)).isEqualTo(4L);
+        assertThat(read(swapper, 3, result)).isEqualTo(4L + RESERVED_BYTES);
         assertThat(getInt(result, 0)).isEqualTo(4);
         putInt(result, 0, 0);
-        assertThat(read(swapper, 4, result)).isEqualTo(4L);
+        assertThat(read(swapper, 4, result)).isEqualTo(4L + RESERVED_BYTES);
         assertThat(getInt(result, 0)).isEqualTo(5);
         putInt(result, 0, 0);
         assertThat(read(swapper, 5, result)).isEqualTo(0L);
@@ -580,6 +600,7 @@ public abstract class PageSwapperTest {
 
     @Test
     void positionedVectoredWriteMustFlushAllBuffersOfDifferentSizeInOrder() throws Exception {
+        assumeThat(RESERVED_BYTES).isEqualTo(0);
         Path file = file("file");
         PageSwapperFactory factory = createSwapperFactory(getFs());
         PageSwapper swapper = createSwapperAndFile(factory, file, 4);
@@ -620,6 +641,7 @@ public abstract class PageSwapperTest {
 
     @Test
     void positionedVectoredReadMustFillAllBuffersOfDifferentSizesInOrder() throws Exception {
+        assumeThat(RESERVED_BYTES).isEqualTo(0);
         Path file = file("file");
         PageSwapperFactory factory = createSwapperFactory(getFs());
         PageSwapper swapper = createSwapperAndFile(factory, file, 4);
@@ -677,9 +699,14 @@ public abstract class PageSwapperTest {
         long pageC = createPage(4);
         long pageD = createPage(4);
 
-        // Read 4 pages of 4 bytes each
-        assertThat(read(swapper, 1, new long[] {pageA, pageB, pageC, pageD}, new int[] {4, 4, 4, 4}, 4))
-                .isEqualTo(4 * 4L);
+        // Read 4 pages of 4 bytes each + reserved bytes
+        assertThat(read(
+                        swapper,
+                        1,
+                        new long[] {pageA, pageB, pageC, pageD},
+                        new int[] {4 + RESERVED_BYTES, 4 + RESERVED_BYTES, 4 + RESERVED_BYTES, 4 + RESERVED_BYTES},
+                        4))
+                .isEqualTo((4 + RESERVED_BYTES) * 4L);
 
         assertThat(getInt(pageA, 0)).isEqualTo(2);
         assertThat(getInt(pageB, 0)).isEqualTo(3);
@@ -689,31 +716,40 @@ public abstract class PageSwapperTest {
 
     @Test
     void positionedVectoredReadFromEmptyFileMustFillPagesWithZeros() throws Exception {
+        assumeThat(RESERVED_BYTES).isEqualTo(0);
         Path file = file("file");
         PageSwapperFactory factory = createSwapperFactory(getFs());
         PageSwapper swapper = createSwapperAndFile(factory, file, 4);
 
         long page = createPage(4);
         putInt(page, 0, 1);
-        assertThat(read(swapper, 0, new long[] {page}, new int[] {4}, 1)).isEqualTo(0L);
+        assertThat(read(swapper, 0, new long[] {page}, new int[] {4 + RESERVED_BYTES}, 1))
+                .isEqualTo(0L);
         assertThat(getInt(page, 0)).isEqualTo(0);
     }
 
     @Test
     void positionedVectoredReadBeyondEndOfFileMustFillPagesWithZeros() throws Exception {
+        assumeThat(RESERVED_BYTES).isEqualTo(0);
         Path file = file("file");
         PageSwapperFactory factory = createSwapperFactory(getFs());
         PageSwapper swapper = createSwapperAndFile(factory, file, 4);
 
         long output = createPage(4);
         putInt(output, 0, 0xFFFF_FFFF);
-        write(swapper, 0, new long[] {output, output, output}, new int[] {4, 4, 4}, 3, 3);
+        write(
+                swapper,
+                0,
+                new long[] {output, output, output},
+                new int[] {4 + RESERVED_BYTES, 4 + RESERVED_BYTES, 4 + RESERVED_BYTES},
+                3,
+                3);
 
         long pageA = createPage(4);
         long pageB = createPage(4);
         putInt(pageA, 0, -1);
         putInt(pageB, 0, -1);
-        assertThat(read(swapper, 3, new long[] {pageA, pageB}, new int[] {4, 4}, 2))
+        assertThat(read(swapper, 3, new long[] {pageA, pageB}, new int[] {4 + RESERVED_BYTES, 4 + RESERVED_BYTES}, 2))
                 .isEqualTo(0L);
         assertThat(getInt(pageA, 0)).isEqualTo(0);
         assertThat(getInt(pageB, 0)).isEqualTo(0);
@@ -721,6 +757,7 @@ public abstract class PageSwapperTest {
 
     @Test
     void positionedVectoredReadBeyondEndOfFileMustFillPagesWithZerosForBuffersWithDifferentSizes() throws Exception {
+        assumeThat(RESERVED_BYTES).isEqualTo(0);
         Path file = file("file");
         PageSwapperFactory factory = createSwapperFactory(getFs());
         PageSwapper swapper = createSwapperAndFile(factory, file, 4);
@@ -750,6 +787,7 @@ public abstract class PageSwapperTest {
 
     @Test
     void positionedVectoredReadWhereLastPageExtendBeyondEndOfFileMustHaveRemainderZeroFilled() throws Exception {
+        assumeThat(RESERVED_BYTES).isEqualTo(0);
         Path file = file("file");
         PageSwapperFactory factory = createSwapperFactory(getFs());
         PageSwapper swapper = createSwapperAndFile(factory, file, 4);
@@ -781,6 +819,7 @@ public abstract class PageSwapperTest {
 
     @Test
     void positionedVectoredReadWhereSecondLastPageExtendBeyondEndOfFileMustHaveRestZeroFilled() throws Exception {
+        assumeThat(RESERVED_BYTES).isEqualTo(0);
         Path file = file("file");
         PageSwapperFactory factory = createSwapperFactory(getFs());
         PageSwapper swapper = createSwapperAndFile(factory, file, 4);
@@ -832,7 +871,7 @@ public abstract class PageSwapperTest {
             int[] sizes = new int[length];
             for (int i = 0; i < length; i++) {
                 pages[i] = createPage(pageSize);
-                sizes[i] = pageSize;
+                sizes[i] = pageSize + RESERVED_BYTES;
             }
 
             startLatch.await();
@@ -841,7 +880,7 @@ public abstract class PageSwapperTest {
                 if (rng.nextBoolean()) {
                     // Do read
                     long bytesRead = read(swapper, startFilePageId, pages, sizes, pages.length);
-                    assertThat(bytesRead).isEqualTo(pages.length * 4L);
+                    assertThat(bytesRead).isEqualTo(pages.length * 4L + RESERVED_BYTES * length);
                     for (int j = 0; j < pages.length; j++) {
                         int expectedValue = (int) (1 + j + startFilePageId);
                         int actualValue = getInt(pages[j], 0);
@@ -854,7 +893,7 @@ public abstract class PageSwapperTest {
                         putInt(pages[j], 0, value);
                     }
                     assertThat(write(swapper, startFilePageId, pages, sizes, pages.length, pages.length))
-                            .isEqualTo(pages.length * 4L);
+                            .isEqualTo(pages.length * 4L + RESERVED_BYTES * length);
                 }
             }
             return null;
@@ -890,7 +929,7 @@ public abstract class PageSwapperTest {
 
         long page = createPage(4);
 
-        int[] pageSizes = {4, 4, 4, 4};
+        int[] pageSizes = {4 + RESERVED_BYTES, 4 + RESERVED_BYTES, 4 + RESERVED_BYTES, 4 + RESERVED_BYTES};
         write(swapper, 0, new long[] {page, page, page, page}, pageSizes, 4, 4);
 
         assertThatThrownBy(
@@ -965,7 +1004,12 @@ public abstract class PageSwapperTest {
 
         assertThrows(
                 IOException.class,
-                () -> read(swapper, -1, new long[] {createPage(4), createPage(4)}, new int[] {4, 4}, 2));
+                () -> read(
+                        swapper,
+                        -1,
+                        new long[] {createPage(4), createPage(4)},
+                        new int[] {4 + RESERVED_BYTES, 4 + RESERVED_BYTES},
+                        2));
     }
 
     @Test
@@ -976,7 +1020,13 @@ public abstract class PageSwapperTest {
 
         assertThrows(
                 IOException.class,
-                () -> write(swapper, -1, new long[] {createPage(4), createPage(4)}, new int[] {4, 4}, 2, 2));
+                () -> write(
+                        swapper,
+                        -1,
+                        new long[] {createPage(4), createPage(4)},
+                        new int[] {4 + RESERVED_BYTES, 4 + RESERVED_BYTES},
+                        2,
+                        2));
     }
 
     @Test
@@ -990,7 +1040,7 @@ public abstract class PageSwapperTest {
         putInt(pageA, 0, 1);
         putInt(pageB, 0, 2);
         long[] pages = {pageA, pageB};
-        int[] pageSizes = {4, 4};
+        int[] pageSizes = {4 + RESERVED_BYTES, 4 + RESERVED_BYTES};
         write(swapper, 0, pages, pageSizes, 2, 2);
         putInt(pageA, 0, 3);
         putInt(pageB, 0, 4);
@@ -1012,7 +1062,7 @@ public abstract class PageSwapperTest {
         putInt(pageA, 0, 1);
         putInt(pageB, 0, 2);
         long[] pages = {pageA, pageB};
-        int[] pageSizes = {4, 4};
+        int[] pageSizes = {4 + RESERVED_BYTES, 4 + RESERVED_BYTES};
         write(swapper, 0, pages, pageSizes, 2, 2);
         putInt(pageA, 0, 3);
         putInt(pageB, 0, 4);
@@ -1042,15 +1092,16 @@ public abstract class PageSwapperTest {
     }
 
     protected long createPage(int cachePageSize) {
-        long address = mman.allocateAligned(cachePageSize + Integer.BYTES, 1);
-        UnsafeUtil.putInt(address, cachePageSize);
-        return address + Integer.BYTES;
+        int size = cachePageSize + RESERVED_BYTES;
+        long address = mman.allocateAligned(size + Integer.BYTES, 1);
+        UnsafeUtil.putInt(address(address), size);
+        return address(address) + Integer.BYTES;
     }
 
     protected static void clear(long address) {
         byte b = (byte) 0;
-        for (int i = 0; i < cachePageSize(); i++) {
-            UnsafeUtil.putByte(address + i, b);
+        for (int i = 0; i < PAYLOAD_SIZE; i++) {
+            UnsafeUtil.putByte(address(address) + i, b);
         }
     }
 
@@ -1074,7 +1125,16 @@ public abstract class PageSwapperTest {
             boolean preallocateStoreFiles)
             throws IOException {
         return createSwapper(
-                factory, path, filePageSize, callback, createIfNotExist, useDirectIO, preallocateStoreFiles, DISABLED);
+                factory,
+                path,
+                filePageSize + RESERVED_BYTES,
+                RESERVED_BYTES,
+                callback,
+                createIfNotExist,
+                useDirectIO,
+                preallocateStoreFiles,
+                checksumPages,
+                DISABLED);
     }
 
     protected PageSwapper createSwapper(
@@ -1087,41 +1147,72 @@ public abstract class PageSwapperTest {
             boolean preallocateStoreFiles,
             IOController controller)
             throws IOException {
-        PageSwapper swapper = factory.createPageSwapper(
+        return createSwapper(
+                factory,
                 path,
-                filePageSize,
+                filePageSize + RESERVED_BYTES,
+                RESERVED_BYTES,
                 callback,
                 createIfNotExist,
                 useDirectIO,
                 preallocateStoreFiles,
+                checksumPages,
+                controller);
+    }
+
+    protected PageSwapper createSwapper(
+            PageSwapperFactory factory,
+            Path path,
+            int filePageSize,
+            int reservedPageBytes,
+            PageEvictionCallback callback,
+            boolean createIfNotExist,
+            boolean useDirectIO,
+            boolean preallocateStoreFiles,
+            boolean checksumPages,
+            IOController controller)
+            throws IOException {
+        PageSwapper swapper = factory.createPageSwapper(
+                path,
+                filePageSize,
+                reservedPageBytes,
+                callback,
+                createIfNotExist,
+                useDirectIO,
+                preallocateStoreFiles,
+                checksumPages,
                 controller,
                 swapperSet);
         openedSwappers.add(swapper);
         return swapper;
     }
 
-    protected static int sizeOfAsInt(long page) {
-        return UnsafeUtil.getInt(page - Integer.BYTES);
+    protected static int sizeOfAsInt(long address) {
+        return UnsafeUtil.getInt(address - Integer.BYTES) - RESERVED_BYTES;
     }
 
     protected static void putInt(long address, int offset, int value) {
-        UnsafeUtil.putInt(address + offset, value);
+        UnsafeUtil.putInt(address(address) + offset, value);
+    }
+
+    public static long address(long address) {
+        return address + RESERVED_BYTES;
     }
 
     protected static int getInt(long address, int offset) {
-        return UnsafeUtil.getInt(address + offset);
+        return UnsafeUtil.getInt(address(address) + offset);
     }
 
     protected static void putLong(long address, int offset, long value) {
-        UnsafeUtil.putLong(address + offset, value);
+        UnsafeUtil.putLong(address(address) + offset, value);
     }
 
     protected static long getLong(long address, int offset) {
-        return UnsafeUtil.getLong(address + offset);
+        return UnsafeUtil.getLong(address(address) + offset);
     }
 
     protected static byte getByte(long address, int offset) {
-        return UnsafeUtil.getByte(address + offset);
+        return UnsafeUtil.getByte(address(address) + offset);
     }
 
     private static long write(PageSwapper swapper, int filePageId, long address) throws IOException {
@@ -1158,12 +1249,12 @@ public abstract class PageSwapperTest {
     }
 
     private PageSwapper createSwapperAndFile(PageSwapperFactory factory, Path path) throws IOException {
-        return createSwapperAndFile(factory, path, cachePageSize());
+        return createSwapperAndFile(factory, path, PAYLOAD_SIZE);
     }
 
     private PageSwapper createSwapperAndFile(PageSwapperFactory factory, Path path, boolean useDirectIO)
             throws IOException {
-        return createSwapper(factory, path, cachePageSize(), NO_CALLBACK, true, useDirectIO, true);
+        return createSwapper(factory, path, PAYLOAD_SIZE, NO_CALLBACK, true, useDirectIO, true);
     }
 
     private PageSwapper createSwapperAndFile(

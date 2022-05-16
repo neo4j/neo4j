@@ -9,6 +9,7 @@ Apache Software License, Version 2.0
   Caffeine cache
   com.github.netcrusherorg:netcrusher-core
   Java Native Access
+  LZ4 and xxHash
 ------------------------------------------------------------------------------
 
                                  Apache License

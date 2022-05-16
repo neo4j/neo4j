@@ -349,7 +349,8 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                     recordsPerFilePage * 2,
                     recordSize,
                     recordsPerFilePage,
-                    reserved_page_header_bytes.defaultValue());
+                    reserved_page_header_bytes.defaultValue(),
+                    pageCachePageSize);
 
             getPageCache(fs, maxPages, PageCacheTracer.NULL);
 

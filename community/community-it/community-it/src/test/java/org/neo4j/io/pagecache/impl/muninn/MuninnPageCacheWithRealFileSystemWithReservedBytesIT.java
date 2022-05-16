@@ -100,7 +100,8 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
     void linkedCursorsPreservePayloadSize() throws IOException {
         try (var pageCache = getPageCache(fs, 1024, new DefaultPageCacheTracer())) {
             var file = file("a");
-            generateFileWithRecords(file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes);
+            generateFileWithRecords(
+                    file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes, pageCachePageSize);
 
             try (var pagedFile = map(file("a"), pageCache.pageSize());
                     var reader = pagedFile.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
@@ -244,7 +245,8 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
     void outOfBoundsWhenReadDataOutsideOfPayloadWindow() throws IOException {
         try (var pageCache = getPageCache(fs, 1024, new DefaultPageCacheTracer())) {
             var file = file("a");
-            generateFileWithRecords(file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes);
+            generateFileWithRecords(
+                    file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes, filePageSize);
             try (var pagedFile = map(file, pageCache.pageSize());
                     var reader = pagedFile.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
                 assertTrue(reader.next());
@@ -265,7 +267,8 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
     void outOfBoundsWhenWriteDataOutsideOfPayloadWindow() throws IOException {
         try (var pageCache = getPageCache(fs, 1024, new DefaultPageCacheTracer())) {
             var file = file("a");
-            generateFileWithRecords(file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes);
+            generateFileWithRecords(
+                    file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes, filePageSize);
             try (var pagedFile = map(file, pageCache.pageSize());
                     var writer = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                 assertTrue(writer.next());

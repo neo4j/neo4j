@@ -195,10 +195,12 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
         swapper = swapperFactory.createPageSwapper(
                 path,
                 filePageSize,
+                fileReservedPageBytes,
                 onEviction,
                 createIfNotExists,
                 useDirectIo,
                 preallocateStoreFiles,
+                multiVersioned,
                 ioController,
                 getSwappers());
         if (truncateExisting) {

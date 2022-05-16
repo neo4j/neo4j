@@ -124,8 +124,13 @@ public abstract class PageCacheTestSupport<T extends PageCache> {
     }
 
     protected T createPageCache(FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer) {
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory(fs, tracer, EmptyMemoryTracker.INSTANCE);
+        PageSwapperFactory swapperFactory = createDefaultPageSwapperFactory(fs, tracer);
         return createPageCache(swapperFactory, maxPages, tracer);
+    }
+
+    protected SingleFilePageSwapperFactory createDefaultPageSwapperFactory(
+            FileSystemAbstraction fs, PageCacheTracer tracer) {
+        return new SingleFilePageSwapperFactory(fs, tracer, EmptyMemoryTracker.INSTANCE);
     }
 
     protected final T getPageCache(FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer) {
@@ -247,18 +252,28 @@ public abstract class PageCacheTestSupport<T extends PageCache> {
     }
 
     protected void generateFileWithRecords(
-            Path file, int recordCount, int recordSize, int recordsPerFilePage, int reservedBytes) throws IOException {
+            Path file, int recordCount, int recordSize, int recordsPerFilePage, int reservedBytes, int pageSize)
+            throws IOException {
         try (StoreChannel channel = fs.write(file)) {
-            generateFileWithRecords(channel, recordCount, recordSize, recordsPerFilePage, reservedBytes);
+            generateFileWithRecords(channel, recordCount, recordSize, recordsPerFilePage, reservedBytes, pageSize);
         }
     }
 
     protected static void generateFileWithRecords(
-            WritableByteChannel channel, int recordCount, int recordSize, int recordsPerFilePage, int reservedBytes)
+            StoreChannel channel,
+            int recordCount,
+            int recordSize,
+            int recordsPerFilePage,
+            int reservedBytes,
+            int pageSize)
             throws IOException {
         ByteBuffer buf = ByteBuffers.allocate(recordSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         for (int i = 0; i < recordCount; i++) {
             if (i % recordsPerFilePage == 0) {
+                long position = channel.position();
+                if (position % pageSize != 0) {
+                    writeBuffer(channel, ByteBuffer.allocate((int) (pageSize - (position % pageSize))));
+                }
                 writeBuffer(channel, ByteBuffer.allocate(reservedBytes));
             }
             generateRecordForId(i, buf);

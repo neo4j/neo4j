@@ -17,15 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.fs;
+package org.neo4j.io.pagecache.impl;
 
-public class ChecksumMismatchException extends RuntimeException {
+import java.nio.file.Path;
+import org.junit.jupiter.api.BeforeAll;
+import org.neo4j.io.fs.FileSystemAbstraction;
 
-    public ChecksumMismatchException(long storedChecksum, long checksum) {
-        this("The stored checksum '%d' does not match to evaluated checksum of '%d'.", storedChecksum, checksum);
+public class SingleFilePageSwapperWithRealFileSystemReservedBytesIT extends SingleFilePageSwapperTest {
+
+    @BeforeAll
+    static void beforeAll() {
+        RESERVED_BYTES = Long.BYTES * 3;
+        PAYLOAD_SIZE = 32;
+        cachePageSize = PAYLOAD_SIZE + RESERVED_BYTES;
     }
 
-    public ChecksumMismatchException(String messageTemplate, long storedChecksum, long checksum) {
-        super(messageTemplate.formatted(storedChecksum, checksum));
+    @Override
+    protected Path getPath() {
+        return testDir.file(super.getPath().getFileName().toString());
+    }
+
+    @Override
+    protected FileSystemAbstraction getFs() {
+        return getRealFileSystem();
     }
 }

@@ -23,6 +23,7 @@ import static java.util.concurrent.ConcurrentHashMap.newKeySet;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -130,7 +131,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
 
     private static void putBytes(long page, byte[] data, int srcOffset, int tgtOffset, int length) {
         for (int i = 0; i < length; i++) {
-            UnsafeUtil.putByte(page + srcOffset + i, data[tgtOffset + i]);
+            UnsafeUtil.putByte(address(page) + srcOffset + i, data[tgtOffset + i]);
         }
     }
 
@@ -147,7 +148,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
             long target = createPage(4);
             int numberOfReads = 12;
             for (int i = 0; i < numberOfReads; i++) {
-                assertEquals(4, swapper.read(0, target));
+                assertEquals(4 + RESERVED_BYTES, swapper.read(0, target));
             }
             assertEquals(numberOfReads, controller.getExternalIOCounter());
         }
@@ -166,7 +167,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
             long target = createPage(4);
             int numberOfReads = 12;
             for (int i = 0; i < numberOfReads; i++) {
-                assertEquals(4, swapper.read(0, target, bytes.length));
+                assertEquals(4 + RESERVED_BYTES, swapper.read(0, target, 4 + RESERVED_BYTES));
             }
             assertEquals(numberOfReads, controller.getExternalIOCounter());
         }
@@ -174,9 +175,13 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
 
     @Test
     void reportExternalIoOnSwapInWithMultipleBuffers() throws IOException {
-        byte[] bytes = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+        byte[] bytes1 = new byte[] {1, 2, 3, 4};
+        byte[] bytes2 = new byte[] {5, 6, 7, 8};
+        byte[] bytes3 = new byte[] {9, 10, 11, 12};
         try (StoreChannel channel = getFs().write(getPath())) {
-            channel.writeAll(wrap(bytes));
+            channel.writeAll(wrap(bytes1));
+            channel.writeAll(wrap(bytes2));
+            channel.writeAll(wrap(bytes3));
         }
 
         PageSwapperFactory factory = createSwapperFactory(getFs());
@@ -188,7 +193,13 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
             int numberOfReads = 12;
             int buffers = 3;
             for (int i = 0; i < numberOfReads; i++) {
-                assertEquals(12, swapper.read(0, new long[] {target1, target2, target3}, new int[] {4, 4, 4}, buffers));
+                assertEquals(
+                        12 + RESERVED_BYTES * 3,
+                        swapper.read(
+                                0,
+                                new long[] {target1, target2, target3},
+                                new int[] {4 + RESERVED_BYTES, 4 + RESERVED_BYTES, 4 + RESERVED_BYTES},
+                                buffers));
             }
             long expectedIO = getEphemeralFileSystem() == getFs() ? numberOfReads * buffers : numberOfReads;
             assertEquals(expectedIO, controller.getExternalIOCounter());
@@ -205,7 +216,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
             long target = createPage(4);
             int numberOfWrites = 42;
             for (int i = 0; i < numberOfWrites; i++) {
-                assertEquals(4, swapper.write(0, target));
+                assertEquals(4 + RESERVED_BYTES, swapper.write(0, target));
             }
             assertEquals(numberOfWrites, controller.getExternalIOCounter());
         }
@@ -221,7 +232,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
             long target = createPage(4);
             int numberOfWrites = 42;
             for (int i = 0; i < numberOfWrites; i++) {
-                assertEquals(4, swapper.write(0, target, 4));
+                assertEquals(4 + RESERVED_BYTES, swapper.write(0, target, 4 + RESERVED_BYTES));
             }
             assertEquals(numberOfWrites, controller.getExternalIOCounter());
         }
@@ -241,9 +252,13 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
             int buffers = 3;
             for (int i = 0; i < numberOfReads; i++) {
                 assertEquals(
-                        12,
+                        12 + RESERVED_BYTES * 3,
                         swapper.write(
-                                0, new long[] {target1, target2, target3}, new int[] {4, 4, 4}, buffers, buffers));
+                                0,
+                                new long[] {target1, target2, target3},
+                                new int[] {4 + RESERVED_BYTES, 4 + RESERVED_BYTES, 4 + RESERVED_BYTES},
+                                buffers,
+                                buffers));
             }
             assertEquals(0, controller.getExternalIOCounter());
         }
@@ -259,31 +274,30 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
         PageSwapperFactory factory = createSwapperFactory(getFs());
         PageSwapper swapper = createSwapper(factory, getPath(), 4, null, false);
         long target = createPage(4);
-        assertEquals(4, swapper.read(0, target));
+        assertEquals(4 + RESERVED_BYTES, swapper.read(0, target));
 
         assertThat(array(target)).containsExactly(bytes);
     }
 
     @Test
     void mustZeroFillPageBeyondEndOfFile() throws Exception {
-        byte[] bytes = new byte[] {
+        byte[] bytes1 = new byte[] {
             // --- page 0:
-            1,
-            2,
-            3,
-            4,
+            1, 2, 3, 4
+        };
+        byte[] bytes2 = new byte[] {
             // --- page 1:
-            5,
-            6
+            5, 6
         };
         StoreChannel channel = getFs().write(getPath());
-        channel.writeAll(wrap(bytes));
+        channel.writeAll(wrap(bytes1));
+        channel.writeAll(wrap(bytes2));
         channel.close();
 
         PageSwapperFactory factory = createSwapperFactory(getFs());
         PageSwapper swapper = createSwapper(factory, getPath(), 4, null, false);
         long target = createPage(4);
-        assertEquals(2, swapper.read(1, target));
+        assertEquals(2 + RESERVED_BYTES, swapper.read(1, target));
 
         assertThat(array(target)).containsExactly(5, 6, 0, 0);
     }
@@ -367,24 +381,26 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
 
         PageSwapperFactory factory = createSwapperFactory(getFs());
         PageSwapper swapper = createSwapper(factory, getPath(), 4, null, false);
-        assertEquals(4, swapper.write(0, page));
+        assertEquals(4 + RESERVED_BYTES, swapper.write(0, page));
 
         try (InputStream stream = getFs().openAsInputStream(getPath())) {
             byte[] actual = new byte[expected.length];
 
+            stream.readNBytes(RESERVED_BYTES);
             assertThat(stream.read(actual)).isEqualTo(actual.length);
             assertThat(actual).containsExactly(expected);
         }
     }
 
     private long createPage(byte[] expected) {
-        long page = createPage(expected.length);
+        long page = createPage(expected.length + RESERVED_BYTES);
         putBytes(page, expected, 0, 0, expected.length);
         return page;
     }
 
     @Test
     void swappingOutMustNotOverwriteDataBeyondPage() throws Exception {
+        assumeThat(RESERVED_BYTES).isEqualTo(0);
         byte[] initialData = new byte[] {
             // --- page 0:
             1, 2, 3, 4,
@@ -557,17 +573,21 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
         assertThat(openFilesCounter.get()).isEqualTo(0);
     }
 
-    private static byte[] array(long page) {
-        int size = sizeOfAsInt(page);
+    private static byte[] array(long address) {
+        int size = sizeOfAsInt(address);
         byte[] array = new byte[size];
         for (int i = 0; i < size; i++) {
-            array[i] = UnsafeUtil.getByte(page + i);
+            array[i] = UnsafeUtil.getByte(address(address) + i);
         }
         return array;
     }
 
     private static ByteBuffer wrap(byte[] bytes) {
-        ByteBuffer buffer = ByteBuffers.allocate(bytes.length, ByteOrder.LITTLE_ENDIAN, INSTANCE);
+        ByteBuffer buffer = ByteBuffers.allocate(RESERVED_BYTES + bytes.length, ByteOrder.LITTLE_ENDIAN, INSTANCE);
+        byte zero = 0;
+        for (int i = 0; i < RESERVED_BYTES; i++) {
+            buffer.put(zero);
+        }
         for (byte b : bytes) {
             buffer.put(b);
         }
@@ -600,7 +620,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
         try {
             for (int i = 0; i < 10_000; i++) {
                 clear(page);
-                assertThat(swapper.read(0, page)).isEqualTo(bytesTotal);
+                assertThat(swapper.read(0, page)).isEqualTo(bytesTotal + RESERVED_BYTES);
                 assertThat(array(page)).isEqualTo(data);
             }
         } finally {
@@ -629,7 +649,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
                 swapper.write(0, zeroPage);
                 putBytes(page, data, 0, 0, data.length);
                 adversary.setProbabilityFactor(1);
-                assertThat(swapper.write(0, page)).isEqualTo(bytesTotal);
+                assertThat(swapper.write(0, page)).isEqualTo(bytesTotal + RESERVED_BYTES);
                 clear(page);
                 adversary.setProbabilityFactor(0);
                 swapper.read(0, page);
@@ -642,6 +662,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
 
     @Test
     void mustHandleMischiefInPositionedVectoredRead() throws Exception {
+        assumeThat(RESERVED_BYTES).isEqualTo(0);
         int bytesTotal = 512;
         int bytesPerPage = 32;
         int pageCount = bytesTotal / bytesPerPage;
@@ -710,7 +731,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
             putBytes(writePages[i], data, 0, i * bytesPerPage, bytesPerPage);
             readPages[i] = createPage(bytesPerPage);
             zeroPages[i] = zeroPage;
-            pageLengths[i] = bytesPerPage;
+            pageLengths[i] = bytesPerPage + RESERVED_BYTES;
         }
 
         try {
@@ -723,7 +744,8 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
                     clear(readPage);
                 }
                 adversary.setProbabilityFactor(0);
-                assertThat(swapper.read(0, readPages, pageLengths, pageCount)).isEqualTo(bytesTotal);
+                assertThat(swapper.read(0, readPages, pageLengths, pageCount))
+                        .isEqualTo(bytesTotal + pageCount * RESERVED_BYTES);
                 for (int j = 0; j < pageCount; j++) {
                     assertThat(array(readPages[j])).containsExactly(array(writePages[j]));
                 }

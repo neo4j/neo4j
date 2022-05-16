@@ -51,6 +51,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.lz4</groupId>
+            <artifactId>lz4-java</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>annotations</artifactId>
             <version>${project.version}</version>

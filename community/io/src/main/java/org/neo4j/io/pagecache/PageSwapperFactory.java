@@ -61,10 +61,12 @@ public interface PageSwapperFactory {
     PageSwapper createPageSwapper(
             Path path,
             int filePageSize,
+            int reservedPageBytes,
             PageEvictionCallback onEviction,
             boolean createIfNotExist,
             boolean useDirectIO,
             boolean preallocateStoreFiles,
+            boolean checksumPages,
             IOController ioController,
             SwapperSet swappers)
             throws IOException;
