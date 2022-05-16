@@ -37,32 +37,34 @@ class DiagnosticsReportCommandTest {
             CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
         }
         assertThat(baos.toString().trim())
-                .isEqualTo(String.format(
-                        "Produces a zip/tar of the most common information needed for remote assessments.%n" + "%n"
-                                + "USAGE%n"
-                                + "%n"
-                                + "report [--expand-commands] [--force] [--list] [--verbose] [--pid=<pid>]%n"
-                                + "       [--to=<path>] [<classifier>...]%n"
-                                + "%n"
-                                + "DESCRIPTION%n"
-                                + "%n"
-                                + "Will collect information about the system and package everything in an archive.%n"
-                                + "If you specify 'all', everything will be included. You can also fine tune the%n"
-                                + "selection by passing classifiers to the tool, e.g 'logs tx threads'.%n"
-                                + "%n"
-                                + "PARAMETERS%n"
-                                + "%n"
-                                + "      [<classifier>...]     Default: [config, logs, metrics, plugins, ps,%n"
-                                + "                            sysprop, threads, tree, version]%n"
-                                + "%n"
-                                + "OPTIONS%n"
-                                + "%n"
-                                + "      --verbose           Enable verbose output.%n"
-                                + "      --expand-commands   Allow command expansion in config value evaluation.%n"
-                                + "      --list              List all available classifiers%n"
-                                + "      --force             Ignore disk full warning%n"
-                                + "      --to=<path>         Destination directory for reports. Defaults to a%n"
-                                + "                            system tmp directory.%n"
-                                + "      --pid=<pid>         Specify process id of running neo4j instance"));
+                .isEqualToIgnoringNewLines(
+                        """
+                Produces a zip/tar of the most common information needed for remote assessments.
+
+                USAGE
+
+                report [--expand-commands] [--force] [--list] [--verbose] [--pid=<pid>]
+                       [--to=<path>] [<classifier>...]
+
+                DESCRIPTION
+
+                Will collect information about the system and package everything in an archive.
+                If you specify 'all', everything will be included. You can also fine tune the
+                selection by passing classifiers to the tool, e.g 'logs tx threads'.
+
+                PARAMETERS
+
+                      [<classifier>...]     Default: [config, logs, metrics, plugins, ps,
+                                            sysprop, threads, tree, version]
+
+                OPTIONS
+
+                      --expand-commands   Allow command expansion in config value evaluation.
+                      --force             Ignore disk full warning
+                      --list              List all available classifiers
+                      --pid=<pid>         Specify process id of running neo4j instance
+                      --to=<path>         Destination directory for reports. Defaults to a
+                                            system tmp directory.
+                      --verbose           Enable verbose output.""");
     }
 }

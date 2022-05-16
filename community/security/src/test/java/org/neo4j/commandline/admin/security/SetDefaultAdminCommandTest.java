@@ -71,16 +71,25 @@ class SetDefaultAdminCommandTest {
             CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
         }
         assertThat(baos.toString().trim())
-                .isEqualTo(String.format(
-                        "USAGE%n" + "%n" + "set-default-admin [--expand-commands] [--verbose] <username>%n"
-                                + "%n"
-                                + "DESCRIPTION%n" + "%n" + "Sets the default admin user.%n"
-                                + "This user will be granted the admin role on startup if the system has no roles.%n"
-                                + "%n"
-                                + "PARAMETERS%n"
-                                + "%n" + "      <username>%n"
-                                + "%n" + "OPTIONS%n" + "%n" + "      --verbose           Enable verbose output.%n"
-                                + "      --expand-commands   Allow command expansion in config value evaluation."));
+                .isEqualToIgnoringNewLines(
+                        """
+                                USAGE
+
+                                set-default-admin [--expand-commands] [--verbose] <username>
+
+                                DESCRIPTION
+
+                                Sets the default admin user.
+                                This user will be granted the admin role on startup if the system has no roles.
+
+                                PARAMETERS
+
+                                      <username>
+
+                                OPTIONS
+
+                                      --expand-commands   Allow command expansion in config value evaluation.
+                                      --verbose           Enable verbose output.""");
     }
 
     @Test

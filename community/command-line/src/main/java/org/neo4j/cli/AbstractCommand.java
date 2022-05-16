@@ -22,6 +22,7 @@ package org.neo4j.cli;
 import static java.util.Objects.requireNonNull;
 
 import java.io.PrintStream;
+import java.util.concurrent.Callable;
 import org.neo4j.kernel.diagnostics.providers.SystemDiagnostics;
 import org.neo4j.kernel.internal.Version;
 import picocli.CommandLine;
@@ -35,9 +36,8 @@ import picocli.CommandLine.Spec;
         descriptionHeading = "%n@|bold,underline DESCRIPTION|@%n%n",
         optionListHeading = "%n@|bold,underline OPTIONS|@%n%n",
         parameterListHeading = "%n@|bold,underline PARAMETERS|@%n%n",
-        showDefaultValues = true,
-        sortOptions = false)
-public abstract class AbstractCommand implements Command {
+        showDefaultValues = true)
+public abstract class AbstractCommand implements Callable<Integer> {
     @Option(names = "--verbose", arity = "0", description = "Enable verbose output.")
     protected boolean verbose;
 

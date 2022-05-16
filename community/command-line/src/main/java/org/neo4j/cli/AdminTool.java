@@ -28,7 +28,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.SystemUtils;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.service.Services;
 import org.neo4j.util.VisibleForTesting;
@@ -36,6 +38,8 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.ExitCode;
 import picocli.CommandLine.HelpCommand;
+import picocli.CommandLine.Model.CommandSpec;
+import picocli.CommandLine.Model.UsageMessageSpec;
 
 @Command(
         name = "neo4j-admin",
@@ -86,26 +90,48 @@ public final class AdminTool {
     }
 
     public static CommandLine getCommandLine(ExecutionContext ctx) {
-        CommandLine cmd = new CommandLine(new AdminTool())
-                .setOut(new PrintWriter(ctx.out(), true))
+        CommandLine cmd = new CommandLine(new AdminTool());
+        registerCommands(cmd, ctx, Services.loadAll(CommandProvider.class));
+        cmd.setOut(new PrintWriter(ctx.out(), true))
                 .setErr(new PrintWriter(ctx.err(), true))
                 .setUsageHelpWidth(120)
                 .setCaseInsensitiveEnumValuesAllowed(true);
-        registerCommands(cmd, ctx, Services.loadAll(CommandProvider.class));
         return cmd;
     }
 
     private static void registerCommands(
             CommandLine cmd, ExecutionContext ctx, Collection<CommandProvider> commandProviders) {
-        cmd.addSubcommand(HelpCommand.class);
-        filterCommandProviders(commandProviders).stream()
-                .sorted(Comparator.comparing(CommandProvider::commandType))
-                .forEach(commandProvider -> cmd.addSubcommand(commandProvider.createCommand(ctx)));
+        CommandLine commandLine = cmd.addSubcommand(HelpCommand.class);
+        for (CommandGroup commandGroup : CommandGroup.values()) {
+            var messageSpec = new UsageMessageSpec().description(commandGroup.getDescription());
+            CommandSpec commandSpec =
+                    CommandSpec.create().name(commandGroup.getDisplayName()).usageMessage(messageSpec);
+            CommandLine groupCommandLine = new CommandLine(commandSpec);
+            registerGroupCommands(commandProviders, commandGroup, ctx, groupCommandLine);
+            commandLine.addSubcommand(groupCommandLine);
+        }
     }
 
-    protected static Collection<CommandProvider> filterCommandProviders(Collection<CommandProvider> commandProviders) {
+    private static void registerGroupCommands(
+            Collection<CommandProvider> commandProviders,
+            CommandGroup commandGroup,
+            ExecutionContext ctx,
+            CommandLine commandLine) {
+        List<Object> subcommands = filterCommandProviders(commandProviders, commandGroup).stream()
+                .map(c -> c.createCommand(ctx))
+                .sorted(new CommandNameComparator())
+                .toList();
+        for (Object subcommand : subcommands) {
+            commandLine.addSubcommand(subcommand);
+        }
+    }
+
+    protected static Collection<CommandProvider> filterCommandProviders(
+            Collection<CommandProvider> commandProviders, CommandGroup group) {
         return commandProviders.stream()
-                .collect(Collectors.toMap(k -> k.commandType(), v -> v, (cp1, cp2) -> {
+                .filter(c -> c.commandType().getCommandGroup() == group)
+                .filter(c -> SystemUtils.IS_OS_WINDOWS || c.commandType() != CommandType.NEO4J_SERVICE)
+                .collect(Collectors.toMap(CommandProvider::commandType, v -> v, (cp1, cp2) -> {
                     if (cp1.getPriority() == cp2.getPriority()) {
                         throw new IllegalArgumentException(String.format(
                                 "Command providers %s and %s create commands with the same priority",
@@ -135,6 +161,24 @@ public final class AdminTool {
         @Override
         public String[] getVersion() {
             return new String[] {Version.getNeo4jVersion()};
+        }
+    }
+
+    private static class CommandNameComparator implements Comparator<Object> {
+        @Override
+        public int compare(Object o1, Object o2) {
+            return getCommand(o1).name().compareTo(getCommand(o2).name());
+        }
+
+        private Command getCommand(Object object) {
+            var clazz = object.getClass();
+            while (clazz != null) {
+                if (clazz.isAnnotationPresent(Command.class)) {
+                    return clazz.getAnnotation(Command.class);
+                }
+                clazz = clazz.getSuperclass();
+            }
+            throw new IllegalStateException("Instance of " + object.getClass() + " is not a command.");
         }
     }
 }

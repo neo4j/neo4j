@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.pushtocloud;
+package org.neo4j.export;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -52,11 +52,11 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.export.ExportCommand.Copier;
+import org.neo4j.export.ExportCommand.DumpCreator;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.pushtocloud.PushToCloudCommand.Copier;
-import org.neo4j.pushtocloud.PushToCloudCommand.DumpCreator;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
@@ -65,7 +65,7 @@ import picocli.CommandLine;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ExtendWith(TestDirectorySupportExtension.class)
-class PushToCloudCommandTest {
+class ExportCommandTest {
     private static final String SOME_EXAMPLE_BOLT_URI = "bolt+routing://database_id.databases.neo4j.io";
     public static final String DBNAME = "neo4j";
 
@@ -112,7 +112,7 @@ class PushToCloudCommandTest {
         Copier targetCommunicator = mockedTargetCommunicator();
         String username = "neo4j";
         String password = "abc";
-        PushToCloudCommand command = command()
+        ExportCommand command = command()
                 .copier(targetCommunicator)
                 .console(PushToCloudConsole.fakeConsole(username, password))
                 .build();
@@ -135,7 +135,7 @@ class PushToCloudCommandTest {
         when(console.readLine(anyString(), anyString())).thenReturn("");
         String defaultUsername = "neo4j";
         String password = "super-secret-password";
-        PushToCloudCommand command =
+        ExportCommand command =
                 command().copier(targetCommunicator).console(console).build();
 
         // when
@@ -161,7 +161,7 @@ class PushToCloudCommandTest {
         when(console.readLine(anyString(), anyString())).thenReturn(null);
         String defaultUsername = "neo4j";
         String password = "super-secret-password";
-        PushToCloudCommand command =
+        ExportCommand command =
                 command().copier(targetCommunicator).console(console).build();
 
         // when
@@ -182,10 +182,10 @@ class PushToCloudCommandTest {
     void shouldAcceptDumpAsSource() throws Exception {
         // given
         Copier targetCommunicator = mockedTargetCommunicator();
-        PushToCloudCommand command = command().copier(targetCommunicator).build();
+        ExportCommand command = command().copier(targetCommunicator).build();
 
         // when
-        PushToCloudCommand.Uploader uploader = command.makeDumpUploader(this.dump);
+        ExportCommand.Uploader uploader = command.makeDumpUploader(this.dump);
         String[] args = {"--dump", dump.toString(), "--bolt-uri", SOME_EXAMPLE_BOLT_URI};
         new CommandLine(command).execute(args);
 
@@ -200,7 +200,7 @@ class PushToCloudCommandTest {
         Copier targetCommunicator = mockedTargetCommunicator();
         DumpCreator dumpCreator = mockedDumpCreator();
 
-        PushToCloudCommand command =
+        ExportCommand command =
                 command().copier(targetCommunicator).dumpCreator(dumpCreator).build();
 
         // when
@@ -222,7 +222,7 @@ class PushToCloudCommandTest {
         // given
         Copier targetCommunicator = mockedTargetCommunicator();
         DumpCreator dumpCreator = mockedDumpCreator();
-        PushToCloudCommand command =
+        ExportCommand command =
                 command().copier(targetCommunicator).dumpCreator(dumpCreator).build();
 
         // when
@@ -246,7 +246,7 @@ class PushToCloudCommandTest {
         // given
         Copier targetCommunicator = mockedTargetCommunicator();
         DumpCreator dumpCreator = mockedDumpCreator();
-        PushToCloudCommand command =
+        ExportCommand command =
                 command().copier(targetCommunicator).dumpCreator(dumpCreator).build();
 
         // when
@@ -266,8 +266,7 @@ class PushToCloudCommandTest {
     @Test
     public void shouldNotAcceptBothDumpAndDatabaseNameAsSource() throws IOException, CommandFailedException {
         // given
-        PushToCloudCommand command =
-                command().copier(mockedTargetCommunicator()).build();
+        ExportCommand command = command().copier(mockedTargetCommunicator()).build();
 
         // when
         String[] args = {
@@ -285,7 +284,7 @@ class PushToCloudCommandTest {
         Copier targetCommunicator = mockedTargetCommunicator();
         String username = "neo4j";
 
-        PushToCloudCommand command = command()
+        ExportCommand command = command()
                 .copier(targetCommunicator)
                 .console(PushToCloudConsole.fakeConsole(username, "tomte"))
                 .build();
@@ -304,7 +303,7 @@ class PushToCloudCommandTest {
         Copier targetCommunicator = mockedTargetCommunicator();
         String username = "neo4j";
 
-        PushToCloudCommand command = command()
+        ExportCommand command = command()
                 .copier(targetCommunicator)
                 .console(PushToCloudConsole.fakeConsole(username, "tomte"))
                 .build();
@@ -327,7 +326,7 @@ class PushToCloudCommandTest {
         Copier targetCommunicator = mockedTargetCommunicator();
         String username = "neo4j";
         String password = "abc";
-        PushToCloudCommand command = command()
+        ExportCommand command = command()
                 .copier(targetCommunicator)
                 .console(PushToCloudConsole.fakeConsole(username, password))
                 .build();
@@ -348,7 +347,7 @@ class PushToCloudCommandTest {
         Copier targetCommunicator = mockedTargetCommunicator();
         String username = "neo4j";
         String password = "abc";
-        PushToCloudCommand command = command()
+        ExportCommand command = command()
                 .copier(targetCommunicator)
                 .console(PushToCloudConsole.fakeConsole(username, password))
                 .build();
@@ -372,7 +371,7 @@ class PushToCloudCommandTest {
         Copier targetCommunicator = mockedTargetCommunicator();
         String username = "neo4j";
         String password = "abc";
-        PushToCloudCommand command = command()
+        ExportCommand command = command()
                 .copier(targetCommunicator)
                 .console(PushToCloudConsole.fakeConsole(username, password))
                 .build();
@@ -400,7 +399,7 @@ class PushToCloudCommandTest {
         Copier targetCommunicator = mockedTargetCommunicator();
         String username = "neo4j";
         String password = "abc";
-        PushToCloudCommand command = command()
+        ExportCommand command = command()
                 .copier(targetCommunicator)
                 .console(PushToCloudConsole.fakeConsole(username, password))
                 .build();
@@ -422,7 +421,7 @@ class PushToCloudCommandTest {
         // given
         DumpCreator dumpCreator = mockedDumpCreator();
         Copier copier = mock(Copier.class);
-        PushToCloudCommand command =
+        ExportCommand command =
                 command().dumpCreator(dumpCreator).copier(copier).build();
 
         // when
@@ -437,8 +436,7 @@ class PushToCloudCommandTest {
     @Test
     public void shouldFailOnDumpPointingToMissingFile() throws IOException, CommandFailedException {
         // given
-        PushToCloudCommand command =
-                command().copier(mockedTargetCommunicator()).build();
+        ExportCommand command = command().copier(mockedTargetCommunicator()).build();
 
         // when
         Path dumpFile = directory.file("some-dump-file");
@@ -453,7 +451,7 @@ class PushToCloudCommandTest {
     public void shouldRecognizeBothEnvironmentAndDatabaseIdFromBoltURI() throws IOException, CommandFailedException {
         // given
         Copier copier = mock(Copier.class);
-        PushToCloudCommand command = command().copier(copier).build();
+        ExportCommand command = command().copier(copier).build();
 
         // when
         String[] args = {
@@ -475,7 +473,7 @@ class PushToCloudCommandTest {
     public void shouldRecognizeDatabaseIdFromBoltURI() throws IOException, CommandFailedException {
         // given
         Copier copier = mock(Copier.class);
-        PushToCloudCommand command = command().copier(copier).build();
+        ExportCommand command = command().copier(copier).build();
 
         // when
         String[] args = {"--dump", dump.toString(), "--bolt-uri", "bolt+routing://mydbid.databases.neo4j.io"};
@@ -496,8 +494,7 @@ class PushToCloudCommandTest {
         // given
         Copier copier = mockedTargetCommunicator();
         DumpCreator dumper = mockedDumpCreator();
-        PushToCloudCommand command =
-                command().copier(copier).dumpCreator(dumper).build();
+        ExportCommand command = command().copier(copier).dumpCreator(dumper).build();
 
         // when
         String[] args = {"--bolt-uri", "bolt+routing://mydbid.databases.neo4j.io"};
@@ -576,8 +573,8 @@ class PushToCloudCommandTest {
             return this;
         }
 
-        PushToCloudCommand build() throws IOException {
-            return new PushToCloudCommand(executionContext, targetCommunicator, dumpCreator, console);
+        ExportCommand build() throws IOException {
+            return new ExportCommand(executionContext, targetCommunicator, dumpCreator, console);
         }
     }
 }

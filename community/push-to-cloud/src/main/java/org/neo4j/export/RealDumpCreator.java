@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.pushtocloud;
+package org.neo4j.export;
 
 import static org.neo4j.internal.helpers.collection.Iterators.array;
 
@@ -24,7 +24,7 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.commandline.dbms.DumpCommandProvider;
 import picocli.CommandLine;
 
-class RealDumpCreator implements PushToCloudCommand.DumpCreator {
+class RealDumpCreator implements ExportCommand.DumpCreator {
     private ExecutionContext ctx;
 
     RealDumpCreator(ExecutionContext ctx) {

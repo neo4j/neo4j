@@ -39,27 +39,30 @@ class DumpCommandTest {
             CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
         }
         assertThat(baos.toString().trim())
-                .isEqualTo(String.format("Dump a database into a single-file archive.%n" + "%n"
-                        + "USAGE%n"
-                        + "%n"
-                        + "dump [--expand-commands] [--verbose] [--database=<database>] --to=<path>%n"
-                        + "%n"
-                        + "DESCRIPTION%n"
-                        + "%n"
-                        + "Dump a database into a single-file archive. The archive can be used by the load%n"
-                        + "command. <destination-path> can be a file or directory (in which case a file%n"
-                        + "called <database>.dump will be created), or '-' to use standard output. It is%n"
-                        + "not possible to dump a database that is mounted in a running Neo4j server.%n"
-                        + "%n"
-                        + "OPTIONS%n"
-                        + "%n"
-                        + "      --verbose           Enable verbose output.%n"
-                        + "      --expand-commands   Allow command expansion in config value evaluation.%n"
-                        + "      --database=<database>%n"
-                        + "                          Name of the database to dump. Can contain * and ? for%n"
-                        + "                            globbing.%n"
-                        + "                            Default: neo4j%n"
-                        + "      --to=<path>         Destination (file or folder or '-' for stdout) of%n"
-                        + "                            database dump."));
+                .isEqualToIgnoringNewLines(
+                        """
+                Dump a database into a single-file archive.
+
+                USAGE
+
+                dump [--expand-commands] [--verbose] [--database=<database>] --to=<path>
+
+                DESCRIPTION
+
+                Dump a database into a single-file archive. The archive can be used by the load
+                command. <destination-path> can be a file or directory (in which case a file
+                called <database>.dump will be created), or '-' to use standard output. It is
+                not possible to dump a database that is mounted in a running Neo4j server.
+
+                OPTIONS
+
+                      --database=<database>
+                                          Name of the database to dump. Can contain * and ? for
+                                            globbing.
+                                            Default: neo4j
+                      --expand-commands   Allow command expansion in config value evaluation.
+                      --to=<path>         Destination (file or folder or '-' for stdout) of
+                                            database dump.
+                      --verbose           Enable verbose output.""");
     }
 }

@@ -17,24 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.commandline.dbms;
+package org.neo4j.server.startup.provider;
 
-import static org.neo4j.cli.CommandType.MEMORY_RECOMMENDATION;
+import org.neo4j.server.startup.BootloaderCommand;
+import org.neo4j.server.startup.Neo4jCommand;
+import picocli.CommandLine;
 
-import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.cli.CommandProvider;
-import org.neo4j.cli.CommandType;
-import org.neo4j.cli.ExecutionContext;
-
-@ServiceProvider
-public class MemoryRecommendationsCommandProvider implements CommandProvider {
-    @Override
-    public MemoryRecommendationsCommand createCommand(ExecutionContext ctx) {
-        return new MemoryRecommendationsCommand(ctx);
-    }
-
-    @Override
-    public CommandType commandType() {
-        return MEMORY_RECOMMENDATION;
+@CommandLine.Command(
+        name = "windows-service",
+        description = "Neo4j windows service commands.",
+        subcommands = {
+            Neo4jCommand.InstallService.class,
+            Neo4jCommand.UpdateService.class,
+            Neo4jCommand.UninstallService.class
+        })
+class Neo4jServiceCommand extends BootloaderCommand {
+    Neo4jServiceCommand(Neo4jCommand.Neo4jBootloaderContext ctx) {
+        super(ctx);
     }
 }

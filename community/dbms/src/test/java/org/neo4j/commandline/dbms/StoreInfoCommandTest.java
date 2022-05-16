@@ -96,27 +96,30 @@ class StoreInfoCommandTest {
             CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
         }
         assertThat(baos.toString().trim())
-                .isEqualTo(String.format("Print information about a Neo4j database store.%n" + "%n"
-                        + "USAGE%n"
-                        + "%n"
-                        + "store-info [--all] [--expand-commands] [--structured] [--verbose] <path>%n"
-                        + "%n"
-                        + "DESCRIPTION%n"
-                        + "%n"
-                        + "Print information about a Neo4j database store, such as what version of Neo4j%n"
-                        + "created it.%n"
-                        + "%n"
-                        + "PARAMETERS%n"
-                        + "%n"
-                        + "      <path>              Path to database store files, or databases directory%n"
-                        + "                            if --all option is used%n"
-                        + "%n"
-                        + "OPTIONS%n"
-                        + "%n"
-                        + "      --verbose           Enable verbose output.%n"
-                        + "      --expand-commands   Allow command expansion in config value evaluation.%n"
-                        + "      --structured        Return result structured as json%n"
-                        + "      --all               Return store info for all databases at provided path"));
+                .isEqualToIgnoringNewLines(
+                        """
+                Print information about a Neo4j database store.
+
+                USAGE
+
+                info [--all] [--expand-commands] [--structured] [--verbose] <path>
+
+                DESCRIPTION
+
+                Print information about a Neo4j database store, such as what version of Neo4j
+                created it.
+
+                PARAMETERS
+
+                      <path>              Path to database store files, or databases directory
+                                            if --all option is used
+
+                OPTIONS
+
+                      --all               Return store info for all databases at provided path
+                      --expand-commands   Allow command expansion in config value evaluation.
+                      --structured        Return result structured as json
+                      --verbose           Enable verbose output.""");
     }
 
     @Test

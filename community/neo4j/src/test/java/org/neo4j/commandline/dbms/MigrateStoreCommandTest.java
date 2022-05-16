@@ -37,35 +37,37 @@ class MigrateStoreCommandTest {
             CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
         }
         assertThat(baos.toString().trim())
-                .isEqualTo(String.format("Migrate database store%n"
-                        + "%n"
-                        + "USAGE%n"
-                        + "%n"
-                        + "migrate-store [--expand-commands] [--verbose] [--additional-config=<path>]%n"
-                        + "              [--database=<database>] [--format-family=<format family>]%n"
-                        + "              [--pagecache=<size>]%n"
-                        + "%n"
-                        + "DESCRIPTION%n"
-                        + "%n"
-                        + "Migrate database store%n"
-                        + "%n"
-                        + "OPTIONS%n"
-                        + "%n"
-                        + "      --verbose            Enable verbose output.%n"
-                        + "      --expand-commands    Allow command expansion in config value evaluation.%n"
-                        + "      --database=<database>%n"
-                        + "                           Name of the database whose store to migrate. Can%n"
-                        + "                             contain * and ? for globbing.%n"
-                        + "                             Default: neo4j%n"
-                        + "      --format-family=<format family>%n"
-                        + "                           Format family to migrate the store to. This option%n"
-                        + "                             is supported only in combination with%n"
-                        + "                             --storage-engine RECORD%n"
-                        + "      --pagecache=<size>   The size of the page cache to use for the backup%n"
-                        + "                             process.%n"
-                        + "                             Default: 8m%n"
-                        + "      --additional-config=<path>%n"
-                        + "                           Configuration file to supply additional%n"
-                        + "                             configuration in."));
+                .isEqualToIgnoringNewLines(
+                        """
+                         Migrate database store
+
+                         USAGE
+
+                         migrate-store [--expand-commands] [--verbose] [--additional-config=<path>]
+                                       [--database=<database>] [--format-family=<format family>]
+                                       [--pagecache=<size>]
+
+                         DESCRIPTION
+
+                         Migrate database store
+
+                         OPTIONS
+
+                               --additional-config=<path>
+                                                    Configuration file to supply additional
+                                                      configuration in.
+                               --database=<database>
+                                                    Name of the database whose store to migrate. Can
+                                                      contain * and ? for globbing.
+                                                      Default: neo4j
+                               --expand-commands    Allow command expansion in config value evaluation.
+                               --format-family=<format family>
+                                                    Format family to migrate the store to. This option
+                                                      is supported only in combination with
+                                                      --storage-engine RECORD
+                               --pagecache=<size>   The size of the page cache to use for the backup
+                                                      process.
+                                                      Default: 8m
+                               --verbose            Enable verbose output.""");
     }
 }

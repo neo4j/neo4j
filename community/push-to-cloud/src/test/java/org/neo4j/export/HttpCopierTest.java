@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.pushtocloud;
+package org.neo4j.export;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
@@ -46,11 +46,11 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.pushtocloud.HttpCopier.ERROR_REASON_EXCEEDS_MAX_SIZE;
-import static org.neo4j.pushtocloud.HttpCopier.ERROR_REASON_UNSUPPORTED_INDEXES;
-import static org.neo4j.pushtocloud.HttpCopier.HTTP_RESUME_INCOMPLETE;
-import static org.neo4j.pushtocloud.HttpCopier.HTTP_UNPROCESSABLE_ENTITY;
-import static org.neo4j.pushtocloud.HttpCopier.StatusBody;
+import static org.neo4j.export.HttpCopier.ERROR_REASON_EXCEEDS_MAX_SIZE;
+import static org.neo4j.export.HttpCopier.ERROR_REASON_UNSUPPORTED_INDEXES;
+import static org.neo4j.export.HttpCopier.HTTP_RESUME_INCOMPLETE;
+import static org.neo4j.export.HttpCopier.HTTP_UNPROCESSABLE_ENTITY;
+import static org.neo4j.export.HttpCopier.StatusBody;
 import static wiremock.org.hamcrest.CoreMatchers.allOf;
 import static wiremock.org.hamcrest.CoreMatchers.containsString;
 import static wiremock.org.hamcrest.MatcherAssert.assertThat;
@@ -73,9 +73,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.export.HttpCopier.ErrorBody;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.pushtocloud.HttpCopier.ErrorBody;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -921,7 +921,7 @@ class HttpCopierTest {
     }
 
     private void authenticateAndCopy(
-            PushToCloudCommand.Copier copier,
+            ExportCommand.Copier copier,
             Path path,
             long databaseSize,
             boolean sourceProvided,
@@ -929,7 +929,7 @@ class HttpCopierTest {
             char[] password)
             throws CommandFailedException, IOException {
         String bearerToken = copier.authenticate(false, TEST_CONSOLE_URL, username, password, false);
-        PushToCloudCommand.Source source = new PushToCloudCommand.Source(path, databaseSize);
+        ExportCommand.Source source = new ExportCommand.Source(path, databaseSize);
         copier.copy(
                 true,
                 TEST_CONSOLE_URL,

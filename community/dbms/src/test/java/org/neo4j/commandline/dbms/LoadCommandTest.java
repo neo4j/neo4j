@@ -108,32 +108,36 @@ class LoadCommandTest {
             CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
         }
         assertThat(baos.toString().trim())
-                .isEqualTo(String.format("Load a database from an archive created with the dump command.%n" + "%n"
-                        + "USAGE%n"
-                        + "%n"
-                        + "load [--expand-commands] [--force] [--info] [--verbose] [--database=<database>]%n"
-                        + "     --from=<path>%n"
-                        + "%nDESCRIPTION%n"
-                        + "%n"
-                        + "Load a database from an archive. <archive-path> must be an archive created with%n"
-                        + "the dump command. <database> is the name of the database to create. Existing%n"
-                        + "databases can be replaced by specifying --force. It is not possible to replace%n"
-                        + "a database that is mounted in a running Neo4j server. If --info is specified,%n"
-                        + "then the database is not loaded, but information (i.e. file count, byte count,%n"
-                        + "and format of load file) about the archive is printed instead.%n"
-                        + "%n"
-                        + "OPTIONS%n"
-                        + "%n"
-                        + "      --verbose           Enable verbose output.%n"
-                        + "      --expand-commands   Allow command expansion in config value evaluation.%n"
-                        + "      --from=<path>       Path to archive created with the dump command or '-'%n"
-                        + "                            to read from standard input.%n"
-                        + "      --database=<database>%n"
-                        + "                          Name of the database to load.%n"
-                        + "                            Default: neo4j%n"
-                        + "      --force             If an existing database should be replaced.%n"
-                        + "      --info              Print meta-data information about the archive file,%n"
-                        + "                            instead of loading the contained database."));
+                .isEqualToIgnoringNewLines(
+                        """
+                Load a database from an archive created with the dump command.
+
+                USAGE
+
+                load [--expand-commands] [--force] [--info] [--verbose] [--database=<database>]
+                     --from=<path>
+
+                DESCRIPTION
+
+                Load a database from an archive. <archive-path> must be an archive created with
+                the dump command. <database> is the name of the database to create. Existing
+                databases can be replaced by specifying --force. It is not possible to replace
+                a database that is mounted in a running Neo4j server. If --info is specified,
+                then the database is not loaded, but information (i.e. file count, byte count,
+                and format of load file) about the archive is printed instead.
+
+                OPTIONS
+
+                      --database=<database>
+                                          Name of the database to load.
+                                            Default: neo4j
+                      --expand-commands   Allow command expansion in config value evaluation.
+                      --force             If an existing database should be replaced.
+                      --from=<path>       Path to archive created with the dump command or '-'
+                                            to read from standard input.
+                      --info              Print meta-data information about the archive file,
+                                            instead of loading the contained database.
+                      --verbose           Enable verbose output.""");
     }
 
     @Test

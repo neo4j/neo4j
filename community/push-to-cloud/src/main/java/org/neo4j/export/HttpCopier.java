@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.pushtocloud;
+package org.neo4j.export;
 
 import static java.lang.Long.min;
 import static java.lang.String.format;
@@ -33,7 +33,7 @@ import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.compress.utils.IOUtils.toByteArray;
-import static org.neo4j.pushtocloud.PushToCloudCommand.bytesToGibibytes;
+import static org.neo4j.export.ExportCommand.bytesToGibibytes;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -59,7 +59,7 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 
-public class HttpCopier implements PushToCloudCommand.Copier {
+public class HttpCopier implements ExportCommand.Copier {
     static final int HTTP_RESUME_INCOMPLETE = 308;
     static final int HTTP_UNPROCESSABLE_ENTITY = 422;
     static final int HTTP_TOO_MANY_REQUESTS = 429;
@@ -161,7 +161,7 @@ public class HttpCopier implements PushToCloudCommand.Copier {
             boolean verbose,
             String consoleURL,
             String boltUri,
-            PushToCloudCommand.Source source,
+            ExportCommand.Source source,
             boolean deleteSourceAfterImport,
             String bearerToken) {
         try {
@@ -733,8 +733,8 @@ public class HttpCopier implements PushToCloudCommand.Copier {
             // No special treatment required
             if (ERROR_REASON_EXCEEDS_MAX_SIZE.equals(errorBody.getReason())) {
                 String trimmedMessage = StringUtils.removeEnd(message, ".");
-                message = format(
-                        "%s. Minimum storage space required: %s", trimmedMessage, PushToCloudCommand.sizeText(size));
+                message =
+                        format("%s. Minimum storage space required: %s", trimmedMessage, ExportCommand.sizeText(size));
             }
 
             return formatCommandFailedExceptionError(message, errorBody.getUrl());

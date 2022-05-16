@@ -19,22 +19,22 @@
  */
 package org.neo4j.commandline.dbms;
 
-import static org.neo4j.cli.Command.CommandType.MIGRATE_STORE;
+import static org.neo4j.cli.CommandType.MIGRATE_STORE;
 
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.cli.Command;
 import org.neo4j.cli.CommandProvider;
+import org.neo4j.cli.CommandType;
 import org.neo4j.cli.ExecutionContext;
 
 @ServiceProvider
-public class MigrateStoreCommandProvider implements CommandProvider<MigrateStoreCommand> {
+public class MigrateStoreCommandProvider implements CommandProvider {
     @Override
     public MigrateStoreCommand createCommand(ExecutionContext ctx) {
         return new MigrateStoreCommand(ctx);
     }
 
     @Override
-    public Command.CommandType commandType() {
+    public CommandType commandType() {
         return MIGRATE_STORE;
     }
 }

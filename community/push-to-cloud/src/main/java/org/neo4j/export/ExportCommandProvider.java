@@ -14,25 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.pushtocloud;
+package org.neo4j.export;
 
-import static org.neo4j.cli.Command.CommandType.PUSH_TO_CLOUD;
+import static org.neo4j.cli.CommandType.EXPORT;
 
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.cli.Command;
 import org.neo4j.cli.CommandProvider;
+import org.neo4j.cli.CommandType;
 import org.neo4j.cli.ExecutionContext;
 
 @ServiceProvider
-public class PushToCloudCommandProvider implements CommandProvider<PushToCloudCommand> {
+public class ExportCommandProvider implements CommandProvider {
     @Override
-    public PushToCloudCommand createCommand(ExecutionContext ctx) {
-        return new PushToCloudCommand(
-                ctx, new HttpCopier(ctx), new RealDumpCreator(ctx), PushToCloudConsole.realConsole());
+    public ExportCommand createCommand(ExecutionContext ctx) {
+        return new ExportCommand(ctx, new HttpCopier(ctx), new RealDumpCreator(ctx), PushToCloudConsole.realConsole());
     }
 
     @Override
-    public Command.CommandType commandType() {
-        return PUSH_TO_CLOUD;
+    public CommandType commandType() {
+        return EXPORT;
     }
 }

@@ -84,46 +84,48 @@ class CheckConsistencyCommandIT {
             CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
         }
         assertThat(baos.toString().trim())
-                .isEqualTo(String.format("Check the consistency of a database.%n" + "%n"
-                        + "USAGE%n"
-                        + "%n"
-                        + "check-consistency [--expand-commands] [--verbose] [--additional-config=<path>]%n"
-                        + "                  [--check-graph=<true/false>]%n"
-                        + "                  [--check-index-structure=<true/false>]%n"
-                        + "                  [--check-indexes=<true/false>] [--report-dir=<path>]%n"
-                        + "                  (--database=<database> | --backup=<path>)%n"
-                        + "%n"
-                        + "DESCRIPTION%n"
-                        + "%n"
-                        + "This command allows for checking the consistency of a database or a backup%n"
-                        + "thereof. It cannot be used with a database which is currently in use.%n"
-                        + "%n"
-                        + "All checks except 'check-graph' can be quite expensive so it may be useful to%n"
-                        + "turn them off for very large databases. Increasing the heap size can also be a%n"
-                        + "good idea. See 'neo4j-admin help' for details.%n"
-                        + "%n"
-                        + "OPTIONS%n"
-                        + "%n"
-                        + "      --verbose             Enable verbose output.%n"
-                        + "      --expand-commands     Allow command expansion in config value evaluation.%n"
-                        + "      --database=<database> Name of the database to check.%n"
-                        + "      --backup=<path>       Path to backup to check consistency of. Cannot be%n"
-                        + "                              used together with --database.%n"
-                        + "      --additional-config=<path>%n"
-                        + "                            Configuration file to supply additional%n"
-                        + "                              configuration in.%n"
-                        + "      --report-dir=<path>   Directory where consistency report will be written.%n"
-                        + "                              Default: .%n"
-                        + "      --check-graph=<true/false>%n"
-                        + "                            Perform consistency checks between nodes,%n"
-                        + "                              relationships, properties, types and tokens.%n"
-                        + "                              Default: true%n"
-                        + "      --check-indexes=<true/false>%n"
-                        + "                            Perform consistency checks on indexes.%n"
-                        + "                              Default: true%n"
-                        + "      --check-index-structure=<true/false>%n"
-                        + "                            Perform structure checks on indexes.%n"
-                        + "                              Default: true"));
+                .isEqualToIgnoringNewLines(
+                        """
+                        Check the consistency of a database.
+
+                        USAGE
+
+                        check [--expand-commands] [--verbose] [--additional-config=<path>]
+                              [--check-graph=<true/false>] [--check-index-structure=<true/false>]
+                              [--check-indexes=<true/false>] [--report-dir=<path>]
+                              (--database=<database> | --backup=<path>)
+
+                        DESCRIPTION
+
+                        This command allows for checking the consistency of a database or a backup
+                        thereof. It cannot be used with a database which is currently in use.
+
+                        All checks except 'check-graph' can be quite expensive so it may be useful to
+                        turn them off for very large databases. Increasing the heap size can also be a
+                        good idea. See 'neo4j-admin help' for details.
+
+                        OPTIONS
+
+                              --additional-config=<path>
+                                                    Configuration file to supply additional
+                                                      configuration in.
+                              --backup=<path>       Path to backup to check consistency of. Cannot be
+                                                      used together with --database.
+                              --check-graph=<true/false>
+                                                    Perform consistency checks between nodes,
+                                                      relationships, properties, types and tokens.
+                                                      Default: true
+                              --check-index-structure=<true/false>
+                                                    Perform structure checks on indexes.
+                                                      Default: true
+                              --check-indexes=<true/false>
+                                                    Perform consistency checks on indexes.
+                                                      Default: true
+                              --database=<database> Name of the database to check.
+                              --expand-commands     Allow command expansion in config value evaluation.
+                              --report-dir=<path>   Directory where consistency report will be written.
+                                                      Default: .
+                              --verbose             Enable verbose output.""");
     }
 
     @Test

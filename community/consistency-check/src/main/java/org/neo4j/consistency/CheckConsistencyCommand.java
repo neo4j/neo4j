@@ -58,7 +58,7 @@ import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
 @Command(
-        name = "check-consistency",
+        name = "check",
         header = "Check the consistency of a database.",
         description = "This command allows for checking the consistency of a database or a backup thereof. It cannot "
                 + "be used with a database which is currently in use.%n"

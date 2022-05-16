@@ -17,24 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.commandline.dbms;
+package org.neo4j.server.startup.provider;
 
-import static org.neo4j.cli.CommandType.MEMORY_RECOMMENDATION;
+import static org.neo4j.cli.CommandType.NEO4J_STOP;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.cli.CommandProvider;
 import org.neo4j.cli.CommandType;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.server.startup.Neo4jCommand;
 
 @ServiceProvider
-public class MemoryRecommendationsCommandProvider implements CommandProvider {
+public class Neo4jStopCommandProvider implements CommandProvider {
     @Override
-    public MemoryRecommendationsCommand createCommand(ExecutionContext ctx) {
-        return new MemoryRecommendationsCommand(ctx);
+    public Neo4jCommand.Stop createCommand(ExecutionContext ctx) {
+        return new Neo4jCommand.Stop();
     }
 
     @Override
     public CommandType commandType() {
-        return MEMORY_RECOMMENDATION;
+        return NEO4J_STOP;
     }
 }

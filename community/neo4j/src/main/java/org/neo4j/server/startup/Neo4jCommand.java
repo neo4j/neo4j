@@ -32,7 +32,7 @@ import org.neo4j.util.VisibleForTesting;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "Neo4j", description = "Neo4j database server CLI.", synopsisSubcommandLabel = "<COMMAND>")
-class Neo4jCommand extends BootloaderCommand {
+public class Neo4jCommand extends BootloaderCommand {
     Neo4jCommand(Neo4jBootloaderContext ctx) {
         super(ctx);
     }
@@ -53,23 +53,25 @@ class Neo4jCommand extends BootloaderCommand {
     }
 
     @CommandLine.Command(name = "start", description = "Start server as a daemon.")
-    private static class Start extends BootCommand {
+    public static class Start extends BootCommand {
         @Override
         public Integer call() {
-            return getBootloader(startOptions.expandCommands).start();
+            var context = bootloader != null ? bootloader.ctx : new Neo4jBootloaderContext();
+            return getBootloader(context, startOptions.expandCommands).start();
         }
     }
 
     @CommandLine.Command(name = "stop", description = "Stop the server daemon.")
-    private static class Stop extends BootCommand {
+    public static class Stop extends BootCommand {
         @Override
         public Integer call() {
-            return getBootloader(startOptions.expandCommands).stop();
+            var context = bootloader != null ? bootloader.ctx : new Neo4jBootloaderContext();
+            return getBootloader(context, startOptions.expandCommands).stop();
         }
     }
 
     @CommandLine.Command(name = "restart", description = "Restart the server daemon.")
-    private static class Restart extends BootCommand {
+    public static class Restart extends BootCommand {
         @Override
         public Integer call() {
             return getBootloader(startOptions.expandCommands).restart();
@@ -77,10 +79,11 @@ class Neo4jCommand extends BootloaderCommand {
     }
 
     @CommandLine.Command(name = "status", description = "Get the status of the server.")
-    private static class Status extends BootCommand {
+    public static class Status extends BootCommand {
         @Override
         public Integer call() {
-            return getBootloader(startOptions.expandCommands).status();
+            var context = bootloader != null ? bootloader.ctx : new Neo4jBootloaderContext();
+            return getBootloader(context, startOptions.expandCommands).status();
         }
     }
 
@@ -95,7 +98,7 @@ class Neo4jCommand extends BootloaderCommand {
 
     // Windows service commands
     @CommandLine.Command(name = "install-service", description = "Install the Windows service.")
-    private static class InstallService extends BootCommand {
+    public static class InstallService extends BootCommand {
         @Override
         public Integer call() {
             return getBootloader(startOptions.expandCommands).installService();
@@ -103,7 +106,7 @@ class Neo4jCommand extends BootloaderCommand {
     }
 
     @CommandLine.Command(name = "uninstall-service", description = "Uninstall the Windows service.")
-    private static class UninstallService extends BaseCommand {
+    public static class UninstallService extends BaseCommand {
         @Override
         public Integer call() {
             return getBootloader(false).uninstallService();
@@ -111,7 +114,7 @@ class Neo4jCommand extends BootloaderCommand {
     }
 
     @CommandLine.Command(name = "update-service", description = "Update the Windows service.")
-    private static class UpdateService extends BootCommand {
+    public static class UpdateService extends BootCommand {
         @Override
         public Integer call() {
             return getBootloader(startOptions.expandCommands).updateService();
@@ -143,8 +146,8 @@ class Neo4jCommand extends BootloaderCommand {
         System.exit(exitCode);
     }
 
-    static class Neo4jBootloaderContext extends BootloaderContext {
-        Neo4jBootloaderContext() {
+    public static class Neo4jBootloaderContext extends BootloaderContext {
+        public Neo4jBootloaderContext() {
             super(EntryPoint.serviceloadEntryPoint(), BootloaderExtension.serviceLoadExtensions());
         }
 

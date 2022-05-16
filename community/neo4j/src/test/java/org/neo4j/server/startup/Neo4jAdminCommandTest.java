@@ -43,8 +43,8 @@ import org.junit.jupiter.api.condition.OS;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.AdminTool;
-import org.neo4j.cli.Command;
 import org.neo4j.cli.CommandProvider;
+import org.neo4j.cli.CommandType;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -74,21 +74,21 @@ class Neo4jAdminCommandTest {
 
         @Test
         void shouldExecuteCommand() throws Exception {
-            if (fork.run(() -> execute("test-command"))) {
+            if (fork.run(() -> execute("dbms", "test-command"))) {
                 assertThat(out.toString()).contains(TestCommand.MSG);
             }
         }
 
         @Test
         void shouldNotPrintUnexpectedErrorStackTraceOnCommandNonZeroExit() throws Exception {
-            if (!fork.run(() -> assertThat(execute("load")).isEqualTo(ExitCode.USAGE))) {
+            if (!fork.run(() -> execute("database", "load"), Map.of(), p -> ExitCode.SOFTWARE)) {
                 assertThat(err.toString()).isEmpty();
             }
         }
 
         @Test
         void shouldWarnWhenHomeIsInvalid() throws Exception {
-            if (fork.run(() -> execute("test-command"), Map.of(Bootloader.ENV_NEO4J_HOME, "foo"))) {
+            if (fork.run(() -> execute("dbms", "test-command"), Map.of(Bootloader.ENV_NEO4J_HOME, "foo"))) {
                 assertThat(err.toString()).contains("NEO4J_HOME path doesn't exist");
             }
         }
@@ -97,14 +97,14 @@ class Neo4jAdminCommandTest {
         void shouldNotExpandAtFilesInBootloader() throws Exception {
             Path commandFile = home.resolve("fileWithArgs");
             Files.write(commandFile, "foo bar baz".getBytes());
-            if (fork.run(() -> execute("test-command", "@" + commandFile, "--verbose"))) {
+            if (fork.run(() -> execute("dbms", "test-command", "@" + commandFile, "--verbose"))) {
                 // In the command we expect the @file to be expanded
                 assertThat(out.toString()).containsSubsequence("Test command executed", "foo", "bar", "baz");
             } else {
                 // But the command we execute should just forward the argument
                 assertThat(out.toString())
                         .containsSubsequence(
-                                "Executing command line:", "AdminTool test-command @" + commandFile + " --verbose")
+                                "Executing command line:", "AdminTool dbms test-command @" + commandFile + " --verbose")
                         .doesNotContain("foo", "bar", "baz");
             }
         }
@@ -113,7 +113,8 @@ class Neo4jAdminCommandTest {
         @DisabledOnOs(OS.WINDOWS)
         void shouldPassThroughAndAcceptVerboseAndExpandCommands() throws Exception {
             addConf(GraphDatabaseSettings.default_database, "$(echo foo)");
-            if (fork.run(() -> assertThat(execute("report", "--to", home.toString(), "--verbose", "--expand-commands"))
+            if (fork.run(() -> assertThat(
+                            execute("server", "report", "--to", home.toString(), "--verbose", "--expand-commands"))
                     .isEqualTo(EXIT_CODE_OK))) {
                 assertThat(out.toString()).containsSubsequence("Writing report to", "100%");
                 assertThat(err.toString()).isEmpty();
@@ -122,7 +123,8 @@ class Neo4jAdminCommandTest {
 
         @Test
         void shouldUseEnvironmentJavaOptionsWhenGiven() throws Exception {
-            if (fork.run(() -> execute("test-command"), Map.of(Bootloader.ENV_JAVA_OPTS, "-XX:+UseG1GC -Xlog:gc"))) {
+            if (fork.run(
+                    () -> execute("dbms", "test-command"), Map.of(Bootloader.ENV_JAVA_OPTS, "-XX:+UseG1GC -Xlog:gc"))) {
                 // The JVM needs to accept '-Xlog:gc' in order to print which GC it is using
                 // and it needs to accept '-XX:+UseG1GC' in order to print 'Using G1',
                 // so testing presence of 'Using G1' really verifies that both options are in use.
@@ -166,13 +168,13 @@ class Neo4jAdminCommandTest {
 
         @Test
         void shouldPassParallelGcByDefault() {
-            assertThat(execute("test-command")).isEqualTo(EXIT_CODE_OK);
+            assertThat(execute("dbms", "test-command")).isEqualTo(EXIT_CODE_OK);
             assertThat(out.toString()).contains("-XX:+UseParallelGC");
         }
 
         @Test
         void shouldSpecifyHeapSizeWhenGiven() {
-            assertThat(execute(List.of("test-command"), Map.of(Bootloader.ENV_HEAP_SIZE, "666m")))
+            assertThat(execute(List.of("dbms", "test-command"), Map.of(Bootloader.ENV_HEAP_SIZE, "666m")))
                     .isEqualTo(EXIT_CODE_OK);
             assertThat(out.toString()).contains("-Xmx666m").contains("-Xms666m");
         }
@@ -180,14 +182,14 @@ class Neo4jAdminCommandTest {
         @Test
         void shouldReadMaxHeapSizeFromConfig() {
             addConf(BootloaderSettings.max_heap_size, "222m");
-            assertThat(execute("test-command")).isEqualTo(EXIT_CODE_OK);
+            assertThat(execute("dbms", "test-command")).isEqualTo(EXIT_CODE_OK);
             assertThat(out.toString()).contains("-Xmx227328k");
         }
 
         @Test
         void shouldPrioritizeHeapSizeWhenConfigProvidedGiven() {
             addConf(BootloaderSettings.max_heap_size, "222m");
-            assertThat(execute(List.of("test-command"), Map.of(Bootloader.ENV_HEAP_SIZE, "666m")))
+            assertThat(execute(List.of("dbms", "test-command"), Map.of(Bootloader.ENV_HEAP_SIZE, "666m")))
                     .isEqualTo(EXIT_CODE_OK);
             assertThat(out.toString()).contains("-Xmx666m").contains("-Xms666m");
         }
@@ -195,13 +197,14 @@ class Neo4jAdminCommandTest {
         @Test
         void shouldIgnoreMinHeapSizeInConfig() {
             addConf(BootloaderSettings.initial_heap_size, "222m");
-            assertThat(execute("test-command")).isEqualTo(EXIT_CODE_OK);
+            assertThat(execute("dbms", "test-command")).isEqualTo(EXIT_CODE_OK);
             assertThat(out.toString()).doesNotContain("-Xms");
         }
 
         @Test
         void shouldUseEnvironmentJavaOptionsWhenGiven() {
-            assertThat(execute(List.of("test-command"), Map.of(Bootloader.ENV_JAVA_OPTS, "-XX:+UseZGC -Xlog:gc")))
+            assertThat(execute(
+                            List.of("dbms", "test-command"), Map.of(Bootloader.ENV_JAVA_OPTS, "-XX:+UseZGC -Xlog:gc")))
                     .isEqualTo(EXIT_CODE_OK);
             assertThat(out.toString())
                     .contains("-XX:+UseZGC")
@@ -216,7 +219,8 @@ class Neo4jAdminCommandTest {
             addConf(
                     BootloaderSettings.additional_jvm,
                     "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005");
-            assertThat(execute(List.of("test-command"), Map.of(Bootloader.ENV_JAVA_OPTS, "-XX:+UseZGC -Xlog:gc")))
+            assertThat(execute(
+                            List.of("dbms", "test-command"), Map.of(Bootloader.ENV_JAVA_OPTS, "-XX:+UseZGC -Xlog:gc")))
                     .isEqualTo(EXIT_CODE_OK);
             assertThat(out.toString())
                     .contains("-XX:+UseZGC")
@@ -230,7 +234,7 @@ class Neo4jAdminCommandTest {
         @Test
         void shouldIgnoreHeapSizeWhenJavaOptionsVariablePresent() {
             assertThat(execute(
-                            List.of("test-command"),
+                            List.of("dbms", "test-command"),
                             Map.of(Bootloader.ENV_JAVA_OPTS, "-XX:+UseZGC -Xlog:gc", Bootloader.ENV_HEAP_SIZE, "666m")))
                     .isEqualTo(EXIT_CODE_OK);
             assertThat(out.toString())
@@ -246,7 +250,7 @@ class Neo4jAdminCommandTest {
             Runtime.Version version = Runtime.Version.parse("11.0.11+9-LTS");
             Map<String, String> vm =
                     Map.of(PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM", PROP_VM_VENDOR, "Oracle");
-            assertThat(execute(List.of("test-command"), vm, version)).isEqualTo(EXIT_CODE_OK);
+            assertThat(execute(List.of("dbms", "test-command"), vm, version)).isEqualTo(EXIT_CODE_OK);
             assertThat(err.toString())
                     .containsSubsequence(String.format(
                             "Selecting JVM - Version:%s, Name:%s, Vendor:%s%n",
@@ -264,20 +268,20 @@ class Neo4jAdminCommandTest {
             }
             String cmd = String.format("$(%secho foo)", IS_OS_WINDOWS ? "cmd.exe /c " : "");
             addConf(GraphDatabaseSettings.default_database, cmd);
-            assertThat(execute("test-command", "--expand-commands")).isEqualTo(EXIT_CODE_OK);
+            assertThat(execute("dbms", "test-command", "--expand-commands")).isEqualTo(EXIT_CODE_OK);
             assertThat(out.toString()).containsSubsequence("test-command", "--expand-commands");
         }
 
         @Test
         void shouldPassThroughVerbose() {
-            assertThat(execute("test-command", "--verbose")).isEqualTo(EXIT_CODE_OK);
+            assertThat(execute("dbms", "test-command", "--verbose")).isEqualTo(EXIT_CODE_OK);
             assertThat(out.toString()).containsSubsequence("test-command", "--verbose");
         }
 
         @Test
         void shouldFailOnMissingExpandCommands() {
             addConf(BootloaderSettings.max_heap_size, "$(echo foo)");
-            assertThat(execute("test-command")).isEqualTo(ExitCode.SOFTWARE);
+            assertThat(execute("dbms", "test-command")).isEqualTo(ExitCode.SOFTWARE);
             assertThat(err.toString())
                     .containsSubsequence(
                             "Failed to read config",
@@ -285,7 +289,7 @@ class Neo4jAdminCommandTest {
                             "Run with '--verbose' for a more detailed error message");
 
             clearOutAndErr();
-            assertThat(execute("--verbose", "test-command")).isEqualTo(ExitCode.SOFTWARE);
+            assertThat(execute("--verbose", "dbms", "test-command")).isEqualTo(ExitCode.SOFTWARE);
             assertThat(err.toString())
                     .containsSubsequence(
                             "Failed to read config", "is a command, but config is not explicitly told to expand it")
@@ -328,15 +332,15 @@ class Neo4jAdminCommandTest {
     }
 
     @ServiceProvider
-    public static class TestCommandProvider implements CommandProvider<TestCommand> {
+    public static class TestCommandProvider implements CommandProvider {
         @Override
         public TestCommand createCommand(ExecutionContext ctx) {
             return new TestCommand(ctx);
         }
 
         @Override
-        public Command.CommandType commandType() {
-            return Command.CommandType.TEST;
+        public CommandType commandType() {
+            return CommandType.TEST;
         }
     }
 }

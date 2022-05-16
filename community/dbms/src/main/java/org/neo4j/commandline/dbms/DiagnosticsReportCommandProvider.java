@@ -19,15 +19,15 @@
  */
 package org.neo4j.commandline.dbms;
 
-import static org.neo4j.cli.Command.CommandType.DIAGNOSTICS_REPORT;
+import static org.neo4j.cli.CommandType.REPORT;
 
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.cli.Command.CommandType;
 import org.neo4j.cli.CommandProvider;
+import org.neo4j.cli.CommandType;
 import org.neo4j.cli.ExecutionContext;
 
 @ServiceProvider
-public class DiagnosticsReportCommandProvider implements CommandProvider<DiagnosticsReportCommand> {
+public class DiagnosticsReportCommandProvider implements CommandProvider {
     @Override
     public DiagnosticsReportCommand createCommand(ExecutionContext ctx) {
         return new DiagnosticsReportCommand(ctx);
@@ -35,6 +35,6 @@ public class DiagnosticsReportCommandProvider implements CommandProvider<Diagnos
 
     @Override
     public CommandType commandType() {
-        return DIAGNOSTICS_REPORT;
+        return REPORT;
     }
 }

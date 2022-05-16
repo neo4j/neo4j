@@ -74,21 +74,30 @@ class SetInitialPasswordCommandTest {
             CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
         }
         assertThat(baos.toString().trim())
-                .isEqualTo(String.format(
-                        "USAGE%n" + "%n" + "set-initial-password [--expand-commands] [--require-password-change]%n"
-                                + "                     [--verbose] <password>%n"
-                                + "%n"
-                                + "DESCRIPTION%n" + "%n"
-                                + "Sets the initial password of the initial admin user ('neo4j'). And removes the%n"
-                                + "requirement to change password on first login. IMPORTANT: this change will only%n"
-                                + "take effect if performed before the database is started for the first time.%n"
-                                + "%n"
-                                + "PARAMETERS%n" + "%n" + "      <password>%n"
-                                + "%n" + "OPTIONS%n" + "%n" + "      --verbose           Enable verbose output.%n"
-                                + "      --expand-commands   Allow command expansion in config value evaluation.%n"
-                                + "      --require-password-change%n"
-                                + "                          Require the user to change their password on first%n"
-                                + "                            login."));
+                .isEqualToIgnoringNewLines(
+                        """
+                                USAGE
+
+                                set-initial-password [--expand-commands] [--require-password-change]
+                                                     [--verbose] <password>
+
+                                DESCRIPTION
+
+                                Sets the initial password of the initial admin user ('neo4j'). And removes the
+                                requirement to change password on first login. IMPORTANT: this change will only
+                                take effect if performed before the database is started for the first time.
+
+                                PARAMETERS
+
+                                      <password>
+
+                                OPTIONS
+
+                                      --expand-commands   Allow command expansion in config value evaluation.
+                                      --require-password-change
+                                                          Require the user to change their password on first
+                                                            login.
+                                      --verbose           Enable verbose output.""");
     }
 
     @Test

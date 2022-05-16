@@ -19,15 +19,15 @@
  */
 package org.neo4j.commandline.dbms;
 
-import static org.neo4j.cli.Command.CommandType.STORE_INFO;
+import static org.neo4j.cli.CommandType.INFO;
 
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.cli.Command.CommandType;
 import org.neo4j.cli.CommandProvider;
+import org.neo4j.cli.CommandType;
 import org.neo4j.cli.ExecutionContext;
 
 @ServiceProvider
-public class StoreInfoCommandProvider implements CommandProvider<StoreInfoCommand> {
+public class StoreInfoCommandProvider implements CommandProvider {
     @Override
     public StoreInfoCommand createCommand(ExecutionContext ctx) {
         return new StoreInfoCommand(ctx);
@@ -35,6 +35,6 @@ public class StoreInfoCommandProvider implements CommandProvider<StoreInfoComman
 
     @Override
     public CommandType commandType() {
-        return STORE_INFO;
+        return INFO;
     }
 }

@@ -19,22 +19,22 @@
  */
 package org.neo4j.importer;
 
-import static org.neo4j.cli.Command.CommandType.IMPORT;
+import static org.neo4j.cli.CommandType.IMPORT;
 
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.cli.Command;
 import org.neo4j.cli.CommandProvider;
+import org.neo4j.cli.CommandType;
 import org.neo4j.cli.ExecutionContext;
 
 @ServiceProvider
-public class ImportCommandProvider implements CommandProvider<ImportCommand> {
+public class ImportCommandProvider implements CommandProvider {
     @Override
     public ImportCommand createCommand(ExecutionContext ctx) {
         return new ImportCommand(ctx);
     }
 
     @Override
-    public Command.CommandType commandType() {
+    public CommandType commandType() {
         return IMPORT;
     }
 }

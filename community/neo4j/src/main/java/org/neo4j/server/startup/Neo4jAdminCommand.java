@@ -35,7 +35,7 @@ import org.neo4j.util.VisibleForTesting;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "Neo4j Admin", description = "Neo4j Admin CLI.")
-class Neo4jAdminCommand extends BootloaderCommand implements Callable<Integer>, VerboseCommand {
+public class Neo4jAdminCommand extends BootloaderCommand implements Callable<Integer>, VerboseCommand {
     Neo4jAdminCommand(Neo4jAdminBootloaderContext ctx) {
         super(ctx);
     }
@@ -101,10 +101,10 @@ class Neo4jAdminCommand extends BootloaderCommand implements Callable<Integer>, 
         return verbose;
     }
 
-    static class Neo4jAdminBootloaderContext extends BootloaderContext {
+    public static class Neo4jAdminBootloaderContext extends BootloaderContext {
         private static final Class<?> entrypoint = AdminTool.class;
 
-        Neo4jAdminBootloaderContext() {
+        public Neo4jAdminBootloaderContext() {
             super(entrypoint);
         }
 

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.pushtocloud;
+package org.neo4j.export;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
@@ -48,12 +48,12 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 @Command(
-        name = "push-to-cloud",
+        name = "export",
         description =
                 "Push your local database to a Neo4j Aura instance. The database must be shutdown in order to take a dump to upload. "
                         + "The target location is your Neo4j Aura Bolt URI. You will be asked your Neo4j Cloud username and password during "
                         + "the push-to-cloud operation.")
-public class PushToCloudCommand extends AbstractCommand {
+public class ExportCommand extends AbstractCommand {
     private final Copier copier;
     private final DumpCreator dumpCreator;
     private final PushToCloudConsole cons;
@@ -106,7 +106,7 @@ public class PushToCloudCommand extends AbstractCommand {
     private static final double ACCEPTABLE_DUMP_CHANGE =
             0.1; // Allow 10% deviation between measured database size, and actually stored dump
 
-    public PushToCloudCommand(ExecutionContext ctx, Copier copier, DumpCreator dumpCreator, PushToCloudConsole cons) {
+    public ExportCommand(ExecutionContext ctx, Copier copier, DumpCreator dumpCreator, PushToCloudConsole cons) {
         super(ctx);
         this.copier = copier;
         this.dumpCreator = dumpCreator;

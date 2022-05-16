@@ -100,31 +100,34 @@ class MemoryRecommendationsCommandTest {
             CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
         }
         assertThat(baos.toString().trim())
-                .isEqualTo(String.format("Print Neo4j heap and pagecache memory settings recommendations.%n" + "%n"
-                        + "USAGE%n"
-                        + "%n"
-                        + "memrec [--docker] [--expand-commands] [--verbose] [--memory=<size>]%n"
-                        + "%n"
-                        + "DESCRIPTION%n"
-                        + "%n"
-                        + "Print heuristic memory setting recommendations for the Neo4j JVM heap and%n"
-                        + "pagecache. The heuristic is based on the total memory of the system the command%n"
-                        + "is running on, or on the amount of memory specified with the --memory argument.%n"
-                        + "The heuristic assumes that the system is dedicated to running Neo4j. If this is%n"
-                        + "not the case, then use the --memory argument to specify how much memory can be%n"
-                        + "expected to be dedicated to Neo4j. The output is formatted such that it can be%n"
-                        + "copy-pasted into the neo4j.conf file.%n"
-                        + "%n"
-                        + "OPTIONS%n"
-                        + "%n"
-                        + "      --verbose           Enable verbose output.%n"
-                        + "      --expand-commands   Allow command expansion in config value evaluation.%n"
-                        + "      --memory=<size>     Recommend memory settings with respect to the given%n"
-                        + "                            amount of memory, instead of the total memory of%n"
-                        + "                            the system running the command.%n"
-                        + "      --docker            The recommended memory settings are produced in the%n"
-                        + "                            form of environment variables that can be directly%n"
-                        + "                            passed to Neo4j docker container."));
+                .isEqualToIgnoringNewLines(
+                        """
+                        Print Neo4j heap and pagecache memory settings recommendations.
+
+                        USAGE
+
+                        memrec [--docker] [--expand-commands] [--verbose] [--memory=<size>]
+
+                        DESCRIPTION
+
+                        Print heuristic memory setting recommendations for the Neo4j JVM heap and
+                        pagecache. The heuristic is based on the total memory of the system the command
+                        is running on, or on the amount of memory specified with the --memory argument.
+                        The heuristic assumes that the system is dedicated to running Neo4j. If this is
+                        not the case, then use the --memory argument to specify how much memory can be
+                        expected to be dedicated to Neo4j. The output is formatted such that it can be
+                        copy-pasted into the neo4j.conf file.
+
+                        OPTIONS
+
+                              --docker            The recommended memory settings are produced in the
+                                                    form of environment variables that can be directly
+                                                    passed to Neo4j docker container.
+                              --expand-commands   Allow command expansion in config value evaluation.
+                              --memory=<size>     Recommend memory settings with respect to the given
+                                                    amount of memory, instead of the total memory of
+                                                    the system running the command.
+                              --verbose           Enable verbose output.""");
     }
 
     @Test

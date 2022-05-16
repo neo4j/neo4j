@@ -17,24 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.commandline.dbms;
+package org.neo4j.cli;
 
-import static org.neo4j.cli.CommandType.MEMORY_RECOMMENDATION;
+public enum CommandGroup {
+    DATABASE("database", "Database-specific administration tasks."),
+    DBMS("dbms", "DBMS-wide (for single and clustered environments) administration tasks."),
+    SERVER("server", "Server-wide administration tasks.");
 
-import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.cli.CommandProvider;
-import org.neo4j.cli.CommandType;
-import org.neo4j.cli.ExecutionContext;
+    private final String displayName;
+    private final String description;
 
-@ServiceProvider
-public class MemoryRecommendationsCommandProvider implements CommandProvider {
-    @Override
-    public MemoryRecommendationsCommand createCommand(ExecutionContext ctx) {
-        return new MemoryRecommendationsCommand(ctx);
+    CommandGroup(String displayName, String description) {
+        this.displayName = displayName;
+        this.description = description;
     }
 
-    @Override
-    public CommandType commandType() {
-        return MEMORY_RECOMMENDATION;
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public String getDescription() {
+        return description;
     }
 }

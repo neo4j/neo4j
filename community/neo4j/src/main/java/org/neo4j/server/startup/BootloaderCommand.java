@@ -27,10 +27,10 @@ import picocli.CommandLine;
 import picocli.CommandLine.Option;
 
 @CommandLine.Command(sortOptions = false)
-abstract class BootloaderCommand {
+public abstract class BootloaderCommand {
     protected final BootloaderContext ctx;
 
-    BootloaderCommand(BootloaderContext ctx) {
+    public BootloaderCommand(BootloaderContext ctx) {
         this.ctx = ctx;
     }
 
@@ -44,6 +44,11 @@ abstract class BootloaderCommand {
         Bootloader getBootloader(boolean expandCommands) {
             bootloader.ctx.init(expandCommands, verbose);
             return new Bootloader(bootloader.ctx);
+        }
+
+        Bootloader getBootloader(BootloaderContext ctx, boolean expandCommands) {
+            ctx.init(expandCommands, verbose);
+            return new Bootloader(ctx);
         }
 
         @Override

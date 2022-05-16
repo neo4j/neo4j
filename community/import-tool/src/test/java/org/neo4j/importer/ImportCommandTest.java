@@ -19,7 +19,6 @@
  */
 package org.neo4j.importer;
 
-import static java.lang.System.lineSeparator;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -60,257 +59,194 @@ class ImportCommandTest {
         try (var out = new PrintStream(baos)) {
             CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
         }
-        assertEquals(
-                "USAGE" + lineSeparator() + ""
-                        + lineSeparator() + "import [--expand-commands] [--verbose] [--auto-skip-subsequent-headers"
-                        + lineSeparator() + "       [=<true/false>]] [--cache-on-heap[=<true/false>]] [--force"
-                        + lineSeparator() + "       [=<true/false>]] [--high-io[=<true/false>]] [--ignore-empty-strings"
-                        + lineSeparator() + "       [=<true/false>]] [--ignore-extra-columns[=<true/false>]]"
-                        + lineSeparator() + "       [--legacy-style-quoting[=<true/false>]] [--multiline-fields"
-                        + lineSeparator() + "       [=<true/false>]] [--normalize-types[=<true/false>]]"
-                        + lineSeparator()
-                        + "       [--skip-bad-entries-logging[=<true/false>]] [--skip-bad-relationships"
-                        + lineSeparator()
-                        + "       [=<true/false>]] [--skip-duplicate-nodes[=<true/false>]] [--trim-strings"
-                        + lineSeparator()
-                        + "       [=<true/false>]] [--additional-config=<path>] [--array-delimiter=<char>]"
-                        + lineSeparator()
-                        + "       [--bad-tolerance=<num>] [--database=<database>] [--delimiter=<char>]"
-                        + lineSeparator()
-                        + "       [--id-type=<STRING|INTEGER|ACTUAL>] [--input-encoding=<character-set>]"
-                        + lineSeparator() + "       [--max-memory=<size>] [--processors=<num>] [--quote=<char>]"
-                        + lineSeparator()
-                        + "       [--read-buffer-size=<size>] [--report-file=<path>] --nodes=[<label>[:"
-                        + lineSeparator()
-                        + "       <label>]...=]<files>... [--nodes=[<label>[:<label>]...=]<files>...]..."
-                        + lineSeparator() + "       [--relationships=[<type>=]<files>...]..."
-                        + lineSeparator() + ""
-                        + lineSeparator() + "DESCRIPTION"
-                        + lineSeparator() + ""
-                        + lineSeparator() + "Import a collection of CSV files."
-                        + lineSeparator() + ""
-                        + lineSeparator() + "OPTIONS"
-                        + lineSeparator() + ""
-                        + lineSeparator() + "      --verbose              Enable verbose output."
-                        + lineSeparator()
-                        + "      --expand-commands      Allow command expansion in config value evaluation."
-                        + lineSeparator() + "      --database=<database>  Name of the database to import."
-                        + lineSeparator() + "                               If the database used to import into doesn't"
-                        + lineSeparator() + "                               exist prior to importing,"
-                        + lineSeparator() + "                               then it must be created subsequently using"
-                        + lineSeparator() + "                               CREATE DATABASE."
-                        + lineSeparator() + "                               Default: neo4j"
-                        + lineSeparator() + "      --additional-config=<path>"
-                        + lineSeparator() + "                             Configuration file to supply additional"
-                        + lineSeparator() + "                               configuration in."
-                        + lineSeparator() + "      --report-file=<path>   File in which to store the report of the"
-                        + lineSeparator() + "                               csv-import."
-                        + lineSeparator() + "                               Default: import.report"
-                        + lineSeparator() + "      --force[=<true/false>] Force will delete any existing database files"
-                        + lineSeparator() + "                               prior to the import."
-                        + lineSeparator() + "                               Default: false"
-                        + lineSeparator() + "      --id-type=<STRING|INTEGER|ACTUAL>"
-                        + lineSeparator()
-                        + "                             Each node must provide a unique id. This is used"
-                        + lineSeparator() + "                               to find the correct nodes when creating"
-                        + lineSeparator() + "                               relationships. Possible values are:"
-                        + lineSeparator()
-                        + "                               STRING: arbitrary strings for identifying nodes,"
-                        + lineSeparator() + "                               INTEGER: arbitrary integer values for"
-                        + lineSeparator() + "                               identifying nodes,"
-                        + lineSeparator() + "                               ACTUAL: (advanced) actual node ids."
-                        + lineSeparator()
-                        + "                             For more information on id handling, please see"
-                        + lineSeparator() + "                               the Neo4j Manual: https://neo4j."
-                        + lineSeparator()
-                        + "                               com/docs/operations-manual/current/tools/import/"
-                        + lineSeparator() + "                               Default: STRING"
-                        + lineSeparator() + "      --input-encoding=<character-set>"
-                        + lineSeparator() + "                             Character set that input data is encoded in."
-                        + lineSeparator() + "                               Default: UTF-8"
-                        + lineSeparator() + "      --ignore-extra-columns[=<true/false>]"
-                        + lineSeparator()
-                        + "                             If un-specified columns should be ignored during"
-                        + lineSeparator() + "                               the import."
-                        + lineSeparator() + "                               Default: false"
-                        + lineSeparator() + "      --multiline-fields[=<true/false>]"
-                        + lineSeparator()
-                        + "                             Whether or not fields from input source can span"
-                        + lineSeparator()
-                        + "                               multiple lines, i.e. contain newline characters."
-                        + lineSeparator() + "                               Default: false"
-                        + lineSeparator() + "      --ignore-empty-strings[=<true/false>]"
-                        + lineSeparator()
-                        + "                             Whether or not empty string fields, i.e. \"\" from"
-                        + lineSeparator()
-                        + "                               input source are ignored, i.e. treated as null."
-                        + lineSeparator() + "                               Default: false"
-                        + lineSeparator() + "      --trim-strings[=<true/false>]"
-                        + lineSeparator() + "                             Whether or not strings should be trimmed for"
-                        + lineSeparator() + "                               whitespaces."
-                        + lineSeparator() + "                               Default: false"
-                        + lineSeparator() + "      --legacy-style-quoting[=<true/false>]"
-                        + lineSeparator()
-                        + "                             Whether or not backslash-escaped quote e.g. \\\" is"
-                        + lineSeparator() + "                               interpreted as inner quote."
-                        + lineSeparator() + "                               Default: false"
-                        + lineSeparator()
-                        + "      --delimiter=<char>     Delimiter character between values in CSV data."
-                        + lineSeparator() + "                               Also accepts 'TAB' and e.g. 'U+20AC' for"
-                        + lineSeparator() + "                               specifying character using unicode."
-                        + lineSeparator() + "                               Default: ,"
-                        + lineSeparator() + "      --array-delimiter=<char>"
-                        + lineSeparator()
-                        + "                             Delimiter character between array elements within"
-                        + lineSeparator()
-                        + "                               a value in CSV data. Also accepts 'TAB' and e.g."
-                        + lineSeparator()
-                        + "                               'U+20AC' for specifying character using unicode."
-                        + lineSeparator() + "                               Default: ;"
-                        + lineSeparator() + "      --quote=<char>         Character to treat as quotation character for"
-                        + lineSeparator()
-                        + "                               values in CSV data. Quotes can be escaped as per"
-                        + lineSeparator()
-                        + "                               RFC 4180 by doubling them, for example \"\" would"
-                        + lineSeparator()
-                        + "                               be interpreted as a literal \". You cannot escape"
-                        + lineSeparator() + "                               using \\."
-                        + lineSeparator() + "                               Default: \""
-                        + lineSeparator() + "      --read-buffer-size=<size>"
-                        + lineSeparator()
-                        + "                             Size of each buffer for reading input data. The"
-                        + lineSeparator()
-                        + "                               size has to at least be large enough to hold the"
-                        + lineSeparator() + "                               biggest single value in the input data. The"
-                        + lineSeparator() + "                               value can be a plain number or a byte units"
-                        + lineSeparator() + "                               string, e.g. 128k, 1m."
-                        + lineSeparator() + "                               Default: 4194304"
-                        + lineSeparator() + "      --max-memory=<size>    Maximum memory that neo4j-admin can use for"
-                        + lineSeparator()
-                        + "                               various data structures and caching to improve"
-                        + lineSeparator()
-                        + "                               performance. Values can be plain numbers, like"
-                        + lineSeparator()
-                        + "                               10000000 or e.g. 20G for 20 gigabyte, or even e."
-                        + lineSeparator() + "                               g. 70%."
-                        + lineSeparator() + "                               Default: 90%"
-                        + lineSeparator() + "      --high-io[=<true/false>]"
-                        + lineSeparator()
-                        + "                             Ignore environment-based heuristics, and assume"
-                        + lineSeparator()
-                        + "                               that the target storage subsystem can support"
-                        + lineSeparator() + "                               parallel IO with high throughput."
-                        + lineSeparator() + "                               Default: null"
-                        + lineSeparator() + "      --cache-on-heap[=<true/false>]"
-                        + lineSeparator() + "                             (advanced) Whether or not to allow allocating"
-                        + lineSeparator()
-                        + "                               memory for the cache on heap. If 'false' then"
-                        + lineSeparator()
-                        + "                               caches will still be allocated off-heap, but the"
-                        + lineSeparator()
-                        + "                               additional free memory inside the JVM will not"
-                        + lineSeparator()
-                        + "                               be allocated for the caches. Use this option to"
-                        + lineSeparator()
-                        + "                               be able to have better control over the heap"
-                        + lineSeparator() + "                               memory."
-                        + lineSeparator() + "                               Default: false"
-                        + lineSeparator()
-                        + "      --processors=<num>     (advanced) Max number of processors used by the"
-                        + lineSeparator()
-                        + "                               importer. Defaults to the number of available"
-                        + lineSeparator() + "                               processors reported by the JVM. There is a"
-                        + lineSeparator()
-                        + "                               certain amount of minimum threads needed so for"
-                        + lineSeparator()
-                        + "                               that reason there is no lower bound for this"
-                        + lineSeparator() + "                               value. For optimal performance this value"
-                        + lineSeparator() + "                               shouldn't be greater than the number of"
-                        + lineSeparator() + "                               available processors."
-                        + lineSeparator() + "                               Default: "
-                        + Runtime.getRuntime().availableProcessors() + lineSeparator()
-                        + "      --bad-tolerance=<num>  Number of bad entries before the import is"
-                        + lineSeparator()
-                        + "                               considered failed. This tolerance threshold is"
-                        + lineSeparator()
-                        + "                               about relationships referring to missing nodes."
-                        + lineSeparator()
-                        + "                               Format errors in input data are still treated as"
-                        + lineSeparator() + "                               errors"
-                        + lineSeparator() + "                               Default: 1000"
-                        + lineSeparator() + "      --skip-bad-entries-logging[=<true/false>]"
-                        + lineSeparator() + "                             Whether or not to skip logging bad entries"
-                        + lineSeparator() + "                               detected during import."
-                        + lineSeparator() + "                               Default: false"
-                        + lineSeparator() + "      --skip-bad-relationships[=<true/false>]"
-                        + lineSeparator()
-                        + "                             Whether or not to skip importing relationships"
-                        + lineSeparator()
-                        + "                               that refers to missing node ids, i.e. either"
-                        + lineSeparator()
-                        + "                               start or end node id/group referring to node"
-                        + lineSeparator()
-                        + "                               that wasn't specified by the node input data."
-                        + lineSeparator()
-                        + "                               Skipped relationships will be logged, containing"
-                        + lineSeparator() + "                               at most number of entities specified by"
-                        + lineSeparator()
-                        + "                               bad-tolerance, unless otherwise specified by"
-                        + lineSeparator() + "                               skip-bad-entries-logging option."
-                        + lineSeparator() + "                               Default: false"
-                        + lineSeparator() + "      --skip-duplicate-nodes[=<true/false>]"
-                        + lineSeparator()
-                        + "                             Whether or not to skip importing nodes that have"
-                        + lineSeparator() + "                               the same id/group. In the event of multiple"
-                        + lineSeparator()
-                        + "                               nodes within the same group having the same id,"
-                        + lineSeparator()
-                        + "                               the first encountered will be imported whereas"
-                        + lineSeparator()
-                        + "                               consecutive such nodes will be skipped. Skipped"
-                        + lineSeparator()
-                        + "                               nodes will be logged, containing at most number"
-                        + lineSeparator()
-                        + "                               of entities specified by bad-tolerance, unless"
-                        + lineSeparator()
-                        + "                               otherwise specified by skip-bad-entries-logging"
-                        + lineSeparator() + "                               option."
-                        + lineSeparator() + "                               Default: false"
-                        + lineSeparator() + "      --normalize-types[=<true/false>]"
-                        + lineSeparator() + "                             Whether or not to normalize property types to"
-                        + lineSeparator() + "                               Cypher types, e.g. 'int' becomes 'long' and"
-                        + lineSeparator() + "                               'float' becomes 'double'"
-                        + lineSeparator() + "                               Default: true"
-                        + lineSeparator() + "      --nodes=[<label>[:<label>]...=]<files>..."
-                        + lineSeparator()
-                        + "                             Node CSV header and data. Multiple files will be"
-                        + lineSeparator() + "                               logically seen as one big file from the"
-                        + lineSeparator()
-                        + "                               perspective of the importer. The first line must"
-                        + lineSeparator()
-                        + "                               contain the header. Multiple data sources like"
-                        + lineSeparator()
-                        + "                               these can be specified in one import, where each"
-                        + lineSeparator() + "                               data source has its own header."
-                        + lineSeparator() + "      --relationships=[<type>=]<files>..."
-                        + lineSeparator()
-                        + "                             Relationship CSV header and data. Multiple files"
-                        + lineSeparator()
-                        + "                               will be logically seen as one big file from the"
-                        + lineSeparator()
-                        + "                               perspective of the importer. The first line must"
-                        + lineSeparator()
-                        + "                               contain the header. Multiple data sources like"
-                        + lineSeparator()
-                        + "                               these can be specified in one import, where each"
-                        + lineSeparator() + "                               data source has its own header."
-                        + lineSeparator() + "      --auto-skip-subsequent-headers[=<true/false>]"
-                        + lineSeparator() + "                             Automatically skip accidental header lines in"
-                        + lineSeparator()
-                        + "                               subsequent files in file groups with more than"
-                        + lineSeparator() + "                               one file"
-                        + lineSeparator() + "                               Default: false",
-                baos.toString().trim());
+        String actualValue = baos.toString().trim();
+        String expectedValue =
+                """
+                USAGE
+
+                import [--expand-commands] [--verbose] [--auto-skip-subsequent-headers
+                       [=<true/false>]] [--cache-on-heap[=<true/false>]] [--force
+                       [=<true/false>]] [--high-io[=<true/false>]] [--ignore-empty-strings
+                       [=<true/false>]] [--ignore-extra-columns[=<true/false>]]
+                       [--legacy-style-quoting[=<true/false>]] [--multiline-fields
+                       [=<true/false>]] [--normalize-types[=<true/false>]]
+                       [--skip-bad-entries-logging[=<true/false>]] [--skip-bad-relationships
+                       [=<true/false>]] [--skip-duplicate-nodes[=<true/false>]] [--trim-strings
+                       [=<true/false>]] [--additional-config=<path>] [--array-delimiter=<char>]
+                       [--bad-tolerance=<num>] [--database=<database>] [--delimiter=<char>]
+                       [--id-type=<STRING|INTEGER|ACTUAL>] [--input-encoding=<character-set>]
+                       [--max-memory=<size>] [--processors=<num>] [--quote=<char>]
+                       [--read-buffer-size=<size>] [--report-file=<path>] --nodes=[<label>[:
+                       <label>]...=]<files>... [--nodes=[<label>[:<label>]...=]<files>...]...
+                       [--relationships=[<type>=]<files>...]...
+
+                DESCRIPTION
+
+                Import a collection of CSV files.
+
+                OPTIONS
+
+                      --additional-config=<path>
+                                             Configuration file to supply additional
+                                               configuration in.
+                      --array-delimiter=<char>
+                                             Delimiter character between array elements within
+                                               a value in CSV data. Also accepts 'TAB' and e.g.
+                                               'U+20AC' for specifying character using unicode.
+                                               Default: ;
+                      --auto-skip-subsequent-headers[=<true/false>]
+                                             Automatically skip accidental header lines in
+                                               subsequent files in file groups with more than
+                                               one file
+                                               Default: false
+                      --bad-tolerance=<num>  Number of bad entries before the import is
+                                               considered failed. This tolerance threshold is
+                                               about relationships referring to missing nodes.
+                                               Format errors in input data are still treated as
+                                               errors
+                                               Default: 1000
+                      --cache-on-heap[=<true/false>]
+                                             (advanced) Whether or not to allow allocating
+                                               memory for the cache on heap. If 'false' then
+                                               caches will still be allocated off-heap, but the
+                                               additional free memory inside the JVM will not
+                                               be allocated for the caches. Use this option to
+                                               be able to have better control over the heap
+                                               memory.
+                                               Default: false
+                      --database=<database>  Name of the database to import.
+                                               If the database used to import into doesn't
+                                               exist prior to importing,
+                                               then it must be created subsequently using
+                                               CREATE DATABASE.
+                                               Default: neo4j
+                      --delimiter=<char>     Delimiter character between values in CSV data.
+                                               Also accepts 'TAB' and e.g. 'U+20AC' for
+                                               specifying character using unicode.
+                                               Default: ,
+                      --expand-commands      Allow command expansion in config value evaluation.
+                      --force[=<true/false>] Force will delete any existing database files
+                                               prior to the import.
+                                               Default: false
+                      --high-io[=<true/false>]
+                                             Ignore environment-based heuristics, and assume
+                                               that the target storage subsystem can support
+                                               parallel IO with high throughput.
+                                               Default: null
+                      --id-type=<STRING|INTEGER|ACTUAL>
+                                             Each node must provide a unique id. This is used
+                                               to find the correct nodes when creating
+                                               relationships. Possible values are:
+                                               STRING: arbitrary strings for identifying nodes,
+                                               INTEGER: arbitrary integer values for
+                                               identifying nodes,
+                                               ACTUAL: (advanced) actual node ids.
+                                             For more information on id handling, please see
+                                               the Neo4j Manual: https://neo4j.
+                                               com/docs/operations-manual/current/tools/import/
+                                               Default: STRING
+                      --ignore-empty-strings[=<true/false>]
+                                             Whether or not empty string fields, i.e. "" from
+                                               input source are ignored, i.e. treated as null.
+                                               Default: false
+                      --ignore-extra-columns[=<true/false>]
+                                             If un-specified columns should be ignored during
+                                               the import.
+                                               Default: false
+                      --input-encoding=<character-set>
+                                             Character set that input data is encoded in.
+                                               Default: UTF-8
+                      --legacy-style-quoting[=<true/false>]
+                                             Whether or not backslash-escaped quote e.g. \\" is
+                                               interpreted as inner quote.
+                                               Default: false
+                      --max-memory=<size>    Maximum memory that neo4j-admin can use for
+                                               various data structures and caching to improve
+                                               performance. Values can be plain numbers, like
+                                               10000000 or e.g. 20G for 20 gigabyte, or even e.
+                                               g. 70%%.
+                                               Default: 90%%
+                      --multiline-fields[=<true/false>]
+                                             Whether or not fields from input source can span
+                                               multiple lines, i.e. contain newline characters.
+                                               Default: false
+                      --nodes=[<label>[:<label>]...=]<files>...
+                                             Node CSV header and data. Multiple files will be
+                                               logically seen as one big file from the
+                                               perspective of the importer. The first line must
+                                               contain the header. Multiple data sources like
+                                               these can be specified in one import, where each
+                                               data source has its own header.
+                      --normalize-types[=<true/false>]
+                                             Whether or not to normalize property types to
+                                               Cypher types, e.g. 'int' becomes 'long' and
+                                               'float' becomes 'double'
+                                               Default: true
+                      --processors=<num>     (advanced) Max number of processors used by the
+                                               importer. Defaults to the number of available
+                                               processors reported by the JVM. There is a
+                                               certain amount of minimum threads needed so for
+                                               that reason there is no lower bound for this
+                                               value. For optimal performance this value
+                                               shouldn't be greater than the number of
+                                               available processors.
+                                               Default: %d
+                      --quote=<char>         Character to treat as quotation character for
+                                               values in CSV data. Quotes can be escaped as per
+                                               RFC 4180 by doubling them, for example "" would
+                                               be interpreted as a literal ". You cannot escape
+                                               using \\.
+                                               Default: "
+                      --read-buffer-size=<size>
+                                             Size of each buffer for reading input data. The
+                                               size has to at least be large enough to hold the
+                                               biggest single value in the input data. The
+                                               value can be a plain number or a byte units
+                                               string, e.g. 128k, 1m.
+                                               Default: 4194304
+                      --relationships=[<type>=]<files>...
+                                             Relationship CSV header and data. Multiple files
+                                               will be logically seen as one big file from the
+                                               perspective of the importer. The first line must
+                                               contain the header. Multiple data sources like
+                                               these can be specified in one import, where each
+                                               data source has its own header.
+                      --report-file=<path>   File in which to store the report of the
+                                               csv-import.
+                                               Default: import.report
+                      --skip-bad-entries-logging[=<true/false>]
+                                             Whether or not to skip logging bad entries
+                                               detected during import.
+                                               Default: false
+                      --skip-bad-relationships[=<true/false>]
+                                             Whether or not to skip importing relationships
+                                               that refers to missing node ids, i.e. either
+                                               start or end node id/group referring to node
+                                               that wasn't specified by the node input data.
+                                               Skipped relationships will be logged, containing
+                                               at most number of entities specified by
+                                               bad-tolerance, unless otherwise specified by
+                                               skip-bad-entries-logging option.
+                                               Default: false
+                      --skip-duplicate-nodes[=<true/false>]
+                                             Whether or not to skip importing nodes that have
+                                               the same id/group. In the event of multiple
+                                               nodes within the same group having the same id,
+                                               the first encountered will be imported whereas
+                                               consecutive such nodes will be skipped. Skipped
+                                               nodes will be logged, containing at most number
+                                               of entities specified by bad-tolerance, unless
+                                               otherwise specified by skip-bad-entries-logging
+                                               option.
+                                               Default: false
+                      --trim-strings[=<true/false>]
+                                             Whether or not strings should be trimmed for
+                                               whitespaces.
+                                               Default: false
+                      --verbose              Enable verbose output."""
+                        .formatted(Runtime.getRuntime().availableProcessors());
+
+        assertThat(actualValue).isEqualToIgnoringNewLines(expectedValue);
     }
 
     @Test
@@ -327,7 +263,7 @@ class ImportCommandTest {
                 command,
                 "--additional-config",
                 additionalConfigFile.toAbsolutePath().toString(),
-                "--nodes=" + foo.toAbsolutePath().toString());
+                "--nodes=" + foo.toAbsolutePath());
 
         // when
         Config resultingConfig = command.loadNeo4jConfig();

@@ -75,19 +75,23 @@ class UnbindCommandTest {
             CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
         }
         assertThat(baos.toString().trim())
-                .isEqualTo(String.format("Removes server identifier.%n" + "%n"
-                        + "USAGE%n"
-                        + "%n"
-                        + "unbind [--expand-commands] [--verbose]%n"
-                        + "%nDESCRIPTION%n"
-                        + "%n"
-                        + "Removes server identifier. Next start instance will create a new identity for%n"
-                        + "itself.%n"
-                        + "%n"
-                        + "OPTIONS%n"
-                        + "%n"
-                        + "      --verbose           Enable verbose output.%n"
-                        + "      --expand-commands   Allow command expansion in config value evaluation."));
+                .isEqualToIgnoringNewLines(
+                        """
+                Removes server identifier.
+
+                USAGE
+
+                unbind [--expand-commands] [--verbose]
+
+                DESCRIPTION
+
+                Removes server identifier. Next start instance will create a new identity for
+                itself.
+
+                OPTIONS
+
+                      --expand-commands   Allow command expansion in config value evaluation.
+                      --verbose           Enable verbose output.""");
     }
 
     @Test
