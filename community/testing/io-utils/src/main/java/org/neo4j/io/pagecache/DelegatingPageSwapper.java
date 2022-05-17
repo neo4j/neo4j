@@ -111,11 +111,6 @@ public class DelegatingPageSwapper implements PageSwapper {
     }
 
     @Override
-    public long read(long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length) throws IOException {
-        return delegate.read(startFilePageId, bufferAddresses, bufferLengths, length);
-    }
-
-    @Override
     public long write(
             long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length, int totalAffectedPages)
             throws IOException {

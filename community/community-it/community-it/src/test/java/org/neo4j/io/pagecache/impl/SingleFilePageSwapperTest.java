@@ -174,39 +174,6 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
     }
 
     @Test
-    void reportExternalIoOnSwapInWithMultipleBuffers() throws IOException {
-        byte[] bytes1 = new byte[] {1, 2, 3, 4};
-        byte[] bytes2 = new byte[] {5, 6, 7, 8};
-        byte[] bytes3 = new byte[] {9, 10, 11, 12};
-        try (StoreChannel channel = getFs().write(getPath())) {
-            channel.writeAll(wrap(bytes1));
-            channel.writeAll(wrap(bytes2));
-            channel.writeAll(wrap(bytes3));
-        }
-
-        PageSwapperFactory factory = createSwapperFactory(getFs());
-        CountingIOController controller = new CountingIOController();
-        try (var swapper = createSwapper(factory, getPath(), 4, null, false, false, true, controller)) {
-            long target1 = createPage(4);
-            long target2 = createPage(4);
-            long target3 = createPage(4);
-            int numberOfReads = 12;
-            int buffers = 3;
-            for (int i = 0; i < numberOfReads; i++) {
-                assertEquals(
-                        12 + RESERVED_BYTES * 3,
-                        swapper.read(
-                                0,
-                                new long[] {target1, target2, target3},
-                                new int[] {4 + RESERVED_BYTES, 4 + RESERVED_BYTES, 4 + RESERVED_BYTES},
-                                buffers));
-            }
-            long expectedIO = getEphemeralFileSystem() == getFs() ? numberOfReads * buffers : numberOfReads;
-            assertEquals(expectedIO, controller.getExternalIOCounter());
-        }
-    }
-
-    @Test
     void reportExternalIoOnSwapOut() throws IOException {
         createEmptyFile();
 
@@ -661,53 +628,6 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
     }
 
     @Test
-    void mustHandleMischiefInPositionedVectoredRead() throws Exception {
-        assumeThat(RESERVED_BYTES).isEqualTo(0);
-        int bytesTotal = 512;
-        int bytesPerPage = 32;
-        int pageCount = bytesTotal / bytesPerPage;
-        byte[] data = new byte[bytesTotal];
-        ThreadLocalRandom.current().nextBytes(data);
-
-        PageSwapperFactory factory = createSwapperFactory(getFs());
-        Path file = getPath();
-        PageSwapper swapper = createSwapper(factory, file, bytesTotal, NO_CALLBACK, true);
-        try {
-            long page = createPage(data);
-            swapper.write(0, page);
-        } finally {
-            swapper.close();
-        }
-
-        RandomAdversary adversary = new RandomAdversary(0.5, 0.0, 0.0);
-        factory = createSwapperFactory(new AdversarialFileSystemAbstraction(adversary, getFs()));
-        swapper = createSwapper(factory, file, bytesPerPage, NO_CALLBACK, false);
-
-        long[] pages = new long[pageCount];
-        int[] pageLengths = new int[pageCount];
-        for (int i = 0; i < pageCount; i++) {
-            pages[i] = createPage(bytesPerPage);
-            pageLengths[i] = bytesPerPage;
-        }
-
-        byte[] temp = new byte[bytesPerPage];
-        try {
-            for (int i = 0; i < 10_000; i++) {
-                for (long page : pages) {
-                    clear(page);
-                }
-                assertThat(swapper.read(0, pages, pageLengths, pages.length)).isEqualTo(bytesTotal);
-                for (int j = 0; j < pageCount; j++) {
-                    System.arraycopy(data, j * bytesPerPage, temp, 0, bytesPerPage);
-                    assertThat(array(pages[j])).isEqualTo(temp);
-                }
-            }
-        } finally {
-            swapper.close();
-        }
-    }
-
-    @Test
     void mustHandleMischiefInPositionedVectoredWrite() throws Exception {
         int bytesTotal = 512;
         int bytesPerPage = 32;
@@ -744,8 +664,11 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
                     clear(readPage);
                 }
                 adversary.setProbabilityFactor(0);
-                assertThat(swapper.read(0, readPages, pageLengths, pageCount))
-                        .isEqualTo(bytesTotal + pageCount * RESERVED_BYTES);
+                long readBytes = 0;
+                for (int j = 0; j < pageCount; j++) {
+                    readBytes += swapper.read(j, readPages[j], pageLengths[j]);
+                }
+                assertThat(readBytes).isEqualTo(bytesTotal + pageCount * RESERVED_BYTES);
                 for (int j = 0; j < pageCount; j++) {
                     assertThat(array(readPages[j])).containsExactly(array(writePages[j]));
                 }

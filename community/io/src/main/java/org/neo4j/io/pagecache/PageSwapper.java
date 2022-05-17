@@ -62,24 +62,6 @@ public interface PageSwapper extends Closeable {
     long read(long filePageId, long bufferAddress, int bufferLength) throws IOException;
 
     /**
-     * Read pages from the file into the pages given by the bufferAddresses, starting from the given startFilePageId.
-     * <p>
-     * Returns the number of bytes read in from the file. May be zero if the
-     * requested startFilePageId was beyond the end of the file. If the file does not have enough data
-     * to fill up all the buffer space represented by the pages, then the remaining buffer space will be
-     * filled with zero bytes.
-     * <p>
-     * The contents of the pages should be considered to be garbage if the operation throws an exception,
-     * since the constituent reads can be reordered, and no zeroing will take place.
-     * <p>
-     * Note: It is possible for the channel to be asynchronously closed while
-     * this operation is taking place. For instance, if the current thread is
-     * interrupted. If this happens, then the implementation must reopen the
-     * channel and the operation must be retried.
-     */
-    long read(long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length) throws IOException;
-
-    /**
      * Write the contents of the page given by the bufferAddress and default length of page buffer,
      * to the concrete file on the file system, at the located indicated by the given
      * filePageId.

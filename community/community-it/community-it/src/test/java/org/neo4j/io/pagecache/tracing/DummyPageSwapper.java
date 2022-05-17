@@ -102,11 +102,6 @@ public class DummyPageSwapper implements PageSwapper {
     public void closeAndDelete() {}
 
     @Override
-    public long read(long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length) {
-        return 0;
-    }
-
-    @Override
     public long write(
             long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length, int totalAffectedPages) {
         return 0;

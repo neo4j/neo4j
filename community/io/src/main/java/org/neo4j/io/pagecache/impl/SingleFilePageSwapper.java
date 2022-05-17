@@ -247,94 +247,12 @@ public class SingleFilePageSwapper implements PageSwapper {
         return -1;
     }
 
-    @Override
-    public long read(long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length) throws IOException {
-        if (length == 0) {
-            return 0;
-        }
-
-        try (Retry retry = new Retry()) {
-            do {
-                try {
-                    if (canDoVectorizedIO) {
-                        return readPositionedVectoredToFileChannel(
-                                startFilePageId, bufferAddresses, bufferLengths, length);
-                    }
-                    return readPositionedVectoredFallback(startFilePageId, bufferAddresses, bufferLengths, length);
-                } catch (ClosedChannelException e) {
-                    retry.caught(e);
-                }
-            } while (retry.shouldRetry());
-        }
-        return -1;
-    }
-
-    private long readPositionedVectoredToFileChannel(
-            long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length) throws IOException {
-        long fileOffset = pageIdToPosition(startFilePageId);
-        long bytesToRead = countBuffersLengths(bufferLengths, length);
-        ByteBuffer[] srcs = convertToByteBuffers(bufferAddresses, bufferLengths, length);
-        long bytesRead = lockPositionReadVector(fileOffset, srcs, bytesToRead);
-        if (checksumPages) {
-            for (int i = 0; i < srcs.length; i++) {
-                verifyChecksum(srcs[i], bufferAddresses[i], bufferLengths[i]);
-            }
-        }
-        if (bytesRead == -1) {
-            for (int i = 0; i < length; i++) {
-                UnsafeUtil.setMemory(bufferAddresses[i], bufferLengths[i], MuninnPageCache.ZERO_BYTE);
-            }
-            return 0;
-        } else if (bytesRead < bytesToRead) {
-            long bytesToKeep = bytesRead;
-            for (int bufferIndex = 0; bufferIndex < length; bufferIndex++) {
-                int bufferLength = bufferLengths[bufferIndex];
-                if (bytesToKeep > bufferLength) {
-                    bytesToKeep = Math.subtractExact(bytesToKeep, bufferLength);
-                } else {
-                    UnsafeUtil.setMemory(
-                            bufferAddresses[bufferIndex] + bytesToKeep,
-                            bufferLength - bytesToKeep,
-                            MuninnPageCache.ZERO_BYTE);
-                    bytesToKeep = 0;
-                }
-            }
-        }
-        return bytesRead;
-    }
-
     private static long countBuffersLengths(int[] bufferLengths, int length) {
         long bytesToRead = 0;
         for (int i = 0; i < length; i++) {
             bytesToRead += bufferLengths[i];
         }
         return bytesToRead;
-    }
-
-    private long lockPositionReadVector(long fileOffset, ByteBuffer[] srcs, long bytesToRead) throws IOException {
-        long read;
-        long readTotal = 0;
-        synchronized (channel.getPositionLock()) {
-            setPositionUnderLock(fileOffset);
-            do {
-                read = channel.read(srcs);
-            } while (read != -1 && (readTotal += read) < bytesToRead);
-            ioController.reportIO(1);
-            return readTotal;
-        }
-    }
-
-    private int readPositionedVectoredFallback(
-            long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length) throws IOException {
-        int bytes = 0;
-        long filePageId = startFilePageId;
-        for (int i = 0; i < length; i++) {
-            long address = bufferAddresses[i];
-            int bufferLength = bufferLengths[i];
-            bytes += read(filePageId, address, bufferLength);
-            filePageId += bufferLength / filePageSize;
-        }
-        return bytes;
     }
 
     @Override
