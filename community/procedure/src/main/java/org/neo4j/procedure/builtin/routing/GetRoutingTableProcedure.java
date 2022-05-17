@@ -247,11 +247,11 @@ public final class GetRoutingTableProcedure implements CallableProcedure
 
     private void assertNotIllegalAliasChain( DatabaseReference databaseReference, MapValue routingContext ) throws ProcedureException
     {
-        var refIsAlias = databaseReference instanceof DatabaseReference.External;
+        var refIsRemoteAlias = databaseReference instanceof DatabaseReference.External;
 
         var sourceAlias = routingContext.get( FROM_ALIAS_KEY );
         var sourceAliasIsPresent = sourceAlias != null && sourceAlias != NO_VALUE;
-        if ( refIsAlias && sourceAliasIsPresent )
+        if ( refIsRemoteAlias && sourceAliasIsPresent )
         {
             var sourceAliasString = ((TextValue) sourceAlias).stringValue();
             throw new ProcedureException( IllegalAliasChain, "Unable to provide a routing table for the database '" + databaseReference.alias().name() +
