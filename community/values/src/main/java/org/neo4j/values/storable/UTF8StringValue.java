@@ -260,10 +260,12 @@ public final class UTF8StringValue extends StringValue {
         }
 
         int startIndex = trimLeftIndex();
-        if (startIndex >= values.length) {
-            return StringValue.EMPTY;
+        assert (startIndex <= values.length);
+        if (startIndex == offset) {
+            return this;
+        } else {
+            return new UTF8StringValue(values, startIndex, byteLength - (startIndex - offset));
         }
-        return new UTF8StringValue(values, startIndex, byteLength - (startIndex - offset));
     }
 
     @Override
