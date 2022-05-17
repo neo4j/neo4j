@@ -42,6 +42,7 @@ import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 
 import java.nio.file.Path
 import java.time.Clock
+import java.time.ZonedDateTime
 
 import scala.collection.Map
 
@@ -405,6 +406,15 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     result("lastCommittedTxn") shouldBe null
     result("serverID") should beAValidUUID()
     result("databaseID") shouldBe dbId
+    result("creationTime") shouldBe a[ZonedDateTime]
+    (ZonedDateTime.now().toEpochSecond - result("creationTime").asInstanceOf[
+      ZonedDateTime
+    ].toEpochSecond) should be < 300L
+    result("lastStartTime") shouldBe a[ZonedDateTime]
+    (ZonedDateTime.now().toEpochSecond - result("lastStartTime").asInstanceOf[
+      ZonedDateTime
+    ].toEpochSecond) should be < 300L
+    result("lastStopTime") shouldBe null
   }
 
   test("should show database with yield verbose columns should produce verbose but not polled columns") {

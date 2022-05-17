@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
+import org.neo4j.cypher.internal.util.symbols.CTDateTime
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTMap
@@ -685,6 +686,9 @@ object ShowDatabase {
       case _ =>
         List((ShowColumn("default", CTBoolean)(position), true), (ShowColumn("home", CTBoolean)(position), true))
     }) ++ List(
+      (ShowColumn("creationTime", CTDateTime)(position), false),
+      (ShowColumn("lastStartTime", CTDateTime)(position), false),
+      (ShowColumn("lastStopTime", CTDateTime)(position), false),
       (ShowColumn("lastCommittedTxn", CTInteger)(position), false),
       (ShowColumn("replicationLag", CTInteger)(position), false)
     )

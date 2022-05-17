@@ -40,11 +40,14 @@ import org.neo4j.dbms.database.DatabaseInfo
 import org.neo4j.dbms.database.DatabaseInfoService
 import org.neo4j.dbms.database.ExtendedDatabaseInfo
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_CREATED_AT_PROPERTY
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_LABEL
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_STARTED_AT_PROPERTY
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_STATUS_PROPERTY
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_STOPPED_AT_PROPERTY
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.NAME_PROPERTY
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.TARGETS
 import org.neo4j.graphdb.Direction
@@ -116,10 +119,19 @@ case class ShowDatabasesExecutionPlanner(
     }
 
     val verboseColumns =
-      if (verbose)
-        ", props.databaseID as databaseID, props.serverID as serverID, props.lastCommittedTxn as lastCommittedTxn, props.replicationLag as replicationLag"
+      if (verbose) {
+        s""", props.databaseID as databaseID,
+           |props.serverID as serverID,
+           |props.lastCommittedTxn as lastCommittedTxn,
+           |props.replicationLag as replicationLag,
+           |d.$DATABASE_CREATED_AT_PROPERTY as creationTime,
+           |d.$DATABASE_STARTED_AT_PROPERTY as lastStartTime,
+           |d.$DATABASE_STOPPED_AT_PROPERTY as lastStopTime
+           |""".stripMargin
+      } else ""
+    val verboseNames =
+      if (verbose) ", databaseID, serverID, creationTime, lastStartTime, lastStopTime, lastCommittedTxn, replicationLag"
       else ""
-    val verboseNames = if (verbose) ", databaseID, serverID, lastCommittedTxn, replicationLag" else ""
     val returnClause = AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("name"))
 
     val query = Predef.augmentString(
