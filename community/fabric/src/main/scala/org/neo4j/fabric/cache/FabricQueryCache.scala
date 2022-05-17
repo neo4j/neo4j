@@ -26,14 +26,16 @@ import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.fabric.planning.FabricPlan
 import org.neo4j.values.virtual.MapValue
 
+import scala.collection.JavaConverters.mapAsScalaMapConverter
+
 class FabricQueryCache(cacheFactory: CaffeineCacheFactory, size: Int) {
 
   type Query = String
   type Params = MapValue
   type ParamTypes = ParameterTypeMap
-  type DefaultContextName = String
+  type ContextName = String
 
-  type Key = (Query, ParamTypes, DefaultContextName)
+  type Key = (Query, ParamTypes, ContextName)
   type Value = FabricPlan
 
   private val cache = new LFUCache[Key, Value](cacheFactory, size)
@@ -41,10 +43,13 @@ class FabricQueryCache(cacheFactory: CaffeineCacheFactory, size: Int) {
   private var hits: Long = 0
   private var misses: Long = 0
 
-  def computeIfAbsent(query: Query, params: Params, defaultContextName: DefaultContextName,
-                      compute: () => FabricPlan,
-                      shouldCache: FabricPlan => Boolean
-                     ): FabricPlan = {
+  def computeIfAbsent(
+    query: Query,
+    params: Params,
+    defaultContextName: ContextName,
+    compute: () => FabricPlan,
+    shouldCache: FabricPlan => Boolean
+  ): FabricPlan = {
     val paramTypes = QueryCache.extractParameterTypeMap(params)
     val key = (query, paramTypes, defaultContextName)
     cache.get(key) match {
@@ -65,4 +70,19 @@ class FabricQueryCache(cacheFactory: CaffeineCacheFactory, size: Int) {
   def getHits: Long = hits
 
   def getMisses: Long = misses
+
+  def getInnerCopy: Map[Key, Value] =
+    cache.inner.asMap().asScala.toMap
+
+  // mutable implementation for resource efficiency
+  def clearByContext(contextName: ContextName): Long = {
+    var clearedCount = 0
+    cache.inner.asMap().forEach((key, _) =>
+      if (key._3 == contextName) {
+        cache.inner.invalidate(key)
+        clearedCount += 1
+      }
+    )
+    clearedCount
+  }
 }

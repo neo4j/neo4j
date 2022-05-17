@@ -163,6 +163,11 @@ public class FabricExecutor
         }
     }
 
+    public long clearQueryCachesForDatabase( String databaseName )
+    {
+        return planner.queryCache().clearByContext( databaseName );
+    }
+
     private static void rollbackOnFailure( FabricTransaction fabricTransaction, Throwable failure )
     {
         try
