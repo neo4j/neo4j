@@ -128,6 +128,20 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
+    void shouldNotSeeRelationshipsForSingleRelationshipNoId() throws Exception {
+        try (KernelTransaction tx = beginTransaction()) {
+            try (var relationships = tx.cursors().allocateRelationshipScanCursor(tx.cursorContext())) {
+                final var write = tx.dataWrite();
+                final var relType = tx.tokenWrite().relationshipTypeGetOrCreateForName("REL");
+                write.relationshipCreate(write.nodeCreate(), relType, write.nodeCreate());
+
+                tx.dataRead().singleRelationship(-1, relationships);
+                assertFalse(relationships.next());
+            }
+        }
+    }
+
+    @Test
     void shouldScanRelationshipInTransaction() throws Exception {
         final int nRelationshipsInStore = 10;
 

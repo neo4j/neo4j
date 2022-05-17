@@ -31,6 +31,7 @@ import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
 class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements RelationshipScanCursor {
     private long single;
+    private boolean isSingle;
     private LongIterator addedRelationships;
     private final StorageRelationshipScanCursor storeCursor;
     private final DefaultNodeCursor securityNodeCursor;
@@ -47,6 +48,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
     void scan(Read read) {
         storeCursor.scan();
         this.single = NO_ID;
+        this.isSingle = false;
         init(read);
         this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
     }
@@ -60,6 +62,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
             AccessMode accessMode) {
         this.read = read;
         this.single = NO_ID;
+        this.isSingle = false;
         this.currentAddedInTx = NO_ID;
         this.addedRelationships = addedRelationships;
         this.hasChanges = hasChanges;
@@ -72,6 +75,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
     void single(long reference, Read read) {
         storeCursor.single(reference);
         this.single = reference;
+        this.isSingle = true;
         init(read);
         this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
     }
@@ -79,6 +83,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
     void single(long reference, long sourceNodeReference, int type, long targetNodeReference, Read read) {
         storeCursor.single(reference, sourceNodeReference, type, targetNodeReference);
         this.single = reference;
+        this.isSingle = true;
         init(read);
         this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
     }
@@ -156,7 +161,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
 
     @Override
     protected void collectAddedTxStateSnapshot() {
-        if (isSingle()) {
+        if (isSingle) {
             addedRelationships = read.txState().relationshipIsAddedInThisTx(single)
                     ? LongHashSet.newSetWith(single).longIterator()
                     : ImmutableEmptyLongIterator.INSTANCE;
@@ -164,10 +169,6 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
             addedRelationships =
                     read.txState().addedAndRemovedRelationships().getAdded().longIterator();
         }
-    }
-
-    private boolean isSingle() {
-        return single != NO_ID;
     }
 
     public void release() {
