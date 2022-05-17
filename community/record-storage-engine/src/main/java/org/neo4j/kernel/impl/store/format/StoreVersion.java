@@ -29,6 +29,8 @@ public enum StoreVersion {
     ALIGNED_V4_3("AF4.3.0", "4.3.0", true),
     ALIGNED_V5_0("AF5.0.0", "5.0.0", false),
 
+    EXPERIMENTAL("EX5.0.0", "5.0.0", false),
+
     HIGH_LIMIT_V4_3("HL4.3.0", "4.3.0", true),
     HIGH_LIMIT_V5_0("HL5.0.0", "5.0.0", false);
 

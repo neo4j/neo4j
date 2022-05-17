@@ -158,7 +158,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
                 NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT,
                 readOnlyChecker,
                 databaseName,
-                openOptions);
+                openOptions.newWithAll(REQUIRED_OPTIONS));
 
         checkpointLogVersion.set(logTailMetadata.getCheckpointLogVersion());
         kernelVersion = logTailMetadata.getKernelVersion();

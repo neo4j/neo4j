@@ -56,6 +56,7 @@ import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.test.Race.throwing;
 
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -77,6 +78,7 @@ import java.util.stream.Stream;
 import org.eclipse.collections.api.iterator.MutableLongIterator;
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -165,8 +167,12 @@ class IndexedIdGeneratorTest {
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
                 monitor,
-                immutable.empty(),
+                getOpenOptions(),
                 slotDistribution);
+    }
+
+    protected ImmutableSet<OpenOption> getOpenOptions() {
+        return immutable.empty();
     }
 
     @AfterEach
@@ -203,7 +209,7 @@ class IndexedIdGeneratorTest {
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
                 NO_MONITOR,
-                immutable.empty(),
+                getOpenOptions(),
                 SINGLE_IDS)) {
             customGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             for (int i = 0; i < generatedIds; i++) {
@@ -229,7 +235,7 @@ class IndexedIdGeneratorTest {
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
                 NO_MONITOR,
-                immutable.empty(),
+                getOpenOptions(),
                 SINGLE_IDS)) {
             reopenedGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             assertDoesNotThrow(() -> reopenedGenerator.nextId(NULL_CONTEXT));
@@ -615,7 +621,7 @@ class IndexedIdGeneratorTest {
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
                 NO_MONITOR,
-                immutable.empty(),
+                getOpenOptions(),
                 SINGLE_IDS);
 
         // then
@@ -648,7 +654,7 @@ class IndexedIdGeneratorTest {
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
                 NO_MONITOR,
-                immutable.empty(),
+                getOpenOptions(),
                 SINGLE_IDS);
 
         // then
@@ -675,7 +681,7 @@ class IndexedIdGeneratorTest {
                         DEFAULT_DATABASE_NAME,
                         CONTEXT_FACTORY,
                         NO_MONITOR,
-                        immutable.empty(),
+                        getOpenOptions(),
                         SINGLE_IDS));
         assertTrue(Exceptions.contains(e, t -> t instanceof WriteOnReadOnlyAccessDbException));
         assertTrue(Exceptions.contains(e, t -> t instanceof TreeFileNotFoundException));
@@ -698,7 +704,7 @@ class IndexedIdGeneratorTest {
                         DEFAULT_DATABASE_NAME,
                         CONTEXT_FACTORY,
                         NO_MONITOR,
-                        immutable.empty(),
+                        getOpenOptions(),
                         SINGLE_IDS)
                 .close();
         // Never start id generator means it will need rebuild on next start
@@ -717,7 +723,7 @@ class IndexedIdGeneratorTest {
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
                 NO_MONITOR,
-                immutable.empty(),
+                getOpenOptions(),
                 SINGLE_IDS)) {
             var e = assertThrows(Exception.class, () -> readOnlyGenerator.start(NO_FREE_IDS, NULL_CONTEXT));
             assertThat(e).hasCauseInstanceOf(WriteOnReadOnlyAccessDbException.class);
@@ -740,7 +746,7 @@ class IndexedIdGeneratorTest {
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
                 NO_MONITOR,
-                immutable.empty(),
+                getOpenOptions(),
                 SINGLE_IDS);
         indexedIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         indexedIdGenerator.close();
@@ -760,7 +766,7 @@ class IndexedIdGeneratorTest {
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
                 NO_MONITOR,
-                immutable.empty(),
+                getOpenOptions(),
                 SINGLE_IDS)) {
             readOnlyGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         }
@@ -1007,7 +1013,7 @@ class IndexedIdGeneratorTest {
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
                 NO_MONITOR,
-                immutable.empty(),
+                getOpenOptions(),
                 SINGLE_IDS)) {
             prepareIndexWithoutRebuild.checkpoint(NULL_CONTEXT);
         }
@@ -1024,7 +1030,7 @@ class IndexedIdGeneratorTest {
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
                 NO_MONITOR,
-                immutable.empty(),
+                getOpenOptions(),
                 SINGLE_IDS)) {
             var pageCacheTracer = new DefaultPageCacheTracer();
             try (var cursorContext = CONTEXT_FACTORY.create(
@@ -1270,7 +1276,7 @@ class IndexedIdGeneratorTest {
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
                 NO_MONITOR,
-                immutable.empty(),
+                getOpenOptions(),
                 SINGLE_IDS);
         indexedIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         indexedIdGenerator.close();
@@ -1289,7 +1295,7 @@ class IndexedIdGeneratorTest {
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
                 NO_MONITOR,
-                immutable.empty(),
+                getOpenOptions(),
                 SINGLE_IDS)) {
             readOnlyGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             assertDoesNotThrow(() -> operation.apply(readOnlyGenerator));
@@ -1312,7 +1318,7 @@ class IndexedIdGeneratorTest {
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
                 NO_MONITOR,
-                immutable.empty(),
+                getOpenOptions(),
                 SINGLE_IDS);
         indexedIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         indexedIdGenerator.close();
@@ -1331,7 +1337,7 @@ class IndexedIdGeneratorTest {
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
                 NO_MONITOR,
-                immutable.empty(),
+                getOpenOptions(),
                 SINGLE_IDS)) {
             readOnlyGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             var e = assertThrows(Exception.class, operation.apply(readOnlyGenerator));

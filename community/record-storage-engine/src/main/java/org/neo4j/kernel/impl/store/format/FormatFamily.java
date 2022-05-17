@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.storageengine.api.format.Capability;
 
 /**
@@ -30,7 +29,8 @@ import org.neo4j.storageengine.api.format.Capability;
 public enum FormatFamily {
     standard(0),
     aligned(1),
-    high_limit(2);
+    high_limit(2),
+    experimental(-999);
 
     private final int rank;
     private final Capability formatCapability;
@@ -52,13 +52,5 @@ public enum FormatFamily {
      */
     public boolean isHigherThan(FormatFamily other) {
         return rank > other.rank;
-    }
-
-    public GraphDatabaseSettings.DatabaseRecordFormat databaseRecordFormat() {
-        return switch (this) {
-            case standard -> GraphDatabaseSettings.DatabaseRecordFormat.standard;
-            case aligned -> GraphDatabaseSettings.DatabaseRecordFormat.aligned;
-            case high_limit -> GraphDatabaseSettings.DatabaseRecordFormat.high_limit;
-        };
     }
 }

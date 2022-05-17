@@ -30,7 +30,6 @@ import org.neo4j.io.pagecache.PagedFile;
  * A CompositePageCursor is a seamless view over parts of two other PageCursors.
  * @see #compose(PageCursor, int, PageCursor, int)
  */
-// TODO little-endian format
 public final class CompositePageCursor extends PageCursor {
     private final PageCursor first;
     private final int firstBaseOffset;
@@ -493,6 +492,10 @@ public final class CompositePageCursor extends PageCursor {
      *                   └──────────────────────────────┘
      *             offset = 0, page size = first length + second length
      * </pre>
+     *
+     * Note about byte order: when accessing shorts, ints, or longs that span across two cursors CompositeCursor
+     * uses big-endian order, in other cases it is byte order of the passed cursors.
+     *
      * @param first The cursor that will form the first part of this composite cursor, from its current offset.
      * @param firstLength The number of bytes from the first cursor that will participate in the composite view.
      * @param second The cursor that will form the second part of this composite cursor, from its current offset.

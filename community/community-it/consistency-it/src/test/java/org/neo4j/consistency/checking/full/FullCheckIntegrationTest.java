@@ -51,9 +51,7 @@ import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
-import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
-import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.LabelIdArray.prependNodeId;
 import static org.neo4j.kernel.impl.store.PropertyType.ARRAY;
@@ -71,7 +69,6 @@ import static org.neo4j.util.Bits.bits;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -113,7 +110,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.kernel.api.TokenWrite;
@@ -309,7 +305,7 @@ public class FullCheckIntegrationTest {
     @Test
     void shouldNotReportAnythingForNodeWithConsistentChainOfDynamicRecordsWithLabels() throws Exception {
         // given
-        assertEquals(3, chainOfDynamicRecordsWithLabelsForANode(130).first().size());
+        assertEquals(3, chainOfDynamicRecordsWithLabelsForANode(130).chain().size());
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -495,7 +491,7 @@ public class FullCheckIntegrationTest {
         final List<Integer> labels = new ArrayList<>();
 
         // given
-        final Pair<List<DynamicRecord>, List<Integer>> pair = chainOfDynamicRecordsWithLabelsForANode(3);
+        var nodeIdChainAndLabels = chainOfDynamicRecordsWithLabelsForANode(3);
         fixture.apply(new GraphStoreFixture.Transaction() {
             @Override
             protected void transactionData(
@@ -503,8 +499,8 @@ public class FullCheckIntegrationTest {
                 NodeRecord node = new NodeRecord(42).initialize(false, -1, false, -1, 0);
                 node.setInUse(true);
                 List<DynamicRecord> dynamicRecords;
-                dynamicRecords = pair.first();
-                labels.addAll(pair.other());
+                dynamicRecords = nodeIdChainAndLabels.chain();
+                labels.addAll(nodeIdChainAndLabels.labels());
                 node.setLabelField(dynamicPointer(dynamicRecords), dynamicRecords);
                 tx.create(node);
             }
@@ -922,18 +918,15 @@ public class FullCheckIntegrationTest {
     @Test
     void shouldReportCyclesInDynamicRecordsWithLabels() throws Exception {
         // given
-        final List<DynamicRecord> chain =
-                chainOfDynamicRecordsWithLabelsForANode(176 /*3 full records*/).first();
+        var nodeChainLabels = chainOfDynamicRecordsWithLabelsForANode(176 /*3 full records*/);
+        final List<DynamicRecord> chain = nodeChainLabels.chain();
         assertEquals(3, chain.size(), "number of records in chain");
         assertEquals(chain.get(0).getLength(), chain.get(2).getLength(), "all records full");
         fixture.apply(new GraphStoreFixture.Transaction() {
             @Override
             protected void transactionData(
                     GraphStoreFixture.TransactionDataBuilder tx, GraphStoreFixture.IdGenerator next) {
-                long nodeId = ((long[])
-                                getRightArray(readFullByteArrayFromHeavyRecords(chain, ARRAY), ByteOrder.LITTLE_ENDIAN)
-                                        .asObject())
-                        [0];
+                long nodeId = nodeChainLabels.nodeId();
                 NodeRecord before = inUse(new NodeRecord(nodeId).initialize(false, -1, false, -1, 0));
                 NodeRecord after = inUse(new NodeRecord(nodeId).initialize(false, -1, false, -1, 0));
                 DynamicRecord record1 = cloneRecord(chain.get(0));
@@ -954,8 +947,7 @@ public class FullCheckIntegrationTest {
         on(stats).verify(RecordType.NODE, 1).verify(RecordType.COUNTS, 176).andThatsAllFolks();
     }
 
-    private Pair<List<DynamicRecord>, List<Integer>> chainOfDynamicRecordsWithLabelsForANode(int labelCount)
-            throws KernelException {
+    private NodeIdChainAndLabels chainOfDynamicRecordsWithLabelsForANode(int labelCount) throws KernelException {
         final long[] labels = new long[labelCount + 1]; // allocate enough labels to need three records
         final List<Integer> createdLabels = new ArrayList<>();
         for (int i = 1 /*leave space for the node id*/; i < labels.length; i++) {
@@ -989,14 +981,16 @@ public class FullCheckIntegrationTest {
                 tx.create(nodeRecord);
             }
         });
-        return Pair.of(chain, createdLabels);
+        return new NodeIdChainAndLabels(labels[0], chain, createdLabels);
     }
+
+    private record NodeIdChainAndLabels(long nodeId, List<DynamicRecord> chain, List<Integer> labels) {}
 
     @Test
     void shouldReportNodeDynamicLabelContainingDuplicateLabelAsNodeInconsistency() throws Exception {
         int nodeId = 1000;
         List<DynamicRecord> duplicatedLabel = new ArrayList<>();
-        final Pair<List<DynamicRecord>, List<Integer>> labels = chainOfDynamicRecordsWithLabelsForANode(1);
+        var nodeIdChainAndLabels = chainOfDynamicRecordsWithLabelsForANode(1);
 
         // given
         fixture.apply(new GraphStoreFixture.Transaction() {
@@ -1005,11 +999,11 @@ public class FullCheckIntegrationTest {
                     GraphStoreFixture.TransactionDataBuilder tx, GraphStoreFixture.IdGenerator next) {
                 NodeRecord node = new NodeRecord(nodeId).initialize(false, -1, false, -1, 0);
                 node.setInUse(true);
-                List<DynamicRecord> labelRecords = labels.first();
+                List<DynamicRecord> labelRecords = nodeIdChainAndLabels.chain();
                 node.setLabelField(dynamicPointer(labelRecords), labelRecords);
                 tx.create(node);
 
-                Integer labelId = labels.other().get(0);
+                Integer labelId = nodeIdChainAndLabels.labels().get(0);
                 DynamicRecord record = inUse(new DynamicRecord(labelId));
                 allocateFromNumbers(
                         duplicatedLabel,
@@ -1380,8 +1374,7 @@ public class FullCheckIntegrationTest {
                             }
                         },
                         NULL_CONTEXT,
-                        INSTANCE,
-                        ByteOrder.BIG_ENDIAN);
+                        INSTANCE);
                 assertThat(allocatedRecords.size()).isGreaterThan(1);
                 DynamicRecord array = allocatedRecords.get(0);
                 array.setType(ARRAY.intValue());
@@ -2823,14 +2816,7 @@ public class FullCheckIntegrationTest {
                 PropertyRecord record = new PropertyRecord(id).initialize(true, prev, next);
                 PropertyBlock block = new PropertyBlock();
                 PropertyStore.encodeValue(
-                        block,
-                        propertyKeyId,
-                        Values.intValue(10),
-                        null,
-                        null,
-                        NULL_CONTEXT,
-                        INSTANCE,
-                        ByteOrder.BIG_ENDIAN);
+                        block, propertyKeyId, Values.intValue(10), null, null, NULL_CONTEXT, INSTANCE);
                 record.addPropertyBlock(block);
                 return record;
             }
@@ -3180,8 +3166,7 @@ public class FullCheckIntegrationTest {
         DynamicRecordAllocator arrayAllocator = null;
         protoProperties.forEachKeyValue((keyId, value) -> {
             PropertyBlock block = new PropertyBlock();
-            PropertyStore.encodeValue(
-                    block, keyId, value, stringAllocator, arrayAllocator, NULL_CONTEXT, INSTANCE, ByteOrder.BIG_ENDIAN);
+            PropertyStore.encodeValue(block, keyId, value, stringAllocator, arrayAllocator, NULL_CONTEXT, INSTANCE);
             blocks.add(block);
         });
 

@@ -54,6 +54,7 @@ import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
@@ -69,6 +70,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -155,7 +157,7 @@ class GBPTreeGenericCountsStoreTest {
                 randomMaxCacheSize(),
                 NullLogProvider.getInstance(),
                 cursorContextFactory,
-                Sets.immutable.empty())) {
+                getOpenOptions())) {
             assertThat(pageCacheTracer.pins()).isEqualTo(10);
             assertThat(pageCacheTracer.unpins()).isEqualTo(10);
             assertThat(pageCacheTracer.hits()).isEqualTo(5);
@@ -513,7 +515,7 @@ class GBPTreeGenericCountsStoreTest {
                         randomMaxCacheSize(),
                         NullLogProvider.getInstance(),
                         CONTEXT_FACTORY,
-                        Sets.immutable.empty()));
+                        getOpenOptions()));
         assertTrue(Exceptions.contains(e, t -> t instanceof WriteOnReadOnlyAccessDbException));
         assertTrue(Exceptions.contains(e, t -> t instanceof TreeFileNotFoundException));
         assertTrue(Exceptions.contains(e, t -> t instanceof IllegalStateException));
@@ -888,7 +890,11 @@ class GBPTreeGenericCountsStoreTest {
                 randomMaxCacheSize(),
                 NullLogProvider.getInstance(),
                 CONTEXT_FACTORY,
-                Sets.immutable.empty());
+                getOpenOptions());
+    }
+
+    protected ImmutableSet<OpenOption> getOpenOptions() {
+        return Sets.immutable.empty();
     }
 
     private static void assertZeroGlobalTracer(PageCacheTracer pageCacheTracer) {

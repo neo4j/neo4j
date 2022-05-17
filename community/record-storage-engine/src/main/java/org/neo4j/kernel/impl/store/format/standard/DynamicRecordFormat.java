@@ -57,15 +57,15 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
          * [x   ,    ][    ,    ][    ,    ][    ,    ] 0: start record, 1: linked record
          * [   x,    ][    ,    ][    ,    ][    ,    ] inUse
          * [    ,xxxx][    ,    ][    ,    ][    ,    ] high next block bits
-         * [    ,    ][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx] nr of bytes in the data field in this record
-         *
+         * [    ,    ][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx] nr of bytes in the data field in this record in big-endian
          */
-        long firstInteger = cursor.getInt() & 0xFFFFFFFFL;
-        boolean isStartRecord = (firstInteger & 0x80000000) == 0;
-        boolean inUse = (firstInteger & 0x10000000) != 0;
+        byte firstByte = cursor.getByte();
+        boolean isStartRecord = (firstByte & 0x80) == 0;
+        boolean inUse = (firstByte & 0x10) != 0;
         if (mode.shouldLoad(inUse)) {
             int dataSize = recordSize - getRecordHeaderSize();
-            int nrOfBytes = (int) (firstInteger & 0xFFFFFF);
+            int nrOfBytes =
+                    (cursor.getByte() & 0xFF) << 16 | (cursor.getByte() & 0xFF) << 8 | (cursor.getByte() & 0xFF);
             if (nrOfBytes > dataSize) {
                 // We must have performed an inconsistent read,
                 // because this many bytes cannot possibly fit in a record!
@@ -77,7 +77,7 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
              * Pointer to next block 4b (low bits of the pointer)
              */
             long nextBlock = cursor.getInt() & 0xFFFFFFFFL;
-            long nextModifier = (firstInteger & 0xF000000L) << 8;
+            long nextModifier = (firstByte & 0x0FL) << 32;
 
             long longNextBlock = BaseRecordFormat.longFromIntAndMod(nextBlock, nextModifier);
             record.initialize(inUse, isStartRecord, longNextBlock, -1);
@@ -116,30 +116,28 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
     @Override
     public void write(DynamicRecord record, PageCursor cursor, int recordSize, int recordsPerPage) {
         if (record.inUse()) {
-            long nextBlock = record.getNextBlock();
-            int highByteInFirstInteger =
-                    nextBlock == Record.NO_NEXT_BLOCK.intValue() ? 0 : (int) ((nextBlock & 0xF00000000L) >> 8);
-            highByteInFirstInteger |= Record.IN_USE.byteValue() << 28;
-            highByteInFirstInteger |= (record.isStartRecord() ? 0 : 1) << 31;
-
             /*
              * First 4b
              * [x   ,    ][    ,    ][    ,    ][    ,    ] 0: start record, 1: linked record
              * [   x,    ][    ,    ][    ,    ][    ,    ] inUse
              * [    ,xxxx][    ,    ][    ,    ][    ,    ] high next block bits
-             * [    ,    ][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx] nr of bytes in the data field in this record
-             *
+             * [    ,    ][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx] nr of bytes in the data field in this record in big endian
              */
-            int firstInteger = record.getLength();
-            assert firstInteger < (1 << 24) - 1;
+            long nextBlock = record.getNextBlock();
+            int highNextBlockBits =
+                    nextBlock == Record.NO_NEXT_BLOCK.intValue() ? 0 : (int) ((nextBlock & 0xF00000000L) >> 32);
 
-            firstInteger |= highByteInFirstInteger;
+            byte firstByte = (byte) (0x10 | (record.isStartRecord() ? 0 : 0x80) | highNextBlockBits);
 
-            cursor.putInt(firstInteger);
+            int recordLength = record.getLength();
+            assert recordLength < (1 << 24) - 1;
+            cursor.putByte(firstByte);
+            cursor.putByte((byte) ((recordLength >> 16) & 0xFF));
+            cursor.putByte((byte) ((recordLength >> 8) & 0xFF));
+            cursor.putByte((byte) ((recordLength) & 0xFF));
             cursor.putInt((int) nextBlock);
             cursor.putBytes(record.getData());
         } else {
-            // TODO little-endian format this byte in different place
             cursor.putByte(Record.NOT_IN_USE.byteValue());
         }
     }

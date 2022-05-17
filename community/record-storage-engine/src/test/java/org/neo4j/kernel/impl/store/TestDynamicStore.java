@@ -159,8 +159,10 @@ class TestDynamicStore {
                 long blockId = idsTaken.remove(random.nextInt(currentCount));
                 store.getRecords(blockId, NORMAL, false, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR));
                 byte[] bytes = (byte[]) store.getArrayFor(
-                        store.getRecords(blockId, NORMAL, false, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR)),
-                        storeCursors);
+                                store.getRecords(
+                                        blockId, NORMAL, false, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR)),
+                                storeCursors)
+                        .asObject();
                 validateData(bytes, byteData.remove(blockId));
                 Collection<DynamicRecord> records =
                         store.getRecords(blockId, NORMAL, false, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR));
@@ -229,8 +231,9 @@ class TestDynamicStore {
         long blockId = create(store, emptyToWrite, storeCursors);
         store.getRecords(blockId, NORMAL, false, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR));
         byte[] bytes = (byte[]) store.getArrayFor(
-                store.getRecords(blockId, NORMAL, false, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR)),
-                storeCursors);
+                        store.getRecords(blockId, NORMAL, false, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR)),
+                        storeCursors)
+                .asObject();
         assertEquals(0, bytes.length);
 
         Collection<DynamicRecord> records =
@@ -249,8 +252,9 @@ class TestDynamicStore {
         long blockId = create(store, new String[0], storeCursors);
         store.getRecords(blockId, NORMAL, false, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR));
         String[] readBack = (String[]) store.getArrayFor(
-                store.getRecords(blockId, NORMAL, false, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR)),
-                storeCursors);
+                        store.getRecords(blockId, NORMAL, false, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR)),
+                        storeCursors)
+                .asObject();
         assertEquals(0, readBack.length);
 
         Collection<DynamicRecord> records =

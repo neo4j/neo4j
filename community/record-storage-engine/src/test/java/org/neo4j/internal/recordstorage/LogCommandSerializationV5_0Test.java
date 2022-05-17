@@ -27,7 +27,6 @@ import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
-import java.nio.ByteOrder;
 import java.util.List;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.RepeatedTest;
@@ -691,15 +690,7 @@ public class LogCommandSerializationV5_0Test {
         }
         if (record.inUse()) {
             PropertyBlock block = new PropertyBlock();
-            PropertyStore.encodeValue(
-                    block,
-                    random.nextInt(1000),
-                    Values.of(123),
-                    null,
-                    null,
-                    NULL_CONTEXT,
-                    INSTANCE,
-                    ByteOrder.BIG_ENDIAN);
+            PropertyStore.encodeValue(block, random.nextInt(1000), Values.of(123), null, null, NULL_CONTEXT, INSTANCE);
             record.addPropertyBlock(block);
         }
         if (random.nextBoolean()) {

@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 public interface RecordGenerators {
     interface Generator<RECORD extends AbstractBaseRecord> {
@@ -49,4 +50,6 @@ public interface RecordGenerators {
     Generator<LabelTokenRecord> labelToken();
 
     Generator<DynamicRecord> dynamic();
+
+    Generator<SchemaRecord> schema();
 }

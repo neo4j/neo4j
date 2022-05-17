@@ -82,7 +82,9 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.test.tags.RecordFormatOverrideTag;
 
+@RecordFormatOverrideTag
 @PageCacheExtension
 @Neo4jLayoutExtension
 class StoreMigratorTest {

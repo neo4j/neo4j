@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -35,9 +34,12 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.stream.Stream;
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -45,8 +47,10 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore.HeavyRecordData;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
+import org.neo4j.kernel.impl.store.format.experimental.ExperimentalFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -74,20 +78,25 @@ class TestArrayStore {
     private DynamicArrayStore arrayStore;
     private NeoStores neoStores;
 
-    @BeforeEach
-    void before() {
-        DefaultIdGeneratorFactory idGeneratorFactory =
-                new DefaultIdGeneratorFactory(fileSystem, immediate(), databaseLayout.getDatabaseName());
-        StoreFactory factory = new StoreFactory(
+    public static Stream<Arguments> recordFormats() {
+        return Stream.of(
+                Arguments.of(PageAligned.LATEST_RECORD_FORMATS), Arguments.of(ExperimentalFormat.RECORD_FORMATS));
+    }
+
+    void setup(RecordFormats recordFormats) {
+        var factory = new StoreFactory(
                 databaseLayout,
                 Config.defaults(),
-                idGeneratorFactory,
+                new DefaultIdGeneratorFactory(fileSystem, immediate(), databaseLayout.getDatabaseName()),
                 pageCache,
                 fileSystem,
+                recordFormats,
                 NullLogProvider.getInstance(),
-                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                CursorContextFactory.NULL_CONTEXT_FACTORY,
                 writable(),
-                EMPTY_LOG_TAIL);
+                EMPTY_LOG_TAIL,
+                Sets.immutable.empty());
+
         neoStores = factory.openAllNeoStores(true);
         arrayStore = neoStores.getPropertyStore().getArrayStore();
     }
@@ -99,8 +108,10 @@ class TestArrayStore {
         }
     }
 
-    @Test
-    void intArrayPropertiesShouldBeBitPacked() {
+    @ParameterizedTest
+    @MethodSource("recordFormats")
+    void intArrayPropertiesShouldBeBitPacked(RecordFormats recordFormats) {
+        setup(recordFormats);
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized(
                 new int[] {1, 2, 3, 4, 5, 6, 7}, PropertyType.INT, 3);
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized(
@@ -109,8 +120,10 @@ class TestArrayStore {
                 new int[] {1000, 10000, 13000}, PropertyType.INT, 14);
     }
 
-    @Test
-    void longArrayPropertiesShouldBeBitPacked() {
+    @ParameterizedTest
+    @MethodSource("recordFormats")
+    void longArrayPropertiesShouldBeBitPacked(RecordFormats recordFormats) {
+        setup(recordFormats);
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized(
                 new long[] {1, 2, 3, 4, 5, 6, 7}, PropertyType.LONG, 3);
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized(
@@ -119,8 +132,10 @@ class TestArrayStore {
                 new long[] {1000, 10000, 13000, 15000000000L}, PropertyType.LONG, 34);
     }
 
-    @Test
-    void doubleArrayPropertiesShouldNotBeBitPacked() {
+    @ParameterizedTest
+    @MethodSource("recordFormats")
+    void doubleArrayPropertiesShouldNotBeBitPacked(RecordFormats recordFormats) {
+        setup(recordFormats);
         // TODO Enabling right-trim would allow doubles that are integers, like 42.0, to pack well
         // While enabling the default left-trim would only allow some extreme doubles to pack, like
         // Double.longBitsToDouble( 0x1L )
@@ -133,8 +148,10 @@ class TestArrayStore {
                 new double[] {longBitsToDouble(0x1L), longBitsToDouble(0x8L)}, PropertyType.DOUBLE, 64);
     }
 
-    @Test
-    void byteArrayPropertiesShouldNotBeBitPacked() {
+    @ParameterizedTest
+    @MethodSource("recordFormats")
+    void byteArrayPropertiesShouldNotBeBitPacked(RecordFormats recordFormats) {
+        setup(recordFormats);
         /* Byte arrays are always stored unpacked. For two reasons:
          * - They are very unlikely to gain anything from bit packing
          * - byte[] are often used for storing big arrays and the bigger the long
@@ -143,8 +160,10 @@ class TestArrayStore {
                 new byte[] {1, 2, 3, 4, 5}, PropertyType.BYTE, Byte.SIZE);
     }
 
-    @Test
-    void stringArrayGetsStoredAsUtf8() {
+    @ParameterizedTest
+    @MethodSource("recordFormats")
+    void stringArrayGetsStoredAsUtf8(RecordFormats recordFormats) {
+        setup(recordFormats);
         String[] array = new String[] {"first", "second"};
         Collection<DynamicRecord> records = new ArrayList<>();
         arrayStore.allocateRecords(records, array, CursorContext.NULL_CONTEXT, INSTANCE);
@@ -160,8 +179,10 @@ class TestArrayStore {
         }
     }
 
-    @Test
-    void pointArraysOfWgs84() {
+    @ParameterizedTest
+    @MethodSource("recordFormats")
+    void pointArraysOfWgs84(RecordFormats recordFormats) {
+        setup(recordFormats);
         PointValue[] array = new PointValue[] {
             Values.pointValue(CoordinateReferenceSystem.WGS_84, -45.0, -45.0),
             Values.pointValue(CoordinateReferenceSystem.WGS_84, 12.8, 56.3)
@@ -171,8 +192,10 @@ class TestArrayStore {
         assertPointArrayHasCorrectFormat(array, numberOfBitsUsedForDoubles);
     }
 
-    @Test
-    void pointArraysOfCartesian() {
+    @ParameterizedTest
+    @MethodSource("recordFormats")
+    void pointArraysOfCartesian(RecordFormats recordFormats) {
+        setup(recordFormats);
         PointValue[] array = new PointValue[] {
             Values.pointValue(CoordinateReferenceSystem.CARTESIAN, -100.0, -100.0),
             Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 25.0, 50.5)
@@ -182,8 +205,10 @@ class TestArrayStore {
         assertPointArrayHasCorrectFormat(array, numberOfBitsUsedForDoubles);
     }
 
-    @Test
-    void pointArraysOfMixedCRS() {
+    @ParameterizedTest
+    @MethodSource("recordFormats")
+    void pointArraysOfMixedCRS(RecordFormats recordFormats) {
+        setup(recordFormats);
         assertThrows(IllegalArgumentException.class, () -> {
             PointValue[] array = new PointValue[] {
                 Values.pointValue(CoordinateReferenceSystem.CARTESIAN, longBitsToDouble(0x1L), longBitsToDouble(0x7L)),
@@ -195,8 +220,10 @@ class TestArrayStore {
         });
     }
 
-    @Test
-    void pointArraysOfMixedDimension() {
+    @ParameterizedTest
+    @MethodSource("recordFormats")
+    void pointArraysOfMixedDimension(RecordFormats recordFormats) {
+        setup(recordFormats);
         assertThrows(IllegalArgumentException.class, () -> {
             PointValue[] array = new PointValue[] {
                 Values.pointValue(CoordinateReferenceSystem.CARTESIAN, longBitsToDouble(0x1L), longBitsToDouble(0x7L)),

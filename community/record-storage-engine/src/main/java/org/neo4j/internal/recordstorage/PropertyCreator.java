@@ -199,7 +199,7 @@ public class PropertyCreator {
 
     private PropertyBlock encodePropertyValue(int propertyKey, Value value) {
         PropertyBlock block = new PropertyBlock();
-        propertyStore.encodeValue(
+        PropertyStore.encodeValue(
                 block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator, cursorContext, memoryTracker);
         return block;
     }

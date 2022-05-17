@@ -219,30 +219,15 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
         if (type == null) {
             return ValueGroup.NO_VALUE;
         }
-        switch (type) {
-            case BOOL:
-                return ValueGroup.BOOLEAN;
-            case BYTE:
-            case SHORT:
-            case INT:
-            case LONG:
-            case FLOAT:
-            case DOUBLE:
-                return ValueGroup.NUMBER;
-            case STRING:
-            case CHAR:
-            case SHORT_STRING:
-                return ValueGroup.TEXT;
-            case TEMPORAL:
-            case GEOMETRY:
-            case SHORT_ARRAY:
-            case ARRAY:
-                // value read is needed to get correct value group since type is not fine grained enough to match all
-                // ValueGroups
-                return propertyValue().valueGroup();
-            default:
-                throw new UnsupportedOperationException("not implemented");
-        }
+        return switch (type) {
+            case BOOL -> ValueGroup.BOOLEAN;
+            case BYTE, SHORT, INT, LONG, FLOAT, DOUBLE -> ValueGroup.NUMBER;
+            case STRING, CHAR, SHORT_STRING -> ValueGroup.TEXT;
+            case TEMPORAL, GEOMETRY, SHORT_ARRAY, ARRAY ->
+            // value read is needed to get correct value group since type is not fine grained enough to match all
+            // ValueGroups
+            propertyValue().valueGroup();
+        };
     }
 
     private PropertyType type() {
@@ -269,38 +254,22 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
         if (type == null) {
             return NO_VALUE;
         }
-        switch (type) {
-            case BOOL:
-                return readBoolean();
-            case BYTE:
-                return readByte();
-            case SHORT:
-                return readShort();
-            case INT:
-                return readInt();
-            case LONG:
-                return readLong();
-            case FLOAT:
-                return readFloat();
-            case DOUBLE:
-                return readDouble();
-            case CHAR:
-                return readChar();
-            case SHORT_STRING:
-                return readShortString();
-            case SHORT_ARRAY:
-                return readShortArray();
-            case STRING:
-                return readLongString();
-            case ARRAY:
-                return readLongArray();
-            case GEOMETRY:
-                return geometryValue();
-            case TEMPORAL:
-                return temporalValue();
-            default:
-                throw new IllegalStateException("Unsupported PropertyType: " + type.name());
-        }
+        return switch (type) {
+            case BOOL -> readBoolean();
+            case BYTE -> readByte();
+            case SHORT -> readShort();
+            case INT -> readInt();
+            case LONG -> readLong();
+            case FLOAT -> readFloat();
+            case DOUBLE -> readDouble();
+            case CHAR -> readChar();
+            case SHORT_STRING -> readShortString();
+            case SHORT_ARRAY -> readShortArray();
+            case STRING -> readLongString();
+            case ARRAY -> readLongArray();
+            case GEOMETRY -> geometryValue();
+            case TEMPORAL -> temporalValue();
+        };
     }
 
     private Value geometryValue() {
@@ -451,8 +420,9 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
 
     public ByteBuffer getOrCreateClearBuffer() {
         if (buffer == null) {
+            // byte order is important only for string arrays, always big-endian
             setScopedBuffer(
-                    new HeapScopedBuffer(DEFAULT_PROPERTY_BUFFER_CAPACITY, ByteOrder.LITTLE_ENDIAN, memoryTracker));
+                    new HeapScopedBuffer(DEFAULT_PROPERTY_BUFFER_CAPACITY, ByteOrder.BIG_ENDIAN, memoryTracker));
         } else {
             buffer.clear();
         }
@@ -465,7 +435,8 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
         int newCapacity = Math.max(oldCapacity, minAdditionalCapacity) + oldCapacity;
 
         var oldScopedBuffer = scopedBuffer;
-        setScopedBuffer(new HeapScopedBuffer(newCapacity, ByteOrder.LITTLE_ENDIAN, memoryTracker));
+        // byte order is important only for string arrays, always big-endian
+        setScopedBuffer(new HeapScopedBuffer(newCapacity, ByteOrder.BIG_ENDIAN, memoryTracker));
         buffer.put(oldScopedBuffer.getBuffer());
         oldScopedBuffer.close();
 

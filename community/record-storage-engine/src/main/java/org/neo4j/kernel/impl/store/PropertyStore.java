@@ -24,13 +24,11 @@ import static org.neo4j.internal.recordstorage.InconsistentDataReadException.CYC
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_STRING_STORE_CURSOR;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -46,7 +44,6 @@ import org.neo4j.internal.recordstorage.InconsistentDataReadException;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.internal.recordstorage.RecordPropertyCursor;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -158,7 +155,6 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
     private final DynamicStringStore stringStore;
     private final PropertyKeyTokenStore propertyKeyTokenStore;
     private final DynamicArrayStore arrayStore;
-    private final ByteOrder byteOrder;
 
     public PropertyStore(
             Path path,
@@ -191,8 +187,6 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
         this.stringStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayStore = arrayPropertyStore;
-        this.byteOrder =
-                openOptions.contains(PageCacheOpenOptions.BIG_ENDIAN) ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN;
     }
 
     public DynamicStringStore getStringStore() {
@@ -328,28 +322,15 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
             Object array,
             DynamicRecordAllocator allocator,
             CursorContext cursorContext,
-            MemoryTracker memoryTracker,
-            ByteOrder byteOrder) {
-        DynamicArrayStore.allocateRecords(target, array, allocator, cursorContext, memoryTracker, byteOrder);
+            MemoryTracker memoryTracker) {
+        DynamicArrayStore.allocateRecords(target, array, allocator, cursorContext, memoryTracker);
     }
 
     public void encodeValue(
             PropertyBlock block, int keyId, Value value, CursorContext cursorContext, MemoryTracker memoryTracker) {
-        encodeValue(block, keyId, value, stringStore, arrayStore, cursorContext, memoryTracker, byteOrder);
+        encodeValue(block, keyId, value, stringStore, arrayStore, cursorContext, memoryTracker);
     }
 
-    public void encodeValue(
-            PropertyBlock block,
-            int keyId,
-            Value value,
-            DynamicRecordAllocator stringAllocator,
-            DynamicRecordAllocator arrayAllocator,
-            CursorContext cursorContext,
-            MemoryTracker memoryTracker) {
-        encodeValue(block, keyId, value, stringAllocator, arrayAllocator, cursorContext, memoryTracker, byteOrder);
-    }
-
-    // TODO little-endian format make private
     public static void encodeValue(
             PropertyBlock block,
             int keyId,
@@ -357,8 +338,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
             DynamicRecordAllocator stringAllocator,
             DynamicRecordAllocator arrayAllocator,
             CursorContext cursorContext,
-            MemoryTracker memoryTracker,
-            ByteOrder byteOrder) {
+            MemoryTracker memoryTracker) {
         if (value instanceof ArrayValue) {
             Object asObject = value.asObject();
 
@@ -369,7 +349,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
 
             // Fall back to dynamic array store
             List<DynamicRecord> arrayRecords = newArrayList(memoryTracker);
-            allocateArrayRecords(arrayRecords, asObject, arrayAllocator, cursorContext, memoryTracker, byteOrder);
+            allocateArrayRecords(arrayRecords, asObject, arrayAllocator, cursorContext, memoryTracker);
             setSingleBlockValue(
                     block,
                     keyId,
@@ -630,7 +610,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
     }
 
     public Value getArrayFor(Collection<DynamicRecord> records, StoreCursors storeCursors) {
-        return getRightArray(arrayStore.readFullByteArray(records, PropertyType.ARRAY, storeCursors), byteOrder);
+        return arrayStore.getArrayFor(records, storeCursors);
     }
 
     @Override
@@ -656,7 +636,6 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
         }
 
         byte typeId = buffer.get();
-        buffer.order(byteOrder);
         if (typeId == PropertyType.STRING.intValue()) {
             int arrayLength = buffer.getInt();
             String[] result = new String[arrayLength];

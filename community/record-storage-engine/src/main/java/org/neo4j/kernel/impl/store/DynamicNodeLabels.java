@@ -22,15 +22,12 @@ package org.neo4j.kernel.impl.store;
 import static java.lang.String.format;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
-import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.LabelIdArray.filter;
-import static org.neo4j.kernel.impl.store.LabelIdArray.stripNodeId;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRecordOfLabels;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.firstDynamicLabelRecordId;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsBody;
 import static org.neo4j.kernel.impl.store.PropertyType.ARRAY;
 
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -84,17 +81,6 @@ public class DynamicNodeLabels implements NodeLabels {
             }
         }
         return subscriber.hasLabel();
-    }
-
-    @Override
-    public long[] getIfLoaded() {
-        if (node.isLight()) {
-            return null;
-        }
-        return stripNodeId((long[]) getRightArray(
-                        readFullByteArrayFromHeavyRecords(node.getUsedDynamicLabelRecords(), ARRAY),
-                        ByteOrder.LITTLE_ENDIAN)
-                .asObject());
     }
 
     @Override
@@ -234,7 +220,7 @@ public class DynamicNodeLabels implements NodeLabels {
         return format(
                 "Dynamic(id:%d,[%s])",
                 firstDynamicLabelRecordId(node.getLabelField()),
-                Arrays.toString(getDynamicLabelsArrayFromHeavyRecords(node.getUsedDynamicLabelRecords())));
+                Arrays.toString(parseHeavyRecords(node.getUsedDynamicLabelRecords())));
     }
 
     public static List<DynamicRecord> allocateRecordsForDynamicLabels(
@@ -255,34 +241,29 @@ public class DynamicNodeLabels implements NodeLabels {
             MemoryTracker memoryTracker) {
         long[] storedLongs = LabelIdArray.prependNodeId(nodeId, labels);
         List<DynamicRecord> records = new ArrayList<>();
-        // TODO little-endian byte order should be taken from recordformat/storeversion
-        DynamicArrayStore.allocateRecords(
-                records, storedLongs, allocator, cursorContext, memoryTracker, ByteOrder.BIG_ENDIAN);
+        DynamicArrayStore.allocateRecords(records, storedLongs, allocator, cursorContext, memoryTracker);
         return records;
     }
 
     public static long[] getDynamicLabelsArray(
-            Iterable<DynamicRecord> records, AbstractDynamicStore dynamicLabelStore, StoreCursors storeCursors) {
-        long[] storedLongs = (long[]) DynamicArrayStore.getRightArray(
-                        dynamicLabelStore.readFullByteArray(records, PropertyType.ARRAY, storeCursors),
-                        ByteOrder.LITTLE_ENDIAN)
-                .asObject();
-        return LabelIdArray.stripNodeId(storedLongs);
-    }
-
-    public static long[] getDynamicLabelsArrayFromHeavyRecords(Iterable<DynamicRecord> records) {
-        long[] storedLongs = (long[]) DynamicArrayStore.getRightArray(
-                        readFullByteArrayFromHeavyRecords(records, PropertyType.ARRAY), ByteOrder.LITTLE_ENDIAN)
-                .asObject();
+            Iterable<DynamicRecord> records, DynamicArrayStore dynamicLabelStore, StoreCursors storeCursors) {
+        long[] storedLongs =
+                (long[]) dynamicLabelStore.getArrayFor(records, storeCursors).asObject();
         return LabelIdArray.stripNodeId(storedLongs);
     }
 
     public static long getDynamicLabelsArrayOwner(
-            Iterable<DynamicRecord> records, AbstractDynamicStore dynamicLabelStore, StoreCursors storeCursors) {
-        long[] storedLongs = (long[]) DynamicArrayStore.getRightArray(
-                        dynamicLabelStore.readFullByteArray(records, PropertyType.ARRAY, storeCursors),
-                        ByteOrder.LITTLE_ENDIAN)
-                .asObject();
+            Iterable<DynamicRecord> records, DynamicArrayStore dynamicLabelStore, StoreCursors storeCursors) {
+        long[] storedLongs =
+                (long[]) dynamicLabelStore.getArrayFor(records, storeCursors).asObject();
         return storedLongs[0];
+    }
+
+    private static long[] parseHeavyRecords(Iterable<DynamicRecord> records) {
+        var heavyRecordData = readFullByteArrayFromHeavyRecords(records, ARRAY);
+        long[] storedLongs =
+                (long[]) DynamicArrayStore.getNumbersArray(heavyRecordData.header(), heavyRecordData.data())
+                        .asObject();
+        return LabelIdArray.stripNodeId(storedLongs);
     }
 }

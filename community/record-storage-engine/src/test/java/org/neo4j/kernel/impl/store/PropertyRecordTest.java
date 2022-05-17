@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-import java.nio.ByteOrder;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -121,8 +120,7 @@ class PropertyRecordTest {
 
     private static void addBlock(PropertyRecord record, int key, int value) {
         PropertyBlock block = new PropertyBlock();
-        PropertyStore.encodeValue(
-                block, key, Values.of(value), null, null, NULL_CONTEXT, INSTANCE, ByteOrder.BIG_ENDIAN);
+        PropertyStore.encodeValue(block, key, Values.of(value), null, null, NULL_CONTEXT, INSTANCE);
         for (long valueBlock : block.getValueBlocks()) {
             record.addLoadedBlock(valueBlock);
         }

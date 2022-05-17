@@ -19,15 +19,19 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.nio.file.OpenOption;
 import java.util.List;
+import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-public class PointKeyStateFormatTest extends IndexKeyStateFormatTest<PointKey> {
+class PointKeyStateFormatTest extends IndexKeyStateFormatTest<PointKey> {
     @Override
     void populateValues(List<Value> values) {
         // Some points selected randomly. One for each crs.
@@ -55,6 +59,11 @@ public class PointKeyStateFormatTest extends IndexKeyStateFormatTest<PointKey> {
     @Override
     protected String storeFileName() {
         return "point-key-state-store";
+    }
+
+    @Override
+    ImmutableSet<OpenOption> getOpenOptions() {
+        return Sets.immutable.of(PageCacheOpenOptions.BIG_ENDIAN);
     }
 
     @Override

@@ -56,11 +56,6 @@ public class InlineNodeLabels implements NodeLabels {
     }
 
     @Override
-    public long[] getIfLoaded() {
-        return parseInlined(node.getLabelField());
-    }
-
-    @Override
     public Collection<DynamicRecord> put(
             long[] labelIds,
             NodeStore nodeStore,
@@ -196,6 +191,6 @@ public class InlineNodeLabels implements NodeLabels {
 
     @Override
     public String toString() {
-        return format("Inline(0x%x:%s)", node.getLabelField(), Arrays.toString(getIfLoaded(/*it is*/ )));
+        return format("Inline(0x%x:%s)", node.getLabelField(), Arrays.toString(parseInlined(node.getLabelField())));
     }
 }

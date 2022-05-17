@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 public class FullyCoveringRecordKeys implements RecordKeys {
     public static final RecordKeys INSTANCE = new FullyCoveringRecordKeys();
@@ -152,6 +153,14 @@ public class FullyCoveringRecordKeys implements RecordKeys {
             assertArrayEquals(written.getData(), read.getData());
             assertEquals(written.isStartRecord(), read.isStartRecord());
             assertEquals(written.isUseFixedReferences(), read.isUseFixedReferences());
+        };
+    }
+
+    @Override
+    public RecordKey<SchemaRecord> schema() {
+        return (written, read) -> {
+            assertEquals(written.inUse(), read.inUse());
+            assertEquals(written.getNextProp(), read.getNextProp());
         };
     }
 }

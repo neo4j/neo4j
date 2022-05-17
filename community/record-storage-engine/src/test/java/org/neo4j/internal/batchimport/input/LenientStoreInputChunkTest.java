@@ -31,7 +31,6 @@ import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_F
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-import java.nio.ByteOrder;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.junit.jupiter.api.BeforeEach;
@@ -190,8 +189,7 @@ class LenientStoreInputChunkTest {
     private IntValue addBlockToProperty(PropertyRecord propertyRecord, NamedToken token, int value) {
         PropertyBlock block = new PropertyBlock();
         IntValue intValue = Values.intValue(value);
-        PropertyStore.encodeValue(
-                block, token.id(), intValue, null, null, NULL_CONTEXT, INSTANCE, ByteOrder.LITTLE_ENDIAN);
+        PropertyStore.encodeValue(block, token.id(), intValue, null, null, NULL_CONTEXT, INSTANCE);
         propertyRecord.addPropertyBlock(block);
         return intValue;
     }

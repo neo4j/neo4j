@@ -28,12 +28,13 @@ import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -50,8 +51,6 @@ import org.neo4j.test.utils.PageCacheConfig;
 
 @ExtendWith(RandomExtension.class)
 public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
-    @RegisterExtension
-    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
 
     private static final String STORE = "store";
     private static final int INITIAL_KEY_COUNT = 1_000;
@@ -71,28 +70,133 @@ public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
     private static final String CURRENT_FIXED_SIZE_FORMAT_4M_ZIP = "current-format_4M.zip";
     private static final String CURRENT_DYNAMIC_SIZE_FORMAT_4M_ZIP = "current-dynamic-format_4M.zip";
 
+    private static final String CURRENT_FIXED_SIZE_FORMAT_8k_LE_ZIP = "current-format_8k_le.zip";
+    private static final String CURRENT_DYNAMIC_SIZE_FORMAT_8k_LE_ZIP = "current-dynamic-format_8k_le.zip";
+    private static final String CURRENT_FIXED_SIZE_FORMAT_16k_LE_ZIP = "current-format_16k_le.zip";
+    private static final String CURRENT_DYNAMIC_SIZE_FORMAT_16k_LE_ZIP = "current-dynamic-format_16k_le.zip";
+    private static final String CURRENT_FIXED_SIZE_FORMAT_32k_LE_ZIP = "current-format_32k_le.zip";
+    private static final String CURRENT_DYNAMIC_SIZE_FORMAT_32k_LE_ZIP = "current-dynamic-format_32k_le.zip";
+    private static final String CURRENT_FIXED_SIZE_FORMAT_64k_LE_ZIP = "current-format_64k_le.zip";
+    private static final String CURRENT_DYNAMIC_SIZE_FORMAT_64k_LE_ZIP = "current-dynamic-format_64k_le.zip";
+    private static final String CURRENT_FIXED_SIZE_FORMAT_4M_LE_ZIP = "current-format_4M_le.zip";
+    private static final String CURRENT_DYNAMIC_SIZE_FORMAT_4M_LE_ZIP = "current-dynamic-format_4M_le.zip";
+
     private TestLayout<KEY, VALUE> layout;
     private String zipName;
+    private ImmutableSet<OpenOption> openOptions;
 
     private static Stream<Arguments> data() {
         return Stream.of(
-                Arguments.of(longLayout().withFixedSize(true).build(), CURRENT_FIXED_SIZE_FORMAT_8k_ZIP, PAGE_SIZE_8K),
-                Arguments.of(new SimpleByteArrayLayout(4000, 99), CURRENT_DYNAMIC_SIZE_FORMAT_8k_ZIP, PAGE_SIZE_8K),
+                Arguments.of(
+                        longLayout().withFixedSize(true).build(),
+                        CURRENT_FIXED_SIZE_FORMAT_8k_ZIP,
+                        PAGE_SIZE_8K,
+                        immutable.of(PageCacheOpenOptions.BIG_ENDIAN)),
+                Arguments.of(
+                        new SimpleByteArrayLayout(4000, 99),
+                        CURRENT_DYNAMIC_SIZE_FORMAT_8k_ZIP,
+                        PAGE_SIZE_8K,
+                        immutable.of(PageCacheOpenOptions.BIG_ENDIAN)),
                 // 16k
                 Arguments.of(
-                        longLayout().withFixedSize(true).build(), CURRENT_FIXED_SIZE_FORMAT_16k_ZIP, PAGE_SIZE_16K),
-                Arguments.of(new SimpleByteArrayLayout(4000, 99), CURRENT_DYNAMIC_SIZE_FORMAT_16k_ZIP, PAGE_SIZE_16K),
+                        longLayout().withFixedSize(true).build(),
+                        CURRENT_FIXED_SIZE_FORMAT_16k_ZIP,
+                        PAGE_SIZE_16K,
+                        immutable.of(PageCacheOpenOptions.BIG_ENDIAN)),
+                Arguments.of(
+                        new SimpleByteArrayLayout(4000, 99),
+                        CURRENT_DYNAMIC_SIZE_FORMAT_16k_ZIP,
+                        PAGE_SIZE_16K,
+                        immutable.of(PageCacheOpenOptions.BIG_ENDIAN)),
                 // 32k
                 Arguments.of(
-                        longLayout().withFixedSize(true).build(), CURRENT_FIXED_SIZE_FORMAT_32k_ZIP, PAGE_SIZE_32K),
-                Arguments.of(new SimpleByteArrayLayout(4000, 99), CURRENT_DYNAMIC_SIZE_FORMAT_32k_ZIP, PAGE_SIZE_32K),
+                        longLayout().withFixedSize(true).build(),
+                        CURRENT_FIXED_SIZE_FORMAT_32k_ZIP,
+                        PAGE_SIZE_32K,
+                        immutable.of(PageCacheOpenOptions.BIG_ENDIAN)),
+                Arguments.of(
+                        new SimpleByteArrayLayout(4000, 99),
+                        CURRENT_DYNAMIC_SIZE_FORMAT_32k_ZIP,
+                        PAGE_SIZE_32K,
+                        immutable.of(PageCacheOpenOptions.BIG_ENDIAN)),
                 // 64k
                 Arguments.of(
-                        longLayout().withFixedSize(true).build(), CURRENT_FIXED_SIZE_FORMAT_64k_ZIP, PAGE_SIZE_64K),
-                Arguments.of(new SimpleByteArrayLayout(4000, 99), CURRENT_DYNAMIC_SIZE_FORMAT_64k_ZIP, PAGE_SIZE_64K),
+                        longLayout().withFixedSize(true).build(),
+                        CURRENT_FIXED_SIZE_FORMAT_64k_ZIP,
+                        PAGE_SIZE_64K,
+                        immutable.of(PageCacheOpenOptions.BIG_ENDIAN)),
+                Arguments.of(
+                        new SimpleByteArrayLayout(4000, 99),
+                        CURRENT_DYNAMIC_SIZE_FORMAT_64k_ZIP,
+                        PAGE_SIZE_64K,
+                        immutable.of(PageCacheOpenOptions.BIG_ENDIAN)),
                 // 4M
-                Arguments.of(longLayout().withFixedSize(true).build(), CURRENT_FIXED_SIZE_FORMAT_4M_ZIP, PAGE_SIZE_4M),
-                Arguments.of(new SimpleByteArrayLayout(4000, 99), CURRENT_DYNAMIC_SIZE_FORMAT_4M_ZIP, PAGE_SIZE_4M));
+                Arguments.of(
+                        longLayout().withFixedSize(true).build(),
+                        CURRENT_FIXED_SIZE_FORMAT_4M_ZIP,
+                        PAGE_SIZE_4M,
+                        immutable.of(PageCacheOpenOptions.BIG_ENDIAN)),
+                Arguments.of(
+                        new SimpleByteArrayLayout(4000, 99),
+                        CURRENT_DYNAMIC_SIZE_FORMAT_4M_ZIP,
+                        PAGE_SIZE_4M,
+                        immutable.of(PageCacheOpenOptions.BIG_ENDIAN)),
+
+                // Same but little-endian now
+                Arguments.of(
+                        longLayout().withFixedSize(true).build(),
+                        CURRENT_FIXED_SIZE_FORMAT_8k_LE_ZIP,
+                        PAGE_SIZE_8K,
+                        immutable.empty()),
+                Arguments.of(
+                        new SimpleByteArrayLayout(4000, 99),
+                        CURRENT_DYNAMIC_SIZE_FORMAT_8k_LE_ZIP,
+                        PAGE_SIZE_8K,
+                        immutable.empty()),
+                // 16k
+                Arguments.of(
+                        longLayout().withFixedSize(true).build(),
+                        CURRENT_FIXED_SIZE_FORMAT_16k_LE_ZIP,
+                        PAGE_SIZE_16K,
+                        immutable.empty()),
+                Arguments.of(
+                        new SimpleByteArrayLayout(4000, 99),
+                        CURRENT_DYNAMIC_SIZE_FORMAT_16k_LE_ZIP,
+                        PAGE_SIZE_16K,
+                        immutable.empty()),
+                // 32k
+                Arguments.of(
+                        longLayout().withFixedSize(true).build(),
+                        CURRENT_FIXED_SIZE_FORMAT_32k_LE_ZIP,
+                        PAGE_SIZE_32K,
+                        immutable.empty()),
+                Arguments.of(
+                        new SimpleByteArrayLayout(4000, 99),
+                        CURRENT_DYNAMIC_SIZE_FORMAT_32k_LE_ZIP,
+                        PAGE_SIZE_32K,
+                        immutable.empty()),
+                // 64k
+                Arguments.of(
+                        longLayout().withFixedSize(true).build(),
+                        CURRENT_FIXED_SIZE_FORMAT_64k_LE_ZIP,
+                        PAGE_SIZE_64K,
+                        immutable.empty()),
+                Arguments.of(
+                        new SimpleByteArrayLayout(4000, 99),
+                        CURRENT_DYNAMIC_SIZE_FORMAT_64k_LE_ZIP,
+                        PAGE_SIZE_64K,
+                        immutable.empty()),
+                // 4M
+                Arguments.of(
+                        longLayout().withFixedSize(true).build(),
+                        CURRENT_FIXED_SIZE_FORMAT_4M_LE_ZIP,
+                        PAGE_SIZE_4M,
+                        immutable.empty()),
+                Arguments.of(
+                        new SimpleByteArrayLayout(4000, 99),
+                        CURRENT_DYNAMIC_SIZE_FORMAT_4M_LE_ZIP,
+                        PAGE_SIZE_4M,
+                        immutable.empty()));
     }
 
     @Override
@@ -103,14 +207,23 @@ public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
     @ParameterizedTest
     @MethodSource("data")
     @MultiVersionedTag
-    public void shouldDetectFormatChange(TestLayout<KEY, VALUE> layout, String zipName, int pageSize) throws Throwable {
-        init(layout, zipName, pageSize);
-        super.shouldDetectFormatChange();
+    public void shouldDetectFormatChange(
+            TestLayout<KEY, VALUE> layout, String zipName, int pageSize, ImmutableSet<OpenOption> openOptions)
+            throws Throwable {
+        try {
+            init(layout, zipName, pageSize, openOptions);
+            super.shouldDetectFormatChange();
+        } finally {
+            clear();
+        }
     }
 
-    private void init(TestLayout<KEY, VALUE> layout, String zipName, int pageSize) {
+    private void init(
+            TestLayout<KEY, VALUE> layout, String zipName, int pageSize, ImmutableSet<OpenOption> openOptions) {
         this.layout = layout;
         this.zipName = zipName;
+        this.openOptions = openOptions;
+
         allKeys = new ArrayList<>();
         allKeys.addAll(initialKeys);
         allKeys.addAll(keysToAdd);
@@ -119,7 +232,13 @@ public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
         if (pageSize == PAGE_SIZE_4M) {
             overriddenConfig.withMemory("16MiB");
         }
-        pageCache = pageCacheExtension.getPageCache(globalFs, overriddenConfig);
+        pageCache = PageCacheSupportExtension.getPageCache(globalFs, overriddenConfig);
+    }
+
+    private void clear() {
+        if (pageCache != null) {
+            pageCache.close();
+        }
     }
 
     @Inject
@@ -143,7 +262,9 @@ public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
     @Override
     protected void createStoreFile(Path storeFile) throws IOException {
         List<Long> initialKeys = initialKeys();
-        try (GBPTree<KEY, VALUE> tree = new GBPTreeBuilder<>(pageCache, storeFile, layout).build()) {
+        try (GBPTree<KEY, VALUE> tree = new GBPTreeBuilder<>(pageCache, storeFile, layout)
+                .with(openOptions)
+                .build()) {
             try (Writer<KEY, VALUE> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 for (Long key : initialKeys) {
                     put(writer, key);
@@ -159,9 +280,8 @@ public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
     @SuppressWarnings("EmptyTryBlock")
     @Override
     protected void verifyFormat(Path storeFile) throws IOException, FormatViolationException {
-        // TODO little-endian format add little-endian versions of formats
         try (GBPTree<KEY, VALUE> ignored = new GBPTreeBuilder<>(pageCache, storeFile, layout)
-                .with(immutable.of(PageCacheOpenOptions.BIG_ENDIAN))
+                .with(openOptions)
                 .build()) {
         } catch (MetadataMismatchException e) {
             throw new FormatViolationException(e);
@@ -171,7 +291,7 @@ public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
     @Override
     public void verifyContent(Path storeFile) throws IOException {
         try (GBPTree<KEY, VALUE> tree = new GBPTreeBuilder<>(pageCache, storeFile, layout)
-                .with(immutable.of(PageCacheOpenOptions.BIG_ENDIAN))
+                .with(openOptions)
                 .build()) {
             {
                 // WHEN reading from the tree

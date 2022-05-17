@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
@@ -77,7 +76,7 @@ public enum GeometryType {
             byte[] dataHeader = PropertyType.ARRAY.readDynamicRecordHeader(data);
             byte[] dataBody = new byte[data.length - dataHeader.length];
             System.arraycopy(data, dataHeader.length, dataBody, 0, dataBody.length);
-            Value dataValue = DynamicArrayStore.getRightArray(dataHeader, dataBody, ByteOrder.LITTLE_ENDIAN);
+            Value dataValue = DynamicArrayStore.getRightArray(dataHeader, dataBody);
             if (dataValue instanceof FloatingPointArray numbers) {
                 PointValue[] points = new PointValue[numbers.length() / header.dimension];
                 for (int i = 0; i < points.length; i++) {

@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV4_3;
 import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV5_0;
+import org.neo4j.kernel.impl.store.format.experimental.ExperimentalFormat;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
@@ -55,6 +56,7 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionIdentifier;
+import org.neo4j.util.FeatureToggles;
 
 /**
  * Selects record format that will be used in a database.
@@ -66,6 +68,13 @@ import org.neo4j.storageengine.api.StoreVersionIdentifier;
 public class RecordFormatSelector {
     private static final String STORE_SELECTION_TAG = "storeSelection";
 
+    /**
+     * System property to override record format in tests via maven profile.
+     * {@link GraphDatabaseInternalSettings#select_specific_record_format} has higher priority then this property.
+     */
+    private static final String RECORD_FORMAT_OVERRIDE =
+            FeatureToggles.getString(RecordFormatSelector.class, "RECORD_FORMAT_OVERRIDE", "");
+
     /** Default format here should be kept same as {@link GraphDatabaseSettings#record_format_created_db#defaultFormat()}. */
     private static final RecordFormats DEFAULT_FORMAT = PageAligned.LATEST_RECORD_FORMATS;
 
@@ -73,7 +82,8 @@ public class RecordFormatSelector {
             StandardV4_3.RECORD_FORMATS,
             StandardV5_0.RECORD_FORMATS,
             PageAlignedV4_3.RECORD_FORMATS,
-            PageAlignedV5_0.RECORD_FORMATS);
+            PageAlignedV5_0.RECORD_FORMATS,
+            ExperimentalFormat.RECORD_FORMATS);
 
     private RecordFormatSelector() {
         throw new AssertionError("Not for instantiation!");
@@ -226,10 +236,9 @@ public class RecordFormatSelector {
             return null;
         }
 
-        String specificFormat = config.get(GraphDatabaseInternalSettings.select_specific_record_format);
-        if (StringUtils.isNotEmpty(specificFormat)) {
-            return selectSpecificFormat(
-                    specificFormat, config.get(GraphDatabaseInternalSettings.include_versions_under_development));
+        var specificFormat = trySelectSpecificFormat(config);
+        if (specificFormat != null) {
+            return specificFormat;
         }
 
         RecordFormats formats = loadRecordFormat(
@@ -241,6 +250,18 @@ public class RecordFormatSelector {
             formats = newestFormatInFamily.orElse(formats);
         }
         return formats;
+    }
+
+    private static RecordFormats trySelectSpecificFormat(Config config) {
+        var specificFormat = config.get(GraphDatabaseInternalSettings.select_specific_record_format);
+        if (StringUtils.isNotEmpty(specificFormat)) {
+            return selectSpecificFormat(
+                    specificFormat, config.get(GraphDatabaseInternalSettings.include_versions_under_development));
+        }
+        if (!RECORD_FORMAT_OVERRIDE.isEmpty()) {
+            return selectSpecificFormat(RECORD_FORMAT_OVERRIDE, true);
+        }
+        return null;
     }
 
     private static boolean formatSameFamilyAndVersion(RecordFormats left, RecordFormats right) {
@@ -259,12 +280,12 @@ public class RecordFormatSelector {
     }
 
     public static Optional<RecordFormats> findLatestSupportedFormatInFamily(RecordFormats result, Config config) {
-        var specificFormat = config.get(GraphDatabaseInternalSettings.select_specific_record_format);
-        var includeDevFormats = config.get(GraphDatabaseInternalSettings.include_versions_under_development);
-        if (StringUtils.isNotEmpty(specificFormat)) {
-            return Optional.of(selectSpecificFormat(specificFormat, includeDevFormats));
+        var specificFormat = trySelectSpecificFormat(config);
+        if (specificFormat != null) {
+            return Optional.of(specificFormat);
         }
-        return findLatestFormatInFamily(result, includeDevFormats);
+        return findLatestFormatInFamily(
+                result, config.get(GraphDatabaseInternalSettings.include_versions_under_development));
     }
 
     public static Optional<RecordFormats> findLatestSupportedFormatInFamily(RecordFormats result) {

@@ -84,6 +84,7 @@
       -Dio.netty.tryReflectionSetAccessible=true
       "-XX:HeapDumpPath=target/test data"
       -Dinternal.dbms.multiversioned.store.override=${multiversion.store}
+      -Dorg.neo4j.kernel.impl.store.format.RecordFormatSelector.RECORD_FORMAT_OVERRIDE=${recordformat.override}
       -Dorg.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer.CHECK_REPORTED_COUNTERS=${cursor.counters.check}
       -Dorg.neo4j.internal.unsafe.UnsafeUtil.DIRTY_MEMORY=true
       -Dorg.neo4j.internal.unsafe.UnsafeUtil.CHECK_NATIVE_ACCESS=true
@@ -109,6 +110,7 @@
     <excludedTestGroups/>
     <forkCounts>1</forkCounts>
     <multiversion.store>false</multiversion.store>
+    <recordformat.override/>
     <parallel.tests>false</parallel.tests>
     <maven.build.timestamp.format>yyMMddHHmmssSSS</maven.build.timestamp.format>
     <cursor.counters.check>true</cursor.counters.check>
@@ -915,6 +917,16 @@
       <properties>
         <excludedTestGroups>multiVersioned</excludedTestGroups>
         <multiversion.store>true</multiversion.store>
+      </properties>
+    </profile>
+    <profile>
+      <id>experimentalRecordFormat</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <properties>
+        <recordformat.override>experimental</recordformat.override>
+        <excludedTestGroups>recordformatoverride</excludedTestGroups>
       </properties>
     </profile>
     <profile>

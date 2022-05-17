@@ -23,7 +23,6 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import org.neo4j.internal.recordstorage.Command.LabelTokenCommand;
@@ -154,9 +153,7 @@ public class Commands {
         record.setCreated();
         PropertyBlock block = new PropertyBlock();
         if (valueRecordIds.length == 0) {
-            // TODO little-endian format use proper byte order
-            PropertyStore.encodeValue(
-                    block, key, Values.of(123), null, null, NULL_CONTEXT, INSTANCE, ByteOrder.BIG_ENDIAN);
+            PropertyStore.encodeValue(block, key, Values.of(123), null, null, NULL_CONTEXT, INSTANCE);
         } else {
             PropertyStore.setSingleBlockValue(block, key, type, valueRecordIds[0]);
             block.setValueRecords(dynamicRecords(valueRecordIds));

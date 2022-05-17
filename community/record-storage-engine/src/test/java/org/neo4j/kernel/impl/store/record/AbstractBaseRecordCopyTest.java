@@ -30,7 +30,6 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -132,8 +131,7 @@ class AbstractBaseRecordCopyTest {
                     stringAllocator,
                     arrayAllocator,
                     NULL_CONTEXT,
-                    INSTANCE,
-                    ByteOrder.BIG_ENDIAN);
+                    INSTANCE);
             int tentativeBlocksWithThisOne = blocksOccupied + block.getValueBlocks().length;
             if (tentativeBlocksWithThisOne <= 4) {
                 record.addPropertyBlock(block);

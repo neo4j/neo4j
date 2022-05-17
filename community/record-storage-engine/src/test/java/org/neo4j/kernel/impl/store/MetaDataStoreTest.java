@@ -50,11 +50,16 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -73,6 +78,9 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
+import org.neo4j.kernel.impl.store.format.experimental.ExperimentalFormat;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
@@ -84,6 +92,7 @@ import org.neo4j.storageengine.StoreFileClosedException;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -108,6 +117,11 @@ class MetaDataStoreTest {
     private boolean fakePageCursorOverflow;
     private PageCache pageCacheWithFakeOverflow;
     private final CursorContextFactory contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+
+    public static Stream<Arguments> recordFormats() {
+        return Stream.of(
+                Arguments.of(PageAligned.LATEST_RECORD_FORMATS), Arguments.of(ExperimentalFormat.RECORD_FORMATS));
+    }
 
     @BeforeEach
     void setUp() {
@@ -571,6 +585,21 @@ class MetaDataStoreTest {
         assertThrows(StoreFileClosedException.class, store::getLastCommittedTransactionId);
     }
 
+    @ParameterizedTest
+    @MethodSource("recordFormats")
+    void canReadStoreVersionWithDifferentEndiannessFormats(RecordFormats recordFormats) throws IOException {
+        try (var metaDataStore = newMetaDataStore(recordFormats)) {
+            var version = MetaDataStore.getRecord(
+                    pageCache,
+                    metaDataStore.getStorageFile(),
+                    MetaDataStore.Position.STORE_VERSION,
+                    databaseLayout.getDatabaseName(),
+                    NULL_CONTEXT);
+            String versionString = StoreVersion.versionLongToString(version);
+            assertThat(versionString).isEqualTo(recordFormats.storeVersion());
+        }
+    }
+
     @Test
     void regenerateSetStoreId() {
         // given
@@ -868,6 +897,23 @@ class MetaDataStoreTest {
                 contextFactory,
                 writable(),
                 logTail);
+        return storeFactory.openNeoStores(true, StoreType.META_DATA).getMetaDataStore();
+    }
+
+    private MetaDataStore newMetaDataStore(RecordFormats recordFormats) {
+        InternalLogProvider logProvider = NullLogProvider.getInstance();
+        StoreFactory storeFactory = new StoreFactory(
+                databaseLayout,
+                Config.defaults(),
+                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()),
+                pageCacheWithFakeOverflow,
+                fs,
+                recordFormats,
+                logProvider,
+                contextFactory,
+                writable(),
+                EMPTY_LOG_TAIL,
+                Sets.immutable.empty());
         return storeFactory.openNeoStores(true, StoreType.META_DATA).getMetaDataStore();
     }
 }

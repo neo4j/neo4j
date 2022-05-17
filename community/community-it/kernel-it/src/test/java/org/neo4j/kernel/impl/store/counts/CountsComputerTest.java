@@ -30,13 +30,14 @@ import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 import org.assertj.core.api.SoftAssertions;
 import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
-import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,11 +59,11 @@ import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -145,7 +146,7 @@ class CountsComputerTest {
         InvocationTrackingProgressReporter progressReporter = new InvocationTrackingProgressReporter();
         rebuildCounts(lastCommittedTransactionId, progressReporter);
 
-        try (GBPTreeCountsStore store = createCountsStore(matchingBuilder(lastCommittedTransactionId))) {
+        try (var store = createCountsStore(matchingBuilder(lastCommittedTransactionId), getDBOpenOptions(db))) {
             store.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
             softly.assertThat(store.txId()).as("Store Transaction id").isEqualTo(lastCommittedTransactionId);
             store.accept(new AssertEmptyCountStoreVisitor(), NULL_CONTEXT);
@@ -164,7 +165,7 @@ class CountsComputerTest {
 
         rebuildCounts(lastCommittedTransactionId);
 
-        try (GBPTreeCountsStore store = createCountsStore(matchingBuilder(lastCommittedTransactionId))) {
+        try (var store = createCountsStore(matchingBuilder(lastCommittedTransactionId), getDBOpenOptions(db))) {
             store.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
             softly.assertThat(store.txId()).as("Store Transaction id").isEqualTo(lastCommittedTransactionId);
             store.accept(new AssertEmptyCountStoreVisitor(), NULL_CONTEXT);
@@ -194,7 +195,7 @@ class CountsComputerTest {
 
         rebuildCounts(lastCommittedTransactionId);
 
-        try (GBPTreeCountsStore store = createCountsStore()) {
+        try (var store = createCountsStore(getDBOpenOptions(db))) {
             softly.assertThat(store.txId()).as("Store Transaction id").isEqualTo(lastCommittedTransactionId);
 
             softly.assertThat(store.nodeCount(ANY_LABEL, NULL_CONTEXT))
@@ -239,7 +240,7 @@ class CountsComputerTest {
 
         rebuildCounts(lastCommittedTransactionId);
 
-        try (GBPTreeCountsStore store = createCountsStore()) {
+        try (var store = createCountsStore(getDBOpenOptions(db))) {
             softly.assertThat(store.txId()).as("Store Transaction id").isEqualTo(lastCommittedTransactionId);
 
             softly.assertThat(store.nodeCount(ANY_LABEL, NULL_CONTEXT))
@@ -292,7 +293,7 @@ class CountsComputerTest {
 
         rebuildCounts(lastCommittedTransactionId);
 
-        try (GBPTreeCountsStore store = createCountsStore()) {
+        try (var store = createCountsStore(getDBOpenOptions(db))) {
             softly.assertThat(store.txId()).as("Store Transaction id").isEqualTo(lastCommittedTransactionId);
 
             softly.assertThat(store.nodeCount(ANY_LABEL, NULL_CONTEXT))
@@ -356,7 +357,7 @@ class CountsComputerTest {
 
         rebuildCounts(lastCommittedTransactionId);
 
-        try (GBPTreeCountsStore store = createCountsStore()) {
+        try (var store = createCountsStore(getDBOpenOptions(db))) {
             softly.assertThat(store.txId()).as("Store Transaction id").isEqualTo(lastCommittedTransactionId);
 
             softly.assertThat(store.nodeCount(ANY_LABEL, NULL_CONTEXT))
@@ -431,7 +432,7 @@ class CountsComputerTest {
 
         rebuildCounts(lastCommittedTransactionId);
 
-        try (GBPTreeCountsStore store = createCountsStore()) {
+        try (var store = createCountsStore(getDBOpenOptions(db))) {
             softly.assertThat(store.txId()).as("Store Transaction id").isEqualTo(lastCommittedTransactionId);
 
             softly.assertThat(store.nodeCount(ANY_LABEL, NULL_CONTEXT))
@@ -542,11 +543,12 @@ class CountsComputerTest {
         fileSystem.deleteFile(countsStoreFile());
     }
 
-    private GBPTreeCountsStore createCountsStore() throws IOException {
-        return createCountsStore(CountsBuilder.EMPTY);
+    private GBPTreeCountsStore createCountsStore(ImmutableSet<OpenOption> openOptions) throws IOException {
+        return createCountsStore(CountsBuilder.EMPTY, openOptions);
     }
 
-    private GBPTreeCountsStore createCountsStore(CountsBuilder builder) throws IOException {
+    private GBPTreeCountsStore createCountsStore(CountsBuilder builder, ImmutableSet<OpenOption> openOptions)
+            throws IOException {
         return new GBPTreeCountsStore(
                 pageCache,
                 databaseLayout.countStore(),
@@ -559,7 +561,7 @@ class CountsComputerTest {
                 1_000,
                 NullLogProvider.getInstance(),
                 CONTEXT_FACTORY,
-                Sets.immutable.of(PageCacheOpenOptions.BIG_ENDIAN));
+                openOptions);
     }
 
     private void rebuildCounts(long lastCommittedTransactionId) throws IOException {
@@ -600,7 +602,7 @@ class CountsComputerTest {
                     progressReporter,
                     CONTEXT_FACTORY,
                     INSTANCE);
-            try (GBPTreeCountsStore countsStore = createCountsStore(countsComputer)) {
+            try (var countsStore = createCountsStore(countsComputer, neoStores.getOpenOptions())) {
                 countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
                 countsStore.checkpoint(NULL_CONTEXT);
             } catch (IOException e) {
@@ -623,6 +625,12 @@ class CountsComputerTest {
                 return lastCommittedTransactionId;
             }
         };
+    }
+
+    private ImmutableSet<OpenOption> getDBOpenOptions(GraphDatabaseAPI db) {
+        return db.getDependencyResolver()
+                .resolveDependency(RecordStorageEngine.class)
+                .getOpenOptions();
     }
 
     private static class InvocationTrackingProgressReporter implements ProgressReporter {

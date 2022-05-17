@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store;
 import static java.time.ZoneOffset.UTC;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -578,7 +577,7 @@ public enum TemporalType {
         byte[] dataHeader = PropertyType.ARRAY.readDynamicRecordHeader(data);
         byte[] dataBody = new byte[data.length - dataHeader.length];
         System.arraycopy(data, dataHeader.length, dataBody, 0, dataBody.length);
-        Value dataValue = DynamicArrayStore.getRightArray(dataHeader, dataBody, ByteOrder.LITTLE_ENDIAN);
+        Value dataValue = DynamicArrayStore.getRightArray(dataHeader, dataBody);
         return find(header.temporalType).decodeArray(dataValue);
     }
 

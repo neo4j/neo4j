@@ -149,7 +149,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter {
 
     private void encodeProperty(PropertyBlock block, int key, Object property) {
         Value value = property instanceof Value ? (Value) property : Values.of(property);
-        propertyStore.encodeValue(
+        PropertyStore.encodeValue(
                 block,
                 key,
                 value,

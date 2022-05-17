@@ -46,7 +46,7 @@ public class CompositePageCursorTest {
 
     private StubPageCursor generatePage(int initialPageId, int pageSize, int initialValue) {
         int reservedBytes = getReservedBytes();
-        // TODO little-endian format CompositeCursor doesn't support little-endian stores yet
+        // test assumes big-endian byte order
         var cursor = new StubPageCursor(
                 initialPageId, ByteBuffers.allocate(pageSize, ByteOrder.BIG_ENDIAN, INSTANCE), reservedBytes);
         for (int i = 0; i < pageSize - reservedBytes; i++) {

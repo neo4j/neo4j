@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 public interface RecordKeys {
     RecordKey<NodeRecord> node();
@@ -44,4 +45,6 @@ public interface RecordKeys {
     RecordKey<LabelTokenRecord> labelToken();
 
     RecordKey<DynamicRecord> dynamic();
+
+    RecordKey<SchemaRecord> schema();
 }

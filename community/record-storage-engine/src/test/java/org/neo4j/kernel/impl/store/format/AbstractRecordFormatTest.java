@@ -123,6 +123,11 @@ public abstract class AbstractRecordFormatTest {
         verifyWriteAndRead(formats::dynamic, generators::dynamic, keys::dynamic, false);
     }
 
+    @Test
+    public void schema() throws Exception {
+        verifyWriteAndRead(formats::schema, generators::schema, keys::schema, false);
+    }
+
     private <R extends AbstractBaseRecord> void verifyWriteAndRead(
             Supplier<RecordFormat<R>> formatSupplier,
             Supplier<Generator<R>> generatorSupplier,
@@ -136,9 +141,11 @@ public abstract class AbstractRecordFormatTest {
         int recordSize = format.getRecordSize(new IntStoreHeader(DATA_SIZE));
         BatchingIdSequence idSequence = new BatchingIdSequence(1);
         // WHEN
-        // TODO little-endian format dynamic store assumes big-endian byte order
-        PageCursor cursor = new ByteArrayPageCursor(
-                ByteBuffers.allocate(recordSize, ByteOrder.BIG_ENDIAN, EmptyMemoryTracker.INSTANCE));
+        var byteOrder = formats.hasCapability(RecordStorageCapability.LITTLE_ENDIAN)
+                ? ByteOrder.LITTLE_ENDIAN
+                : ByteOrder.BIG_ENDIAN;
+        PageCursor cursor =
+                new ByteArrayPageCursor(ByteBuffers.allocate(recordSize, byteOrder, EmptyMemoryTracker.INSTANCE));
         long time = currentTimeMillis();
         long endTime = time + TEST_TIME;
         long i = 0;

@@ -36,10 +36,12 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import org.apache.commons.lang3.RandomUtils;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
@@ -79,7 +81,7 @@ class AbstractDynamicStoreTest {
     @BeforeEach
     void before() throws IOException {
         try (StoreChannel channel = fs.write(storeFile)) {
-            ByteBuffer buffer = ByteBuffers.allocate(pageCache.payloadSize(), ByteOrder.BIG_ENDIAN, INSTANCE);
+            ByteBuffer buffer = ByteBuffers.allocate(pageCache.payloadSize(), getByteOrder(), INSTANCE);
             while (buffer.hasRemaining()) {
                 buffer.putInt(BLOCK_SIZE);
             }
@@ -255,7 +257,7 @@ class AbstractDynamicStoreTest {
                         formats.dynamic(),
                         DatabaseReadOnlyChecker.writable(),
                         DEFAULT_DATABASE_NAME,
-                        immutable.of(PageCacheOpenOptions.BIG_ENDIAN)) {
+                        getOpenOptions()) {
                     @Override
                     public String getTypeDescriptor() {
                         return "TestDynamicStore";
@@ -263,5 +265,13 @@ class AbstractDynamicStoreTest {
                 };
         store.initialise(true, new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
         return store;
+    }
+
+    protected ImmutableSet<OpenOption> getOpenOptions() {
+        return immutable.of(PageCacheOpenOptions.BIG_ENDIAN);
+    }
+
+    protected ByteOrder getByteOrder() {
+        return ByteOrder.BIG_ENDIAN;
     }
 }

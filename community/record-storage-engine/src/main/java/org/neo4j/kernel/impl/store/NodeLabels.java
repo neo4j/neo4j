@@ -28,8 +28,6 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 public interface NodeLabels {
     long[] get(NodeStore nodeStore, StoreCursors storeCursors);
 
-    long[] getIfLoaded();
-
     Collection<DynamicRecord> put(
             long[] labelIds,
             NodeStore nodeStore,

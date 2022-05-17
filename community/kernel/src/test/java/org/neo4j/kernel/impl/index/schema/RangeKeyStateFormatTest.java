@@ -19,7 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.nio.file.OpenOption;
+import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 
 class RangeKeyStateFormatTest extends GenericKeyStateFormatTest<RangeKey> {
     @Override
@@ -30,6 +34,11 @@ class RangeKeyStateFormatTest extends GenericKeyStateFormatTest<RangeKey> {
     @Override
     protected String storeFileName() {
         return "range-key-state-store";
+    }
+
+    @Override
+    ImmutableSet<OpenOption> getOpenOptions() {
+        return Sets.immutable.of(PageCacheOpenOptions.BIG_ENDIAN);
     }
 
     @Override

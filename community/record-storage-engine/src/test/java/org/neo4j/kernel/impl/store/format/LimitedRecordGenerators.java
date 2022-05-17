@@ -24,7 +24,6 @@ import static java.lang.Math.abs;
 import static java.lang.Math.toIntExact;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-import java.nio.ByteOrder;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -38,6 +37,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.values.storable.RandomValues;
 
 public class LimitedRecordGenerators implements RecordGenerators {
@@ -136,8 +136,7 @@ public class LimitedRecordGenerators implements RecordGenerators {
                         stringAllocator,
                         arrayAllocator,
                         CursorContext.NULL_CONTEXT,
-                        INSTANCE,
-                        ByteOrder.BIG_ENDIAN);
+                        INSTANCE);
                 int tentativeBlocksWithThisOne = blocksOccupied + block.getValueBlocks().length;
                 if (tentativeBlocksWithThisOne <= 4) {
                     record.addPropertyBlock(block);
@@ -185,6 +184,12 @@ public class LimitedRecordGenerators implements RecordGenerators {
             record.setData(bytes);
             return record;
         };
+    }
+
+    @Override
+    public Generator<SchemaRecord> schema() {
+        return (recordSize, format, id) ->
+                new SchemaRecord(id).initialize(random.nextBoolean(), randomLongOrOccasionallyNull(propertyBits));
     }
 
     private int randomInt(int maxBits) {

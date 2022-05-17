@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.index.schema;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -34,10 +34,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -48,9 +46,6 @@ import org.neo4j.values.storable.Values;
 
 abstract class IndexKeyStateFormatTest<KEY extends NativeIndexKey<KEY>> extends FormatCompatibilityVerifier {
     protected static final int ENTITY_ID = 19570320;
-
-    @RegisterExtension
-    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
 
     protected List<Value> values;
 
@@ -75,6 +70,8 @@ abstract class IndexKeyStateFormatTest<KEY extends NativeIndexKey<KEY>> extends 
      * Get detailed description of the key
      */
     abstract String toDetailedString(KEY key);
+
+    abstract ImmutableSet<OpenOption> getOpenOptions();
 
     @Override
     protected void createStoreFile(Path storeFile) throws IOException {
@@ -122,11 +119,11 @@ abstract class IndexKeyStateFormatTest<KEY extends NativeIndexKey<KEY>> extends 
     }
 
     private void withCursor(Path storeFile, boolean create, Consumer<PageCursor> cursorConsumer) throws IOException {
-        // TODO little-endian format add little-endian versions of formats
-        ImmutableSet<OpenOption> openOptions = create
-                ? immutable.of(WRITE, CREATE, PageCacheOpenOptions.BIG_ENDIAN)
-                : immutable.of(WRITE, PageCacheOpenOptions.BIG_ENDIAN);
-        try (PageCache pageCache = pageCacheExtension.getPageCache(globalFs);
+        var openOptions = getOpenOptions().newWith(WRITE);
+        if (create) {
+            openOptions = openOptions.newWith(CREATE);
+        }
+        try (PageCache pageCache = PageCacheSupportExtension.getPageCache(globalFs, config());
                 PagedFile pagedFile =
                         pageCache.map(storeFile, pageCache.pageSize(), DEFAULT_DATABASE_NAME, openOptions);
                 PageCursor cursor = pagedFile.io(0, PagedFile.PF_SHARED_WRITE_LOCK, CursorContext.NULL_CONTEXT)) {
