@@ -26,6 +26,7 @@ public class DoubleLatch {
     private static final long FIVE_MINUTES = TimeUnit.MINUTES.toMillis(5);
     private final CountDownLatch startSignal;
     private final CountDownLatch finishSignal;
+    private final CountDownLatch allButOneFinishedSignal;
     private final boolean awaitUninterruptibly;
 
     public DoubleLatch() {
@@ -39,6 +40,7 @@ public class DoubleLatch {
     public DoubleLatch(int numberOfContestants, boolean awaitUninterruptibly) {
         this.startSignal = new CountDownLatch(numberOfContestants);
         this.finishSignal = new CountDownLatch(numberOfContestants);
+        this.allButOneFinishedSignal = new CountDownLatch(numberOfContestants - 1);
         this.awaitUninterruptibly = awaitUninterruptibly;
     }
 
@@ -67,10 +69,15 @@ public class DoubleLatch {
 
     public void finish() {
         finishSignal.countDown();
+        allButOneFinishedSignal.countDown();
     }
 
     public void waitForAllToFinish() {
         awaitLatch(finishSignal, awaitUninterruptibly);
+    }
+
+    public void waitForAllButOneToFinish() {
+        awaitLatch(allButOneFinishedSignal);
     }
 
     public static void awaitLatch(CountDownLatch latch) {
