@@ -398,7 +398,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                         + " has already been added");
         this.indexUpdateListener = listener;
         this.indexUpdatesSync = new IndexUpdatesWorkSync(listener, parallelIndexUpdatesApply);
-        this.integrityValidator.setIndexValidator(listener);
     }
 
     /**

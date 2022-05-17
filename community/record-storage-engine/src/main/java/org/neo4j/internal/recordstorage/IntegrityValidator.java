@@ -19,35 +19,21 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.DeletedNodeStillHasRelationshipsException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.storageengine.api.IndexUpdateListener;
-import org.neo4j.util.Preconditions;
 
 /**
  * Validates data integrity during the prepare phase of {@link TransactionRecordState}.
  */
 class IntegrityValidator {
     private final NeoStores neoStores;
-    private IndexUpdateListener indexValidator;
 
     IntegrityValidator(NeoStores neoStores) {
         this.neoStores = neoStores;
-    }
-
-    void setIndexValidator(IndexUpdateListener validator) {
-        Preconditions.checkState(
-                this.indexValidator == null,
-                "Only supports a single validator. Tried to add " + validator + ", but " + this.indexValidator
-                        + " has already been added");
-        this.indexValidator = validator;
     }
 
     static void validateNodeRecord(NodeRecord record) throws TransactionFailureException {
@@ -73,35 +59,6 @@ class IntegrityValidator {
                             + "constraints are executed.",
                     latestConstraintIntroducingTx,
                     lastCommittedTxWhenTransactionStarted);
-        }
-    }
-
-    void validateSchemaRule(SchemaRule schemaRule) throws TransactionFailureException {
-        Preconditions.checkState(indexValidator != null, "No index validator installed");
-
-        if (schemaRule instanceof ConstraintDescriptor constraint) {
-            if (constraint.isIndexBackedConstraint()) {
-                long ownedIndex = constraint.asIndexBackedConstraint().ownedIndexId();
-                try {
-                    indexValidator.validateIndex(ownedIndex);
-                } catch (KernelException e) {
-                    // This could occur if there were concurrent violating transactions since the index population
-                    // completed
-                    // but before being activated, e.g. transaction executed on another instance with a dated view of
-                    // the world.
-                    //
-                    // The other alternative is that this is an unexpected exception and means we're in a very bad state
-                    // - out of
-                    // disk or index corruption, or similar. This will kill the database such that it can be shut down
-                    // and have recovery performed. It's the safest bet to avoid loosing data.
-                    throw new TransactionFailureException(
-                            Status.Transaction.TransactionValidationFailed,
-                            e,
-                            "Index validation of " + schemaRule + " failed, specifically for its owned index "
-                                    + ownedIndex,
-                            e);
-                }
-            }
         }
     }
 }

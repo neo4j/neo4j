@@ -75,7 +75,6 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
@@ -604,13 +603,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     @Deprecated
     public IndexProxy getIndexProxy(long indexId) throws IndexNotFoundKernelException {
         return indexMapRef.getIndexProxy(indexId);
-    }
-
-    @Override
-    public void validateIndex(long indexId)
-            throws IndexNotFoundKernelException, IndexPopulationFailedKernelException,
-                    UniquePropertyValueValidationException {
-        indexMapRef.getIndexProxy(indexId).validate();
     }
 
     public void forceAll(CursorContext cursorContext) throws IOException {

@@ -59,13 +59,6 @@ public interface IndexUpdateListener {
             Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext, boolean parallel)
             throws IOException, KernelException;
 
-    /**
-     * Called before commit to ask whether or not the particular indexReference is valid.
-     * @param indexReference reference to the index being validated.
-     * @throws KernelException if index isn't valid.
-     */
-    void validateIndex(long indexReference) throws KernelException;
-
     class Adapter implements IndexUpdateListener {
         @Override
         public void createIndexes(Subject subject, IndexDescriptor... indexes) {}
@@ -79,8 +72,5 @@ public interface IndexUpdateListener {
         @Override
         public void applyUpdates(
                 Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext, boolean parallel) {}
-
-        @Override
-        public void validateIndex(long indexReference) {}
     }
 }

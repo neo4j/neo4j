@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -51,7 +50,6 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CU
 import static org.neo4j.internal.recordstorage.RelationshipModifier.DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
-import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
@@ -816,25 +814,6 @@ class TransactionRecordStateTest {
         // property deletes come last.
         assertCommand(commandIterator.next(), PropertyCommand.class);
         assertFalse(commandIterator.hasNext());
-    }
-
-    @Test
-    void shouldValidateConstraintIndexAsPartOfExtraction() throws Throwable {
-        createStores();
-        // GIVEN
-        TransactionRecordState recordState = newTransactionRecordState();
-
-        final long indexId = neoStores.getSchemaStore().nextId(NULL_CONTEXT);
-        final long constraintId = neoStores.getSchemaStore().nextId(NULL_CONTEXT);
-
-        recordState.schemaRuleCreate(
-                constraintId, true, uniqueForLabel(1, 1).withId(constraintId).withOwnedIndexId(indexId));
-
-        // WHEN
-        recordState.extractCommands(new ArrayList<>(), INSTANCE);
-
-        // THEN
-        verify(integrityValidator).validateSchemaRule(any());
     }
 
     @Test

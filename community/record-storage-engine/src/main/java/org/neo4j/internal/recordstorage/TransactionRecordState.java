@@ -269,9 +269,6 @@ public class TransactionRecordState implements RecordState {
         for (RecordProxy<SchemaRecord, SchemaRule> change : schemaRuleChange) {
             SchemaRecord schemaRecord = change.forReadingLinkage();
             SchemaRule rule = change.getAdditionalData();
-            if (schemaRecord.inUse()) {
-                integrityValidator.validateSchemaRule(rule);
-            }
             Command.SchemaRuleCommand cmd = new Command.SchemaRuleCommand(
                     commandSerialization, change.getBefore(), change.forChangingData(), rule);
             schemaChangeByMode

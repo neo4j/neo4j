@@ -188,9 +188,6 @@ class IndexTransactionApplierFactoryTest {
             }
         }
 
-        @Override
-        public void validateIndex(long indexReference) {}
-
         void done() {
             assertEquals(cursor, expectedNodeIds.length);
         }
