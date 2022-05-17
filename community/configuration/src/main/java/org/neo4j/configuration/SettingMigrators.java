@@ -141,9 +141,6 @@ public final class SettingMigrators {
         private static final String OLD_PREFIX = "dbms.connector";
         private static final Pattern SUPPORTED_CONNECTOR_PATTERN = Pattern.compile("(.+)\\.(bolt|http|https)\\.(.+)");
         private static final List<String> REMOVED_SETTINGS = List.of(
-                "causal_clustering.delete_store_before_store_copy",
-                "causal_clustering.multi_dc_license",
-                "causal_clustering.store_copy_chunk_size",
                 "dbms.allow_upgrade",
                 "dbms.record_format",
                 "dbms.backup.incremental.strategy",
@@ -162,6 +159,7 @@ public final class SettingMigrators {
                 "fabric.driver.api",
                 "unsupported.cypher.parser",
                 "unsupported.dbms.block_remote_alias",
+                "unsupported.dbms.large_cluster.enable",
                 "unsupported.dbms.memory.pagecache.warmup.legacy_profile_loader",
                 "unsupported.dbms.lucene.ephemeral",
                 "unsupported.dbms.recovery.ignore_store_id_validation",
@@ -457,7 +455,6 @@ public final class SettingMigrators {
                         "unsupported.dbms.io.controller.consider.external.enabled",
                         "internal.dbms.io.controller.consider.external.enabled"),
                 new Mapping("unsupported.dbms.kernel_id", "internal.dbms.kernel_id"),
-                new Mapping("unsupported.dbms.large_cluster.enable", "internal.dbms.large_cluster.enable"),
                 new Mapping("unsupported.dbms.lock_manager", "internal.dbms.lock_manager"),
                 new Mapping(
                         "unsupported.dbms.lock_manager.verbose_deadlocks",
@@ -549,7 +546,6 @@ public final class SettingMigrators {
             migrateGroupSpatialSettings(values, defaultValues, log);
             migrateCheckpointSettings(values, defaultValues, log);
             migrateKeepAliveSetting(values, defaultValues, log);
-            migrateRefuseToBeALeader(values, defaultValues, log);
             migrateReadOnlySetting(values, defaultValues, log);
             migrateDatabaseMaxSize(values, defaultValues, log);
             migrateCypherNamespace(values, defaultValues, log);
@@ -879,18 +875,6 @@ public final class SettingMigrators {
                     log,
                     "dbms.connector.bolt.connection_keep_alive_scheduling_interval",
                     BoltConnector.connection_keep_alive_streaming_scheduling_interval);
-        }
-
-        private static void migrateRefuseToBeALeader(
-                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            final var refuseToBeLeader = "causal_clustering.refuse_to_be_leader";
-            final var refuseToBeLeaderValue = values.get(refuseToBeLeader);
-            if (isNotBlank(refuseToBeLeaderValue)) {
-                log.warn(
-                        "The setting '" + refuseToBeLeader + "' is deprecated. Use please '%s' as a replacement",
-                        read_only_database_default.name());
-            }
-            migrateSettingNameChange(values, log, refuseToBeLeader, read_only_database_default);
         }
 
         private static void migrateReadOnlySetting(

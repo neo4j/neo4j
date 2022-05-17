@@ -392,20 +392,6 @@ class SettingMigratorsTest {
     }
 
     @Test
-    void refuseToBeLeaderShouldBeMigrated() throws IOException {
-        // given
-        Path confFile = testDirectory.createFile("test.conf");
-        Files.write(confFile, List.of("causal_clustering.refuse_to_be_leader=true"));
-
-        // when
-        Config config = Config.newBuilder().fromFile(confFile).build();
-
-        // then
-        assertThat(config.get(read_only_database_default)).isTrue();
-        assertThat(Config.defaults().get(read_only_database_default)).isFalse();
-    }
-
-    @Test
     void readOnlySettingMigration() throws IOException {
         var configuration = testDirectory.createFile("test.conf");
         Files.write(configuration, List.of("dbms.read_only=true"));
@@ -426,7 +412,7 @@ class SettingMigratorsTest {
     @Test
     void removedSettingMigration() throws IOException {
         var configuration = testDirectory.createFile("test.conf");
-        Files.write(configuration, List.of("causal_clustering.multi_dc_license=foo"));
+        Files.write(configuration, List.of("dbms.allow_upgrade=false"));
 
         var logProvider = new AssertableLogProvider();
         var config = Config.newBuilder().fromFile(configuration).build();
@@ -435,8 +421,7 @@ class SettingMigratorsTest {
         assertThat(logProvider)
                 .forClass(Config.class)
                 .forLevel(WARN)
-                .containsMessages(
-                        "Setting 'causal_clustering.multi_dc_license' is removed. It no longer has any effect.");
+                .containsMessages("Setting 'dbms.allow_upgrade' is removed. It no longer has any effect.");
     }
 
     @Test
