@@ -76,6 +76,8 @@ public class NullAstFactory
                 NULL,
                 NULL,
                 NULL,
+                NULL,
+                NULL,
                 NULL> {
 
     @Override
@@ -638,7 +640,7 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL everyPathPattern(List<NULL> nodes, List<NULL> relationships) {
+    public NULL everyPathPattern(List<NULL> atoms) {
         return null;
     }
 
@@ -662,6 +664,32 @@ public class NullAstFactory
 
     @Override
     public NULL pathLength(NULL p, NULL pMin, NULL pMax, String minLength, String maxLength) {
+        return null;
+    }
+
+    @Override
+    public NULL intervalPathQuantifier(
+            NULL p, NULL posLowerBound, NULL posUpperBound, String lowerBound, String upperBound) {
+        return null;
+    }
+
+    @Override
+    public NULL fixedPathQuantifier(NULL p, NULL valuePos, String value) {
+        return null;
+    }
+
+    @Override
+    public NULL plusPathQuantifier(NULL p) {
+        return null;
+    }
+
+    @Override
+    public NULL starPathQuantifier(NULL p) {
+        return null;
+    }
+
+    @Override
+    public NULL parenthesizedPathPattern(NULL p, NULL internalPattern, NULL aNull) {
         return null;
     }
 

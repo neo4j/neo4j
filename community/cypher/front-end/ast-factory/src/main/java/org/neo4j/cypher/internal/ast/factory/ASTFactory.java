@@ -45,8 +45,8 @@ public interface ASTFactory<
                 RETURN_ITEMS,
                 ORDER_ITEM,
                 PATTERN,
-                NODE_PATTERN,
-                REL_PATTERN,
+                NODE_PATTERN extends PATTERN_ATOM,
+                REL_PATTERN extends PATTERN_ATOM,
                 PATH_LENGTH,
                 SET_CLAUSE extends CLAUSE,
                 SET_ITEM,
@@ -74,7 +74,9 @@ public interface ASTFactory<
                 PRIVILEGE_QUALIFIER,
                 SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
                 POS,
-                ENTITY_TYPE>
+                ENTITY_TYPE,
+                PATH_PATTERN_QUANTIFIER,
+                PATTERN_ATOM>
         extends ASTExpressionFactory<
                 EXPRESSION,
                 LABEL_EXPRESSION,
@@ -204,7 +206,7 @@ public interface ASTFactory<
 
     PATTERN allShortestPathsPattern(POS p, PATTERN pattern);
 
-    PATTERN everyPathPattern(List<NODE_PATTERN> nodes, List<REL_PATTERN> relationships);
+    PATTERN everyPathPattern(List<PATTERN_ATOM> atoms);
 
     NODE_PATTERN nodePattern(
             POS p, VARIABLE v, LABEL_EXPRESSION labelExpression, EXPRESSION properties, EXPRESSION predicate);
@@ -233,6 +235,17 @@ public interface ASTFactory<
      *     [*..]        ""          ""      <- separate from [*] to allow specific error messages
      */
     PATH_LENGTH pathLength(POS p, POS pMin, POS pMax, String minLength, String maxLength);
+
+    PATH_PATTERN_QUANTIFIER intervalPathQuantifier(
+            POS p, POS posLowerBound, POS posUpperBound, String lowerBound, String upperBound);
+
+    PATH_PATTERN_QUANTIFIER fixedPathQuantifier(POS p, POS valuePos, String value);
+
+    PATH_PATTERN_QUANTIFIER plusPathQuantifier(POS p);
+
+    PATH_PATTERN_QUANTIFIER starPathQuantifier(POS p);
+
+    PATTERN_ATOM parenthesizedPathPattern(POS p, PATTERN internalPattern, PATH_PATTERN_QUANTIFIER quantifier);
 
     CLAUSE loadCsvClause(POS p, boolean headers, EXPRESSION source, VARIABLE v, String fieldTerminator);
 

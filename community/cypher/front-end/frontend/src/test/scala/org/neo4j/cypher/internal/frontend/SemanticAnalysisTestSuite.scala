@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext
 import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
@@ -34,6 +35,8 @@ case class SemanticAnalysisResult(context: ErrorCollectingContext, state: BaseSt
   def errors: Seq[SemanticErrorDef] = context.errors
 
   def errorMessages: Seq[String] = errors.map(_.msg)
+
+  def semanticTable: SemanticTable = state.semanticTable()
 }
 
 trait SemanticAnalysisTestSuite {
@@ -76,6 +79,8 @@ trait SemanticAnalysisTestSuiteWithDefaultQuery extends SemanticAnalysisTestSuit
 
   def runSemanticAnalysis(): SemanticAnalysisResult = runSemanticAnalysis(defaultQuery)
 
+  def runSemanticAnalysisWithSemanticFeatures(semanticFeatures: SemanticFeature*): SemanticAnalysisResult =
+    runSemanticAnalysisWithSemanticFeatures(semanticFeatures, defaultQuery)
 }
 
 trait NameBasedSemanticAnalysisTestSuite extends SemanticAnalysisTestSuiteWithDefaultQuery with TestName {

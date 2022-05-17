@@ -237,6 +237,9 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
               MultiRelationshipPathStep(rel.get.copyId, direction, to.variable.map(_.copyId), step)(rc.position)
             )
         }
+
+      case _ =>
+        throw new IllegalArgumentException("Quantified path patterns in a named path are not allowed at the moment.")
     }
   }
 

@@ -58,44 +58,46 @@ import org.neo4j.values.virtual.VirtualValues;
  */
 public class LiteralInterpreter
         implements ASTFactory<
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                Object,
-                NULL,
-                Object,
-                Object,
-                Object,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL> {
+                NULL, // STATEMENT,
+                NULL, // QUERY extends STATEMENT,
+                NULL, // CLAUSE,
+                NULL, // RETURN_CLAUSE extends CLAUSE,
+                NULL, // RETURN_ITEM,
+                NULL, // RETURN_ITEMS,
+                NULL, // ORDER_ITEM,
+                NULL, // PATTERN,
+                NULL, // NODE_PATTERN extends PATTERN_ATOM,
+                NULL, // REL_PATTERN extends PATTERN_ATOM,
+                NULL, // PATH_LENGTH,
+                NULL, // SET_CLAUSE extends CLAUSE,
+                NULL, // SET_ITEM,
+                NULL, // REMOVE_ITEM,
+                NULL, // CALL_RESULT_ITEM,
+                NULL, // HINT,
+                Object, // EXPRESSION,
+                NULL, // LABEL_EXPRESSION,
+                Object, // PARAMETER extends EXPRESSION,
+                Object, // VARIABLE extends EXPRESSION,
+                Object, // PROPERTY extends EXPRESSION,
+                NULL, // MAP_PROJECTION_ITEM,
+                NULL, // USE_GRAPH extends CLAUSE,
+                NULL, // STATEMENT_WITH_GRAPH extends STATEMENT,
+                NULL, // ADMINISTRATION_COMMAND extends STATEMENT_WITH_GRAPH,
+                NULL, // SCHEMA_COMMAND extends STATEMENT_WITH_GRAPH,
+                NULL, // YIELD extends CLAUSE,
+                NULL, // WHERE,
+                NULL, // DATABASE_SCOPE,
+                NULL, // WAIT_CLAUSE,
+                NULL, // ADMINISTRATION_ACTION,
+                NULL, // GRAPH_SCOPE,
+                NULL, // PRIVILEGE_TYPE,
+                NULL, // PRIVILEGE_RESOURCE,
+                NULL, // PRIVILEGE_QUALIFIER,
+                NULL, // SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
+                NULL, // POS,
+                NULL, // ENTITY_TYPE,
+                NULL, // PATH_PATTERN_LENGTH,
+                NULL> { // PATTERN_ATOM>
 
     public static final ZoneId DEFAULT_ZONE_ID = ZoneId.systemDefault();
     public static final String LONG_MIN_VALUE_DECIMAL_STRING =
@@ -300,7 +302,7 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL everyPathPattern(List<NULL> nodes, List<NULL> relationships) {
+    public NULL everyPathPattern(List<NULL> atoms) {
         throw new UnsupportedOperationException("everyPathPattern is not a literal");
     }
 
@@ -325,6 +327,32 @@ public class LiteralInterpreter
     @Override
     public NULL pathLength(NULL p, NULL pMin, NULL mMax, String minLength, String maxLength) {
         throw new UnsupportedOperationException("pathLength is not a literal");
+    }
+
+    @Override
+    public NULL intervalPathQuantifier(
+            NULL p, NULL posLowerBound, NULL posUpperBound, String lowerBound, String upperBound) {
+        throw new UnsupportedOperationException("intervalPathQuantifier is not a literal");
+    }
+
+    @Override
+    public NULL fixedPathQuantifier(NULL p, NULL valuePos, String value) {
+        throw new UnsupportedOperationException("fixedPathQuantifier is not a literal");
+    }
+
+    @Override
+    public NULL plusPathQuantifier(NULL p) {
+        throw new UnsupportedOperationException("plusPathQuantifier is not a literal");
+    }
+
+    @Override
+    public NULL starPathQuantifier(NULL p) {
+        throw new UnsupportedOperationException("starPathQuantifier is not a literal");
+    }
+
+    @Override
+    public NULL parenthesizedPathPattern(NULL p, NULL internalPattern, NULL aNull) {
+        throw new UnsupportedOperationException("parenthesizedPathPattern is not a literal");
     }
 
     @Override

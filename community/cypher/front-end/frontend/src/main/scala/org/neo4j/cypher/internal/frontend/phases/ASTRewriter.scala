@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.replaceLiteralDynamicProper
 import org.neo4j.cypher.internal.rewriting.rewriters.rewriteCountExpression
 import org.neo4j.cypher.internal.rewriting.rewriters.rewriteOrderById
 import org.neo4j.cypher.internal.rewriting.rewriters.simplifyIterablePredicates
+import org.neo4j.cypher.internal.rewriting.rewriters.unwrapParenthesizedPath
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -80,7 +81,8 @@ object ASTRewriter {
         parameterValueTypeReplacement,
         rewriteOrderById,
         LabelExpressionPredicateNormalizer,
-        rewriteCountExpression
+        rewriteCountExpression,
+        unwrapParenthesizedPath
       ),
       initialConditions = Set(ProjectionClausesHaveSemanticInfo, PatternExpressionsHaveSemanticInfo)
     )

@@ -20,10 +20,10 @@ import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
-import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -71,7 +71,7 @@ class FindDuplicateRelationshipsTest extends CypherFunSuite {
   }
 
   private def relChain(ids: Variable*) =
-    ids.foldLeft(node.asInstanceOf[PatternElement]) {
+    ids.foldLeft(node.asInstanceOf[SimplePattern]) {
       (n, id) => expressions.RelationshipChain(n, relPattern(id), node)(pos)
     }
 

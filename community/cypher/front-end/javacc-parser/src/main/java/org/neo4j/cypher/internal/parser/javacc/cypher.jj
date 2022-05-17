@@ -1,4 +1,22 @@
-
+/*
+ * Copyright (c) 2002-2019 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 options {
   LOOKAHEAD = 1;
   CHOICE_AMBIGUITY_CHECK = 2;
@@ -72,8 +90,8 @@ public class Cypher<STATEMENT,
                     RETURN_ITEMS,
                     ORDER_ITEM,
                     PATTERN,
-                    NODE_PATTERN,
-                    REL_PATTERN,
+                    NODE_PATTERN extends PATTERN_ATOM,
+                    REL_PATTERN extends PATTERN_ATOM,
                     PATH_LENGTH,
                     SET_CLAUSE extends CLAUSE,
                     SET_ITEM,
@@ -101,7 +119,9 @@ public class Cypher<STATEMENT,
                     PRIVILEGE_QUALIFIER,
                     SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
                     POS,
-                    ENTITY_TYPE> {
+                    ENTITY_TYPE,
+                    PATTERN_QUANTIFIER,
+                    PATTERN_ATOM> {
 
     ASTExceptionFactory exceptionFactory;
     ASTFactory<STATEMENT,
@@ -141,7 +161,9 @@ public class Cypher<STATEMENT,
                PRIVILEGE_QUALIFIER,
                SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
                POS,
-               ENTITY_TYPE> astFactory;
+               ENTITY_TYPE,
+               PATTERN_QUANTIFIER,
+               PATTERN_ATOM> astFactory;
     // to distinguish a bar that follows a label expression from the or-operator as part of a label expression, this stack keeps track of the current context
     Stack<ExpectBar> labelExpressionStack = new Stack<>();
 
@@ -182,7 +204,9 @@ public class Cypher<STATEMENT,
                              PRIVILEGE_QUALIFIER,
                              SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
                              POS,
-                             ENTITY_TYPE> astFactory,
+                             ENTITY_TYPE,
+                             PATTERN_QUANTIFIER,
+                             PATTERN_ATOM> astFactory,
                   ASTExceptionFactory exceptionFactory,
                   CharStream stream) {
         this(stream);
@@ -2088,6 +2112,24 @@ PATTERN Pattern() :
     | p=AnonymousPattern() { return p; }
 }
 
+PATTERN_QUANTIFIER Quantifier() :
+{
+    Token range;
+    Token l = null;
+    Token u = null;
+}
+{
+    LOOKAHEAD(3)
+    range = <LCURLY> l=<UNSIGNED_DECIMAL_INTEGER> <RCURLY> {
+        return astFactory.fixedPathQuantifier(pos(range), pos(l), l.image);
+    }
+    | range = <LCURLY> ( l=<UNSIGNED_DECIMAL_INTEGER> )? "," ( u=<UNSIGNED_DECIMAL_INTEGER> )? <RCURLY> {
+        return astFactory.intervalPathQuantifier(pos(range), pos(l), pos(u), l == null ? null : l.image, u == null ? null : u.image);
+    }
+    | range = <PLUS> { return astFactory.plusPathQuantifier(pos(range)); }
+    | range = <TIMES> { return astFactory.starPathQuantifier(pos(range)); }
+}
+
 PATTERN AnonymousPattern() :
 {
     PATTERN p;
@@ -2096,7 +2138,6 @@ PATTERN AnonymousPattern() :
     (
         p=ShortestPathPattern()
         | LOOKAHEAD( 3 ) p=EveryPathPattern()
-        | <LPAREN> p=AnonymousPattern() <RPAREN>
     )
     {
         return p;
@@ -2117,40 +2158,48 @@ PATTERN EveryPathPattern() :
 {
     NODE_PATTERN n;
     REL_PATTERN r;
-    List<REL_PATTERN> relationships = new ArrayList<>();
-    List<NODE_PATTERN> nodes = new ArrayList<>();
+    PATTERN_ATOM parenthesizedAtom;
+    List<PATTERN_ATOM> patternAtoms = new ArrayList<>();
     labelExpressionStack.push(ExpectBar.DO_NOT_EXPECT_BAR);
 }
 {
-    n=NodePattern() { nodes.add( n ); }
-    (
-        LOOKAHEAD( 2 ) r=RelationshipPattern() { relationships.add( r ); }
-        n=NodePattern() { nodes.add( n ); }
-    )*
-    {
+      (
+            (
+                LOOKAHEAD(3)
+                (
+                    n=NodePattern() { patternAtoms.add( n ); }
+                    (
+                        LOOKAHEAD( 2 ) r=RelationshipPattern() { patternAtoms.add( r ); }
+                        n=NodePattern() { patternAtoms.add( n ); }
+                    )*
+                ) |
+                (
+                    parenthesizedAtom = ParenthesizedPath() { patternAtoms.add( parenthesizedAtom ); }
+                )
+            )+
+      ) {
         labelExpressionStack.pop();
-        return astFactory.everyPathPattern( nodes, relationships );
-    }
+        return astFactory.everyPathPattern( patternAtoms );
+      }
 }
 
 PATTERN EveryPathPatternNonEmpty() :
 {
     NODE_PATTERN n;
     REL_PATTERN r;
-    List<REL_PATTERN> relationships = new ArrayList<>();
-    List<NODE_PATTERN> nodes = new ArrayList<>();
+    List<PATTERN_ATOM> patternAtoms = new ArrayList<>();
     labelExpressionStack.push(ExpectBar.DO_NOT_EXPECT_BAR);
 }
 {
-    n=NodePattern() { nodes.add( n ); }
-    (
-        LOOKAHEAD( 2 ) r=RelationshipPattern() {relationships.add( r );}
-        n=NodePattern() { nodes.add( n ); }
-    )+
-    {
+      n=NodePattern() { patternAtoms.add( n ); }
+      (
+        LOOKAHEAD( 2 ) r=RelationshipPattern() {patternAtoms.add( r );}
+        n=NodePattern() { patternAtoms.add( n ); }
+      )+
+      {
         labelExpressionStack.pop();
-        return astFactory.everyPathPattern( nodes, relationships );
-    }
+        return astFactory.everyPathPattern( patternAtoms );
+      }
 }
 
 NODE_PATTERN NodePattern() :
@@ -2170,6 +2219,20 @@ NODE_PATTERN NodePattern() :
     <RPAREN>
     {
         return astFactory.nodePattern( pos( t ), v, labelExpression, properties, predicate );
+    }
+}
+
+PATTERN_ATOM ParenthesizedPath() :
+{
+    Token t;
+    PATTERN p;
+    VARIABLE v;
+    PATTERN_QUANTIFIER quantifier = null;
+}
+{
+    t = <LPAREN> p = Pattern() <RPAREN> ( quantifier=Quantifier() )?
+    {
+        return astFactory.parenthesizedPathPattern( pos(t), p, quantifier );
     }
 }
 
@@ -2494,6 +2557,10 @@ EXPRESSION Expression9() :
     }
 }
 
+/**
+ * Implements comparison operation chaining. That is that expressions like `a < b < c` are interpreted as `a < b AND b < c`.
+ * See https://neo4j.com/docs/cypher-manual/current/syntax/operators/#cypher-operations-chaining
+ */
 EXPRESSION Expression8() :
 {
     Token t;

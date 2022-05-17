@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
@@ -44,6 +45,11 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
     TestCase(
       "MATCH (n), (x) WITH n AS n MATCH (x) RETURN n AS n, x AS x",
       "MATCH (n), (`  x@0`) WITH n AS n MATCH (`  x@1`) RETURN n AS n, `  x@1` AS `  x@1`",
+      List(varFor("  x@0"), varFor("  x@1"))
+    ),
+    TestCase(
+      "MATCH (a) ((x)-->(y))+ WHERE x = 0 WITH '1' as x WHERE y IS NOT NULL RETURN x",
+      "MATCH (a) ((`  x@0`)-->(y))+ WHERE `  x@0` = 0 WITH '1' as `  x@1` WHERE y IS NOT NULL RETURN `  x@1`",
       List(varFor("  x@0"), varFor("  x@1"))
     ),
     TestCase(
@@ -231,7 +237,12 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
   tests.foreach {
     case TestCase(q, rewritten, semanticTableExpressions) =>
       test(q) {
-        assertRewritten(q.replace("\r\n", "\n"), rewritten, semanticTableExpressions)
+        assertRewritten(
+          q.replace("\r\n", "\n"),
+          rewritten,
+          semanticTableExpressions,
+          SemanticFeature.QuantifiedPathPatterns
+        )
       }
     case TestCaseWithStatement(q, rewritten, semanticTableExpressions) =>
       test(q) {

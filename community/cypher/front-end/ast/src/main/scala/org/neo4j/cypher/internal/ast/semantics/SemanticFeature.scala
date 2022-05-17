@@ -40,12 +40,17 @@ object SemanticFeature {
   case object ExpressionsInViewInvocations extends SemanticFeature
   case object WithInitialQuerySignature extends SemanticFeature
 
+  case object QuantifiedPathPatterns extends SemanticFeature with FeatureToString {
+    override def name: String = "Quantified path patterns"
+  }
+
   private val allSemanticFeatures = Set(
     MultipleDatabases,
     MultipleGraphs,
     UseGraphSelector,
     ExpressionsInViewInvocations,
-    WithInitialQuerySignature
+    WithInitialQuerySignature,
+    QuantifiedPathPatterns
   )
 
   def fromString(str: String): SemanticFeature =

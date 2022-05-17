@@ -18,12 +18,12 @@ package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.expressions.ShortestPaths
+import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -64,7 +64,7 @@ class ShortestPathExpressionTest extends SemanticFunSuite {
     (ShortestPathExpression(ShortestPaths(pattern, single)(pos)), state)
   }
 
-  private def chain(left: PatternElement, rel: RelationshipPattern, right: NodePattern): RelationshipChain = {
+  private def chain(left: SimplePattern, rel: RelationshipPattern, right: NodePattern): RelationshipChain = {
     expressions.RelationshipChain(left, rel, right)(pos)
   }
 

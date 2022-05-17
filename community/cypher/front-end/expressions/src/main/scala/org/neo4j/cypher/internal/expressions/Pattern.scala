@@ -51,18 +51,23 @@ case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) 
 case class RelationshipsPattern(element: RelationshipChain)(val position: InputPosition) extends ASTNode
 
 sealed abstract class PatternPart extends ASTNode {
+  def allVariables: Set[LogicalVariable]
   def element: PatternElement
 }
 
 case class NamedPatternPart(variable: Variable, patternPart: AnonymousPatternPart)(val position: InputPosition)
     extends PatternPart {
-  def element: PatternElement = patternPart.element
+  override def element: PatternElement = patternPart.element
+
+  override def allVariables: Set[LogicalVariable] = patternPart.allVariables + variable
 }
 
-sealed trait AnonymousPatternPart extends PatternPart
+sealed trait AnonymousPatternPart extends PatternPart {
+  override def allVariables: Set[LogicalVariable] = element.allVariables
+}
 
 case class EveryPath(element: PatternElement) extends AnonymousPatternPart {
-  def position = element.position
+  override def position: InputPosition = element.position
 }
 
 case class ShortestPaths(element: PatternElement, single: Boolean)(val position: InputPosition)
@@ -75,6 +80,47 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
       "allShortestPaths"
 }
 
+/**
+ * Contains a list of elements that are concatenated in the query.
+ *
+ * NOTE that the concatenation is recorded only in the order of the factors in the sequence.
+ * That is that `factors(i)` is concatenated with `factors(i - 1)` and `factors(i + 1)` if they exist.
+ */
+case class PathConcatenation(factors: Seq[PathFactor])(val position: InputPosition) extends PatternElement {
+  override def allVariables: Set[LogicalVariable] = factors.flatMap(_.allVariables).toSet
+
+  override def variable: Option[LogicalVariable] = None
+}
+
+/**
+ * Elements of this trait can be put next to each other to form a juxtaposition in a pattern.
+ */
+sealed trait PathFactor extends PatternElement
+
+sealed trait PatternAtom extends ASTNode
+
+case class QuantifiedPath(
+  part: PatternPart,
+  quantifier: GraphPatternQuantifier
+)(val position: InputPosition)
+    extends PathFactor with PatternAtom {
+
+  override def allVariables: Set[LogicalVariable] = part.allVariables
+
+  override def variable: Option[LogicalVariable] = None
+}
+
+// We can currently parse these but not plan them. Therefore, we represent them in the AST but disallow them in semantic checking when concatenated.
+case class ParenthesizedPath(
+  part: PatternPart
+)(val position: InputPosition)
+    extends PathFactor with PatternAtom {
+
+  override def allVariables: Set[LogicalVariable] = part.element.allVariables
+
+  override def variable: Option[LogicalVariable] = None
+}
+
 sealed abstract class PatternElement extends ASTNode {
   def allVariables: Set[LogicalVariable]
   def variable: Option[LogicalVariable]
@@ -82,14 +128,19 @@ sealed abstract class PatternElement extends ASTNode {
   def isSingleNode = false
 }
 
+/**
+ * A part of the pattern that consists of alternating nodes and relationships, starting and ending in a node.
+ */
+sealed abstract class SimplePattern extends PathFactor
+
 case class RelationshipChain(
-  element: PatternElement,
+  element: SimplePattern,
   relationship: RelationshipPattern,
   rightNode: NodePattern
 )(val position: InputPosition)
-    extends PatternElement {
+    extends SimplePattern {
 
-  def variable: Option[LogicalVariable] = relationship.variable
+  override def variable: Option[LogicalVariable] = relationship.variable
 
   override def allVariables: Set[LogicalVariable] = element.allVariables ++ relationship.variable ++ rightNode.variable
 
@@ -120,7 +171,7 @@ case class NodePattern(
   properties: Option[Expression],
   predicate: Option[Expression]
 )(val position: InputPosition)
-    extends PatternElement {
+    extends SimplePattern with PatternAtom {
 
   override def allVariables: Set[LogicalVariable] = variable.toSet
 
@@ -134,7 +185,7 @@ case class RelationshipPattern(
   properties: Option[Expression],
   predicate: Option[Expression],
   direction: SemanticDirection
-)(val position: InputPosition) extends ASTNode {
+)(val position: InputPosition) extends ASTNode with PatternAtom {
 
   def isSingleLength: Boolean = length.isEmpty
 

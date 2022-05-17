@@ -20,11 +20,14 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelExpression
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.ParenthesizedPath
+import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.PathStep
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SymbolicName
@@ -76,6 +79,15 @@ private class PrettyExpressionStringifier(inner: ExpressionStringifier) extends 
 
     override def apply(relationship: RelationshipPattern): String =
       innerPatterns.apply(relationship.endoRewrite(simplifyPattern))
+
+    override def apply(concatenation: PathConcatenation): String =
+      innerPatterns.apply(concatenation.endoRewrite(simplifyPattern))
+
+    override def apply(quantified: QuantifiedPath): String =
+      innerPatterns.apply(quantified.endoRewrite(simplifyPattern))
+
+    override def apply(path: ParenthesizedPath): String =
+      innerPatterns.apply(path.endoRewrite(simplifyPattern))
   }
 
   override def pathSteps: PathStepStringifier = new PathStepStringifier {

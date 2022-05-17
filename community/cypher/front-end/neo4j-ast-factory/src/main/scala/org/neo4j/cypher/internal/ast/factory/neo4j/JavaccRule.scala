@@ -24,8 +24,11 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.factory.ParameterType
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.PatternAtom
+import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.parser.javacc.Cypher
@@ -62,8 +65,11 @@ object JavaccRule {
   def NodePattern: JavaccRule[NodePattern] = fromParser(_.NodePattern())
   def NumberLiteral: JavaccRule[Expression] = fromParser(_.NumberLiteral())
   def Parameter: JavaccRule[Parameter] = fromParser(_.Parameter(ParameterType.ANY))
+  def ParenthesizedPath: JavaccRule[PatternAtom] = fromParser(_.ParenthesizedPath())
   def PatternComprehension: JavaccRule[Expression] = fromParser(_.PatternComprehension())
+  def Quantifier: JavaccRule[GraphPatternQuantifier] = fromParser(_.Quantifier())
   def RelationshipPattern: JavaccRule[RelationshipPattern] = fromParser(_.RelationshipPattern())
+  def PatternPart: JavaccRule[PatternPart] = fromParser(_.Pattern())
   def Statement: JavaccRule[Statement] = fromParser(_.Statement())
   def UseClause: JavaccRule[UseGraph] = fromParser(_.UseClause())
 

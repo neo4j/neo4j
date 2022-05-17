@@ -314,11 +314,14 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ExtractScope
 import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.FilterScope
+import org.neo4j.cypher.internal.expressions.FixedQuantifier
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.IntervalQuantifier
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
@@ -348,17 +351,21 @@ import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.PathConcatenation
+import org.neo4j.cypher.internal.expressions.PathFactor
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.PlusQuantifier
 import org.neo4j.cypher.internal.expressions.Pow
 import org.neo4j.cypher.internal.expressions.ProcedureName
 import org.neo4j.cypher.internal.expressions.ProcedureOutput
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertySelector
+import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.ReduceExpression
@@ -378,7 +385,9 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.SingleIterablePredicate
+import org.neo4j.cypher.internal.expressions.StarQuantifier
 import org.neo4j.cypher.internal.expressions.StartsWith
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Subtract
@@ -931,14 +940,49 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield RelationshipPattern(variable, labelExpression, length, properties, predicate, direction)(pos)
 
   def _relationshipChain: Gen[RelationshipChain] = for {
-    element <- _patternElement
+    element <- _pathPrimary
     relationship <- _relationshipPattern
     rightNode <- _nodePattern
   } yield RelationshipChain(element, relationship, rightNode)(pos)
 
-  def _patternElement: Gen[PatternElement] = oneOf(
+  def _pathPrimary: Gen[SimplePattern] = oneOf(
     _nodePattern,
     lzy(_relationshipChain)
+  )
+
+  def _generalQuantifier: Gen[IntervalQuantifier] = for {
+    lower <- option(_unsignedDecIntLit)
+    upper <- option(_unsignedDecIntLit)
+  } yield IntervalQuantifier(lower, upper)(pos)
+
+  def _fixedQuantifier: Gen[FixedQuantifier] = for {
+    value <- _unsignedDecIntLit
+  } yield FixedQuantifier(value)(pos)
+
+  def _quantifier: Gen[GraphPatternQuantifier] = oneOf(
+    const(StarQuantifier()(pos)),
+    const(PlusQuantifier()(pos)),
+    _generalQuantifier,
+    _fixedQuantifier
+  )
+
+  def _quantifiedPath: Gen[QuantifiedPath] = for {
+    primary <- _pathFactor
+    quantifier <- _quantifier
+  } yield QuantifiedPath(EveryPath(primary), quantifier)(pos)
+
+  def _pathFactor: Gen[PathFactor] = oneOf(
+    lzy(_quantifiedPath),
+    lzy(_pathPrimary)
+  )
+
+  def _pathConcatenation: Gen[PathConcatenation] = for {
+    elements <- twoOrMore(_pathFactor)
+  } yield PathConcatenation(elements)(pos)
+
+  def _patternElement: Gen[PatternElement] = oneOf(
+    lzy(_pathFactor),
+    lzy(_pathConcatenation)
   )
 
   def _anonPatternPart: Gen[AnonymousPatternPart] = for {

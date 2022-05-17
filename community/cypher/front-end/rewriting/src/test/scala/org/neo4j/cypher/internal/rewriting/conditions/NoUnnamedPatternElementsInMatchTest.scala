@@ -26,12 +26,12 @@ import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
-import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -188,7 +188,7 @@ class NoUnnamedPatternElementsInMatchTest extends CypherFunSuite with AstConstru
     condition(ast) shouldBe empty
   }
 
-  private def chain(left: PatternElement, rel: RelationshipPattern, right: NodePattern): RelationshipChain = {
+  private def chain(left: SimplePattern, rel: RelationshipPattern, right: NodePattern): RelationshipChain = {
     RelationshipChain(left, rel, right) _
   }
 

@@ -18,16 +18,23 @@ package org.neo4j.cypher.internal.ast.prettifier
 
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FixedQuantifier
+import org.neo4j.cypher.internal.expressions.IntervalQuantifier
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.ParenthesizedPath
+import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.PlusQuantifier
+import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.ShortestPaths
+import org.neo4j.cypher.internal.expressions.StarQuantifier
 
 trait PatternStringifier {
   def apply(p: Pattern): String
@@ -36,6 +43,9 @@ trait PatternStringifier {
   def apply(nodePattern: NodePattern): String
   def apply(relationshipChain: RelationshipChain): String
   def apply(relationship: RelationshipPattern): String
+  def apply(concatenation: PathConcatenation): String
+  def apply(quantified: QuantifiedPath): String
+  def apply(path: ParenthesizedPath): String
 }
 
 object PatternStringifier {
@@ -56,6 +66,9 @@ private class DefaultPatternStringifier(expr: ExpressionStringifier) extends Pat
   override def apply(element: PatternElement): String = element match {
     case r: RelationshipChain => apply(r)
     case n: NodePattern       => apply(n)
+    case c: PathConcatenation => apply(c)
+    case q: QuantifiedPath    => apply(q)
+    case p: ParenthesizedPath => apply(p)
   }
 
   override def apply(nodePattern: NodePattern): String = {
@@ -113,6 +126,26 @@ private class DefaultPatternStringifier(expr: ExpressionStringifier) extends Pat
       case SemanticDirection.INCOMING => s"<-$body-"
       case SemanticDirection.BOTH     => s"-$body-"
     }
+  }
+
+  override def apply(concatenation: PathConcatenation): String =
+    concatenation.factors.map(apply).mkString(" ")
+
+  override def apply(quantified: QuantifiedPath): String = {
+    val inner = apply(quantified.part)
+    val quantifier = quantified.quantifier match {
+      case StarQuantifier() => "*"
+      case PlusQuantifier() => "+"
+      case IntervalQuantifier(lower, upper) =>
+        s"{${lower.map(_.stringVal).getOrElse("")}, ${upper.map(_.stringVal).getOrElse("")}}"
+      case FixedQuantifier(value) => s"{${value.stringVal}}"
+    }
+    s"($inner)$quantifier"
+  }
+
+  override def apply(path: ParenthesizedPath): String = {
+    val inner = apply(path.part)
+    s"($inner)"
   }
 
   private def concatenate(separator: String, fragments: Seq[Option[String]]): Option[String] =
