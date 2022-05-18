@@ -39,7 +39,7 @@ public class StringEncoder implements Encoder {
         int inputLength = s.length();
         byte[] bytes = new byte[inputLength];
         for (int i = 0; i < inputLength; i++) {
-            bytes[i] = (byte) ((s.charAt(i)) % 256);
+            bytes[i] = (byte) ((s.charAt(i)) % 127);
         }
         if (inputLength <= ENCODING_THRESHOLD) {
             return simplestCode(bytes, inputLength);

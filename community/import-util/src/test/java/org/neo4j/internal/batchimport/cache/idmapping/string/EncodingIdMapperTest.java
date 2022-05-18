@@ -169,6 +169,21 @@ public class EncodingIdMapperTest {
         assertEquals(-1L, mapper.get("", Group.GLOBAL));
     }
 
+    @Test
+    public void shouldFindEncodedShortStringsWithNonAscii() {
+        // GIVEN
+        IdMapper mapper = mapper(new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR, 1);
+
+        // WHEN
+        mapper.put("P_Évora", 0, Group.GLOBAL);
+        mapper.put("P_Setúbal", 1, Group.GLOBAL);
+        mapper.prepare(null, mock(Collector.class), NONE);
+
+        // THEN
+        assertEquals(1L, mapper.get("P_Setúbal", Group.GLOBAL));
+        assertEquals(0L, mapper.get("P_Évora", Group.GLOBAL));
+    }
+
     @ParameterizedTest(name = "processors:{0}")
     @MethodSource("data")
     public void shouldEncodeSmallSetOfRandomData(int processors) {
