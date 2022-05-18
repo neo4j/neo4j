@@ -93,6 +93,12 @@ public interface TopologyGraphDbmsModel {
         draining
     }
 
+    enum InstanceModeConstraint {
+        primary,
+        secondary,
+        none
+    }
+
     Label DATABASE_LABEL = Label.label("Database");
     String DATABASE = DATABASE_LABEL.name();
     Label DELETED_DATABASE_LABEL = Label.label("DeletedDatabase");
