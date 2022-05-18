@@ -1835,11 +1835,39 @@ class CsvInputTest {
     }
 
     @Test
-    void shouldParseReferencedNodeSchema() throws FileNotFoundException {
+    void shouldParseReferencedNodeSchemaWithoutExplicitLabelOptionData() throws FileNotFoundException {
         // given
         Path file = directory.file("relationship-header");
         try (PrintWriter writer = new PrintWriter(file.toFile())) {
-            writer.println("myId:ID(My Group){label:Person,key:myId}\tname:string\t:LABEL");
+            writer.println("myId:ID(Person)\tname:string\t:LABEL");
+        }
+
+        try (var input = new CsvInput(
+                datas(DataFactories.data(NO_DECORATOR, Charset.defaultCharset(), file)),
+                defaultFormatNodeFileHeader(),
+                datas(),
+                defaultFormatRelationshipFileHeader(),
+                STRING,
+                TABS,
+                false,
+                NO_MONITOR,
+                INSTANCE)) {
+            // when
+            var tokenHolders = new TokenHolders(
+                    tokenHolder(Map.of("myId", 4)), tokenHolder(Map.of("Person", 2)), tokenHolder(Map.of()));
+            var schema = input.referencedNodeSchema(tokenHolders);
+
+            // then
+            Assertions.assertThat(schema).isEqualTo(Map.of("Person", SchemaDescriptors.forLabel(2, 4)));
+        }
+    }
+
+    @Test
+    void shouldParseReferencedNodeSchemaWithExplicitLabelOptionData() throws FileNotFoundException {
+        // given
+        Path file = directory.file("relationship-header");
+        try (PrintWriter writer = new PrintWriter(file.toFile())) {
+            writer.println("myId:ID(My Group){label:Person}\tname:string\t:LABEL");
         }
 
         try (var input = new CsvInput(

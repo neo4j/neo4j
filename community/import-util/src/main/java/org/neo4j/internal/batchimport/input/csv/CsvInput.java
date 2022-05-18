@@ -26,6 +26,7 @@ import static org.neo4j.internal.batchimport.input.InputEntityDecorators.NO_DECO
 import static org.neo4j.internal.batchimport.input.csv.CsvInputIterator.extractHeader;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.util.Preconditions.checkState;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -46,6 +47,7 @@ import org.neo4j.csv.reader.MultiReadable;
 import org.neo4j.internal.batchimport.InputIterable;
 import org.neo4j.internal.batchimport.InputIterator;
 import org.neo4j.internal.batchimport.input.Collector;
+import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.Input;
@@ -59,7 +61,6 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenConstants;
-import org.neo4j.util.Preconditions;
 
 /**
  * Provides {@link Input} from data contained in tabular/csv form. Expects factories for instantiating
@@ -364,15 +365,28 @@ public class CsvInput implements Input {
                 .filter(e -> e.type() == Type.ID)
                 .findAny()
                 .ifPresent(entry -> {
-                    Map<String, String> options = entry.rawOptions();
-                    String labelName = options.get("label");
-                    String keyName = options.get("key");
-                    int label = tokenHolders.labelTokens().getIdByName(labelName);
-                    int key = tokenHolders.propertyKeyTokens().getIdByName(keyName);
-                    Preconditions.checkState(label != TokenConstants.NO_TOKEN, "Label '%s' not found", labelName);
-                    Preconditions.checkState(key != TokenConstants.NO_TOKEN, "Property key '%s' not found", keyName);
-                    SchemaDescriptor prev = result.put(entry.group().name(), SchemaDescriptors.forLabel(label, key));
-                    Preconditions.checkState(prev == null, "Multiple indexes for group " + entry.group());
+                    var options = entry.rawOptions();
+                    var labelName = options.get("label");
+                    if (labelName == null) {
+                        // No explicit label specified, use the group name, if it's explicitly specified
+                        checkState(
+                                entry.group() != Group.GLOBAL,
+                                "No label was specified for the referenced node "
+                                        + "index schema definition and no explicit group was set in %s",
+                                entry);
+                        labelName = entry.group().name();
+                    }
+                    var keyName = entry.name();
+                    checkState(
+                            keyName != null,
+                            "No property key was specified for the referenced node index schema definition in %s",
+                            entry);
+                    var label = tokenHolders.labelTokens().getIdByName(labelName);
+                    var key = tokenHolders.propertyKeyTokens().getIdByName(keyName);
+                    checkState(label != TokenConstants.NO_TOKEN, "Label '%s' not found", labelName);
+                    checkState(key != TokenConstants.NO_TOKEN, "Property key '%s' not found", keyName);
+                    var prev = result.put(entry.group().name(), SchemaDescriptors.forLabel(label, key));
+                    checkState(prev == null, "Multiple indexes for group " + entry.group());
                 });
     }
 
