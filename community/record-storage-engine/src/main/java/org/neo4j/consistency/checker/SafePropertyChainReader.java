@@ -65,6 +65,7 @@ class SafePropertyChainReader implements AutoCloseable {
     private final CheckerContext context;
     private final NeoStores neoStores;
     private final boolean internalTokens;
+    private final FreeIdCache freeIdCache;
 
     SafePropertyChainReader(CheckerContext context, CursorContext cursorContext) {
         this(context, cursorContext, false);
@@ -85,6 +86,7 @@ class SafePropertyChainReader implements AutoCloseable {
         this.seenDynamicRecordIds = new LongHashSet();
         this.dynamicRecords = new ArrayList<>();
         this.internalTokens = checkInternalTokens;
+        this.freeIdCache = context.propertyFreeIdCache;
     }
 
     /**
@@ -120,6 +122,10 @@ class SafePropertyChainReader implements AutoCloseable {
                         .nextNotInUse(propertyRecord);
                 return false;
             } else {
+                if (freeIdCache.isIdFree(propertyRecordId)) {
+                    reporter.forProperty(propertyRecord).idIsFreed();
+                }
+
                 if (propertyRecord.getPrevProp() != previousRecordId) {
                     if (NULL_REFERENCE.is(previousRecordId)) {
                         primitiveReporter.apply(entity).propertyNotFirstInChain(propertyRecord);

@@ -299,6 +299,9 @@ public interface ConsistencyReport {
         @Documented("The next property record is not in use.")
         void nextNotInUse(PropertyRecord property);
 
+        @Documented("The property record is in use but the id is up for reuse in the id file.")
+        void idIsFreed();
+
         @Documented("The previous property record does not have this record as its next record.")
         void previousDoesNotReferenceBack(PropertyRecord property);
 

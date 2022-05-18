@@ -259,16 +259,29 @@ public class FullCheckIntegrationTest {
         // given
         long nodeId = createOneNode();
         long relId = createOneRelationship();
+        fixture.apply(tx -> {
+            tx.getNodeById(nodeId).setProperty("foo", "bar");
+        });
 
         NeoStores neoStores = fixture.directStoreAccess().nativeStores();
-        markAsDeletedId(neoStores.getNodeStore(), nodeId);
-        markAsDeletedId(neoStores.getRelationshipStore(), relId);
+        NodeStore nodeStore = neoStores.getNodeStore();
+        NodeRecord nodeRecord = nodeStore.newRecord();
+        try (PageCursor pageCursor = fixture.getStoreCursors().readCursor(NODE_CURSOR)) {
+            nodeStore.getRecordByCursor(nodeId, nodeRecord, FORCE, pageCursor);
+        }
+        long propId = nodeRecord.getNextProp();
 
-        // when
-        ConsistencySummaryStatistics stats = check();
+        // When
+        markAsDeletedId(nodeStore, nodeId);
+        markAsDeletedId(neoStores.getRelationshipStore(), relId);
+        markAsDeletedId(neoStores.getPropertyStore(), propId);
 
         // then
-        on(stats).verify(RecordType.NODE, 1).verify(RecordType.RELATIONSHIP, 1).andThatsAllFolks();
+        on(check())
+                .verify(RecordType.NODE, 1)
+                .verify(RecordType.RELATIONSHIP, 1)
+                .verify(RecordType.PROPERTY, 1)
+                .andThatsAllFolks();
     }
 
     @Test

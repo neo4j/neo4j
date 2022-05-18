@@ -65,6 +65,8 @@ class CheckerContext {
     final IndexAccessor nodeLabelIndex;
     final IndexAccessor relationshipTypeIndex;
     final CursorContextFactory contextFactory;
+    final FreeIdCache propertyFreeIdCache;
+
     private final AtomicBoolean cancelled;
     private final InternalLog log;
     private final boolean verbose;
@@ -95,6 +97,7 @@ class CheckerContext {
                 tokenHolders,
                 recordLoader,
                 observedCounts,
+                new FreeIdCache(neoStores.getPropertyStore().getIdGenerator()),
                 limiter,
                 progress,
                 pageCache,
@@ -115,6 +118,7 @@ class CheckerContext {
             TokenHolders tokenHolders,
             RecordLoading recordLoader,
             CountsState observedCounts,
+            FreeIdCache propertyFreeIdCache,
             EntityBasedMemoryLimiter limiter,
             ProgressMonitorFactory.MultiPartBuilder progress,
             PageCache pageCache,
@@ -147,6 +151,7 @@ class CheckerContext {
         this.tokenNameLookup = tokenHolders.lookupWithIds();
         this.pageCache = pageCache;
         this.memoryTracker = memoryTracker;
+        this.propertyFreeIdCache = propertyFreeIdCache;
     }
 
     CheckerContext withoutReporting() {
@@ -159,6 +164,7 @@ class CheckerContext {
                 tokenHolders,
                 recordLoader,
                 observedCounts,
+                propertyFreeIdCache,
                 limiter,
                 progress,
                 pageCache,
@@ -173,6 +179,7 @@ class CheckerContext {
     void initialize() throws Exception {
         debug(limiter.toString());
         timeOperation("Initialize index sizes", indexSizes::initialize, false);
+        timeOperation("Initialize free-id cache for properties", propertyFreeIdCache::initialize, false);
         if (verbose) {
             debugPrintIndexes(indexSizes.largeIndexes(EntityType.NODE), "considered large node indexes");
             debugPrintIndexes(indexSizes.smallIndexes(EntityType.NODE), "considered small node indexes");

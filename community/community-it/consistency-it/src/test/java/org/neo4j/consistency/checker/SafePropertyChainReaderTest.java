@@ -366,6 +366,27 @@ class SafePropertyChainReaderTest extends CheckerTestBase {
         expect(NodeConsistencyReport.class, PrimitiveConsistencyReport::propertyKeyNotUniqueInChain);
     }
 
+    @Test
+    void shouldReportPropertyWithIdForReuse() throws Exception {
+        // given
+        long propId;
+        long nodeId;
+        try (AutoCloseable ignored = tx()) {
+            propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
+            nodeId = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), propId, NULL);
+            property(propId, NULL, NULL, propertyValue(propertyKey1, longValue(10)));
+        }
+        markAsDeletedId(propertyStore, propId);
+
+        // when
+        try (SafePropertyChainReader checker = new SafePropertyChainReader(context(), CursorContext.NULL_CONTEXT)) {
+            checker.read(new IntObjectHashMap<>(), loadNode(nodeId), reporter::forNode, storeCursors);
+        }
+
+        // then
+        expect(PropertyConsistencyReport.class, PropertyConsistencyReport::idIsFreed);
+    }
+
     //  shouldReportInvalidPropertyKey: impossible because keys cannot be loaded with a negative id
     //  shouldReportInvalidPropertyType: impossible because property blocks w/ invalid type are skipped when loading
     //  shouldReportDynamicStringRecordInvalidLength: impossible because DynamicRecordFormat will not load a record with
