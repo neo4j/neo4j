@@ -88,7 +88,6 @@ class UTF8StringValueTest
         assertSame( utf8Value( bytes, 5, 4 ).ltrim(), stringValue( "fghi" ) );
     }
 
-
     @Test
     void shouldSubstring()
     {
