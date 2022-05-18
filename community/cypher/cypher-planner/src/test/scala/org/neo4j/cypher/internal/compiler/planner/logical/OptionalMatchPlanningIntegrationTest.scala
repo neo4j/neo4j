@@ -435,7 +435,36 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
     plan.stripProduceResults shouldBe an[OptionalExpand]
   }
 
-  test("should pick a right outer hash join with hint if it is cheaper than left outer hash join, also in a tail query") {
+  test("should not pick an outer hash join with hint if the join could end up in RHS of an apply") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(52)
+      .setLabelCardinality("A", 50)
+      .setLabelCardinality("B", 2)
+      .setRelationshipCardinality("()-[]-()", 30)
+      .setRelationshipCardinality("(:A)-[]-()", 30)
+      .setRelationshipCardinality("()-[]-(:B)", 30)
+      .setRelationshipCardinality("(:A)-[]-(:B)", 30)
+      .build()
+
+    val tailQuery =
+      s"""MATCH (a: A)
+         |WITH a, 1 AS horizon
+         |OPTIONAL MATCH (a)-[r]->(b:B)
+         |USING JOIN ON a
+         |OPTIONAL MATCH (a)--(c)
+         |RETURN a.name, b.name""".stripMargin
+
+    val tailPlan = cfg.plan(tailQuery)
+
+    withClue(tailPlan) {
+      tailPlan.folder.treeExists {
+        case _: RightOuterHashJoin => true
+        case _: LeftOuterHashJoin  => true
+      } should be(false)
+    }
+  }
+
+  test("should pick an outer hash join with hint if it is cheaper than left outer hash join, but not in a tail query") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(52)
       .setLabelCardinality("A", 50)
@@ -470,7 +499,8 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
     withClue(tailPlan) {
       tailPlan.folder.treeExists {
         case _: RightOuterHashJoin => true
-      } should be(true)
+        case _: LeftOuterHashJoin  => true
+      } should be(false)
     }
   }
 
