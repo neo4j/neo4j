@@ -24,14 +24,12 @@ import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
-import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalUnaryPlan
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.Projection
-import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.macros.AssertMacros
@@ -109,16 +107,6 @@ case class unnestApply(override val solveds: Solveds,
       providedOrders.copy(lhs2.id, apply2.id)
 
       Apply(selectionLHS, apply2, isSubquery2)(SameId(original.id))
-
-    // L Ax (Arg LOJ R) => L LOJ R
-    case apply@RemovableApply(lhs, join@LeftOuterHashJoin(_, arg:Argument, _), _) if preservesOrder(apply, join) =>
-      assertArgumentHasCardinality1(arg)
-      unnestRightBinaryLeft(apply, lhs, join)
-
-    // L Ax (L2 ROJ Arg) => L2 ROJ L
-    case apply@RemovableApply(lhs, join@RightOuterHashJoin(_, _, arg:Argument), _) if preservesOrder(apply, join) =>
-      assertArgumentHasCardinality1(arg)
-      unnestRightBinaryRight(apply, lhs, join)
 
     // L Ax (OEX Arg) => OEX (L Ax Arg)
     case apply@Apply(lhs, oex@OptionalExpand(_:Argument, _, _, _, _, _, _, _), _) =>
