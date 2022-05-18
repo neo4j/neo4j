@@ -82,7 +82,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -141,6 +140,7 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
+import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
@@ -255,31 +255,20 @@ public class FullCheckIntegrationTest {
     }
 
     @Test
-    void shouldReportNodeIdMismatch() throws Exception {
-        MutableLong id = new MutableLong();
+    void shouldReportIdMismatch() throws Exception {
         // given
-        fixture.apply(new GraphStoreFixture.Transaction() {
-            @Override
-            protected void transactionData(
-                    GraphStoreFixture.TransactionDataBuilder tx, GraphStoreFixture.IdGenerator next) {
-                long node = next.node();
-                id.setValue(node);
-                tx.create(new NodeRecord(node).initialize(true, -1, false, -1, 0));
-            }
-        });
-        try (var marker = fixture.directStoreAccess()
-                .nativeStores()
-                .getNodeStore()
-                .getIdGenerator()
-                .marker(NULL_CONTEXT)) {
-            marker.markDeleted(id.longValue());
-        }
+        long nodeId = createOneNode();
+        long relId = createOneRelationship();
+
+        NeoStores neoStores = fixture.directStoreAccess().nativeStores();
+        markAsDeletedId(neoStores.getNodeStore(), nodeId);
+        markAsDeletedId(neoStores.getRelationshipStore(), relId);
 
         // when
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on(stats).verify(RecordType.NODE, 1).andThatsAllFolks();
+        on(stats).verify(RecordType.NODE, 1).verify(RecordType.RELATIONSHIP, 1).andThatsAllFolks();
     }
 
     @Test
@@ -3061,6 +3050,12 @@ public class FullCheckIntegrationTest {
                 }
             }
         });
+    }
+
+    private void markAsDeletedId(CommonAbstractStore store, long id) {
+        try (var marker = store.getIdGenerator().marker(NULL_CONTEXT)) {
+            marker.markDeleted(id);
+        }
     }
 
     private void createUniquenessConstraintRule(final int labelId, final int... propertyKeyIds) throws KernelException {

@@ -127,11 +127,18 @@ class RelationshipChecker implements Checker {
                 SafePropertyChainReader property = new SafePropertyChainReader(context, cursorContext);
                 SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker(
                         context, mandatoryProperties, indexes, cursorContext, storeCursors);
-                var localProgress = progress.threadLocalReporter()) {
+                var localProgress = progress.threadLocalReporter();
+                var freeIdsIterator = firstRound
+                        ? context.neoStores
+                                .getRelationshipStore()
+                                .getIdGenerator()
+                                .freeIdsIterator(fromRelationshipId, toRelationshipId)
+                        : null) {
             CacheAccess.Client client = cacheAccess.client();
             MutableIntObjectMap<Value> propertyValues = new IntObjectHashMap<>();
             Iterator<EntityTokenRange> relationshipTypeRangeIterator = relationshipTypeReader.iterator();
             EntityTokenIndexCheckState typeIndexState = new EntityTokenIndexCheckState(null, fromRelationshipId - 1);
+            long nextFreeId = NULL_REFERENCE.longValue();
 
             for (long relationshipId = fromRelationshipId;
                     relationshipId < toRelationshipId && !context.isCancelled();
@@ -187,6 +194,12 @@ class RelationshipChecker implements Checker {
                 }
 
                 if (firstRound) {
+                    while (nextFreeId < relationshipId && freeIdsIterator.hasNext()) {
+                        nextFreeId = freeIdsIterator.next();
+                    }
+                    if (relationshipId == nextFreeId) {
+                        reporter.forRelationship(relationshipRecord).idIsFreed();
+                    }
                     if (startNode >= context.highNodeId) {
                         reporter.forRelationship(relationshipRecord)
                                 .sourceNodeNotInUse(context.recordLoader.node(startNode, storeCursors));

@@ -246,6 +246,26 @@ class RelationshipCheckerTest extends CheckerTestBase {
         expect(RelationshipConsistencyReport.class, report -> report.relationshipTypeNotInUse(any()));
     }
 
+    @Test
+    void shouldReportRelationshipWithIdForReuse() throws Exception {
+        // Given
+        long relId;
+        try (AutoCloseable ignored = tx()) {
+            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
+            long node1 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            long node2 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            relId = relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true);
+        }
+
+        markAsDeletedId(relationshipStore, relId);
+
+        // when
+        check();
+
+        // then
+        expect(RelationshipConsistencyReport.class, RelationshipConsistencyReport::idIsFreed);
+    }
+
     private void check() throws Exception {
         check(context());
     }
