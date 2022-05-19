@@ -68,11 +68,11 @@ public class CountsKey {
 
     CountsKey() {}
 
-    CountsKey(byte type, long keyFirst, int keySecond) {
+    public CountsKey(byte type, long keyFirst, int keySecond) {
         initialize(type, keyFirst, keySecond);
     }
 
-    void initialize(byte type, long keyFirst, int keySecond) {
+    public void initialize(byte type, long keyFirst, int keySecond) {
         this.type = type;
         this.first = keyFirst;
         this.second = keySecond;
@@ -88,6 +88,18 @@ public class CountsKey {
 
     int extractLowFirstInt() {
         return (int) first;
+    }
+
+    public long first() {
+        return first;
+    }
+
+    public long second() {
+        return second;
+    }
+
+    public int type() {
+        return type;
     }
 
     // Implements hashCode/equals so that these instances can be keys in a map

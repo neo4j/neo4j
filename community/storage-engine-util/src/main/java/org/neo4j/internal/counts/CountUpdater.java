@@ -25,7 +25,7 @@ import org.neo4j.counts.InvalidCountException;
 /**
  * Manages a {@link CountWriter}, which is injectable, and a lock which it will release in {@link #close()}.
  */
-class CountUpdater implements AutoCloseable {
+public class CountUpdater implements AutoCloseable {
     private final CountWriter writer;
     private final Lock lock;
 
@@ -40,7 +40,7 @@ class CountUpdater implements AutoCloseable {
      * @param delta the delta for the count, can be positive or negative.
      * @return {@code true} if the absolute value either was 0 before this change, or became zero after the change. Otherwise {@code false}.
      */
-    boolean increment(CountsKey key, long delta) {
+    public boolean increment(CountsKey key, long delta) {
         try {
             return writer.write(key, delta);
         } catch (InvalidCountException e) {

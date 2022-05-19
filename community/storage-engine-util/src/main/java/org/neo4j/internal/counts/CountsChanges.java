@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import org.neo4j.util.Preconditions;
 
-abstract class CountsChanges {
+public abstract class CountsChanges {
     static final long ABSENT = -1;
 
     protected final ConcurrentMap<CountsKey, AtomicLong> changes;

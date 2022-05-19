@@ -24,13 +24,17 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 /**
  * Value in a {@link GBPTree} owned by {@link GBPTreeCountsStore}.
  */
-class CountsValue {
+public class CountsValue {
     static final int SIZE = Long.BYTES;
 
     long count;
 
-    CountsValue initialize(long count) {
+    public CountsValue initialize(long count) {
         this.count = count;
         return this;
+    }
+
+    public long count() {
+        return count;
     }
 }
