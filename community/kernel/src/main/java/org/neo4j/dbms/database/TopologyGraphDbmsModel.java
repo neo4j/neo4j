@@ -69,8 +69,8 @@ public interface TopologyGraphDbmsModel {
     }
 
     enum DatabaseStatus {
-        ONLINE,
-        OFFLINE
+        online,
+        offline
     }
 
     enum DatabaseAccess {
