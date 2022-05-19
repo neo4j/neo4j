@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.AbstractThrowableAssert;
+import org.assertj.core.util.Throwables;
 import org.neo4j.logging.AssertableLogProvider.LogCall;
 
 public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider> {
@@ -193,6 +194,30 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider> 
         return this;
     }
 
+    public LogAssert containsMessageWithExceptionMatching(String message, Predicate<Throwable> predicate) {
+        isNotNull();
+        requireNonNull(predicate);
+        if (!haveMessageWithExceptionMatching(message, predicate)) {
+            failWithMessage(
+                    "Expected log to contain message `%s` with exception matching predicate. But no matches "
+                            + "found in:%n%s",
+                    message, actual.serialize());
+        }
+        return this;
+    }
+
+    public LogAssert containsMessageWithExceptionWithCause(String message, Throwable t) {
+        isNotNull();
+        requireNonNull(t);
+        if (!haveMessageWithExceptionWithCause(message, t)) {
+            failWithMessage(
+                    "Expected log to contain message `%s` with exception with cause `%s`. But no matches found "
+                            + "in:%n%s",
+                    message, stringify(t), actual.serialize());
+        }
+        return this;
+    }
+
     public LogAssert containsException(Throwable t) {
         requireNonNull(t);
         isNotNull();
@@ -210,6 +235,22 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider> 
                 .anyMatch(call -> matchedLogger(call)
                         && matchedLevel(call)
                         && t.equals(call.getThrowable())
+                        && matchedMessage(message, call));
+    }
+
+    private boolean haveMessageWithExceptionMatching(String message, Predicate<Throwable> predicate) {
+        return actual.getLogCalls().stream()
+                .anyMatch(call -> matchedLogger(call)
+                        && matchedLevel(call)
+                        && predicate.test(call.getThrowable())
+                        && matchedMessage(message, call));
+    }
+
+    private boolean haveMessageWithExceptionWithCause(String message, Throwable cause) {
+        return actual.getLogCalls().stream()
+                .anyMatch(call -> matchedLogger(call)
+                        && matchedLevel(call)
+                        && cause.equals(Throwables.getRootCause(call.getThrowable()))
                         && matchedMessage(message, call));
     }
 
