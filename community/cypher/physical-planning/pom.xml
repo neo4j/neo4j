@@ -11,16 +11,16 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>neo4j-cypher-slotted-runtime</artifactId>
+    <artifactId>neo4j-cypher-physical-planning</artifactId>
     <packaging>jar</packaging>
     <version>5.0.0-SNAPSHOT</version>
-    <name>Neo4j - Cypher Slotted Runtime</name>
-    <description>Planner for the physical query plans</description>
+    <name>Neo4j - Cypher Physical Planning</name>
+    <description>A runtime for Neo4j's query language</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
     <properties>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
-        <moduleName>org.neo4j.cypher.internal.compatibility.runtime.slotted</moduleName>
+        <moduleName>org.neo4j.cypher.internal.compatibility.runtime</moduleName>
     </properties>
 
     <scm>
@@ -29,7 +29,7 @@
         <url>https://github.com/neo4j/neo4j</url>
     </scm>
 
-    <dependencies>
+  <dependencies>
 
         <!-- scala -->
 
@@ -46,49 +46,35 @@
         <!-- scala test dependencies -->
 
         <dependency>
-            <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_${scala.binary.version}</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.vintage</groupId>
-            <artifactId>junit-vintage-engine</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.scalacheck</groupId>
             <artifactId>scalacheck_${scala.binary.version}</artifactId>
         </dependency>
 
         <!-- neo4j -->
-
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-exceptions</artifactId>
+            <artifactId>neo4j-codegen</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-kernel</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-physical-planning</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+      <dependency>
+          <groupId>org.neo4j</groupId>
+          <artifactId>neo4j-exceptions</artifactId>
+          <version>${project.version}</version>
+      </dependency>
 
         <!-- neo4j testing -->
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-kernel</artifactId>
+            <artifactId>neo4j-cypher-logical-plan-builder</artifactId>
             <version>${project.version}</version>
-            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>kernel-api-test-utils</artifactId>
+            <artifactId>neo4j-cypher-runtime-util</artifactId>
             <version>${project.version}</version>
+            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -110,12 +96,6 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>log-test-utils</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
 
         <dependency>
             <groupId>org.neo4j</groupId>
@@ -127,36 +107,22 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-runtime-util</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-cypher-planner</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
 
+      <dependency>
+          <groupId>org.neo4j</groupId>
+          <artifactId>neo4j-test-util</artifactId>
+          <version>${project.version}</version>
+          <scope>test</scope>
+      </dependency>
+
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-ast</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-test-util</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-interpreted-runtime</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
@@ -178,6 +144,7 @@
         </dependency>
 
         <!-- other -->
+
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
@@ -194,31 +161,5 @@
         </dependency>
 
     </dependencies>
-
-    <profiles>
-        <profile>
-            <id>scala-fatal-warnings</id>
-            <activation>
-                <property>
-                    <name>scalaFatalWarnings</name>
-                    <value>true</value>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>net.alchim31.maven</groupId>
-                        <artifactId>scala-maven-plugin</artifactId>
-                        <configuration>
-                            <args combine.children="append">
-                                <arg>-Xfatal-warnings</arg>
-                                <arg>-Wconf:msg=match may not be exhaustive:i</arg>
-                            </args>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 
 </project>

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
 import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
+import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.logging.InternalLog
@@ -41,6 +42,7 @@ case class CommunityRuntimeContext(
 ) extends RuntimeContext {
 
   override def compileExpressions: Boolean = false
+  override def materializedEntitiesMode: Boolean = false
 }
 
 case class CommunityRuntimeContextManager(log: InternalLog, config: CypherRuntimeConfiguration)

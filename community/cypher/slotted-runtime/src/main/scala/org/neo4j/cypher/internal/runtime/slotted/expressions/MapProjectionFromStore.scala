@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.runtime.slotted.expressions
 
 import org.neo4j.cypher.internal.physicalplanning.ast.PropertyFromStore
+import org.neo4j.cypher.internal.runtime.PropertyTokensResolver
 import org.neo4j.cypher.internal.runtime.ReadableRow
-import org.neo4j.cypher.internal.runtime.compiled.expressions.PropertyTokensResolver
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState

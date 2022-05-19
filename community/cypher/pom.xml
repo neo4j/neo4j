@@ -53,6 +53,7 @@
                 <module>runtime-util</module>
                 <module>interpreted-runtime</module>
                 <module>slotted-runtime</module>
+                <module>physical-planning</module>
                 <module>acceptance-spec-suite</module>
                 <module>compatibility-spec-suite</module>
                 <module>spec-suite-tools</module>
@@ -62,6 +63,7 @@
                 <module>expression-evaluator</module>
                 <module>cypher-testing</module>
                 <module>cypher-config</module>
+                <module>cypher-cache</module>
                 <module>literal-interpreter</module>
                 <module>graph-counts</module>
             </modules>

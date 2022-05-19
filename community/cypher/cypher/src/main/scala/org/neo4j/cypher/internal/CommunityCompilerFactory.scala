@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
 import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planning.CypherPlanner
+import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.logging.InternalLog

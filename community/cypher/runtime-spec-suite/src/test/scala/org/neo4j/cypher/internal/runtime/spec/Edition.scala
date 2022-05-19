@@ -23,10 +23,10 @@ import org.neo4j.common.DependencyResolver
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.CommunityRuntimeContextManager
-import org.neo4j.cypher.internal.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.RuntimeContextManager
 import org.neo4j.cypher.internal.config.CypherConfiguration
+import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.lifecycle.LifeSupport

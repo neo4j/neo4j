@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.runtime.slotted
 
 import org.mockito.Mockito
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.CachedProperty
@@ -66,6 +65,7 @@ import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.Size
 import org.neo4j.cypher.internal.physicalplanning.SlottedIndexedProperty
 import org.neo4j.cypher.internal.physicalplanning.VariablePredicates
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
+import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryIndexRegistrator
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedPipeMapper
