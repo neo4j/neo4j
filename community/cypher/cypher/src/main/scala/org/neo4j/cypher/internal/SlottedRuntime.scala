@@ -1,13 +1,16 @@
 package org.neo4j.cypher.internal
 
-import org.neo4j.codegen.api.CodeGeneration
 import org.neo4j.cypher.internal.InterpretedRuntime.InterpretedExecutionPlan
+import org.neo4j.cypher.internal.SlottedRuntime.NO_METADATA
+import org.neo4j.cypher.internal.SlottedRuntime.NO_WARNINGS
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
+import org.neo4j.cypher.internal.physicalplanning.PhysicalPlan
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanner
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.runtime.QueryIndexRegistrator
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedPipeMapper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NestedPipeExpressions
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeTreeBuilder
@@ -17,9 +20,10 @@ import org.neo4j.cypher.internal.runtime.slotted.SlottedPipelineBreakingPolicy
 import org.neo4j.cypher.internal.runtime.slotted.expressions.MaterializedEntitiesExpressionConverter
 import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedExpressionConverters
 import org.neo4j.cypher.internal.util.CypherException
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.exceptions.CantCompileQueryException
 
-object SlottedRuntime extends CypherRuntime[RuntimeContext] with DebugPrettyPrinter {
+trait SlottedRuntime[-CONTEXT <: RuntimeContext] extends CypherRuntime[CONTEXT] with DebugPrettyPrinter {
   override def name: String = "slotted"
 
   override def correspondingRuntimeOption: Option[CypherRuntimeOption] = Some(CypherRuntimeOption.slotted)
@@ -37,8 +41,17 @@ object SlottedRuntime extends CypherRuntime[RuntimeContext] with DebugPrettyPrin
   override val PRINT_PIPELINE_INFO = true
   override val PRINT_FAILURE_STACK_TRACE = true
 
+  protected def compileExpressions(
+    baseConverters: List[ExpressionConverter],
+    context: CONTEXT,
+    physicalPlan: PhysicalPlan,
+    query: LogicalQuery
+  ): (List[ExpressionConverter], () => Seq[Argument], () => Set[InternalNotification]) = {
+    (baseConverters, NO_METADATA, NO_WARNINGS)
+  }
+
   @throws[CantCompileQueryException]
-  override def compileToExecutable(query: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
+  override def compileToExecutable(query: LogicalQuery, context: CONTEXT): ExecutionPlan = {
     try {
       if (ENABLE_DEBUG_PRINTS && PRINT_PLAN_INFO_EARLY) {
         printPlanInfo(query)
@@ -62,24 +75,13 @@ object SlottedRuntime extends CypherRuntime[RuntimeContext] with DebugPrettyPrin
         CommunityExpressionConverter(context.tokenContext, context.anonymousVariableNameGenerator)
       )
 
-      val allConverters =
+      val (allConverters, metadataGen, warningsGen) =
         if (context.materializedEntitiesMode) {
-          MaterializedEntitiesExpressionConverter(context.tokenContext) +: baseConverters
-//        } TODO
-//        else if (context.compileExpressions) {
-//          new CompiledExpressionConverter(
-//            context.log,
-//            physicalPlan,
-//            context.tokenContext,
-//            query.readOnly,
-//            false,
-//            codeGenerationMode,
-//            context.compiledExpressionsContext,
-//            expressionConversionLogger,
-//            context.anonymousVariableNameGenerator
-//          ) +: baseConverters
+          (MaterializedEntitiesExpressionConverter(context.tokenContext) +: baseConverters, NO_METADATA, NO_WARNINGS)
+        } else if (context.compileExpressions) {
+          compileExpressions(baseConverters, context, physicalPlan, query)
         } else {
-          baseConverters
+          (baseConverters, NO_METADATA, NO_WARNINGS)
         }
 
       val converters = new ExpressionConverters(allConverters: _*)
@@ -137,13 +139,9 @@ object SlottedRuntime extends CypherRuntime[RuntimeContext] with DebugPrettyPrin
         SlottedRuntimeName,
         query.readOnly,
         startsTransactions,
-        Seq.empty,
-        Set.empty
+        metadataGen(),
+        warningsGen()
       )
-      // TODO compiled expressions
-//        metadata,
-//        expressionConversionLogger.warnings
-      // )
     } catch {
       case e: CypherException =>
         if (ENABLE_DEBUG_PRINTS) {
@@ -156,3 +154,10 @@ object SlottedRuntime extends CypherRuntime[RuntimeContext] with DebugPrettyPrin
     }
   }
 }
+
+object SlottedRuntime {
+  val NO_WARNINGS: () => Set[InternalNotification] = () => Set.empty[InternalNotification]
+  val NO_METADATA: () => Seq[Argument] = () => Seq.empty[Argument]
+}
+
+object CommunitySlottedRuntime extends SlottedRuntime[RuntimeContext]

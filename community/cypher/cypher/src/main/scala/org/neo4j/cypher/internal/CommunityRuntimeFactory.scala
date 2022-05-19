@@ -27,12 +27,19 @@ object CommunityRuntimeFactory {
   val interpreted =
     new FallbackRuntime[RuntimeContext](List(SchemaCommandRuntime, InterpretedRuntime), CypherRuntimeOption.interpreted)
 
+  val slotted = new FallbackRuntime[RuntimeContext](
+    List(SchemaCommandRuntime, CommunitySlottedRuntime),
+    CypherRuntimeOption.slotted
+  )
+
   val default =
     new FallbackRuntime[RuntimeContext](List(SchemaCommandRuntime, InterpretedRuntime), CypherRuntimeOption.default)
 
   def getRuntime(cypherRuntime: CypherRuntimeOption, disallowFallback: Boolean): CypherRuntime[RuntimeContext] =
     cypherRuntime match {
       case CypherRuntimeOption.interpreted => interpreted
+
+      case CypherRuntimeOption.slotted => slotted
 
       case CypherRuntimeOption.default => default
 
