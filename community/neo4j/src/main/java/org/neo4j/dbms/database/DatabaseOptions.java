@@ -26,8 +26,8 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.config.Setting;
 
 public record DatabaseOptions(Map<Setting<?>, Object> settings, TopologyGraphDbmsModel.HostedOnMode mode) {
-    public static final DatabaseOptions RAFT = empty(TopologyGraphDbmsModel.HostedOnMode.raft);
-    public static final DatabaseOptions SINGLE = empty(TopologyGraphDbmsModel.HostedOnMode.single);
+    public static final DatabaseOptions RAFT = empty(TopologyGraphDbmsModel.HostedOnMode.RAFT );
+    public static final DatabaseOptions SINGLE = empty(TopologyGraphDbmsModel.HostedOnMode.SINGLE );
 
     public static DatabaseOptions empty(TopologyGraphDbmsModel.HostedOnMode mode) {
         return new DatabaseOptions(new HashMap<>(), mode);

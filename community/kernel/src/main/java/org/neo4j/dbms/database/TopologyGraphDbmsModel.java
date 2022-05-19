@@ -31,9 +31,9 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 
 public interface TopologyGraphDbmsModel {
     enum HostedOnMode {
-        raft(1, GraphDatabaseSettings.Mode.CORE),
-        replica(2, GraphDatabaseSettings.Mode.READ_REPLICA),
-        single(0, GraphDatabaseSettings.Mode.SINGLE);
+        RAFT( 1, GraphDatabaseSettings.Mode.CORE),
+        REPLICA( 2, GraphDatabaseSettings.Mode.READ_REPLICA),
+        SINGLE( 0, GraphDatabaseSettings.Mode.SINGLE);
 
         private final GraphDatabaseSettings.Mode instanceMode;
         private final byte code;
@@ -69,8 +69,8 @@ public interface TopologyGraphDbmsModel {
     }
 
     enum DatabaseStatus {
-        online,
-        offline
+        ONLINE,
+        OFFLINE
     }
 
     enum DatabaseAccess {
@@ -89,14 +89,14 @@ public interface TopologyGraphDbmsModel {
     }
 
     enum InstanceStatus {
-        active,
-        draining
+        ENABLED,
+        DEALLOCATING
     }
 
     enum InstanceModeConstraint {
-        primary,
-        secondary,
-        none
+        PRIMARY,
+        SECONDARY,
+        NONE
     }
 
     Label DATABASE_LABEL = Label.label("Database");
