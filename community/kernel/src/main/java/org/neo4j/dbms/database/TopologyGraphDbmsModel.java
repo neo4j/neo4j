@@ -31,9 +31,9 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 
 public interface TopologyGraphDbmsModel {
     enum HostedOnMode {
-        RAFT( 1, GraphDatabaseSettings.Mode.CORE),
-        REPLICA( 2, GraphDatabaseSettings.Mode.READ_REPLICA),
-        SINGLE( 0, GraphDatabaseSettings.Mode.SINGLE);
+        RAFT(1, GraphDatabaseSettings.Mode.CORE),
+        REPLICA(2, GraphDatabaseSettings.Mode.READ_REPLICA),
+        SINGLE(0, GraphDatabaseSettings.Mode.SINGLE);
 
         private final GraphDatabaseSettings.Mode instanceMode;
         private final byte code;
