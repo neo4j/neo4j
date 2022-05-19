@@ -171,7 +171,8 @@ class CypherPreParserTest extends CypherFunSuite with TableDrivenPropertyChecks 
   test("run the tests") {
     forAll(queries) {
       case (query, expected) =>
-        parse(query) should equal(expected)
+        val result = parse(query)
+        result should equal(expected)
     }
   }
 

@@ -402,7 +402,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
       // THEN
       result should have size 1
-      assertCorrectFullMap(result.head, "neo4j-transaction-", "", "SHOW TRANSACTIONS YIELD *")
+      assertCorrectFullMap(result.head, "neo4j-transaction-", "", "SHOW TRANSACTIONS YIELD *", runtime = "slotted")
     }
   }
 
@@ -429,7 +429,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     result should have size 2
     val sortedRes =
       result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
-    assertCorrectFullMap(sortedRes.head, "neo4j-transaction-", "", "SHOW TRANSACTIONS YIELD *")
+    assertCorrectFullMap(sortedRes.head, "neo4j-transaction-", "", "SHOW TRANSACTIONS YIELD *", runtime = "slotted")
     assertCorrectFullMap(
       sortedRes(1),
       "system-transaction-",
@@ -458,8 +458,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     result should have size 2
     val sortedRes =
       result.sortBy(m => m("username").asInstanceOf[String]) // To get stable order to assert correct result
-    assertCorrectFullMap(sortedRes.head, user2Id, username2, user2Query)
-    assertCorrectFullMap(sortedRes(1), user1Id, username, user1Query)
+    assertCorrectFullMap(sortedRes.head, user2Id, username2, user2Query, runtime = "slotted")
+    assertCorrectFullMap(sortedRes(1), user1Id, username, user1Query, runtime = "slotted")
   }
 
   test("Should show all transactions with specific YIELD") {
@@ -487,8 +487,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     val sortedRes =
       result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
     sortedRes should be(List(
-      Map("transactionId" -> unwindId, "currentQuery" -> unwindQuery, "runtime" -> "interpreted"),
-      Map("transactionId" -> showId, "currentQuery" -> showQuery, "runtime" -> "interpreted")
+      Map("transactionId" -> unwindId, "currentQuery" -> unwindQuery, "runtime" -> "slotted"),
+      Map("transactionId" -> showId, "currentQuery" -> showQuery, "runtime" -> "slotted")
     ))
   }
 
@@ -509,8 +509,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     val sortedRes =
       result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
     sortedRes should be(List(
-      Map("transactionId" -> user1Id, "currentQuery" -> user1Query, "runtime" -> "interpreted"),
-      Map("transactionId" -> user2Id, "currentQuery" -> user2Query, "runtime" -> "interpreted")
+      Map("transactionId" -> user1Id, "currentQuery" -> user1Query, "runtime" -> "slotted"),
+      Map("transactionId" -> user2Id, "currentQuery" -> user2Query, "runtime" -> "slotted")
     ).sortBy(m => m("transactionId")))
   }
 
@@ -536,8 +536,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // THEN
     result should be(List(
-      Map("transactionId" -> unwindId, "runtime" -> "interpreted"),
-      Map("transactionId" -> showId, "runtime" -> "interpreted")
+      Map("transactionId" -> unwindId, "runtime" -> "slotted"),
+      Map("transactionId" -> showId, "runtime" -> "slotted")
     ))
   }
 
@@ -563,8 +563,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // THEN
     result should be(List(
-      Map("transactionId" -> showId, "runtime" -> "interpreted"),
-      Map("transactionId" -> unwindId, "runtime" -> "interpreted")
+      Map("transactionId" -> showId, "runtime" -> "slotted"),
+      Map("transactionId" -> unwindId, "runtime" -> "slotted")
     ))
   }
 
@@ -584,8 +584,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     result should have size 2
     val sortedRes =
       result.sortBy(m => m("username").asInstanceOf[String]) // To get stable order to assert correct result
-    assertCorrectFullMap(sortedRes.head, user2Id, username2, user2Query)
-    assertCorrectFullMap(sortedRes(1), user1Id, username, user1Query)
+    assertCorrectFullMap(sortedRes.head, user2Id, username2, user2Query, runtime = "slotted")
+    assertCorrectFullMap(sortedRes(1), user1Id, username, user1Query, runtime = "slotted")
   }
 
   test("Should show transactions with specific YIELD and WHERE") {
@@ -598,7 +598,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // WHEN
     val result = execute(
-      "SHOW TRANSACTIONS YIELD transactionId, currentQuery, runtime, username WHERE runtime = 'interpreted' AND username <> ''"
+      "SHOW TRANSACTIONS YIELD transactionId, currentQuery, runtime, username WHERE runtime = 'slotted' AND username <> ''"
     ).toList
     latch.finishAndWaitForAllToFinish()
 
@@ -606,8 +606,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     val sortedRes =
       result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
     sortedRes should be(List(
-      Map("transactionId" -> user1Id, "currentQuery" -> user1Query, "username" -> username, "runtime" -> "interpreted"),
-      Map("transactionId" -> user2Id, "currentQuery" -> user2Query, "username" -> username2, "runtime" -> "interpreted")
+      Map("transactionId" -> user1Id, "currentQuery" -> user1Query, "username" -> username, "runtime" -> "slotted"),
+      Map("transactionId" -> user2Id, "currentQuery" -> user2Query, "username" -> username2, "runtime" -> "slotted")
     ).sortBy(m => m("transactionId")))
   }
 
@@ -624,7 +624,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       """
         |SHOW TRANSACTIONS
         |YIELD transactionId, currentQuery, runtime, username
-        |WHERE runtime = 'interpreted'
+        |WHERE runtime = 'slotted'
         |AND username <> ''
         |RETURN transactionId, left(currentQuery, 5) AS shortQuery"""
         .stripMargin
@@ -658,7 +658,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // WHEN
     val result = execute(
-      "SHOW TRANSACTIONS YIELD transactionId AS txId, runtime, username ORDER BY txId SKIP 1 LIMIT 5 WHERE runtime = 'interpreted' AND username <> '' RETURN txId"
+      "SHOW TRANSACTIONS YIELD transactionId AS txId, runtime, username ORDER BY txId SKIP 1 LIMIT 5 WHERE runtime = 'slotted' AND username <> '' RETURN txId"
     ).toList
     latch.finishAndWaitForAllToFinish()
 
@@ -1379,9 +1379,9 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     transactionId: String,
     username: String,
     query: String,
+    runtime: String,
     database: String = DEFAULT_DATABASE_NAME,
     planner: String = "idp",
-    runtime: String = "interpreted",
     queryAllocatedBytesIsNull: Boolean = false
   ) = {
     assertCorrectDefaultMap(resultMap, transactionId, username, query, database, numColumns = 39)

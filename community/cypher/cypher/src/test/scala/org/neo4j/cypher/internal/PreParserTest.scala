@@ -201,8 +201,8 @@ class PreParserTest extends CypherFunSuite {
       GraphDatabaseInternalSettings.cypher_pipelined_interpreted_pipes_fallback -> GraphDatabaseInternalSettings.CypherPipelinedInterpretedPipesFallback.ALL
     )
     val runtimeInterpreted = Option(
-      "runtime=interpreted",
-      GraphDatabaseInternalSettings.cypher_runtime -> GraphDatabaseInternalSettings.CypherRuntime.INTERPRETED
+      "runtime=legacy",
+      GraphDatabaseInternalSettings.cypher_runtime -> GraphDatabaseInternalSettings.CypherRuntime.LEGACY
     )
     val runtimeSlotted = Option(
       "runtime=slotted",

@@ -88,6 +88,7 @@ object CypherQueryOptions {
   final private def ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS
     : Set[(CypherExpressionEngineOption, CypherRuntimeOption)] =
     Set(
+      (CypherExpressionEngineOption.compiled, CypherRuntimeOption.legacy),
       (CypherExpressionEngineOption.compiled, CypherRuntimeOption.interpreted)
     )
 
@@ -95,7 +96,8 @@ object CypherQueryOptions {
     : Set[(CypherOperatorEngineOption, CypherRuntimeOption)] =
     Set(
       (CypherOperatorEngineOption.compiled, CypherRuntimeOption.slotted),
-      (CypherOperatorEngineOption.compiled, CypherRuntimeOption.interpreted)
+      (CypherOperatorEngineOption.compiled, CypherRuntimeOption.interpreted),
+      (CypherOperatorEngineOption.compiled, CypherRuntimeOption.legacy)
     )
 
   final private def ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS
@@ -103,10 +105,13 @@ object CypherQueryOptions {
     Set(
       (CypherInterpretedPipesFallbackOption.disabled, CypherRuntimeOption.slotted),
       (CypherInterpretedPipesFallbackOption.disabled, CypherRuntimeOption.interpreted),
+      (CypherInterpretedPipesFallbackOption.disabled, CypherRuntimeOption.legacy),
       (CypherInterpretedPipesFallbackOption.whitelistedPlansOnly, CypherRuntimeOption.slotted),
       (CypherInterpretedPipesFallbackOption.whitelistedPlansOnly, CypherRuntimeOption.interpreted),
+      (CypherInterpretedPipesFallbackOption.whitelistedPlansOnly, CypherRuntimeOption.legacy),
       (CypherInterpretedPipesFallbackOption.allPossiblePlans, CypherRuntimeOption.slotted),
-      (CypherInterpretedPipesFallbackOption.allPossiblePlans, CypherRuntimeOption.interpreted)
+      (CypherInterpretedPipesFallbackOption.allPossiblePlans, CypherRuntimeOption.interpreted),
+      (CypherInterpretedPipesFallbackOption.allPossiblePlans, CypherRuntimeOption.legacy)
     )
 }
 
@@ -196,12 +201,13 @@ case object CypherRuntimeOption extends CypherOptionCompanion[CypherRuntimeOptio
     ) {
 
   case object default extends CypherRuntimeOption(CypherOption.DEFAULT)
+  case object legacy extends CypherRuntimeOption("legacy")
   case object interpreted extends CypherRuntimeOption("interpreted")
   case object slotted extends CypherRuntimeOption("slotted")
   case object pipelined extends CypherRuntimeOption("pipelined")
   case object parallel extends CypherRuntimeOption("parallel")
 
-  def values: Set[CypherRuntimeOption] = Set(interpreted, slotted, pipelined, parallel)
+  def values: Set[CypherRuntimeOption] = Set(interpreted, slotted, pipelined, parallel, legacy)
 
   implicit val hasDefault: OptionDefault[CypherRuntimeOption] = OptionDefault.create(default)
   implicit val renderer: OptionRenderer[CypherRuntimeOption] = OptionRenderer.create(_.render)

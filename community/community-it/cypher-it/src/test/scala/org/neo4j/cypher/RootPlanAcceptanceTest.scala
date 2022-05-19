@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.InterpretedRuntimeName
 import org.neo4j.cypher.internal.RuntimeName
+import org.neo4j.cypher.internal.SlottedRuntimeName
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
@@ -48,16 +49,16 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHaveCypherVersion(CypherVersion.v3_5)
   }
 
-  test("interpreted should be default runtime in 4.3") {
+  test("slotted should be default runtime in 4.3") {
     given("match (n) return n")
       .withCypherVersion(CypherVersion.v4_3)
-      .shouldHaveRuntime(InterpretedRuntimeName)
+      .shouldHaveRuntime(SlottedRuntimeName)
   }
 
-  test("interpreted should be default runtime in 4.4") {
+  test("slotted should be default runtime in 4.4") {
     given("match (n) return n")
       .withCypherVersion(CypherVersion.v4_4)
-      .shouldHaveRuntime(InterpretedRuntimeName)
+      .shouldHaveRuntime(SlottedRuntimeName)
   }
 
   test("AllNodesScan should be the only child of the plan") {

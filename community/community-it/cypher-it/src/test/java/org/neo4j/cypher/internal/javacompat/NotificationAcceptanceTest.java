@@ -48,12 +48,12 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     @Test
     void shouldWarnWhenRequestingSlottedRuntimeOnUnsupportedQuery() {
         shouldNotifyInStreamWithDetail(
-                "EXPLAIN CYPHER runtime=slotted RETURN 1",
+                "EXPLAIN CYPHER runtime=pipelined RETURN 1",
                 InputPosition.empty,
                 RUNTIME_UNSUPPORTED,
                 NotificationDetail.Factory.message(
                         "Runtime unsupported",
-                        "This version of Neo4j does not " + "support requested runtime: slotted"));
+                        "This version of Neo4j does not " + "support requested runtime: pipelined"));
     }
 
     @Test

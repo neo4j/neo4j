@@ -52,7 +52,7 @@ import scala.collection.immutable.ArraySeq
 object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
   override def name: String = "interpreted"
 
-  override def correspondingRuntimeOption: Option[CypherRuntimeOption] = Some(CypherRuntimeOption.interpreted)
+  override def correspondingRuntimeOption: Option[CypherRuntimeOption] = Some(CypherRuntimeOption.legacy)
 
   override def compileToExecutable(query: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
     val Result(logicalPlan, nExpressionSlots, availableExpressionVars) =

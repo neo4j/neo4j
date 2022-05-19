@@ -39,7 +39,7 @@ case object PipelinedTestConfig
 
 case object ParallelTestConfig extends TestConfig(Some("parallel.txt"), "CYPHER planner=cost runtime=parallel")
 
-case object InterpretedTestConfig extends TestConfig(Some("interpreted.txt"), "CYPHER planner=cost runtime=interpreted")
+case object InterpretedTestConfig extends TestConfig(Some("interpreted.txt"), "CYPHER planner=cost runtime=legacy")
 
 case object PipelinedFullTestConfig extends TestConfig(
       Some("pipelined-single-threaded-full.txt"),

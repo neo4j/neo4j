@@ -69,7 +69,7 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest {
         assertThat(actual, containsString("Plan: \"PROFILE\""));
         assertThat(actual, containsString("Statement: \"READ_ONLY\""));
         assertThat(actual, containsString("Planner: \"COST\""));
-        assertThat(actual, containsString("Runtime: \"INTERPRETED\""));
+        assertThat(actual, containsString("Runtime: \"SLOTTED\""));
         assertThat(actual, containsString("DbHits: 0"));
         assertThat(actual, containsString("Rows: 1"));
         assertThat(actual, containsString("null"));
@@ -94,7 +94,7 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest {
     @Test
     void cypherWithExplainStatements() throws CommandException {
         // when
-        shell.execute(CypherStatement.complete("CYPHER RUNTIME=INTERPRETED EXPLAIN RETURN null"));
+        shell.execute(CypherStatement.complete("CYPHER RUNTIME=SLOTTED EXPLAIN RETURN null"));
 
         // then
         String actual = linePrinter.output();
@@ -102,6 +102,6 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest {
         assertThat(actual, containsString("Plan: \"EXPLAIN\""));
         assertThat(actual, containsString("Statement: \"READ_ONLY\""));
         assertThat(actual, containsString("Planner: \"COST\""));
-        assertThat(actual, containsString("Runtime: \"INTERPRETED\""));
+        assertThat(actual, containsString("Runtime: \"SLOTTED\""));
     }
 }

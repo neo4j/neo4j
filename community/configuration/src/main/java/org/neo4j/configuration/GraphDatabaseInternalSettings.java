@@ -119,6 +119,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
 
     public enum CypherRuntime {
         DEFAULT,
+        LEGACY,
         INTERPRETED,
         SLOTTED,
         PIPELINED

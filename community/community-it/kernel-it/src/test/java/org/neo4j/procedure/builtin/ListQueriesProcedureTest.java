@@ -244,7 +244,7 @@ public class ListQueriesProcedureTest {
             Map<String, Object> data = getQueryListing(QUERY1);
 
             // then
-            assertThat(data).containsEntry("runtime", "interpreted");
+            assertThat(data).containsEntry("runtime", "slotted");
             assertThat(data).containsEntry("status", "waiting");
             assertThat(data)
                     .hasEntrySatisfying("indexes", value -> assertThat(value).isInstanceOf(List.class));
