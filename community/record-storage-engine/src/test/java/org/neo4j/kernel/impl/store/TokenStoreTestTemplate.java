@@ -88,7 +88,8 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord> {
         Path namesFile = dir.file("label-tokens.db.names");
         Path namesIdFile = dir.file("label-tokens.db.names.id");
 
-        IdGeneratorFactory generatorFactory = new DefaultIdGeneratorFactory(fs, immediate(), DEFAULT_DATABASE_NAME);
+        IdGeneratorFactory generatorFactory =
+                new DefaultIdGeneratorFactory(fs, immediate(), PageCacheTracer.NULL, DEFAULT_DATABASE_NAME);
         InternalLogProvider logProvider = NullLogProvider.getInstance();
 
         RecordFormats formats = RecordFormatSelector.defaultFormat();
@@ -100,6 +101,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord> {
                 RecordIdType.LABEL_TOKEN_NAME,
                 generatorFactory,
                 pageCache,
+                PageCacheTracer.NULL,
                 logProvider,
                 TokenStore.NAME_STORE_BLOCK_SIZE,
                 formats.dynamic(),
@@ -145,9 +147,9 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord> {
     void getRecordWithNormalModeMustThrowIfTheRecordIsNotInUse() throws IOException {
         createEmptyPageZero();
 
-        assertThrows(InvalidRecordException.class, () -> {
-            store.getRecordByCursor(7, store.newRecord(), NORMAL, storeCursor());
-        });
+        assertThrows(
+                InvalidRecordException.class,
+                () -> store.getRecordByCursor(7, store.newRecord(), NORMAL, storeCursor()));
     }
 
     @Test

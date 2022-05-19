@@ -124,6 +124,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -1201,15 +1203,15 @@ class IndexingServiceTest {
                     throw new RuntimeException("Index deleted.");
                 })
                 .when(deletedIndexProxy)
-                .force(any(CursorContext.class));
+                .force(any(), any(CursorContext.class));
 
         IndexingService indexingService = createIndexServiceWithCustomIndexMap(indexMapReference);
 
-        indexingService.forceAll(NULL_CONTEXT);
-        verify(validIndex1).force(NULL_CONTEXT);
-        verify(validIndex2).force(NULL_CONTEXT);
-        verify(validIndex3).force(NULL_CONTEXT);
-        verify(validIndex4).force(NULL_CONTEXT);
+        indexingService.forceAll(DatabaseFlushEvent.NULL, NULL_CONTEXT);
+        verify(validIndex1).force(FileFlushEvent.NULL, NULL_CONTEXT);
+        verify(validIndex2).force(FileFlushEvent.NULL, NULL_CONTEXT);
+        verify(validIndex3).force(FileFlushEvent.NULL, NULL_CONTEXT);
+        verify(validIndex4).force(FileFlushEvent.NULL, NULL_CONTEXT);
     }
 
     @Test
@@ -1218,7 +1220,7 @@ class IndexingServiceTest {
         IndexProxy strangeIndexProxy = createIndexProxyMock(1);
         doThrow(new UncheckedIOException(new IOException("Can't force")))
                 .when(strangeIndexProxy)
-                .force(any(CursorContext.class));
+                .force(any(), any(CursorContext.class));
         indexMapReference.modify(indexMap -> {
             IndexProxy validIndex = createIndexProxyMock(0);
             indexMap.putIndexProxy(validIndex);
@@ -1231,7 +1233,9 @@ class IndexingServiceTest {
 
         IndexingService indexingService = createIndexServiceWithCustomIndexMap(indexMapReference);
 
-        var e = assertThrows(UnderlyingStorageException.class, () -> indexingService.forceAll(NULL_CONTEXT));
+        var e = assertThrows(
+                UnderlyingStorageException.class,
+                () -> indexingService.forceAll(DatabaseFlushEvent.NULL, NULL_CONTEXT));
         assertThat(e.getMessage()).startsWith("Unable to force");
     }
 
@@ -1356,8 +1360,7 @@ class IndexingServiceTest {
     }
 
     @Test
-    void shouldHandleCreatingBothNodeBasedRelationshipLookupAndValueIndexesInSameCall()
-            throws IOException, IndexNotFoundKernelException {
+    void shouldHandleCreatingBothNodeBasedRelationshipLookupAndValueIndexesInSameCall() throws IOException {
         // given
         when(accessor.newUpdater(any(IndexUpdateMode.class), any(CursorContext.class), anyBoolean()))
                 .thenReturn(updater);
@@ -1495,7 +1498,7 @@ class IndexingServiceTest {
                         any(IndexDescriptor.class), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any()))
                 .thenReturn(accessor);
         when(indexProvider.storeMigrationParticipant(
-                        any(FileSystemAbstraction.class), any(PageCache.class), any(), any()))
+                        any(FileSystemAbstraction.class), any(PageCache.class), any(), any(), any()))
                 .thenReturn(StoreMigrationParticipant.NOT_PARTICIPATING);
 
         MockIndexProviderMap providerMap = life.add(new MockIndexProviderMap(indexProvider));

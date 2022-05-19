@@ -38,7 +38,11 @@ class PointIndexPopulationStressTest extends IndexPopulationStressTest {
                         GEOGRAPHIC_POINT, GEOGRAPHIC_POINT_3D, CARTESIAN_POINT, CARTESIAN_POINT_3D),
                 test -> {
                     DatabaseIndexContext context = DatabaseIndexContext.builder(
-                                    test.pageCache, test.fs, test.contextFactory, DEFAULT_DATABASE_NAME)
+                                    test.pageCache,
+                                    test.fs,
+                                    test.contextFactory,
+                                    test.pageCacheTracer,
+                                    DEFAULT_DATABASE_NAME)
                             .build();
                     return new PointIndexProvider(context, test.directory(), immediate(), defaults());
                 });

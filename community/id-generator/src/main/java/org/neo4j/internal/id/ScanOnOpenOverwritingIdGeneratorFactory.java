@@ -31,6 +31,7 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 /**
  * A {@link DefaultIdGeneratorFactory} that ignores any existing id file on open and instead replaces it with an id file
@@ -41,8 +42,9 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
  * from a store that has no id files (once upon a time this was accepted).
  */
 public class ScanOnOpenOverwritingIdGeneratorFactory extends DefaultIdGeneratorFactory {
-    public ScanOnOpenOverwritingIdGeneratorFactory(FileSystemAbstraction fs, String databaseName) {
-        super(fs, immediate(), databaseName);
+    public ScanOnOpenOverwritingIdGeneratorFactory(
+            FileSystemAbstraction fs, PageCacheTracer pageCacheTracer, String databaseName) {
+        super(fs, immediate(), pageCacheTracer, databaseName);
     }
 
     @Override

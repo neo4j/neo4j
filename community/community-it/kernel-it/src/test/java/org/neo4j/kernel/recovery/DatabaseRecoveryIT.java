@@ -92,6 +92,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -425,7 +426,7 @@ class DatabaseRecoveryIT {
                     try {
                         // Flush the page cache which will fished out of the GlobalModule at the point of constructing
                         // the database
-                        pageCache.flushAndForce();
+                        pageCache.flushAndForce(DatabaseFlushEvent.NULL);
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
@@ -492,8 +493,10 @@ class DatabaseRecoveryIT {
                 NeoStores store1 = new StoreFactory(
                                 databaseLayout,
                                 defaults(),
-                                new DefaultIdGeneratorFactory(fs1, immediate(), databaseLayout.getDatabaseName()),
+                                new DefaultIdGeneratorFactory(
+                                        fs1, immediate(), cacheTracer, databaseLayout.getDatabaseName()),
                                 pageCache1,
+                                cacheTracer,
                                 fs1,
                                 logProvider,
                                 contextFactory,
@@ -503,8 +506,10 @@ class DatabaseRecoveryIT {
                 NeoStores store2 = new StoreFactory(
                                 databaseLayout,
                                 defaults(),
-                                new DefaultIdGeneratorFactory(fs2, immediate(), databaseLayout.getDatabaseName()),
+                                new DefaultIdGeneratorFactory(
+                                        fs2, immediate(), cacheTracer, databaseLayout.getDatabaseName()),
                                 pageCache2,
+                                cacheTracer,
                                 fs2,
                                 logProvider,
                                 contextFactory,
@@ -550,7 +555,7 @@ class DatabaseRecoveryIT {
         var forceOperation = ((GraphDatabaseAPI) db)
                 .getDependencyResolver()
                 .resolveDependency(CheckPointerImpl.ForceOperation.class);
-        forceOperation.flushAndForce(CursorContext.NULL_CONTEXT);
+        forceOperation.flushAndForce(DatabaseFlushEvent.NULL, CursorContext.NULL_CONTEXT);
     }
 
     private static void checkPoint(GraphDatabaseService db) throws IOException {

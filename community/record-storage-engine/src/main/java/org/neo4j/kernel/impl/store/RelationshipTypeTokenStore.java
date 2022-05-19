@@ -30,6 +30,7 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.InternalLogProvider;
@@ -47,6 +48,7 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             InternalLogProvider logProvider,
             DynamicStringStore nameStore,
             RecordFormats recordFormats,
@@ -60,6 +62,7 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
                 SchemaIdType.RELATIONSHIP_TYPE_TOKEN,
                 idGeneratorFactory,
                 pageCache,
+                pageCacheTracer,
                 logProvider,
                 nameStore,
                 TYPE_DESCRIPTOR,

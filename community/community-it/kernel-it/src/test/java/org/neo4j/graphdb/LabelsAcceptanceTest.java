@@ -727,9 +727,10 @@ class LabelsAcceptanceTest {
 
     private IdContextFactory createIdContextFactoryWithMaxedOutLabelTokenIds(
             FileSystemAbstraction fileSystem, JobScheduler jobScheduler) {
-        return IdContextFactoryBuilder.of(fileSystem, jobScheduler, Config.defaults())
+        var cacheTracer = PageCacheTracer.NULL;
+        return IdContextFactoryBuilder.of(fileSystem, jobScheduler, Config.defaults(), cacheTracer)
                 .withIdGenerationFactoryProvider(
-                        any -> new DefaultIdGeneratorFactory(fileSystem, immediate(), db.databaseName()) {
+                        any -> new DefaultIdGeneratorFactory(fileSystem, immediate(), cacheTracer, db.databaseName()) {
                             @Override
                             public IdGenerator open(
                                     PageCache pageCache,

@@ -35,6 +35,7 @@ import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.extension.Threading.waitingWhileIn;
@@ -74,7 +75,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -313,6 +313,7 @@ public class DatabaseCompositeIndexAccessorTest {
             FileSystemAbstraction fileSystem,
             TestDirectory testDirectory) {
         Collection<AbstractIndexProviderFactory<?>> indexProviderFactories = List.of(new RangeIndexProviderFactory());
+        var cacheTracer = NULL;
         return indexProviderFactories.stream()
                 .map(f -> f.create(
                         pageCache,
@@ -326,7 +327,8 @@ public class DatabaseCompositeIndexAccessorTest {
                         DatabaseLayout.ofFlat(testDirectory.homePath()),
                         new TokenHolders(null, null, null),
                         jobScheduler,
-                        new CursorContextFactory(PageCacheTracer.NULL, EMPTY)))
+                        new CursorContextFactory(cacheTracer, EMPTY),
+                        cacheTracer))
                 .collect(Collectors.toList());
     }
 

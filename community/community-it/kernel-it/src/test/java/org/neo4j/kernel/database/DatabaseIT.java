@@ -48,6 +48,8 @@ import org.neo4j.io.pagecache.DelegatingPagedFile;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
@@ -337,9 +339,9 @@ class DatabaseIT {
         }
 
         @Override
-        public void flushAndForce() throws IOException {
+        public void flushAndForce(DatabaseFlushEvent flushEvent) throws IOException {
             flushes.incrementAndGet();
-            super.flushAndForce();
+            super.flushAndForce(flushEvent);
         }
 
         public int getFlushes() {
@@ -371,13 +373,13 @@ class DatabaseIT {
         }
 
         @Override
-        public void flushAndForce() throws IOException {
+        public void flushAndForce(FileFlushEvent flushEvent) throws IOException {
             if (disabledIOController.get()) {
                 assertFalse(ioController.isEnabled());
                 ioControllerChecks.incrementAndGet();
             }
             flushCounter.incrementAndGet();
-            super.flushAndForce();
+            super.flushAndForce(flushEvent);
         }
     }
 }

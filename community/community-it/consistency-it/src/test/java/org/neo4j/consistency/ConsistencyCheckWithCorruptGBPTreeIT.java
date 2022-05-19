@@ -958,7 +958,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
         try (var cursorContext = contextFactory.create("corruptIndexes");
                 JobScheduler jobScheduler = createInitialisedScheduler();
                 GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper(
-                        fs, jobScheduler, layoutBootstrapper, readOnlyChecker, contextFactory)) {
+                        fs, jobScheduler, layoutBootstrapper, readOnlyChecker, contextFactory, NULL)) {
             for (Path file : targetFiles) {
                 var bootstrap = bootstrapper.bootstrapTree(
                         file, openOptions.newWith(NO_FLUSH_ON_CLOSE).toArray(new OpenOption[0]));

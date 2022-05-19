@@ -40,6 +40,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -83,7 +84,7 @@ class LimitedFullCheckIT extends FullCheckIntegrationTest {
                     // There is already another node (created in generateInitialData()) that has this value
                     updater.process(IndexEntryUpdate.add(nodeId, indexRule, values(indexRule)));
                 }
-                accessor.force(NULL_CONTEXT);
+                accessor.force(FileFlushEvent.NULL, NULL_CONTEXT);
             }
         }
 
@@ -170,7 +171,7 @@ class LimitedFullCheckIT extends FullCheckIntegrationTest {
                 }
                 updater.process(IndexEntryUpdate.remove(idToRemove, indexRule, values(indexRule)));
             }
-            accessor.force(NULL_CONTEXT);
+            accessor.force(FileFlushEvent.NULL, NULL_CONTEXT);
         }
     }
 }

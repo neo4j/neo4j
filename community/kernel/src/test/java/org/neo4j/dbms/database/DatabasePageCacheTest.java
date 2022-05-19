@@ -48,6 +48,8 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileMappedListener;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -167,7 +169,7 @@ class DatabasePageCacheTest {
             anotherDatabaseCache.map(mapFile3, PAGE_SIZE, DATABASE_NAME);
             anotherDatabaseCache.map(mapFile4, PAGE_SIZE, DATABASE_NAME);
 
-            databasePageCache.flushAndForce();
+            databasePageCache.flushAndForce(DatabaseFlushEvent.NULL);
 
             List<PagedFile> pagedFiles = pagedFileMapper.getPagedFiles();
             PagedFile originalPagedFile1 = findPagedFile(pagedFiles, mapFile1);
@@ -175,10 +177,10 @@ class DatabasePageCacheTest {
             PagedFile originalPagedFile3 = findPagedFile(pagedFiles, mapFile3);
             PagedFile originalPagedFile4 = findPagedFile(pagedFiles, mapFile4);
 
-            verify(originalPagedFile1).flushAndForce();
-            verify(originalPagedFile2).flushAndForce();
-            verify(originalPagedFile3, never()).flushAndForce();
-            verify(originalPagedFile4, never()).flushAndForce();
+            verify(originalPagedFile1).flushAndForce(FileFlushEvent.NULL);
+            verify(originalPagedFile2).flushAndForce(FileFlushEvent.NULL);
+            verify(originalPagedFile3, never()).flushAndForce(FileFlushEvent.NULL);
+            verify(originalPagedFile4, never()).flushAndForce(FileFlushEvent.NULL);
         }
     }
 
@@ -194,7 +196,7 @@ class DatabasePageCacheTest {
             anotherDatabaseCache.map(mapFile3, PAGE_SIZE, DATABASE_NAME);
             anotherDatabaseCache.map(mapFile4, PAGE_SIZE, DATABASE_NAME);
 
-            databasePageCache.flushAndForce();
+            databasePageCache.flushAndForce(DatabaseFlushEvent.NULL);
 
             List<PagedFile> pagedFiles = pagedFileMapper.getPagedFiles();
             PagedFile originalPagedFile1 = findPagedFile(pagedFiles, mapFile1);
@@ -202,10 +204,10 @@ class DatabasePageCacheTest {
             PagedFile originalPagedFile3 = findPagedFile(pagedFiles, mapFile3);
             PagedFile originalPagedFile4 = findPagedFile(pagedFiles, mapFile4);
 
-            verify(originalPagedFile1).flushAndForce();
-            verify(originalPagedFile2).flushAndForce();
-            verify(originalPagedFile3, never()).flushAndForce();
-            verify(originalPagedFile4, never()).flushAndForce();
+            verify(originalPagedFile1).flushAndForce(FileFlushEvent.NULL);
+            verify(originalPagedFile2).flushAndForce(FileFlushEvent.NULL);
+            verify(originalPagedFile3, never()).flushAndForce(FileFlushEvent.NULL);
+            verify(originalPagedFile4, never()).flushAndForce(FileFlushEvent.NULL);
         }
     }
 

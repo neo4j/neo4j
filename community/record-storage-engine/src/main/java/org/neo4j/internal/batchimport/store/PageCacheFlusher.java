@@ -22,10 +22,11 @@ package org.neo4j.internal.batchimport.store;
 import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 /**
- * A dedicated thread which constantly call {@link PageCache#flushAndForce()} until a call to {@link #halt()} is made.
+ * A dedicated thread which constantly call {@link PageCache#flushAndForce(DatabaseFlushEvent)} until a call to {@link #halt()} is made.
  * Must be started manually by calling {@link #start()}.
  */
 class PageCacheFlusher extends Thread {
@@ -44,7 +45,7 @@ class PageCacheFlusher extends Thread {
         try {
             while (!halted) {
                 try {
-                    pageCache.flushAndForce();
+                    pageCache.flushAndForce(DatabaseFlushEvent.NULL);
                 } catch (Throwable e) {
                     error = e;
                     break;
@@ -56,7 +57,7 @@ class PageCacheFlusher extends Thread {
     }
 
     /**
-     * Halts this flusher, making it stop flushing. The current call to {@link PageCache#flushAndForce()}
+     * Halts this flusher, making it stop flushing. The current call to {@link PageCache#flushAndForce(DatabaseFlushEvent)}
      * will complete before exiting this method call. If there was an error in the thread doing the flushes
      * that exception will be thrown from this method as a {@link RuntimeException}.
      */

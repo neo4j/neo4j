@@ -93,7 +93,7 @@ public class RecordStorageEngineSupport {
             ConstraintRuleAccessor constraintSemantics,
             IndexConfigCompleter indexConfigCompleter) {
         IdGeneratorFactory idGeneratorFactory =
-                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName());
+                new DefaultIdGeneratorFactory(fs, immediate(), PageCacheTracer.NULL, databaseLayout.getDatabaseName());
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
         RecordStorageEngine engine = new ExtendedRecordStorageEngine(
                 databaseLayout,
@@ -130,7 +130,7 @@ public class RecordStorageEngineSupport {
         private LockService lockService = new ReentrantLockService();
         private TokenHolders tokenHolders =
                 new TokenHolders(mock(TokenHolder.class), mock(TokenHolder.class), mock(TokenHolder.class));
-        private Config config = Config.defaults();
+        private final Config config = Config.defaults();
         private ConstraintRuleAccessor constraintSemantics = new ConstraintRuleAccessor() {
             @Override
             public ConstraintDescriptor readConstraint(ConstraintDescriptor rule) {
@@ -261,7 +261,8 @@ public class RecordStorageEngineSupport {
                     EMPTY_LOG_TAIL,
                     CommandLockVerification.Factory.IGNORE,
                     LockVerificationMonitor.Factory.IGNORE,
-                    new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
+                    new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                    PageCacheTracer.NULL);
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 

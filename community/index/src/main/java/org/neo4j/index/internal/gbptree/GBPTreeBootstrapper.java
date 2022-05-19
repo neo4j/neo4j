@@ -54,6 +54,7 @@ public class GBPTreeBootstrapper implements Closeable {
     private final LayoutBootstrapper layoutBootstrapper;
     private final DatabaseReadOnlyChecker readOnlyChecker;
     private final CursorContextFactory contextFactory;
+    private final PageCacheTracer pageCacheTracer;
     private PageCache pageCache;
 
     public GBPTreeBootstrapper(
@@ -61,12 +62,14 @@ public class GBPTreeBootstrapper implements Closeable {
             JobScheduler jobScheduler,
             LayoutBootstrapper layoutBootstrapper,
             DatabaseReadOnlyChecker readOnlyChecker,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer) {
         this.fs = fs;
         this.jobScheduler = jobScheduler;
         this.layoutBootstrapper = layoutBootstrapper;
         this.readOnlyChecker = readOnlyChecker;
         this.contextFactory = contextFactory;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     public Bootstrap bootstrapTree(Path file, OpenOption... additionalOptions) {
@@ -104,7 +107,8 @@ public class GBPTreeBootstrapper implements Closeable {
                     DEFAULT_DATABASE_NAME,
                     file.getFileName().toString(),
                     contextFactory,
-                    layouts.rootLayerConfiguration());
+                    layouts.rootLayerConfiguration(),
+                    pageCacheTracer);
             return new SuccessfulBootstrap(tree, layouts, state, meta);
         } catch (Exception e) {
             return new FailedBootstrap(e);

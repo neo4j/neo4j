@@ -242,7 +242,7 @@ class AbstractDynamicStoreTest {
 
     private AbstractDynamicStore newTestableDynamicStore() {
         DefaultIdGeneratorFactory idGeneratorFactory =
-                new DefaultIdGeneratorFactory(fs, immediate(), DEFAULT_DATABASE_NAME);
+                new DefaultIdGeneratorFactory(fs, immediate(), PageCacheTracer.NULL, DEFAULT_DATABASE_NAME);
         AbstractDynamicStore store =
                 new AbstractDynamicStore(
                         storeFile,
@@ -251,6 +251,7 @@ class AbstractDynamicStoreTest {
                         RecordIdType.ARRAY_BLOCK,
                         idGeneratorFactory,
                         pageCache,
+                        PageCacheTracer.NULL,
                         NullLogProvider.getInstance(),
                         "test",
                         BLOCK_SIZE,

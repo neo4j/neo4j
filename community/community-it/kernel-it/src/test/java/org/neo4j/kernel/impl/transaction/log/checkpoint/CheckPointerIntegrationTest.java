@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import static java.lang.System.currentTimeMillis;
+import static java.time.Duration.ofHours;
 import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,33 +31,38 @@ import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_tx;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.io.ByteUnit.gibiBytes;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogAssertions;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 
-@EphemeralNeo4jLayoutExtension
+@Neo4jLayoutExtension
 class CheckPointerIntegrationTest {
     @Inject
-    private EphemeralFileSystemAbstraction fs;
+    private FileSystemAbstraction fs;
 
     @Inject
     private DatabaseLayout databaseLayout;
@@ -65,9 +71,7 @@ class CheckPointerIntegrationTest {
 
     @BeforeEach
     void setup() {
-        builder = new TestDatabaseManagementServiceBuilder(databaseLayout)
-                .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
-                .impermanent();
+        builder = new TestDatabaseManagementServiceBuilder(databaseLayout).setFileSystem(fs);
     }
 
     @Test
@@ -277,6 +281,81 @@ class CheckPointerIntegrationTest {
             assertThat(cacheTracer.flushes()).isGreaterThan(initialFlushes);
             assertThat(cacheTracer.bytesWritten()).isGreaterThan(initialBytesWritten);
             assertThat(cacheTracer.pins()).isGreaterThan(initialPins);
+        } finally {
+            managementService.shutdown();
+        }
+    }
+
+    @Test
+    void checkpointMessageWithNotConfiguredIOController() throws IOException {
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        var managementService = builder.setConfig(check_point_interval_time, ofHours(7))
+                .setConfig(check_point_interval_tx, 10_000)
+                .setConfig(logical_log_rotation_threshold, gibiBytes(1))
+                .setInternalLogProvider(logProvider)
+                .build();
+        try {
+            GraphDatabaseAPI databaseAPI = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+            var cacheTracer = databaseAPI.getDependencyResolver().resolveDependency(PageCacheTracer.class);
+
+            long initialFlushes = cacheTracer.flushes();
+            long initialBytesWritten = cacheTracer.bytesWritten();
+            long initialPins = cacheTracer.pins();
+
+            getCheckPointer(databaseAPI).forceCheckPoint(new SimpleTriggerInfo("tracing"));
+
+            assertThat(cacheTracer.flushes()).isGreaterThan(initialFlushes);
+            assertThat(cacheTracer.bytesWritten()).isGreaterThan(initialBytesWritten);
+            assertThat(cacheTracer.pins()).isGreaterThan(initialPins);
+
+            LogAssertions.assertThat(logProvider)
+                    .forClass(CheckPointerImpl.class)
+                    .containsMessages(
+                            " Checkpoint flushed 30 pages (2% of total available pages), in 30 IOs. Checkpoint performed with IO limit: unlimited.");
+
+        } finally {
+            managementService.shutdown();
+        }
+    }
+
+    @Test
+    void checkpointMessageWithDifferentNumberOfIOsWithNotConfiguredIOController() throws IOException {
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        var managementService = builder.setConfig(check_point_interval_time, ofHours(7))
+                .setConfig(check_point_interval_tx, 10_000)
+                .setConfig(logical_log_rotation_threshold, gibiBytes(1))
+                .setInternalLogProvider(logProvider)
+                .build();
+        try {
+            GraphDatabaseAPI databaseAPI = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+            var cacheTracer = databaseAPI.getDependencyResolver().resolveDependency(PageCacheTracer.class);
+
+            String property = RandomStringUtils.randomAscii((int) kibiBytes(2));
+            for (int i = 0; i < 100; i++) {
+                try (var transaction = databaseAPI.beginTx()) {
+                    Node nodeA = transaction.createNode();
+                    Node nodeB = transaction.createNode();
+                    nodeA.setProperty("a", property);
+                    nodeA.createRelationshipTo(nodeB, RelationshipType.withName("foo"));
+                    transaction.commit();
+                }
+            }
+
+            long initialFlushes = cacheTracer.flushes();
+            long initialBytesWritten = cacheTracer.bytesWritten();
+            long initialPins = cacheTracer.pins();
+
+            getCheckPointer(databaseAPI).forceCheckPoint(new SimpleTriggerInfo("tracing"));
+
+            assertThat(cacheTracer.flushes()).isGreaterThan(initialFlushes);
+            assertThat(cacheTracer.bytesWritten()).isGreaterThan(initialBytesWritten);
+            assertThat(cacheTracer.pins()).isGreaterThan(initialPins);
+
+            LogAssertions.assertThat(logProvider)
+                    .forClass(CheckPointerImpl.class)
+                    .containsMessages(
+                            "Checkpoint flushed 73 pages (7% of total available pages), in 46 IOs. Checkpoint performed with IO limit: unlimited.");
+
         } finally {
             managementService.shutdown();
         }

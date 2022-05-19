@@ -66,8 +66,9 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> e
 
     @Override
     NativeIndexPopulator<KEY> createPopulator(PageCache pageCache) throws IOException {
+        var cacheTracer = PageCacheTracer.NULL;
         DatabaseIndexContext context = DatabaseIndexContext.builder(
-                        pageCache, fs, new CursorContextFactory(PageCacheTracer.NULL, EMPTY), DEFAULT_DATABASE_NAME)
+                        pageCache, fs, new CursorContextFactory(cacheTracer, EMPTY), cacheTracer, DEFAULT_DATABASE_NAME)
                 .build();
         return populatorFactory.create(context, indexFiles, layout, indexDescriptor, tokenNameLookup);
     }

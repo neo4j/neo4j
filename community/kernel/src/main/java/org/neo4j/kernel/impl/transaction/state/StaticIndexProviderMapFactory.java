@@ -28,6 +28,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.PointIndexProviderFactory;
@@ -55,7 +56,8 @@ public class StaticIndexProviderMapFactory {
             DatabaseLayout databaseLayout,
             TokenHolders tokenHolders,
             JobScheduler scheduler,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer) {
         return create(
                 life,
                 databaseConfig,
@@ -70,6 +72,7 @@ public class StaticIndexProviderMapFactory {
                 tokenHolders,
                 scheduler,
                 contextFactory,
+                pageCacheTracer,
                 new Dependencies());
     }
 
@@ -87,6 +90,7 @@ public class StaticIndexProviderMapFactory {
             TokenHolders tokenHolders,
             JobScheduler scheduler,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             DependencyResolver dependencies) {
         var tokenIndexProvider = life.add(new TokenIndexProviderFactory()
                 .create(
@@ -101,7 +105,8 @@ public class StaticIndexProviderMapFactory {
                         databaseLayout,
                         tokenHolders,
                         scheduler,
-                        contextFactory));
+                        contextFactory,
+                        pageCacheTracer));
 
         var textIndexProvider = life.add(new TextIndexProviderFactory()
                 .create(
@@ -116,7 +121,8 @@ public class StaticIndexProviderMapFactory {
                         databaseLayout,
                         tokenHolders,
                         scheduler,
-                        contextFactory));
+                        contextFactory,
+                        pageCacheTracer));
 
         var fulltextIndexProvider = life.add(new FulltextIndexProviderFactory()
                 .create(
@@ -131,7 +137,8 @@ public class StaticIndexProviderMapFactory {
                         databaseLayout,
                         tokenHolders,
                         scheduler,
-                        contextFactory));
+                        contextFactory,
+                        pageCacheTracer));
 
         var rangeIndexProvider = life.add(new RangeIndexProviderFactory()
                 .create(
@@ -146,7 +153,8 @@ public class StaticIndexProviderMapFactory {
                         databaseLayout,
                         tokenHolders,
                         scheduler,
-                        contextFactory));
+                        contextFactory,
+                        pageCacheTracer));
 
         var pointIndexProvider = life.add(new PointIndexProviderFactory()
                 .create(
@@ -161,7 +169,8 @@ public class StaticIndexProviderMapFactory {
                         databaseLayout,
                         tokenHolders,
                         scheduler,
-                        contextFactory));
+                        contextFactory,
+                        pageCacheTracer));
 
         return new StaticIndexProviderMap(
                 tokenIndexProvider,

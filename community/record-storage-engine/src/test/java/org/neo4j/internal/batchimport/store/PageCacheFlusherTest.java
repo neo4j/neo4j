@@ -27,6 +27,7 @@ import static org.mockito.Mockito.mock;
 import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.actors.Actor;
@@ -47,7 +48,7 @@ class PageCacheFlusherTest {
                     return null;
                 })
                 .when(pageCache)
-                .flushAndForce();
+                .flushAndForce(DatabaseFlushEvent.NULL);
         PageCacheFlusher flusher = new PageCacheFlusher(pageCache);
         flusher.start();
 
@@ -70,7 +71,7 @@ class PageCacheFlusherTest {
                     throw failure;
                 })
                 .when(pageCache)
-                .flushAndForce();
+                .flushAndForce(DatabaseFlushEvent.NULL);
         PageCacheFlusher flusher = new PageCacheFlusher(pageCache);
         flusher.run();
 

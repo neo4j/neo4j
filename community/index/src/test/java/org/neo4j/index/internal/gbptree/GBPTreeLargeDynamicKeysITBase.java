@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -251,7 +252,7 @@ abstract class GBPTreeLargeDynamicKeysITBase {
                     }
                 }
             }
-            tree.checkpoint(NULL_CONTEXT);
+            tree.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
     }
 

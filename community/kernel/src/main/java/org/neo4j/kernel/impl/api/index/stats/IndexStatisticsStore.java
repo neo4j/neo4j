@@ -43,6 +43,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -66,6 +68,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
     private final Path path;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final String databaseName;
+    private final PageCacheTracer pageCacheTracer;
     private final IndexStatisticsLayout layout;
     private final DatabaseReadOnlyChecker readOnlyChecker;
     private GBPTree<IndexStatisticsKey, IndexStatisticsValue> tree;
@@ -80,6 +83,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseReadOnlyChecker readOnlyChecker,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             ImmutableSet<OpenOption> openOptions)
             throws IOException {
         this(
@@ -89,6 +93,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
                 readOnlyChecker,
                 databaseLayout.getDatabaseName(),
                 contextFactory,
+                pageCacheTracer,
                 openOptions);
     }
 
@@ -99,12 +104,14 @@ public class IndexStatisticsStore extends LifecycleAdapter
             DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             ImmutableSet<OpenOption> openOptions)
             throws IOException {
         this.pageCache = pageCache;
         this.path = path;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.databaseName = databaseName;
+        this.pageCacheTracer = pageCacheTracer;
         this.layout = new IndexStatisticsLayout();
         this.readOnlyChecker = readOnlyChecker;
         initTree(contextFactory, openOptions);
@@ -125,7 +132,8 @@ public class IndexStatisticsStore extends LifecycleAdapter
                     openOptions,
                     databaseName,
                     "Statistics store",
-                    contextFactory);
+                    contextFactory,
+                    pageCacheTracer);
             try (var cursorContext = contextFactory.create("indexStatisticScan")) {
                 scanTree(
                         (key, value) -> cache.put(key.getIndexId(), new ImmutableIndexStatistics(value)),
@@ -181,11 +189,11 @@ public class IndexStatisticsStore extends LifecycleAdapter
         }
     }
 
-    public void checkpoint(CursorContext cursorContext) throws IOException {
+    public void checkpoint(FileFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
         // There's an assumption that there will never be concurrent calls to checkpoint. This is guarded outside.
         clearTree(cursorContext);
         writeCacheContentsIntoTree(cursorContext);
-        tree.checkpoint(cursorContext);
+        tree.checkpoint(flushEvent, cursorContext);
     }
 
     @Override

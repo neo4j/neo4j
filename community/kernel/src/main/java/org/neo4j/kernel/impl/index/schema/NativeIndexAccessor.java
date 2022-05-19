@@ -38,6 +38,7 @@ import org.neo4j.index.internal.gbptree.TreeInconsistencyException;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -94,8 +95,8 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
     }
 
     @Override
-    public void force(CursorContext cursorContext) {
-        tree.checkpoint(cursorContext);
+    public void force(FileFlushEvent flushEvent, CursorContext cursorContext) {
+        tree.checkpoint(flushEvent, cursorContext);
     }
 
     @Override

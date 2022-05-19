@@ -34,6 +34,7 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 
 public class EmptyIdGeneratorFactory implements IdGeneratorFactory {
     public static final IdGeneratorFactory EMPTY_ID_GENERATOR_FACTORY = new EmptyIdGeneratorFactory();
@@ -145,7 +146,7 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory {
         }
 
         @Override
-        public void checkpoint(CursorContext cursorContext) {
+        public void checkpoint(FileFlushEvent flushEvent, CursorContext cursorContext) {
             // nothing
         }
 

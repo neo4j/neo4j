@@ -47,6 +47,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
@@ -93,6 +94,7 @@ class IndexStatisticsStoreTest {
                 writable(),
                 DEFAULT_DATABASE_NAME,
                 contextFactory,
+                pageCacheTracer,
                 getOpenOptions());
         return lifeSupport.add(statisticsStore);
     }
@@ -108,7 +110,7 @@ class IndexStatisticsStoreTest {
             for (int i = 0; i < 100; i++) {
                 store.replaceStats(i, new IndexSample());
             }
-            store.checkpoint(CursorContext.NULL_CONTEXT);
+            store.checkpoint(FileFlushEvent.NULL, CursorContext.NULL_CONTEXT);
             store.consistencyCheck(noopReporterFactory(), cursorContext);
 
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
@@ -142,7 +144,7 @@ class IndexStatisticsStoreTest {
                 store.replaceStats(i, new IndexSample());
             }
 
-            store.checkpoint(cursorContext);
+            store.checkpoint(FileFlushEvent.NULL, cursorContext);
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             assertThat(cursorTracer.pins()).isEqualTo(36);
             assertThat(cursorTracer.unpins()).isEqualTo(36);
@@ -201,7 +203,7 @@ class IndexStatisticsStoreTest {
     }
 
     private void restartStore() throws IOException {
-        store.checkpoint(CursorContext.NULL_CONTEXT);
+        store.checkpoint(FileFlushEvent.NULL, CursorContext.NULL_CONTEXT);
         lifeSupport.shutdown();
         lifeSupport = new LifeSupport();
         store = openStore("stats");
@@ -237,7 +239,7 @@ class IndexStatisticsStoreTest {
         race.addContestant(throwing(() -> {
             for (int i = 0; i < 20; i++) {
                 Thread.sleep(5);
-                store.checkpoint(CursorContext.NULL_CONTEXT);
+                store.checkpoint(FileFlushEvent.NULL, CursorContext.NULL_CONTEXT);
             }
             checkpointDone.set(true);
         }));
@@ -276,6 +278,7 @@ class IndexStatisticsStoreTest {
                         readOnly(),
                         DEFAULT_DATABASE_NAME,
                         contextFactory,
+                        pageCacheTracer,
                         getOpenOptions()));
         assertTrue(Exceptions.contains(e, t -> t instanceof WriteOnReadOnlyAccessDbException));
         assertTrue(Exceptions.contains(e, t -> t instanceof TreeFileNotFoundException));

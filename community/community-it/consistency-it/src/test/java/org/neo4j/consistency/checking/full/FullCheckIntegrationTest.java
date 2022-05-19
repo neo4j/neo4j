@@ -127,6 +127,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -774,7 +775,7 @@ public class FullCheckIntegrationTest {
                     // There is already another node (created in generateInitialData()) that has this value
                     updater.process(IndexEntryUpdate.add(nodeId, indexRule, values(indexRule)));
                 }
-                accessor.force(NULL_CONTEXT);
+                accessor.force(FileFlushEvent.NULL, NULL_CONTEXT);
             }
         }
 
@@ -2847,6 +2848,7 @@ public class FullCheckIntegrationTest {
         ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
         LookupAccessorsFromRunningDb accessorLookup =
                 new LookupAccessorsFromRunningDb(dependencyResolver.resolveDependency(IndexingService.class));
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         new RecordStorageConsistencyChecker(
                         dependencyResolver.resolveDependency(FileSystemAbstraction.class),
                         RecordDatabaseLayout.convert(fixture.databaseLayout()),
@@ -2866,7 +2868,8 @@ public class FullCheckIntegrationTest {
                         ConsistencyFlags.DEFAULT,
                         memoryLimiter,
                         EmptyMemoryTracker.INSTANCE,
-                        new CursorContextFactory(PageCacheTracer.NULL, EMPTY))
+                        new CursorContextFactory(cacheTracer, EMPTY),
+                        cacheTracer)
                 .check();
         return summary;
     }

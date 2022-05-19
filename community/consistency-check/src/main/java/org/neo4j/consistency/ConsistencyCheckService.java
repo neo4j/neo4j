@@ -458,7 +458,7 @@ public class ConsistencyCheckService {
             var recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.ignore();
             var monitors = new Monitors();
             var tokenHolders = storageEngineFactory.loadReadOnlyTokens(
-                    fileSystem, layout, config, pageCache, true, contextFactory);
+                    fileSystem, layout, config, pageCache, pageCacheTracer, true, contextFactory);
             var extensions = life.add(instantiateExtensions(
                     layout,
                     fileSystem,
@@ -487,6 +487,7 @@ public class ConsistencyCheckService {
                     tokenHolders,
                     jobScheduler,
                     contextFactory,
+                    pageCacheTracer,
                     extensions));
 
             // do the consistency check
@@ -499,8 +500,8 @@ public class ConsistencyCheckService {
             if (consistencyFlags.isCheckIndexStructure()) {
                 var openOptions =
                         storageEngineFactory.getStoreOpenOptions(fileSystem, pageCache, layout, contextFactory);
-                var statisticsStore =
-                        getStatisticStore(pageCache, recoveryCleanupWorkCollector, contextFactory, openOptions);
+                var statisticsStore = getStatisticStore(
+                        pageCache, recoveryCleanupWorkCollector, contextFactory, pageCacheTracer, openOptions);
                 life.add(statisticsStore);
                 consistencyCheckSingleCheckable(log, summary, statisticsStore, "INDEX_STATISTICS", NULL_CONTEXT);
             }
@@ -519,7 +520,8 @@ public class ConsistencyCheckService {
                         progressOutput,
                         verbose,
                         consistencyFlags,
-                        contextFactory);
+                        contextFactory,
+                        pageCacheTracer);
             } catch (Exception e) {
                 throw new ConsistencyCheckIncompleteException(e);
             }
@@ -581,10 +583,17 @@ public class ConsistencyCheckService {
             PageCache pageCache,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             ImmutableSet<OpenOption> openOptions) {
         try {
             return new IndexStatisticsStore(
-                    pageCache, layout, recoveryCleanupWorkCollector, readOnly(), contextFactory, openOptions);
+                    pageCache,
+                    layout,
+                    recoveryCleanupWorkCollector,
+                    readOnly(),
+                    contextFactory,
+                    pageCacheTracer,
+                    openOptions);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

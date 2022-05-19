@@ -67,6 +67,7 @@ public class RecordStorageEngineTestUtils {
                 createReadOnlyTokenHolder(TokenHolder.TYPE_PROPERTY_KEY),
                 createReadOnlyTokenHolder(TokenHolder.TYPE_LABEL),
                 createReadOnlyTokenHolder(TokenHolder.TYPE_RELATIONSHIP_TYPE));
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         return new RecordStorageEngine(
                 layout,
                 config,
@@ -80,7 +81,7 @@ public class RecordStorageEngineTestUtils {
                 c -> c,
                 NO_LOCK_SERVICE,
                 mock(Health.class),
-                new DefaultIdGeneratorFactory(fs, immediate(), DEFAULT_DATABASE_NAME),
+                new DefaultIdGeneratorFactory(fs, immediate(), cacheTracer, DEFAULT_DATABASE_NAME),
                 immediate(),
                 true,
                 EmptyMemoryTracker.INSTANCE,
@@ -88,7 +89,8 @@ public class RecordStorageEngineTestUtils {
                 EMPTY_LOG_TAIL,
                 CommandLockVerification.Factory.IGNORE,
                 LockVerificationMonitor.Factory.IGNORE,
-                new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
+                new CursorContextFactory(cacheTracer, EMPTY),
+                cacheTracer);
     }
 
     public static void applyLogicalChanges(

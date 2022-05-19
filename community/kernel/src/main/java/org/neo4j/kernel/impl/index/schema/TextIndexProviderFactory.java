@@ -31,6 +31,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.logging.InternalLog;
@@ -65,7 +66,8 @@ public class TextIndexProviderFactory extends AbstractIndexProviderFactory<TextI
             InternalLog log,
             TokenHolders tokenHolders,
             JobScheduler scheduler,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer) {
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider(databaseLayout.databaseDirectory());
         return new TextIndexProvider(
                 fs,

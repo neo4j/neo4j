@@ -44,6 +44,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 public class MuninnPageCacheChecksumIT extends PageCacheTestSupport<MuninnPageCache> {
@@ -227,7 +228,7 @@ public class MuninnPageCacheChecksumIT extends PageCacheTestSupport<MuninnPageCa
                         mutator.putInt(i);
                     }
                 }
-                pageFile.flushAndForce();
+                pageFile.flushAndForce(FileFlushEvent.NULL);
             }
 
             try (var pageFile = map(pageCache, file("a"), pageCache.pageSize());

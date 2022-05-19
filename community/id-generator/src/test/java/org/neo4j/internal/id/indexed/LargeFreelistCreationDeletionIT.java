@@ -41,6 +41,7 @@ import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.TestIdType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
@@ -74,6 +75,7 @@ class LargeFreelistCreationDeletionIT {
             allocatedIds[i] = new long[ALLOCATIONS_PER_THREAD];
         }
 
+        var cacheTracer = PageCacheTracer.NULL;
         for (int r = 0; r < 3; r++) {
             // Create
             try (var freelist = new IndexedIdGenerator(
@@ -87,10 +89,11 @@ class LargeFreelistCreationDeletionIT {
                     writable(),
                     Config.defaults(),
                     DEFAULT_DATABASE_NAME,
-                    new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                    new CursorContextFactory(cacheTracer, EMPTY),
                     NO_MONITOR,
                     Sets.immutable.empty(),
-                    SINGLE_IDS)) {
+                    SINGLE_IDS,
+                    cacheTracer)) {
                 // Make sure ID cache is filled so that initial allocations won't slide highId unnecessarily.
                 freelist.maintenance(NULL_CONTEXT);
 
@@ -127,7 +130,7 @@ class LargeFreelistCreationDeletionIT {
                 }
 
                 // Checkpoint
-                freelist.checkpoint(NULL_CONTEXT);
+                freelist.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
                 System.out.println(freelist.getHighId());
             }
         }

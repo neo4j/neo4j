@@ -71,6 +71,8 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -124,7 +126,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     private static final String STORAGE_ENGINE_START_TAG = "storageEngineStart";
     private static final String SCHEMA_CACHE_START_TAG = "schemaCacheStart";
     private static final String TOKENS_INIT_TAG = "tokensInitialisation";
-    private static final String SCHEMA_UPGRADE_TAG = "schemaUpgrade";
 
     private final NeoStores neoStores;
     private final RecordDatabaseLayout databaseLayout;
@@ -180,7 +181,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             LogTailMetadata logTailMetadata,
             CommandLockVerification.Factory commandLockVerificationFactory,
             LockVerificationMonitor.Factory lockVerificationFactory,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer) {
         this.databaseLayout = databaseLayout;
         this.config = config;
         this.internalLogProvider = internalLogProvider;
@@ -199,6 +201,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                 config,
                 idGeneratorFactory,
                 pageCache,
+                pageCacheTracer,
                 fs,
                 internalLogProvider,
                 contextFactory,
@@ -226,7 +229,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                     recoveryCleanupWorkCollector,
                     readOnlyChecker,
                     config,
-                    contextFactory);
+                    contextFactory,
+                    pageCacheTracer);
 
             groupDegreesStore = openDegreesStore(
                     pageCache,
@@ -237,7 +241,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                     recoveryCleanupWorkCollector,
                     readOnlyChecker,
                     config,
-                    contextFactory);
+                    contextFactory,
+                    pageCacheTracer);
 
             consistencyCheckApply = config.get(GraphDatabaseInternalSettings.consistency_check_on_apply);
             storeEntityCounters = new RecordDatabaseEntityCounters(idGeneratorFactory, countsStore);
@@ -290,7 +295,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseReadOnlyChecker readOnlyChecker,
             Config config,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer) {
         try {
             return new GBPTreeCountsStore(
                     pageCache,
@@ -322,6 +328,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                     config.get(counts_store_max_cached_entries),
                     userLogProvider,
                     contextFactory,
+                    pageCacheTracer,
                     getOpenOptions());
         } catch (IOException e) {
             throw new UnderlyingStorageException(e);
@@ -337,7 +344,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseReadOnlyChecker readOnlyChecker,
             Config config,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer) {
         try {
             return new GBPTreeRelationshipGroupDegreesStore(
                     pageCache,
@@ -357,6 +365,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                     config.get(counts_store_max_cached_entries),
                     userLogProvider,
                     contextFactory,
+                    pageCacheTracer,
                     getOpenOptions());
         } catch (IOException e) {
             throw new UnderlyingStorageException(e);
@@ -583,10 +592,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     @Override
-    public void flushAndForce(CursorContext cursorContext) throws IOException {
-        countsStore.checkpoint(cursorContext);
-        groupDegreesStore.checkpoint(cursorContext);
-        neoStores.flush(cursorContext);
+    public void flushAndForce(DatabaseFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
+        try (var fileFlushEvent = flushEvent.beginFileFlush()) {
+            countsStore.checkpoint(fileFlushEvent, cursorContext);
+        }
+        try (var fileFlushEvent = flushEvent.beginFileFlush()) {
+            groupDegreesStore.checkpoint(fileFlushEvent, cursorContext);
+        }
+        neoStores.flush(flushEvent, cursorContext);
     }
 
     @Override

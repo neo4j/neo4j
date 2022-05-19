@@ -26,6 +26,7 @@ import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -33,7 +34,7 @@ import org.neo4j.storageengine.util.IdUpdateListener;
 
 /**
  * A store for {@link #updateRecord(AbstractBaseRecord, PageCursor, CursorContext, StoreCursors) updating} and
- * {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}  getting} records.
+ * {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)} getting} records.
  *
  * There are two ways of getting records, either one-by-one using
  * {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}, passing in record retrieved from {@link #newRecord()}.
@@ -252,7 +253,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * This call is blocking and will ensure all updates since last call to this method are durable
      * once the call returns.
      */
-    void flush(CursorContext cursorContext);
+    void flush(FileFlushEvent flushEvent, CursorContext cursorContext);
 
     /**
      * Some stores may have meta data stored in the header of the store file. Since all records in a store

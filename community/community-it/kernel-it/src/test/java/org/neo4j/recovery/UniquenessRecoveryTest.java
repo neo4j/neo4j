@@ -52,6 +52,7 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -287,7 +288,7 @@ public class UniquenessRecoveryTest {
             ((GraphDatabaseAPI) db)
                     .getDependencyResolver()
                     .resolveDependency(PageCache.class)
-                    .flushAndForce();
+                    .flushAndForce(DatabaseFlushEvent.NULL);
         } catch (IOException e) {
             System.out.println("!! failed to force the page cache");
             e.printStackTrace(System.out);

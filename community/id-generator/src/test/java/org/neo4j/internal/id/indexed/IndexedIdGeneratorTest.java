@@ -104,6 +104,7 @@ import org.neo4j.internal.id.TestIdType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
 import org.neo4j.kernel.database.DatabaseIdFactory;
@@ -168,7 +169,8 @@ class IndexedIdGeneratorTest {
                 CONTEXT_FACTORY,
                 monitor,
                 getOpenOptions(),
-                slotDistribution);
+                slotDistribution,
+                PageCacheTracer.NULL);
     }
 
     protected ImmutableSet<OpenOption> getOpenOptions() {
@@ -210,7 +212,8 @@ class IndexedIdGeneratorTest {
                 CONTEXT_FACTORY,
                 NO_MONITOR,
                 getOpenOptions(),
-                SINGLE_IDS)) {
+                SINGLE_IDS,
+                PageCacheTracer.NULL)) {
             customGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             for (int i = 0; i < generatedIds; i++) {
                 customGenerator.nextId(NULL_CONTEXT);
@@ -219,7 +222,7 @@ class IndexedIdGeneratorTest {
 
             assertDoesNotThrow(() -> customGenerator.nextId(NULL_CONTEXT));
 
-            customGenerator.checkpoint(NULL_CONTEXT);
+            customGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
 
         try (var reopenedGenerator = new IndexedIdGenerator(
@@ -236,7 +239,8 @@ class IndexedIdGeneratorTest {
                 CONTEXT_FACTORY,
                 NO_MONITOR,
                 getOpenOptions(),
-                SINGLE_IDS)) {
+                SINGLE_IDS,
+                PageCacheTracer.NULL)) {
             reopenedGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             assertDoesNotThrow(() -> reopenedGenerator.nextId(NULL_CONTEXT));
 
@@ -622,7 +626,8 @@ class IndexedIdGeneratorTest {
                 CONTEXT_FACTORY,
                 NO_MONITOR,
                 getOpenOptions(),
-                SINGLE_IDS);
+                SINGLE_IDS,
+                PageCacheTracer.NULL);
 
         // then
         verify(highIdSupplier).getAsLong();
@@ -635,7 +640,7 @@ class IndexedIdGeneratorTest {
         open();
         long highId = idGenerator.getHighId();
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
-        idGenerator.checkpoint(NULL_CONTEXT);
+        idGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         stop();
 
         // when
@@ -655,7 +660,8 @@ class IndexedIdGeneratorTest {
                 CONTEXT_FACTORY,
                 NO_MONITOR,
                 getOpenOptions(),
-                SINGLE_IDS);
+                SINGLE_IDS,
+                PageCacheTracer.NULL);
 
         // then
         verifyNoMoreInteractions(highIdSupplier);
@@ -682,7 +688,8 @@ class IndexedIdGeneratorTest {
                         CONTEXT_FACTORY,
                         NO_MONITOR,
                         getOpenOptions(),
-                        SINGLE_IDS));
+                        SINGLE_IDS,
+                        PageCacheTracer.NULL));
         assertTrue(Exceptions.contains(e, t -> t instanceof WriteOnReadOnlyAccessDbException));
         assertTrue(Exceptions.contains(e, t -> t instanceof TreeFileNotFoundException));
         assertTrue(Exceptions.contains(e, t -> t instanceof IllegalStateException));
@@ -705,7 +712,8 @@ class IndexedIdGeneratorTest {
                         CONTEXT_FACTORY,
                         NO_MONITOR,
                         getOpenOptions(),
-                        SINGLE_IDS)
+                        SINGLE_IDS,
+                        PageCacheTracer.NULL)
                 .close();
         // Never start id generator means it will need rebuild on next start
 
@@ -724,7 +732,8 @@ class IndexedIdGeneratorTest {
                 CONTEXT_FACTORY,
                 NO_MONITOR,
                 getOpenOptions(),
-                SINGLE_IDS)) {
+                SINGLE_IDS,
+                PageCacheTracer.NULL)) {
             var e = assertThrows(Exception.class, () -> readOnlyGenerator.start(NO_FREE_IDS, NULL_CONTEXT));
             assertThat(e).hasCauseInstanceOf(WriteOnReadOnlyAccessDbException.class);
         }
@@ -747,7 +756,8 @@ class IndexedIdGeneratorTest {
                 CONTEXT_FACTORY,
                 NO_MONITOR,
                 getOpenOptions(),
-                SINGLE_IDS);
+                SINGLE_IDS,
+                PageCacheTracer.NULL);
         indexedIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         indexedIdGenerator.close();
         // Never start id generator means it will need rebuild on next start
@@ -767,7 +777,8 @@ class IndexedIdGeneratorTest {
                 CONTEXT_FACTORY,
                 NO_MONITOR,
                 getOpenOptions(),
-                SINGLE_IDS)) {
+                SINGLE_IDS,
+                PageCacheTracer.NULL)) {
             readOnlyGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         }
     }
@@ -814,7 +825,7 @@ class IndexedIdGeneratorTest {
         idGenerator.maintenance(NULL_CONTEXT);
         long reusedId = idGenerator.nextId(NULL_CONTEXT);
         verify(monitor).allocatedFromReused(reusedId, 1);
-        idGenerator.checkpoint(NULL_CONTEXT);
+        idGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         // two times, one in start and one now in checkpoint
         verify(monitor, times(2)).checkpoint(anyLong(), anyLong());
         idGenerator.clearCache(NULL_CONTEXT);
@@ -969,7 +980,7 @@ class IndexedIdGeneratorTest {
             assertThat(cursorTracer.unpins()).isZero();
             assertThat(cursorTracer.hits()).isZero();
 
-            idGenerator.checkpoint(cursorContext);
+            idGenerator.checkpoint(FileFlushEvent.NULL, cursorContext);
 
             // 2 state pages involved into checkpoint (twice)
             assertThat(cursorTracer.pins()).isEqualTo(4);
@@ -1014,8 +1025,9 @@ class IndexedIdGeneratorTest {
                 CONTEXT_FACTORY,
                 NO_MONITOR,
                 getOpenOptions(),
-                SINGLE_IDS)) {
-            prepareIndexWithoutRebuild.checkpoint(NULL_CONTEXT);
+                SINGLE_IDS,
+                PageCacheTracer.NULL)) {
+            prepareIndexWithoutRebuild.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
         try (var idGenerator = new IndexedIdGenerator(
                 pageCache,
@@ -1031,7 +1043,8 @@ class IndexedIdGeneratorTest {
                 CONTEXT_FACTORY,
                 NO_MONITOR,
                 getOpenOptions(),
-                SINGLE_IDS)) {
+                SINGLE_IDS,
+                PageCacheTracer.NULL)) {
             var pageCacheTracer = new DefaultPageCacheTracer();
             try (var cursorContext = CONTEXT_FACTORY.create(
                     pageCacheTracer.createPageCursorTracer("tracePageCacheOnIdGeneratorStartWithoutRebuild"))) {
@@ -1277,7 +1290,8 @@ class IndexedIdGeneratorTest {
                 CONTEXT_FACTORY,
                 NO_MONITOR,
                 getOpenOptions(),
-                SINGLE_IDS);
+                SINGLE_IDS,
+                PageCacheTracer.NULL);
         indexedIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         indexedIdGenerator.close();
 
@@ -1296,7 +1310,8 @@ class IndexedIdGeneratorTest {
                 CONTEXT_FACTORY,
                 NO_MONITOR,
                 getOpenOptions(),
-                SINGLE_IDS)) {
+                SINGLE_IDS,
+                PageCacheTracer.NULL)) {
             readOnlyGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             assertDoesNotThrow(() -> operation.apply(readOnlyGenerator));
         }
@@ -1319,7 +1334,8 @@ class IndexedIdGeneratorTest {
                 CONTEXT_FACTORY,
                 NO_MONITOR,
                 getOpenOptions(),
-                SINGLE_IDS);
+                SINGLE_IDS,
+                PageCacheTracer.NULL);
         indexedIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         indexedIdGenerator.close();
 
@@ -1338,7 +1354,8 @@ class IndexedIdGeneratorTest {
                 CONTEXT_FACTORY,
                 NO_MONITOR,
                 getOpenOptions(),
-                SINGLE_IDS)) {
+                SINGLE_IDS,
+                PageCacheTracer.NULL)) {
             readOnlyGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             var e = assertThrows(Exception.class, operation.apply(readOnlyGenerator));
             assertThat(e).hasCauseInstanceOf(WriteOnReadOnlyAccessDbException.class);
@@ -1364,7 +1381,7 @@ class IndexedIdGeneratorTest {
     }
 
     private void restart() throws IOException {
-        idGenerator.checkpoint(NULL_CONTEXT);
+        idGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         stop();
         open();
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);

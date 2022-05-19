@@ -37,6 +37,8 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.TinyLockManager;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 
 class CommandPrimer {
     private final Random rng;
@@ -108,7 +110,7 @@ class CommandPrimer {
         return new Action(Command.FlushCache, "") {
             @Override
             public void perform() throws Exception {
-                cache.flushAndForce();
+                cache.flushAndForce(DatabaseFlushEvent.NULL);
             }
         };
     }
@@ -121,7 +123,7 @@ class CommandPrimer {
                 public void perform() throws Exception {
                     PagedFile pagedFile = fileMap.get(file);
                     if (pagedFile != null) {
-                        pagedFile.flushAndForce();
+                        pagedFile.flushAndForce(FileFlushEvent.NULL);
                     }
                 }
             };

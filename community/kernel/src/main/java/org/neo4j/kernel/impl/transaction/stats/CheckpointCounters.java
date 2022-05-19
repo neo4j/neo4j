@@ -37,4 +37,22 @@ public interface CheckpointCounters {
      * @return last checkpoint duration in milliseconds
      */
     long lastCheckpointTimeMillis();
+
+    /**
+     * Number of pages flushed in the last checkpoint
+     * @return number of pages flushed in the last checkpoint
+     */
+    long lastCheckpointPagesFlushed();
+
+    /**
+     * Number of IOs performed by the last checkpoint
+     * @return number of IOs performed by the last checkpoint
+     */
+    long lastCheckpointIOs();
+
+    /**
+     * Last observed value of io limited during the last checkpoint
+     * @return Last observed value of io limited during the last checkpoint
+     */
+    long lastCheckpointIOLimit();
 }

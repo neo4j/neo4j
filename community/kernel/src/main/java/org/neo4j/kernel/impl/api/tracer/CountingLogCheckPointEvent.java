@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.api.tracer;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
@@ -34,21 +36,31 @@ import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
 class CountingLogCheckPointEvent implements LogCheckPointEvent {
     private final AtomicLong checkpointCounter = new AtomicLong();
     private final AtomicLong accumulatedCheckpointTotalTimeMillis = new AtomicLong();
+    private final long maxPages;
     private final BiConsumer<LogPosition, LogPosition> logFileAppendConsumer;
     private final CountingLogRotateEvent countingLogRotateEvent;
-    private volatile long lastCheckpointTimeMillis;
+    private volatile LastCheckpointInfo lastCheckpointInfo = new LastCheckpointInfo(0, 0, 0, 0);
+    private final DatabaseFlushEvent databaseFlushEvent;
 
     CountingLogCheckPointEvent(
-            BiConsumer<LogPosition, LogPosition> logFileAppendConsumer, CountingLogRotateEvent countingLogRotateEvent) {
+            PageCacheTracer pageCacheTracer,
+            BiConsumer<LogPosition, LogPosition> logFileAppendConsumer,
+            CountingLogRotateEvent countingLogRotateEvent) {
+        this.maxPages = pageCacheTracer.maxPages();
         this.logFileAppendConsumer = logFileAppendConsumer;
         this.countingLogRotateEvent = countingLogRotateEvent;
+        this.databaseFlushEvent = pageCacheTracer.beginDatabaseFlush();
     }
 
     @Override
     public void checkpointCompleted(long checkpointMillis) {
         checkpointCounter.incrementAndGet();
         accumulatedCheckpointTotalTimeMillis.addAndGet(checkpointMillis);
-        lastCheckpointTimeMillis = checkpointMillis;
+        lastCheckpointInfo = new LastCheckpointInfo(
+                checkpointMillis,
+                databaseFlushEvent.pagesFlushed(),
+                databaseFlushEvent.ioPerformed(),
+                databaseFlushEvent.getIoLimit());
     }
 
     @Override
@@ -59,6 +71,35 @@ class CountingLogCheckPointEvent implements LogCheckPointEvent {
     @Override
     public void appendToLogFile(LogPosition positionBeforeCheckpoint, LogPosition positionAfterCheckpoint) {
         logFileAppendConsumer.accept(positionBeforeCheckpoint, positionAfterCheckpoint);
+    }
+
+    @Override
+    public DatabaseFlushEvent beginDatabaseFlush() {
+        databaseFlushEvent.reset();
+        return databaseFlushEvent;
+    }
+
+    @Override
+    public long getPagesFlushed() {
+        return lastCheckpointInfo.pagesFlushed();
+    }
+
+    @Override
+    public long getIOsPerformed() {
+        return lastCheckpointInfo.performedIO();
+    }
+
+    @Override
+    public long getConfiguredIOLimit() {
+        return lastCheckpointInfo.ioLimit();
+    }
+
+    @Override
+    public double flushRatio() {
+        if (maxPages == 0) {
+            return 0;
+        }
+        return ((double) lastCheckpointInfo.pagesFlushed()) / maxPages;
     }
 
     @Override
@@ -80,11 +121,13 @@ class CountingLogCheckPointEvent implements LogCheckPointEvent {
     }
 
     long lastCheckpointTimeMillis() {
-        return lastCheckpointTimeMillis;
+        return lastCheckpointInfo.timeMillis();
     }
 
     @Override
     public LogRotateEvent beginLogRotate() {
         return countingLogRotateEvent;
     }
+
+    private record LastCheckpointInfo(long timeMillis, long pagesFlushed, long performedIO, long ioLimit) {}
 }

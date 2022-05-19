@@ -36,6 +36,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DoubleArray;
@@ -47,7 +48,7 @@ class PointIndexProviderConfigTest {
     void mustCompleteIndexDescriptorConfigurationsWithSpatialConfig() {
         // Given
         DatabaseIndexContext context = DatabaseIndexContext.builder(
-                        null, null, NULL_CONTEXT_FACTORY, DEFAULT_DATABASE_NAME)
+                        null, null, NULL_CONTEXT_FACTORY, PageCacheTracer.NULL, DEFAULT_DATABASE_NAME)
                 .build();
         PointIndexProvider provider =
                 new PointIndexProvider(context, IndexDirectoryStructure.NONE, null, Config.defaults());
@@ -75,7 +76,7 @@ class PointIndexProviderConfigTest {
     void completeConfigurationMustNotOverrideExistingSettings() {
         // Given
         DatabaseIndexContext context = DatabaseIndexContext.builder(
-                        null, null, NULL_CONTEXT_FACTORY, DEFAULT_DATABASE_NAME)
+                        null, null, NULL_CONTEXT_FACTORY, PageCacheTracer.NULL, DEFAULT_DATABASE_NAME)
                 .build();
         PointIndexProvider provider =
                 new PointIndexProvider(context, IndexDirectoryStructure.NONE, null, Config.defaults());

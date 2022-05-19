@@ -38,6 +38,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.PageCacheOptionsSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -54,6 +55,7 @@ public class StoreFactory {
     private final FileSystemAbstraction fileSystemAbstraction;
     private final InternalLogProvider logProvider;
     private final PageCache pageCache;
+    private final PageCacheTracer pageCacheTracer;
     private final RecordFormats recordFormats;
     private final CursorContextFactory contextFactory;
     private final DatabaseReadOnlyChecker readOnlyChecker;
@@ -65,6 +67,7 @@ public class StoreFactory {
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             FileSystemAbstraction fileSystemAbstraction,
             InternalLogProvider logProvider,
             CursorContextFactory contextFactory,
@@ -75,6 +78,7 @@ public class StoreFactory {
                 config,
                 idGeneratorFactory,
                 pageCache,
+                pageCacheTracer,
                 fileSystemAbstraction,
                 selectForStoreOrConfigForNewDbs(
                         config,
@@ -95,6 +99,7 @@ public class StoreFactory {
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             FileSystemAbstraction fileSystemAbstraction,
             RecordFormats recordFormats,
             InternalLogProvider logProvider,
@@ -113,6 +118,7 @@ public class StoreFactory {
         this.openOptions = buildOpenOptions(config, recordFormats, openOptions);
         this.logProvider = logProvider;
         this.pageCache = pageCache;
+        this.pageCacheTracer = pageCacheTracer;
         configureRecordFormat(recordFormats, config);
     }
 
@@ -166,6 +172,7 @@ public class StoreFactory {
                 config,
                 idGeneratorFactory,
                 pageCache,
+                pageCacheTracer,
                 logProvider,
                 recordFormats,
                 createStoreIfNotExists,

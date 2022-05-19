@@ -47,6 +47,8 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -138,6 +140,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
             Path file,
             Config conf,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             InternalLogProvider logProvider,
             RecordFormat<MetaDataRecord> recordFormat,
             DatabaseReadOnlyChecker readOnlyChecker,
@@ -152,6 +155,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
                 null,
                 EMPTY_ID_GENERATOR_FACTORY,
                 pageCache,
+                pageCacheTracer,
                 logProvider,
                 TYPE_DESCRIPTOR,
                 recordFormat,
@@ -178,8 +182,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     }
 
     @Override
-    protected void initialiseNewStoreFile(CursorContext cursorContext) throws IOException {
-        super.initialiseNewStoreFile(cursorContext);
+    protected void initialiseNewStoreFile(FileFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
+        super.initialiseNewStoreFile(flushEvent, cursorContext);
         StoreId storeId = storeIdFactory.get();
         // TODO: this is am ugly temporary solution until the new Store ID is stored in meta data store
         var format =
@@ -578,7 +582,9 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         } catch (IOException e) {
             throw new UnderlyingStorageException(e);
         }
-        flush(cursorContext);
+        try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+            flush(flushEvent, cursorContext);
+        }
     }
 
     private void writeLongRecord(PageCursor cursor, long value) {

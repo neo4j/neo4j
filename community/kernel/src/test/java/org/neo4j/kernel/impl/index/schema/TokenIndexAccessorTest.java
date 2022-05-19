@@ -67,6 +67,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -80,7 +81,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
     IndexAccessor createAccessor(PageCache pageCache) {
         RecoveryCleanupWorkCollector cleanup = RecoveryCleanupWorkCollector.immediate();
         DatabaseIndexContext context = DatabaseIndexContext.builder(
-                        pageCache, fs, contextFactory, DEFAULT_DATABASE_NAME)
+                        pageCache, fs, contextFactory, pageCacheTracer, DEFAULT_DATABASE_NAME)
                 .withReadOnlyChecker(writable())
                 .build();
         return new TokenIndexAccessor(context, indexFiles, indexDescriptor, cleanup, Sets.immutable.empty());
@@ -469,12 +470,12 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
 
     private void maybeCheckpoint() {
         if (random.nextBoolean()) {
-            accessor.force(NULL_CONTEXT);
+            accessor.force(FileFlushEvent.NULL, NULL_CONTEXT);
         }
     }
 
     private void forceAndCloseAccessor() {
-        accessor.force(NULL_CONTEXT);
+        accessor.force(FileFlushEvent.NULL, NULL_CONTEXT);
         accessor.close();
     }
 

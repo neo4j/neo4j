@@ -372,8 +372,8 @@ public class MigrateStoreCommand extends AbstractCommand {
             CursorContextFactory contextFactory) {
         var recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.ignore();
         var monitors = new Monitors();
-        var tokenHolders =
-                storageEngineFactory.loadReadOnlyTokens(fs, databaseLayout, config, pageCache, true, contextFactory);
+        var tokenHolders = storageEngineFactory.loadReadOnlyTokens(
+                fs, databaseLayout, config, pageCache, pageCacheTracer, true, contextFactory);
         var extensions = life.add(instantiateExtensions(
                 fs,
                 databaseLayout,
@@ -402,6 +402,7 @@ public class MigrateStoreCommand extends AbstractCommand {
                 tokenHolders,
                 jobScheduler,
                 contextFactory,
+                pageCacheTracer,
                 extensions));
     }
 

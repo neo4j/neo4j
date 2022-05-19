@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.index;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 import java.nio.file.Path;
 import java.util.Optional;
@@ -75,6 +76,7 @@ class TokenIndexProviderCompatibilitySuiteTest extends SpecialisedIndexProviderC
                 readOnlyChecker,
                 recoveryCleanupWorkCollector,
                 databaseLayout,
-                NULL_CONTEXT_FACTORY);
+                NULL_CONTEXT_FACTORY,
+                NULL);
     }
 }

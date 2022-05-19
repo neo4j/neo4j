@@ -60,6 +60,8 @@ import org.neo4j.internal.id.IdValidator;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 /**
  * At the heart of this free-list sits a {@link GBPTree}, containing all deleted and freed ids. The tree is used as a bit-set and since it's
@@ -281,6 +283,7 @@ public class IndexedIdGenerator implements IdGenerator {
     private final IdRangeMerger defaultMerger;
     private final IdRangeMerger recoveryMerger;
     private final DatabaseReadOnlyChecker readOnlyChecker;
+    private final PageCacheTracer pageCacheTracer;
 
     private final Monitor monitor;
     private final boolean strictlyPrioritizeFreelist;
@@ -300,9 +303,11 @@ public class IndexedIdGenerator implements IdGenerator {
             CursorContextFactory contextFactory,
             Monitor monitor,
             ImmutableSet<OpenOption> openOptions,
-            IdSlotDistribution slotDistribution) {
+            IdSlotDistribution slotDistribution,
+            PageCacheTracer tracer) {
         this.path = path;
         this.readOnlyChecker = readOnlyChecker;
+        this.pageCacheTracer = tracer;
         int cacheCapacity = idType.highActivity() && allowLargeIdCaches ? LARGE_CACHE_CAPACITY : SMALL_CACHE_CAPACITY;
         this.idType = idType;
         IdSlotDistribution.Slot[] slots = slotDistribution.slots(cacheCapacity);
@@ -389,7 +394,8 @@ public class IndexedIdGenerator implements IdGenerator {
                     openOptions,
                     databaseName,
                     "Indexed ID generator",
-                    contextFactory);
+                    contextFactory,
+                    pageCacheTracer);
         } catch (TreeFileNotFoundException e) {
             throw new IllegalStateException(
                     "Id generator file could not be found, most likely this database needs to be recovered, file:"
@@ -555,7 +561,9 @@ public class IndexedIdGenerator implements IdGenerator {
                 highestWrittenId.set(highestId);
             }
             // We can checkpoint here since the free ids we read are committed
-            checkpoint(cursorContext);
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                checkpoint(flushEvent, cursorContext);
+            }
             atLeastOneIdOnFreelist.set(true);
         }
 
@@ -567,8 +575,11 @@ public class IndexedIdGenerator implements IdGenerator {
     }
 
     @Override
-    public void checkpoint(CursorContext cursorContext) {
-        tree.checkpoint(new HeaderWriter(highId::get, highestWrittenId::get, generation, idsPerEntry), cursorContext);
+    public void checkpoint(FileFlushEvent flushEvent, CursorContext cursorContext) {
+        tree.checkpoint(
+                new HeaderWriter(highId::get, highestWrittenId::get, generation, idsPerEntry),
+                flushEvent,
+                cursorContext);
         monitor.checkpoint(highestWrittenId.get(), highId.get());
     }
 
@@ -679,6 +690,7 @@ public class IndexedIdGenerator implements IdGenerator {
             PageCache pageCache,
             Path path,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             boolean onlySummary,
             ImmutableSet<OpenOption> openOptions)
             throws IOException {
@@ -697,7 +709,8 @@ public class IndexedIdGenerator implements IdGenerator {
                 openOptions,
                 DEFAULT_DATABASE_NAME,
                 "Indexed ID generator",
-                contextFactory)) {
+                contextFactory,
+                pageCacheTracer)) {
             System.out.println(header);
             if (onlySummary) {
                 MutableLong numDeletedNotFreed = new MutableLong();

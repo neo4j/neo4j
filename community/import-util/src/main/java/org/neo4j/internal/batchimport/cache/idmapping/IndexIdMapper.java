@@ -43,6 +43,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -56,13 +57,18 @@ import org.neo4j.values.storable.Values;
 public class IndexIdMapper implements IdMapper {
     private final Map<String, IndexAccessor> accessors;
     private final Map<String, SchemaDescriptor> schemaDescriptors;
+    private final PageCacheTracer pageCacheTracer;
     private final ThreadLocal<Map<String, Index>> threadLocal;
     private final List<Index> indexes = new CopyOnWriteArrayList<>();
 
     // key is groupName, and for some reason accessors doesn't expose which descriptor they're for, so pass that in too
-    public IndexIdMapper(Map<String, IndexAccessor> accessors, Map<String, SchemaDescriptor> schemaDescriptors) {
+    public IndexIdMapper(
+            Map<String, IndexAccessor> accessors,
+            Map<String, SchemaDescriptor> schemaDescriptors,
+            PageCacheTracer pageCacheTracer) {
         this.accessors = accessors;
         this.schemaDescriptors = schemaDescriptors;
+        this.pageCacheTracer = pageCacheTracer;
         this.threadLocal = ThreadLocal.withInitial(HashMap::new);
     }
 
@@ -123,7 +129,9 @@ public class IndexIdMapper implements IdMapper {
                 (Closeable) () -> closeAllUnchecked(indexes),
                 () -> {
                     for (var accessor : accessors.values()) {
-                        accessor.force(CursorContext.NULL_CONTEXT);
+                        try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                            accessor.force(flushEvent, CursorContext.NULL_CONTEXT);
+                        }
                     }
                 },
                 () -> closeAllUnchecked(accessors.values()));

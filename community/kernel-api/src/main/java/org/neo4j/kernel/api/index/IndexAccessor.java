@@ -32,6 +32,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
@@ -64,10 +65,11 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
      * rotating the logical log. After completion of this call there cannot be any essential state that
      * hasn't been forced to disk.
      *
+     * @param flushEvent file flush event
      * @param cursorContext underlying page cursor context
      * @throws UncheckedIOException if there was a problem forcing the state to persistent storage.
      */
-    void force(CursorContext cursorContext);
+    void force(FileFlushEvent flushEvent, CursorContext cursorContext);
 
     /**
      * Refreshes this index, so that {@link #newValueReader() readers} created after completion of this call
@@ -198,7 +200,7 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         }
 
         @Override
-        public void force(CursorContext cursorContext) {}
+        public void force(FileFlushEvent flushEvent, CursorContext cursorContext) {}
 
         @Override
         public void refresh() {}
@@ -264,8 +266,8 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         }
 
         @Override
-        public void force(CursorContext cursorContext) {
-            delegate.force(cursorContext);
+        public void force(FileFlushEvent flushEvent, CursorContext cursorContext) {
+            delegate.force(flushEvent, cursorContext);
         }
 
         @Override

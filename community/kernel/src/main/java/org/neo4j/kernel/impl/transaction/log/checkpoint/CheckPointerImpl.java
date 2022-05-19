@@ -26,8 +26,10 @@ import java.io.IOException;
 import java.time.Clock;
 import java.util.function.BooleanSupplier;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
@@ -43,6 +45,9 @@ import org.neo4j.time.Stopwatch;
 public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
     private static final String CHECKPOINT_TAG = "checkpoint";
     private static final long NO_TRANSACTION_ID = -1;
+    private static final String IO_DETAILS_TEMPLATE =
+            "Checkpoint flushed %d pages (%d%% of total available pages), in %d IOs. Checkpoint performed with IO limit: %s.";
+    private static final String UNLIMITED_IO_CONTROLLER_LIMIT = "unlimited";
 
     private final CheckpointAppender checkpointAppender;
     private final MetadataProvider metadataProvider;
@@ -55,6 +60,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
     private final StoreCopyCheckPointMutex mutex;
     private final CursorContextFactory cursorContextFactory;
     private final Clock clock;
+    private final IOController ioController;
 
     private volatile long lastCheckPointedTx;
 
@@ -69,7 +75,8 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
             DatabaseTracers tracers,
             StoreCopyCheckPointMutex mutex,
             CursorContextFactory cursorContextFactory,
-            Clock clock) {
+            Clock clock,
+            IOController ioController) {
         this.checkpointAppender = checkpointAppender;
         this.metadataProvider = metadataProvider;
         this.threshold = threshold;
@@ -81,6 +88,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
         this.mutex = mutex;
         this.cursorContextFactory = cursorContextFactory;
         this.clock = clock;
+        this.ioController = ioController;
     }
 
     @Override
@@ -140,7 +148,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
     private long doCheckPoint(TriggerInfo triggerInfo) throws IOException {
         var databaseTracer = tracers.getDatabaseTracer();
         try (var cursorContext = cursorContextFactory.create(CHECKPOINT_TAG);
-                LogCheckPointEvent event = databaseTracer.beginCheckPoint()) {
+                LogCheckPointEvent checkPointEvent = databaseTracer.beginCheckPoint()) {
             var lastClosedTxData = metadataProvider.getLastClosedTransaction();
             var lastClosedTransaction = new TransactionId(
                     lastClosedTxData.transactionId(), lastClosedTxData.checksum(), lastClosedTxData.commitTimestamp());
@@ -160,18 +168,24 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
              */
             log.info(checkpointReason + " checkpoint started...");
             Stopwatch startTime = Stopwatch.start();
-            forceOperation.flushAndForce(cursorContext);
+
+            try (var flushEvent = checkPointEvent.beginDatabaseFlush()) {
+                forceOperation.flushAndForce(flushEvent, cursorContext);
+                flushEvent.ioControllerLimit(ioController.configuredLimit());
+            }
+
             /*
              * Check kernel health before going to write the next check point.  In case of a panic this check point
              * will be aborted, which is the safest alternative so that the next recovery will have a chance to
              * repair the damages.
              */
             databaseHealth.assertHealthy(IOException.class);
-            checkpointAppender.checkPoint(event, lastClosedTransaction, logPosition, clock.instant(), checkpointReason);
+            checkpointAppender.checkPoint(
+                    checkPointEvent, lastClosedTransaction, logPosition, clock.instant(), checkpointReason);
             threshold.checkPointHappened(lastClosedTransactionId, logPosition);
             long durationMillis = startTime.elapsed(MILLISECONDS);
-            log.info(checkpointReason + " checkpoint completed in " + duration(durationMillis));
-            event.checkpointCompleted(durationMillis);
+            checkPointEvent.checkpointCompleted(durationMillis);
+            log.info(createCheckpointMessageDescription(checkPointEvent, checkpointReason, durationMillis));
 
             /*
              * Prune up to the version pointed from the latest check point,
@@ -189,6 +203,22 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
         }
     }
 
+    private String createCheckpointMessageDescription(
+            LogCheckPointEvent checkpointEvent, String checkpointReason, long durationMillis) {
+        double flushRatio = checkpointEvent.flushRatio();
+        long ioLimit = checkpointEvent.getConfiguredIOLimit();
+        String ioDetails = IO_DETAILS_TEMPLATE.formatted(
+                checkpointEvent.getPagesFlushed(),
+                (int) (flushRatio * 100),
+                checkpointEvent.getIOsPerformed(),
+                ioLimitDescription(ioLimit));
+        return checkpointReason + " checkpoint completed in " + duration(durationMillis) + ". " + ioDetails;
+    }
+
+    private String ioLimitDescription(long ioLimit) {
+        return ioController.isEnabled() && ioLimit >= 0 ? String.valueOf(ioLimit) : UNLIMITED_IO_CONTROLLER_LIMIT;
+    }
+
     @Override
     public long lastCheckPointedTransactionId() {
         return lastCheckPointedTx;
@@ -196,6 +226,6 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
 
     @FunctionalInterface
     public interface ForceOperation {
-        void flushAndForce(CursorContext cursorContext) throws IOException;
+        void flushAndForce(DatabaseFlushEvent flushEvent, CursorContext cursorContext) throws IOException;
     }
 }

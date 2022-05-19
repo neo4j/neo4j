@@ -123,7 +123,7 @@ class DynamicArrayStoreTest {
 
     private DynamicArrayStore dynamicArrayStore() throws IOException {
         DefaultIdGeneratorFactory idGeneratorFactory =
-                new DefaultIdGeneratorFactory(fs, immediate(), DEFAULT_DATABASE_NAME);
+                new DefaultIdGeneratorFactory(fs, immediate(), PageCacheTracer.NULL, DEFAULT_DATABASE_NAME);
         DynamicArrayStore store = new DynamicArrayStore(
                 storeFile,
                 idFile,
@@ -131,6 +131,7 @@ class DynamicArrayStoreTest {
                 RecordIdType.ARRAY_BLOCK,
                 idGeneratorFactory,
                 pageCache,
+                PageCacheTracer.NULL,
                 NullLogProvider.getInstance(),
                 1,
                 defaultFormat(),

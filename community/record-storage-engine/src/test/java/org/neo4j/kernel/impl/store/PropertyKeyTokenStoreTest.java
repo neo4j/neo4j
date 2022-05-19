@@ -31,6 +31,7 @@ import org.neo4j.internal.recordstorage.RecordCursorTypes;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.logging.InternalLogProvider;
@@ -65,6 +66,7 @@ class PropertyKeyTokenStoreTest extends TokenStoreTestTemplate<PropertyKeyTokenR
                 config,
                 generatorFactory,
                 pageCache,
+                PageCacheTracer.NULL,
                 logProvider,
                 nameStore,
                 formats,

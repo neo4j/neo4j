@@ -107,8 +107,13 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
         IndexDirectoryStructure directoryStructure =
                 directoriesByProvider(directory.homePath()).forProvider(providerDescriptor);
         indexFiles = new IndexFiles.Directory(fs, directoryStructure, INDEX_DESCRIPTOR.getId());
+        var pageCacheTracer = PageCacheTracer.NULL;
         databaseIndexContext = DatabaseIndexContext.builder(
-                        pageCache, fs, new CursorContextFactory(PageCacheTracer.NULL, EMPTY), DEFAULT_DATABASE_NAME)
+                        pageCache,
+                        fs,
+                        new CursorContextFactory(pageCacheTracer, EMPTY),
+                        pageCacheTracer,
+                        DEFAULT_DATABASE_NAME)
                 .build();
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
         populationWorkScheduler = new IndexPopulator.PopulationWorkScheduler() {

@@ -29,6 +29,7 @@ import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.memory.MemoryTracker;
@@ -50,6 +51,7 @@ public class LabelIndexWriterStep extends IndexWriterStep<NodeRecord[]> {
             long fromNodeId,
             MemoryTracker memoryTracker,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             Function<CursorContext, StoreCursors> storeCursorsCreator) {
         super(control, "LABEL INDEX", config, 1, contextFactory);
         this.fromNodeId = fromNodeId;
@@ -61,6 +63,7 @@ public class LabelIndexWriterStep extends IndexWriterStep<NodeRecord[]> {
                 NODE,
                 memoryTracker,
                 contextFactory,
+                pageCacheTracer,
                 storeCursorsCreator);
         this.cachedStoreCursors = storeCursorsCreator.apply(cursorContext);
         this.nodeStore = neoStores.getNodeStore();

@@ -141,7 +141,7 @@ public class Tracers {
     }
 
     public DatabaseTracer getDatabaseTracer() {
-        return tracersFactory.createDatabaseTracer(clock);
+        return tracersFactory.createDatabaseTracer(pageCacheTracer, clock);
     }
 
     private static TracerFactory createTracersFactory(String desiredImplementationName, InternalLog msgLog) {

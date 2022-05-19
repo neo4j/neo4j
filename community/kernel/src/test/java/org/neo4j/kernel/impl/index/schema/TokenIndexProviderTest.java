@@ -33,9 +33,17 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class TokenIndexProviderTest extends IndexProviderTests {
     private static final ProviderFactory factory =
-            (pageCache, fs, dir, monitors, collector, readOnlyChecker, databaseLayout, contextFactory) -> {
+            (pageCache,
+                    fs,
+                    dir,
+                    monitors,
+                    collector,
+                    readOnlyChecker,
+                    databaseLayout,
+                    contextFactory,
+                    pageCacheTracer) -> {
                 DatabaseIndexContext context = DatabaseIndexContext.builder(
-                                pageCache, fs, contextFactory, databaseLayout.getDatabaseName())
+                                pageCache, fs, contextFactory, pageCacheTracer, databaseLayout.getDatabaseName())
                         .withMonitors(monitors)
                         .withReadOnlyChecker(readOnlyChecker)
                         .build();

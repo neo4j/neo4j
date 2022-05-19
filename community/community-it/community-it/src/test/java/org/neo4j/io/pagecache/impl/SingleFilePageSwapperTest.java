@@ -76,7 +76,7 @@ import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PageSwapperTest;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.memory.EmptyMemoryTracker;
 
 public class SingleFilePageSwapperTest extends PageSwapperTest {
@@ -707,13 +707,18 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
         private final AtomicLong externalIOCounter = new AtomicLong();
 
         @Override
-        public void maybeLimitIO(int recentlyCompletedIOs, Flushable flushable, MajorFlushEvent flushes) {
+        public void maybeLimitIO(int recentlyCompletedIOs, Flushable flushable, FileFlushEvent flushes) {
             // empty
         }
 
         @Override
         public void reportIO(int completedIOs) {
             externalIOCounter.addAndGet(completedIOs);
+        }
+
+        @Override
+        public long configuredLimit() {
+            return 0;
         }
 
         public long getExternalIOCounter() {

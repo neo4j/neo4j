@@ -30,6 +30,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -46,6 +47,7 @@ import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant {
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
+    private final PageCacheTracer pageCacheTracer;
     private final IndexDirectoryStructure indexDirectoryStructure;
     private final StorageEngineFactory storageEngineFactory;
     private final CursorContextFactory contextFactory;
@@ -55,12 +57,14 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant {
             String name,
             FileSystemAbstraction fileSystem,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             IndexDirectoryStructure indexDirectoryStructure,
             StorageEngineFactory storageEngineFactory,
             CursorContextFactory contextFactory) {
         super(name);
         this.fileSystem = fileSystem;
         this.pageCache = pageCache;
+        this.pageCacheTracer = pageCacheTracer;
         this.indexDirectoryStructure = indexDirectoryStructure;
         this.storageEngineFactory = storageEngineFactory;
         this.contextFactory = contextFactory;
@@ -100,7 +104,14 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant {
 
     private void deleteRelationshipIndexes(DatabaseLayout databaseLayout) throws IOException {
         for (SchemaRule schemaRule : storageEngineFactory.loadSchemaRules(
-                fileSystem, pageCache, Config.defaults(), databaseLayout, false, r -> r, contextFactory)) {
+                fileSystem,
+                pageCache,
+                pageCacheTracer,
+                Config.defaults(),
+                databaseLayout,
+                false,
+                r -> r,
+                contextFactory)) {
             if (schemaRule.schema().entityType() == EntityType.RELATIONSHIP) {
                 fileSystem.deleteRecursively(indexDirectoryStructure.directoryForIndex(schemaRule.getId()));
             }

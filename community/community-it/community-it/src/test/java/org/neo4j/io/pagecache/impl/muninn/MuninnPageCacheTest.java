@@ -84,12 +84,13 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.io.pagecache.context.VersionContextSupplier;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.DelegatingPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
-import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
@@ -120,13 +121,13 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         fixture.backgroundFlushLatch = new CountDownLatch(1);
         return new DelegatingPageCacheTracer(delegate) {
             @Override
-            public MajorFlushEvent beginCacheFlush() {
+            public FileFlushEvent beginFileFlush() {
                 try {
                     fixture.backgroundFlushLatch.await();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
-                return super.beginCacheFlush();
+                return super.beginFileFlush();
             }
         };
     }
@@ -766,7 +767,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 }
                 assertEquals(maxPages - (pageId + 1), pageCacheTracer.getFreeListSize());
             }
-            pagedFile.flushAndForce();
+            pagedFile.flushAndForce(FileFlushEvent.NULL);
         }
     }
 
@@ -782,7 +783,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                     cursor.putLong(1);
                 }
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
 
             var observedChunks = pageCacheTracer.getObservedChunks();
             assertThat(observedChunks).hasSize(1);
@@ -798,7 +801,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 assertTrue(cursor.next());
                 cursor.putLong(1);
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
 
             var secondFlushChunks = pageCacheTracer.getObservedChunks();
             assertThat(secondFlushChunks).hasSize(1);
@@ -822,7 +827,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                     cursor.putLong(1);
                 }
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
 
             var observedChunks = pageCacheTracer.getObservedChunks();
             assertThat(observedChunks).hasSize(2);
@@ -847,7 +854,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                     cursor.putLong(1);
                 }
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
 
             var observedChunks = pageCacheTracer.getObservedChunks();
             assertThat(observedChunks).hasSize(1);
@@ -863,7 +872,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 assertTrue(cursor.next());
                 cursor.putLong(1);
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
 
             var secondFlushChunks = pageCacheTracer.getObservedChunks();
             assertThat(secondFlushChunks).hasSize(1);
@@ -885,7 +896,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                     cursor.putLong(1);
                 }
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
 
             // we flushed one big region
             var observedChunks = pageCacheTracer.getObservedChunks();
@@ -903,7 +916,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 assertTrue(cursor.next());
                 cursor.putLong(1);
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
 
             var secondFlushChunks = pageCacheTracer.getObservedChunks();
             assertThat(secondFlushChunks).hasSize(1);
@@ -920,7 +935,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 assertTrue(cursor.next());
                 cursor.putLong(1);
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
             var thirdFlushChunks = pageCacheTracer.getObservedChunks();
             assertThat(thirdFlushChunks).hasSize(1);
             var thirdChunkInfo = thirdFlushChunks.get(0);
@@ -940,7 +957,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                     cursor.putLong(1);
                 }
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
 
             // we flushed one big region
             var observedChunks = pageCacheTracer.getObservedChunks();
@@ -958,7 +977,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 assertTrue(cursor.next());
                 cursor.putLong(1);
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
 
             var secondFlushChunks = pageCacheTracer.getObservedChunks();
             assertThat(secondFlushChunks).hasSize(1);
@@ -975,7 +996,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 assertTrue(cursor.next());
                 cursor.putLong(1);
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
             var thirdFlushChunks = pageCacheTracer.getObservedChunks();
             assertThat(thirdFlushChunks).hasSize(1);
             var thirdChunkInfo = thirdFlushChunks.get(0);
@@ -995,7 +1018,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                     cursor.putLong(1);
                 }
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
 
             // we flushed one big region
             var observedChunks = pageCacheTracer.getObservedChunks();
@@ -1013,7 +1038,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 assertTrue(cursor.next());
                 cursor.putLong(1);
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
 
             var secondFlushChunks = pageCacheTracer.getObservedChunks();
             assertThat(secondFlushChunks).hasSize(1);
@@ -1030,7 +1057,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 assertTrue(cursor.next());
                 cursor.putLong(1);
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
             var thirdFlushChunks = pageCacheTracer.getObservedChunks();
             assertThat(thirdFlushChunks).hasSize(1);
             var thirdChunkInfo = thirdFlushChunks.get(0);
@@ -1050,7 +1079,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                     cursor.putLong(1);
                 }
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
 
             // we flushed one big region
             var observedChunks = pageCacheTracer.getObservedChunks();
@@ -1068,7 +1099,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 assertTrue(cursor.next());
                 cursor.putLong(1);
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
 
             var secondFlushChunks = pageCacheTracer.getObservedChunks();
             assertThat(secondFlushChunks).hasSize(1);
@@ -1085,7 +1118,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 assertTrue(cursor.next());
                 cursor.putLong(1);
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
             var thirdFlushChunks = pageCacheTracer.getObservedChunks();
             assertThat(thirdFlushChunks).hasSize(1);
             var thirdChunkInfo = thirdFlushChunks.get(0);
@@ -1105,7 +1140,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                     cursor.putLong(1);
                 }
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
 
             // we flushed one big region
             var observedChunks = pageCacheTracer.getObservedChunks();
@@ -1123,7 +1160,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 assertTrue(cursor.next());
                 cursor.putLong(1);
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
 
             var secondFlushChunks = pageCacheTracer.getObservedChunks();
             assertThat(secondFlushChunks).hasSize(1);
@@ -1140,7 +1179,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 assertTrue(cursor.next());
                 cursor.putLong(1);
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
             var thirdFlushChunks = pageCacheTracer.getObservedChunks();
             assertThat(thirdFlushChunks).hasSize(1);
             var thirdChunkInfo = thirdFlushChunks.get(0);
@@ -1160,7 +1201,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                     cursor.putLong(1);
                 }
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
 
             // we flushed one big region
             var observedChunks = pageCacheTracer.getObservedChunks();
@@ -1178,7 +1221,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 assertTrue(cursor.next());
                 cursor.putLong(1);
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
 
             var secondFlushChunks = pageCacheTracer.getObservedChunks();
             assertThat(secondFlushChunks).hasSize(1);
@@ -1195,7 +1240,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 assertTrue(cursor.next());
                 cursor.putLong(1);
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
             var thirdFlushChunks = pageCacheTracer.getObservedChunks();
             assertThat(thirdFlushChunks).hasSize(1);
             var thirdChunkInfo = thirdFlushChunks.get(0);
@@ -1217,7 +1264,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 assertTrue(cursor.next());
                 cursor.putLong(1);
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
 
             assertEquals(2, pageCacheTracer.flushes());
             assertEquals(1, pageCacheTracer.merges());
@@ -1243,13 +1292,17 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 assertTrue(cursor.next());
                 cursor.putLong(1);
             }
-            pagedFileA.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFileA.flushAndForce(flushEvent);
+            }
 
             try (PageCursor cursor = pagedFileB.io(1, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                 assertTrue(cursor.next());
                 cursor.putLong(1);
             }
-            pagedFileB.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFileB.flushAndForce(flushEvent);
+            }
 
             assertEquals(3, pageCacheTracer.flushes());
             assertEquals(1, pageCacheTracer.merges());
@@ -1274,7 +1327,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 assertTrue(cursor.next());
                 cursor.putLong(1);
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
 
             assertEquals(2, pageCacheTracer.flushes());
             assertEquals(0, pageCacheTracer.merges());
@@ -1296,7 +1351,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 assertTrue(cursor.next());
                 cursor.putLong(1);
             }
-            pagedFile.flushAndForce();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
 
             assertEquals(2, pageCacheTracer.flushes());
             assertEquals(0, pageCacheTracer.merges());
@@ -1616,7 +1673,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
 
                 // We now have a background eviction exception. A successful flushAndForce should clear it, though.
                 throwException.setFalse();
-                pageCache.flushAndForce();
+                pageCache.flushAndForce(DatabaseFlushEvent.NULL);
 
                 // And with a cleared exception, we should be able to work with the page cache without worry.
                 try (PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
@@ -1676,7 +1733,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 }
             }
 
-            pageCache.flushAndForce();
+            pageCache.flushAndForce(DatabaseFlushEvent.NULL);
 
             IOUtils.closeAll(mappedPagedFiles);
         });
@@ -1752,14 +1809,14 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         }
 
         @Override
-        public MajorFlushEvent beginFileFlush(PageSwapper swapper) {
+        public FileFlushEvent beginFileFlush(PageSwapper swapper) {
             latch.countDown();
             try {
                 latch.await();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            return MajorFlushEvent.NULL;
+            return FileFlushEvent.NULL;
         }
     }
 
@@ -1901,8 +1958,13 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         }
 
         @Override
-        public MajorFlushEvent beginFileFlush(PageSwapper swapper) {
-            return new FlushInfoMajorFlushEvent();
+        public FileFlushEvent beginFileFlush(PageSwapper swapper) {
+            return new FlushInfoFileFlushEvent();
+        }
+
+        @Override
+        public FileFlushEvent beginFileFlush() {
+            return new FlushInfoFileFlushEvent();
         }
 
         private class InfoPageCursorTracer extends DefaultPageCursorTracer {
@@ -1958,7 +2020,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
             }
         }
 
-        private class FlushInfoMajorFlushEvent implements MajorFlushEvent {
+        private class FlushInfoFileFlushEvent implements FileFlushEvent {
 
             @Override
             public void close() {
@@ -1985,6 +2047,19 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
             public void startFlush(int[][] translationTable) {}
 
             @Override
+            public void reset() {}
+
+            @Override
+            public long ioPerformed() {
+                return 0;
+            }
+
+            @Override
+            public long pagesFlushed() {
+                return 0;
+            }
+
+            @Override
             public ChunkEvent startChunk(int[] chunk) {
                 return new FlushInfoChunk();
             }
@@ -1996,7 +2071,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
             public void reportIO(int completedIOs) {}
         }
 
-        private class FlushInfoChunk extends MajorFlushEvent.ChunkEvent {
+        private class FlushInfoChunk extends FileFlushEvent.ChunkEvent {
             @Override
             public void chunkFlushed(
                     long notModifiedPages, long flushPerChunk, long buffersPerChunk, long mergesPerChunk) {

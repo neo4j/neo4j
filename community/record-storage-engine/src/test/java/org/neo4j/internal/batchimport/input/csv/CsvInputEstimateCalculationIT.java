@@ -185,8 +185,10 @@ class CsvInputEstimateCalculationIT {
                     NeoStores stores = new StoreFactory(
                                     databaseLayout,
                                     config,
-                                    new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()),
+                                    new DefaultIdGeneratorFactory(
+                                            fs, immediate(), PageCacheTracer.NULL, databaseLayout.getDatabaseName()),
                                     pageCache,
+                                    cacheTracer,
                                     fs,
                                     NullLogProvider.getInstance(),
                                     NULL_CONTEXT_FACTORY,

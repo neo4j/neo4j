@@ -42,6 +42,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -120,7 +121,7 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
                             1);
                 }
                 race.goUnchecked();
-                index.checkpoint(NULL_CONTEXT);
+                index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
             }
 
             // then
@@ -205,7 +206,7 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
             }));
             race.addContestant(throwing(() -> {
                 Thread.sleep(ThreadLocalRandom.current().nextInt(maxCheckpointDelay));
-                tree.checkpoint(NULL_CONTEXT);
+                tree.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
             }));
             race.goUnchecked();
 

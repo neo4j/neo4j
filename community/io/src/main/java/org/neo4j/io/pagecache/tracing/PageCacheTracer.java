@@ -61,13 +61,18 @@ public interface PageCacheTracer extends PageCacheCounters {
         }
 
         @Override
-        public MajorFlushEvent beginFileFlush(PageSwapper swapper) {
-            return MajorFlushEvent.NULL;
+        public FileFlushEvent beginFileFlush(PageSwapper swapper) {
+            return FileFlushEvent.NULL;
         }
 
         @Override
-        public MajorFlushEvent beginCacheFlush() {
-            return MajorFlushEvent.NULL;
+        public FileFlushEvent beginFileFlush() {
+            return FileFlushEvent.NULL;
+        }
+
+        @Override
+        public DatabaseFlushEvent beginDatabaseFlush() {
+            return DatabaseFlushEvent.NULL;
         }
 
         @Override
@@ -153,6 +158,11 @@ public interface PageCacheTracer extends PageCacheCounters {
         @Override
         public double usageRatio() {
             return 0d;
+        }
+
+        @Override
+        public long maxPages() {
+            return 0;
         }
 
         @Override
@@ -297,12 +307,17 @@ public interface PageCacheTracer extends PageCacheCounters {
     /**
      * A PagedFile wants to flush all its bound pages.
      */
-    MajorFlushEvent beginFileFlush(PageSwapper swapper);
+    FileFlushEvent beginFileFlush(PageSwapper swapper);
 
     /**
-     * The PageCache wants to flush all its bound pages.
+     * The PageCache wants to flush file bound pages.
      */
-    MajorFlushEvent beginCacheFlush();
+    FileFlushEvent beginFileFlush();
+
+    /**
+     * Start database flush event
+     */
+    DatabaseFlushEvent beginDatabaseFlush();
 
     /**
      * Report number of observed pins

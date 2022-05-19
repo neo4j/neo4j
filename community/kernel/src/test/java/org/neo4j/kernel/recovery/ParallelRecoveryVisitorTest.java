@@ -39,6 +39,7 @@ import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -349,7 +350,7 @@ class ParallelRecoveryVisitorTest {
         }
 
         @Override
-        public void flushAndForce(CursorContext cursorTracer) throws IOException {
+        public void flushAndForce(DatabaseFlushEvent flushEvent, CursorContext cursorTracer) throws IOException {
             throw new UnsupportedOperationException();
         }
 

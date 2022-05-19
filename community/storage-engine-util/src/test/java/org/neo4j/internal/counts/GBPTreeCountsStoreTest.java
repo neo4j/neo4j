@@ -49,6 +49,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -99,7 +100,7 @@ class GBPTreeCountsStoreTest {
             updater.incrementRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 2); // now at 5
         }
 
-        countsStore.checkpoint(NULL_CONTEXT);
+        countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
 
         // when/then
         assertEquals(15, countsStore.nodeCount(LABEL_ID_1, NULL_CONTEXT));
@@ -168,16 +169,18 @@ class GBPTreeCountsStoreTest {
             updater.incrementRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 3);
             updater.incrementRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, 7);
         }
-        countsStore.checkpoint(NULL_CONTEXT);
+        countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         closeCountsStore();
 
         // when
         ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         GBPTreeCountsStore.dump(
                 pageCache,
                 countsStoreFile(),
                 new PrintStream(out),
-                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                new CursorContextFactory(cacheTracer, EMPTY),
+                cacheTracer,
                 immutable.empty());
 
         // then
@@ -197,7 +200,7 @@ class GBPTreeCountsStoreTest {
     }
 
     private void checkpointAndRestartCountsStore() throws Exception {
-        countsStore.checkpoint(NULL_CONTEXT);
+        countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         closeCountsStore();
         openCountsStore();
     }
@@ -218,6 +221,7 @@ class GBPTreeCountsStoreTest {
     private void instantiateCountsStore(
             CountsBuilder builder, DatabaseReadOnlyChecker readOnlyChecker, GBPTreeCountsStore.Monitor monitor)
             throws IOException {
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         countsStore = new GBPTreeCountsStore(
                 pageCache,
                 countsStoreFile(),
@@ -229,7 +233,8 @@ class GBPTreeCountsStoreTest {
                 DEFAULT_DATABASE_NAME,
                 10,
                 NullLogProvider.getInstance(),
-                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                new CursorContextFactory(cacheTracer, EMPTY),
+                cacheTracer,
                 Sets.immutable.empty());
     }
 

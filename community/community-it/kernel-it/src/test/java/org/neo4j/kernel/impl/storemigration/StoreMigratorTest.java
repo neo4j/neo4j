@@ -449,7 +449,7 @@ class StoreMigratorTest {
                 })
                 .when(indexProviderMap)
                 .accept(any());
-        when(indexProvider.storeMigrationParticipant(any(), any(), any(), any()))
+        when(indexProvider.storeMigrationParticipant(any(), any(), any(), any(), any()))
                 .thenReturn(participant);
     }
 

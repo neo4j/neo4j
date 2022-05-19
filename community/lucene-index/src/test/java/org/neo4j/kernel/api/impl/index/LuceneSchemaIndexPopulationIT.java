@@ -41,6 +41,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexAccessor;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
@@ -88,7 +89,7 @@ class LuceneSchemaIndexPopulationIT {
             try (LuceneIndexAccessor indexAccessor =
                     new LuceneIndexAccessor(uniqueIndex, descriptor, SIMPLE_TOKEN_LOOKUP, UPDATE_IGNORE_STRATEGY)) {
                 generateUpdates(indexAccessor, affectedNodes);
-                indexAccessor.force(CursorContext.NULL_CONTEXT);
+                indexAccessor.force(FileFlushEvent.NULL, CursorContext.NULL_CONTEXT);
 
                 // now index is online and should contain updates data
                 assertTrue(uniqueIndex.isOnline());

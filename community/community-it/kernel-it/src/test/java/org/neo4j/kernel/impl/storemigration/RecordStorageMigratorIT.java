@@ -195,8 +195,9 @@ class RecordStorageMigratorIT {
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout,
                 CONFIG,
-                new ScanOnOpenOverwritingIdGeneratorFactory(fs, databaseLayout.getDatabaseName()),
+                new ScanOnOpenOverwritingIdGeneratorFactory(fs, cacheTracer, databaseLayout.getDatabaseName()),
                 pageCache,
+                cacheTracer,
                 fs,
                 logService.getInternalLogProvider(),
                 contextFactory,
@@ -244,8 +245,9 @@ class RecordStorageMigratorIT {
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout,
                 CONFIG,
-                new ScanOnOpenOverwritingIdGeneratorFactory(fs, databaseLayout.getDatabaseName()),
+                new ScanOnOpenOverwritingIdGeneratorFactory(fs, cacheTracer, databaseLayout.getDatabaseName()),
                 pageCache,
+                cacheTracer,
                 fs,
                 logService.getInternalLogProvider(),
                 contextFactory,
@@ -300,8 +302,9 @@ class RecordStorageMigratorIT {
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout,
                 CONFIG,
-                new ScanOnOpenOverwritingIdGeneratorFactory(fs, databaseLayout.getDatabaseName()),
+                new ScanOnOpenOverwritingIdGeneratorFactory(fs, cacheTracer, databaseLayout.getDatabaseName()),
                 pageCache,
+                cacheTracer,
                 fs,
                 logService.getInternalLogProvider(),
                 contextFactory,
@@ -374,8 +377,9 @@ class RecordStorageMigratorIT {
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout,
                 config,
-                new ScanOnOpenOverwritingIdGeneratorFactory(fs, databaseLayout.getDatabaseName()),
+                new ScanOnOpenOverwritingIdGeneratorFactory(fs, cacheTracer, databaseLayout.getDatabaseName()),
                 pageCache,
+                cacheTracer,
                 fs,
                 logService.getInternalLogProvider(),
                 contextFactory,
@@ -474,6 +478,7 @@ class RecordStorageMigratorIT {
                 counts_store_max_cached_entries.defaultValue(),
                 NullLogProvider.getInstance(),
                 contextFactory,
+                cacheTracer,
                 migratedStoreOpenOptions)) {
             // The rebuild would happen here in start and will throw exception (above) if invoked
             groupDegreesStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
@@ -487,8 +492,9 @@ class RecordStorageMigratorIT {
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout,
                 CONFIG,
-                new ScanOnOpenOverwritingIdGeneratorFactory(fs, databaseLayout.getDatabaseName()),
+                new ScanOnOpenOverwritingIdGeneratorFactory(fs, cacheTracer, databaseLayout.getDatabaseName()),
                 pageCache,
+                cacheTracer,
                 fs,
                 logService.getInternalLogProvider(),
                 contextFactory,
@@ -542,8 +548,9 @@ class RecordStorageMigratorIT {
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout,
                 CONFIG,
-                new ScanOnOpenOverwritingIdGeneratorFactory(fs, databaseLayout.getDatabaseName()),
+                new ScanOnOpenOverwritingIdGeneratorFactory(fs, cacheTracer, databaseLayout.getDatabaseName()),
                 pageCache,
+                cacheTracer,
                 fs,
                 logService.getInternalLogProvider(),
                 contextFactory,
@@ -593,8 +600,9 @@ class RecordStorageMigratorIT {
         try (NeoStores neoStores = new StoreFactory(
                         databaseLayout,
                         Config.defaults(),
-                        new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()),
+                        new DefaultIdGeneratorFactory(fs, immediate(), cacheTracer, databaseLayout.getDatabaseName()),
                         pageCache,
+                        cacheTracer,
                         fs,
                         NullLogProvider.getInstance(),
                         contextFactory,

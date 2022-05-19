@@ -32,6 +32,7 @@ import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -53,6 +54,7 @@ public class NodeCountsAndLabelIndexBuildStage extends Stage {
             IndexImporterFactory indexImporterFactory,
             long fromNodeId,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             Function<CursorContext, StoreCursors> storeCursorsCreator,
             MemoryTracker memoryTracker,
             MemoryUsageStatsProvider additionalStatsProviders) {
@@ -68,6 +70,7 @@ public class NodeCountsAndLabelIndexBuildStage extends Stage {
                     fromNodeId,
                     memoryTracker,
                     contextFactory,
+                    pageCacheTracer,
                     storeCursorsCreator));
         }
         add(new RecordProcessorStep<>(

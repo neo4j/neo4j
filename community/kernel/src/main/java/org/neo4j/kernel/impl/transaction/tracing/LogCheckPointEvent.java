@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.tracing;
 
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
 /**
@@ -49,6 +50,31 @@ public interface LogCheckPointEvent extends LogForceEvents, LogRotateEvents, Aut
 
         @Override
         public void appendToLogFile(LogPosition positionBeforeCheckpoint, LogPosition positionAfterCheckpoint) {}
+
+        @Override
+        public DatabaseFlushEvent beginDatabaseFlush() {
+            return DatabaseFlushEvent.NULL;
+        }
+
+        @Override
+        public long getPagesFlushed() {
+            return 0;
+        }
+
+        @Override
+        public long getIOsPerformed() {
+            return 0;
+        }
+
+        @Override
+        public long getConfiguredIOLimit() {
+            return 0;
+        }
+
+        @Override
+        public double flushRatio() {
+            return 0;
+        }
     };
 
     /**
@@ -70,4 +96,29 @@ public interface LogCheckPointEvent extends LogForceEvents, LogRotateEvents, Aut
      * @param positionAfterCheckpoint end position
      */
     void appendToLogFile(LogPosition positionBeforeCheckpoint, LogPosition positionAfterCheckpoint);
+
+    /**
+     * Start database flush as part of checkpoint
+     */
+    DatabaseFlushEvent beginDatabaseFlush();
+
+    /**
+     * Number of pages flushed by the last checkpoint event. 0 if no checkpoints were performed yet.
+     */
+    long getPagesFlushed();
+
+    /**
+     * Number of IOs performed by the last checkpoint event. 0 if no checkpoints were performed yet.
+     */
+    long getIOsPerformed();
+
+    /**
+     * Last observed io limit during the last checkpoint event. 0 if no checkpoints were performed yet and -1 if IO was not limited.
+     */
+    long getConfiguredIOLimit();
+
+    /**
+     * Ratio of flushed pages to total available pages in page cache
+     */
+    double flushRatio();
 }

@@ -36,6 +36,7 @@ import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.memory.MemoryTracker;
@@ -175,6 +176,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 public StoreMigrationParticipant storeMigrationParticipant(
                         FileSystemAbstraction fs,
                         PageCache pageCache,
+                        PageCacheTracer pageCacheTracer,
                         StorageEngineFactory storageEngineFactory,
                         CursorContextFactory contextFactory) {
                     return StoreMigrationParticipant.NOT_PARTICIPATING;
@@ -299,6 +301,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
     public abstract StoreMigrationParticipant storeMigrationParticipant(
             FileSystemAbstraction fs,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             StorageEngineFactory storageEngineFactory,
             CursorContextFactory contextFactory);
 
@@ -357,6 +360,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         public StoreMigrationParticipant storeMigrationParticipant(
                 FileSystemAbstraction fs,
                 PageCache pageCache,
+                PageCacheTracer pageCacheTracer,
                 StorageEngineFactory storageEngineFactory,
                 CursorContextFactory contextFactory) {
             return StoreMigrationParticipant.NOT_PARTICIPATING;
@@ -449,9 +453,11 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         public StoreMigrationParticipant storeMigrationParticipant(
                 FileSystemAbstraction fs,
                 PageCache pageCache,
+                PageCacheTracer pageCacheTracer,
                 StorageEngineFactory storageEngineFactory,
                 CursorContextFactory contextFactory) {
-            return provider.storeMigrationParticipant(fs, pageCache, storageEngineFactory, contextFactory);
+            return provider.storeMigrationParticipant(
+                    fs, pageCache, pageCacheTracer, storageEngineFactory, contextFactory);
         }
 
         @Override

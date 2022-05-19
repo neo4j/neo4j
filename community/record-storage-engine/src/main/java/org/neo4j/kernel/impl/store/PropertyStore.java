@@ -46,6 +46,7 @@ import org.neo4j.internal.recordstorage.RecordPropertyCursor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -162,6 +163,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
             Config configuration,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             InternalLogProvider logProvider,
             DynamicStringStore stringPropertyStore,
             PropertyKeyTokenStore propertyKeyTokenStore,
@@ -177,6 +179,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
                 RecordIdType.PROPERTY,
                 idGeneratorFactory,
                 pageCache,
+                pageCacheTracer,
                 logProvider,
                 TYPE_DESCRIPTOR,
                 recordFormats.property(),

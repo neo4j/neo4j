@@ -68,6 +68,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -108,6 +109,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
     private final InternalLog log;
     private final ConsistencyFlags consistencyFlags;
     private final CursorContextFactory contextFactory;
+    private final PageCacheTracer cacheTracer;
     private final CacheAccess cacheAccess;
     private final ConsistencyReporter reporter;
     private final CountsState observedCounts;
@@ -134,7 +136,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
             ConsistencyFlags consistencyFlags,
             EntityBasedMemoryLimiter.Factory memoryLimit,
             MemoryTracker memoryTracker,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            PageCacheTracer cacheTracer) {
         this.fileSystem = fileSystem;
         this.databaseLayout = databaseLayout;
         this.pageCache = pageCache;
@@ -145,6 +148,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
         this.log = log;
         this.consistencyFlags = consistencyFlags;
         this.contextFactory = contextFactory;
+        this.cacheTracer = cacheTracer;
         int stopCountThreshold = config.get(consistency_checker_fail_fast_threshold);
         AtomicInteger stopCount = new AtomicInteger(0);
         ConsistencyReporter.Monitor monitor = ConsistencyReporter.NO_MONITOR;
@@ -388,6 +392,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
                         100,
                         NullLogProvider.getInstance(),
                         contextFactory,
+                        cacheTracer,
                         neoStores.getOpenOptions());
                 var checker = observedCounts.checker(reporter)) {
             if (context.consistencyFlags.isCheckGraph()) {
@@ -429,6 +434,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
                         100,
                         NullLogProvider.getInstance(),
                         contextFactory,
+                        cacheTracer,
                         neoStores.getOpenOptions())) {
             consistencyCheckSingleCheckable(
                     report,

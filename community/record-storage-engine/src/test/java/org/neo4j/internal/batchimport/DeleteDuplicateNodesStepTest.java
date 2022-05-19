@@ -98,8 +98,9 @@ class DeleteDuplicateNodesStepTest {
         var storeFactory = new StoreFactory(
                 databaseLayout,
                 Config.defaults(),
-                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()),
+                new DefaultIdGeneratorFactory(fs, immediate(), PageCacheTracer.NULL, databaseLayout.getDatabaseName()),
                 pageCache,
+                PageCacheTracer.NULL,
                 fs,
                 NullLogProvider.getInstance(),
                 contextFactory,

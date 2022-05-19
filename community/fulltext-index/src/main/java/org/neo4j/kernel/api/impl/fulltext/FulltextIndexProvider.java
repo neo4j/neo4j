@@ -52,6 +52,7 @@ import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.index.DroppableIndex;
 import org.neo4j.kernel.api.impl.index.DroppableLuceneIndex;
@@ -293,10 +294,17 @@ public class FulltextIndexProvider extends IndexProvider {
     public StoreMigrationParticipant storeMigrationParticipant(
             final FileSystemAbstraction fs,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             StorageEngineFactory storageEngineFactory,
             CursorContextFactory contextFactory) {
         return new SchemaIndexMigrator(
-                "Fulltext indexes", fs, pageCache, this.directoryStructure(), storageEngineFactory, contextFactory);
+                "Fulltext indexes",
+                fs,
+                pageCache,
+                pageCacheTracer,
+                this.directoryStructure(),
+                storageEngineFactory,
+                contextFactory);
     }
 
     @Override

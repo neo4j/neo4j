@@ -194,16 +194,19 @@ class TransactionRecordStateTest {
     }
 
     private void createStores(Config config, RecordFormats formats) {
-        idGeneratorFactory = new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName());
+        var pageCacheTracer = PageCacheTracer.NULL;
+        idGeneratorFactory =
+                new DefaultIdGeneratorFactory(fs, immediate(), pageCacheTracer, databaseLayout.getDatabaseName());
         var storeFactory = new StoreFactory(
                 databaseLayout,
                 config,
                 idGeneratorFactory,
                 pageCache,
+                pageCacheTracer,
                 fs,
                 formats,
                 NullLogProvider.getInstance(),
-                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                new CursorContextFactory(pageCacheTracer, EMPTY),
                 writable(),
                 EMPTY_LOG_TAIL,
                 immutable.empty());

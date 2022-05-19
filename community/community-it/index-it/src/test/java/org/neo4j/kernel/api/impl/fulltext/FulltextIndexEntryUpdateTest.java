@@ -133,8 +133,8 @@ class FulltextIndexEntryUpdateTest {
 
     @BeforeEach
     final void setup() {
-        CursorContextFactory contextFactory =
-                new CursorContextFactory(new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY);
+        DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
+        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
         var defaultDatabaseId = DatabaseIdFactory.from(
                 DEFAULT_DATABASE_NAME, UUID.randomUUID()); // UUID required, but ignored by config lookup
         DatabaseIdRepository databaseIdRepository = mock(DatabaseIdRepository.class);
@@ -156,7 +156,8 @@ class FulltextIndexEntryUpdateTest {
                         databaseLayout,
                         tokenHolders,
                         jobScheduler,
-                        contextFactory);
+                        contextFactory,
+                        cacheTracer);
         life.add(provider);
         life.start();
 

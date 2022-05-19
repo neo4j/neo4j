@@ -23,6 +23,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.util.VisibleForTesting;
 
@@ -74,7 +75,7 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 
     long getDefragCount();
 
-    void checkpoint(CursorContext cursorContext);
+    void checkpoint(FileFlushEvent flushEvent, CursorContext cursorContext);
 
     /**
      * Does some maintenance. This operation isn't critical for the functionality of an IdGenerator, but may make it perform better.
@@ -191,8 +192,8 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         }
 
         @Override
-        public void checkpoint(CursorContext cursorContext) {
-            delegate.checkpoint(cursorContext);
+        public void checkpoint(FileFlushEvent fileFlushEvent, CursorContext cursorContext) {
+            delegate.checkpoint(fileFlushEvent, cursorContext);
         }
 
         @Override

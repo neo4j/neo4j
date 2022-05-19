@@ -99,6 +99,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.impl.api.KernelImpl;
@@ -519,7 +520,7 @@ class FulltextIndexProviderTest {
             RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.of(
                     Config.defaults(GraphDatabaseSettings.neo4j_home, builder.getHomeDirectory()));
             DefaultIdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory(
-                    fs, RecoveryCleanupWorkCollector.ignore(), databaseLayout.getDatabaseName());
+                    fs, RecoveryCleanupWorkCollector.ignore(), cacheTracer, databaseLayout.getDatabaseName());
             try (JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
                     PageCache pageCache =
                             StandalonePageCacheFactory.createPageCache(fs, scheduler, cacheTracer, config(100))) {
@@ -529,6 +530,7 @@ class FulltextIndexProviderTest {
                         Config.defaults(),
                         idGenFactory,
                         pageCache,
+                        cacheTracer,
                         fs,
                         NullLogProvider.getInstance(),
                         contextFactory,
@@ -550,7 +552,7 @@ class FulltextIndexProviderTest {
                     }
                     index = index.withIndexConfig(IndexConfig.with(indexConfigMap));
                     storage.writeSchemaRule(index, IdUpdateListener.DIRECT, cursorContext, INSTANCE, storeCursors);
-                    schemaStore.flush(cursorContext);
+                    schemaStore.flush(FileFlushEvent.NULL, cursorContext);
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);

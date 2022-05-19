@@ -28,6 +28,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 public class IndexImporterFactoryImpl implements IndexImporterFactory {
 
@@ -38,7 +39,8 @@ public class IndexImporterFactoryImpl implements IndexImporterFactory {
             FileSystemAbstraction fs,
             PageCache pageCache,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             ImmutableSet<OpenOption> openOptions) {
-        return new TokenIndexImporter(index, layout, fs, pageCache, contextFactory, openOptions);
+        return new TokenIndexImporter(index, layout, fs, pageCache, contextFactory, pageCacheTracer, openOptions);
     }
 }

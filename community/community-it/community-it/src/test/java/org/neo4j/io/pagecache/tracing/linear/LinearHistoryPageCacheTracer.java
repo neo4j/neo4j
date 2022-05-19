@@ -20,14 +20,15 @@
 package org.neo4j.io.pagecache.tracing.linear;
 
 import static org.neo4j.io.pagecache.tracing.linear.HEvents.EvictionRunHEvent;
-import static org.neo4j.io.pagecache.tracing.linear.HEvents.MajorFlushHEvent;
+import static org.neo4j.io.pagecache.tracing.linear.HEvents.FileFlushHEvent;
 import static org.neo4j.io.pagecache.tracing.linear.HEvents.MappedFileHEvent;
 import static org.neo4j.io.pagecache.tracing.linear.HEvents.UnmappedFileHEvent;
 
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
-import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -78,13 +79,18 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
-    public MajorFlushEvent beginFileFlush(PageSwapper swapper) {
-        return tracer.add(new MajorFlushHEvent(tracer, swapper.path()));
+    public FileFlushEvent beginFileFlush(PageSwapper swapper) {
+        return tracer.add(new FileFlushHEvent(tracer, swapper.path()));
     }
 
     @Override
-    public MajorFlushEvent beginCacheFlush() {
-        return tracer.add(new MajorFlushHEvent(tracer, null));
+    public FileFlushEvent beginFileFlush() {
+        return tracer.add(new FileFlushHEvent(tracer, null));
+    }
+
+    @Override
+    public DatabaseFlushEvent beginDatabaseFlush() {
+        return DatabaseFlushEvent.NULL;
     }
 
     @Override
@@ -170,6 +176,11 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer {
     @Override
     public double usageRatio() {
         return 0d;
+    }
+
+    @Override
+    public long maxPages() {
+        return 0;
     }
 
     @Override

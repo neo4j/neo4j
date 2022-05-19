@@ -164,7 +164,7 @@ class IndexCRUDIT {
     void before() {
         when(mockedIndexProvider.getProviderDescriptor()).thenReturn(PROVIDER_DESCRIPTOR);
         when(mockedIndexProvider.storeMigrationParticipant(
-                        any(FileSystemAbstraction.class), any(PageCache.class), any(), any()))
+                        any(FileSystemAbstraction.class), any(PageCache.class), any(), any(), any()))
                 .thenReturn(StoreMigrationParticipant.NOT_PARTICIPATING);
         when(mockedIndexProvider.completeConfiguration(any(IndexDescriptor.class)))
                 .then(inv -> inv.getArgument(0));

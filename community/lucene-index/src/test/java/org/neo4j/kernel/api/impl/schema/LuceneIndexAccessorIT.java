@@ -71,6 +71,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
@@ -416,10 +417,10 @@ public class LuceneIndexAccessorIT {
                 }
             }
             if (random.nextInt(100) == 0) {
-                index.force(NULL_CONTEXT);
+                index.force(FileFlushEvent.NULL, NULL_CONTEXT);
             }
         }
-        index.force(NULL_CONTEXT);
+        index.force(FileFlushEvent.NULL, NULL_CONTEXT);
         return liveEntityIds;
     }
 

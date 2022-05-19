@@ -25,6 +25,7 @@ import java.io.IOException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -74,7 +75,7 @@ public class SchemaRuleMigrationAccessImpl implements SchemaRuleMigrationAccess 
     @Override
     public void close() throws IOException {
         storeCursors.close();
-        neoStores.flush(cursorContext);
+        neoStores.flush(DatabaseFlushEvent.NULL, cursorContext);
         closeAllUnchecked(storeCursors, neoStores, cursorContext);
     }
 }

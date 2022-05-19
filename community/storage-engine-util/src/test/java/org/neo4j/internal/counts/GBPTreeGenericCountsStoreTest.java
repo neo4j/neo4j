@@ -87,6 +87,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
 import org.neo4j.logging.NullLogProvider;
@@ -157,6 +158,7 @@ class GBPTreeGenericCountsStoreTest {
                 randomMaxCacheSize(),
                 NullLogProvider.getInstance(),
                 cursorContextFactory,
+                pageCacheTracer,
                 getOpenOptions())) {
             assertThat(pageCacheTracer.pins()).isEqualTo(10);
             assertThat(pageCacheTracer.unpins()).isEqualTo(10);
@@ -228,7 +230,7 @@ class GBPTreeGenericCountsStoreTest {
             updater.increment(relationshipKey(LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2), 2); // now at 5
         }
 
-        countsStore.checkpoint(NULL_CONTEXT);
+        countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
 
         // when/then
         assertEquals(15, countsStore.read(nodeKey(LABEL_ID_1), NULL_CONTEXT));
@@ -304,7 +306,7 @@ class GBPTreeGenericCountsStoreTest {
             }));
             race.addContestant(throwing(() -> {
                 long checkpointTxId = lastClosedTxId.getHighestGapFreeNumber();
-                countsStore.checkpoint(NULL_CONTEXT);
+                countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
                 lastCheckPointedTxId.set(checkpointTxId);
                 Thread.sleep(ThreadLocalRandom.current().nextInt(roundTimeMillis / 5));
             }));
@@ -407,7 +409,7 @@ class GBPTreeGenericCountsStoreTest {
         // given
         int labelId = 123;
         incrementNodeCount(BASE_TX_ID + 1, labelId, 4);
-        countsStore.checkpoint(NULL_CONTEXT);
+        countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         incrementNodeCount(BASE_TX_ID + 2, labelId, -2);
         closeCountsStore();
         deleteCountsStore();
@@ -448,8 +450,8 @@ class GBPTreeGenericCountsStoreTest {
 
         try (OtherThreadExecutor checkpointer = new OtherThreadExecutor("Checkpointer", 1, MINUTES)) {
             // when
-            Future<Object> checkpoint =
-                    checkpointer.executeDontWait(command(() -> countsStore.checkpoint(NULL_CONTEXT)));
+            Future<Object> checkpoint = checkpointer.executeDontWait(
+                    command(() -> countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT)));
             checkpointer.waitUntilWaiting();
 
             // and when closing one of the updaters it should still wait
@@ -472,8 +474,8 @@ class GBPTreeGenericCountsStoreTest {
         try (OtherThreadExecutor checkpointer = new OtherThreadExecutor("Checkpointer", 1, MINUTES);
                 OtherThreadExecutor applier = new OtherThreadExecutor("Applier", 1, MINUTES)) {
             // when
-            Future<Object> checkpoint =
-                    checkpointer.executeDontWait(command(() -> countsStore.checkpoint(NULL_CONTEXT)));
+            Future<Object> checkpoint = checkpointer.executeDontWait(
+                    command(() -> countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT)));
             checkpointer.waitUntilWaiting();
 
             // and when trying to open another applier it must wait
@@ -515,6 +517,7 @@ class GBPTreeGenericCountsStoreTest {
                         randomMaxCacheSize(),
                         NullLogProvider.getInstance(),
                         CONTEXT_FACTORY,
+                        PageCacheTracer.NULL,
                         getOpenOptions()));
         assertTrue(Exceptions.contains(e, t -> t instanceof WriteOnReadOnlyAccessDbException));
         assertTrue(Exceptions.contains(e, t -> t instanceof TreeFileNotFoundException));
@@ -524,7 +527,7 @@ class GBPTreeGenericCountsStoreTest {
     @Test
     void shouldAllowToCreateUpdatedEvenInReadOnlyMode() throws IOException {
         // given
-        countsStore.checkpoint(NULL_CONTEXT);
+        countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         closeCountsStore();
         instantiateCountsStore(EMPTY_REBUILD, readOnly(), NO_MONITOR);
         countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
@@ -536,13 +539,13 @@ class GBPTreeGenericCountsStoreTest {
     @Test
     void shouldNotCheckpointInReadOnlyMode() throws IOException {
         // given
-        countsStore.checkpoint(NULL_CONTEXT);
+        countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         closeCountsStore();
         instantiateCountsStore(EMPTY_REBUILD, readOnly(), NO_MONITOR);
         countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
 
         // then it's fine to call checkpoint, because no changes can actually be made on a read-only counts store anyway
-        countsStore.checkpoint(NULL_CONTEXT);
+        countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
     }
 
     @Test
@@ -556,7 +559,7 @@ class GBPTreeGenericCountsStoreTest {
 
         // when
         Race race = new Race();
-        race.addContestant(throwing(() -> countsStore.checkpoint(NULL_CONTEXT)), 1);
+        race.addContestant(throwing(() -> countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT)), 1);
         race.addContestants(
                 10,
                 throwing(() -> {
@@ -584,7 +587,8 @@ class GBPTreeGenericCountsStoreTest {
         // when
         assertThrows(
                 NoSuchFileException.class,
-                () -> GBPTreeCountsStore.dump(pageCache, file, System.out, CONTEXT_FACTORY, immutable.empty()));
+                () -> GBPTreeCountsStore.dump(
+                        pageCache, file, System.out, CONTEXT_FACTORY, PageCacheTracer.NULL, immutable.empty()));
 
         // then
         assertFalse(fs.fileExists(file));
@@ -671,7 +675,7 @@ class GBPTreeGenericCountsStoreTest {
         }
 
         // write the illegal value to the tree
-        countsStore.checkpoint(NULL_CONTEXT);
+        countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
 
         try (CountUpdater updater = countsStore.updater(++txId, NULL_CONTEXT)) {
             updater.increment(nodeKey(LABEL_ID_1), 10); // this will be just ignored
@@ -687,7 +691,7 @@ class GBPTreeGenericCountsStoreTest {
         // and other counts still work
         assertEquals(15, countsStore.read(nodeKey(LABEL_ID_2), NULL_CONTEXT));
 
-        countsStore.checkpoint(NULL_CONTEXT);
+        countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
 
         // ... and after checkpoint, too
         InvalidCountException e2 =
@@ -706,7 +710,7 @@ class GBPTreeGenericCountsStoreTest {
         }
 
         // when
-        countsStore.checkpoint(NULL_CONTEXT);
+        countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         closeCountsStore();
         MutableBoolean rebuildTriggered = new MutableBoolean();
         openCountsStore(new Rebuilder() {
@@ -737,7 +741,7 @@ class GBPTreeGenericCountsStoreTest {
         try (CountUpdater updater = countsStore.updater(countsStoreTxId + 2, NULL_CONTEXT)) {
             updater.increment(key, 3);
         }
-        countsStore.checkpoint(NULL_CONTEXT);
+        countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
 
         // when
         closeCountsStore();
@@ -851,7 +855,7 @@ class GBPTreeGenericCountsStoreTest {
     }
 
     private void checkpointAndRestartCountsStore() throws Exception {
-        countsStore.checkpoint(NULL_CONTEXT);
+        countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         closeCountsStore();
         openCountsStore();
     }
@@ -890,6 +894,7 @@ class GBPTreeGenericCountsStoreTest {
                 randomMaxCacheSize(),
                 NullLogProvider.getInstance(),
                 CONTEXT_FACTORY,
+                PageCacheTracer.NULL,
                 getOpenOptions());
     }
 

@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -94,7 +95,7 @@ class CountsStoreRecoveryTest {
                 .resolveDependency(RecordStorageEngine.class)
                 .testAccessNeoStores();
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-        metaDataStore.flush(NULL_CONTEXT);
+        metaDataStore.flush(FileFlushEvent.NULL, NULL_CONTEXT);
     }
 
     private void checkPoint() throws IOException {

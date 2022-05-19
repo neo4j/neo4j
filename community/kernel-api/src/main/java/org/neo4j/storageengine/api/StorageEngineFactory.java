@@ -178,7 +178,8 @@ public interface StorageEngineFactory {
             DatabaseReadOnlyChecker readOnlyChecker,
             LogTailMetadata logTailMetadata,
             MemoryTracker memoryTracker,
-            CursorContextFactory contextFactory)
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer)
             throws IOException;
 
     /**
@@ -225,7 +226,8 @@ public interface StorageEngineFactory {
             PageCache pageCache,
             DatabaseReadOnlyChecker readOnlyChecker,
             CursorContextFactory contextFactory,
-            LogTailMetadata logTailMetadata)
+            LogTailMetadata logTailMetadata,
+            PageCacheTracer pageCacheTracer)
             throws IOException;
 
     @Deprecated
@@ -239,6 +241,7 @@ public interface StorageEngineFactory {
             Config config,
             PageCache pageCache,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             LegacyStoreId storeId,
             UUID externalStoreId)
             throws IOException;
@@ -249,6 +252,7 @@ public interface StorageEngineFactory {
             Config config,
             PageCache pageCache,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             StoreId storeId,
             UUID externalStoreId)
             throws IOException;
@@ -264,6 +268,7 @@ public interface StorageEngineFactory {
             LogService logService,
             String recordFormats,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker);
 
     /**
@@ -272,6 +277,7 @@ public interface StorageEngineFactory {
     List<SchemaRule44> load44SchemaRules(
             FileSystemAbstraction fs,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             Config config,
             DatabaseLayout databaseLayout,
             CursorContextFactory contextFactory,
@@ -280,6 +286,7 @@ public interface StorageEngineFactory {
     List<SchemaRule> loadSchemaRules(
             FileSystemAbstraction fs,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             Config config,
             DatabaseLayout databaseLayout,
             boolean lenient,
@@ -291,6 +298,7 @@ public interface StorageEngineFactory {
             DatabaseLayout databaseLayout,
             Config config,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             boolean lenient,
             CursorContextFactory contextFactory);
 
@@ -358,6 +366,7 @@ public interface StorageEngineFactory {
             DatabaseLayout databaseLayout,
             FileSystemAbstraction fileSystem,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             Config config,
             MemoryTracker memoryTracker,
             ReadBehaviour readBehaviour,
@@ -410,6 +419,7 @@ public interface StorageEngineFactory {
      * @param verbose whether or not to print verbose progress output.
      * @param flags which parts of the store/indexes to check.
      * @param contextFactory underlying page cursor context factory.
+     * @param pageCacheTracer underlying page cache tracer
      * @throws ConsistencyCheckIncompleteException on failure doing the consistency check.
      */
     void consistencyCheck(
@@ -425,11 +435,12 @@ public interface StorageEngineFactory {
             OutputStream progressOutput,
             boolean verbose,
             ConsistencyFlags flags,
-            CursorContextFactory contextFactory)
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer)
             throws ConsistencyCheckIncompleteException;
 
     /**
-     * Detects open options for existing store such as endianness or versionness
+     * Detects open options for existing store such as endianness or version
      */
     ImmutableSet<OpenOption> getStoreOpenOptions(
             FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, CursorContextFactory contextFactory);

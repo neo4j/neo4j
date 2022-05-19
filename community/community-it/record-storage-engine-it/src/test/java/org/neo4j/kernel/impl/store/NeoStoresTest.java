@@ -87,6 +87,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
@@ -183,6 +184,7 @@ public class NeoStoresTest {
                 Config.defaults(),
                 pageCache,
                 CONTEXT_FACTORY,
+                PageCacheTracer.NULL,
                 new LegacyStoreId(123),
                 new UUID(2, 3));
 
@@ -361,8 +363,9 @@ public class NeoStoresTest {
         StoreFactory sf = new StoreFactory(
                 databaseLayout,
                 config,
-                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()),
+                new DefaultIdGeneratorFactory(fs, immediate(), PageCacheTracer.NULL, databaseLayout.getDatabaseName()),
                 pageCache,
+                PageCacheTracer.NULL,
                 fs,
                 LOG_PROVIDER,
                 CONTEXT_FACTORY,
@@ -383,7 +386,7 @@ public class NeoStoresTest {
         assertEquals(10L, metaDataStore.getLatestConstraintIntroducingTx());
 
         // when
-        neoStores.flush(NULL_CONTEXT);
+        neoStores.flush(DatabaseFlushEvent.NULL, NULL_CONTEXT);
         neoStores.close();
     }
 
@@ -471,6 +474,7 @@ public class NeoStoresTest {
                 defaults,
                 new CloseFailingDefaultIdGeneratorFactory(fs, errorMessage),
                 pageCache,
+                PageCacheTracer.NULL,
                 fs,
                 NullLogProvider.getInstance(),
                 CONTEXT_FACTORY,
@@ -487,12 +491,13 @@ public class NeoStoresTest {
         // given
         fs.deleteRecursively(databaseLayout.databaseDirectory());
         DefaultIdGeneratorFactory idFactory =
-                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName());
+                new DefaultIdGeneratorFactory(fs, immediate(), PageCacheTracer.NULL, databaseLayout.getDatabaseName());
         StoreFactory factory = new StoreFactory(
                 databaseLayout,
                 Config.defaults(),
                 idFactory,
                 pageCache,
+                PageCacheTracer.NULL,
                 fs,
                 LOG_PROVIDER,
                 CONTEXT_FACTORY,
@@ -511,12 +516,13 @@ public class NeoStoresTest {
         // given
         fs.deleteRecursively(databaseLayout.databaseDirectory());
         DefaultIdGeneratorFactory idFactory =
-                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName());
+                new DefaultIdGeneratorFactory(fs, immediate(), PageCacheTracer.NULL, databaseLayout.getDatabaseName());
         StoreFactory factory = new StoreFactory(
                 databaseLayout,
                 Config.defaults(),
                 idFactory,
                 pageCache,
+                PageCacheTracer.NULL,
                 fs,
                 LOG_PROVIDER,
                 CONTEXT_FACTORY,
@@ -542,12 +548,13 @@ public class NeoStoresTest {
         RecordFormats recordFormats = RecordFormatSelector.defaultFormat();
         Config config = Config.defaults();
         IdGeneratorFactory idGeneratorFactory =
-                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName());
+                new DefaultIdGeneratorFactory(fs, immediate(), PageCacheTracer.NULL, databaseLayout.getDatabaseName());
         return new StoreFactory(
                 databaseLayout,
                 config,
                 idGeneratorFactory,
                 pageCache,
+                PageCacheTracer.NULL,
                 fs,
                 recordFormats,
                 LOG_PROVIDER,
@@ -563,7 +570,7 @@ public class NeoStoresTest {
         dependencies.satisfyDependency(config);
         closeStorageEngine();
         IdGeneratorFactory idGeneratorFactory =
-                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName());
+                new DefaultIdGeneratorFactory(fs, immediate(), PageCacheTracer.NULL, databaseLayout.getDatabaseName());
 
         TokenHolders tokenHolders = new TokenHolders(
                 createReadOnlyTokenHolder(TokenHolder.TYPE_PROPERTY_KEY),
@@ -590,7 +597,8 @@ public class NeoStoresTest {
                 EMPTY_LOG_TAIL,
                 CommandLockVerification.Factory.IGNORE,
                 LockVerificationMonitor.Factory.IGNORE,
-                CONTEXT_FACTORY);
+                CONTEXT_FACTORY,
+                PageCacheTracer.NULL);
         life = new LifeSupport();
         life.add(storageEngine);
         life.add(storageEngine.schemaAndTokensLifecycle());
@@ -738,8 +746,9 @@ public class NeoStoresTest {
         return new StoreFactory(
                 databaseLayout,
                 config,
-                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()),
+                new DefaultIdGeneratorFactory(fs, immediate(), PageCacheTracer.NULL, databaseLayout.getDatabaseName()),
                 pageCache,
+                PageCacheTracer.NULL,
                 fs,
                 logProvider,
                 CONTEXT_FACTORY,
@@ -751,7 +760,7 @@ public class NeoStoresTest {
         private final String errorMessage;
 
         CloseFailingDefaultIdGeneratorFactory(FileSystemAbstraction fs, String errorMessage) {
-            super(fs, immediate(), DEFAULT_DATABASE_NAME);
+            super(fs, immediate(), PageCacheTracer.NULL, DEFAULT_DATABASE_NAME);
             this.errorMessage = errorMessage;
         }
 
@@ -786,7 +795,8 @@ public class NeoStoresTest {
                         contextFactory,
                         IndexedIdGenerator.NO_MONITOR,
                         openOptions,
-                        slotDistribution) {
+                        slotDistribution,
+                        PageCacheTracer.NULL) {
                     @Override
                     public synchronized void close() {
                         super.close();

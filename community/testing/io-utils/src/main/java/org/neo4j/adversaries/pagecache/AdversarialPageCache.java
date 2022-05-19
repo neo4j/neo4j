@@ -34,6 +34,7 @@ import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 
 /**
  * A {@linkplain PageCache page cache} that wraps another page cache and an {@linkplain Adversary adversary} to provide
@@ -87,9 +88,9 @@ public class AdversarialPageCache implements PageCache {
     }
 
     @Override
-    public void flushAndForce() throws IOException {
+    public void flushAndForce(DatabaseFlushEvent flushEvent) throws IOException {
         adversary.injectFailure(NoSuchFileException.class, IOException.class, SecurityException.class);
-        delegate.flushAndForce();
+        delegate.flushAndForce(flushEvent);
     }
 
     @Override

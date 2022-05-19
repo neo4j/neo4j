@@ -74,7 +74,7 @@ class BufferedIdControllerTest {
 
     void setUp(CursorContextFactory contextFactory, FileSystemAbstraction filesystem) throws IOException {
         idGeneratorFactory = new BufferingIdGeneratorFactory(
-                new DefaultIdGeneratorFactory(filesystem, immediate(), DEFAULT_DATABASE_NAME));
+                new DefaultIdGeneratorFactory(filesystem, immediate(), PageCacheTracer.NULL, DEFAULT_DATABASE_NAME));
         controller = new BufferedIdController(
                 idGeneratorFactory,
                 new OnDemandJobScheduler(),

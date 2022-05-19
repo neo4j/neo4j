@@ -37,6 +37,7 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.TokenIndexReader;
@@ -76,8 +77,8 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor {
     }
 
     @Override
-    public void force(CursorContext cursorContext) {
-        index.checkpoint(cursorContext);
+    public void force(FileFlushEvent flushEvent, CursorContext cursorContext) {
+        index.checkpoint(flushEvent, cursorContext);
     }
 
     @Override

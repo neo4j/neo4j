@@ -22,13 +22,11 @@ package org.neo4j.io.pagecache.tracing;
 import org.neo4j.io.pagecache.PageSwapper;
 
 /**
- * Begin a mass-flushing of pages.
+ * Begin a mass-flushing of file pages.
  */
-public interface MajorFlushEvent extends AutoCloseablePageCacheTracerEvent {
-    /**
-     * A MajorFlushEvent that only returns the FlushEventOpportunity.NULL.
-     */
-    MajorFlushEvent NULL = new MajorFlushEvent() {
+public interface FileFlushEvent extends AutoCloseablePageCacheTracerEvent {
+
+    FileFlushEvent NULL = new FileFlushEvent() {
 
         @Override
         public FlushEvent beginFlush(
@@ -48,6 +46,19 @@ public interface MajorFlushEvent extends AutoCloseablePageCacheTracerEvent {
 
         @Override
         public void startFlush(int[][] translationTable) {}
+
+        @Override
+        public void reset() {}
+
+        @Override
+        public long ioPerformed() {
+            return 0;
+        }
+
+        @Override
+        public long pagesFlushed() {
+            return 0;
+        }
 
         @Override
         public ChunkEvent startChunk(int[] chunk) {
@@ -84,6 +95,21 @@ public interface MajorFlushEvent extends AutoCloseablePageCacheTracerEvent {
      * @param translationTable table we flush
      */
     void startFlush(int[][] translationTable);
+
+    /**
+     * Reset internal state of the event
+     */
+    void reset();
+
+    /**
+     * Number of IOs (number of buffers flushed) by this event after last {@link #reset()}
+     */
+    long ioPerformed();
+
+    /**
+     * Number of pages flushed by this event after last {@link #reset()}
+     */
+    long pagesFlushed();
 
     /**
      * Start flushing of given chunk

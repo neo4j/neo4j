@@ -111,6 +111,11 @@ public interface PageCacheCounters {
     double usageRatio();
 
     /**
+     * Return max number of page cache pages. 0 if number is not available.
+     */
+    long maxPages();
+
+    /**
      * @return The number of IOPQ performed thus far.
      */
     long iopqPerformed();

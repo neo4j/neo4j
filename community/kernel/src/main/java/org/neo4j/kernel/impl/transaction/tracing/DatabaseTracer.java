@@ -40,6 +40,21 @@ public interface DatabaseTracer extends TransactionTracer, CheckPointTracer {
         }
 
         @Override
+        public long lastCheckpointPagesFlushed() {
+            return 0;
+        }
+
+        @Override
+        public long lastCheckpointIOs() {
+            return 0;
+        }
+
+        @Override
+        public long lastCheckpointIOLimit() {
+            return 0;
+        }
+
+        @Override
         public LogFileCreateEvent createLogFile() {
             return LogFileCreateEvent.NULL;
         }

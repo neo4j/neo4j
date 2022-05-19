@@ -61,6 +61,8 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -78,6 +80,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
         implements RecordStore<RECORD>, AutoCloseable {
     protected final Config configuration;
     protected final PageCache pageCache;
+    protected final PageCacheTracer pageCacheTracer;
     protected final IdType idType;
     protected final IdGeneratorFactory idGeneratorFactory;
     protected final InternalLog log;
@@ -122,6 +125,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             InternalLogProvider logProvider,
             String typeDescriptor,
             RecordFormat<RECORD> recordFormat,
@@ -135,6 +139,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
         this.idGeneratorFactory = idGeneratorFactory;
         this.pageCache = pageCache;
         this.idType = idType;
+        this.pageCacheTracer = pageCacheTracer;
         this.typeDescriptor = typeDescriptor;
         this.recordFormat = recordFormat;
         this.storeHeaderFormat = storeHeaderFormat;
@@ -232,7 +237,9 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
 
                         // Map the file (w/ the CREATE flag) and initialize the header
                         pagedFile = pageCache.map(storageFile, filePageSize, databaseName, openOptions.newWith(CREATE));
-                        initialiseNewStoreFile(cursorContext);
+                        try (FileFlushEvent flushEvent = pageCacheTracer.beginFileFlush()) {
+                            initialiseNewStoreFile(flushEvent, cursorContext);
+                        }
                         return true; // <-- successfully created and initialized
                     } catch (IOException e1) {
                         e.addSuppressed(e1);
@@ -249,7 +256,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
         }
     }
 
-    protected void initialiseNewStoreFile(CursorContext cursorContext) throws IOException {
+    protected void initialiseNewStoreFile(FileFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
         if (getNumberOfReservedLowIds() > 0) {
             try (PageCursor pageCursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK | PF_EAGER_FLUSH, cursorContext)) {
                 if (pageCursor.next()) {
@@ -261,7 +268,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
                     }
                 }
             }
-            pagedFile.flushAndForce();
+            pagedFile.flushAndForce(flushEvent);
         }
 
         // Determine record size right after writing the header since some stores
@@ -634,10 +641,10 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     }
 
     @Override
-    public void flush(CursorContext cursorContext) {
+    public void flush(FileFlushEvent flushEvent, CursorContext cursorContext) {
         try {
-            pagedFile.flushAndForce();
-            idGenerator.checkpoint(cursorContext);
+            pagedFile.flushAndForce(flushEvent);
+            idGenerator.checkpoint(flushEvent, cursorContext);
         } catch (IOException e) {
             throw new UnderlyingStorageException("Failed to flush", e);
         }

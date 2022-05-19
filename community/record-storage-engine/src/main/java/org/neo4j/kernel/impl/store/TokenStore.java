@@ -38,6 +38,7 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -64,6 +65,7 @@ public abstract class TokenStore<RECORD extends TokenRecord> extends CommonAbstr
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             InternalLogProvider logProvider,
             DynamicStringStore nameStore,
             String typeDescriptor,
@@ -80,6 +82,7 @@ public abstract class TokenStore<RECORD extends TokenRecord> extends CommonAbstr
                 idType,
                 idGeneratorFactory,
                 pageCache,
+                pageCacheTracer,
                 logProvider,
                 typeDescriptor,
                 recordFormat,

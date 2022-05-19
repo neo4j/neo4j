@@ -39,6 +39,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -59,13 +60,19 @@ class DirectRecordStoreMigrator {
     private final FileSystemAbstraction fs;
     private final Config config;
     private final CursorContextFactory contextFactory;
+    private final PageCacheTracer pageCacheTracer;
 
     DirectRecordStoreMigrator(
-            PageCache pageCache, FileSystemAbstraction fs, Config config, CursorContextFactory contextFactory) {
+            PageCache pageCache,
+            FileSystemAbstraction fs,
+            Config config,
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer) {
         this.pageCache = pageCache;
         this.fs = fs;
         this.config = config;
         this.contextFactory = contextFactory;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     public void migrate(
@@ -85,6 +92,7 @@ class DirectRecordStoreMigrator {
                                 config,
                                 new ScanOnOpenReadOnlyIdGeneratorFactory(),
                                 pageCache,
+                                pageCacheTracer,
                                 fs,
                                 fromFormat,
                                 NullLogProvider.getInstance(),
@@ -96,8 +104,10 @@ class DirectRecordStoreMigrator {
                 NeoStores toStores = new StoreFactory(
                                 toDirectoryStructure,
                                 withPersistedStoreHeadersAsConfigFrom(fromStores, storesToOpen),
-                                new DefaultIdGeneratorFactory(fs, immediate(), toDirectoryStructure.getDatabaseName()),
+                                new DefaultIdGeneratorFactory(
+                                        fs, immediate(), pageCacheTracer, toDirectoryStructure.getDatabaseName()),
                                 pageCache,
+                                pageCacheTracer,
                                 fs,
                                 toFormat,
                                 NullLogProvider.getInstance(),

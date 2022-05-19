@@ -76,14 +76,16 @@ abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S ext
     void setUp() {
         nextReadIsInconsistent = new AtomicBoolean();
         pageCache = PageCacheSupportExtension.getPageCache(fs, config().withInconsistentReads(nextReadIsInconsistent));
+        var pageCacheTracer = PageCacheTracer.NULL;
         StoreFactory factory = new StoreFactory(
                 databaseLayout,
                 Config.defaults(),
-                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()),
+                new DefaultIdGeneratorFactory(fs, immediate(), pageCacheTracer, databaseLayout.getDatabaseName()),
                 pageCache,
+                pageCacheTracer,
                 fs,
                 NullLogProvider.getInstance(),
-                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                new CursorContextFactory(pageCacheTracer, EMPTY),
                 writable(),
                 EMPTY_LOG_TAIL);
         neoStores = factory.openAllNeoStores(true);

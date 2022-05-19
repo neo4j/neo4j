@@ -30,6 +30,7 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.logging.InternalLogProvider;
@@ -46,6 +47,7 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord> {
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             InternalLogProvider logProvider,
             DynamicStringStore nameStore,
             RecordFormats recordFormats,
@@ -59,6 +61,7 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord> {
                 SchemaIdType.LABEL_TOKEN,
                 idGeneratorFactory,
                 pageCache,
+                pageCacheTracer,
                 logProvider,
                 nameStore,
                 TYPE_DESCRIPTOR,

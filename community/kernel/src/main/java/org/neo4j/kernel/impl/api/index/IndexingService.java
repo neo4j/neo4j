@@ -72,6 +72,7 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -605,11 +606,15 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         return indexMapRef.getIndexProxy(indexId);
     }
 
-    public void forceAll(CursorContext cursorContext) throws IOException {
-        indexStatisticsStore.checkpoint(cursorContext);
-        indexMapRef
-                .indexMapSnapshot()
-                .forEachIndexProxy(indexProxyOperation("force", proxy -> proxy.force(cursorContext)));
+    public void forceAll(DatabaseFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
+        try (var fileFlushEvent = flushEvent.beginFileFlush()) {
+            indexStatisticsStore.checkpoint(fileFlushEvent, cursorContext);
+        }
+        indexMapRef.indexMapSnapshot().forEachIndexProxy(indexProxyOperation("force", proxy -> {
+            try (var fileFlushEvent = flushEvent.beginFileFlush()) {
+                proxy.force(fileFlushEvent, cursorContext);
+            }
+        }));
     }
 
     private LongObjectProcedure<IndexProxy> indexProxyOperation(

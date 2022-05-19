@@ -186,6 +186,7 @@ class KernelTransactionTestBase {
         Mockito.when(databaseIdRepository.getByName(databaseId.name())).thenReturn(Optional.of(databaseId));
         var readOnlyLookup = new ConfigBasedLookupFactory(config, databaseIdRepository);
         var readOnlyChecker = new ReadOnlyDatabases(readOnlyLookup);
+        DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
         return new KernelTransactionImplementation(
                 config,
                 mock(DatabaseTransactionEventListeners.class),
@@ -196,10 +197,10 @@ class KernelTransactionTestBase {
                 txPool,
                 clock,
                 new AtomicReference<>(CpuClock.NOT_AVAILABLE),
-                new DatabaseTracers(new DefaultTracer(), LockTracer.NONE, new DefaultPageCacheTracer()),
+                new DatabaseTracers(new DefaultTracer(pageCacheTracer), LockTracer.NONE, pageCacheTracer),
                 storageEngine,
                 any -> CanWrite.INSTANCE,
-                new CursorContextFactory(new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY),
+                new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY),
                 () -> collectionsFactory,
                 new StandardConstraintSemantics(),
                 mock(SchemaState.class),

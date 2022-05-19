@@ -80,14 +80,17 @@ class ConsistencyCheckingApplierTest {
     void setUp() {
         Config config = Config.defaults(neo4j_home, directory.homePath());
         RecordDatabaseLayout layout = RecordDatabaseLayout.of(config);
+        var pageCacheTracer = PageCacheTracer.NULL;
         neoStores = new StoreFactory(
                         layout,
                         config,
-                        new DefaultIdGeneratorFactory(directory.getFileSystem(), immediate(), DEFAULT_DATABASE_NAME),
+                        new DefaultIdGeneratorFactory(
+                                directory.getFileSystem(), immediate(), pageCacheTracer, DEFAULT_DATABASE_NAME),
                         pageCache,
+                        pageCacheTracer,
                         directory.getFileSystem(),
                         NullLogProvider.getInstance(),
-                        new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                        new CursorContextFactory(pageCacheTracer, EMPTY),
                         writable(),
                         EMPTY_LOG_TAIL)
                 .openAllNeoStores(true);

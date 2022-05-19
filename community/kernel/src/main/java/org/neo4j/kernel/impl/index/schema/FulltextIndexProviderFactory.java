@@ -32,6 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -67,7 +68,8 @@ public class FulltextIndexProviderFactory extends AbstractIndexProviderFactory<F
             InternalLog log,
             TokenHolders tokenHolders,
             JobScheduler scheduler,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer) {
         boolean ephemeral = config.get(GraphDatabaseInternalSettings.ephemeral_lucene);
         DirectoryFactory directoryFactory = directoryFactory(ephemeral);
         IndexDirectoryStructure.Factory directoryStructureFactory =

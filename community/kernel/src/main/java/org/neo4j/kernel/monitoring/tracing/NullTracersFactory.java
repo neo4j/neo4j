@@ -45,7 +45,7 @@ public class NullTracersFactory implements TracerFactory {
     }
 
     @Override
-    public DatabaseTracer createDatabaseTracer(Clock clock) {
+    public DatabaseTracer createDatabaseTracer(PageCacheTracer pageCacheTracer, Clock clock) {
         return DatabaseTracer.NULL;
     }
 

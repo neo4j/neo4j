@@ -47,6 +47,7 @@ import org.neo4j.internal.schema.SchemaDescriptorImplementation;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.IntStoreHeader;
@@ -123,6 +124,7 @@ public class SchemaStore44Reader implements AutoCloseable {
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             CursorContextFactory cursorContextFactory,
             InternalLogProvider logProvider,
             RecordFormats recordFormats,
@@ -138,6 +140,7 @@ public class SchemaStore44Reader implements AutoCloseable {
                 idType,
                 idGeneratorFactory,
                 pageCache,
+                pageCacheTracer,
                 cursorContextFactory,
                 logProvider,
                 recordFormats,
@@ -423,6 +426,7 @@ public class SchemaStore44Reader implements AutoCloseable {
                 IdType idType,
                 IdGeneratorFactory idGeneratorFactory,
                 PageCache pageCache,
+                PageCacheTracer pageCacheTracer,
                 CursorContextFactory cursorContextFactory,
                 InternalLogProvider logProvider,
                 RecordFormats recordFormats,
@@ -436,6 +440,7 @@ public class SchemaStore44Reader implements AutoCloseable {
                     idType,
                     idGeneratorFactory,
                     pageCache,
+                    pageCacheTracer,
                     logProvider,
                     TYPE_DESCRIPTOR,
                     recordFormats.schema(),

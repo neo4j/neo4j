@@ -28,6 +28,7 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.InternalLogProvider;
@@ -41,6 +42,7 @@ public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGrou
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             InternalLogProvider logProvider,
             RecordFormats recordFormats,
             DatabaseReadOnlyChecker readOnlyChecker,
@@ -53,6 +55,7 @@ public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGrou
                 RecordIdType.RELATIONSHIP_GROUP,
                 idGeneratorFactory,
                 pageCache,
+                pageCacheTracer,
                 logProvider,
                 TYPE_DESCRIPTOR,
                 recordFormats.relationshipGroup(),

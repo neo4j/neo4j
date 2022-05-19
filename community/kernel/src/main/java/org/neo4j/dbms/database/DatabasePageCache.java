@@ -37,6 +37,8 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.monitoring.PageFileCounters;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileMappedListener;
 
 /**
@@ -88,9 +90,11 @@ public class DatabasePageCache implements PageCache {
     }
 
     @Override
-    public void flushAndForce() throws IOException {
+    public void flushAndForce(DatabaseFlushEvent flushEvent) throws IOException {
         for (PagedFile pagedFile : databasePagedFiles) {
-            pagedFile.flushAndForce();
+            try (FileFlushEvent fileFlushEvent = flushEvent.beginFileFlush()) {
+                pagedFile.flushAndForce(fileFlushEvent);
+            }
         }
     }
 
@@ -189,8 +193,8 @@ public class DatabasePageCache implements PageCache {
         }
 
         @Override
-        public void flushAndForce() throws IOException {
-            delegate.flushAndForce();
+        public void flushAndForce(FileFlushEvent flushEvent) throws IOException {
+            delegate.flushAndForce(flushEvent);
         }
 
         @Override

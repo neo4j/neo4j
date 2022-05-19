@@ -103,8 +103,9 @@ import org.neo4j.io.pagecache.impl.muninn.MuninnPageCursor;
 import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 import org.neo4j.io.pagecache.randomharness.Record;
 import org.neo4j.io.pagecache.randomharness.StandardRecordFormat;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
@@ -236,7 +237,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
             }
 
-            pagedFile.flushAndForce();
+            pagedFile.flushAndForce(FileFlushEvent.NULL);
 
             verifyRecordsInFile(file("a"), recordCount);
             pagedFile.close();
@@ -272,7 +273,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         dirtyManyPages(pfA, pagesToDirty);
         dirtyManyPages(pfB, pagesToDirty);
 
-        cache.flushAndForce();
+        cache.flushAndForce(DatabaseFlushEvent.NULL);
         pfA.close();
         pfB.close();
 
@@ -297,7 +298,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         // Dirty a bunch of data
         dirtyManyPages(pf, pagesToDirty);
 
-        pf.flushAndForce();
+        pf.flushAndForce(FileFlushEvent.NULL);
         pf.close();
 
         assertThat(callbackCounter.get()).isGreaterThan(0);
@@ -341,7 +342,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     // running concurrently right now.
                     // Therefor, a flush right now would have a high chance of racing
                     // with eviction.
-                    pagedFile.flushAndForce();
+                    pagedFile.flushAndForce(FileFlushEvent.NULL);
 
                     // Race or not, a flush should still put all changes in storage,
                     // so we should be able to verify the contents of the file.
@@ -370,7 +371,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             BinaryLatch limiterBlockLatch = new BinaryLatch();
             var ioController = new EmptyIOController() {
                 @Override
-                public void maybeLimitIO(int recentlyCompletedIOs, Flushable flushable, MajorFlushEvent flushEvent) {
+                public void maybeLimitIO(int recentlyCompletedIOs, Flushable flushable, FileFlushEvent flushEvent) {
                     limiterStartLatch.release();
                     limiterBlockLatch.await();
                     super.maybeLimitIO(recentlyCompletedIOs, flushable, flushEvent);
@@ -386,7 +387,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
 
                 Future<?> flusher = executor.submit(() -> {
-                    pfA.flushAndForce();
+                    pfA.flushAndForce(FileFlushEvent.NULL);
                     return null;
                 });
 
@@ -432,15 +433,15 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
 
             flushers.add(executor.submit(() -> {
-                pfA.flushAndForce();
+                pfA.flushAndForce(FileFlushEvent.NULL);
                 return null;
             }));
             flushers.add(executor.submit(() -> {
-                pfB.flushAndForce();
+                pfB.flushAndForce(FileFlushEvent.NULL);
                 return null;
             }));
             flushers.add(executor.submit(() -> {
-                pfC.flushAndForce();
+                pfC.flushAndForce(FileFlushEvent.NULL);
                 return null;
             }));
 
@@ -516,7 +517,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 cursor.putInt(1);
             }
 
-            pagedFile.flushAndForce();
+            pagedFile.flushAndForce(FileFlushEvent.NULL);
 
             assertThat(writeCounter.get()).isGreaterThanOrEqualTo(2); // We might race with background flushing.
             assertThat(forceCounter.get()).isEqualTo(1);
@@ -540,7 +541,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 cursor.putInt(1);
             }
 
-            pagedFile.flushAndForce();
+            pagedFile.flushAndForce(FileFlushEvent.NULL);
 
             assertThat(writeCounter.get()).isGreaterThanOrEqualTo(1); // We might race with background flushing.
             assertThat(forceCounter.get()).isEqualTo(1);
@@ -569,7 +570,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 cursor.putInt(1);
             }
 
-            pageCache.flushAndForce();
+            pageCache.flushAndForce(DatabaseFlushEvent.NULL);
 
             assertThat(writeCounter.get()).isGreaterThanOrEqualTo(3); // We might race with background flushing.
             assertThat(forceCounter.get()).isEqualTo(2);
@@ -598,7 +599,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 cursor.putInt(1);
             }
 
-            pageCache.flushAndForce();
+            pageCache.flushAndForce(DatabaseFlushEvent.NULL);
 
             assertThat(writeCounter.get()).isGreaterThanOrEqualTo(2); // We might race with background flushing.
             assertThat(forceCounter.get()).isEqualTo(2);
@@ -868,7 +869,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
             configureStandardPageCache();
             pageCache.close();
-            assertThrows(IllegalStateException.class, () -> pageCache.flushAndForce());
+            assertThrows(IllegalStateException.class, () -> pageCache.flushAndForce(DatabaseFlushEvent.NULL));
         });
     }
 
@@ -959,7 +960,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
             }
 
-            pagedFile.flushAndForce();
+            pagedFile.flushAndForce(FileFlushEvent.NULL);
         });
     }
 
@@ -2415,7 +2416,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                                     assertTrue(writer.next(i));
                                 }
                             }
-                            otherPagedFile.flushAndForce();
+                            otherPagedFile.flushAndForce(FileFlushEvent.NULL);
                         }
                     });
                 }
@@ -3683,7 +3684,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         hasSpace.set(true);
 
         // Flushing the paged file implies the eviction exception gets cleared, and mustn't itself throw:
-        pagedFile.flushAndForce();
+        pagedFile.flushAndForce(FileFlushEvent.NULL);
 
         try (PageCursor cursor = pagedFile.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
             assertTrue(cursor.next()); // this should not throw
@@ -5704,7 +5705,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
 
         @Override
-        public void maybeLimitIO(int recentlyCompletedIOs, Flushable flushable, MajorFlushEvent flushEvent) {
+        public void maybeLimitIO(int recentlyCompletedIOs, Flushable flushable, FileFlushEvent flushEvent) {
             ioCounter.addAndGet(recentlyCompletedIOs * pagesPerFlush);
             callbackCounter.getAndIncrement();
         }
@@ -5720,7 +5721,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
 
         @Override
-        public void maybeLimitIO(int recentlyCompletedIOs, Flushable flushable, MajorFlushEvent flushEvent) {
+        public void maybeLimitIO(int recentlyCompletedIOs, Flushable flushable, FileFlushEvent flushEvent) {
             closeLatch.countDown();
             limiterBlockLatch.await();
             super.maybeLimitIO(recentlyCompletedIOs, flushable, flushEvent);

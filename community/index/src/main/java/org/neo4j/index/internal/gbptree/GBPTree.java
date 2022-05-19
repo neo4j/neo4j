@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 /**
  * Merely a convenience for a single-root {@link MultiRootGBPTree}.
@@ -54,7 +55,8 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
             ImmutableSet<OpenOption> openOptions,
             String databaseName,
             String name,
-            CursorContextFactory contextFactory)
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer)
             throws MetadataMismatchException {
         super(
                 pageCache,
@@ -69,7 +71,8 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
                 databaseName,
                 name,
                 contextFactory,
-                singleRoot());
+                singleRoot(),
+                pageCacheTracer);
         access = rootLayer.access(SingleRoot.SINGLE_ROOT);
     }
 

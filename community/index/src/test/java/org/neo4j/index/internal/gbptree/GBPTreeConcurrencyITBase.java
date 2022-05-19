@@ -57,6 +57,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -550,7 +551,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY, VALUE> {
         return () -> {
             while (!endSignal.get()) {
                 try {
-                    index.checkpoint(NULL_CONTEXT);
+                    index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
                     // Sleep a little in between checkpoints
                     MILLISECONDS.sleep(20L);
                 } catch (Throwable e) {

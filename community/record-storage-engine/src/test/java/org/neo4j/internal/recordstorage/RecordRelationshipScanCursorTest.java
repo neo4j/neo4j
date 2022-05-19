@@ -160,14 +160,17 @@ class RecordRelationshipScanCursorTest {
     }
 
     private StoreFactory getStoreFactory() {
+        var pageCacheTracer = PageCacheTracer.NULL;
         return new StoreFactory(
                 databaseLayout,
                 Config.defaults(),
-                new DefaultIdGeneratorFactory(fileSystem, immediate(), databaseLayout.getDatabaseName()),
+                new DefaultIdGeneratorFactory(
+                        fileSystem, immediate(), pageCacheTracer, databaseLayout.getDatabaseName()),
                 pageCache,
+                pageCacheTracer,
                 fileSystem,
                 NullLogProvider.getInstance(),
-                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                new CursorContextFactory(pageCacheTracer, EMPTY),
                 writable(),
                 EMPTY_LOG_TAIL);
     }

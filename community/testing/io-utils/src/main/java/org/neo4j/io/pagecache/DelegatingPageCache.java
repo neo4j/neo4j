@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Optional;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 
 public class DelegatingPageCache implements PageCache {
     private final PageCache delegate;
@@ -86,7 +87,7 @@ public class DelegatingPageCache implements PageCache {
     }
 
     @Override
-    public void flushAndForce() throws IOException {
-        delegate.flushAndForce();
+    public void flushAndForce(DatabaseFlushEvent flushEvent) throws IOException {
+        delegate.flushAndForce(flushEvent);
     }
 }

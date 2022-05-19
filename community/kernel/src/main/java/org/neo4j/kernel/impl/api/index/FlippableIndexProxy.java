@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.ExceptionDuringFlipKernelException;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
@@ -116,10 +117,10 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy {
      * we don't care about waiting threads, only about whether the exclusive lock is held or not.
      */
     @Override
-    public void force(CursorContext cursorContext) throws IOException {
+    public void force(FileFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
         barge(lock.readLock()); // see javadoc of this method (above) for rationale on why we use barge(...) here
         try {
-            delegate.force(cursorContext);
+            delegate.force(flushEvent, cursorContext);
         } finally {
             lock.readLock().unlock();
         }

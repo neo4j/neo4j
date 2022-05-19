@@ -34,6 +34,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -60,6 +61,7 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
             int maxCacheSize,
             InternalLogProvider userLogProvider,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             ImmutableSet<OpenOption> openOptions)
             throws IOException {
         super(
@@ -75,6 +77,7 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
                 maxCacheSize,
                 userLogProvider,
                 contextFactory,
+                pageCacheTracer,
                 openOptions);
     }
 
@@ -155,6 +158,7 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
             Path file,
             PrintStream out,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             ImmutableSet<OpenOption> openOptions)
             throws IOException {
         GBPTreeGenericCountsStore.dump(
@@ -164,6 +168,7 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
                 DEFAULT_DATABASE_NAME,
                 NAME,
                 contextFactory,
+                pageCacheTracer,
                 GBPTreeRelationshipGroupDegreesStore::keyToString,
                 openOptions);
     }

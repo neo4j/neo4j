@@ -47,6 +47,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.LuceneAllDocumentsReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -78,7 +79,7 @@ class LuceneSchemaIndexIT {
         // Given
         try (LuceneIndexAccessor indexAccessor = createDefaultIndexAccessor()) {
             generateUpdates(indexAccessor, 32);
-            indexAccessor.force(NULL_CONTEXT);
+            indexAccessor.force(FileFlushEvent.NULL, NULL_CONTEXT);
 
             // When & Then
             List<String> indexFileNames = asFileInsidePartitionNames(indexAccessor.snapshotFiles());

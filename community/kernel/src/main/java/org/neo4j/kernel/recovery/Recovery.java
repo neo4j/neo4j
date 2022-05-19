@@ -467,6 +467,7 @@ public final class Recovery {
                 tokenHolders,
                 scheduler,
                 cursorContextFactory,
+                tracers.getPageCacheTracer(),
                 extensions));
 
         LogTailMetadata logTailMetadata = providedLogTail.orElseGet(
@@ -481,7 +482,8 @@ public final class Recovery {
                 getConstraintSemantics(),
                 indexProviderMap,
                 NO_LOCK_SERVICE,
-                new DefaultIdGeneratorFactory(fs, recoveryCleanupCollector, databaseLayout.getDatabaseName()),
+                new DefaultIdGeneratorFactory(
+                        fs, recoveryCleanupCollector, tracers.getPageCacheTracer(), databaseLayout.getDatabaseName()),
                 databaseHealth,
                 logService.getInternalLogProvider(),
                 logService.getUserLogProvider(),
@@ -490,7 +492,8 @@ public final class Recovery {
                 readOnlyChecker,
                 logTailMetadata,
                 memoryTracker,
-                cursorContextFactory);
+                cursorContextFactory,
+                tracers.getPageCacheTracer());
 
         // Schema indexes
         FullScanStoreView fullScanStoreView = new FullScanStoreView(NO_LOCK_SERVICE, storageEngine, config, scheduler);
@@ -503,6 +506,7 @@ public final class Recovery {
                 recoveryCleanupCollector,
                 readOnlyChecker,
                 cursorContextFactory,
+                tracers.getPageCacheTracer(),
                 storageEngine.getOpenOptions());
         IndexingService indexingService = Database.buildIndexingService(
                 storageEngine,
@@ -534,7 +538,8 @@ public final class Recovery {
                 getConstraintSemantics(),
                 NO_LOCK_SERVICE,
                 databaseHealth,
-                new DefaultIdGeneratorFactory(fs, recoveryCleanupCollector, databaseLayout.getDatabaseName()),
+                new DefaultIdGeneratorFactory(
+                        fs, recoveryCleanupCollector, tracers.getPageCacheTracer(), databaseLayout.getDatabaseName()),
                 new DefaultIdController(),
                 readOnlyChecker,
                 cursorContextFactory,
@@ -604,7 +609,8 @@ public final class Recovery {
                 tracers,
                 new StoreCopyCheckPointMutex(),
                 cursorContextFactory,
-                clock);
+                clock,
+                ioController);
         recoveryLife.add(indexStatisticsStore);
         recoveryLife.add(storageEngine);
         recoveryLife.add(new MissingTransactionLogsCheck(config, logTailMetadata, recoveryLog));

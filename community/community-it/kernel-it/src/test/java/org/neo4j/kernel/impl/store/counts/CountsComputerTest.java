@@ -67,6 +67,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -92,7 +93,8 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 class CountsComputerTest {
     private static final NullLogProvider LOG_PROVIDER = NullLogProvider.getInstance();
     private static final Config CONFIG = Config.defaults();
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+    private static final PageCacheTracer PAGE_CACHE_TRACER = PageCacheTracer.NULL;
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PAGE_CACHE_TRACER, EMPTY);
 
     @Inject
     private FileSystemAbstraction fileSystem;
@@ -561,6 +563,7 @@ class CountsComputerTest {
                 1_000,
                 NullLogProvider.getInstance(),
                 CONTEXT_FACTORY,
+                PAGE_CACHE_TRACER,
                 openOptions);
     }
 
@@ -571,13 +574,14 @@ class CountsComputerTest {
     private void rebuildCounts(long lastCommittedTransactionId, ProgressReporter progressReporter) throws IOException {
         cleanupCountsForRebuilding();
 
-        IdGeneratorFactory idGenFactory =
-                new DefaultIdGeneratorFactory(fileSystem, immediate(), databaseLayout.getDatabaseName());
+        IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory(
+                fileSystem, immediate(), PAGE_CACHE_TRACER, databaseLayout.getDatabaseName());
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout,
                 CONFIG,
                 idGenFactory,
                 pageCache,
+                PAGE_CACHE_TRACER,
                 fileSystem,
                 LOG_PROVIDER,
                 CONTEXT_FACTORY,
@@ -604,7 +608,7 @@ class CountsComputerTest {
                     INSTANCE);
             try (var countsStore = createCountsStore(countsComputer, neoStores.getOpenOptions())) {
                 countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
-                countsStore.checkpoint(NULL_CONTEXT);
+                countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

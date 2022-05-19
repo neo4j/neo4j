@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Optional;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 
 /**
  * A PageCache implementation that delegates to another page cache, whose life cycle is managed elsewhere.
@@ -73,8 +74,8 @@ public class ExternallyManagedPageCache implements PageCache {
     }
 
     @Override
-    public void flushAndForce() throws IOException {
-        delegate.flushAndForce();
+    public void flushAndForce(DatabaseFlushEvent flushEvent) throws IOException {
+        delegate.flushAndForce(flushEvent);
     }
 
     @Override

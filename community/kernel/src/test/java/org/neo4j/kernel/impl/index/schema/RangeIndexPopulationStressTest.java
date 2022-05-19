@@ -30,7 +30,7 @@ class RangeIndexPopulationStressTest extends IndexPopulationStressTest {
     RangeIndexPopulationStressTest() {
         super(true, RandomValues::nextValue, test -> {
             DatabaseIndexContext context = DatabaseIndexContext.builder(
-                            test.pageCache, test.fs, test.contextFactory, DEFAULT_DATABASE_NAME)
+                            test.pageCache, test.fs, test.contextFactory, test.pageCacheTracer, DEFAULT_DATABASE_NAME)
                     .build();
             return new RangeIndexProvider(context, test.directory(), immediate(), defaults());
         });

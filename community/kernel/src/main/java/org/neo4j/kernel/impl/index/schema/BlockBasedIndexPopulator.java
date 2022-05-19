@@ -297,7 +297,9 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
             // Flush the tree here, but keep its state as populating. This is done so that the "actual"
             // flush-and-mark-online during flip
             // becomes way faster and so the flip lock time is reduced.
-            flushTreeAndMarkAs(BYTE_POPULATING, cursorContext);
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                flushTreeAndMarkAs(BYTE_POPULATING, flushEvent, cursorContext);
+            }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } catch (InterruptedException e) {

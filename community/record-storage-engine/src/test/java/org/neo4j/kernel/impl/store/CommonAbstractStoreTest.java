@@ -66,6 +66,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -167,6 +168,7 @@ class CommonAbstractStoreTest {
                 RecordIdType.NODE_LABELS,
                 idGeneratorFactory,
                 pageCache,
+                PageCacheTracer.NULL,
                 NullLogProvider.getInstance(),
                 GraphDatabaseInternalSettings.label_block_size.defaultValue(),
                 recordFormats,
@@ -232,7 +234,7 @@ class CommonAbstractStoreTest {
                 databaseLayout.idNodeStore(),
                 config,
                 idType,
-                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()),
+                new DefaultIdGeneratorFactory(fs, immediate(), PageCacheTracer.NULL, databaseLayout.getDatabaseName()),
                 pageCache,
                 NullLogProvider.getInstance(),
                 recordFormat,
@@ -286,7 +288,6 @@ class CommonAbstractStoreTest {
 
     private static class TheStore extends CommonAbstractStore<TheRecord, NoStoreHeader> {
         static final String TYPE_DESCRIPTOR = "TheType";
-        static final String STORE_VERSION = "v1";
 
         TheStore(
                 Path file,
@@ -305,6 +306,7 @@ class CommonAbstractStoreTest {
                     idType,
                     idGeneratorFactory,
                     pageCache,
+                    PageCacheTracer.NULL,
                     logProvider,
                     TYPE_DESCRIPTOR,
                     recordFormat,
@@ -315,7 +317,7 @@ class CommonAbstractStoreTest {
         }
 
         @Override
-        protected void initialiseNewStoreFile(CursorContext cursorContext) {}
+        protected void initialiseNewStoreFile(FileFlushEvent flushEvent, CursorContext cursorContext) {}
 
         @Override
         protected int determineRecordSize() {

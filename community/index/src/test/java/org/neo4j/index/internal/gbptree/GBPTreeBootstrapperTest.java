@@ -43,6 +43,7 @@ import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
@@ -101,7 +102,7 @@ class GBPTreeBootstrapperTest {
         try (GBPTree<MutableLong, MutableLong> tree = new GBPTreeBuilder<>(pageCache, storeFile, layout)
                 .with(Sets.immutable.of(PageCacheOpenOptions.BIG_ENDIAN))
                 .build()) {
-            tree.checkpoint(CursorContext.NULL_CONTEXT);
+            tree.checkpoint(FileFlushEvent.NULL, CursorContext.NULL_CONTEXT);
         }
         ZipUtils.zip(dir.getFileSystem(), storeFile, zipFile);
         fail(String.format(
@@ -123,8 +124,8 @@ class GBPTreeBootstrapperTest {
                 meta -> new LayoutBootstrapper.Layouts(layout, RootLayerConfiguration.singleRoot());
         var contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
         try (JobScheduler scheduler = new ThreadPoolJobScheduler();
-                GBPTreeBootstrapper bootstrapper =
-                        new GBPTreeBootstrapper(fs, scheduler, layoutBootstrapper, readOnly(), contextFactory)) {
+                GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper(
+                        fs, scheduler, layoutBootstrapper, readOnly(), contextFactory, PageCacheTracer.NULL)) {
             GBPTreeBootstrapper.Bootstrap bootstrap =
                     bootstrapper.bootstrapTree(storeFile, PageCacheOpenOptions.BIG_ENDIAN);
             assertTrue(bootstrap.isTree());

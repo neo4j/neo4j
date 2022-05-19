@@ -52,6 +52,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -103,7 +104,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
             updater.increment(GROUP_ID_1, INCOMING, 2); // now at 5
         }
 
-        countsStore.checkpoint(NULL_CONTEXT);
+        countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
 
         // when/then
         assertEquals(15, countsStore.degree(GROUP_ID_1, OUTGOING, NULL_CONTEXT));
@@ -172,13 +173,18 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
             updater.increment(GROUP_ID_1, INCOMING, 3);
             updater.increment(GROUP_ID_2, LOOP, 7);
         }
-        countsStore.checkpoint(NULL_CONTEXT);
+        countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         closeCountsStore();
 
         // when
         ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
         GBPTreeRelationshipGroupDegreesStore.dump(
-                pageCache, countsStoreFile(), new PrintStream(out), CONTEXT_FACTORY, immutable.empty());
+                pageCache,
+                countsStoreFile(),
+                new PrintStream(out),
+                CONTEXT_FACTORY,
+                PageCacheTracer.NULL,
+                immutable.empty());
 
         // then
         String dump = out.toString();
@@ -195,7 +201,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
     }
 
     private void checkpointAndRestartCountsStore() throws Exception {
-        countsStore.checkpoint(NULL_CONTEXT);
+        countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         closeCountsStore();
         openCountsStore();
     }
@@ -228,6 +234,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
                 10,
                 NullLogProvider.getInstance(),
                 CONTEXT_FACTORY,
+                PageCacheTracer.NULL,
                 Sets.immutable.empty());
     }
 

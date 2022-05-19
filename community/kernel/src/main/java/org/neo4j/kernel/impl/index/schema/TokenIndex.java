@@ -39,6 +39,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.util.Preconditions;
@@ -125,6 +126,11 @@ public class TokenIndex implements ConsistencyCheckable {
     private final String tokenStoreName;
 
     /**
+     * Underlying page cache tracer.
+     */
+    final PageCacheTracer pageCacheTracer;
+
+    /**
      * A descriptor used for monitoring purposes.
      * <p>
      * A descriptor of a token index can change in very rare cases (everything is the same apart from the ID).
@@ -146,6 +152,7 @@ public class TokenIndex implements ConsistencyCheckable {
         this.fs = databaseIndexContext.fileSystem;
         this.databaseName = databaseIndexContext.databaseName;
         this.contextFactory = databaseIndexContext.contextFactory;
+        this.pageCacheTracer = databaseIndexContext.pageCacheTracer;
         this.indexFiles = indexFiles;
         this.tokenStoreName = descriptor.getName();
         this.monitoringDescriptor = descriptor;
@@ -167,7 +174,8 @@ public class TokenIndex implements ConsistencyCheckable {
                 openOptions,
                 databaseName,
                 tokenStoreName,
-                contextFactory);
+                contextFactory,
+                pageCacheTracer);
     }
 
     void instantiateUpdater() {

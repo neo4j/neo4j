@@ -46,6 +46,7 @@ import org.neo4j.internal.recordstorage.RelationshipGroupGetter.RelationshipGrou
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
@@ -84,11 +85,13 @@ class RelationshipGroupGetterTest {
     @BeforeEach
     void openStore() {
         InternalLogProvider logProvider = NullLogProvider.getInstance();
+        var pageCacheTracer = PageCacheTracer.NULL;
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout,
                 Config.defaults(),
-                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()),
+                new DefaultIdGeneratorFactory(fs, immediate(), pageCacheTracer, databaseLayout.getDatabaseName()),
                 pageCache,
+                pageCacheTracer,
                 fs,
                 logProvider,
                 NULL_CONTEXT_FACTORY,

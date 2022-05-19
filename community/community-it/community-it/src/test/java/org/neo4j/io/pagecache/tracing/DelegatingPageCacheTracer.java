@@ -56,7 +56,7 @@ public class DelegatingPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
-    public MajorFlushEvent beginFileFlush(PageSwapper swapper) {
+    public FileFlushEvent beginFileFlush(PageSwapper swapper) {
         return delegate.beginFileFlush(swapper);
     }
 
@@ -81,8 +81,13 @@ public class DelegatingPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
-    public MajorFlushEvent beginCacheFlush() {
-        return delegate.beginCacheFlush();
+    public FileFlushEvent beginFileFlush() {
+        return delegate.beginFileFlush();
+    }
+
+    @Override
+    public DatabaseFlushEvent beginDatabaseFlush() {
+        return delegate.beginDatabaseFlush();
     }
 
     @Override
@@ -118,6 +123,11 @@ public class DelegatingPageCacheTracer implements PageCacheTracer {
     @Override
     public double usageRatio() {
         return delegate.usageRatio();
+    }
+
+    @Override
+    public long maxPages() {
+        return delegate.maxPages();
     }
 
     @Override

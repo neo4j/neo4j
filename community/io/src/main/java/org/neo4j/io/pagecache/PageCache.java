@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 
 /**
  * A page caching mechanism that allows caching multiple files and accessing their data
@@ -160,7 +161,7 @@ public interface PageCache extends AutoCloseable {
     /**
      * Flush all dirty pages.
      */
-    void flushAndForce() throws IOException;
+    void flushAndForce(DatabaseFlushEvent flushEvent) throws IOException;
 
     /**
      * Close the page cache to prevent any future mapping of files.

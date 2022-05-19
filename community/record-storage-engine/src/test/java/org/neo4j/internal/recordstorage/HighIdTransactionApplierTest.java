@@ -69,14 +69,16 @@ class HighIdTransactionApplierTest {
 
     @BeforeEach
     void before() {
+        var pageCacheTracer = PageCacheTracer.NULL;
         var storeFactory = new StoreFactory(
                 databaseLayout,
                 Config.defaults(),
-                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()),
+                new DefaultIdGeneratorFactory(fs, immediate(), pageCacheTracer, databaseLayout.getDatabaseName()),
                 pageCache,
+                pageCacheTracer,
                 fs,
                 NullLogProvider.getInstance(),
-                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                new CursorContextFactory(pageCacheTracer, EMPTY),
                 writable(),
                 EMPTY_LOG_TAIL);
         neoStores = storeFactory.openAllNeoStores(true);

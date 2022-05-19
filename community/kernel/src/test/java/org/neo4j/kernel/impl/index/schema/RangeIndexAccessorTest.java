@@ -66,7 +66,7 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey> {
     NativeIndexAccessor<RangeKey> createAccessor(PageCache pageCache) {
         RecoveryCleanupWorkCollector cleanup = RecoveryCleanupWorkCollector.immediate();
         DatabaseIndexContext context = DatabaseIndexContext.builder(
-                        pageCache, fs, contextFactory, DEFAULT_DATABASE_NAME)
+                        pageCache, fs, contextFactory, pageCacheTracer, DEFAULT_DATABASE_NAME)
                 .withReadOnlyChecker(writable())
                 .build();
         return new RangeIndexAccessor(

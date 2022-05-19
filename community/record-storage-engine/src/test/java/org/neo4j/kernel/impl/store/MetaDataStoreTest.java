@@ -75,6 +75,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.KernelVersion;
@@ -432,7 +433,7 @@ class MetaDataStoreTest {
         long storeVersion = versionStringToLong(defaultFormat().storeVersion());
         try (MetaDataStore store = newMetaDataStore()) {
             writeCorrectMetaDataRecord(store, positions, storeVersion);
-            store.flush(NULL_CONTEXT);
+            store.flush(FileFlushEvent.NULL, NULL_CONTEXT);
         }
 
         List<Long> actualValues = new ArrayList<>();
@@ -826,7 +827,7 @@ class MetaDataStoreTest {
     }
 
     @Test
-    void shouldGenerateCorrectTransactionIdSequenceWhenConcurrentlyReadingOtherFields() throws IOException {
+    void shouldGenerateCorrectTransactionIdSequenceWhenConcurrentlyReadingOtherFields() {
         // given an existing meta data store with its external store ID UUID set to uninitialized (as if the db was from
         // an older version)
         try (var metaDataStore = newMetaDataStore()) {
@@ -887,11 +888,13 @@ class MetaDataStoreTest {
 
     private MetaDataStore newMetaDataStore(CursorContextFactory contextFactory, LogTailMetadata logTail) {
         InternalLogProvider logProvider = NullLogProvider.getInstance();
+        PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout,
                 Config.defaults(),
-                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()),
+                new DefaultIdGeneratorFactory(fs, immediate(), pageCacheTracer, databaseLayout.getDatabaseName()),
                 pageCacheWithFakeOverflow,
+                pageCacheTracer,
                 fs,
                 logProvider,
                 contextFactory,
@@ -902,11 +905,13 @@ class MetaDataStoreTest {
 
     private MetaDataStore newMetaDataStore(RecordFormats recordFormats) {
         InternalLogProvider logProvider = NullLogProvider.getInstance();
+        PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout,
                 Config.defaults(),
-                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()),
+                new DefaultIdGeneratorFactory(fs, immediate(), pageCacheTracer, databaseLayout.getDatabaseName()),
                 pageCacheWithFakeOverflow,
+                pageCacheTracer,
                 fs,
                 recordFormats,
                 logProvider,

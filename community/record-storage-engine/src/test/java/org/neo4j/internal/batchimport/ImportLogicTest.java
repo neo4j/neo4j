@@ -106,6 +106,7 @@ class ImportLogicTest {
                     NO_MONITOR,
                     contextFactory,
                     factory,
+                    NULL,
                     EmptyMemoryTracker.INSTANCE)) {
                 // nothing to run in this import
                 logic.success();
@@ -200,6 +201,7 @@ class ImportLogicTest {
                     NO_MONITOR,
                     contextFactory,
                     factory,
+                    NULL,
                     EmptyMemoryTracker.INSTANCE)) {
                 logic.putState(dataStatistics);
                 logic.success();

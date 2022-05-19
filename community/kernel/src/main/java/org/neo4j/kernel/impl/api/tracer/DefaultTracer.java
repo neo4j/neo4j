@@ -24,6 +24,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FO
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.tracing.AppendTransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
@@ -49,14 +50,14 @@ public class DefaultTracer implements DatabaseTracer {
     private final CountingLogRotateEvent countingLogRotateEvent = new CountingLogRotateEvent();
     private final LogFileCreateEvent logFileCreateEvent = () -> appendedBytes.addAndGet(CURRENT_FORMAT_LOG_HEADER_SIZE);
     private final LogFileFlushEvent logFileFlushEvent = numberOfFlushes::incrementAndGet;
-    private final CountingLogCheckPointEvent logCheckPointEvent =
-            new CountingLogCheckPointEvent(this::appendLogBytes, countingLogRotateEvent);
     private final LogAppendEvent logAppendEvent = new DefaultLogAppendEvent();
     private final CommitEvent commitEvent = new DefaultCommitEvent();
     private final TransactionEvent transactionEvent = new DefaultTransactionEvent();
+    private final CountingLogCheckPointEvent logCheckPointEvent;
 
-    public DefaultTracer() {
-        // empty
+    public DefaultTracer(PageCacheTracer pageCacheTracer) {
+        this.logCheckPointEvent =
+                new CountingLogCheckPointEvent(pageCacheTracer, this::appendLogBytes, countingLogRotateEvent);
     }
 
     @Override
@@ -107,6 +108,21 @@ public class DefaultTracer implements DatabaseTracer {
     @Override
     public long lastCheckpointTimeMillis() {
         return logCheckPointEvent.lastCheckpointTimeMillis();
+    }
+
+    @Override
+    public long lastCheckpointPagesFlushed() {
+        return logCheckPointEvent.getPagesFlushed();
+    }
+
+    @Override
+    public long lastCheckpointIOs() {
+        return logCheckPointEvent.getIOsPerformed();
+    }
+
+    @Override
+    public long lastCheckpointIOLimit() {
+        return logCheckPointEvent.getConfiguredIOLimit();
     }
 
     @Override

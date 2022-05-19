@@ -64,6 +64,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -76,7 +78,7 @@ import org.neo4j.util.concurrent.OutOfOrderSequence;
  *
  * Updates that are {@link #updater(long, CursorContext) applied} are relative values (e.g. +10 or -5) and counts are read as their absolute values.
  * Multiple transactions can update counts concurrently where counts are CAS:ed to minimize contention.
- * Updates between {@link #checkpoint(CursorContext) checkpoints} are kept in an internal {@link CountsChanges} map and only written
+ * Updates between {@link #checkpoint(FileFlushEvent, CursorContext) checkpoints} are kept in an internal {@link CountsChanges} map and only written
  * as part of a checkpoint. Checkpoint has a very short critical section where it switches over to a new {@link CountsChanges} instance
  * and also snapshots data about which transactions have applied before letting updaters continue to make changes while the checkpointing thread
  * writes the changes to the backing tree concurrently.
@@ -124,6 +126,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
             int maxCacheSize,
             InternalLogProvider userLogProvider,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             ImmutableSet<OpenOption> openOptions)
             throws IOException {
         this.userLogProvider = userLogProvider;
@@ -140,13 +143,27 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
         GBPTree<CountsKey, CountsValue> instantiatedTree;
         try {
             instantiatedTree = instantiateTree(
-                    pageCache, file, recoveryCollector, readOnlyChecker, header, contextFactory, openOptions);
+                    pageCache,
+                    file,
+                    recoveryCollector,
+                    readOnlyChecker,
+                    header,
+                    contextFactory,
+                    pageCacheTracer,
+                    openOptions);
         } catch (MetadataMismatchException e) {
             // Corrupt, delete and rebuild
             fileSystem.deleteFileOrThrow(file);
             header = new CountsHeader(NEEDS_REBUILDING_HIGH_ID);
             instantiatedTree = instantiateTree(
-                    pageCache, file, recoveryCollector, readOnlyChecker, header, contextFactory, openOptions);
+                    pageCache,
+                    file,
+                    recoveryCollector,
+                    readOnlyChecker,
+                    header,
+                    contextFactory,
+                    pageCacheTracer,
+                    openOptions);
         }
         this.tree = instantiatedTree;
         boolean successful = false;
@@ -178,6 +195,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
             DatabaseReadOnlyChecker readOnlyChecker,
             CountsHeader header,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             ImmutableSet<OpenOption> openOptions) {
         try {
             return new GBPTree<>(
@@ -192,7 +210,8 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
                     openOptions,
                     databaseName,
                     name,
-                    contextFactory);
+                    contextFactory,
+                    pageCacheTracer);
         } catch (TreeFileNotFoundException e) {
             throw new IllegalStateException(
                     "Counts store file could not be found, most likely this database needs to be recovered, file:"
@@ -296,7 +315,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
     }
 
     @Override
-    public void checkpoint(CursorContext cursorContext) throws IOException {
+    public void checkpoint(FileFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
         try (CriticalSection criticalSection = new CriticalSection(lock)) {
             criticalSection.acquireExclusive();
             // Take a snapshot of applied transactions while in the exclusive critical section (but write it later, no
@@ -306,7 +325,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
 
             // Write transaction information to the tree and checkpoint while still in the shared critical section
             updateTxIdInformationInTree(txIdSnapshot, cursorContext);
-            tree.checkpoint(new CountsHeader(txIdSnapshot.highestGapFree()[0]), cursorContext);
+            tree.checkpoint(new CountsHeader(txIdSnapshot.highestGapFree()[0]), flushEvent, cursorContext);
         }
     }
 
@@ -499,6 +518,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
             String databaseName,
             String name,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             Function<CountsKey, String> keyToString,
             ImmutableSet<OpenOption> openOptions)
             throws IOException {
@@ -522,7 +542,8 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
                 openOptions,
                 databaseName,
                 name,
-                contextFactory)) {
+                contextFactory,
+                pageCacheTracer)) {
             out.printf("Highest gap-free txId: %d%n", header.highestGapFreeTxId());
             try (var cursorContext = contextFactory.create("dumpVisitor")) {
                 tree.visit(

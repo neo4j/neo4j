@@ -51,6 +51,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -75,6 +76,7 @@ abstract class IndexProviderTests {
     private PageCache pageCache;
 
     private CursorContextFactory contextFactory;
+    private DefaultPageCacheTracer pageCacheTracer;
 
     @Inject
     private TestDirectory testDirectory;
@@ -100,7 +102,8 @@ abstract class IndexProviderTests {
 
     @BeforeEach
     void setup() throws IOException {
-        contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        pageCacheTracer = new DefaultPageCacheTracer();
+        contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
         setupIndexFolders(fs);
     }
 
@@ -402,7 +405,8 @@ abstract class IndexProviderTests {
                 immediate(),
                 readOnlyChecker,
                 databaseLayout,
-                contextFactory);
+                contextFactory,
+                pageCacheTracer);
     }
 
     IndexProvider newProvider() {
@@ -431,6 +435,7 @@ abstract class IndexProviderTests {
                 RecoveryCleanupWorkCollector collector,
                 DatabaseReadOnlyChecker readOnlyChecker,
                 DatabaseLayout databaseLayout,
-                CursorContextFactory contextFactory);
+                CursorContextFactory contextFactory,
+                PageCacheTracer pageCacheTracer);
     }
 }

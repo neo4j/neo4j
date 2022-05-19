@@ -31,6 +31,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
@@ -46,6 +47,7 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant {
 
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
+    private final PageCacheTracer pageCacheTracer;
     private final StorageEngineFactory storageEngineFactory;
     private final DatabaseLayout layout;
     private final Function<SchemaRule, Path> storeFileProvider;
@@ -57,6 +59,7 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant {
             String name,
             FileSystemAbstraction fileSystem,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             StorageEngineFactory storageEngineFactory,
             DatabaseLayout layout,
             Function<SchemaRule, Path> storeFileProvider,
@@ -64,6 +67,7 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant {
         super(name);
         this.fileSystem = fileSystem;
         this.pageCache = pageCache;
+        this.pageCacheTracer = pageCacheTracer;
         this.storageEngineFactory = storageEngineFactory;
         this.layout = layout;
         this.storeFileProvider = storeFileProvider;
@@ -113,7 +117,14 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant {
 
     private void moveTokenIndexes(DatabaseLayout databaseLayout) throws IOException {
         for (var schemaRule : storageEngineFactory.loadSchemaRules(
-                fileSystem, pageCache, Config.defaults(), databaseLayout, false, r -> r, contextFactory)) {
+                fileSystem,
+                pageCache,
+                pageCacheTracer,
+                Config.defaults(),
+                databaseLayout,
+                false,
+                r -> r,
+                contextFactory)) {
             if (!schemaRule.schema().isAnyTokenSchemaDescriptor()) {
                 continue;
             }
@@ -140,7 +151,14 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant {
 
     private void deleteRelationshipTypeTokenIndex(DatabaseLayout databaseLayout) throws IOException {
         for (var schemaRule : storageEngineFactory.loadSchemaRules(
-                fileSystem, pageCache, Config.defaults(), databaseLayout, false, r -> r, contextFactory)) {
+                fileSystem,
+                pageCache,
+                pageCacheTracer,
+                Config.defaults(),
+                databaseLayout,
+                false,
+                r -> r,
+                contextFactory)) {
             if (schemaRule.schema().isAnyTokenSchemaDescriptor()
                     && schemaRule.schema().entityType() == EntityType.RELATIONSHIP) {
                 Path indexFile = storeFileProvider.apply(schemaRule);

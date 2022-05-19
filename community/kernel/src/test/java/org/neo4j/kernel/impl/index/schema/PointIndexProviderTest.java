@@ -38,9 +38,17 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 
 class PointIndexProviderTest extends IndexProviderTests {
     private static final ProviderFactory factory =
-            (pageCache, fs, dir, monitors, collector, readOnlyChecker, databaseLayout, contextFactory) -> {
+            (pageCache,
+                    fs,
+                    dir,
+                    monitors,
+                    collector,
+                    readOnlyChecker,
+                    databaseLayout,
+                    contextFactory,
+                    pageCacheTracer) -> {
                 DatabaseIndexContext context = DatabaseIndexContext.builder(
-                                pageCache, fs, contextFactory, DEFAULT_DATABASE_NAME)
+                                pageCache, fs, contextFactory, pageCacheTracer, DEFAULT_DATABASE_NAME)
                         .withMonitors(monitors)
                         .withReadOnlyChecker(readOnlyChecker)
                         .build();

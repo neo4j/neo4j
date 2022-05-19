@@ -34,6 +34,7 @@ import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -69,6 +70,7 @@ public class NodeStore extends CommonAbstractStore<NodeRecord, NoStoreHeader> {
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             InternalLogProvider logProvider,
             DynamicArrayStore dynamicLabelStore,
             RecordFormats recordFormats,
@@ -82,6 +84,7 @@ public class NodeStore extends CommonAbstractStore<NodeRecord, NoStoreHeader> {
                 RecordIdType.NODE,
                 idGeneratorFactory,
                 pageCache,
+                pageCacheTracer,
                 logProvider,
                 TYPE_DESCRIPTOR,
                 recordFormats.node(),

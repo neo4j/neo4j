@@ -23,10 +23,11 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
-import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
 import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
@@ -89,13 +90,18 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     }
 
     @Override
-    public MajorFlushEvent beginFileFlush(PageSwapper swapper) {
-        return MajorFlushEvent.NULL;
+    public FileFlushEvent beginFileFlush(PageSwapper swapper) {
+        return FileFlushEvent.NULL;
     }
 
     @Override
-    public MajorFlushEvent beginCacheFlush() {
-        return MajorFlushEvent.NULL;
+    public FileFlushEvent beginFileFlush() {
+        return FileFlushEvent.NULL;
+    }
+
+    @Override
+    public DatabaseFlushEvent beginDatabaseFlush() {
+        return DatabaseFlushEvent.NULL;
     }
 
     @Override
@@ -181,6 +187,11 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     @Override
     public double usageRatio() {
         return 0d;
+    }
+
+    @Override
+    public long maxPages() {
+        return 0;
     }
 
     @Override

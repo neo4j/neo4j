@@ -102,6 +102,7 @@ public class ImportLogic implements Closeable {
     private final InternalLog log;
     protected final CursorContextFactory contextFactory;
     private final IndexImporterFactory indexImporterFactory;
+    private final PageCacheTracer pageCacheTracer;
     private final MemoryTracker memoryTracker;
     private final ExecutionMonitor executionMonitor;
     private final RecordFormats recordFormats;
@@ -148,6 +149,7 @@ public class ImportLogic implements Closeable {
             Monitor monitor,
             CursorContextFactory contextFactory,
             IndexImporterFactory indexImporterFactory,
+            PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker) {
         this.databaseDirectory = databaseLayout.databaseDirectory();
         this.databaseName = databaseLayout.getDatabaseName();
@@ -160,6 +162,7 @@ public class ImportLogic implements Closeable {
         this.log = logService.getInternalLogProvider().getLog(getClass());
         this.contextFactory = contextFactory;
         this.indexImporterFactory = indexImporterFactory;
+        this.pageCacheTracer = pageCacheTracer;
         this.memoryTracker = memoryTracker;
         this.executionMonitor = ExecutionSupervisors.withDynamicProcessorAssignment(executionMonitor, config);
         this.maxMemory = config.maxMemoryUsage();
@@ -590,6 +593,7 @@ public class ImportLogic implements Closeable {
                                     indexImporterFactory,
                                     fromNodeId,
                                     contextFactory,
+                                    pageCacheTracer,
                                     storeCursorsFactory,
                                     memoryTracker,
                                     memoryUsageStats));
@@ -606,6 +610,7 @@ public class ImportLogic implements Closeable {
                                     progressMonitor.startSection("Relationships"),
                                     indexImporterFactory,
                                     contextFactory,
+                                    pageCacheTracer,
                                     storeCursorsFactory,
                                     memoryTracker));
                         }

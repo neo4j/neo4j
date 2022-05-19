@@ -44,6 +44,7 @@ import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -146,10 +147,18 @@ public class TokenIndexProvider extends IndexProvider {
     public StoreMigrationParticipant storeMigrationParticipant(
             FileSystemAbstraction fs,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             StorageEngineFactory storageEngineFactory,
             CursorContextFactory contextFactory) {
         return new TokenIndexMigrator(
-                "Token indexes", fs, pageCache, storageEngineFactory, databaseLayout, this::storeFile, contextFactory);
+                "Token indexes",
+                fs,
+                pageCache,
+                pageCacheTracer,
+                storageEngineFactory,
+                databaseLayout,
+                this::storeFile,
+                contextFactory);
     }
 
     @Override

@@ -50,6 +50,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -77,14 +78,16 @@ class TestDynamicStore {
 
     @BeforeEach
     void setUp() {
+        var pageCacheTracer = PageCacheTracer.NULL;
         storeFactory = new StoreFactory(
                 databaseLayout,
                 Config.defaults(),
-                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()),
+                new DefaultIdGeneratorFactory(fs, immediate(), pageCacheTracer, databaseLayout.getDatabaseName()),
                 pageCache,
+                pageCacheTracer,
                 fs,
                 NullLogProvider.getInstance(),
-                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                new CursorContextFactory(pageCacheTracer, EMPTY),
                 writable(),
                 EMPTY_LOG_TAIL);
     }
@@ -191,7 +194,7 @@ class TestDynamicStore {
                 currentCount++;
             }
             if (rIndex > (1.0f - closeIndex) || rIndex < closeIndex) {
-                neoStores.flush(NULL_CONTEXT);
+                neoStores.flush(DatabaseFlushEvent.NULL, NULL_CONTEXT);
                 neoStores.close();
                 store = createDynamicArrayStore();
             }

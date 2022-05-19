@@ -35,7 +35,6 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
@@ -93,20 +92,20 @@ abstract class IndexAccessorTests<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE>>
     void dropShouldNotFlushContent() throws IOException {
         // given
         accessor.close();
-        DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
-        try (PageCache pageCache = PageCacheSupportExtension.getPageCache(
-                fs, PageCacheConfig.config().withTracer(tracer))) {
+        try (PageCache pageCache = PageCacheSupportExtension.getPageCache(fs, PageCacheConfig.config())) {
             accessor = createAccessor(pageCache);
-            long baseline = tracer.flushes();
-            accessor.force(NULL_CONTEXT);
-            long preDrop = tracer.flushes();
+            long baseline = pageCacheTracer.flushes();
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                accessor.force(flushEvent, NULL_CONTEXT);
+            }
+            long preDrop = pageCacheTracer.flushes();
             assertThat(preDrop).isGreaterThan(baseline);
 
             // when
             accessor.drop();
 
             // then
-            long postDrop = tracer.flushes();
+            long postDrop = pageCacheTracer.flushes();
             assertEquals(preDrop, postDrop);
         }
     }

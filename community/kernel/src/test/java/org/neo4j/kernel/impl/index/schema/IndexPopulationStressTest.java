@@ -130,6 +130,7 @@ abstract class IndexPopulationStressTest {
     private IndexProvider indexProvider;
     private TokenNameLookup tokenNameLookup;
     private boolean prevAccessCheck;
+    DefaultPageCacheTracer pageCacheTracer;
 
     abstract IndexType indexType();
 
@@ -149,7 +150,8 @@ abstract class IndexPopulationStressTest {
 
     @BeforeEach
     void setup() throws IOException, EntityNotFoundException {
-        contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        pageCacheTracer = new DefaultPageCacheTracer();
+        contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
         indexProvider = providerCreator.apply(this);
         tokenNameLookup = SIMPLE_NAME_LOOKUP;
         descriptor = indexProvider.completeConfiguration(forSchema(forLabel(0, 0), PROVIDER)

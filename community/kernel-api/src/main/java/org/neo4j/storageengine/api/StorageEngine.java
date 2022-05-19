@@ -26,6 +26,7 @@ import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -133,10 +134,11 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
      * Flushes and forces all changes down to underlying storage. This is a blocking call and when it returns
      * all changes applied to this storage engine will be durable.
      *
+     * @param flushEvent flush event from checkpoint that requested flush
      * @param cursorContext underlying page cursor context
      * @throws IOException on I/O error.
      */
-    void flushAndForce(CursorContext cursorContext) throws IOException;
+    void flushAndForce(DatabaseFlushEvent flushEvent, CursorContext cursorContext) throws IOException;
 
     /**
      * Dump diagnostics about the storage.

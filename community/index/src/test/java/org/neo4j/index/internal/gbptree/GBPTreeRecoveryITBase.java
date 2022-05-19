@@ -44,6 +44,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -105,7 +107,7 @@ abstract class GBPTreeRecoveryITBase<KEY, VALUE> {
                     GBPTree<KEY, VALUE> index = createIndex(pageCache, file);
                     Writer<KEY, VALUE> writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 writer.put(key, value);
-                pageCache.flushAndForce();
+                pageCache.flushAndForce(DatabaseFlushEvent.NULL);
                 // No checkpoint
             }
         }
@@ -188,7 +190,7 @@ abstract class GBPTreeRecoveryITBase<KEY, VALUE> {
             int crashFlushIndex = lastCheckPointIndex + random.nextInt(numberOfRemainingActions) + 1;
             execute(shuffledLoad.subList(lastCheckPointIndex + 1, crashFlushIndex), index);
             // ... flush ...
-            pageCache.flushAndForce();
+            pageCache.flushAndForce(DatabaseFlushEvent.NULL);
             // ... execute the remaining actions
             execute(shuffledLoad.subList(crashFlushIndex, shuffledLoad.size()), index);
             // ... and finally crash
@@ -505,7 +507,7 @@ abstract class GBPTreeRecoveryITBase<KEY, VALUE> {
 
         @Override
         public void execute(GBPTree<KEY, VALUE> index) throws IOException {
-            index.checkpoint(NULL_CONTEXT);
+            index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
 
         @Override
@@ -544,13 +546,5 @@ abstract class GBPTreeRecoveryITBase<KEY, VALUE> {
                 0,
                 layout.compareValue(expected, actual),
                 format("expected equal, expected=%s, actual=%s", expected, actual));
-    }
-
-    private long keySeed(KEY key) {
-        return layout.keySeed(key);
-    }
-
-    private long valueSeed(VALUE value) {
-        return layout.valueSeed(value);
     }
 }

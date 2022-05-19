@@ -34,6 +34,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -43,6 +44,7 @@ public class TokenIndexImporter implements IndexImporter {
     private static final String INDEX_TOKEN_IMPORTER_TAG = "indexTokenImporter";
     private final IndexUpdater updater;
     private final IndexDescriptor index;
+    private final PageCacheTracer pageCacheTracer;
     private final TokenIndexAccessor accessor;
     private final CursorContext cursorContext;
 
@@ -52,9 +54,11 @@ public class TokenIndexImporter implements IndexImporter {
             FileSystemAbstraction fs,
             PageCache cache,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             ImmutableSet<OpenOption> openOptions) {
         this.index = index;
-        this.accessor = tokenIndexAccessor(layout, fs, cache, contextFactory, openOptions);
+        this.pageCacheTracer = pageCacheTracer;
+        this.accessor = tokenIndexAccessor(layout, fs, cache, contextFactory, pageCacheTracer, openOptions);
         this.cursorContext = contextFactory.create(INDEX_TOKEN_IMPORTER_TAG);
         this.updater = accessor.newUpdater(ONLINE, cursorContext, false);
     }
@@ -70,7 +74,14 @@ public class TokenIndexImporter implements IndexImporter {
 
     @Override
     public void close() throws IOException {
-        closeAll(updater, () -> accessor.force(cursorContext), accessor);
+        closeAll(
+                updater,
+                () -> {
+                    try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                        accessor.force(flushEvent, cursorContext);
+                    }
+                },
+                accessor);
     }
 
     private TokenIndexAccessor tokenIndexAccessor(
@@ -78,8 +89,10 @@ public class TokenIndexImporter implements IndexImporter {
             FileSystemAbstraction fs,
             PageCache pageCache,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             ImmutableSet<OpenOption> openOptions) {
-        var context = DatabaseIndexContext.builder(pageCache, fs, contextFactory, layout.getDatabaseName())
+        var context = DatabaseIndexContext.builder(
+                        pageCache, fs, contextFactory, pageCacheTracer, layout.getDatabaseName())
                 .build();
         IndexDirectoryStructure indexDirectoryStructure = IndexDirectoryStructure.directoriesByProvider(
                         layout.databaseDirectory())

@@ -236,7 +236,14 @@ public class StoreMigrator {
         progressMonitor.started(participants.size());
 
         var logsMigrator = new LogsMigrator(
-                fs, storageEngineFactory, databaseLayout, pageCache, config, contextFactory, logTailSupplier);
+                fs,
+                storageEngineFactory,
+                databaseLayout,
+                pageCache,
+                config,
+                contextFactory,
+                logTailSupplier,
+                pageCacheTracer);
         var logsCheckResult = logsMigrator.assertCleanlyShutDown();
         StoreVersion fromVersion =
                 storageEngineFactory.versionInformation(versionToMigrateFrom).orElseThrow();
@@ -398,8 +405,8 @@ public class StoreMigrator {
         List<StoreMigrationParticipant> participants = new ArrayList<>(storeParticipants);
 
         // Do individual index provider migration last because they may delete files that we need in earlier steps.
-        indexProviderMap.accept(provider -> participants.add(
-                provider.storeMigrationParticipant(fs, pageCache, storageEngineFactory, contextFactory)));
+        indexProviderMap.accept(provider -> participants.add(provider.storeMigrationParticipant(
+                fs, pageCache, pageCacheTracer, storageEngineFactory, contextFactory)));
 
         Set<String> participantNames = new HashSet<>();
         participants.forEach(participant -> {

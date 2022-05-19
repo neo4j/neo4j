@@ -97,15 +97,18 @@ class PropertyDeleterTest {
 
     private void startStore(boolean log) {
         Config config = Config.defaults(GraphDatabaseInternalSettings.log_inconsistent_data_deletion, log);
-        idGeneratorFactory = new DefaultIdGeneratorFactory(directory.getFileSystem(), immediate(), "db");
+        var pageCacheTracer = PageCacheTracer.NULL;
+        idGeneratorFactory =
+                new DefaultIdGeneratorFactory(directory.getFileSystem(), immediate(), pageCacheTracer, "db");
         neoStores = new StoreFactory(
                         DatabaseLayout.ofFlat(directory.homePath()),
                         config,
                         idGeneratorFactory,
                         pageCache,
+                        pageCacheTracer,
                         directory.getFileSystem(),
                         NullLogProvider.getInstance(),
-                        new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                        new CursorContextFactory(pageCacheTracer, EMPTY),
                         writable(),
                         EMPTY_LOG_TAIL)
                 .openAllNeoStores(true);

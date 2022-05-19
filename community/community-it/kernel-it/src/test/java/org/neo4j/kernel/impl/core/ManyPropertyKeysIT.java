@@ -45,6 +45,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -139,8 +140,9 @@ class ManyPropertyKeysIT {
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout,
                 Config.defaults(),
-                new DefaultIdGeneratorFactory(fileSystem, immediate(), databaseLayout.getDatabaseName()),
+                new DefaultIdGeneratorFactory(fileSystem, immediate(), cacheTracer, databaseLayout.getDatabaseName()),
                 pageCache,
+                cacheTracer,
                 fileSystem,
                 NullLogProvider.getInstance(),
                 contextFactory,
@@ -161,7 +163,7 @@ class ManyPropertyKeysIT {
             }
         }
 
-        neoStores.flush(cursorContext);
+        neoStores.flush(DatabaseFlushEvent.NULL, cursorContext);
         neoStores.close();
 
         return database();

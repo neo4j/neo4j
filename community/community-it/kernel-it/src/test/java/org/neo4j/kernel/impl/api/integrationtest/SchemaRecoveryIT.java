@@ -38,6 +38,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -123,7 +124,7 @@ class SchemaRecoveryIT {
         // Flush the property token store, but NOT the property token ~name~ store. This means tokens will refer to
         // unused dynamic records for their names.
         RecordStorageEngine storageEngine = db.getDependencyResolver().resolveDependency(RecordStorageEngine.class);
-        storageEngine.testAccessNeoStores().getPropertyKeyTokenStore().flush(NULL_CONTEXT);
+        storageEngine.testAccessNeoStores().getPropertyKeyTokenStore().flush(FileFlushEvent.NULL, NULL_CONTEXT);
 
         killDb();
 

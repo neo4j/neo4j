@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.monitoring.PageFileCounters;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 
 public class DelegatingPagedFile implements PagedFile {
     private final PagedFile delegate;
@@ -37,8 +38,8 @@ public class DelegatingPagedFile implements PagedFile {
     }
 
     @Override
-    public void flushAndForce() throws IOException {
-        delegate.flushAndForce();
+    public void flushAndForce(FileFlushEvent flushEvent) throws IOException {
+        delegate.flushAndForce(flushEvent);
     }
 
     @Override

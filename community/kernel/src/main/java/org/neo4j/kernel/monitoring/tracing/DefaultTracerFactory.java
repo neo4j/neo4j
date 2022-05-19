@@ -49,7 +49,7 @@ public class DefaultTracerFactory implements TracerFactory {
     }
 
     @Override
-    public DatabaseTracer createDatabaseTracer(Clock clock) {
-        return new DefaultTracer();
+    public DatabaseTracer createDatabaseTracer(PageCacheTracer pageCacheTracer, Clock clock) {
+        return new DefaultTracer(pageCacheTracer);
     }
 }

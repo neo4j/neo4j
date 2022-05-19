@@ -85,12 +85,14 @@ class PropertyStoreTest {
 
             DynamicStringStore stringPropertyStore = mock(DynamicStringStore.class);
 
+            var pageCacheTracer = PageCacheTracer.NULL;
             try (var store = new PropertyStore(
                     storeFile,
                     idFile,
                     config,
-                    new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()),
+                    new DefaultIdGeneratorFactory(fs, immediate(), pageCacheTracer, databaseLayout.getDatabaseName()),
                     pageCache,
+                    pageCacheTracer,
                     NullLogProvider.getInstance(),
                     stringPropertyStore,
                     mock(PropertyKeyTokenStore.class),
@@ -99,7 +101,7 @@ class PropertyStoreTest {
                     writable(),
                     databaseLayout.getDatabaseName(),
                     immutable.empty())) {
-                store.initialise(true, new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
+                store.initialise(true, new CursorContextFactory(pageCacheTracer, EMPTY));
                 store.start(NULL_CONTEXT);
                 final long propertyRecordId = store.nextId(NULL_CONTEXT);
 

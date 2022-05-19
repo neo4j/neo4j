@@ -33,6 +33,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.test.DoubleLatch;
@@ -149,7 +150,7 @@ class ContractCheckingIndexProxyTest {
         IndexProxy outer = newContractCheckingIndexProxy(inner);
 
         // WHEN
-        outer.force(NULL_CONTEXT);
+        outer.force(FileFlushEvent.NULL, NULL_CONTEXT);
         verifyNoMoreInteractions(inner);
     }
 
@@ -163,7 +164,7 @@ class ContractCheckingIndexProxyTest {
         outer.start();
         outer.close(NULL_CONTEXT);
 
-        outer.force(NULL_CONTEXT);
+        outer.force(FileFlushEvent.NULL, NULL_CONTEXT);
         verify(inner).start();
         verify(inner).close(any());
         verifyNoMoreInteractions(inner);
@@ -252,7 +253,7 @@ class ContractCheckingIndexProxyTest {
         AtomicReference<Thread> actionThreadReference = new AtomicReference<>();
         final IndexProxy inner = new IndexProxyAdapter() {
             @Override
-            public void force(CursorContext cursorContext) {
+            public void force(FileFlushEvent flushEvent, CursorContext cursorContext) {
                 try {
                     actionThreadReference.get().start();
                     latch.await();
@@ -266,7 +267,7 @@ class ContractCheckingIndexProxyTest {
         actionThreadReference.set(actionThread);
 
         outer.start();
-        Thread thread = runInSeparateThread(() -> outer.force(NULL_CONTEXT));
+        Thread thread = runInSeparateThread(() -> outer.force(FileFlushEvent.NULL, NULL_CONTEXT));
 
         ThreadTestUtils.awaitThreadState(actionThread, TEST_TIMEOUT, Thread.State.TIMED_WAITING);
         latch.countDown();

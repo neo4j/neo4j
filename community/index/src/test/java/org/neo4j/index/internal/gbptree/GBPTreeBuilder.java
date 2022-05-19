@@ -143,7 +143,8 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
                 openOptions,
                 DEFAULT_DATABASE_NAME,
                 "test tree",
-                cursorContextFactory);
+                cursorContextFactory,
+                pageCacheTracer);
     }
 
     public MultiRootGBPTree<ROOT_KEY, KEY, VALUE> buildMultiRoot() {
@@ -161,6 +162,7 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
                 DEFAULT_DATABASE_NAME,
                 "test tree",
                 cursorContextFactory,
-                RootLayerConfiguration.multipleRoots(rootLayout, (int) kibiBytes(10)));
+                RootLayerConfiguration.multipleRoots(rootLayout, (int) kibiBytes(10)),
+                pageCacheTracer);
     }
 }

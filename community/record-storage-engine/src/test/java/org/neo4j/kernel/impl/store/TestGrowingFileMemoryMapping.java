@@ -67,16 +67,18 @@ class TestGrowingFileMemoryMapping {
         final int NUMBER_OF_RECORDS = 1000000;
 
         Config config = Config.defaults();
+        var pageCacheTracer = PageCacheTracer.NULL;
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory(
-                testDirectory.getFileSystem(), immediate(), databaseLayout.getDatabaseName());
+                testDirectory.getFileSystem(), immediate(), pageCacheTracer, databaseLayout.getDatabaseName());
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout,
                 config,
                 idGeneratorFactory,
                 pageCache,
+                pageCacheTracer,
                 testDirectory.getFileSystem(),
                 NullLogProvider.getInstance(),
-                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                new CursorContextFactory(pageCacheTracer, EMPTY),
                 writable(),
                 EMPTY_LOG_TAIL);
 

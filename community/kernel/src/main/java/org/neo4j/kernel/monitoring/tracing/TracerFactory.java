@@ -55,10 +55,11 @@ public interface TracerFactory extends NamedService {
     /**
      * Create a new DatabaseTracer instance.
      *
+     * @param pageCacheTracer page cache tracer
      * @param clock system clock
      * @return The created instance.
      */
-    DatabaseTracer createDatabaseTracer(Clock clock);
+    DatabaseTracer createDatabaseTracer(PageCacheTracer pageCacheTracer, Clock clock);
 
     /**
      * Create a new LockTracer instance.

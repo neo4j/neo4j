@@ -146,7 +146,7 @@ class DefaultPageCacheTracerTest {
 
     @Test
     void mustCountFlushes() {
-        try (MajorFlushEvent cacheFlush = tracer.beginCacheFlush()) {
+        try (var cacheFlush = tracer.beginFileFlush()) {
             cacheFlush.beginFlush(0, swapper, pageReferenceTranslator).close();
             cacheFlush.beginFlush(0, swapper, pageReferenceTranslator).close();
             cacheFlush.beginFlush(0, swapper, pageReferenceTranslator).close();
@@ -154,7 +154,7 @@ class DefaultPageCacheTracerTest {
 
         assertCounts(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0d, 0);
 
-        try (MajorFlushEvent fileFlush = tracer.beginFileFlush(swapper)) {
+        try (var fileFlush = tracer.beginFileFlush(swapper)) {
             var flushEvent1 = fileFlush.beginFlush(0, swapper, pageReferenceTranslator);
             flushEvent1.addPagesFlushed(1);
             flushEvent1.close();
@@ -173,14 +173,14 @@ class DefaultPageCacheTracerTest {
 
     @Test
     void countPageMerges() {
-        try (MajorFlushEvent cacheFlush = tracer.beginCacheFlush()) {
+        try (var cacheFlush = tracer.beginFileFlush()) {
             cacheFlush.beginFlush(0, swapper, pageReferenceTranslator).close();
             cacheFlush.beginFlush(0, swapper, pageReferenceTranslator).close();
             cacheFlush.beginFlush(0, swapper, pageReferenceTranslator).close();
         }
         assertCounts(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0d, 0);
 
-        try (MajorFlushEvent fileFlush = tracer.beginFileFlush(swapper)) {
+        try (var fileFlush = tracer.beginFileFlush(swapper)) {
             var flushEvent1 = fileFlush.beginFlush(new long[] {0}, swapper, pageReferenceTranslator, 0, 1);
             flushEvent1.addPagesMerged(1);
             flushEvent1.close();

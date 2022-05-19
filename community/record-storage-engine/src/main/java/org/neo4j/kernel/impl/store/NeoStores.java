@@ -46,6 +46,8 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
@@ -77,6 +79,7 @@ public class NeoStores implements AutoCloseable {
     private final Config config;
     private final IdGeneratorFactory idGeneratorFactory;
     private final PageCache pageCache;
+    private final PageCacheTracer pageCacheTracer;
     private final InternalLogProvider logProvider;
     private final boolean createIfNotExist;
     private final CursorContextFactory contextFactory;
@@ -93,6 +96,7 @@ public class NeoStores implements AutoCloseable {
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             final InternalLogProvider logProvider,
             RecordFormats recordFormats,
             boolean createIfNotExist,
@@ -106,6 +110,7 @@ public class NeoStores implements AutoCloseable {
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
         this.pageCache = pageCache;
+        this.pageCacheTracer = pageCacheTracer;
         this.logProvider = logProvider;
         this.recordFormats = recordFormats;
         this.createIfNotExist = createIfNotExist;
@@ -214,20 +219,13 @@ public class NeoStores implements AutoCloseable {
         }
     }
 
-    public void flush(CursorContext cursorContext) throws IOException {
-        // The thing about flush here is that it won't invoke flush on each individual store and this is because calling
-        // the flushAndForce method on the MuninnPageCache has the opportunity to flush things in parallel, something
-        // that
-        // flushing individual files would not have, or at least it would be a bit more complicated to do.
-        // Therefore this method will have to manually checkpoint all the id generators of all stores.
-        // The reason we don't use IdGeneratorFactory to get all the IdGenerators is that the design of it and where it
-        // sits
-        // architecturally makes it fragile and silently overwriting IdGenerator instances from other databases,
-        // it's weird I know. The most stable and secure thing we can do is to invoke this on the IdGenerator instances
-        // that our stores reference.
-
-        pageCache.flushAndForce();
-        visitStores(store -> store.getIdGenerator().checkpoint(cursorContext));
+    public void flush(DatabaseFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
+        pageCache.flushAndForce(flushEvent);
+        visitStores(store -> {
+            try (var fileFlushEvent = flushEvent.beginFileFlush()) {
+                store.getIdGenerator().checkpoint(fileFlushEvent, cursorContext);
+            }
+        });
     }
 
     private CommonAbstractStore openStore(StoreType type) {
@@ -397,6 +395,7 @@ public class NeoStores implements AutoCloseable {
                         config,
                         idGeneratorFactory,
                         pageCache,
+                        pageCacheTracer,
                         logProvider,
                         (DynamicArrayStore) getOrOpenStore(StoreType.NODE_LABEL),
                         recordFormats,
@@ -422,6 +421,7 @@ public class NeoStores implements AutoCloseable {
                         config,
                         idGeneratorFactory,
                         pageCache,
+                        pageCacheTracer,
                         logProvider,
                         (DynamicStringStore) getOrOpenStore(StoreType.PROPERTY_KEY_TOKEN_NAME),
                         recordFormats,
@@ -447,6 +447,7 @@ public class NeoStores implements AutoCloseable {
                         config,
                         idGeneratorFactory,
                         pageCache,
+                        pageCacheTracer,
                         logProvider,
                         (DynamicStringStore) getOrOpenStore(StoreType.PROPERTY_STRING),
                         (PropertyKeyTokenStore) getOrOpenStore(StoreType.PROPERTY_KEY_TOKEN),
@@ -478,6 +479,7 @@ public class NeoStores implements AutoCloseable {
                         config,
                         idGeneratorFactory,
                         pageCache,
+                        pageCacheTracer,
                         logProvider,
                         recordFormats,
                         readOnlyChecker,
@@ -494,6 +496,7 @@ public class NeoStores implements AutoCloseable {
                         config,
                         idGeneratorFactory,
                         pageCache,
+                        pageCacheTracer,
                         logProvider,
                         (DynamicStringStore) getOrOpenStore(StoreType.RELATIONSHIP_TYPE_TOKEN_NAME),
                         recordFormats,
@@ -519,6 +522,7 @@ public class NeoStores implements AutoCloseable {
                         config,
                         idGeneratorFactory,
                         pageCache,
+                        pageCacheTracer,
                         logProvider,
                         (DynamicStringStore) getOrOpenStore(StoreType.LABEL_TOKEN_NAME),
                         recordFormats,
@@ -537,6 +541,7 @@ public class NeoStores implements AutoCloseable {
                         SchemaIdType.SCHEMA,
                         idGeneratorFactory,
                         pageCache,
+                        pageCacheTracer,
                         logProvider,
                         (PropertyStore) getOrOpenStore(StoreType.PROPERTY),
                         recordFormats,
@@ -554,6 +559,7 @@ public class NeoStores implements AutoCloseable {
                         config,
                         idGeneratorFactory,
                         pageCache,
+                        pageCacheTracer,
                         logProvider,
                         recordFormats,
                         readOnlyChecker,
@@ -576,6 +582,7 @@ public class NeoStores implements AutoCloseable {
                         layout.metadataStore(),
                         config,
                         pageCache,
+                        pageCacheTracer,
                         logProvider,
                         recordFormats.metaData(),
                         readOnlyChecker,
@@ -608,6 +615,7 @@ public class NeoStores implements AutoCloseable {
                         idType,
                         idGeneratorFactory,
                         pageCache,
+                        pageCacheTracer,
                         logProvider,
                         blockSize,
                         recordFormats.dynamic(),
@@ -634,6 +642,7 @@ public class NeoStores implements AutoCloseable {
                         idType,
                         idGeneratorFactory,
                         pageCache,
+                        pageCacheTracer,
                         logProvider,
                         blockSize,
                         recordFormats,

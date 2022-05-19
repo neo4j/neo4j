@@ -78,15 +78,18 @@ class ApplyRecoveredTransactionsTest {
 
     @BeforeEach
     void before() {
-        idGeneratorFactory = new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName());
+        var pageCacheTracer = PageCacheTracer.NULL;
+        idGeneratorFactory =
+                new DefaultIdGeneratorFactory(fs, immediate(), pageCacheTracer, databaseLayout.getDatabaseName());
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout,
                 Config.defaults(),
                 idGeneratorFactory,
                 pageCache,
+                pageCacheTracer,
                 fs,
                 NullLogProvider.getInstance(),
-                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                new CursorContextFactory(pageCacheTracer, EMPTY),
                 writable(),
                 EMPTY_LOG_TAIL);
         neoStores = storeFactory.openAllNeoStores(true);

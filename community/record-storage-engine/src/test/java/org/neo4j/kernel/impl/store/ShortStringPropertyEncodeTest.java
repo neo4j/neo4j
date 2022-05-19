@@ -66,14 +66,17 @@ class ShortStringPropertyEncodeTest {
 
     @BeforeEach
     void setupStore() {
+        var pageCacheTracer = PageCacheTracer.NULL;
         neoStores = new StoreFactory(
                         databaseLayout,
                         Config.defaults(),
-                        new DefaultIdGeneratorFactory(fileSystem, immediate(), databaseLayout.getDatabaseName()),
+                        new DefaultIdGeneratorFactory(
+                                fileSystem, immediate(), pageCacheTracer, databaseLayout.getDatabaseName()),
                         pageCache,
+                        pageCacheTracer,
                         fileSystem,
                         NullLogProvider.getInstance(),
-                        new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                        new CursorContextFactory(pageCacheTracer, EMPTY),
                         writable(),
                         EMPTY_LOG_TAIL)
                 .openNeoStores(true, StoreType.PROPERTY, StoreType.PROPERTY_ARRAY, StoreType.PROPERTY_STRING);

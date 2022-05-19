@@ -118,12 +118,15 @@ class OnlineIndexUpdatesTest {
         life = new LifeSupport();
         Config config = Config.defaults();
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
-        CursorContextFactory contextFactory = new CursorContextFactory(NULL, EMPTY);
+        var pageCacheTracer = NULL;
+        CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout,
                 config,
-                new DefaultIdGeneratorFactory(fileSystem, immediate(), databaseLayout.getDatabaseName()),
+                new DefaultIdGeneratorFactory(
+                        fileSystem, immediate(), pageCacheTracer, databaseLayout.getDatabaseName()),
                 pageCache,
+                pageCacheTracer,
                 fileSystem,
                 nullLogProvider,
                 contextFactory,
@@ -144,6 +147,7 @@ class OnlineIndexUpdatesTest {
                 1_000,
                 NullLogProvider.getInstance(),
                 contextFactory,
+                pageCacheTracer,
                 neoStores.getOpenOptions());
         life.add(wrapInLifecycle(counts));
         nodeStore = neoStores.getNodeStore();

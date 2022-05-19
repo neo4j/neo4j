@@ -65,16 +65,17 @@ class NeoStoreOpenFailureTest {
     @Test
     @DisabledForRoot
     void mustCloseAllStoresIfNeoStoresFailToOpen() {
+        var pageCacheTracer = NULL;
         Config config = Config.defaults();
-        IdGeneratorFactory idGenFactory =
-                new DefaultIdGeneratorFactory(fileSystem, immediate(), databaseLayout.getDatabaseName());
+        IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory(
+                fileSystem, immediate(), pageCacheTracer, databaseLayout.getDatabaseName());
         InternalLogProvider logProvider = NullLogProvider.getInstance();
         RecordFormats formats = defaultFormat();
         RecordFormatPropertyConfigurator.configureRecordFormat(formats, config);
         boolean create = true;
         StoreType[] storeTypes = StoreType.values();
         ImmutableSet<OpenOption> openOptions = immutable.empty();
-        CursorContextFactory contextFactory = new CursorContextFactory(NULL, EMPTY);
+        CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
         LogTailMetadata logTail = EMPTY_LOG_TAIL;
         NeoStores neoStores = new NeoStores(
                 fileSystem,
@@ -82,6 +83,7 @@ class NeoStoreOpenFailureTest {
                 config,
                 idGenFactory,
                 pageCache,
+                pageCacheTracer,
                 logProvider,
                 formats,
                 create,
@@ -108,6 +110,7 @@ class NeoStoreOpenFailureTest {
                                 config,
                                 idGenFactory,
                                 pageCache,
+                                pageCacheTracer,
                                 logProvider,
                                 formats,
                                 create,

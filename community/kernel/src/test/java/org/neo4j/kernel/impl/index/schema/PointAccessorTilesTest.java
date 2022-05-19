@@ -46,8 +46,9 @@ class PointAccessorTilesTest extends BaseAccessorTilesTest<PointKey> {
         IndexFiles indexFiles = new IndexFiles.Directory(fs, directoryStructure, descriptor.getId());
         PointLayout layout = new PointLayout(indexSettings);
         RecoveryCleanupWorkCollector collector = RecoveryCleanupWorkCollector.ignore();
+        var cacheTracer = PageCacheTracer.NULL;
         DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder(
-                        pageCache, fs, new CursorContextFactory(PageCacheTracer.NULL, EMPTY), DEFAULT_DATABASE_NAME)
+                        pageCache, fs, new CursorContextFactory(cacheTracer, EMPTY), cacheTracer, DEFAULT_DATABASE_NAME)
                 .build();
         StandardConfiguration configuration = new StandardConfiguration();
         return new PointIndexAccessor(

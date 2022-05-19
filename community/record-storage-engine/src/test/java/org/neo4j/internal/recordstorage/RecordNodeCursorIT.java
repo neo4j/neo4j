@@ -74,14 +74,16 @@ class RecordNodeCursorIT {
 
     @BeforeEach
     void startNeoStores() {
+        var pageCacheTracer = PageCacheTracer.NULL;
         neoStores = new StoreFactory(
                         RecordDatabaseLayout.ofFlat(directory.homePath()),
                         Config.defaults(),
-                        new DefaultIdGeneratorFactory(directory.getFileSystem(), immediate(), "db"),
+                        new DefaultIdGeneratorFactory(directory.getFileSystem(), immediate(), pageCacheTracer, "db"),
                         pageCache,
+                        pageCacheTracer,
                         directory.getFileSystem(),
                         NullLogProvider.getInstance(),
-                        new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                        new CursorContextFactory(pageCacheTracer, EMPTY),
                         DatabaseReadOnlyChecker.writable(),
                         EMPTY_LOG_TAIL)
                 .openAllNeoStores(true);

@@ -49,6 +49,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
 import org.junit.jupiter.api.Test;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -122,7 +123,7 @@ class CheckPointerImplTest {
 
         // Then
         assertEquals(transactionId, txId);
-        verify(forceOperation).flushAndForce(any());
+        verify(forceOperation).flushAndForce(any(), any());
         verify(health, times(2)).assertHealthy(IOException.class);
         verify(appender)
                 .checkPoint(
@@ -154,7 +155,7 @@ class CheckPointerImplTest {
 
         // Then
         assertEquals(transactionId, txId);
-        verify(forceOperation).flushAndForce(any());
+        verify(forceOperation).flushAndForce(any(), any());
         verify(health, times(2)).assertHealthy(IOException.class);
         verify(appender)
                 .checkPoint(
@@ -185,7 +186,7 @@ class CheckPointerImplTest {
 
         // Then
         assertEquals(transactionId, txId);
-        verify(forceOperation).flushAndForce(any());
+        verify(forceOperation).flushAndForce(any(), any());
         verify(health, times(2)).assertHealthy(IOException.class);
         verify(appender)
                 .checkPoint(
@@ -216,7 +217,7 @@ class CheckPointerImplTest {
 
         // Then
         assertEquals(transactionId, txId);
-        verify(forceOperation).flushAndForce(any());
+        verify(forceOperation).flushAndForce(any(), any());
         verify(health, times(2)).assertHealthy(IOException.class);
         verify(appender)
                 .checkPoint(
@@ -355,7 +356,7 @@ class CheckPointerImplTest {
                     return null;
                 })
                 .when(forceOperation)
-                .flushAndForce(any());
+                .flushAndForce(any(), any());
 
         Thread forceCheckPointThread = new Thread(() -> {
             try {
@@ -396,7 +397,8 @@ class CheckPointerImplTest {
                 databaseTracers,
                 mutex,
                 new CursorContextFactory(new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY),
-                clock);
+                clock,
+                IOController.DISABLED);
     }
 
     private CheckPointerImpl checkPointer() {

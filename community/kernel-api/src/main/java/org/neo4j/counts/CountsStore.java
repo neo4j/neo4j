@@ -22,6 +22,7 @@ package org.neo4j.counts;
 import java.io.IOException;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
@@ -56,7 +57,7 @@ public interface CountsStore extends CountsStorage, CountsAccessor {
         }
 
         @Override
-        public void checkpoint(CursorContext cursorContext) throws IOException { // no-op
+        public void checkpoint(FileFlushEvent flushEvent, CursorContext cursorContext) throws IOException { // no-op
         }
 
         @Override

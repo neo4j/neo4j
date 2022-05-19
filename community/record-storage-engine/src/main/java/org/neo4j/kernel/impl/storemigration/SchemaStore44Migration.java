@@ -55,6 +55,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -226,6 +227,7 @@ public class SchemaStore44Migration {
             boolean forceBtreeIndexesToRange,
             Config config,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             CursorContextFactory contextFactory,
             IdGeneratorFactory srcIdGeneratorFactory,
             StoreFactory srcFactory) {
@@ -256,6 +258,7 @@ public class SchemaStore44Migration {
                     srcTokensHolders,
                     config,
                     pageCache,
+                    pageCacheTracer,
                     contextFactory,
                     () -> kernelVersion)) {
                 return getSchemaStoreMigration44(
@@ -429,6 +432,7 @@ public class SchemaStore44Migration {
             TokenHolders tokenHolders,
             Config config,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             CursorContextFactory contextFactory,
             KernelVersionRepository kernelVersionRepository) {
         return new SchemaStore44Reader(
@@ -441,6 +445,7 @@ public class SchemaStore44Migration {
                 SchemaIdType.SCHEMA,
                 idGeneratorFactory,
                 pageCache,
+                pageCacheTracer,
                 contextFactory,
                 NullLogProvider.getInstance(),
                 formats,

@@ -472,7 +472,8 @@ public class Database extends LifecycleAdapter {
                     readOnlyDatabaseChecker,
                     tailMetadata,
                     otherDatabaseMemoryTracker,
-                    cursorContextFactory);
+                    cursorContextFactory,
+                    tracers.getPageCacheTracer());
 
             MetadataProvider metadataProvider = storageEngine.metadataProvider();
             databaseDependencies.satisfyDependency(metadataProvider);
@@ -499,6 +500,7 @@ public class Database extends LifecycleAdapter {
                     recoveryCleanupWorkCollector,
                     readOnlyDatabaseChecker,
                     cursorContextFactory,
+                    tracers.getPageCacheTracer(),
                     storageEngine.getOpenOptions());
             life.add(indexStatisticsStore);
 
@@ -726,6 +728,7 @@ public class Database extends LifecycleAdapter {
                 tokenHolders,
                 scheduler,
                 cursorContextFactory,
+                tracers.getPageCacheTracer(),
                 dependencies);
         this.indexProviderMap = indexProvidersLife.add(indexProviderMap);
         dependencies.satisfyDependency(this.indexProviderMap);
@@ -874,7 +877,8 @@ public class Database extends LifecycleAdapter {
                 tracers,
                 storeCopyCheckPointMutex,
                 cursorContextFactory,
-                clock);
+                clock,
+                ioController);
 
         long recurringPeriod = threshold.checkFrequencyMillis();
         CheckPointScheduler checkPointScheduler = new CheckPointScheduler(

@@ -50,6 +50,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -127,7 +128,7 @@ class LuceneIndexProviderTest {
                 readOnlyConfig, new DirectoryFactory.InMemoryDirectoryFactory(), fileSystem, graphDbDir);
 
         // We assert that 'force' does not throw an exception
-        getIndexAccessor(readOnlyConfig, readOnlyIndexProvider).force(NULL_CONTEXT);
+        getIndexAccessor(readOnlyConfig, readOnlyIndexProvider).force(FileFlushEvent.NULL, NULL_CONTEXT);
     }
 
     @Test

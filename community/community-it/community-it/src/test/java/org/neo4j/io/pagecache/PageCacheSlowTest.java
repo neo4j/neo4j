@@ -53,6 +53,7 @@ import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
 
@@ -214,7 +215,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                 assertTrue(cursor.next(), "failed to initialise file page " + i);
             }
         }
-        pageCache.flushAndForce();
+        pageCache.flushAndForce(DatabaseFlushEvent.NULL);
     }
 
     private static void verifyUpdateResults(int filePages, PagedFile pagedFile, List<Future<UpdateResult>> futures)
@@ -492,7 +493,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                 try {
                     // Flushing all pages, if successful, should clear any internal
                     // exception.
-                    pageCache.flushAndForce();
+                    pageCache.flushAndForce(DatabaseFlushEvent.NULL);
 
                     // Do some post-chaos verification of what has been written.
                     verifyAdversarialPagedContent(pfA);

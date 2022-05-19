@@ -33,6 +33,7 @@ import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -56,6 +57,7 @@ public class RelationshipCountsAndTypeIndexBuildStage extends Stage {
             ProgressReporter progressReporter,
             IndexImporterFactory indexImporterFactory,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             Function<CursorContext, StoreCursors> storeCursorsCreator,
             MemoryTracker memoryTracker) {
         super(NAME, null, config, Step.RECYCLE_BATCHES);
@@ -69,6 +71,7 @@ public class RelationshipCountsAndTypeIndexBuildStage extends Stage {
                     indexImporterFactory,
                     memoryTracker,
                     contextFactory,
+                    pageCacheTracer,
                     storeCursorsCreator));
         }
         add(new ProcessRelationshipCountsDataStep(

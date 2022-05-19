@@ -465,8 +465,9 @@ class NodeStoreTest {
     }
 
     private NodeStore newNodeStore(FileSystemAbstraction fs, PageCache pageCache) {
+        var pageCacheTracer = PageCacheTracer.NULL;
         IdGeneratorFactory idGeneratorFactory =
-                spy(new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()) {
+                spy(new DefaultIdGeneratorFactory(fs, immediate(), pageCacheTracer, databaseLayout.getDatabaseName()) {
                     @Override
                     protected IndexedIdGenerator instantiate(
                             FileSystemAbstraction fs,
@@ -503,9 +504,10 @@ class NodeStoreTest {
                 Config.defaults(),
                 idGeneratorFactory,
                 pageCache,
+                pageCacheTracer,
                 fs,
                 NullLogProvider.getInstance(),
-                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                new CursorContextFactory(pageCacheTracer, EMPTY),
                 writable(),
                 EMPTY_LOG_TAIL);
         neoStores = factory.openAllNeoStores(true);

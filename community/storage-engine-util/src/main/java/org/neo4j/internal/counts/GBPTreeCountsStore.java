@@ -37,12 +37,14 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 
 /**
  * Counts store build on top of the {@link GBPTree}.
- * Changes between checkpoints are kept in memory and written out to the tree in {@link #checkpoint(CursorContext)}.
+ * Changes between checkpoints are kept in memory and written out to the tree in {@link #checkpoint(FileFlushEvent, CursorContext)}.
  * Multiple {@link #apply(long, CursorContext)} appliers} can run concurrently in a lock-free manner.
  * Checkpoint will acquire a write lock, wait for currently active appliers to close while at the same time blocking new appliers to start,
  * but doesn't wait for appliers that haven't even started yet, i.e. it doesn't require a gap-free transaction sequence to be completed.
@@ -100,6 +102,7 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
             int maxCacheSize,
             InternalLogProvider userLogProvider,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             ImmutableSet<OpenOption> openOptions)
             throws IOException {
         super(
@@ -115,6 +118,7 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
                 maxCacheSize,
                 userLogProvider,
                 contextFactory,
+                pageCacheTracer,
                 openOptions);
     }
 
@@ -171,6 +175,7 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
             Path file,
             PrintStream out,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             ImmutableSet<OpenOption> openOptions)
             throws IOException {
         GBPTreeGenericCountsStore.dump(
@@ -180,6 +185,7 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
                 DEFAULT_DATABASE_NAME,
                 NAME,
                 contextFactory,
+                pageCacheTracer,
                 GBPTreeCountsStore::keyToString,
                 openOptions);
     }

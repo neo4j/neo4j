@@ -31,8 +31,8 @@ import java.util.Map;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
-import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
 import org.neo4j.io.pagecache.tracing.PinEvent;
@@ -186,10 +186,10 @@ class HEvents {
         }
     }
 
-    public static class MajorFlushHEvent extends IntervalHEvent implements MajorFlushEvent {
+    public static class FileFlushHEvent extends IntervalHEvent implements FileFlushEvent {
         private final Path path;
 
-        MajorFlushHEvent(LinearHistoryTracer tracer, Path path) {
+        FileFlushHEvent(LinearHistoryTracer tracer, Path path) {
             super(tracer);
             this.path = path;
         }
@@ -212,6 +212,19 @@ class HEvents {
 
         @Override
         public void startFlush(int[][] translationTable) {}
+
+        @Override
+        public void reset() {}
+
+        @Override
+        public long ioPerformed() {
+            return 0;
+        }
+
+        @Override
+        public long pagesFlushed() {
+            return 0;
+        }
 
         @Override
         public ChunkEvent startChunk(int[] chunk) {

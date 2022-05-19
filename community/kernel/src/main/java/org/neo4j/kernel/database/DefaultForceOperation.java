@@ -21,6 +21,7 @@ package org.neo4j.kernel.database;
 
 import java.io.IOException;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -35,8 +36,8 @@ public class DefaultForceOperation implements CheckPointerImpl.ForceOperation {
     }
 
     @Override
-    public void flushAndForce(CursorContext cursorContext) throws IOException {
-        indexingService.forceAll(cursorContext);
-        storageEngine.flushAndForce(cursorContext);
+    public void flushAndForce(DatabaseFlushEvent databaseFlushEvent, CursorContext cursorContext) throws IOException {
+        indexingService.forceAll(databaseFlushEvent, cursorContext);
+        storageEngine.flushAndForce(databaseFlushEvent, cursorContext);
     }
 }

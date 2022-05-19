@@ -984,7 +984,8 @@ class RecoveryIT {
                 .resolveDependency(StorageEngine.class)
                 .getOpenOptions();
         // Make an ID generator, say for the node store, dirty
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory(fileSystem, immediate(), "my db");
+        DefaultIdGeneratorFactory idGeneratorFactory =
+                new DefaultIdGeneratorFactory(fileSystem, immediate(), PageCacheTracer.NULL, "my db");
         try (IdGenerator idGenerator = idGeneratorFactory.open(
                 pageCache,
                 layout.idNodeStore(),
@@ -1365,7 +1366,8 @@ class RecoveryIT {
 
     private boolean idGeneratorIsDirty(Path path, IdType idType, ImmutableSet<OpenOption> openOptions)
             throws IOException {
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory(fileSystem, immediate(), "my db");
+        DefaultIdGeneratorFactory idGeneratorFactory =
+                new DefaultIdGeneratorFactory(fileSystem, immediate(), PageCacheTracer.NULL, "my db");
         try (IdGenerator idGenerator = idGeneratorFactory.open(
                 pageCache,
                 path,
@@ -1614,6 +1616,10 @@ class RecoveryIT {
     private static class CheckpointTracer extends DefaultTracer {
 
         private final AtomicInteger openCounter = new AtomicInteger();
+
+        private CheckpointTracer() {
+            super(PageCacheTracer.NULL);
+        }
 
         @Override
         public void openLogFile(Path filePath) {

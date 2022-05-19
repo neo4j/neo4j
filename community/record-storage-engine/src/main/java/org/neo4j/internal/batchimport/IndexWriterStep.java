@@ -41,6 +41,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -65,6 +66,7 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T> {
             EntityType entityType,
             MemoryTracker memoryTracker,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             Function<CursorContext, StoreCursors> storeCursorsFactory) {
         var schemaStore = neoStores.getNeoStores().getSchemaStore();
         var tokenHolders = neoStores.getTokenHolders();
@@ -86,6 +88,7 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T> {
                     neoStores.fileSystem(),
                     neoStores.getPageCache(),
                     contextFactory,
+                    pageCacheTracer,
                     neoStores.getOpenOptions());
         }
     }

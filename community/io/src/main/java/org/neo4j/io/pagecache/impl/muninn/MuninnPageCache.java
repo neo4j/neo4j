@@ -56,8 +56,9 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.impl.muninn.versioned.InMemoryVersionStorage;
 import org.neo4j.io.pagecache.impl.muninn.versioned.VersionStorage;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
-import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -757,10 +758,10 @@ public class MuninnPageCache implements PageCache {
     }
 
     @Override
-    public void flushAndForce() throws IOException {
+    public void flushAndForce(DatabaseFlushEvent flushEvent) throws IOException {
         List<PagedFile> files = listExistingMappings();
 
-        try (MajorFlushEvent ignored = pageCacheTracer.beginCacheFlush()) {
+        try (FileFlushEvent ignored = flushEvent.beginFileFlush()) {
             // When we flush whole page cache it can only happen on shutdown and we should be able to progress as fast
             // as we can with disabled io controller
             flushAllPagesParallel(files, IOController.DISABLED);
@@ -798,7 +799,7 @@ public class MuninnPageCache implements PageCache {
     }
 
     private void flushFile(MuninnPagedFile muninnPagedFile, IOController limiter) throws IOException {
-        try (MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush(muninnPagedFile.swapper);
+        try (FileFlushEvent flushEvent = pageCacheTracer.beginFileFlush(muninnPagedFile.swapper);
                 var buffer = bufferFactory.createBuffer()) {
             muninnPagedFile.flushAndForceInternal(flushEvent, false, limiter, buffer);
         }

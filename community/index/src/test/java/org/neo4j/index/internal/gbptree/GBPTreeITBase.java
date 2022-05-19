@@ -45,6 +45,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -149,7 +150,7 @@ abstract class GBPTreeITBase<KEY, VALUE> {
                 }
             }
 
-            index.checkpoint(NULL_CONTEXT);
+            index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
             randomlyModifyIndex(index, data, random.random(), (double) round / totalNumberOfRounds, writerFactory);
         }
 
@@ -218,7 +219,7 @@ abstract class GBPTreeITBase<KEY, VALUE> {
         try (Seeker<KEY, VALUE> seek = index.seek(from, to, NULL_CONTEXT)) {
             assertFalse(seek.next());
         }
-        index.checkpoint(NULL_CONTEXT);
+        index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
     }
 
     private void randomlyModifyIndex(

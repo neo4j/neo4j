@@ -55,6 +55,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
@@ -340,7 +341,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         processAll(data);
 
         // when
-        accessor.force(NULL_CONTEXT);
+        accessor.force(FileFlushEvent.NULL, NULL_CONTEXT);
         accessor.close();
 
         // then
@@ -538,7 +539,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
     }
 
     private void forceAndCloseAccessor() {
-        accessor.force(NULL_CONTEXT);
+        accessor.force(FileFlushEvent.NULL, NULL_CONTEXT);
         closeAccessor();
     }
 

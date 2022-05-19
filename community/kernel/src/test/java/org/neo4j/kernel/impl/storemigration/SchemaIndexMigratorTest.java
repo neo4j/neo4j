@@ -47,6 +47,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.index.SchemaIndexMigrator;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -96,10 +97,16 @@ class SchemaIndexMigratorTest {
         schemaRules.add(forSchema(SchemaDescriptors.fulltext(NODE, new int[] {1, 2, 3}, new int[] {4, 5, 6}))
                 .withName("n2")
                 .materialise(4L));
-        when(storageEngineFactory.loadSchemaRules(any(), any(), any(), any(), anyBoolean(), any(), any()))
+        when(storageEngineFactory.loadSchemaRules(any(), any(), any(), any(), any(), anyBoolean(), any(), any()))
                 .thenReturn(schemaRules);
         SchemaIndexMigrator migrator = new SchemaIndexMigrator(
-                "Test migrator", fs, pageCache, directoryStructure, storageEngineFactory, NULL_CONTEXT_FACTORY);
+                "Test migrator",
+                fs,
+                pageCache,
+                PageCacheTracer.NULL,
+                directoryStructure,
+                storageEngineFactory,
+                NULL_CONTEXT_FACTORY);
 
         // when
         migrator.migrate(

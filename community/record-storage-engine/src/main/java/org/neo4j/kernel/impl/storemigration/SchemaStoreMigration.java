@@ -44,6 +44,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -151,11 +152,19 @@ public class SchemaStoreMigration {
             boolean forceBtreeIndexesToRange,
             Config config,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             FileSystemAbstraction fileSystem,
             CursorContextFactory contextFactory) {
         IdGeneratorFactory srcIdGeneratorFactory = new ScanOnOpenReadOnlyIdGeneratorFactory();
         StoreFactory srcFactory = createStoreFactory(
-                directoryLayout, config, srcIdGeneratorFactory, pageCache, fileSystem, oldFormat, contextFactory);
+                directoryLayout,
+                config,
+                srcIdGeneratorFactory,
+                pageCache,
+                pageCacheTracer,
+                fileSystem,
+                oldFormat,
+                contextFactory);
 
         if (!need50Migration(oldFormat)) {
             if (!requiresPropertyMigration) {
@@ -196,6 +205,7 @@ public class SchemaStoreMigration {
                 forceBtreeIndexesToRange,
                 config,
                 pageCache,
+                pageCacheTracer,
                 contextFactory,
                 srcIdGeneratorFactory,
                 srcFactory);
@@ -206,6 +216,7 @@ public class SchemaStoreMigration {
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             FileSystemAbstraction fileSystem,
             RecordFormats formats,
             CursorContextFactory contextFactory) {
@@ -214,6 +225,7 @@ public class SchemaStoreMigration {
                 config,
                 idGeneratorFactory,
                 pageCache,
+                pageCacheTracer,
                 fileSystem,
                 formats,
                 NullLogProvider.getInstance(),

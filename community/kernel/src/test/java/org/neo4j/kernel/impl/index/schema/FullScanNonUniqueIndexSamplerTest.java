@@ -41,6 +41,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.values.storable.NumberValue;
@@ -131,7 +132,7 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<RangeKey, N
                     nodeId++;
                 }
             }
-            gbpTree.checkpoint(NULL_CONTEXT);
+            gbpTree.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
     }
 

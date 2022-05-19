@@ -44,6 +44,7 @@ import org.neo4j.io.pagecache.DelegatingPagedFile;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -135,12 +136,12 @@ class DatabaseShutdownTest {
                                             super.map(path, pageSize, databaseName, openOptions, ioController);
                                     return new DelegatingPagedFile(pagedFile) {
                                         @Override
-                                        public void flushAndForce() throws IOException {
+                                        public void flushAndForce(FileFlushEvent flushEvent) throws IOException {
                                             if (failFlush) {
                                                 // this is simulating a failing check pointing on shutdown
                                                 throw new IOException("Boom!");
                                             }
-                                            super.flushAndForce();
+                                            super.flushAndForce(flushEvent);
                                         }
                                     };
                                 }

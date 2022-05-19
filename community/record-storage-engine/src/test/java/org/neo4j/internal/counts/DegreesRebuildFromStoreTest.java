@@ -46,6 +46,8 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.FlatRelationshipModifications;
 import org.neo4j.kernel.impl.api.FlatRelationshipModifications.RelationshipData;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -125,7 +127,7 @@ class DegreesRebuildFromStoreTest {
                     }
                 }
             }
-            storageEngine.flushAndForce(NULL_CONTEXT);
+            storageEngine.flushAndForce(DatabaseFlushEvent.NULL, NULL_CONTEXT);
         }
 
         // when
@@ -154,7 +156,7 @@ class DegreesRebuildFromStoreTest {
                                     expectedDegrees.put(combinedKeyOnGroupAndDirection(groupId, direction), degree),
                             NULL_CONTEXT);
             assertThat(expectedDegrees.isEmpty()).isFalse();
-            storageEngine.flushAndForce(NULL_CONTEXT);
+            storageEngine.flushAndForce(DatabaseFlushEvent.NULL, NULL_CONTEXT);
         }
 
         // when
@@ -170,11 +172,14 @@ class DegreesRebuildFromStoreTest {
     private void rebuildAndVerifyDirectlyUsingRebuilderDirectly(
             DatabaseLayout layout, Config config, MutableLongLongMap expectedDegrees) {
         MutableLongLongMap builtExpectedDegrees = LongLongMaps.mutable.empty();
+        var pageCacheTracer = PageCacheTracer.NULL;
         try (NeoStores neoStores = new StoreFactory(
                         layout,
                         config,
-                        new DefaultIdGeneratorFactory(directory.getFileSystem(), immediate(), layout.getDatabaseName()),
+                        new DefaultIdGeneratorFactory(
+                                directory.getFileSystem(), immediate(), pageCacheTracer, layout.getDatabaseName()),
                         pageCache,
+                        pageCacheTracer,
                         directory.getFileSystem(),
                         NullLogProvider.getInstance(),
                         NULL_CONTEXT_FACTORY,

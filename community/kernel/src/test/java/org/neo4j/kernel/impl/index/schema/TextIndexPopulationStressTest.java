@@ -41,7 +41,11 @@ class TextIndexPopulationStressTest extends IndexPopulationStressTest {
                         randomValues.nextValueOfTypes(CHAR, STRING, STRING_ALPHANUMERIC, STRING_ASCII, STRING_BMP),
                 test -> {
                     DatabaseIndexContext context = DatabaseIndexContext.builder(
-                                    test.pageCache, test.fs, test.contextFactory, DEFAULT_DATABASE_NAME)
+                                    test.pageCache,
+                                    test.fs,
+                                    test.contextFactory,
+                                    test.pageCacheTracer,
+                                    DEFAULT_DATABASE_NAME)
                             .build();
                     return new TextIndexProvider(
                             context.fileSystem,

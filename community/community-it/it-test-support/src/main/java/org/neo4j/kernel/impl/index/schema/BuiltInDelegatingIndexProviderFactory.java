@@ -27,6 +27,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -70,7 +71,8 @@ public class BuiltInDelegatingIndexProviderFactory
                 dependencies.databaseLayout(),
                 dependencies.tokenHolders(),
                 dependencies.jobScheduler(),
-                dependencies.contextFactory());
+                dependencies.contextFactory(),
+                dependencies.databaseTracer().getPageCacheTracer());
         return new IndexProvider.Delegating(provider) {
             @Override
             public IndexProviderDescriptor getProviderDescriptor() {
@@ -81,10 +83,12 @@ public class BuiltInDelegatingIndexProviderFactory
             public StoreMigrationParticipant storeMigrationParticipant(
                     FileSystemAbstraction fs,
                     PageCache pageCache,
+                    PageCacheTracer pageCacheTracer,
                     StorageEngineFactory storageEngineFactory,
                     CursorContextFactory contextFactory) {
                 return new NameOverridingStoreMigrationParticipant(
-                        super.storeMigrationParticipant(fs, pageCache, storageEngineFactory, contextFactory),
+                        super.storeMigrationParticipant(
+                                fs, pageCache, pageCacheTracer, storageEngineFactory, contextFactory),
                         descriptorOverride.name());
             }
         };

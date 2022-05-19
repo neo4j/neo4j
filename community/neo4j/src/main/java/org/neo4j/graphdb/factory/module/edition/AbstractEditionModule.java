@@ -211,7 +211,8 @@ public abstract class AbstractEditionModule {
                 IdContextFactory.class, globalModule.getExternalDependencyResolver(), () -> IdContextFactoryBuilder.of(
                                 globalModule.getFileSystem(),
                                 globalModule.getJobScheduler(),
-                                globalModule.getGlobalConfig())
+                                globalModule.getGlobalConfig(),
+                                globalModule.getTracers().getPageCacheTracer())
                         .withLogService(globalModule.getLogService())
                         .build());
     }

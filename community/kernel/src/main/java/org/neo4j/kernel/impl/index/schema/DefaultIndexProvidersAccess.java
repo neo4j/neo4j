@@ -71,7 +71,7 @@ public class DefaultIndexProvidersAccess extends LifeContainer implements IndexP
     public IndexProviderMap access(
             PageCache pageCache, DatabaseLayout layout, DatabaseReadOnlyChecker readOnlyChecker) {
         var tokenHolders = storageEngineFactory.loadReadOnlyTokens(
-                fileSystem, layout, databaseConfig, pageCache, false, contextFactory);
+                fileSystem, layout, databaseConfig, pageCache, pageCacheTracer, false, contextFactory);
         var monitors = new Monitors();
         var extensions = life.add(instantiateExtensions(
                 layout,
@@ -101,6 +101,7 @@ public class DefaultIndexProvidersAccess extends LifeContainer implements IndexP
                 tokenHolders,
                 jobScheduler,
                 contextFactory,
+                pageCacheTracer,
                 extensions));
     }
 }

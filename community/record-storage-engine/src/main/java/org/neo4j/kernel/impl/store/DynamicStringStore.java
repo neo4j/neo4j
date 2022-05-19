@@ -27,6 +27,7 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.InternalLogProvider;
@@ -45,6 +46,7 @@ public class DynamicStringStore extends AbstractDynamicStore {
             RecordIdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             InternalLogProvider logProvider,
             int dataSizeFromConfiguration,
             RecordFormat<DynamicRecord> recordFormat,
@@ -58,6 +60,7 @@ public class DynamicStringStore extends AbstractDynamicStore {
                 idType,
                 idGeneratorFactory,
                 pageCache,
+                pageCacheTracer,
                 logProvider,
                 TYPE_DESCRIPTOR,
                 dataSizeFromConfiguration,

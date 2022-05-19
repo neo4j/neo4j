@@ -21,11 +21,12 @@ package org.neo4j.io.pagecache;
 
 import java.io.Flushable;
 import java.io.IOException;
-import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 
 /**
- * IOController instances used by page file to control speed of data flushing when {@link PageCache#flushAndForce()} invoked.
- * As part of flush controller's {@link #maybeLimitIO(int, Flushable, MajorFlushEvent)} method is invoked on regular intervals.
+ * IOController instances used by page file to control speed of data flushing when {@link PageCache#flushAndForce(DatabaseFlushEvent)} invoked.
+ * As part of flush controller's {@link #maybeLimitIO(int, Flushable, FileFlushEvent)} method is invoked on regular intervals.
  * <p/>
  * This allows the controller to measure the rate of IO (including io performed by other system parts), and inject sleeps, pauses or flushes into the process.
  * The flushes are in this case referring to the underlying hardware.
@@ -53,9 +54,9 @@ public interface IOController {
      * @param recentlyCompletedIOs The number of IOs completed by caller since the last call to this method.
      * @param flushable A {@link Flushable} instance that can flush any relevant dirty system buffers, to help smooth
      * out the IO load on the storage device.
-     * @param flushEvent A {@link MajorFlushEvent} event that describes ongoing io represented by flushable instance.
+     * @param flushEvent A {@link FileFlushEvent} event that describes ongoing io represented by flushable instance.
      */
-    void maybeLimitIO(int recentlyCompletedIOs, Flushable flushable, MajorFlushEvent flushEvent);
+    void maybeLimitIO(int recentlyCompletedIOs, Flushable flushable, FileFlushEvent flushEvent);
 
     /**
      * Report any external IO that could be taken into account during evaluation of limits, to inject pauses or sleeps.
@@ -63,6 +64,12 @@ public interface IOController {
      * @param completedIOs - number of completed external IOs.
      */
     void reportIO(int completedIOs);
+
+    /**
+     * In case if IO controller is configured return its configured limit. -1 in case if controller is disabled.
+     * @return - configured limit, -1 otherwise.
+     */
+    long configuredLimit();
 
     /**
      * @return {@code true} if controller is currently enabled

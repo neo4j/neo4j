@@ -172,14 +172,16 @@ class RelationshipGroupStoreTest {
         if (customThreshold != null) {
             config.set(dense_node_threshold, customThreshold);
         }
+        PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
         return new StoreFactory(
                 databaseLayout,
                 config.build(),
-                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()),
+                new DefaultIdGeneratorFactory(fs, immediate(), pageCacheTracer, databaseLayout.getDatabaseName()),
                 pageCache,
+                pageCacheTracer,
                 fs,
                 NullLogProvider.getInstance(),
-                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                new CursorContextFactory(pageCacheTracer, EMPTY),
                 writable(),
                 EMPTY_LOG_TAIL);
     }

@@ -50,6 +50,7 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.linear.LinearHistoryPageCacheTracerTest;
 import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
@@ -428,7 +429,7 @@ public class RandomPageCacheTestHarness implements Closeable {
 
     private void runVerificationPhase(MuninnPageCache cache) throws Exception {
         if (verification != null) {
-            cache.flushAndForce(); // Clears any stray evictor exceptions
+            cache.flushAndForce(DatabaseFlushEvent.NULL); // Clears any stray evictor exceptions
             verification.run(cache, this.fs, plan.getFilesTouched());
         }
     }

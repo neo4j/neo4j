@@ -31,6 +31,7 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -108,11 +109,15 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator {
             if (populationCompletedSuccessfully) {
                 // Successful and completed population
                 assertTreeOpen();
-                flushTreeAndMarkAs(ONLINE, cursorContext);
+                try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                    flushTreeAndMarkAs(ONLINE, flushEvent, cursorContext);
+                }
             } else if (failureBytes != null) {
                 // Failed population
                 ensureTreeInstantiated();
-                markTreeAsFailed(cursorContext);
+                try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                    markTreeAsFailed(flushEvent, cursorContext);
+                }
             }
             // else cancelled population. Here we simply close the tree w/o checkpointing it and it will look like
             // POPULATING state on next open
@@ -122,14 +127,14 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator {
         }
     }
 
-    private void flushTreeAndMarkAs(byte state, CursorContext cursorContext) {
-        index.checkpoint(pageCursor -> pageCursor.putByte(state), cursorContext);
+    private void flushTreeAndMarkAs(byte state, FileFlushEvent flushEvent, CursorContext cursorContext) {
+        index.checkpoint(pageCursor -> pageCursor.putByte(state), flushEvent, cursorContext);
     }
 
-    private void markTreeAsFailed(CursorContext cursorContext) {
+    private void markTreeAsFailed(FileFlushEvent flushEvent, CursorContext cursorContext) {
         Preconditions.checkState(
                 failureBytes != null, "markAsFailed hasn't been called, populator not actually failed?");
-        index.checkpoint(new FailureHeaderWriter(failureBytes, FAILED), cursorContext);
+        index.checkpoint(new FailureHeaderWriter(failureBytes, FAILED), flushEvent, cursorContext);
     }
 
     @Override

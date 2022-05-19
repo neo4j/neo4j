@@ -29,6 +29,7 @@ import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.monitoring.PageFileCounters;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
 
 /**
@@ -365,7 +366,7 @@ public class ByteArrayPageCursor extends PageCursor {
         }
 
         @Override
-        public void flushAndForce() throws IOException {}
+        public void flushAndForce(FileFlushEvent flushEvent) throws IOException {}
 
         @Override
         public long getLastPageId() throws IOException {

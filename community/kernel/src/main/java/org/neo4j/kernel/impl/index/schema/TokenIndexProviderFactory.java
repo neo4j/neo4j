@@ -30,6 +30,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.monitoring.Monitors;
@@ -61,7 +62,8 @@ public class TokenIndexProviderFactory extends AbstractIndexProviderFactory<Toke
             InternalLog log,
             TokenHolders tokenHolders,
             JobScheduler scheduler,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer) {
         return create(
                 pageCache,
                 databaseLayout.databaseDirectory(),
@@ -71,7 +73,8 @@ public class TokenIndexProviderFactory extends AbstractIndexProviderFactory<Toke
                 readOnlyChecker,
                 recoveryCleanupWorkCollector,
                 databaseLayout,
-                contextFactory);
+                contextFactory,
+                pageCacheTracer);
     }
 
     @VisibleForTesting
@@ -84,10 +87,11 @@ public class TokenIndexProviderFactory extends AbstractIndexProviderFactory<Toke
             DatabaseReadOnlyChecker readOnlyChecker,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseLayout databaseLayout,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer) {
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider(storeDir);
         DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder(
-                        pageCache, fs, contextFactory, databaseLayout.getDatabaseName())
+                        pageCache, fs, contextFactory, pageCacheTracer, databaseLayout.getDatabaseName())
                 .withMonitors(monitors)
                 .withTag(monitorTag)
                 .withReadOnlyChecker(readOnlyChecker)

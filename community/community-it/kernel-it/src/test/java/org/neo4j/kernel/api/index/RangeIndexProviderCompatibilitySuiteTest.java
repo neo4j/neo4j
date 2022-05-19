@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 import java.nio.file.Path;
 import java.util.Optional;
@@ -64,6 +65,7 @@ class RangeIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderComp
                 readOnlyChecker,
                 recoveryCleanupWorkCollector,
                 NULL_CONTEXT_FACTORY,
+                NULL,
                 DEFAULT_DATABASE_NAME);
     }
 

@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -202,6 +203,6 @@ public class UniqueIndexRecoveryTest {
     private void flushAll() throws IOException {
         db.getDependencyResolver()
                 .resolveDependency(CheckPointerImpl.ForceOperation.class)
-                .flushAndForce(NULL_CONTEXT);
+                .flushAndForce(DatabaseFlushEvent.NULL, NULL_CONTEXT);
     }
 }

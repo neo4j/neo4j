@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
@@ -66,8 +67,8 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy {
     }
 
     @Override
-    public void force(CursorContext cursorContext) throws IOException {
-        getDelegate().force(cursorContext);
+    public void force(FileFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
+        getDelegate().force(flushEvent, cursorContext);
     }
 
     @Override

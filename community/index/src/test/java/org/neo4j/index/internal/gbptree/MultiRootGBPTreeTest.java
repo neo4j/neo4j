@@ -62,6 +62,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
@@ -91,6 +92,7 @@ class MultiRootGBPTreeTest {
 
     @BeforeEach
     void start() {
+        PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
         tree = new MultiRootGBPTree<>(
                 pageCache,
                 directory.file("tree"),
@@ -103,8 +105,9 @@ class MultiRootGBPTreeTest {
                 Sets.immutable.empty(),
                 "db",
                 "test multi-root tree",
-                new CursorContextFactory(PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY),
-                multipleRoots(rootKeyLayout, (int) kibiBytes(1)));
+                new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY),
+                multipleRoots(rootKeyLayout, (int) kibiBytes(1)),
+                pageCacheTracer);
         highestUsableSeed = layout.highestUsableSeed();
     }
 
@@ -223,7 +226,7 @@ class MultiRootGBPTreeTest {
                 if (random.nextInt(100) == 0) {
                     // Checkpoint
                     writeTasks.add(() -> {
-                        tree.checkpoint(NULL_CONTEXT);
+                        tree.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
                         return null;
                     });
                 } else {
@@ -327,7 +330,7 @@ class MultiRootGBPTreeTest {
         }));
         race.addContestant(throwing(() -> {
             Thread.sleep(200);
-            tree.checkpoint(NULL_CONTEXT);
+            tree.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }));
         race.goUnchecked();
 
@@ -408,7 +411,7 @@ class MultiRootGBPTreeTest {
         assertSeek(externalId2, seed2, count2);
 
         // when
-        tree.checkpoint(NULL_CONTEXT);
+        tree.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         stop();
         start();
 
@@ -424,6 +427,7 @@ class MultiRootGBPTreeTest {
 
         // when/then
         var wrongRootLayout = new SimpleLongLayout.Builder().build();
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         assertThatThrownBy(() -> new MultiRootGBPTree<>(
                         pageCache,
                         directory.file("tree"),
@@ -436,8 +440,9 @@ class MultiRootGBPTreeTest {
                         Sets.immutable.empty(),
                         "db",
                         "test multi-root tree",
-                        new CursorContextFactory(PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY),
-                        multipleRoots(wrongRootLayout, (int) kibiBytes(1))))
+                        new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY),
+                        multipleRoots(wrongRootLayout, (int) kibiBytes(1)),
+                        cacheTracer))
                 .isInstanceOf(MetadataMismatchException.class);
     }
 
@@ -448,6 +453,7 @@ class MultiRootGBPTreeTest {
 
         // when/then
         var wrongDataLayout = new SimpleLongLayout.Builder().build();
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         assertThatThrownBy(() -> new MultiRootGBPTree<>(
                         pageCache,
                         directory.file("tree"),
@@ -460,8 +466,9 @@ class MultiRootGBPTreeTest {
                         Sets.immutable.empty(),
                         "db",
                         "test multi-root tree",
-                        new CursorContextFactory(PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY),
-                        multipleRoots(rootKeyLayout, (int) kibiBytes(1))))
+                        new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY),
+                        multipleRoots(rootKeyLayout, (int) kibiBytes(1)),
+                        cacheTracer))
                 .isInstanceOf(MetadataMismatchException.class);
     }
 
@@ -473,6 +480,7 @@ class MultiRootGBPTreeTest {
 
         // when/then
         for (int i = 0; i < 2; i++) {
+            PageCacheTracer cacheTracer = PageCacheTracer.NULL;
             new MultiRootGBPTree<>(
                             pageCache,
                             file,
@@ -485,8 +493,9 @@ class MultiRootGBPTreeTest {
                             Sets.immutable.empty(),
                             "db",
                             "test multi-root tree",
-                            new CursorContextFactory(PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY),
-                            multipleRoots(rootKeyLayout, (int) kibiBytes(1)))
+                            new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY),
+                            multipleRoots(rootKeyLayout, (int) kibiBytes(1)),
+                            cacheTracer)
                     .close();
         }
     }

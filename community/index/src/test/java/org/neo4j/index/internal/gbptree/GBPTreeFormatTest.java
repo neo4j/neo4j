@@ -41,6 +41,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.test.FormatCompatibilityVerifier;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -270,7 +271,7 @@ public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
                     put(writer, key);
                 }
             }
-            tree.checkpoint(NULL_CONTEXT);
+            tree.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
     }
 

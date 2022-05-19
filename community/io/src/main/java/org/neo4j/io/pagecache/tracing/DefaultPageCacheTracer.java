@@ -60,10 +60,9 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
 
     private final boolean tracePageFileIndividually;
 
-    private final PageCacheFlushEvent flushEvent = new PageCacheFlushEvent();
     private final EvictionEvent evictionEvent = new PageCacheEvictionEvent();
     private final EvictionRunEvent evictionRunEvent = new DefaultEvictionRunEvent();
-    private final MajorFlushEvent majorFlushEvent = new DefaultPageCacheMajorFlushEvent();
+    private final DatabaseFlushEvent databaseFlushEvent = new DatabaseFlushEvent(new DefaultPageCacheFileFlushEvent());
 
     public DefaultPageCacheTracer() {
         this(false);
@@ -104,13 +103,18 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
-    public MajorFlushEvent beginFileFlush(PageSwapper swapper) {
-        return majorFlushEvent;
+    public FileFlushEvent beginFileFlush(PageSwapper swapper) {
+        return new DefaultPageCacheFileFlushEvent();
     }
 
     @Override
-    public MajorFlushEvent beginCacheFlush() {
-        return majorFlushEvent;
+    public FileFlushEvent beginFileFlush() {
+        return new DefaultPageCacheFileFlushEvent();
+    }
+
+    @Override
+    public DatabaseFlushEvent beginDatabaseFlush() {
+        return databaseFlushEvent;
     }
 
     @Override
@@ -195,11 +199,16 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
 
     @Override
     public double usageRatio() {
-        long pages = maxPages.get();
+        long pages = maxPages();
         if (pages == 0) {
             return 0;
         }
         return Math.max(0, (faults.sum() - evictions.sum()) / (double) pages);
+    }
+
+    @Override
+    public long maxPages() {
+        return maxPages.get();
     }
 
     @Override
@@ -340,11 +349,16 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
 
     private class PageCacheFlushEvent implements FlushEvent {
         private PageFileSwapperTracer swapperTracer;
+        private long pagesFlushed;
 
         @Override
         public void addBytesWritten(long bytes) {
             bytesWritten.add(bytes);
             swapperTracer.bytesWritten(bytes);
+        }
+
+        public void reset() {
+            pagesFlushed = 0;
         }
 
         @Override
@@ -355,6 +369,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
 
         @Override
         public void addPagesFlushed(int pageCount) {
+            pagesFlushed += pageCount;
             flushes.add(pageCount);
             swapperTracer.flushes(pageCount);
         }
@@ -364,38 +379,9 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
             merges.add(pagesMerged);
             swapperTracer.merges(pagesMerged);
         }
-    }
 
-    private class PageCacheEvictionEvent implements EvictionEvent {
-        private PageFileSwapperTracer swapperTracer;
-
-        @Override
-        public void setFilePageId(long filePageId) {}
-
-        @Override
-        public void setSwapper(PageSwapper swapper) {
-            this.swapperTracer = swapper.fileSwapperTracer();
-        }
-
-        @Override
-        public FlushEvent beginFlush(
-                long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator) {
-            flushEvent.swapperTracer = swapper.fileSwapperTracer();
-            return flushEvent;
-        }
-
-        @Override
-        public void setException(IOException exception) {
-            evictionExceptions.increment();
-            swapperTracer.evictionExceptions(1);
-        }
-
-        @Override
-        public void close() {
-            evictions.increment();
-            if (swapperTracer != null) {
-                swapperTracer.evictions(1);
-            }
+        public long getPagesFlushed() {
+            return pagesFlushed;
         }
     }
 
@@ -413,7 +399,16 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
         public void close() {}
     }
 
-    private class DefaultPageCacheMajorFlushEvent implements MajorFlushEvent {
+    public class DefaultPageCacheFileFlushEvent implements FileFlushEvent {
+
+        private final PageCacheFlushEvent flushEvent = new PageCacheFlushEvent();
+        private long ioPerformed;
+
+        @Override
+        public void reset() {
+            ioPerformed = 0;
+            flushEvent.reset();
+        }
 
         @Override
         public FlushEvent beginFlush(
@@ -449,10 +444,56 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
 
         @Override
         public void reportIO(int completedIOs) {
+            ioPerformed += completedIOs;
             iopqPerformed.add(completedIOs);
         }
 
         @Override
+        public long ioPerformed() {
+            return ioPerformed;
+        }
+
+        @Override
+        public long pagesFlushed() {
+            return flushEvent.getPagesFlushed();
+        }
+
+        @Override
         public void close() {}
+    }
+
+    private class PageCacheEvictionEvent implements EvictionEvent {
+
+        private PageFileSwapperTracer swapperTracer;
+        private final PageCacheFlushEvent flushEvent = new PageCacheFlushEvent();
+
+        @Override
+        public void setFilePageId(long filePageId) {}
+
+        @Override
+        public void setSwapper(PageSwapper swapper) {
+            this.swapperTracer = swapper.fileSwapperTracer();
+        }
+
+        @Override
+        public FlushEvent beginFlush(
+                long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator) {
+            flushEvent.swapperTracer = swapper.fileSwapperTracer();
+            return flushEvent;
+        }
+
+        @Override
+        public void setException(IOException exception) {
+            evictionExceptions.increment();
+            swapperTracer.evictionExceptions(1);
+        }
+
+        @Override
+        public void close() {
+            evictions.increment();
+            if (swapperTracer != null) {
+                swapperTracer.evictions(1);
+            }
+        }
     }
 }

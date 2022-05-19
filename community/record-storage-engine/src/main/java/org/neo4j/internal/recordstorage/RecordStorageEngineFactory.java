@@ -289,7 +289,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             DatabaseReadOnlyChecker readOnlyChecker,
             LogTailMetadata logTailMetadata,
             MemoryTracker memoryTracker,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer) {
         return new RecordStorageEngine(
                 convert(databaseLayout),
                 config,
@@ -311,7 +312,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 logTailMetadata,
                 new CommandLockVerification.Factory.RealFactory(config),
                 LockVerificationMonitor.Factory.defaultFactory(config),
-                contextFactory);
+                contextFactory,
+                pageCacheTracer);
     }
 
     @Override
@@ -350,18 +352,20 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             PageCache pageCache,
             DatabaseReadOnlyChecker readOnlyChecker,
             CursorContextFactory contextFactory,
-            LogTailMetadata logTailMetadata) {
+            LogTailMetadata logTailMetadata,
+            PageCacheTracer pageCacheTracer) {
         RecordDatabaseLayout databaseLayout = convert(layout);
         RecordFormats recordFormats = selectForStoreOrConfigForNewDbs(
                 config, databaseLayout, fs, pageCache, NullLogProvider.getInstance(), contextFactory);
         var idGeneratorFactory = readOnlyChecker.isReadOnly()
                 ? new ScanOnOpenReadOnlyIdGeneratorFactory()
-                : new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName());
+                : new DefaultIdGeneratorFactory(fs, immediate(), pageCacheTracer, databaseLayout.getDatabaseName());
         return new StoreFactory(
                         databaseLayout,
                         config,
                         idGeneratorFactory,
                         pageCache,
+                        pageCacheTracer,
                         fs,
                         recordFormats,
                         NullLogProvider.getInstance(),
@@ -388,11 +392,19 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             Config config,
             PageCache pageCache,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             LegacyStoreId storeId,
             UUID externalStoreId)
             throws IOException {
         try (var metadataProvider = transactionMetaDataStore(
-                        fs, databaseLayout, config, pageCache, writable(), contextFactory, EMPTY_LOG_TAIL);
+                        fs,
+                        databaseLayout,
+                        config,
+                        pageCache,
+                        writable(),
+                        contextFactory,
+                        EMPTY_LOG_TAIL,
+                        pageCacheTracer);
                 var cursorContext = contextFactory.create("resetMetadata")) {
             metadataProvider.regenerateMetadata(storeId, externalStoreId, cursorContext);
         }
@@ -405,6 +417,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             Config config,
             PageCache pageCache,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             StoreId storeId,
             UUID externalStoreId)
             throws IOException {
@@ -414,7 +427,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
         long version = StoreVersion.versionStringToLong(recordFormat.storeVersion());
         LegacyStoreId legacyStoreId = new LegacyStoreId(storeId.getCreationTime(), storeId.getRandom(), version);
 
-        resetMetadata(fs, databaseLayout, config, pageCache, contextFactory, legacyStoreId, externalStoreId);
+        resetMetadata(
+                fs, databaseLayout, config, pageCache, contextFactory, pageCacheTracer, legacyStoreId, externalStoreId);
     }
 
     @Override
@@ -433,14 +447,16 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             LogService logService,
             String recordFormats,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker) {
         RecordDatabaseLayout databaseLayout = convert(layout);
         RecordFormats formats = selectForVersion(recordFormats);
         StoreFactory factory = new StoreFactory(
                 databaseLayout,
                 config,
-                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()),
+                new DefaultIdGeneratorFactory(fs, immediate(), pageCacheTracer, databaseLayout.getDatabaseName()),
                 pageCache,
+                pageCacheTracer,
                 fs,
                 formats,
                 logService.getInternalLogProvider(),
@@ -462,6 +478,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     public List<SchemaRule44> load44SchemaRules(
             FileSystemAbstraction fs,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             Config config,
             DatabaseLayout layout,
             CursorContextFactory contextFactory,
@@ -483,6 +500,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 config,
                 idGeneratorFactory,
                 pageCache,
+                pageCacheTracer,
                 fs,
                 NullLogProvider.getInstance(),
                 contextFactory,
@@ -504,6 +522,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                     SchemaIdType.SCHEMA,
                     idGeneratorFactory,
                     pageCache,
+                    pageCacheTracer,
                     contextFactory,
                     NullLogProvider.getInstance(),
                     recordFormats,
@@ -521,6 +540,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     public List<SchemaRule> loadSchemaRules(
             FileSystemAbstraction fs,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             Config config,
             DatabaseLayout layout,
             boolean lenient,
@@ -532,6 +552,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 config,
                 new ScanOnOpenReadOnlyIdGeneratorFactory(),
                 pageCache,
+                pageCacheTracer,
                 fs,
                 NullLogProvider.getInstance(),
                 contextFactory,
@@ -561,6 +582,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             DatabaseLayout layout,
             Config config,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             boolean lenient,
             CursorContextFactory contextFactory) {
         RecordDatabaseLayout databaseLayout = convert(layout);
@@ -569,6 +591,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 config,
                 new ScanOnOpenReadOnlyIdGeneratorFactory(),
                 pageCache,
+                pageCacheTracer,
                 fs,
                 NullLogProvider.getInstance(),
                 contextFactory,
@@ -716,6 +739,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             DatabaseLayout databaseLayout,
             FileSystemAbstraction fileSystem,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             Config config,
             MemoryTracker memoryTracker,
             ReadBehaviour readBehaviour,
@@ -727,6 +751,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                         config,
                         new ScanOnOpenReadOnlyIdGeneratorFactory(),
                         pageCache,
+                        pageCacheTracer,
                         fileSystem,
                         NullLogProvider.getInstance(),
                         contextFactory,
@@ -796,6 +821,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                         config,
                         idGeneratorFactory,
                         pageCache,
+                        PageCacheTracer.NULL,
                         fs,
                         recordFormats,
                         NullLogProvider.getInstance(),
@@ -823,15 +849,17 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             OutputStream progressOutput,
             boolean verbose,
             ConsistencyFlags flags,
-            CursorContextFactory contextFactory)
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer)
             throws ConsistencyCheckIncompleteException {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory(
-                fileSystem, RecoveryCleanupWorkCollector.ignore(), layout.getDatabaseName());
+                fileSystem, RecoveryCleanupWorkCollector.ignore(), pageCacheTracer, layout.getDatabaseName());
         try (NeoStores neoStores = new StoreFactory(
                         layout,
                         config,
                         idGeneratorFactory,
                         pageCache,
+                        pageCacheTracer,
                         fileSystem,
                         NullLogProvider.getInstance(),
                         contextFactory,
@@ -859,7 +887,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                     flags,
                     EntityBasedMemoryLimiter.defaultWithLeeway(memoryLimitLeewayFactor),
                     EmptyMemoryTracker.INSTANCE,
-                    contextFactory)) {
+                    contextFactory,
+                    pageCacheTracer)) {
                 checker.check();
             }
         } catch (IOException e) {

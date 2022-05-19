@@ -30,6 +30,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.storageengine.api.MetadataProvider;
@@ -44,6 +45,7 @@ class LogsMigrator {
     private final Config config;
     private final CursorContextFactory contextFactory;
     private final Supplier<LogTailMetadata> logTailSupplier;
+    private final PageCacheTracer pageCacheTracer;
 
     LogsMigrator(
             FileSystemAbstraction fs,
@@ -52,7 +54,8 @@ class LogsMigrator {
             PageCache pageCache,
             Config config,
             CursorContextFactory contextFactory,
-            Supplier<LogTailMetadata> logTailSupplier) {
+            Supplier<LogTailMetadata> logTailSupplier,
+            PageCacheTracer pageCacheTracer) {
         this.fs = fs;
         this.storageEngineFactory = storageEngineFactory;
         this.databaseLayout = databaseLayout;
@@ -60,6 +63,7 @@ class LogsMigrator {
         this.config = config;
         this.contextFactory = contextFactory;
         this.logTailSupplier = logTailSupplier;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     CheckResult assertCleanlyShutDown() {
@@ -151,6 +155,7 @@ class LogsMigrator {
                 pageCache,
                 DatabaseReadOnlyChecker.readOnly(),
                 contextFactory,
-                logTailSupplier.get());
+                logTailSupplier.get(),
+                pageCacheTracer);
     }
 }

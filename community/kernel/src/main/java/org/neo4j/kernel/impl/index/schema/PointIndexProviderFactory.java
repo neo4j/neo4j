@@ -30,6 +30,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.monitoring.Monitors;
@@ -61,7 +62,8 @@ public class PointIndexProviderFactory extends AbstractIndexProviderFactory<Poin
             InternalLog log,
             TokenHolders tokenHolders,
             JobScheduler scheduler,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer) {
         return create(
                 pageCache,
                 databaseLayout.databaseDirectory(),
@@ -72,6 +74,7 @@ public class PointIndexProviderFactory extends AbstractIndexProviderFactory<Poin
                 readOnlyChecker,
                 recoveryCleanupWorkCollector,
                 contextFactory,
+                pageCacheTracer,
                 databaseLayout.getDatabaseName());
     }
 
@@ -86,10 +89,11 @@ public class PointIndexProviderFactory extends AbstractIndexProviderFactory<Poin
             DatabaseReadOnlyChecker readOnlyChecker,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             String databaseName) {
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider(storeDir);
         DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder(
-                        pageCache, fs, contextFactory, databaseName)
+                        pageCache, fs, contextFactory, pageCacheTracer, databaseName)
                 .withMonitors(monitors)
                 .withTag(monitorTag)
                 .withReadOnlyChecker(readOnlyChecker)

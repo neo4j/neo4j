@@ -39,6 +39,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.monitoring.Monitors;
 
@@ -54,6 +55,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
     private final String databaseName;
     private final CursorContextFactory contextFactory;
     private final ImmutableSet<OpenOption> openOptions;
+    final PageCacheTracer pageCacheTracer;
 
     protected GBPTree<KEY, NullValue> tree;
 
@@ -70,6 +72,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
         this.readOnlyChecker = databaseIndexContext.readOnlyChecker;
         this.databaseName = databaseIndexContext.databaseName;
         this.contextFactory = databaseIndexContext.contextFactory;
+        this.pageCacheTracer = databaseIndexContext.pageCacheTracer;
         this.indexFiles = indexFiles;
         this.layout = layout;
         this.descriptor = descriptor;
@@ -92,7 +95,8 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
                 openOptions,
                 databaseName,
                 descriptor.getName(),
-                contextFactory);
+                contextFactory,
+                pageCacheTracer);
         afterTreeInstantiation(tree);
     }
 

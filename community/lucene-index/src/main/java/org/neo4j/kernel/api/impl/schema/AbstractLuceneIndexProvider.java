@@ -38,6 +38,7 @@ import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.index.DroppableIndex;
 import org.neo4j.kernel.api.impl.index.DroppableLuceneIndex;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
@@ -177,12 +178,14 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider {
     public StoreMigrationParticipant storeMigrationParticipant(
             final FileSystemAbstraction fs,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             StorageEngineFactory storageEngineFactory,
             CursorContextFactory contextFactory) {
         return new SchemaIndexMigrator(
                 getProviderDescriptor().name(),
                 fs,
                 pageCache,
+                pageCacheTracer,
                 this.directoryStructure(),
                 storageEngineFactory,
                 contextFactory);

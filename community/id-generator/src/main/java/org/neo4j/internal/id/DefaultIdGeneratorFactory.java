@@ -39,6 +39,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
     private final Map<IdType, IndexedIdGenerator> generators = new HashMap<>();
@@ -46,6 +47,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     protected final boolean allowLargeIdCaches;
     private final String databaseName;
+    private final PageCacheTracer pageCacheTracer;
 
     /**
      * By default doesn't allow large ID caches.
@@ -54,8 +56,11 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
      * @param recoveryCleanupWorkCollector {@link RecoveryCleanupWorkCollector} for cleanup on starting the id generators.
      */
     public DefaultIdGeneratorFactory(
-            FileSystemAbstraction fs, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, String databaseName) {
-        this(fs, recoveryCleanupWorkCollector, false, databaseName);
+            FileSystemAbstraction fs,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            PageCacheTracer pageCacheTracer,
+            String databaseName) {
+        this(fs, recoveryCleanupWorkCollector, false, pageCacheTracer, databaseName);
     }
 
     /**
@@ -70,10 +75,12 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
             FileSystemAbstraction fs,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             boolean allowLargeIdCaches,
+            PageCacheTracer pageCacheTracer,
             String databaseName) {
         this.fs = fs;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.allowLargeIdCaches = allowLargeIdCaches;
+        this.pageCacheTracer = pageCacheTracer;
         this.databaseName = databaseName;
     }
 
@@ -137,7 +144,8 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
                 contextFactory,
                 defaultIdMonitor(fs, fileName, config),
                 openOptions,
-                slotDistribution);
+                slotDistribution,
+                pageCacheTracer);
     }
 
     @Override
@@ -179,7 +187,8 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
                 contextFactory,
                 defaultIdMonitor(fs, fileName, config),
                 openOptions,
-                slotDistribution);
+                slotDistribution,
+                pageCacheTracer);
         generators.put(idType, generator);
         return generator;
     }

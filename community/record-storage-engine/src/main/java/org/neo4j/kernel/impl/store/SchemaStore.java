@@ -42,6 +42,7 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -108,6 +109,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord, IntStoreHeade
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             InternalLogProvider logProvider,
             PropertyStore propertyStore,
             RecordFormats recordFormats,
@@ -121,6 +123,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord, IntStoreHeade
                 idType,
                 idGeneratorFactory,
                 pageCache,
+                pageCacheTracer,
                 logProvider,
                 TYPE_DESCRIPTOR,
                 recordFormats.schema(),

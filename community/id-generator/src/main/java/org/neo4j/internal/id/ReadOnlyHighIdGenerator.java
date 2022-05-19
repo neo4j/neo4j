@@ -21,6 +21,7 @@ package org.neo4j.internal.id;
 
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 
 /**
  * An {@link IdGenerator} that knows only about a highId and is read-only
@@ -81,7 +82,7 @@ class ReadOnlyHighIdGenerator implements IdGenerator {
     }
 
     @Override
-    public void checkpoint(CursorContext cursorContext) {
+    public void checkpoint(FileFlushEvent flushEvent, CursorContext cursorContext) {
         // no-op
     }
 

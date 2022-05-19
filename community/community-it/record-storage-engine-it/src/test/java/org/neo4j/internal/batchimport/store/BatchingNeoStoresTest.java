@@ -66,6 +66,8 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
@@ -362,9 +364,10 @@ class BatchingNeoStoresTest {
                 1_000,
                 NullLogProvider.getInstance(),
                 CONTEXT_FACTORY,
+                PageCacheTracer.NULL,
                 openOptions)) {
             countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
-            countsStore.checkpoint(NULL_CONTEXT);
+            countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
 
         // when
@@ -418,6 +421,7 @@ class BatchingNeoStoresTest {
                 1_000,
                 NullLogProvider.getInstance(),
                 CONTEXT_FACTORY,
+                PageCacheTracer.NULL,
                 openOptions)) {
             assertEquals(10, countsStore.nodeCount(1, NULL_CONTEXT));
             assertEquals(20, countsStore.nodeCount(2, NULL_CONTEXT));
@@ -498,7 +502,7 @@ class BatchingNeoStoresTest {
                     indexConfigCompleter,
                     LockService.NO_LOCK_SERVICE,
                     new DatabaseHealth(PanicEventGenerator.NO_OP, nullLog),
-                    new DefaultIdGeneratorFactory(fileSystem, immediate(), DEFAULT_DATABASE_NAME),
+                    new DefaultIdGeneratorFactory(fileSystem, immediate(), PageCacheTracer.NULL, DEFAULT_DATABASE_NAME),
                     recoveryCleanupWorkCollector,
                     true,
                     INSTANCE,
@@ -506,7 +510,8 @@ class BatchingNeoStoresTest {
                     EMPTY_LOG_TAIL,
                     CommandLockVerification.Factory.IGNORE,
                     LockVerificationMonitor.Factory.IGNORE,
-                    CONTEXT_FACTORY));
+                    CONTEXT_FACTORY,
+                    PageCacheTracer.NULL));
             // Create the relationship type token
             TxState txState = new TxState();
             NeoStores neoStores = storageEngine.testAccessNeoStores();
@@ -528,7 +533,7 @@ class BatchingNeoStoresTest {
                 txState.relationshipDoCreate(
                         commandCreationContext.reserveRelationship(node1), relTypeId, node1, node2);
                 apply(txState, commandCreationContext, storageEngine, storeCursors);
-                neoStores.flush(NULL_CONTEXT);
+                neoStores.flush(DatabaseFlushEvent.NULL, NULL_CONTEXT);
             }
         }
     }

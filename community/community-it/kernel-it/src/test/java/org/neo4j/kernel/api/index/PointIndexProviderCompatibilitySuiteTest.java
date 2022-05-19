@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 import java.nio.file.Path;
 import java.util.Optional;
@@ -37,7 +38,6 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.index.schema.PointIndexProviderFactory;
@@ -66,6 +66,7 @@ class PointIndexProviderCompatibilitySuiteTest extends SpecialisedIndexProviderC
         Mockito.when(databaseIdRepository.getByName(DEFAULT_DATABASE_NAME)).thenReturn(Optional.of(defaultDatabaseId));
         var readOnlyDatabases = new ReadOnlyDatabases(new ConfigBasedLookupFactory(config, databaseIdRepository));
         var readOnlyChecker = readOnlyDatabases.forDatabase(defaultDatabaseId);
+        var cacheTracer = NULL;
         return PointIndexProviderFactory.create(
                 pageCache,
                 graphDbDir,
@@ -75,7 +76,8 @@ class PointIndexProviderCompatibilitySuiteTest extends SpecialisedIndexProviderC
                 config,
                 readOnlyChecker,
                 recoveryCleanupWorkCollector,
-                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                new CursorContextFactory(cacheTracer, EMPTY),
+                cacheTracer,
                 DEFAULT_DATABASE_NAME);
     }
 }

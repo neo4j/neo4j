@@ -27,6 +27,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
@@ -51,7 +52,8 @@ public abstract class AbstractIndexProviderFactory<T extends IndexProvider> {
             DatabaseLayout databaseLayout,
             TokenHolders tokenHolders,
             JobScheduler scheduler,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer) {
         if (OperationalMode.SINGLE != dbmsInfo.operationalMode) {
             // if running as part of cluster indexes should be writable to allow catchup process to accept transactions
             readOnlyChecker = DatabaseReadOnlyChecker.writable();
@@ -71,7 +73,8 @@ public abstract class AbstractIndexProviderFactory<T extends IndexProvider> {
                 log,
                 tokenHolders,
                 scheduler,
-                contextFactory);
+                contextFactory,
+                pageCacheTracer);
     }
 
     protected abstract Class<?> loggingClass();
@@ -90,5 +93,6 @@ public abstract class AbstractIndexProviderFactory<T extends IndexProvider> {
             InternalLog log,
             TokenHolders tokenHolders,
             JobScheduler scheduler,
-            CursorContextFactory contextFactory);
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer);
 }

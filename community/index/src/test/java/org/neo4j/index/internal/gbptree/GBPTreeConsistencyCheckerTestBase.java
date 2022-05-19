@@ -45,6 +45,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -415,7 +416,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                     writer.remove(layout.key(i));
                 }
             }
-            index.checkpoint(NULL_CONTEXT);
+            index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
 
         // When tree is closed we will overwrite treeState with in memory state so we need to open tree in special mode
@@ -449,7 +450,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                     keyCount++;
                 }
             }
-            index.checkpoint(NULL_CONTEXT);
+            index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
 
         // When tree is closed we will overwrite treeState with in memory state so we need to open tree in special mode
@@ -481,7 +482,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                     keyCount++;
                 }
             }
-            index.checkpoint(NULL_CONTEXT);
+            index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
 
         // When tree is closed we will overwrite treeState with in memory state so we need to open tree in special mode
@@ -516,10 +517,10 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                     keyCount++;
                 }
             }
-            index.checkpoint(NULL_CONTEXT);
+            index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
 
-        // When tree is closed we will overwrite treeState with in memory state so we need to open tree in special mode
+        // When tree is closed we will overwrite treeState with in memory state, so we need to open tree in special mode
         // for our state corruption to persist.
         try (GBPTree<KEY, VALUE> index =
                 index().with(immutable.with(NO_FLUSH_ON_CLOSE)).build()) {

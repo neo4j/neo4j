@@ -42,6 +42,21 @@ public interface CheckPointTracer extends CheckpointCounters {
         public long lastCheckpointTimeMillis() {
             return 0;
         }
+
+        @Override
+        public long lastCheckpointPagesFlushed() {
+            return 0;
+        }
+
+        @Override
+        public long lastCheckpointIOs() {
+            return 0;
+        }
+
+        @Override
+        public long lastCheckpointIOLimit() {
+            return 0;
+        }
     };
 
     /**

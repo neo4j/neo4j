@@ -72,6 +72,7 @@ public abstract class IndexTestUtil<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE
     protected PageCache pageCache;
 
     protected CursorContextFactory contextFactory;
+    protected DefaultPageCacheTracer pageCacheTracer;
 
     @Inject
     protected RandomSupport random;
@@ -85,7 +86,8 @@ public abstract class IndexTestUtil<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE
 
     @BeforeEach
     void setup() {
-        contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        pageCacheTracer = new DefaultPageCacheTracer();
+        contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
         indexDescriptor = indexDescriptor();
         layout = layout();
         this.indexFiles = createIndexFiles(fs, directory, indexDescriptor);

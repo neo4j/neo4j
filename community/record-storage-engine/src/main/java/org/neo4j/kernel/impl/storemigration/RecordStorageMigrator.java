@@ -198,6 +198,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                     forceBtreeIndexesToRange || SYSTEM_DATABASE_NAME.equals(directoryLayoutArg.getDatabaseName()),
                     config,
                     pageCache,
+                    pageCacheTracer,
                     fileSystem,
                     contextFactory);
 
@@ -232,8 +233,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             if (need50Migration(oldFormat)) {
                 schemaStoreMigration.copyFilesInPreparationForMigration(fileSystem, directoryLayout, migrationLayout);
 
-                IdGeneratorFactory idGeneratorFactory =
-                        new DefaultIdGeneratorFactory(fileSystem, immediate(), migrationLayout.getDatabaseName());
+                IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory(
+                        fileSystem, immediate(), pageCacheTracer, migrationLayout.getDatabaseName());
                 IdGeneratorFactory srcIdGeneratorFactory = new ScanOnOpenReadOnlyIdGeneratorFactory();
 
                 StoreFactory dstFactory = createStoreFactory(migrationLayout, newFormat, idGeneratorFactory);
@@ -288,7 +289,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                     var dstTokensHolders = createTokenHolders(dstStore, dstCursors);
 
                     schemaStoreMigration.migrate(dstAccess, dstTokensHolders);
-                    dstStore.flush(cursorContext);
+
+                    try (var databaseFlushEvent = pageCacheTracer.beginDatabaseFlush()) {
+                        dstStore.flush(databaseFlushEvent, cursorContext);
+                    }
                 }
             } else if (requiresPropertyMigration) {
                 // Migrate schema store when changing format family
@@ -440,6 +444,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                         config,
                         new ScanOnOpenReadOnlyIdGeneratorFactory(),
                         pageCache,
+                        pageCacheTracer,
                         fileSystem,
                         format,
                         NullLogProvider.getInstance(),
@@ -487,7 +492,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
         } else {
             // Migrate all token stores and dynamic node label ids, keeping their ids intact
             DirectRecordStoreMigrator migrator =
-                    new DirectRecordStoreMigrator(pageCache, fileSystem, config, contextFactory);
+                    new DirectRecordStoreMigrator(pageCache, fileSystem, config, contextFactory, pageCacheTracer);
 
             StoreType[] storesToMigrate = {
                 StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
@@ -515,14 +520,15 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
         createStoreFactory(
                         migrationStrcuture,
                         newFormat,
-                        new ScanOnOpenOverwritingIdGeneratorFactory(fileSystem, migrationStrcuture.getDatabaseName()))
+                        new ScanOnOpenOverwritingIdGeneratorFactory(
+                                fileSystem, pageCacheTracer, migrationStrcuture.getDatabaseName()))
                 .openAllNeoStores()
                 .close();
     }
 
     private void createStore(RecordDatabaseLayout migrationDirectoryStructure, RecordFormats newFormat) {
-        IdGeneratorFactory idGeneratorFactory =
-                new DefaultIdGeneratorFactory(fileSystem, immediate(), migrationDirectoryStructure.getDatabaseName());
+        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory(
+                fileSystem, immediate(), pageCacheTracer, migrationDirectoryStructure.getDatabaseName());
         createStoreFactory(migrationDirectoryStructure, newFormat, idGeneratorFactory)
                 .openAllNeoStores(true)
                 .close();
@@ -535,6 +541,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                 config,
                 idGeneratorFactory,
                 pageCache,
+                pageCacheTracer,
                 fileSystem,
                 formats,
                 NullLogProvider.getInstance(),
@@ -666,7 +673,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
         StoreFactory dstFactory = createStoreFactory(
                 migrationLayout,
                 newFormat,
-                new ScanOnOpenOverwritingIdGeneratorFactory(fileSystem, migrationLayout.getDatabaseName()));
+                new ScanOnOpenOverwritingIdGeneratorFactory(
+                        fileSystem, pageCacheTracer, migrationLayout.getDatabaseName()));
 
         // Token stores
         try (NeoStores dstStore = dstFactory.openNeoStores(
@@ -687,7 +695,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                 schemaStoreMigration.migrate(dstAccess, dstTokensHolders);
             }
 
-            dstStore.flush(cursorContext);
+            try (var databaseFlushEvent = pageCacheTracer.beginDatabaseFlush()) {
+                dstStore.flush(databaseFlushEvent, cursorContext);
+            }
         }
     }
 

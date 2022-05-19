@@ -125,6 +125,7 @@ public class ParallelBatchImporter implements BatchImporter {
                         monitor,
                         contextFactory,
                         indexImporterFactory,
+                        pageCacheTracer,
                         memoryTracker)) {
             store.createNew();
             logic.initialize(input);

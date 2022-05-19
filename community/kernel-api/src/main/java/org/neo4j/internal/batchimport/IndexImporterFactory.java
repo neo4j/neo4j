@@ -28,6 +28,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 /**
  * Used by the {@link BatchImporter} to get an instance of {@link IndexImporter} to which it can publish index updates.
@@ -39,7 +40,9 @@ public interface IndexImporterFactory {
             FileSystemAbstraction fs,
             PageCache pageCache,
             CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
             ImmutableSet<OpenOption> openOptions);
 
-    IndexImporterFactory EMPTY = (descriptor, layout, fs, pageCache, cursorTracer, openOptions) -> EMPTY_IMPORTER;
+    IndexImporterFactory EMPTY =
+            (descriptor, layout, fs, pageCache, contextFactory, pageCacheTracer, openOptions) -> EMPTY_IMPORTER;
 }
