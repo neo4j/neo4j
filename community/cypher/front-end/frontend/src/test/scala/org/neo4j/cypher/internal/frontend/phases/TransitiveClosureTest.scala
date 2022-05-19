@@ -144,4 +144,25 @@ class TransitiveClosureTest extends CypherFunSuite with AstConstructionTestSuppo
   test("MATCH (a)-->(b) WHERE a.prop = b.prop AND EXISTS {MATCH (a) WHERE a.prop = 42}") {
     assertNotRewritten("MATCH (a)-->(b) WHERE a.prop = b.prop AND EXISTS {MATCH (a) WHERE a.prop = 42} RETURN a")
   }
+
+  //Test for circular rewrites
+  test("MATCH (n) WHERE (n:L) AND n.p = (n.p = $x) RETURN n") {
+    assertNotRewritten(
+      "MATCH (n) WHERE (n:L) AND n.p = (n.p = $x) RETURN n"
+    )
+  }
+
+  //Test for circular rewrites
+  test("MATCH (n) WHERE (n:L) AND n.p = (n.p = n.p) RETURN n") {
+    assertNotRewritten(
+      "MATCH (n) WHERE (n:L) AND n.p = (n.p = n.p) RETURN n"
+    )
+  }
+
+  //Test for circular rewrites
+  test("MATCH (n) WHERE (n:L) AND n.p = (n.p = (n.p = $x)) RETURN n") {
+    assertNotRewritten(
+      "MATCH (n)-->(a) WHERE (n:L) AND n.p = (n.p = (a.p = n.p)) RETURN n"
+    )
+  }
 }
