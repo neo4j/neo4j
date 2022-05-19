@@ -979,6 +979,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     new TestPlanBuilder()
       .produceResults("x", "y")
       .filter("x.foo > 42", "true <> false")
+      .filter("CoerceToPredicate(x.foo)")
       .argument()
       .build()
   )

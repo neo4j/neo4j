@@ -32,4 +32,9 @@ case class CoerceToPredicate(inner: Expression) extends BooleanExpression with S
   }
 
   override def position: InputPosition = InputPosition.NONE
+
+  // We are breaking the implicit assumption that every ASTNode has a position as second parameter list.
+  // That is why, we need to adjust the dup method's behaviour
+  override def dup(children: Seq[AnyRef]): this.type =
+    CoerceToPredicate(children.head.asInstanceOf[Expression]).asInstanceOf[this.type]
 }

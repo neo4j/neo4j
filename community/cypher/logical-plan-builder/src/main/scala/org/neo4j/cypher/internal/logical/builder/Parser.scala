@@ -25,12 +25,16 @@ import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
+import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Rewriter
@@ -69,9 +73,15 @@ object Parser {
     case a: ASTNode => a.dup(a.treeChildren.toSeq :+ AbstractLogicalPlanBuilder.pos)
   })
 
+  val replaceWrongFunctionInvocation: Rewriter = topDown(Rewriter.lift {
+    case FunctionInvocation(Namespace(List()), FunctionName("CoerceToPredicate"), _, Seq(expression)) =>
+      CoerceToPredicate(expression)
+  })
+
   def cleanup[T <: ASTNode](in: T): T = inSequence(
     injectCachedProperties,
     invalidateInputPositions,
+    replaceWrongFunctionInvocation,
     flattenBooleanOperators, // It is otherwise impossible to create instances of Ands / Ors
     LabelExpressionPredicateNormalizer.instance
   )(in).asInstanceOf[T]
