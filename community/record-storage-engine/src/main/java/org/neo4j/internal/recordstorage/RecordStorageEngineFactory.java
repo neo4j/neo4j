@@ -850,7 +850,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             boolean verbose,
             ConsistencyFlags flags,
             CursorContextFactory contextFactory,
-            PageCacheTracer pageCacheTracer)
+            PageCacheTracer pageCacheTracer,
+            LogTailMetadata logTailMetadata)
             throws ConsistencyCheckIncompleteException {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory(
                 fileSystem, RecoveryCleanupWorkCollector.ignore(), pageCacheTracer, layout.getDatabaseName());
@@ -864,7 +865,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                         NullLogProvider.getInstance(),
                         contextFactory,
                         readOnly(),
-                        EMPTY_LOG_TAIL)
+                        logTailMetadata)
                 .openAllNeoStores()) {
             neoStores.start(CursorContext.NULL_CONTEXT);
             ProgressMonitorFactory progressMonitorFactory = progressOutput != null

@@ -420,6 +420,7 @@ public interface StorageEngineFactory {
      * @param flags which parts of the store/indexes to check.
      * @param contextFactory underlying page cursor context factory.
      * @param pageCacheTracer underlying page cache tracer
+     * @param logTailMetadata meta data read from the tx log.
      * @throws ConsistencyCheckIncompleteException on failure doing the consistency check.
      */
     void consistencyCheck(
@@ -436,7 +437,8 @@ public interface StorageEngineFactory {
             boolean verbose,
             ConsistencyFlags flags,
             CursorContextFactory contextFactory,
-            PageCacheTracer pageCacheTracer)
+            PageCacheTracer pageCacheTracer,
+            LogTailMetadata logTailMetadata)
             throws ConsistencyCheckIncompleteException;
 
     /**
