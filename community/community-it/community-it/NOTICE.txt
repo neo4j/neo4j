@@ -178,6 +178,9 @@ MIT License
   jersey-inject-hk2
   SLF4J API Module
 
+Mozilla Public License, Version 2.0
+  kiama
+
 Unlicense
   jersey-container-servlet
   jersey-container-servlet-core

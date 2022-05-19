@@ -420,6 +420,9 @@ MIT License
   xmlhttprequest
   yargs
 
+Mozilla Public License, Version 2.0
+  kiama
+
 SIL OFL 1.1
   Font Awesome
   Inconsolata Font

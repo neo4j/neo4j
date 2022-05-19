@@ -110,6 +110,9 @@ GNU General Public License, version 2 with the Classpath Exception
 MIT License
   SLF4J API Module
 
+Mozilla Public License, Version 2.0
+  kiama
+
 Dependencies with multiple licenses
 -----------------------------------
 

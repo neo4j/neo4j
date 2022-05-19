@@ -2,16 +2,22 @@ Neo4j
 Copyright © 2002-2018 Neo4j Sweden AB (referred to in this notice as "Neo4j")
 [http://neo4j.com]
 
-This product includes software ("Software") developed and owned by Neo4j.
+This product includes software ("Software") developed by Neo4j.
 
-The Software is subject to the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
-Version 3 (http://www.fsf.org/licensing/licenses/agpl-3.0.html),
-included in the LICENSE.txt file, with the Commons Clause.
+The copyright in the bundled Neo4j graph database (including the
+Software) is owned by Neo4j. The Software developed and owned
+by Neo4j is licensed under the GNU GENERAL PUBLIC LICENSE Version 3
+(http://www.fsf.org/licensing/licenses/gpl-3.0.html) ("GPL")
+to all third parties and that license, as required by the GPL, is
+included in the LICENSE.txt file.
 
-Neo4j Enterprise object code can be licensed independently from the source
-under separate commercial terms. Email inquiries can be directed
-to: licensing@neo4j.com. More information is also available
-at: https://neo4j.com/licensing/
+However, if you have executed an End User Software License and Services
+Agreement or an OEM Software License and Support Services Agreement, or
+another commercial license agreement with Neo4j or one of its
+affiliates (each, a "Commercial Agreement"), the terms of the license in
+such Commercial Agreement will supersede the GPL and you may use the
+software solely pursuant to the terms of the relevant Commercial
+Agreement.
 
 Full license texts are found in LICENSES.txt.
 
@@ -20,21 +26,24 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
-  Apache Commons Compress
+  Apache Commons IO
   Apache Commons Lang
   Apache Commons Text
+  Apache Log4j API
+  Apache Log4j Core
+  Apache Lucene (module: backward-codecs)
+  Apache Lucene (module: common)
+  Apache Lucene (module: core)
+  Apache Lucene (module: queryparser)
   Caffeine cache
-  ConcurrentLinkedHashMap
-  jPowerShell
-  jProcesses
-  Lucene codecs
-  Lucene Common Analyzers
-  Lucene Core
-  Lucene Memory
-  Lucene QueryParsers
-  Netty/All-in-One
-  opencsv
-  WMI4Java
+  IPAddress
+  Java Concurrency Tools Core Library
+  Java Native Access
+  Jettison
+  LZ4 and xxHash
+  magnolia
+  mercator
+  Scala Compiler
 
 BSD - Scala License
   Scala Library
@@ -42,11 +51,6 @@ BSD - Scala License
 BSD License
   asm
   asm-tree
-  Scala Compiler
-
-Bouncy Castle License
-  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
-  Bouncy Castle Provider
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
