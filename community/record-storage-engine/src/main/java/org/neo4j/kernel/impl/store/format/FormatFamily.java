@@ -30,7 +30,7 @@ public enum FormatFamily {
     standard(0),
     aligned(1),
     high_limit(2),
-    experimental(-999);
+    multiversion(-999);
 
     private final int rank;
     private final Capability formatCapability;

@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV4_3;
 import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV5_0;
-import org.neo4j.kernel.impl.store.format.experimental.ExperimentalFormat;
+import org.neo4j.kernel.impl.store.format.multiversion.MultiVersionFormat;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
@@ -83,7 +83,7 @@ public class RecordFormatSelector {
             StandardV5_0.RECORD_FORMATS,
             PageAlignedV4_3.RECORD_FORMATS,
             PageAlignedV5_0.RECORD_FORMATS,
-            ExperimentalFormat.RECORD_FORMATS);
+            MultiVersionFormat.RECORD_FORMATS);
 
     private RecordFormatSelector() {
         throw new AssertionError("Not for instantiation!");

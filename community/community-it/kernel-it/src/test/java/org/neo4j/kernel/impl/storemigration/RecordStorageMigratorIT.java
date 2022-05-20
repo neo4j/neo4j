@@ -97,12 +97,11 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
-import org.neo4j.test.tags.MultiVersionedTag;
+import org.neo4j.test.tags.RecordFormatOverrideTag;
 import org.neo4j.test.utils.TestDirectory;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
-@MultiVersionedTag
 class RecordStorageMigratorIT {
     private static final String MIGRATION_DIRECTORY = StoreMigrator.MIGRATION_DIRECTORY;
     private static final Config CONFIG = Config.defaults(GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes(8));
@@ -321,6 +320,7 @@ class RecordStorageMigratorIT {
     }
 
     @Test
+    @RecordFormatOverrideTag
     void keepIdsOnUpgrade() throws IOException, KernelException {
         StoreId storeId;
         ExternalStoreId externalStoreId;

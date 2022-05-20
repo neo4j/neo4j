@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.neo4j.kernel.impl.store.format.experimental.ExperimentalFormat;
+import org.neo4j.kernel.impl.store.format.multiversion.MultiVersionFormat;
 
 class LEAlignedRecordFormatTest extends AbstractRecordFormatTest {
     LEAlignedRecordFormatTest() {
-        super(ExperimentalFormat.RECORD_FORMATS, 35, 36);
+        super(MultiVersionFormat.RECORD_FORMATS, 35, 36);
     }
 }

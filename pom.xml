@@ -920,12 +920,12 @@
       </properties>
     </profile>
     <profile>
-      <id>experimentalRecordFormat</id>
+      <id>multiVersionRecordFormat</id>
       <activation>
         <activeByDefault>false</activeByDefault>
       </activation>
       <properties>
-        <recordformat.override>experimental</recordformat.override>
+        <recordformat.override>multiversion</recordformat.override>
         <excludedTestGroups>recordformatoverride</excludedTestGroups>
       </properties>
     </profile>

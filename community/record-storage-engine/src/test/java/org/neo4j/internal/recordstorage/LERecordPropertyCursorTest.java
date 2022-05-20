@@ -20,12 +20,12 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.experimental.ExperimentalFormat;
+import org.neo4j.kernel.impl.store.format.multiversion.MultiVersionFormat;
 
 public class LERecordPropertyCursorTest extends RecordPropertyCursorTest {
 
     @Override
     protected RecordFormats getRecordFormats() {
-        return ExperimentalFormat.RECORD_FORMATS;
+        return MultiVersionFormat.RECORD_FORMATS;
     }
 }

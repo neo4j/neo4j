@@ -64,7 +64,7 @@ public class RecordStoreVersion implements StoreVersion {
     public Optional<StoreVersion> successorStoreVersion() {
         RecordFormats latestFormatInFamily = RecordFormatSelector.findLatestFormatInFamily(
                 format.getFormatFamily().name());
-        if (!latestFormatInFamily.name().equals(format.name())) {
+        if (latestFormatInFamily != null && !latestFormatInFamily.name().equals(format.name())) {
             return Optional.of(new RecordStoreVersion(latestFormatInFamily));
         }
         return Optional.empty();

@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.experimental;
+package org.neo4j.kernel.impl.store.format.multiversion;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat;
-import static org.neo4j.kernel.impl.store.format.StoreVersion.EXPERIMENTAL;
+import static org.neo4j.kernel.impl.store.format.StoreVersion.MULTIVERSION;
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
@@ -54,12 +54,12 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
  * Not publicly visible, i.e. there is no {@link DatabaseRecordFormat} option to select it.
  * It can be selected using {@link GraphDatabaseInternalSettings#select_specific_record_format} setting.
  */
-public class ExperimentalFormat extends BaseRecordFormats {
-    public static final RecordFormats RECORD_FORMATS = new ExperimentalFormat();
-    public static final String NAME = "experimental";
+public class MultiVersionFormat extends BaseRecordFormats {
+    public static final RecordFormats RECORD_FORMATS = new MultiVersionFormat();
+    public static final String NAME = "multiversion";
 
-    private ExperimentalFormat() {
-        super(EXPERIMENTAL, 1, 0, FormatFamily.experimental.formatCapability(), RecordStorageCapability.LITTLE_ENDIAN);
+    private MultiVersionFormat() {
+        super(MULTIVERSION, 1, 0, FormatFamily.multiversion.formatCapability(), RecordStorageCapability.LITTLE_ENDIAN);
     }
 
     @Override
@@ -109,7 +109,7 @@ public class ExperimentalFormat extends BaseRecordFormats {
 
     @Override
     public FormatFamily getFormatFamily() {
-        return FormatFamily.experimental;
+        return FormatFamily.multiversion;
     }
 
     @Override
@@ -124,7 +124,6 @@ public class ExperimentalFormat extends BaseRecordFormats {
 
     @Override
     public boolean formatUnderDevelopment() {
-        // family requires that there are at least one format that is not under developement
-        return false;
+        return true;
     }
 }

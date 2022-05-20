@@ -81,7 +81,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
-import org.neo4j.kernel.impl.store.format.experimental.ExperimentalFormat;
+import org.neo4j.kernel.impl.store.format.multiversion.MultiVersionFormat;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
@@ -121,7 +121,7 @@ class MetaDataStoreTest {
 
     public static Stream<Arguments> recordFormats() {
         return Stream.of(
-                Arguments.of(PageAligned.LATEST_RECORD_FORMATS), Arguments.of(ExperimentalFormat.RECORD_FORMATS));
+                Arguments.of(PageAligned.LATEST_RECORD_FORMATS), Arguments.of(MultiVersionFormat.RECORD_FORMATS));
     }
 
     @BeforeEach
