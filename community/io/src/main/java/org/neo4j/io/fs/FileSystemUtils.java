@@ -105,7 +105,7 @@ public final class FileSystemUtils {
             buffer.flip();
             var data = new byte[(int) fileSize];
             buffer.get(data);
-            return new String(data);
+            return new String(data, UTF_8);
         }
     }
 
