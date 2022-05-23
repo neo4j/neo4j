@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.frontend
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext
 import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
 import org.neo4j.cypher.internal.frontend.phases.InitialState
+import org.neo4j.cypher.internal.frontend.phases.ListCoercedToBooleanCheck
 import org.neo4j.cypher.internal.frontend.phases.OpenCypherJavaCCParsing
 import org.neo4j.cypher.internal.frontend.phases.PatternExpressionInNonExistenceCheck
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
@@ -34,8 +35,7 @@ class SemanticTypeCheckTest extends CypherFunSuite {
     SemanticAnalysis(warn = false) andThen
     SemanticTypeCheck
 
-  private val expectedErrorMessage = PatternExpressionInNonExistenceCheck.errorMessage
-
+  // PatternExpressionInNonExistenceCheck
   test("should fail if pattern expression is used wherever we don't expect a boolean value") {
     val queries = Seq(
       "MATCH (a) RETURN (a)--()",
@@ -44,7 +44,7 @@ class SemanticTypeCheckTest extends CypherFunSuite {
 
     queries.foreach { query =>
       withClue(s"Failing query: $query") {
-        runPipeline(query).errors.map(_.msg) should contain(expectedErrorMessage)
+        runPipeline(query).errors.map(_.msg) should contain(PatternExpressionInNonExistenceCheck.errorMessage)
       }
     }
   }
@@ -77,6 +77,80 @@ class SemanticTypeCheckTest extends CypherFunSuite {
 
     queries.foreach { query =>
       withClue(s"Failing query: $query") {
+        runPipeline(query).errors.size shouldBe 0
+      }
+    }
+  }
+
+  test("should fail if list is coerced to a boolean") {
+    val queries = Seq(
+      "RETURN NOT []",
+      "RETURN NOT [1]",
+      "RETURN NOT ['a']",
+      "RETURN ['a'] OR []",
+      "RETURN TRUE OR []",
+      "RETURN NOT (TRUE OR [])",
+      "RETURN ['a'] AND []",
+      "RETURN TRUE AND []",
+      "RETURN NOT (TRUE AND [])",
+      "MATCH (n) WHERE [] RETURN TRUE",
+      "MATCH (n) WHERE range(0, 10) RETURN TRUE",
+      "MATCH (n) WHERE range(0, 10) RETURN range(0, 10)"
+    )
+
+    queries.foreach { query =>
+      withClue(s"Failing query: $query") {
+        runPipeline(query).errors.map(_.msg) should contain(ListCoercedToBooleanCheck.errorMessage)
+      }
+    }
+  }
+
+  test("should not fail to coerce pattern expressions to boolean") {
+    val queries = Seq(
+      "RETURN NOT FALSE",
+      "RETURN NOT ()--()",
+      "RETURN ()--() OR ()--()--()",
+      "RETURN ()--() AND ()--()--()",
+      "MATCH (n) WHERE (n)-[]->() RETURN n",
+      "WITH 1 AS foo WHERE ()--() RETURN *",
+      """
+        |MATCH (a), (b)
+        |WITH a, b
+        |WHERE a.id = 0
+        |  AND (a)-[:T]->(b:Label1)
+        |  OR (a)-[:T*]->(b:Label2)
+        |RETURN DISTINCT b
+      """.stripMargin,
+      """
+        |MATCH (a), (b)
+        |WITH a, b
+        |WHERE a.id = 0
+        |  AND exists((a)-[:T]->(b:Label1))
+        |  OR exists((a)-[:T*]->(b:Label2))
+        |RETURN DISTINCT b
+      """.stripMargin,
+      "MATCH (n) WHERE NOT (n)-[:REL2]-() RETURN n",
+      "MATCH (n) WHERE (n)-[:REL1]-() AND (n)-[:REL3]-() RETURN n",
+      "MATCH (n WHERE (n)--()) RETURN n",
+      """
+        |MATCH (actor:Actor)
+        |RETURN actor,
+        |  CASE
+        |    WHEN (actor)-[:WON]->(:Oscar) THEN 'Oscar winner'
+        |    WHEN (actor)-[:WON]->(:GoldenGlobe) THEN 'Golden Globe winner'
+        |    ELSE 'None'
+        |  END AS accolade
+        |""".stripMargin,
+      """
+        |MATCH (movie:Movie)<-[:ACTED_IN]-(actor:Actor)
+        |WITH movie, collect(actor) AS cast
+        |WHERE ANY(actor IN cast WHERE (actor)-[:WON]->(:Award))
+        |RETURN movie
+        |""".stripMargin
+    )
+
+    queries.foreach { query =>
+      withClue(s"Failing query: size($query)") {
         runPipeline(query).errors.size shouldBe 0
       }
     }

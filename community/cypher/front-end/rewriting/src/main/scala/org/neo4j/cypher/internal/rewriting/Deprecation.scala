@@ -23,19 +23,14 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonDisjunction
 import org.neo4j.cypher.internal.expressions.Namespace
-import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.Ref
-import org.neo4j.cypher.internal.util.symbols.CTAny
-import org.neo4j.cypher.internal.util.symbols.CTBoolean
-import org.neo4j.cypher.internal.util.symbols.CTList
 
 object Deprecations {
 
@@ -76,23 +71,10 @@ object Deprecations {
 
   }
 
+  // add new semantically deprecated features here
   case object semanticallyDeprecatedFeaturesIn4_X extends SemanticDeprecations {
 
-    private def isExpectedTypeBoolean(semanticTable: SemanticTable, e: Expression) =
-      semanticTable.types.get(e).exists(typeInfo => typeInfo.expected.fold(false)(CTBoolean.covariant.containsAll))
-
-    private def isListCoercedToBoolean(semanticTable: SemanticTable, e: Expression): Boolean =
-      semanticTable.types.get(e).exists(typeInfo =>
-        CTList(CTAny).covariant.containsAll(typeInfo.specified) && isExpectedTypeBoolean(semanticTable, e)
-      )
-
-    override def find(semanticTable: SemanticTable): PartialFunction[Any, Deprecation] = {
-      case e: Expression if isListCoercedToBoolean(semanticTable, e) && !e.isInstanceOf[PatternExpression] =>
-        Deprecation(
-          None,
-          Some(DeprecatedCoercionOfListToBoolean(e.position))
-        )
-    }
+    override def find(semanticTable: SemanticTable): PartialFunction[Any, Deprecation] = Map.empty
   }
 }
 

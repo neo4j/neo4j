@@ -497,10 +497,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     val q =
       """
         |MATCH (a)
-        |WHERE coalesce(
-        |     [1, 2, 3],
-        |     [(a)<--(c) | c.prop5 = '0'],
-        |     [true])
+        |WHERE NOT isEmpty(
+        |     coalesce(
+        |       [1, 2, 3],
+        |       [(a)<--(c) | c.prop5 = '0'],
+        |       [true]
+        |     ))
         |RETURN a
       """.stripMargin
 
@@ -1227,7 +1229,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     val q =
       """
         |MATCH (a)
-        |WHERE [(a)<--(b) | b.prop4 = true][..5]
+        |WHERE NOT isEmpty([(a)<--(b) | b.prop4 = true][..5])
         |RETURN a
       """.stripMargin
 
@@ -1241,7 +1243,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     val q =
       """
         |MATCH (a)
-        |WHERE [ (a)<--(b) | b.prop4 = true ][2..5]
+        |WHERE NOT isEmpty([(a)<--(b) | b.prop4 = true ][2..5])
         |RETURN a
       """.stripMargin
 

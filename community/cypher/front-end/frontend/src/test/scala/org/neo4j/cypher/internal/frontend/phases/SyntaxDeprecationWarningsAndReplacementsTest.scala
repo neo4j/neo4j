@@ -30,15 +30,11 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SyntaxDeprecationWarningsAndReplacementsTest extends CypherFunSuite {
 
-  test("should not warn about coercion with a pattern expression in WHERE clause") {
-    check("WITH 1 AS foo WHERE ()--() RETURN *") should equal(Set.empty)
-  }
+  // Add specific tests for syntax deprecation warning and replacements here.
 
-  test("should not warn about coercion with a pattern expression in boolean expression") {
-    check("RETURN NOT ()--()") should equal(Set.empty)
-    check("RETURN ()--() AND ()--()--()") should equal(Set.empty)
-    check("RETURN ()--() OR ()--()--()") should equal(Set.empty)
-  }
+//  test("placeholder query") {
+//    check("MATCH (n) RETURN *") should equal(Set.empty)
+//  }
 
   private val plannerName = new PlannerName {
     override def name: String = "fake"

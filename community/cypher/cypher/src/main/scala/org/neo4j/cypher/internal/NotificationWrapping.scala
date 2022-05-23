@@ -45,7 +45,6 @@ import org.neo4j.cypher.internal.compiler.SuboptimalIndexForConstainsQueryNotifi
 import org.neo4j.cypher.internal.compiler.SuboptimalIndexForEndsWithQueryNotification
 import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.DeprecatedAmbiguousGroupingNotification
-import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.InputPosition
@@ -185,8 +184,6 @@ object NotificationWrapping {
         graphdb.InputPosition.empty,
         NotificationDetail.Factory.message("Error from code generation", msg)
       )
-    case DeprecatedCoercionOfListToBoolean(pos) =>
-      NotificationCode.DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN.notification(pos.withOffset(offset).asInputPosition)
     case SubqueryVariableShadowing(pos, varName) =>
       NotificationCode.SUBQUERY_VARIABLE_SHADOWING.notification(
         pos.withOffset(offset).asInputPosition,

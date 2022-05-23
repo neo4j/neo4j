@@ -72,10 +72,6 @@ public enum NotificationCode {
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
             "The semantics of using colon in the separation of alternative relationship types will change in a future version."),
-    DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN(
-            SeverityLevel.WARNING,
-            Status.Statement.FeatureDeprecationWarning,
-            "Coercion of list to boolean is deprecated. Please consider using `NOT isEmpty(...)` instead."),
     DEPRECATED_AMBIGUOUS_GROUPING_NOTIFICATION(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
