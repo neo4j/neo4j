@@ -90,7 +90,7 @@ class RelationshipChecker implements Checker {
 
     @Override
     public boolean shouldBeChecked(ConsistencyFlags flags) {
-        return flags.isCheckGraph() || !indexes.isEmpty() && flags.isCheckIndexes();
+        return flags.checkGraph() || !indexes.isEmpty() && flags.checkIndexes();
     }
 
     @Override
@@ -221,7 +221,7 @@ class RelationshipChecker implements Checker {
                         // Here only the very small indexes (or indexes that we can't read the values from, like
                         // fulltext indexes)
                         // gets checked this way, larger indexes will be checked in IndexChecker
-                        if (context.consistencyFlags.isCheckIndexes()) {
+                        if (context.consistencyFlags.checkIndexes()) {
                             schemaComplianceChecker.checkCorrectlyIndexed(
                                     relationshipRecord, typeHolder, propertyValues, reporter::forRelationship);
                         }

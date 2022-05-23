@@ -142,8 +142,12 @@ public class CheckConsistencyCommand extends AbstractCommand {
                             .with(fileSystem)
                             .verbose(verbose)
                             .with(options.getReportDir().normalize())
+                            // counts check is not exposed via API
                             .with(new ConsistencyFlags(
-                                    options.isCheckGraph(), options.isCheckIndexes(), options.isCheckIndexStructure()))
+                                    options.isCheckGraph(),
+                                    options.isCheckIndexes(),
+                                    options.isCheckIndexStructure(),
+                                    true))
                             .runFullConsistencyCheck();
                 }
 

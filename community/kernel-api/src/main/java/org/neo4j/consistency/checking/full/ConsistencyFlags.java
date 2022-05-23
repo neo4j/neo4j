@@ -19,41 +19,23 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+public record ConsistencyFlags(
+        boolean checkGraph, boolean checkIndexes, boolean checkIndexStructure, boolean checkCounts) {
+    public static final ConsistencyFlags DEFAULT = new ConsistencyFlags(true, true, true, true);
 
-public class ConsistencyFlags {
-    public static final ConsistencyFlags DEFAULT = new ConsistencyFlags(true, true, true);
-
-    private final boolean checkGraph;
-    private final boolean checkIndexes;
-    private final boolean checkIndexStructure;
-
-    public ConsistencyFlags(boolean checkGraph, boolean checkIndexes, boolean checkIndexStructure) {
-        this.checkGraph = checkGraph;
-        this.checkIndexes = checkIndexes;
-        this.checkIndexStructure = checkIndexStructure;
+    public ConsistencyFlags skipCheckGraph() {
+        return new ConsistencyFlags(false, checkIndexes, checkIndexStructure, checkCounts);
     }
 
-    public boolean isCheckGraph() {
-        return checkGraph;
+    public ConsistencyFlags skipCheckIndexes() {
+        return new ConsistencyFlags(checkGraph, false, checkIndexStructure, checkCounts);
     }
 
-    public boolean isCheckIndexes() {
-        return checkIndexes;
+    public ConsistencyFlags skipCheckIndexStructure() {
+        return new ConsistencyFlags(checkGraph, checkIndexes, false, checkCounts);
     }
 
-    public boolean isCheckIndexStructure() {
-        return checkIndexStructure;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        return EqualsBuilder.reflectionEquals(this, o);
-    }
-
-    @Override
-    public int hashCode() {
-        return HashCodeBuilder.reflectionHashCode(this);
+    public ConsistencyFlags skipCheckCounts() {
+        return new ConsistencyFlags(checkGraph, checkIndexes, checkIndexStructure, false);
     }
 }

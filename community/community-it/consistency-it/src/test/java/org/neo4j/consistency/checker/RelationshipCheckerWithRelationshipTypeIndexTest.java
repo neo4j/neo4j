@@ -279,8 +279,7 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase {
         }
 
         // when
-        ConsistencyFlags flags = new ConsistencyFlags(true, true, true);
-        check(context(flags));
+        check(context(ConsistencyFlags.DEFAULT));
 
         // then
         if (expectedCalls != null) {
@@ -293,21 +292,11 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase {
     }
 
     private double densityAsFrequency(Density density) {
-        double recordFrequency;
-        switch (density) {
-            case DENSE:
-                recordFrequency = 1;
-                break;
-            case SPARSE:
-                recordFrequency = 0;
-                break;
-            case RANDOM:
-                recordFrequency = random.nextDouble();
-                break;
-            default:
-                throw new IllegalArgumentException("Don't recognize density " + density);
-        }
-        return recordFrequency;
+        return switch (density) {
+            case DENSE -> 1;
+            case SPARSE -> 0;
+            case RANDOM -> random.nextDouble();
+        };
     }
 
     private void createCompleteEntry(IndexUpdater writer, int type) throws IndexEntryConflictException {

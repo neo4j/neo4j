@@ -131,7 +131,7 @@ class RelationshipChainChecker implements Checker {
 
     @Override
     public boolean shouldBeChecked(ConsistencyFlags flags) {
-        return flags.isCheckGraph();
+        return flags.checkGraph();
     }
 
     private void detectSingleRelationshipChainInconsistencies(LongRange nodeIdRange) {

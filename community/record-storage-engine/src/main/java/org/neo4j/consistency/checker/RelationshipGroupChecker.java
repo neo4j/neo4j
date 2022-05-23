@@ -75,7 +75,7 @@ class RelationshipGroupChecker implements Checker {
 
     @Override
     public boolean shouldBeChecked(ConsistencyFlags flags) {
-        return flags.isCheckGraph();
+        return flags.checkGraph();
     }
 
     /**

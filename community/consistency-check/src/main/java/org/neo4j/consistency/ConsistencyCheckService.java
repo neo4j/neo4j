@@ -495,7 +495,7 @@ public class ConsistencyCheckService {
                     config.get(GraphDatabaseInternalSettings.consistency_check_memory_limit_factor);
             var summary = new ConsistencySummaryStatistics();
 
-            if (consistencyFlags.isCheckIndexStructure()) {
+            if (consistencyFlags.checkIndexStructure()) {
                 var openOptions =
                         storageEngineFactory.getStoreOpenOptions(fileSystem, pageCache, layout, contextFactory);
                 var statisticsStore = getStatisticStore(

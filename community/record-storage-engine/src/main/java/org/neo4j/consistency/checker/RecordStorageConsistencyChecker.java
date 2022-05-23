@@ -289,7 +289,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
     }
 
     private void consistencyCheckIndexes() {
-        if (consistencyFlags.isCheckIndexStructure()) {
+        if (consistencyFlags.checkIndexStructure()) {
             try (var cursorContext = contextFactory.create(INDEX_STRUCTURE_CHECKER_TAG)) {
                 List<IdGenerator> idGenerators = new ArrayList<>();
                 idGeneratorFactory.visit(idGenerators::add);
@@ -395,7 +395,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
                         cacheTracer,
                         neoStores.getOpenOptions());
                 var checker = observedCounts.checker(reporter)) {
-            if (context.consistencyFlags.isCheckGraph()) {
+            if (context.consistencyFlags.checkGraph()) {
                 countsStore.accept(checker, cursorContext);
             }
             consistencyCheckSingleCheckable(
@@ -488,7 +488,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
             ConsistencyCheckable checkable,
             RecordType recordType,
             CursorContext cursorContext) {
-        if (consistencyFlags.isCheckIndexStructure()) {
+        if (consistencyFlags.checkIndexStructure()) {
             ConsistencyReporter.FormattingDocumentedHandler handler =
                     ConsistencyReporter.formattingHandler(report, recordType);
             ReporterFactory proxyFactory = new ReporterFactory(handler);

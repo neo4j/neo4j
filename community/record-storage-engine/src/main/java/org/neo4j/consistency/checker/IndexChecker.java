@@ -150,7 +150,7 @@ public abstract class IndexChecker<Record extends PrimitiveRecord> implements Ch
 
     @Override
     public boolean shouldBeChecked(ConsistencyFlags flags) {
-        return flags.isCheckIndexes() && indexes.size() != 0;
+        return flags.checkIndexes() && indexes.size() != 0;
     }
 
     private void cacheIndex(

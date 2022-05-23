@@ -88,9 +88,10 @@ class NodeChecker implements Checker {
         this.tokenHolders = context.tokenHolders;
         this.neoStores = context.neoStores;
         this.mandatoryProperties = mandatoryProperties;
+        // indices are checked in following method via shouldBeChecked and so can't be null
+        this.smallIndexes = context.indexSizes.smallIndexes(NODE);
         this.nodeProgress = context.roundInsensitiveProgressReporter(
                 this, "Nodes", neoStores.getNodeStore().getHighId());
-        this.smallIndexes = context.indexSizes.smallIndexes(NODE);
     }
 
     @Override
@@ -100,7 +101,7 @@ class NodeChecker implements Checker {
                 getClass().getSimpleName() + "-checkNodes",
                 execution.partition(nodeIdRange, (from, to, last) -> () -> check(from, to, lastRange && last)));
 
-        if (context.consistencyFlags.isCheckIndexes()) {
+        if (context.consistencyFlags.checkIndexes()) {
             execution.run(
                     getClass().getSimpleName() + "-checkIndexesVsNodes",
                     smallIndexes.stream()
@@ -112,7 +113,7 @@ class NodeChecker implements Checker {
 
     @Override
     public boolean shouldBeChecked(ConsistencyFlags flags) {
-        return flags.isCheckGraph() || flags.isCheckIndexes() && !smallIndexes.isEmpty();
+        return flags.checkGraph() || flags.checkIndexes() && !smallIndexes.isEmpty();
     }
 
     private BoundedIterable<EntityTokenRange> getLabelIndexReader(
@@ -223,7 +224,7 @@ class NodeChecker implements Checker {
                     // Here only the very small indexes (or indexes that we can't read the values from, like fulltext
                     // indexes)
                     // gets checked this way, larger indexes will be checked in IndexChecker
-                    if (context.consistencyFlags.isCheckIndexes()) {
+                    if (context.consistencyFlags.checkIndexes()) {
                         schemaComplianceChecker.checkCorrectlyIndexed(
                                 nodeRecord, labels, propertyValues, reporter::forNode);
                     }

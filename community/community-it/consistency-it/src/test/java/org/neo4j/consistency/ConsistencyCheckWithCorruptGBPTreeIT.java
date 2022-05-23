@@ -193,7 +193,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
                 },
                 indexFiles);
 
-        ConsistencyFlags flags = new ConsistencyFlags(true, false, false);
+        ConsistencyFlags flags = new ConsistencyFlags(true, false, false, true);
         ConsistencyCheckService.Result result = runConsistencyCheck(NullLogProvider.getInstance(), flags);
 
         assertTrue(result.isSuccessful(), "Expected store to be consistent when not checking indexes.");
@@ -213,7 +213,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
                 },
                 indexFiles);
 
-        ConsistencyFlags flags = new ConsistencyFlags(true, false, true);
+        ConsistencyFlags flags = new ConsistencyFlags(true, false, true, true);
         ConsistencyCheckService.Result result = runConsistencyCheck(NullLogProvider.getInstance(), flags);
 
         assertFalse(result.isSuccessful(), "Expected store to be inconsistent when checking index structure.");
@@ -232,7 +232,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
                 },
                 indexFiles);
 
-        ConsistencyFlags flags = new ConsistencyFlags(true, true, false);
+        ConsistencyFlags flags = new ConsistencyFlags(true, true, false, true);
         ConsistencyCheckService.Result result = runConsistencyCheck(NullLogProvider.getInstance(), flags);
 
         assertTrue(result.isSuccessful(), "Expected store to be consistent when not checking indexes.");
@@ -772,7 +772,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
                 countsLayoutBootstrapper,
                 countsStoreFile);
 
-        ConsistencyFlags flags = new ConsistencyFlags(false, false, true);
+        ConsistencyFlags flags = new ConsistencyFlags(false, false, true, true);
         ConsistencyCheckService.Result result = runConsistencyCheck(NullLogProvider.getInstance(), flags);
         assertFalse(result.isSuccessful());
         assertResultContainsMessage(
@@ -798,7 +798,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
                 },
                 idStoreFiles);
 
-        ConsistencyFlags flags = new ConsistencyFlags(false, false, true);
+        ConsistencyFlags flags = new ConsistencyFlags(false, false, true, true);
         ConsistencyCheckService.Result result = runConsistencyCheck(NullLogProvider.getInstance(), flags);
         assertFalse(result.isSuccessful());
         assertResultContainsMessage(

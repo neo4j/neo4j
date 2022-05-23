@@ -259,7 +259,7 @@ class CheckConsistencyCommandIT {
                 "--check-index-structure=true");
         checkConsistencyCommand.execute();
 
-        consistencyCheckService.verifyArgument(ConsistencyFlags.class, new ConsistencyFlags(false, false, true));
+        consistencyCheckService.verifyArgument(ConsistencyFlags.class, new ConsistencyFlags(false, false, true, true));
     }
 
     @Test
