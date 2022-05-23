@@ -295,37 +295,49 @@ class SettingMigratorsTest {
     @Test
     void directoriesSettingsMigration() throws IOException {
         Path confFile = testDirectory.createFile("test.conf");
+        var a = testDirectory.directory("a");
+        var b = testDirectory.directory("b");
+        var c = testDirectory.directory("c");
+        var d = testDirectory.directory("d");
+        var e = testDirectory.directory("e");
+        var f = testDirectory.directory("f");
+        var g = testDirectory.directory("g");
+        var h = testDirectory.directory("h");
+        var i = testDirectory.directory("i");
+        var j = testDirectory.directory("j");
+        var k = testDirectory.directory("k");
+
         Files.write(
                 confFile,
                 List.of(
-                        "dbms.directories.neo4j_home=/a",
-                        "dbms.directories.data=/b",
-                        "dbms.directories.transaction.logs.root=/c",
-                        "dbms.directories.script.root=/d",
-                        "dbms.directories.dumps.root=/e",
-                        "dbms.directories.import=/f",
-                        "dbms.directories.plugins=/g",
-                        "dbms.directories.logs=/h",
-                        "dbms.directories.licenses=/i",
-                        "dbms.directories.run=/j",
-                        "dbms.directories.lib=/k"));
+                        "dbms.directories.neo4j_home=" + a,
+                        "dbms.directories.data=" + b,
+                        "dbms.directories.transaction.logs.root=" + c,
+                        "dbms.directories.script.root=" + d,
+                        "dbms.directories.dumps.root=" + e,
+                        "dbms.directories.import=" + f,
+                        "dbms.directories.plugins=" + g,
+                        "dbms.directories.logs=" + h,
+                        "dbms.directories.licenses=" + i,
+                        "dbms.directories.run=" + j,
+                        "dbms.directories.lib=" + k));
 
         Config config = Config.newBuilder().fromFile(confFile).build();
         var logProvider = new AssertableLogProvider();
         config.setLogger(logProvider.getLog(Config.class));
 
-        assertEquals("/a", config.get(neo4j_home).toString());
-        assertEquals("/b", config.get(data_directory).toString());
-        assertEquals("/c", config.get(transaction_logs_root_path).toString());
-        assertEquals("/d", config.get(script_root_path).toString());
-        assertEquals("/e", config.get(database_dumps_root_path).toString());
-        assertEquals("/f", config.get(load_csv_file_url_root).toString());
-        assertEquals("/g", config.get(plugin_dir).toString());
-        assertEquals("/h", config.get(logs_directory).toString());
-        assertEquals("/i", config.get(licenses_directory).toString());
+        assertEquals(a, config.get(neo4j_home));
+        assertEquals(b, config.get(data_directory));
+        assertEquals(c, config.get(transaction_logs_root_path));
+        assertEquals(d, config.get(script_root_path));
+        assertEquals(e, config.get(database_dumps_root_path));
+        assertEquals(f, config.get(load_csv_file_url_root));
+        assertEquals(g, config.get(plugin_dir));
+        assertEquals(h, config.get(logs_directory));
+        assertEquals(i, config.get(licenses_directory));
 
-        assertEquals("/j", config.get(run_directory).toString());
-        assertEquals("/k", config.get(lib_directory).toString());
+        assertEquals(j, config.get(run_directory));
+        assertEquals(k, config.get(lib_directory));
     }
 
     @Test
