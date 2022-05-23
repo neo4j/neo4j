@@ -50,6 +50,7 @@ import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.fabric.FabricTest
 import org.neo4j.fabric.FragmentTestUtils
 import org.neo4j.fabric.ProcedureSignatureResolverTestSupport
+import org.neo4j.fabric.cache.FabricQueryCache
 import org.neo4j.fabric.config.FabricConfig
 import org.neo4j.fabric.planning.FabricPlan.DebugOptions
 import org.neo4j.fabric.util.Folded.Descend
@@ -64,6 +65,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 
 import java.time.Duration
 import java.util.Optional
+
 import scala.collection.JavaConverters.setAsJavaSetConverter
 import scala.util.Failure
 import scala.util.Success
@@ -597,6 +599,106 @@ class FabricPlannerTest
       newPlanner.queryCache.getHits.shouldEqual(0)
     }
 
+    "cache miss on literal vs variable with same name" in {
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+
+      val q1 =
+        """MATCH (n)
+          |WITH n AS `true`
+          |RETURN `true`
+          |""".stripMargin
+      val q2 =
+        """MATCH (n)
+          |WITH n AS `true`
+          |RETURN true
+          |""".stripMargin
+
+      newPlanner.instance(q1, params, defaultGraphName).plan
+      newPlanner.instance(q2, params, defaultGraphName).plan
+
+      newPlanner.queryCache.getMisses.shouldEqual(2)
+      newPlanner.queryCache.getHits.shouldEqual(0)
+    }
+
+    "cache clears a context" in {
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+
+      val q =
+        """WITH 1 AS x
+          |RETURN x
+          |""".stripMargin
+
+      newPlanner.instance(q, params, defaultGraphName).plan
+      newPlanner.queryCache.contextSize(defaultGraphName).shouldEqual(1)
+      newPlanner.queryCache.clearByContext(defaultGraphName).shouldEqual(1)
+      newPlanner.queryCache.contextSize(defaultGraphName).shouldEqual(0)
+    }
+
+    "cache clears only the given context" in {
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+
+      val q1 =
+        """USE foo
+          |WITH 1 AS x
+          |RETURN x
+          |""".stripMargin
+      val q2 =
+        """USE bar
+          |WITH 1 AS x
+          |RETURN x
+          |""".stripMargin
+
+      newPlanner.instance(q1, params, "foo").plan
+      newPlanner.instance(q2, params, "bar").plan
+      newPlanner.queryCache.contextSize("foo").shouldEqual(1)
+      newPlanner.queryCache.contextSize("bar").shouldEqual(1)
+      newPlanner.queryCache.clearByContext("foo").shouldEqual(1)
+      newPlanner.queryCache.contextSize("foo").shouldEqual(0)
+      newPlanner.queryCache.contextSize("bar").shouldEqual(1)
+    }
+
+    "the cache hits before being cleared, and it misses after being cleared" in {
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+
+      val q =
+        """WITH 1 AS x
+          |RETURN x
+          |""".stripMargin
+
+      // plan query (cold miss)
+      newPlanner.instance(q, params, defaultGraphName).plan
+      newPlanner.queryCache.getHits.shouldEqual(0)
+      newPlanner.queryCache.getMisses.shouldEqual(1)
+
+      // replan query (hits)
+      newPlanner.instance(q, params, defaultGraphName).plan
+      newPlanner.queryCache.getHits.shouldEqual(1)
+      newPlanner.queryCache.getMisses.shouldEqual(1)
+
+      // clear cache and rereplan query (cold miss again)
+      newPlanner.queryCache.clearByContext(defaultGraphName)
+      newPlanner.instance(q, params, defaultGraphName).plan
+      newPlanner.queryCache.getHits.shouldEqual(1)
+      newPlanner.queryCache.getMisses.shouldEqual(2)
+    }
+
+    "clear an empty cache" in {
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+      newPlanner.queryCache.clearByContext(defaultGraphName).shouldEqual(0)
+    }
+
+    "clearing the cache returns the number of evictions" in {
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+
+      val q =
+        """WITH 1 AS x
+          |RETURN x
+          |""".stripMargin
+
+      newPlanner.instance(q, params, defaultGraphName).plan
+      newPlanner.queryCache.clearByContext(defaultGraphName).shouldEqual(1)
+      newPlanner.queryCache.clearByContext(defaultGraphName).shouldEqual(0)
+    }
   }
 
   "Options:" - {
@@ -1418,6 +1520,11 @@ class FabricPlannerTest
 
       res shouldBe expectedResult
     }
+  }
+
+  implicit class FabricCacheOps(cache: FabricQueryCache) {
+    def contextSize(contextName: String): Int =
+      cache.getInnerCopy.collect { case ((_, _, `contextName`), _) => }.size
   }
 
   implicit class CheckSyntax[A](a: A) {
