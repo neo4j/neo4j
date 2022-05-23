@@ -22,6 +22,9 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.HasALabel
+import org.neo4j.cypher.internal.expressions.HasALabelOrType
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -133,6 +136,125 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
 
     // then
     runtimeResult should beColumns("hasLabel").withRows(singleColumn(Seq(false)))
+  }
+
+  test("hasALabel on top of indexScan") {
+    // given
+    val size = 100
+    given {
+      nodeIndex("Label", "prop")
+      for (i <- 0 until size) {
+        if (i % 2 == 0) {
+          tx.createNode(label("Label"), label("Other")).setProperty("prop", i)
+        } else {
+          tx.createNode().setProperty("prop", i)
+        }
+      }
+    }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("hasALabel")
+      .projection("x:% AS hasALabel")
+      .nodeIndexOperator("x:Label(prop)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("hasALabel").withRows(singleColumn((0 until size / 2).map(_ => true)))
+  }
+
+  test("hasALabel on top of labelNodeScan") {
+    // given
+    val size = 100
+    given {
+      for (i <- 0 until size) {
+        if (i % 2 == 0) {
+          tx.createNode(label("Label"), label("Other"))
+        } else {
+          tx.createNode()
+        }
+      }
+    }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("hasALabel")
+      .projection("x:% AS hasALabel")
+      .nodeByLabelScan("x", "Label", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("hasALabel").withRows(singleColumn((0 until size / 2).map(_ => true)))
+  }
+
+  test("hasALabel on top of allNodesScan") {
+    // given
+    val size = 100
+    given {
+      for (i <- 0 until size) {
+        if (i % 2 == 0) {
+          tx.createNode(label("Label"), label("Other"))
+        } else {
+          tx.createNode()
+        }
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("hasALabel")
+      .projection("x:% AS hasALabel")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("hasALabel").withRows(singleColumn((0 until size).map(_ % 2 == 0)))
+  }
+
+  test("hasALabelOrType on null") {
+    // given
+    val size = 100
+    val unfilteredNodes = given { nodeGraph(size) }
+    val nodes = select(unfilteredNodes, nullProbability = 0.5)
+    val input = inputValues(nodes.map(n => Array[Any](n)): _*)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("hasALabelOrType")
+      .projection(Map("hasALabelOrType" -> HasALabelOrType(varFor("x"))(pos)))
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected = nodes.map(node => if (node == null) null else false)
+    runtimeResult should beColumns("hasALabelOrType").withRows(singleColumn(expected))
+  }
+
+  test("hasALabel on null") {
+    // given
+    val size = 100
+    val unfilteredNodes = given { nodeGraph(size) }
+    val nodes = select(unfilteredNodes, nullProbability = 0.5)
+    val input = inputValues(nodes.map(n => Array[Any](n)): _*)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("hasALabel")
+      .projection(Map("hasALabel" -> HasALabel(varFor("x"))(pos)))
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected = nodes.map(node => if (node == null) null else false)
+    runtimeResult should beColumns("hasALabel").withRows(singleColumn(expected))
   }
 
   test("should handle node property access on top of allNode") {

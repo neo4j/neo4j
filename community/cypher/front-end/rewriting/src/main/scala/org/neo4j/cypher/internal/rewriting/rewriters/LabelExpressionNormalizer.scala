@@ -19,9 +19,8 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.EntityType
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.FunctionInvocation
-import org.neo4j.cypher.internal.expressions.FunctionName
-import org.neo4j.cypher.internal.expressions.GreaterThan
+import org.neo4j.cypher.internal.expressions.HasALabel
+import org.neo4j.cypher.internal.expressions.HasALabelOrType
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.HasTypes
@@ -35,7 +34,6 @@ import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
@@ -90,15 +88,10 @@ case class LabelExpressionNormalizer(entityExpression: Expression, entityType: O
 
     case wildcard: LabelExpression.Wildcard =>
       entityType match {
-        case None => throw new IllegalArgumentException("Unexpected label wildcard inside a predicate")
+        case None =>
+          HasALabelOrType(copy(entityExpression))(wildcard.position)
         case Some(NODE_TYPE) =>
-          val entityWithNewVariables = copy(entityExpression)
-          val entityLabels: FunctionInvocation =
-            FunctionInvocation(FunctionName("labels")(wildcard.position), entityWithNewVariables)(wildcard.position)
-          val numberOfEntityLabels: FunctionInvocation =
-            FunctionInvocation(FunctionName("size")(wildcard.position), entityLabels)(wildcard.position)
-          val zero = SignedDecimalIntegerLiteral("0")(wildcard.position)
-          GreaterThan(numberOfEntityLabels, zero)(wildcard.position)
+          HasALabel(copy(entityExpression))(wildcard.position)
         case Some(RELATIONSHIP_TYPE) =>
           // all relationships have a type
           True()(wildcard.position)

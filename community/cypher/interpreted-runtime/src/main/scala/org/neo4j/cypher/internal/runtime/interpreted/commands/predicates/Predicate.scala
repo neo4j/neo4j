@@ -482,6 +482,63 @@ case class NonEmpty(collection: Expression) extends Predicate {
   override def children: Seq[AstNode[_]] = Seq(collection)
 }
 
+case class HasALabel(entity: Expression) extends Predicate {
+
+  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = entity(ctx, state) match {
+
+    case IsNoValue() =>
+      None
+
+    case value =>
+      val node = CastSupport.castOrFail[VirtualNodeValue](value)
+      val nodeId = node.id
+      val queryCtx = state.query
+      Some(queryCtx.isALabelSetOnNode(nodeId, state.cursors.nodeCursor))
+  }
+
+  override def toString = s"$entity:%"
+
+  override def rewrite(f: Expression => Expression): Expression = f(HasALabel(entity.rewrite(f)))
+
+  override def children: Seq[Expression] = Seq(entity)
+
+  override def arguments: Seq[Expression] = Seq(entity)
+
+  override def containsIsNull = false
+}
+
+case class HasALabelOrType(entity: Expression) extends Predicate {
+
+  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = entity(ctx, state) match {
+
+    case IsNoValue() =>
+      None
+
+    case node: VirtualNodeValue =>
+      val nodeId = node.id
+      val queryCtx = state.query
+      Some(queryCtx.isALabelSetOnNode(nodeId, state.cursors.nodeCursor))
+
+    case _: VirtualRelationshipValue =>
+      Some(true)
+
+    case value =>
+      throw new CypherTypeException(
+        s"Expected $value to be a Node or Relationship, but it was a ${value.getClass.getName}"
+      )
+  }
+
+  override def toString = s"$entity:%"
+
+  override def rewrite(f: Expression => Expression): Expression = f(HasALabelOrType(entity.rewrite(f)))
+
+  override def children: Seq[Expression] = Seq(entity)
+
+  override def arguments: Seq[Expression] = Seq(entity)
+
+  override def containsIsNull = false
+}
+
 case class HasLabelOrType(entity: Expression, labelOrType: String) extends Predicate {
 
   override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = entity(ctx, state) match {

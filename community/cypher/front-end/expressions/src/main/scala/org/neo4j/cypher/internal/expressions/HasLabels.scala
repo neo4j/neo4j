@@ -18,11 +18,25 @@ package org.neo4j.cypher.internal.expressions
 
 import org.neo4j.cypher.internal.util.InputPosition
 
+/**
+ * Boolean expression evaluating the labels or types of a node or relationship.
+ */
+trait LabelOrTypeCheckExpression extends BooleanExpression {
+  def entityExpression: Expression
+}
+
+/**
+ * Boolean expression evaluating the labels of a node.
+ */
+trait LabelCheckExpression extends BooleanExpression {
+  def expression: Expression
+}
+
 /*
  * Checks if expression has all labels
  */
 case class HasLabels(expression: Expression, labels: Seq[LabelName])(val position: InputPosition)
-    extends BooleanExpression {
+    extends LabelCheckExpression {
 
   override def asCanonicalStringVal =
     s"${expression.asCanonicalStringVal}${labels.map(_.asCanonicalStringVal).mkString(":", ":", "")}"
@@ -32,7 +46,7 @@ case class HasLabels(expression: Expression, labels: Seq[LabelName])(val positio
  * Checks if expression has any of the specified labels
  */
 case class HasAnyLabel(expression: Expression, labels: Seq[LabelName])(val position: InputPosition)
-    extends BooleanExpression {
+    extends LabelCheckExpression {
 
   override def asCanonicalStringVal =
     s"${expression.asCanonicalStringVal}${labels.map(_.asCanonicalStringVal).mkString(":", "|", "")}"
@@ -41,11 +55,31 @@ case class HasAnyLabel(expression: Expression, labels: Seq[LabelName])(val posit
 /*
  * Checks if expression has all labels OR all types
  */
-case class HasLabelsOrTypes(expression: Expression, labelsOrTypes: Seq[LabelOrRelTypeName])(val position: InputPosition)
-    extends BooleanExpression {
+case class HasLabelsOrTypes(entityExpression: Expression, labelsOrTypes: Seq[LabelOrRelTypeName])(
+  val position: InputPosition
+) extends LabelOrTypeCheckExpression {
 
   override def asCanonicalStringVal =
-    s"${expression.asCanonicalStringVal}${labelsOrTypes.map(_.asCanonicalStringVal).mkString(":", ":", "")}"
+    s"${entityExpression.asCanonicalStringVal}${labelsOrTypes.map(_.asCanonicalStringVal).mkString(":", ":", "")}"
+}
+
+/**
+ * Checks if expression has at least one label or type. That is always true for relationships but not necessarily for nodes.
+ */
+case class HasALabelOrType(entityExpression: Expression)(val position: InputPosition)
+    extends LabelOrTypeCheckExpression {
+
+  override def asCanonicalStringVal =
+    s"${entityExpression.asCanonicalStringVal}:%"
+}
+
+/**
+ * Checks if expression has at least one label.
+ */
+case class HasALabel(expression: Expression)(val position: InputPosition) extends LabelCheckExpression {
+
+  override def asCanonicalStringVal =
+    s"${expression.asCanonicalStringVal}:%"
 }
 
 /*

@@ -18,11 +18,14 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.HasALabel
+import org.neo4j.cypher.internal.expressions.HasALabelOrType
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -45,6 +48,10 @@ trait HasLabelsAndHasTypeNormalizer extends Rewriter {
       HasLabels(e, labels.map(l => LabelName(l.name)(l.position)))(p.position)
     case p @ HasLabelsOrTypes(e, labels) if isRelationship(e) =>
       HasTypes(e, labels.map(l => RelTypeName(l.name)(l.position)))(p.position)
+    case p @ HasALabelOrType(e) if isNode(e) =>
+      HasALabel(e)(p.position)
+    case p @ HasALabelOrType(e) if isRelationship(e) =>
+      True()(p.position)
     case e =>
       e
   }

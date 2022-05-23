@@ -574,6 +574,8 @@ object StaticEvaluation {
 
     override def isAnyLabelSetOnNode(labels: Array[Int], id: Long, nodeCursor: NodeCursor): Boolean = notAvailable()
 
+    override def isALabelSetOnNode(node: Long, nodeCursor: NodeCursor): Boolean = notAvailable()
+
     override def isTypeSetOnRelationship(typ: Int, id: Long, relationshipCursor: RelationshipScanCursor): Boolean =
       notAvailable()
 

@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.GetDegree
+import org.neo4j.cypher.internal.expressions.HasALabelOrType
 import org.neo4j.cypher.internal.expressions.HasAnyLabel
 import org.neo4j.cypher.internal.expressions.HasDegree
 import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThan
@@ -62,6 +63,7 @@ import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreE
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.physicalplanning.ast.ElementIdFromSlot
 import org.neo4j.cypher.internal.physicalplanning.ast.GetDegreePrimitive
+import org.neo4j.cypher.internal.physicalplanning.ast.HasALabelFromSlot
 import org.neo4j.cypher.internal.physicalplanning.ast.HasAnyLabelFromSlot
 import org.neo4j.cypher.internal.physicalplanning.ast.HasDegreeGreaterThanOrEqualPrimitive
 import org.neo4j.cypher.internal.physicalplanning.ast.HasDegreeGreaterThanPrimitive
@@ -442,6 +444,20 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
           case LongSlot(offset, true, CTRelationship) =>
             val (resolvedTypeTokens, lateTypes) = resolveTypeTokens(types)
             NullCheck(offset, HasTypesFromSlot(offset, resolvedTypeTokens, lateTypes))
+
+          case _ => e // Don't know how to specialize this
+        }
+
+      case e @ HasALabelOrType(Variable(k)) =>
+        slotConfiguration(k) match {
+          case LongSlot(offset, false, CTNode) =>
+            HasALabelFromSlot(offset)
+
+          case LongSlot(offset, true, CTNode) =>
+            NullCheck(offset, HasALabelFromSlot(offset))
+
+          case LongSlot(_, _, CTRelationship) =>
+            True()(e.position)
 
           case _ => e // Don't know how to specialize this
         }

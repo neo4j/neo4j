@@ -234,6 +234,8 @@ case class CommunityExpressionConverter(
             operatorId = id
           )
       case e: internal.expressions.HasLabelsOrTypes => hasLabelsOrTypes(id, e, self)
+      case e: internal.expressions.HasALabelOrType  => hasALabelOrType(id, e, self)
+      case e: internal.expressions.HasALabel        => hasALabel(id, e, self)
       case e: internal.expressions.HasLabels        => hasLabels(id, e, self)
       case e: internal.expressions.HasAnyLabel =>
         predicates.HasAnyLabel(
@@ -749,6 +751,22 @@ case class CommunityExpressionConverter(
         commands.expressions.GenericCase(predicateAlternatives, toCommandExpression(id, e.default, self))
     }
 
+  private def hasALabelOrType(
+    id: Id,
+    e: internal.expressions.HasALabelOrType,
+    self: ExpressionConverters
+  ): Predicate = {
+    predicates.HasALabelOrType(self.toCommandExpression(id, e.entityExpression))
+  }
+
+  private def hasALabel(
+    id: Id,
+    e: internal.expressions.HasALabel,
+    self: ExpressionConverters
+  ): Predicate = {
+    predicates.HasALabel(self.toCommandExpression(id, e.expression))
+  }
+
   private def hasLabelsOrTypes(
     id: Id,
     e: internal.expressions.HasLabelsOrTypes,
@@ -756,7 +774,7 @@ case class CommunityExpressionConverter(
   ): Predicate = {
     val preds = e.labelsOrTypes.map {
       l =>
-        predicates.HasLabelOrType(self.toCommandExpression(id, e.expression), l.name): Predicate
+        predicates.HasLabelOrType(self.toCommandExpression(id, e.entityExpression), l.name): Predicate
     }
     commands.predicates.Ands(preds.toSeq: _*)
   }

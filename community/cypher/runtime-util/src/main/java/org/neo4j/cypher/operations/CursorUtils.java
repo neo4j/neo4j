@@ -225,6 +225,33 @@ public final class CursorUtils {
     }
 
     /**
+     * Checks if given node has any label at all.
+     *
+     * @param read The current Read instance
+     * @param nodeCursor The node cursor to use
+     * @param node The id of the node
+     * @return {@code true} if the node has the label, otherwise {@code false}
+     */
+    public static boolean nodeHasALabel(Read read, NodeCursor nodeCursor, long node) {
+        read.singleNode(node, nodeCursor);
+        if (!nodeCursor.next()) {
+            return false;
+        }
+
+        return nodeCursor.labels().numberOfTokens() > 0;
+    }
+
+    /**
+     * Checks if given node has any label at all.
+     *
+     * @param nodeCursor The node cursor to use
+     * @return {@code true} if the node has the label, otherwise {@code false}
+     */
+    public static boolean nodeHasALabel(NodeCursor nodeCursor) {
+        return nodeCursor.labels().numberOfTokens() > 0;
+    }
+
+    /**
      * Returns true if any of the specified labels are set on the node with id `node`.
      */
     public static boolean nodeHasAnyLabel(Read read, NodeCursor nodeCursor, long node, int[] labels) {

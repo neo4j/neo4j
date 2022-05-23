@@ -69,7 +69,7 @@ class normalizeMatchPredicatesTest extends CypherFunSuite with TestName {
     val expectedResult = rewrite(expectedQuery, rewriterWithoutNormalizeMatchPredicates)
     assert(
       result === expectedResult,
-      s"\n$testName\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:${prettifier.asString(result.asInstanceOf[Statement])}"
+      s"\n$testName\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:${prettifier.asString(result)}"
     )
   }
 
@@ -210,7 +210,7 @@ class normalizeMatchPredicatesTest extends CypherFunSuite with TestName {
   }
 
   test("MATCH (n:%&(B|!%)) RETURN n") {
-    assertRewrite("MATCH (n) WHERE size(labels(n)) > 0 AND (n:B OR NOT(size(labels(n)) > 0)) RETURN n")
+    assertRewrite("MATCH (n) WHERE n:% AND (n:B OR NOT(n:%)) RETURN n")
   }
 
   test("MATCH ()-[r:!A&!B]->() RETURN r") {

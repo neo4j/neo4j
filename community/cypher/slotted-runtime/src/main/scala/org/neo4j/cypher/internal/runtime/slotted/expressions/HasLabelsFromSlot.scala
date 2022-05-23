@@ -75,3 +75,14 @@ case class HasAnyLabelFromSlotLate(offset: Int, labelNames: Seq[String]) extends
 
   override def children: Seq[AstNode[_]] = Seq.empty[AstNode[_]]
 }
+
+case class HasALabelFromSlot(offset: Int) extends Predicate with SlottedExpression {
+
+  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
+    Some(state.query.isALabelSetOnNode(ctx.getLongAt(offset), state.cursors.nodeCursor))
+  }
+
+  override def containsIsNull: Boolean = false
+
+  override def children: Seq[AstNode[_]] = Seq.empty
+}

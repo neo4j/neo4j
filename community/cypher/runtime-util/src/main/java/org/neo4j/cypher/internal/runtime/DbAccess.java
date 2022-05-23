@@ -118,6 +118,8 @@ public interface DbAccess extends EntityById {
 
     boolean isAnyLabelSetOnNode(int[] labels, long id, NodeCursor nodeCursor);
 
+    boolean isALabelSetOnNode(long id, NodeCursor nodeCursor);
+
     boolean isTypeSetOnRelationship(int typ, long id, RelationshipScanCursor relationshipCursor);
 
     String getPropertyKeyName(int token);

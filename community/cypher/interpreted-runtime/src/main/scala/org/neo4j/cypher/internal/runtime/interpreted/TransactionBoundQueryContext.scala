@@ -520,14 +520,7 @@ private[internal] class TransactionBoundReadQueryContext(
   }
 
   override def getLabelsForNode(node: Long, nodeCursor: NodeCursor): ListValue = {
-    reads().singleNode(node, nodeCursor)
-    if (!nodeCursor.next()) {
-      if (nodeReadOps.isDeletedInThisTx(node))
-        throw new EntityNotFoundException(s"Node with id $node has been deleted in this transaction")
-      else
-        VirtualValues.EMPTY_LIST
-    }
-    val labelSet = nodeCursor.labels()
+    val labelSet = getLabelTokenSetForNode(node, nodeCursor)
     val labelArray = new Array[TextValue](labelSet.numberOfTokens())
     var i = 0
     while (i < labelSet.numberOfTokens()) {
@@ -535,6 +528,22 @@ private[internal] class TransactionBoundReadQueryContext(
       i += 1
     }
     VirtualValues.list(labelArray: _*)
+  }
+
+  override def isALabelSetOnNode(node: Long, nodeCursor: NodeCursor): Boolean = {
+    getLabelTokenSetForNode(node, nodeCursor).numberOfTokens() > 0
+  }
+
+  private def getLabelTokenSetForNode(node: Long, nodeCursor: NodeCursor) = {
+    reads().singleNode(node, nodeCursor)
+    if (!nodeCursor.next()) {
+      if (nodeReadOps.isDeletedInThisTx(node)) {
+        throw new EntityNotFoundException(s"Node with id $node has been deleted in this transaction")
+      } else {
+        VirtualValues.EMPTY_LIST
+      }
+    }
+    nodeCursor.labels()
   }
 
   override def getTypeForRelationship(id: Long, cursor: RelationshipScanCursor): TextValue = {

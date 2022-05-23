@@ -827,6 +827,30 @@ public final class CypherFunctions {
     }
 
     @CalledFromGeneratedCode
+    public static boolean hasALabel(AnyValue entity, DbAccess access, NodeCursor nodeCursor) {
+        assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if (entity instanceof VirtualNodeValue virtualNodeValue) {
+            return access.isALabelSetOnNode(virtualNodeValue.id(), nodeCursor);
+        } else {
+            throw new CypherTypeException("Expected a Node, got: " + entity);
+        }
+    }
+
+    @CalledFromGeneratedCode
+    public static boolean hasALabelOrType(AnyValue entity, DbAccess access, NodeCursor nodeCursor) {
+        assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if (entity instanceof VirtualNodeValue node) {
+            return access.isALabelSetOnNode(node.id(), nodeCursor);
+        } else if (entity instanceof VirtualRelationshipValue relationship) {
+            return true;
+        } else {
+            throw new CypherTypeException(format(
+                    "Invalid input for function 'hasALabelOrType()': Expected %s to be a node or relationship, but it was `%s`",
+                    entity, entity.getTypeName()));
+        }
+    }
+
+    @CalledFromGeneratedCode
     public static boolean hasAnyLabel(AnyValue entity, int[] labels, DbAccess access, NodeCursor nodeCursor) {
         assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if (entity instanceof VirtualNodeValue) {

@@ -24,5 +24,8 @@ import org.neo4j.cypher.internal.runtime.ast.BooleanRuntimeExpression
 case class HasLabelsFromSlot(offset: Int, resolvedLabelTokens: Seq[Int], lateLabels: Seq[String])
     extends BooleanRuntimeExpression
 
+case class HasALabelFromSlot(offset: Int)
+    extends BooleanRuntimeExpression
+
 case class HasAnyLabelFromSlot(offset: Int, resolvedLabelTokens: Seq[Int], lateLabels: Seq[String])
     extends BooleanRuntimeExpression

@@ -130,7 +130,7 @@ case class MaterializedEntitiesExpressionConverter(tokenContext: ReadTokenContex
     e: expressions.HasLabelsOrTypes,
     self: ExpressionConverters
   ): Option[Predicate] = {
-    val entity = self.toCommandExpression(id, e.expression)
+    val entity = self.toCommandExpression(id, e.entityExpression)
     val hasLabelOrTypePredicates = e.labelsOrTypes.map(lOrT => MaterializedEntityHasLabelOrType(entity, lOrT.name))
     Some(predicates.Ands(hasLabelOrTypePredicates: _*))
   }

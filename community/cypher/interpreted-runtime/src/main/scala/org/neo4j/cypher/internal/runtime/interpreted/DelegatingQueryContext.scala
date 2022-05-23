@@ -469,6 +469,9 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def isAnyLabelSetOnNode(labels: Array[Int], node: Long, nodeCursor: NodeCursor): Boolean =
     singleDbHit(inner.isAnyLabelSetOnNode(labels, node, nodeCursor))
 
+  override def isALabelSetOnNode(node: Long, nodeCursor: NodeCursor): Boolean =
+    singleDbHit(inner.isALabelSetOnNode(node, nodeCursor))
+
   override def isTypeSetOnRelationship(typ: Int, id: Long, relationshipCursor: RelationshipScanCursor): Boolean =
     singleDbHit(inner.isTypeSetOnRelationship(typ, id, relationshipCursor))
 

@@ -1,4 +1,0 @@
-// Label expression predicates including wildcards
-Feature "LabelExpressionAcceptance": Scenario "Semantics of label expression including wildcards in predicate on node"
-Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression including wildcards in predicate on relationship"
-Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type/label expression on unknown entity type": Example "0"

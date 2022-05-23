@@ -201,6 +201,8 @@ case class SlottedExpressionConverters(physicalPlan: PhysicalPlan, maybeOwningPi
         Some(slotted.expressions.LabelsFromSlot(offset))
       case e: physicalplanning.ast.HasLabelsFromSlot =>
         Some(hasLabelsFromSlot(e))
+      case e: physicalplanning.ast.HasALabelFromSlot =>
+        Some(HasALabelFromSlot(e.offset))
       case e: physicalplanning.ast.HasAnyLabelFromSlot =>
         Some(hasAnyLabelsFromSlot(e))
       case e: physicalplanning.ast.HasTypesFromSlot =>
