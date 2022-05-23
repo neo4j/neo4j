@@ -36,7 +36,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
  * and get rid of the 'String' and 'long' representation of store version and {@link LegacyStoreId}.
  */
 public class StoreId extends StoreVersionIdentifier {
-
+    public static final StoreId UNKNOWN = new StoreId(0, 0, "", "", 0, 0);
     private final long creationTime;
     private final long random;
 

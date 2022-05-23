@@ -50,14 +50,14 @@ public final class StoreSnapshot implements AutoCloseable {
     private final Stream<StoreResource> unrecoverableFiles;
     private final Path[] recoverableFiles;
     private final long lastAppliedTransactionId;
-    private final LegacyStoreId storeId;
+    private final StoreId storeId;
     private final Resource checkPointMutex;
 
     public StoreSnapshot(
             Stream<StoreResource> unrecoverableFiles,
             Path[] recoverableFiles,
             long lastAppliedTransactionId,
-            LegacyStoreId storeId,
+            StoreId storeId,
             Resource checkPointMutex) {
         this.unrecoverableFiles = unrecoverableFiles;
         this.recoverableFiles = recoverableFiles;
@@ -83,7 +83,7 @@ public final class StoreSnapshot implements AutoCloseable {
     /**
      * @return the id of the store files
      */
-    public LegacyStoreId storeId() {
+    public StoreId storeId() {
         return storeId;
     }
 
