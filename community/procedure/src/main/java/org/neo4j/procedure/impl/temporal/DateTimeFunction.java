@@ -103,7 +103,8 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue> {
                     DESCRIPTION,
                     CATEGORY,
                     true,
-                    true);
+                    true,
+                    false);
         }
 
         @Override
@@ -146,7 +147,8 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue> {
                     DESCRIPTION,
                     CATEGORY,
                     true,
-                    true);
+                    true,
+                    false);
         }
 
         @Override

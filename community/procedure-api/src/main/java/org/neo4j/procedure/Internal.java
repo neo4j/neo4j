@@ -25,7 +25,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This annotation marks a {@link Procedure} as being hidden, i.e. not listed in SHOW PROCEDURES and not documented.
+ * This annotation marks a {@link Procedure}, {@link UserFunction}, or {@link UserAggregationFunction} as being hidden,
+ * i.e. not listed in SHOW PROCEDURES/SHOW FUNCTIONS and not documented.
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)

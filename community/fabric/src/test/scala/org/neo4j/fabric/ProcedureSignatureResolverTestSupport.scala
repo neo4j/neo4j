@@ -106,7 +106,9 @@ trait ProcedureSignatureResolverTestSupport {
         null,
         name.last,
         category,
-        true
+        true,
+        false,
+        false
       )
     ) {
       override def apply(ctx: procedure.Context, input: Array[AnyValue]): AnyValue = body

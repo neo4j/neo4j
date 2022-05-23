@@ -40,7 +40,10 @@ public final class UserFunctionSignature {
     private final String category;
     private final boolean caseInsensitive;
     private final boolean isBuiltIn;
+    private final boolean internal;
 
+    // TODO: this is used by APOC and can be removed when
+    // https://trello.com/c/4ajvjBZP/137-update-apoc-dev-to-use-latest-userfunctionsignature is done
     @Deprecated(forRemoval = true)
     @SuppressWarnings("unused")
     public UserFunctionSignature(
@@ -52,27 +55,11 @@ public final class UserFunctionSignature {
             String description,
             String category,
             boolean caseInsensitive) {
-        this(name, inputSignature, type, deprecated, description, category, caseInsensitive);
+        this(name, inputSignature, type, deprecated, description, category, caseInsensitive, false, false);
     }
 
-    public UserFunctionSignature(
-            QualifiedName name,
-            List<FieldSignature> inputSignature,
-            Neo4jTypes.AnyType type,
-            String deprecated,
-            String description,
-            String category,
-            boolean caseInsensitive) {
-        this.name = name;
-        this.inputSignature = unmodifiableList(inputSignature);
-        this.type = type;
-        this.deprecated = deprecated;
-        this.description = description;
-        this.category = category;
-        this.caseInsensitive = caseInsensitive;
-        this.isBuiltIn = false;
-    }
-
+    // TODO: this is used by APOC and can be removed when
+    // https://trello.com/c/4ajvjBZP/137-update-apoc-dev-to-use-latest-userfunctionsignature is done
     @Deprecated(forRemoval = true)
     @SuppressWarnings("unused")
     public UserFunctionSignature(
@@ -85,7 +72,7 @@ public final class UserFunctionSignature {
             String category,
             boolean caseInsensitive,
             boolean isBuiltIn) {
-        this(name, inputSignature, type, deprecated, description, category, caseInsensitive, isBuiltIn);
+        this(name, inputSignature, type, deprecated, description, category, caseInsensitive, isBuiltIn, false);
     }
 
     public UserFunctionSignature(
@@ -96,7 +83,8 @@ public final class UserFunctionSignature {
             String description,
             String category,
             boolean caseInsensitive,
-            boolean isBuiltIn) {
+            boolean isBuiltIn,
+            boolean internal) {
         this.name = name;
         this.inputSignature = unmodifiableList(inputSignature);
         this.type = type;
@@ -105,6 +93,7 @@ public final class UserFunctionSignature {
         this.category = category;
         this.caseInsensitive = caseInsensitive;
         this.isBuiltIn = isBuiltIn;
+        this.internal = internal;
     }
 
     public QualifiedName name() {
@@ -137,6 +126,10 @@ public final class UserFunctionSignature {
 
     public boolean isBuiltIn() {
         return isBuiltIn;
+    }
+
+    public boolean internal() {
+        return internal;
     }
 
     @Override
@@ -213,7 +206,7 @@ public final class UserFunctionSignature {
                 throw new IllegalStateException("output type must be set");
             }
             return new UserFunctionSignature(
-                    name, inputSignature, outputType, deprecated, description, category, false);
+                    name, inputSignature, outputType, deprecated, description, category, false, false, false);
         }
     }
 

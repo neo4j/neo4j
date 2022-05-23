@@ -56,7 +56,8 @@ class DurationFunction implements CallableUserFunction {
             DurationFunction.class.getAnnotation(Description.class).value(),
             CATEGORY,
             true,
-            true);
+            true,
+            false);
 
     static void register(GlobalProcedures globalProcedures) throws ProcedureException {
         globalProcedures.registerBuiltIn(new DurationFunction());
@@ -133,7 +134,8 @@ class DurationFunction implements CallableUserFunction {
                     String.format(DESCRIPTION, unitString),
                     CATEGORY,
                     true,
-                    true);
+                    true,
+                    false);
         }
 
         @Override

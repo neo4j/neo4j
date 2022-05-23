@@ -301,6 +301,7 @@ class ProcedureCompiler {
         TypeCheckers.TypeChecker typeChecker = typeCheckers.checkerFor(returnType);
         String description = description(method);
         UserFunction function = method.getAnnotation(UserFunction.class);
+        boolean internal = method.isAnnotationPresent(Internal.class);
         String deprecated = deprecated(
                 method,
                 function::deprecatedBy,
@@ -313,13 +314,21 @@ class ProcedureCompiler {
             } catch (ComponentInjectionException e) {
                 description = describeAndLogLoadFailure(procName);
                 UserFunctionSignature signature = new UserFunctionSignature(
-                        procName, inputSignature, typeChecker.type(), deprecated, description, null, false);
+                        procName,
+                        inputSignature,
+                        typeChecker.type(),
+                        deprecated,
+                        description,
+                        null,
+                        false,
+                        false,
+                        internal);
                 return new FailedLoadFunction(signature);
             }
         }
 
         UserFunctionSignature signature = new UserFunctionSignature(
-                procName, inputSignature, typeChecker.type(), deprecated, description, null, false);
+                procName, inputSignature, typeChecker.type(), deprecated, description, null, false, false, internal);
 
         return ProcedureCompilation.compileFunction(signature, setters, method);
     }
@@ -409,6 +418,8 @@ class ProcedureCompiler {
                 function::deprecatedBy,
                 "Use of @UserAggregationFunction(deprecatedBy) without @Deprecated in " + funcName);
 
+        boolean internal = create.isAnnotationPresent(Internal.class);
+
         List<FieldSetter> setters = allFieldInjections.setters(definition);
         if (!config.fullAccessFor(funcName.toString())) {
             try {
@@ -416,14 +427,22 @@ class ProcedureCompiler {
             } catch (ComponentInjectionException e) {
                 description = describeAndLogLoadFailure(funcName);
                 UserFunctionSignature signature = new UserFunctionSignature(
-                        funcName, inputSignature, valueConverter.type(), deprecated, description, null, false);
+                        funcName,
+                        inputSignature,
+                        valueConverter.type(),
+                        deprecated,
+                        description,
+                        null,
+                        false,
+                        false,
+                        internal);
 
                 return new FailedLoadAggregatedFunction(signature);
             }
         }
 
         UserFunctionSignature signature = new UserFunctionSignature(
-                funcName, inputSignature, valueConverter.type(), deprecated, description, null, false);
+                funcName, inputSignature, valueConverter.type(), deprecated, description, null, false, false, internal);
 
         return ProcedureCompilation.compileAggregation(signature, setters, create, update, result);
     }

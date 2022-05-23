@@ -107,7 +107,8 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
                 description == null ? null : description.value(),
                 TEMPORAL_CATEGORY,
                 true,
-                true);
+                true,
+                false);
         this.defaultZone = defaultZone;
     }
 
@@ -190,7 +191,8 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
                     description,
                     TEMPORAL_CATEGORY,
                     true,
-                    true);
+                    true,
+                    false);
         }
 
         @Override
