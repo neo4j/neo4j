@@ -20,9 +20,9 @@
 package org.neo4j.configuration.connectors;
 
 import java.net.InetSocketAddress;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.HostnamePort;
 
@@ -35,7 +35,7 @@ public class ConnectorPortRegister {
     }
 
     private final ConcurrentHashMap<ConnectorType, HostnamePort> connectorsInfo = new ConcurrentHashMap<>();
-    private final Set<Listener> listeners = new HashSet<>();
+    private final List<Listener> listeners = new CopyOnWriteArrayList<>();
 
     public void register(ConnectorType connectorKey, InetSocketAddress localAddress) {
         register(connectorKey, localAddress.getHostString(), localAddress.getPort());
