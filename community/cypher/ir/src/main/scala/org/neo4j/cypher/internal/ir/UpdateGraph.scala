@@ -518,8 +518,10 @@ trait UpdateGraph {
     val uniqueLabels = unstableLabels ++ labelsInDeleteExpression
     lazy val allSubsetsOfAllLabels = uniqueLabels.subsets()
     lazy val nodes = NodesToCheckOverlap(Some(deletedNode.name), unstableNode.name)
+    // LabelSizeLimit is used to limit the size of the subsets because they are exponential in complexity.
+    val labelSizeLimit = 3
 
-    uniqueLabels.size > 3 || // TODO question for reviewer: To many subsets to test if number of unique labels are greater than 3?
+    uniqueLabels.size > labelSizeLimit ||
     allSubsetsOfAllLabels.isEmpty ||
     allSubsetsOfAllLabels.exists(labels => labelExpressionsOverlap(qgWithInfo, Set(labels), nodes))
   }
