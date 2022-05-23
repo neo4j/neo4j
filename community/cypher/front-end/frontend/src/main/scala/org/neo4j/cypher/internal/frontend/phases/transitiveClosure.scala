@@ -63,10 +63,11 @@ case object transitiveClosure extends StatementRewriter with StepSequencer.Step 
 
     //Collects property equalities, e.g `a.prop = 42`
     private def collect(e: Expression): Closures = e.folder.treeFold(Closures.empty) {
-      case _: Or => acc => SkipChildren(acc)
-      case _: And => acc => TraverseChildren(acc)
+      case _: Or                          => acc => SkipChildren(acc)
+      case _: And                         => acc => TraverseChildren(acc)
       case PropertyEquivalence(p1, p2, _) => acc => SkipChildren(acc.withEquivalence(p1 -> p2))
-      case PropertyMapping(p: Property, other) if !subTreeReference(p, other) => acc => SkipChildren(acc.withMapping(p -> other))
+      case PropertyMapping(p: Property, other) if !subTreeReference(p, other) =>
+        acc => SkipChildren(acc.withMapping(p -> other))
       case Not(Equals(_,_)) => acc => SkipChildren(acc)
     }
 
@@ -91,7 +92,7 @@ case object transitiveClosure extends StatementRewriter with StepSequencer.Step 
     private def andRewriter(closures: Closures): Rewriter = {
       val stopOnNotEquals: AnyRef => Boolean = {
         case Not(Equals(_, _)) => true
-        case _ => false
+        case _                 => false
       }
 
       bottomUp(Rewriter.lift {
@@ -135,17 +136,20 @@ case object transitiveClosure extends StatementRewriter with StepSequencer.Step 
   ) ++ SemanticInfoAvailable // Introduces new AST nodes
 
   override def getTransformer(pushdownPropertyReads: Boolean,
-                              semanticFeatures: Seq[SemanticFeature]): Transformer[BaseContext, BaseState, BaseState] = thisobject PropertyEquivalence {
+                              semanticFeatures: Seq[SemanticFeature]): Transformer[BaseContext, BaseState, BaseState] = this
+
+  object PropertyEquivalence {
     def unapply(v: Any): Option[(Property, Property, Equals)] = v match {
-      case equals@Equals(p1: Property, p2: Property) => Some(p1, p2, equals)
-      case _ => None
+      case equals @ Equals(p1: Property, p2: Property) => Some(p1, p2, equals)
+      case _                                           => None
     }
   }
 
   object PropertyMapping {
+
     def unapply(v: Any): Option[(Property, Expression)] = v match {
       case Equals(p1: Property, expr: Expression) => Some(p1, expr)
-      case _ => None
+      case _                                      => None
     }
   }
 }
