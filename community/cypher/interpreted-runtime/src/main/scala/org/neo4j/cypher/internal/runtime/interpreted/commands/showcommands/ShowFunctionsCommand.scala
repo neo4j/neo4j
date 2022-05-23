@@ -35,7 +35,6 @@ import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScop
 import org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_ROLE
 import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.kernel.impl.query.FunctionInformation
-import org.neo4j.kernel.impl.query.QueryExecutionEngine
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
@@ -72,18 +71,24 @@ case class ShowFunctionsCommand(functionType: ShowFunctionType, executableBy: Op
       false
 
     // gets you all functions provided by the query language
-    val languageFunctions = functionType match {
+    val languageFunctionsInfo = functionType match {
       case UserDefinedFunctions => List.empty // Will anyway filter out all built-in functions and all of these are built-in
       case _ => state.query.providedLanguageFunctions.map(f => FunctionInfo(f)).toList
     }
 
     // gets you all non-aggregating functions that are registered in the db (incl. those from libs like apoc)
-    val loadedFunctions = txContext.procedures.functionGetAll().iterator.asScala.map(f => FunctionInfo(f, aggregating = false)).toList
+    val loadedFunctions = txContext.procedures.functionGetAll().iterator.asScala
+
+    // filters out functions annotated with @Internal and gets the FunctionInfo
+    val loadedFunctionsInfo = loadedFunctions.filter(f => !f.internal).map(f => FunctionInfo(f, aggregating = false)).toList
 
     // gets you all aggregation functions that are registered in the db (incl. those from libs like apoc)
-    val loadedAggregationFunctions = txContext.procedures.aggregationFunctionGetAll().iterator.asScala.map(f => FunctionInfo(f, aggregating = true)).toList
+    val loadedAggregationFunctions = txContext.procedures.aggregationFunctionGetAll().iterator.asScala
 
-    val allFunctions = languageFunctions ++ loadedFunctions ++ loadedAggregationFunctions
+    // filters out functions annotated with @Internal and gets the FunctionInfo
+    val loadedAggregationFunctionsInfo = loadedAggregationFunctions.filter(f => !f.internal).map(f => FunctionInfo(f, aggregating = true)).toList
+
+    val allFunctions = languageFunctionsInfo ++ loadedFunctionsInfo ++ loadedAggregationFunctionsInfo
     val filteredFunctions = functionType match {
       case AllFunctions         => allFunctions
       case BuiltInFunctions     => allFunctions.filter(f => f.isBuiltIn)
