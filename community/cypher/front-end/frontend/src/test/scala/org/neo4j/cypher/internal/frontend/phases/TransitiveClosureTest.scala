@@ -163,17 +163,33 @@ class TransitiveClosureTest extends CypherFunSuite with AstConstructionTestSuppo
     )
   }
 
-  // Test for circular rewrites
   test("MATCH (n) WHERE (n:L) AND n.p = (n.p = n.p) RETURN n") {
     assertNotRewritten(
       "MATCH (n) WHERE (n:L) AND n.p = (n.p = n.p) RETURN n"
     )
   }
 
-  // Test for circular rewrites
+  test("MATCH (n)-->(a) WHERE a.p = 1 AND n.p = (a.p = (n.p = n.p)) RETURN n") {
+    assertNotRewritten(
+      "MATCH (n)-->(a) WHERE a.p = 1 AND n.p = (a.p = (n.p = n.p)) RETURN n"
+    )
+  }
+
   test("MATCH (n) WHERE (n:L) AND n.p = (n.p = (n.p = $x)) RETURN n") {
     assertNotRewritten(
-      "MATCH (n)-->(a) WHERE (n:L) AND n.p = (n.p = (a.p = n.p)) RETURN n"
+      "MATCH (n) WHERE (n:L) AND n.p = (n.p = (n.p = $x)) RETURN n"
+    )
+  }
+
+  test("MATCH (n) WHERE n.p = 1 AND n.p = (n.p = n.p) RETURN n") {
+    assertRewritten(
+      "MATCH (n) WHERE n.p = 1 AND n.p = (n.p = n.p) RETURN n",
+      "MATCH (n) WHERE n.p = (n.p = 1) AND n.p = 1 RETURN n"
+    )
+
+    assertRewritten(
+      "MATCH (n) WHERE n.p = (n.p = n.p) AND n.p = 1 RETURN n",
+      "MATCH (n) WHERE n.p = (n.p = 1) AND n.p = 1 RETURN n"
     )
   }
 }
