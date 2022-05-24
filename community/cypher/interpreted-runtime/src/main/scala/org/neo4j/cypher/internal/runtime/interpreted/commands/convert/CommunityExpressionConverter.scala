@@ -121,6 +121,7 @@ import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.ast.DefaultValueLiteral
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
+import org.neo4j.cypher.internal.runtime.ast.MakeTraversable
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
 import org.neo4j.cypher.internal.runtime.interpreted.CommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.GroupingExpression
@@ -404,6 +405,7 @@ case class CommunityExpressionConverter(
         commands.expressions.CollectAll(self.toCommandExpression(id, e.arguments.head))
       case e: DefaultValueLiteral => commands.expressions.Literal(e.value)
       case AssertIsNode(expr)     => commands.expressions.AssertIsNodeFunction(self.toCommandExpression(id, expr))
+      case MakeTraversable(e)     => commands.expressions.MakeTraversable(self.toCommandExpression(id, e))
       case _                      => null
     }
 
