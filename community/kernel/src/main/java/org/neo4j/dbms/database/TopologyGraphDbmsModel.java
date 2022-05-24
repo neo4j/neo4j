@@ -174,9 +174,9 @@ public interface TopologyGraphDbmsModel {
     String INSTANCE_STATUS_PROPERTY = "status";
     String INSTANCE_DISCOVERED_AT_PROPERTY = "discovered_at";
     String INSTANCE_MODE_PROPERTY = "mode";
-    String INSTANCE_ALLOWED_DATABASES = "allowedDatabases";
-    String INSTANCE_DENIED_DATABASES = "deniedDatabases";
-    String INSTANCE_MODE_CONSTRAINT = "modeConstraint";
+    String INSTANCE_ALLOWED_DATABASES_PROPERTY = "allowedDatabases";
+    String INSTANCE_DENIED_DATABASES_PROPERTY = "deniedDatabases";
+    String INSTANCE_MODE_CONSTRAINT_PROPERTY = "modeConstraint";
     String REMOVED_INSTANCE_REMOVED_AT_PROPERTY = "removed_at";
     String REMOVED_INSTANCE_ALIASES_PROPERTY = "aliases";
 
