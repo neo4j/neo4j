@@ -306,4 +306,24 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
       .withRows(lhsRows.flatten)
       .withStatistics(nodesCreated = 8, labelsAdded = 8, propertiesSet = 8)
   }
+
+  test("foreachApply does coercion to list of single argument") {
+    // given
+    val lhsRows = inputValues(Array[Any](1))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .foreachApply("i", "1")
+      .|.create(createNode("n"))
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult should beColumns("x").withSingleRow(1).withStatistics(nodesCreated = 1)
+  }
 }
