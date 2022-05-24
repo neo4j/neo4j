@@ -104,6 +104,7 @@ abstract class RuntimeContext {
   def log: InternalLog
   def anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   def materializedEntitiesMode: Boolean
+  def isCommunity: Boolean
 }
 
 /**

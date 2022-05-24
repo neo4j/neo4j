@@ -92,7 +92,8 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
       converters,
       planContext,
       mock[QueryIndexRegistrator],
-      new AnonymousVariableNameGenerator()
+      new AnonymousVariableNameGenerator(),
+      isCommunity = true
     )(semanticTable)
 
   private def build(logicalPlan: LogicalPlan): Pipe =

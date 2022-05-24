@@ -43,6 +43,7 @@ case class CommunityRuntimeContext(
 
   override def compileExpressions: Boolean = false
   override def materializedEntitiesMode: Boolean = false
+  override def isCommunity: Boolean = true
 }
 
 case class CommunityRuntimeContextManager(log: InternalLog, config: CypherRuntimeConfiguration)

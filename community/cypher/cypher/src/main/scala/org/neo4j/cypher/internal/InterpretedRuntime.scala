@@ -69,7 +69,8 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
       converters,
       context.tokenContext,
       queryIndexRegistrator,
-      context.anonymousVariableNameGenerator
+      context.anonymousVariableNameGenerator,
+      context.isCommunity
     )(query.semanticTable)
     val pipeTreeBuilder = PipeTreeBuilder(pipeMapper)
     val logicalPlanWithConvertedNestedPlans =

@@ -111,7 +111,8 @@ trait SlottedRuntime[-CONTEXT <: RuntimeContext] extends CypherRuntime[CONTEXT] 
         converters,
         context.tokenContext,
         queryIndexRegistrator,
-        context.anonymousVariableNameGenerator
+        context.anonymousVariableNameGenerator,
+        context.isCommunity
       )(query.semanticTable)
       val pipeBuilder = new SlottedPipeMapper(
         fallback,

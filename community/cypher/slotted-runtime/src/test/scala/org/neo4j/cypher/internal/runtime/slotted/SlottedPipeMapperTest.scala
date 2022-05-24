@@ -150,7 +150,8 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
       converters,
       tokenContext,
       mock[QueryIndexRegistrator],
-      new AnonymousVariableNameGenerator()
+      new AnonymousVariableNameGenerator(),
+      isCommunity = true
     )(table)
     val pipeBuilder =
       new SlottedPipeMapper(fallback, converters, physicalPlan, true, mock[QueryIndexRegistrator])(table)

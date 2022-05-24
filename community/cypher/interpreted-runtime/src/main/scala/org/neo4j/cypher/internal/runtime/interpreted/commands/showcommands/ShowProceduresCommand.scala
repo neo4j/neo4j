@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 import org.neo4j.cypher.internal.ast.ExecutableBy
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.runtime.ClosingIterator
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.CommunityCypherRowFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.internal.kernel.api.procs.FieldSignature
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature
@@ -41,11 +40,14 @@ import java.util
 import scala.jdk.CollectionConverters.SetHasAsScala
 
 // SHOW PROCEDURE[S] [EXECUTABLE [BY {CURRENT USER | username}]] [WHERE clause | YIELD clause]
-case class ShowProceduresCommand(executableBy: Option[ExecutableBy], verbose: Boolean, columns: List[ShowColumn])
-    extends Command(columns) {
+case class ShowProceduresCommand(
+  executableBy: Option[ExecutableBy],
+  verbose: Boolean,
+  columns: List[ShowColumn],
+  isCommunity: Boolean
+) extends Command(columns) {
 
   override def originalNameRows(state: QueryState): ClosingIterator[Map[String, AnyValue]] = {
-    val isCommunity = state.rowFactory.isInstanceOf[CommunityCypherRowFactory]
     lazy val systemGraph = state.query.systemGraph
 
     val privileges =

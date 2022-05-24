@@ -319,7 +319,8 @@ case class InterpretedPipeMapper(
   expressionConverters: ExpressionConverters,
   tokenContext: ReadTokenContext,
   indexRegistrator: QueryIndexRegistrator,
-  anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+  isCommunity: Boolean
 )(implicit semanticTable: SemanticTable) extends PipeMapper {
 
   private def getBuildExpression(id: Id): internal.expressions.Expression => Expression =
@@ -608,10 +609,10 @@ case class InterpretedPipeMapper(
         CommandPipe(ShowConstraintsCommand(constraintType, verbose, columns))(id)
 
       case ShowProcedures(executableBy, verbose, columns) =>
-        CommandPipe(ShowProceduresCommand(executableBy, verbose, columns))(id)
+        CommandPipe(ShowProceduresCommand(executableBy, verbose, columns, isCommunity))(id)
 
       case ShowFunctions(functionType, executableBy, verbose, columns) =>
-        CommandPipe(ShowFunctionsCommand(functionType, executableBy, verbose, columns))(id)
+        CommandPipe(ShowFunctionsCommand(functionType, executableBy, verbose, columns, isCommunity))(id)
 
       case ShowTransactions(ids, verbose, columns) => CommandPipe(ShowTransactionsCommand(ids, verbose, columns))(id)
 
