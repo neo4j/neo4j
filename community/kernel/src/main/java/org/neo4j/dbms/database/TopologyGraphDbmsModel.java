@@ -31,9 +31,9 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 
 public interface TopologyGraphDbmsModel {
     enum HostedOnMode {
-        RAFT(1, GraphDatabaseSettings.Mode.CORE),
-        REPLICA(2, GraphDatabaseSettings.Mode.READ_REPLICA),
-        SINGLE(0, GraphDatabaseSettings.Mode.SINGLE);
+        raft(1, GraphDatabaseSettings.Mode.CORE),
+        replica(2, GraphDatabaseSettings.Mode.READ_REPLICA),
+        single(0, GraphDatabaseSettings.Mode.SINGLE);
 
         private final GraphDatabaseSettings.Mode instanceMode;
         private final byte code;
@@ -90,7 +90,16 @@ public interface TopologyGraphDbmsModel {
 
     enum InstanceStatus {
         ENABLED,
-        DEALLOCATING
+        DEALLOCATING;
+
+        public static InstanceStatus getInstanceStatus(String value) {
+            if (value.equals("active")) {
+                return InstanceStatus.ENABLED;
+            } else if (value.equals("draining")) {
+                return InstanceStatus.DEALLOCATING;
+            }
+            return InstanceStatus.valueOf(value);
+        }
     }
 
     enum InstanceModeConstraint {

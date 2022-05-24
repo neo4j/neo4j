@@ -232,7 +232,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent {
             var nodes = tx.findNodes(INSTANCE_LABEL).stream().toList();
             if (nodes.size() == 1) {
                 var hostedOn = databaseNode.createRelationshipTo(nodes.get(0), HOSTED_ON_RELATIONSHIP);
-                hostedOn.setProperty(HOSTED_ON_MODE_PROPERTY, TopologyGraphDbmsModel.HostedOnMode.SINGLE.name());
+                hostedOn.setProperty(HOSTED_ON_MODE_PROPERTY, TopologyGraphDbmsModel.HostedOnMode.single.name());
                 hostedOn.setProperty(HOSTED_ON_INSTALLED_AT_PROPERTY, now);
             }
         }
