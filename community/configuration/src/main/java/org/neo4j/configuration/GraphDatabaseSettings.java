@@ -317,11 +317,12 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             newBuilder("dbms.cypher.lenient_create_relationship", BOOL, false).build();
 
     @Description("The number of cached Cypher query execution plans per database. "
-            + "The max number of query plans that can be kept in cache is the `number of databases` * `dbms.query_cache_size`. "
-            + "With 10 databases and `dbms.query_cache_size`=1000, the caches can keep 10000 plans in total on the instance, "
+            + "The max number of query plans that can be kept in cache is the `number of databases` * `server.db.query_cache_size`. "
+            + "With 10 databases and `server.db.query_cache_size`=1000, the caches can keep 10000 plans in total on the instance, "
             + "assuming that each DB receives queries that fill up its cache. ")
-    public static final Setting<Integer> query_cache_size =
-            newBuilder("dbms.query_cache_size", INT, 1000).addConstraint(min(0)).build();
+    public static final Setting<Integer> query_cache_size = newBuilder("server.db.query_cache_size", INT, 1000)
+            .addConstraint(min(0))
+            .build();
 
     @Description("The threshold for statistics above which a plan is considered stale.\n\n"
             + "If any of the underlying statistics used to create the plan have changed more than this value, "

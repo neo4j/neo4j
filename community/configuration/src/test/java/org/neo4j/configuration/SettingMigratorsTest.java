@@ -66,6 +66,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.plugin_dir;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_store_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
+import static org.neo4j.configuration.GraphDatabaseSettings.query_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.query_statistics_divergence_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
 import static org.neo4j.configuration.GraphDatabaseSettings.script_root_path;
@@ -565,5 +566,15 @@ class SettingMigratorsTest {
 
         assertEquals(Duration.ofMinutes(17), config.get(shutdown_transaction_end_timeout));
         assertFalse(config.get(preallocate_store_files));
+    }
+
+    @Test
+    void migrateQueryCacheSize() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(confFile, List.of("dbms.query_cache_size=132"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+
+        assertEquals(132, config.get(query_cache_size));
     }
 }

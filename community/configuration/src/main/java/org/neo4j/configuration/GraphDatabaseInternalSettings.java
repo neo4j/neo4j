@@ -515,7 +515,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             + "This cache is mainly meant to avoid generating code multiple times if different queries use the same logical plan. "
             + "Items are only evicted from the cache when all query caches are cleared, e.g. by calling `db.clearQueryCaches()`. "
             + "The cache is allowed to grow up to this size. "
-            + "If the size is set to -1 (default), it will use the size configured for the query cache, that is `dbms.query_cache_size`"
+            + "If the size is set to -1 (default), it will use the size configured for the query cache, that is `server.db.query_cache_size`"
             + "Setting the size to 0 means disabling this cache.")
     public static final Setting<Integer> query_execution_plan_cache_size = newBuilder(
                     "internal.dbms.query_execution_plan_cache_size", INT, -1)

@@ -61,6 +61,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.plugin_dir;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_store_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
+import static org.neo4j.configuration.GraphDatabaseSettings.query_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.query_statistics_divergence_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
 import static org.neo4j.configuration.GraphDatabaseSettings.script_root_path;
@@ -658,6 +659,12 @@ public final class SettingMigrators {
             migrateMaxProcessorToInternal(values, defaultValues, log);
             migratePageCacheWarmerSettings(values, defaultValues, log);
             migrateShutdownTimeoutAndFilePreallocation(values, defaultValues, log);
+            migrateQueryCacheSize(values, defaultValues, log);
+        }
+
+        private void migrateQueryCacheSize(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.query_cache_size", query_cache_size);
         }
 
         private void migrateShutdownTimeoutAndFilePreallocation(
