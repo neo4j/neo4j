@@ -53,7 +53,10 @@ import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_trans
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_profiling_interval;
 import static org.neo4j.configuration.GraphDatabaseSettings.plugin_dir;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
@@ -651,6 +654,17 @@ public final class SettingMigrators {
             migrateTransactionAndTrackingSettings(values, defaultValues, log);
             migrateGcLogsSettings(values, defaultValues, log);
             migrateMaxProcessorToInternal(values, defaultValues, log);
+            migratePageCacheWarmerSettings(values, defaultValues, log);
+        }
+
+        private void migratePageCacheWarmerSettings(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.memory.pagecache.warmup.enable", pagecache_warmup_enabled);
+            migrateSettingNameChange(values, log, "dbms.memory.pagecache.warmup.preload", pagecache_warmup_prefetch);
+            migrateSettingNameChange(
+                    values, log, "dbms.memory.pagecache.warmup.preload.allowlist", pagecache_warmup_prefetch_allowlist);
+            migrateSettingNameChange(
+                    values, log, "dbms.memory.pagecache.warmup.profile.interval", pagecache_warmup_profiling_interval);
         }
 
         private void migrateMaxProcessorToInternal(

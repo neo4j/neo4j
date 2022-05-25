@@ -19,6 +19,7 @@
  */
 package org.neo4j.configuration;
 
+import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -57,7 +58,10 @@ import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_trans
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_profiling_interval;
 import static org.neo4j.configuration.GraphDatabaseSettings.plugin_dir;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
@@ -122,7 +126,7 @@ class SettingMigratorsTest {
         assertTrue(config.get(BoltConnector.enabled));
         assertTrue(config.get(HttpConnector.enabled));
         assertTrue(config.get(HttpsConnector.enabled));
-        assertEquals(Duration.ofSeconds(1), config.get(thread_pool_shutdown_wait_time));
+        assertEquals(ofSeconds(1), config.get(thread_pool_shutdown_wait_time));
 
         var warnConfigMatcher = assertThat(logProvider).forClass(Config.class).forLevel(WARN);
         warnConfigMatcher
@@ -444,7 +448,7 @@ class SettingMigratorsTest {
         assertEquals(false, config.get(forbid_shortestpath_common_nodes));
         assertEquals(true, config.get(cypher_hints_error));
         assertEquals(false, config.get(cypher_lenient_create_relationship));
-        assertEquals(Duration.ofSeconds(11), config.get(cypher_min_replan_interval));
+        assertEquals(ofSeconds(11), config.get(cypher_min_replan_interval));
         assertEquals(GraphDatabaseSettings.CypherPlanner.COST, config.get(cypher_planner));
         assertEquals(true, config.get(cypher_render_plan_descriptions));
         assertEquals(0.42, config.get(query_statistics_divergence_threshold), 0.01);
@@ -494,11 +498,11 @@ class SettingMigratorsTest {
 
         assertFalse(config.get(track_query_allocation));
         assertTrue(config.get(track_query_cpu_time));
-        assertEquals(Duration.ofSeconds(100), config.get(bookmark_ready_timeout));
+        assertEquals(ofSeconds(100), config.get(bookmark_ready_timeout));
         assertEquals(17, config.get(max_concurrent_transactions));
-        assertEquals(Duration.ofSeconds(4), config.get(transaction_monitor_check_interval));
+        assertEquals(ofSeconds(4), config.get(transaction_monitor_check_interval));
         assertEquals(78, config.get(transaction_sampling_percentage));
-        assertEquals(Duration.ofSeconds(10), config.get(transaction_timeout));
+        assertEquals(ofSeconds(10), config.get(transaction_timeout));
         assertEquals(SAMPLE, config.get(transaction_tracing_level));
     }
 
@@ -528,5 +532,24 @@ class SettingMigratorsTest {
 
         Config config = Config.newBuilder().fromFile(confFile).build();
         assertEquals(7, config.get(upgrade_processors));
+    }
+
+    @Test
+    void migratePageCacheWarmupSettings() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(
+                confFile,
+                List.of(
+                        "dbms.memory.pagecache.warmup.enable=true",
+                        "dbms.memory.pagecache.warmup.preload=false",
+                        "dbms.memory.pagecache.warmup.preload.allowlist=*index*",
+                        "dbms.memory.pagecache.warmup.profile.interval=5s"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+
+        assertTrue(config.get(pagecache_warmup_enabled));
+        assertFalse(config.get(pagecache_warmup_prefetch));
+        assertEquals("*index*", config.get(pagecache_warmup_prefetch_allowlist));
+        assertEquals(ofSeconds(5), config.get(pagecache_warmup_profiling_interval));
     }
 }

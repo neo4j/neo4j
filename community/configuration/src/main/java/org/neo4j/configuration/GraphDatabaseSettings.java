@@ -695,7 +695,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "Accurate profiles allow the page cache to do active warmup after a restart, reducing the mean time to performance.\n"
             + "This feature is available in Neo4j Enterprise Edition.")
     public static final Setting<Duration> pagecache_warmup_profiling_interval = newBuilder(
-                    "dbms.memory.pagecache.warmup.profile.interval", DURATION, ofMinutes(1))
+                    "db.memory.pagecache.warmup.profile.interval", DURATION, ofMinutes(1))
             .build();
 
     @Description(
@@ -704,18 +704,18 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
                     + "This setting allows disabling that behavior.\n"
                     + "This feature is available in Neo4j Enterprise Edition.")
     public static final Setting<Boolean> pagecache_warmup_enabled =
-            newBuilder("dbms.memory.pagecache.warmup.enable", BOOL, true).build();
+            newBuilder("db.memory.pagecache.warmup.enable", BOOL, true).build();
 
     @Description(
             "Page cache warmup can be configured to prefetch files, preferably when cache size is bigger than store size. "
                     + "Files to be prefetched can be filtered by 'dbms.memory.pagecache.warmup.preload.allowlist'. "
                     + "Enabling this disables warmup by profile ")
     public static final Setting<Boolean> pagecache_warmup_prefetch =
-            newBuilder("dbms.memory.pagecache.warmup.preload", BOOL, false).build();
+            newBuilder("db.memory.pagecache.warmup.preload", BOOL, false).build();
 
     @Description("Page cache warmup prefetch file allowlist regex. " + "By default matches all files.")
     public static final Setting<String> pagecache_warmup_prefetch_allowlist = newBuilder(
-                    "dbms.memory.pagecache.warmup.preload.allowlist", STRING, ".*")
+                    "db.memory.pagecache.warmup.preload.allowlist", STRING, ".*")
             .build();
 
     @Description(
