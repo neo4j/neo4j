@@ -374,11 +374,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "use the legacy convention originally supported in Neo4j 3.0 and 3.1, allowing a backslash to "
             + "include quotes in-lined in fields.")
     public static final Setting<Boolean> csv_legacy_quote_escaping =
-            newBuilder("dbms.import.csv.legacy_quote_escaping", BOOL, true).build();
+            newBuilder("db.import.csv.legacy_quote_escaping", BOOL, true).build();
 
     @Description("The size of the internal buffer in bytes used by `LOAD CSV`. If the csv file contains huge fields "
             + "this value may have to be increased.")
-    public static final Setting<Long> csv_buffer_size = newBuilder("dbms.import.csv.buffer_size", LONG, mebiBytes(2))
+    public static final Setting<Long> csv_buffer_size = newBuilder("db.import.csv.buffer_size", LONG, mebiBytes(2))
             .addConstraint(min(1L))
             .build();
 
@@ -430,7 +430,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     @Description(
             "The maximum time interval within which lock should be acquired. Zero (default) means timeout is disabled.")
     public static final Setting<Duration> lock_acquisition_timeout = newBuilder(
-                    "dbms.lock.acquisition.timeout", DURATION, Duration.ZERO)
+                    "db.lock.acquisition.timeout", DURATION, Duration.ZERO)
             .dynamic()
             .build();
 
@@ -728,7 +728,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     @Description("Allows the enabling or disabling of the file watcher service. "
             + "This is an auxiliary service but should be left enabled in almost all cases.")
     public static final Setting<Boolean> filewatcher_enabled =
-            newBuilder("dbms.filewatcher.enabled", BOOL, true).build();
+            newBuilder("db.filewatcher.enabled", BOOL, true).build();
 
     @Description("Relationship count threshold for considering a node to be dense.")
     public static final Setting<Integer> dense_node_threshold = newBuilder(

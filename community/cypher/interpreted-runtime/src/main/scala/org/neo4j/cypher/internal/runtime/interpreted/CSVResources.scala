@@ -110,7 +110,7 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
             if (mark.isEndOfLine) return if (buffer.isEmpty) null else buffer.toArray
           }
         } catch {
-          // TODO change to error message mentioning `dbms.import.csv.buffer_size` in 4.0
+          // TODO change to error message mentioning `db.import.csv.buffer_size` in 4.0
           case e: BufferOverflowException => throw new CypherExecutionException(e.getMessage, e)
         }
 

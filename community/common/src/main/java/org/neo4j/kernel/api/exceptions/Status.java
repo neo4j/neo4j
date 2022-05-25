@@ -136,7 +136,7 @@ public interface Status {
                         + "You may however chain bookmarks generated from system database with bookmarks from another database."),
         Terminated(ClientError, "Explicitly terminated by the user."),
         LockAcquisitionTimeout(
-                ClientError, "Unable to acquire lock within configured timeout (dbms.lock.acquisition.timeout)."),
+                ClientError, "Unable to acquire lock within configured timeout (db.lock.acquisition.timeout)."),
 
         // database errors
         TransactionStartFailed(DatabaseError, "The database was unable to start the transaction."),

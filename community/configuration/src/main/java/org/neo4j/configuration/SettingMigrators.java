@@ -34,6 +34,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_volume;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_iops_limit;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_policy;
+import static org.neo4j.configuration.GraphDatabaseSettings.csv_buffer_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.csv_legacy_quote_escaping;
 import static org.neo4j.configuration.GraphDatabaseSettings.cypher_hints_error;
 import static org.neo4j.configuration.GraphDatabaseSettings.cypher_lenient_create_relationship;
 import static org.neo4j.configuration.GraphDatabaseSettings.cypher_min_replan_interval;
@@ -44,11 +46,13 @@ import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.database_dumps_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
+import static org.neo4j.configuration.GraphDatabaseSettings.filewatcher_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.forbid_exhaustive_shortestpath;
 import static org.neo4j.configuration.GraphDatabaseSettings.forbid_shortestpath_common_nodes;
 import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.licenses_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.load_csv_file_url_root;
+import static org.neo4j.configuration.GraphDatabaseSettings.lock_acquisition_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_transactions;
@@ -665,6 +669,25 @@ public final class SettingMigrators {
             migrateQueryCacheSize(values, defaultValues, log);
             migrateTransactionMemorySettings(values, defaultValues, log);
             migrateGroupAndRecoverySettings(values, defaultValues, log);
+            migrateWatcherSetting(values, defaultValues, log);
+            migrateCsvImportSetting(values, defaultValues, log);
+            migrateLockAcquisitionSetting(values, defaultValues, log);
+        }
+
+        private void migrateLockAcquisitionSetting(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.lock.acquisition.timeout", lock_acquisition_timeout);
+        }
+
+        private void migrateCsvImportSetting(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.import.csv.buffer_size", csv_buffer_size);
+            migrateSettingNameChange(values, log, "dbms.import.csv.legacy_quote_escaping", csv_legacy_quote_escaping);
+        }
+
+        private void migrateWatcherSetting(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.filewatcher.enabled", filewatcher_enabled);
         }
 
         private void migrateGroupAndRecoverySettings(

@@ -39,6 +39,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_volume;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_iops_limit;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_policy;
+import static org.neo4j.configuration.GraphDatabaseSettings.csv_buffer_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.csv_legacy_quote_escaping;
 import static org.neo4j.configuration.GraphDatabaseSettings.cypher_hints_error;
 import static org.neo4j.configuration.GraphDatabaseSettings.cypher_lenient_create_relationship;
 import static org.neo4j.configuration.GraphDatabaseSettings.cypher_min_replan_interval;
@@ -49,11 +51,13 @@ import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.database_dumps_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
+import static org.neo4j.configuration.GraphDatabaseSettings.filewatcher_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.forbid_exhaustive_shortestpath;
 import static org.neo4j.configuration.GraphDatabaseSettings.forbid_shortestpath_common_nodes;
 import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.licenses_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.load_csv_file_url_root;
+import static org.neo4j.configuration.GraphDatabaseSettings.lock_acquisition_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_transactions;
@@ -482,6 +486,38 @@ class SettingMigratorsTest {
         assertEquals("3 days", config.get(keep_logical_logs));
         assertEquals(mebiBytes(34), config.get(logical_log_rotation_threshold));
         assertEquals(ON_HEAP, config.get(tx_state_memory_allocation));
+    }
+
+    @Test
+    void migrateWatcherSetting() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(confFile, List.of("dbms.filewatcher.enabled=false"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+
+        assertFalse(config.get(filewatcher_enabled));
+    }
+
+    @Test
+    void migrateLockAcquisitionSetting() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(confFile, List.of("dbms.lock.acquisition.timeout=15m"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+
+        assertEquals(Duration.ofMinutes(15), config.get(lock_acquisition_timeout));
+    }
+
+    @Test
+    void migrateCsvImportSetting() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(
+                confFile, List.of("dbms.import.csv.buffer_size=123", "dbms.import.csv.legacy_quote_escaping=false"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+
+        assertEquals(123, config.get(csv_buffer_size));
+        assertFalse(config.get(csv_legacy_quote_escaping));
     }
 
     @Test
