@@ -24,6 +24,7 @@ import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.server.configuration.ServerSettings.http_auth_allowlist;
 import static org.neo4j.server.configuration.ServerSettings.third_party_packages;
+import static org.neo4j.server.configuration.ServerSettings.webserver_max_threads;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -80,5 +81,14 @@ class ServerSettingsMigratorTest {
         assertThat(config.get(third_party_packages))
                 .hasSize(1)
                 .contains(new ThirdPartyJaxRsPackage("org.neo4j.test.server.unmanaged", "/examples/test"));
+    }
+
+    @Test
+    void migrateMaxThreads() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(confFile, List.of("dbms.threads.worker_count=9874"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+        assertEquals(9874, config.get(webserver_max_threads));
     }
 }

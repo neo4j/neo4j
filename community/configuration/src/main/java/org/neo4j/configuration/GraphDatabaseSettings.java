@@ -442,7 +442,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     @Description("The maximum amount of time to wait for running transactions to complete before allowing "
             + "initiated database shutdown to continue")
     public static final Setting<Duration> shutdown_transaction_end_timeout = newBuilder(
-                    "dbms.shutdown_transaction_end_timeout", DURATION, ofSeconds(10))
+                    "db.shutdown_transaction_end_timeout", DURATION, ofSeconds(10))
             .build();
 
     @Description("Location of the database plugin directory. Compiled Java JAR files that contain database "
@@ -644,7 +644,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     @Description("Specify if Neo4j should try to preallocate store files as they grow.")
     public static final Setting<Boolean> preallocate_store_files =
-            newBuilder("dbms.store.files.preallocate", BOOL, true).build();
+            newBuilder("db.store.files.preallocate", BOOL, true).build();
 
     @Description("If `true`, Neo4j will abort recovery if transaction log files are missing. Setting "
             + "this to `false` will allow Neo4j to create new empty missing files for the already existing  "

@@ -76,7 +76,7 @@ public class ServerSettings implements SettingsDeclaration {
                     + "Your OS might enforce a lower limit than the maximum value specified here.")
     @DocumentedDefaultValue("Number of available processors, or 500 for machines which have more than 500 processors.")
     public static final Setting<Integer> webserver_max_threads = newBuilder(
-                    "dbms.threads.worker_count",
+                    "server.threads.worker_count",
                     INT,
                     Math.min(Runtime.getRuntime().availableProcessors(), 500))
             .addConstraint(range(1, JettyThreadCalculator.MAX_THREADS))

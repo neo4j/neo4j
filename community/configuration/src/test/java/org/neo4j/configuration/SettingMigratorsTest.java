@@ -64,10 +64,12 @@ import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_pre
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_profiling_interval;
 import static org.neo4j.configuration.GraphDatabaseSettings.plugin_dir;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
+import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_store_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
 import static org.neo4j.configuration.GraphDatabaseSettings.query_statistics_divergence_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
 import static org.neo4j.configuration.GraphDatabaseSettings.script_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.shutdown_transaction_end_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.track_query_allocation;
 import static org.neo4j.configuration.GraphDatabaseSettings.track_query_cpu_time;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_log_buffer_size;
@@ -551,5 +553,17 @@ class SettingMigratorsTest {
         assertFalse(config.get(pagecache_warmup_prefetch));
         assertEquals("*index*", config.get(pagecache_warmup_prefetch_allowlist));
         assertEquals(ofSeconds(5), config.get(pagecache_warmup_profiling_interval));
+    }
+
+    @Test
+    void migrateShutdownTimeoutAndPreallocations() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(
+                confFile, List.of("dbms.shutdown_transaction_end_timeout=17m", "dbms.store.files.preallocate=false"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+
+        assertEquals(Duration.ofMinutes(17), config.get(shutdown_transaction_end_timeout));
+        assertFalse(config.get(preallocate_store_files));
     }
 }

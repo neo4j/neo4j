@@ -59,10 +59,12 @@ import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_pre
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_profiling_interval;
 import static org.neo4j.configuration.GraphDatabaseSettings.plugin_dir;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
+import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_store_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
 import static org.neo4j.configuration.GraphDatabaseSettings.query_statistics_divergence_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
 import static org.neo4j.configuration.GraphDatabaseSettings.script_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.shutdown_transaction_end_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.track_query_allocation;
 import static org.neo4j.configuration.GraphDatabaseSettings.track_query_cpu_time;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_log_buffer_size;
@@ -655,6 +657,14 @@ public final class SettingMigrators {
             migrateGcLogsSettings(values, defaultValues, log);
             migrateMaxProcessorToInternal(values, defaultValues, log);
             migratePageCacheWarmerSettings(values, defaultValues, log);
+            migrateShutdownTimeoutAndFilePreallocation(values, defaultValues, log);
+        }
+
+        private void migrateShutdownTimeoutAndFilePreallocation(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(
+                    values, log, "dbms.shutdown_transaction_end_timeout", shutdown_transaction_end_timeout);
+            migrateSettingNameChange(values, log, "dbms.store.files.preallocate", preallocate_store_files);
         }
 
         private void migratePageCacheWarmerSettings(
