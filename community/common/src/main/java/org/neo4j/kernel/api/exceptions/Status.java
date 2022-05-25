@@ -400,7 +400,7 @@ public interface Status {
         TransactionOutOfMemoryError(
                 ClientError,
                 "The transaction used more memory than was allowed. The maximum allowed size for a "
-                        + "transaction can be configured with 'dbms.memory.transaction.max_size' in the neo4j configuration "
+                        + "transaction can be configured with 'db.memory.transaction.max' in the neo4j configuration "
                         + "(normally in 'conf/neo4j.conf' or, if you are using Neo4j Desktop, found through the user interface)."),
         UpgradeRequired(
                 ClientError,

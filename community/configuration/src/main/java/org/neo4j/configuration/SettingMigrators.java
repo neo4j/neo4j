@@ -51,6 +51,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_transactions;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_global_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_enabled;
@@ -660,6 +661,16 @@ public final class SettingMigrators {
             migratePageCacheWarmerSettings(values, defaultValues, log);
             migrateShutdownTimeoutAndFilePreallocation(values, defaultValues, log);
             migrateQueryCacheSize(values, defaultValues, log);
+            migrateTransactionMemorySettings(values, defaultValues, log);
+        }
+
+        private void migrateTransactionMemorySettings(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(
+                    values, log, "dbms.memory.transaction.database_max_size", memory_transaction_database_max_size);
+            migrateSettingNameChange(
+                    values, log, "dbms.memory.transaction.global_max_size", memory_transaction_global_max_size);
+            migrateSettingNameChange(values, log, "dbms.memory.transaction.max_size", memory_transaction_max_size);
         }
 
         private void migrateQueryCacheSize(

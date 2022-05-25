@@ -1002,7 +1002,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             "Limit the amount of memory that all of the running transactions can consume, in bytes (or kilobytes with the 'k' "
                     + "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'unlimited'.")
     public static final Setting<Long> memory_transaction_global_max_size = newBuilder(
-                    "dbms.memory.transaction.global_max_size", BYTES, 0L)
+                    "dbms.memory.transaction.total.max", BYTES, 0L)
             .addConstraint(any(min(mebiBytes(10)), is(0L)))
             .dynamic()
             .build();
@@ -1011,7 +1011,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             "Limit the amount of memory that all transactions in one database can consume, in bytes (or kilobytes with the 'k' "
                     + "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'unlimited'.")
     public static final Setting<Long> memory_transaction_database_max_size = newBuilder(
-                    "dbms.memory.transaction.database_max_size", BYTES, 0L)
+                    "db.memory.transaction.total.max", BYTES, 0L)
             .addConstraint(any(min(mebiBytes(10)), is(0L)))
             .dynamic()
             .build();
@@ -1020,8 +1020,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             "Limit the amount of memory that a single transaction can consume, in bytes (or kilobytes with the 'k' "
                     + "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'largest possible value'. "
                     + "When `dbms.mode=CORE` or `dbms.mode=SINGLE` and `dbms.clustering.enable=true` this is '2G', in other cases this is 'unlimited'.")
-    public static final Setting<Long> memory_transaction_max_size = newBuilder(
-                    "dbms.memory.transaction.max_size", BYTES, 0L)
+    public static final Setting<Long> memory_transaction_max_size = newBuilder("db.memory.transaction.max", BYTES, 0L)
             .addConstraint(any(min(mebiBytes(1)), is(0L)))
             .addConstraint(ifPrimary(max(gibiBytes(2))))
             .dynamic()

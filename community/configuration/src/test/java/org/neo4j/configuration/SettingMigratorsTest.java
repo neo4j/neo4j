@@ -56,6 +56,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_transactions;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_global_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_enabled;
@@ -85,6 +86,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_bl
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.configuration.connectors.BoltConnectorInternalSettings.thread_pool_shutdown_wait_time;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -300,7 +302,7 @@ class SettingMigratorsTest {
         assertEquals(GraphDatabaseSettings.CheckpointPolicy.PERIODIC, config.get(check_point_policy));
         assertEquals(Duration.ofMinutes(10), config.get(check_point_interval_time));
         assertEquals(17, config.get(check_point_interval_tx));
-        assertEquals(ByteUnit.mebiBytes(125), config.get(check_point_interval_volume));
+        assertEquals(mebiBytes(125), config.get(check_point_interval_volume));
         assertEquals(456, config.get(check_point_iops_limit));
     }
 
@@ -476,7 +478,7 @@ class SettingMigratorsTest {
         assertEquals(ByteUnit.bytes(134072), config.get(transaction_log_buffer_size));
         assertFalse(config.get(preallocate_logical_logs));
         assertEquals("3 days", config.get(keep_logical_logs));
-        assertEquals(ByteUnit.mebiBytes(34), config.get(logical_log_rotation_threshold));
+        assertEquals(mebiBytes(34), config.get(logical_log_rotation_threshold));
         assertEquals(ON_HEAP, config.get(tx_state_memory_allocation));
     }
 
@@ -576,5 +578,22 @@ class SettingMigratorsTest {
         Config config = Config.newBuilder().fromFile(confFile).build();
 
         assertEquals(132, config.get(query_cache_size));
+    }
+
+    @Test
+    void migrateTransactionMemorySettings() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(
+                confFile,
+                List.of(
+                        "dbms.memory.transaction.database_max_size=11m",
+                        "dbms.memory.transaction.global_max_size=111m",
+                        "dbms.memory.transaction.max_size=1111m"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+
+        assertEquals(mebiBytes(11), config.get(memory_transaction_database_max_size));
+        assertEquals(mebiBytes(111), config.get(memory_transaction_global_max_size));
+        assertEquals(mebiBytes(1111), config.get(memory_transaction_max_size));
     }
 }
