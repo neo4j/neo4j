@@ -1103,7 +1103,7 @@
   {
     "name": "dbms.cluster.overview",
     "description": "Overview of all currently accessible cluster members, their databases and roles.",
-    "mode": "READ",
+    "mode": "DBMS",
     "worksOnSystem": true,
     "signature": "dbms.cluster.overview() :: (id :: STRING?, addresses :: LIST? OF STRING?, databases :: MAP?, groups :: LIST? OF STRING?)",
     "argumentDescription": [],
@@ -1145,7 +1145,7 @@
   {
     "name": "dbms.cluster.protocols",
     "description": "Overview of installed protocols",
-    "mode": "READ",
+    "mode": "DBMS",
     "worksOnSystem": true,
     "signature": "dbms.cluster.protocols() :: (orientation :: STRING?, remoteAddress :: STRING?, applicationProtocol :: STRING?, applicationProtocolVersion :: INTEGER?, modifierProtocols :: STRING?)",
     "argumentDescription": [],
