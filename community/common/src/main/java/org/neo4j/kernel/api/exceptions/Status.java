@@ -435,7 +435,7 @@ public interface Status {
                 TransientError,
                 "There is not enough stack size to perform the current task. This is generally considered to be a "
                         + "database error, so please contact Neo4j support. You could try increasing the stack size: "
-                        + "for example to set the stack size to 2M, add `dbms.jvm.additional=-Xss2M' to "
+                        + "for example to set the stack size to 2M, add `server.jvm.additional=-Xss2M' to "
                         + "in the neo4j configuration (normally in 'conf/neo4j.conf' or, if you are using "
                         + "Neo4j Desktop, found through the user interface) or if you are running an embedded installation "
                         + "just add -Xss2M as command line flag."),

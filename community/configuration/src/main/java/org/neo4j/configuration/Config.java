@@ -80,6 +80,7 @@ public class Config implements Configuration {
     public static final String DEFAULT_CONFIG_DIR_NAME = "conf";
     private static final String STRICT_FAILURE_MESSAGE =
             String.format(" Cleanup the config or disable '%s' to continue.", strict_config_validation.name());
+    private static final String LEGACY_4_X_DBMS_JVM_ADDITIONAL = "dbms.jvm.additional";
 
     public static final class Builder {
         // We use tree sets with comparators for setting classes and migrators to have
@@ -118,7 +119,8 @@ public class Config implements Configuration {
         }
 
         public static boolean allowedMultipleDeclarations(String setting) {
-            return Objects.equals(setting, additional_jvm.name());
+            return Objects.equals(setting, additional_jvm.name())
+                    || Objects.equals(setting, LEGACY_4_X_DBMS_JVM_ADDITIONAL);
         }
 
         private <T> void overrideSettingValue(String setting, T value, Map<String, T> settingValues) {
@@ -244,7 +246,7 @@ public class Config implements Configuration {
                 } else {
                     try (InputStream stream = Files.newInputStream(file)) {
                         new Properties() {
-                            private Set<String> duplicateDetection = new HashSet<>();
+                            private final Set<String> duplicateDetection = new HashSet<>();
 
                             @Override
                             public synchronized Object put(Object key, Object value) {

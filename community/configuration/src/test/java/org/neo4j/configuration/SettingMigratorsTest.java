@@ -23,6 +23,7 @@ import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
 import static org.neo4j.configuration.BootloaderSettings.gc_logging_enabled;
 import static org.neo4j.configuration.BootloaderSettings.gc_logging_options;
 import static org.neo4j.configuration.BootloaderSettings.gc_logging_rotation_keep_number;
@@ -718,5 +719,24 @@ class SettingMigratorsTest {
         assertEquals(VERBOSE, config.get(log_queries));
         assertTrue(config.get(log_queries_early_raw_logging_enabled));
         assertFalse(config.get(log_queries_allocation_logging_enabled));
+    }
+
+    @Test
+    void migrateJVMAdditional() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(
+                confFile,
+                List.of(
+                        "dbms.jvm.additional=-XX:+UseG1GC",
+                        "dbms.jvm.additional=-XX:-OmitStackTraceInFastThrow",
+                        "dbms.jvm.additional=-XX:+TrustFinalNonStaticFields"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+        assertEquals(
+                """
+                -XX:+UseG1GC
+                -XX:-OmitStackTraceInFastThrow
+                -XX:+TrustFinalNonStaticFields""",
+                config.get(additional_jvm));
     }
 }

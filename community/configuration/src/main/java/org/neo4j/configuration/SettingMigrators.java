@@ -20,6 +20,7 @@
 package org.neo4j.configuration;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
 import static org.neo4j.configuration.BootloaderSettings.gc_logging_enabled;
 import static org.neo4j.configuration.BootloaderSettings.gc_logging_options;
 import static org.neo4j.configuration.BootloaderSettings.gc_logging_rotation_keep_number;
@@ -691,6 +692,12 @@ public final class SettingMigrators {
             migrateLockAcquisitionSetting(values, defaultValues, log);
             migrateDefaultAddress(values, defaultValues, log);
             migrateQueryLoggingSettings(values, defaultValues, log);
+            migrateJvmAdditional(values, defaultValues, log);
+        }
+
+        private void migrateJvmAdditional(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.jvm.additional", additional_jvm);
         }
 
         private void migrateQueryLoggingSettings(

@@ -54,7 +54,7 @@ public class BootloaderSettings implements SettingsDeclaration {
                     + "commercial features must precede the argument to enable the specific feature in the config value string. For example, "
                     + "to use Flight Recorder, `-XX:+UnlockCommercialFeatures` must come before `-XX:+FlightRecorder`.")
     public static final Setting<String> additional_jvm =
-            newBuilder("dbms.jvm.additional", JVM_ADDITIONAL, null).build();
+            newBuilder("server.jvm.additional", JVM_ADDITIONAL, null).build();
 
     @Description("Initial heap size. By default it is calculated based on available system resources.")
     public static final Setting<Long> initial_heap_size =

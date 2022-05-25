@@ -22,7 +22,9 @@ package org.neo4j.server.configuration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
+import static org.neo4j.server.configuration.ConfigurableServerModules.TRANSACTIONAL_ENDPOINTS;
 import static org.neo4j.server.configuration.ServerSettings.http_auth_allowlist;
+import static org.neo4j.server.configuration.ServerSettings.http_enabled_modules;
 import static org.neo4j.server.configuration.ServerSettings.third_party_packages;
 import static org.neo4j.server.configuration.ServerSettings.webserver_max_threads;
 
@@ -30,6 +32,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
@@ -90,5 +93,15 @@ class ServerSettingsMigratorTest {
 
         Config config = Config.newBuilder().fromFile(confFile).build();
         assertEquals(9874, config.get(webserver_max_threads));
+    }
+
+    @Test
+    void migrateEnabledModulesSettings() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(confFile, List.of("dbms.http_enabled_modules=TRANSACTIONAL_ENDPOINTS"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+
+        assertEquals(Set.of(TRANSACTIONAL_ENDPOINTS), config.get(http_enabled_modules));
     }
 }

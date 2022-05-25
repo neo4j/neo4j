@@ -267,7 +267,7 @@ class MemoryRecommendationsCommandTest {
                 .contains("EXPORT NEO4J_dbms_memory_heap_initial__size='" + heap + "'")
                 .contains("EXPORT NEO4J_dbms_memory_heap_max__size='" + heap + "'")
                 .contains("EXPORT NEO4J_dbms_memory_pagecache_size='" + pagecache + "'")
-                .contains("EXPORT NEO4J_dbms_jvm_additional='" + "-XX:+ExitOnOutOfMemoryError" + "'")
+                .contains("EXPORT NEO4J_server_jvm_additional='" + "-XX:+ExitOnOutOfMemoryError" + "'")
                 .doesNotContain("EXPORT NEO4J_dbms_memory_off__heap_max__size='");
     }
 

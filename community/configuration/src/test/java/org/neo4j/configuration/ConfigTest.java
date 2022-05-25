@@ -987,10 +987,10 @@ class ConfigTest {
         Files.write(
                 confFile,
                 List.of(
-                        "dbms.jvm.additional=-XX:+UseG1GC",
-                        "dbms.jvm.additional=-XX:+AlwaysPreTouch",
-                        "dbms.jvm.additional=-XX:+UnlockExperimentalVMOptions",
-                        "dbms.jvm.additional=-XX:+TrustFinalNonStaticFields"));
+                        "server.jvm.additional=-XX:+UseG1GC",
+                        "server.jvm.additional=-XX:+AlwaysPreTouch",
+                        "server.jvm.additional=-XX:+UnlockExperimentalVMOptions",
+                        "server.jvm.additional=-XX:+TrustFinalNonStaticFields"));
 
         Config config = Config.newBuilder().fromFile(confFile).build();
         var logProvider = new AssertableLogProvider();
