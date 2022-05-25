@@ -175,15 +175,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             newBuilder("server.config.strict_validation.enabled", BOOL, true).build();
 
     @Description(
-            "Max number of processors used when upgrading the store. Defaults to the number of processors available to the JVM. "
-                    + "There is a certain amount of minimum threads needed so for that reason there is no lower bound for this "
-                    + "value. For optimal performance this value shouldn't be greater than the number of available processors.")
-    public static final Setting<Integer> upgrade_processors = newBuilder("dbms.upgrade_max_processors", INT, 0)
-            .addConstraint(min(0))
-            .dynamic()
-            .build();
-
-    @Description(
             "Database record format. This is the format that will be used for new databases. "
                     + "The `aligned` format is essentially the `standard` format with some minimal padding at the end of pages such that a single "
                     + "record will never cross a page boundary. The `high_limit` format is available for Enterprise Edition only. "

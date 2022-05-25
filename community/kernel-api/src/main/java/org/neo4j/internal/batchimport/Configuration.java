@@ -21,8 +21,8 @@ package org.neo4j.internal.batchimport;
 
 import static java.lang.Math.min;
 import static java.lang.Math.round;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.upgrade_processors;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.configuration.GraphDatabaseSettings.upgrade_processors;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.util.FeatureToggles.getInteger;
 

@@ -1019,4 +1019,14 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     public static Setting<Boolean> buffered_ids_offload =
             newBuilder("internal.dbms.id_buffering.offload_to_disk", BOOL, true).build();
+
+    @Internal
+    @Description(
+            "Max number of processors used when upgrading the store. Defaults to the number of processors available to the JVM. "
+                    + "There is a certain amount of minimum threads needed so for that reason there is no lower bound for this "
+                    + "value. For optimal performance this value shouldn't be greater than the number of available processors.")
+    public static final Setting<Integer> upgrade_processors = newBuilder("internal.dbms.upgrade_max_processors", INT, 0)
+            .addConstraint(min(0))
+            .dynamic()
+            .build();
 }

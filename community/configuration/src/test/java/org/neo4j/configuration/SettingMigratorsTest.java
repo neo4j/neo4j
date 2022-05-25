@@ -29,6 +29,7 @@ import static org.neo4j.configuration.BootloaderSettings.gc_logging_rotation_siz
 import static org.neo4j.configuration.BootloaderSettings.lib_directory;
 import static org.neo4j.configuration.BootloaderSettings.run_directory;
 import static org.neo4j.configuration.BootloaderSettings.windows_service_name;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.upgrade_processors;
 import static org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation.ON_HEAP;
 import static org.neo4j.configuration.GraphDatabaseSettings.TransactionTracingLevel.SAMPLE;
 import static org.neo4j.configuration.GraphDatabaseSettings.bookmark_ready_timeout;
@@ -518,5 +519,14 @@ class SettingMigratorsTest {
         assertEquals("niceOptions", config.get(gc_logging_options));
         assertEquals(7, config.get(gc_logging_rotation_keep_number));
         assertEquals(ByteUnit.mebiBytes(5), config.get(gc_logging_rotation_size));
+    }
+
+    @Test
+    void migrateProcessorNumberToInternalNamespace() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(confFile, List.of("dbms.upgrade_max_processors=7"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+        assertEquals(7, config.get(upgrade_processors));
     }
 }

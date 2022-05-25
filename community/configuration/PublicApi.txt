@@ -195,7 +195,6 @@ org.neo4j.configuration.GraphDatabaseSettings::tx_state_max_off_heap_memory org.
 org.neo4j.configuration.GraphDatabaseSettings::tx_state_memory_allocation org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation> public static final
 org.neo4j.configuration.GraphDatabaseSettings::tx_state_off_heap_block_cache_size org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::tx_state_off_heap_max_cacheable_block_size org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
-org.neo4j.configuration.GraphDatabaseSettings::upgrade_processors org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::writable_databases org.neo4j.graphdb.config.Setting<java.util.Set<java.lang.String>> public static final
 org.neo4j.configuration.GroupSetting public abstract interface
 org.neo4j.configuration.GroupSetting::getPrefix() java.lang.String public abstract

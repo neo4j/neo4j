@@ -27,6 +27,7 @@ import static org.neo4j.configuration.BootloaderSettings.gc_logging_rotation_siz
 import static org.neo4j.configuration.BootloaderSettings.lib_directory;
 import static org.neo4j.configuration.BootloaderSettings.run_directory;
 import static org.neo4j.configuration.BootloaderSettings.windows_service_name;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.upgrade_processors;
 import static org.neo4j.configuration.GraphDatabaseSettings.bookmark_ready_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_time;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_tx;
@@ -649,6 +650,12 @@ public final class SettingMigrators {
             migrateTxStateAndLogsSettings(values, defaultValues, log);
             migrateTransactionAndTrackingSettings(values, defaultValues, log);
             migrateGcLogsSettings(values, defaultValues, log);
+            migrateMaxProcessorToInternal(values, defaultValues, log);
+        }
+
+        private void migrateMaxProcessorToInternal(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.upgrade_max_processors", upgrade_processors);
         }
 
         private void migrateGcLogsSettings(
