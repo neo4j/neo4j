@@ -144,5 +144,29 @@ class UnionScanRewriterTest extends CypherFunSuite with LogicalPlanningTestSuppo
       .build())
   }
 
+  test("should rewrite multiple scans") {
+    val input = new LogicalPlanBuilder()
+      .produceResults("m")
+      .apply()
+      .|.orderedDistinct(Seq("n"), "n AS n")
+      .|.orderedUnion(Seq(Ascending("n")))
+      .|.|.nodeByLabelScan("n", "C", IndexOrderAscending, "m")
+      .|.orderedUnion(Seq(Ascending("n")))
+      .|.|.nodeByLabelScan("n", "B", IndexOrderAscending, "m")
+      .|.nodeByLabelScan("n", "A", IndexOrderAscending, "m")
+      .orderedDistinct(Seq("m"), "m AS m")
+      .orderedUnion(Seq(Ascending("m")))
+      .|.nodeByLabelScan("m", "E", IndexOrderAscending)
+      .nodeByLabelScan("m", "D", IndexOrderAscending)
+      .build()
+
+    rewrite(input) should equal(new LogicalPlanBuilder()
+      .produceResults("m")
+      .apply()
+      .|.unionNodeByLabelsScan("n", Seq("A", "B", "C"), IndexOrderAscending, "m")
+      .unionNodeByLabelsScan("m", Seq("D", "E"), IndexOrderAscending)
+      .build())
+  }
+
   private def rewrite(p: LogicalPlan): LogicalPlan = p.endoRewrite(unionScanRewriter)
 }

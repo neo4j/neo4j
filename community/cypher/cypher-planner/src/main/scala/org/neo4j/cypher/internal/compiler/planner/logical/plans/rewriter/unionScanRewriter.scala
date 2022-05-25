@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.SameId
-import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.topDown
 
 case object unionScanRewriter extends Rewriter {
 
@@ -41,7 +41,7 @@ case object unionScanRewriter extends Rewriter {
     instance.apply(input)
   }
 
-  private val instance: Rewriter = bottomUp(Rewriter.lift {
+  private val instance: Rewriter = topDown(Rewriter.lift {
     case outer @ OrderedDistinct(
         CollectUnionLabels(idName, labels, arguments, indexOrder),
         SingleGrouping(groupingName),
