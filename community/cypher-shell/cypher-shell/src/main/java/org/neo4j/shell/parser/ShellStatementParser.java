@@ -166,7 +166,10 @@ public class ShellStatementParser implements StatementParser {
             }
             // Not escaped, not in a quote, not in a comment
             else if (current == ';') {
-                return new CypherStatement(statement.toString(), true, startOffset, reader.offset() - 1);
+                // remove semicolon
+                statement.setLength(statement.length() - 1);
+                String cypherStatement = statement.toString();
+                return new CypherStatement(cypherStatement, true, startOffset, reader.offset() - 2);
             } else {
                 // If it's the start of a quote or comment
                 awaitedRightDelimiter = getRightDelimiter(previous, current);

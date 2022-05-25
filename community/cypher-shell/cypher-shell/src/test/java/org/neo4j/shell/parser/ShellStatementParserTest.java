@@ -62,42 +62,42 @@ class ShellStatementParserTest {
 
     @Test
     void parseCompleteCypher() throws IOException {
-        assertStatements("CREATE (n)\nCREATE ();", cypher("CREATE (n)\nCREATE ();"));
+        assertStatements("CREATE (n)\nCREATE ();", cypher("CREATE (n)\nCREATE ()"));
     }
 
     @Test
     void parseMultipleCypherSingleLine() throws IOException {
-        assertStatements("RETURN 1;RETURN 2;", cypher("RETURN 1;"), cypher("RETURN 2;", 9));
+        assertStatements("RETURN 1;RETURN 2;", cypher("RETURN 1"), cypher("RETURN 2", 9));
     }
 
     @Test
     void parseMultipleCypherMultipleLine() throws IOException {
-        assertStatements("RETURN 1;\n RETURN 2;", cypher("RETURN 1;"), cypher("RETURN 2;", 11));
+        assertStatements("RETURN 1;\n RETURN 2;", cypher("RETURN 1"), cypher("RETURN 2", 11));
     }
 
     @Test
     void singleQuotedSemicolon() throws IOException {
-        assertStatements("hello '\n;\n'\n;\n", cypher("hello '\n;\n'\n;"));
+        assertStatements("hello '\n;\n'\n;\n", cypher("hello '\n;\n'\n"));
     }
 
     @Test
     void backtickQuotedSemicolon() throws IOException {
-        assertStatements("hello `\n;\n`\n;  \n", cypher("hello `\n;\n`\n;"));
+        assertStatements("hello `\n;\n`\n;  \n", cypher("hello `\n;\n`\n"));
     }
 
     @Test
     void doubleQuotedSemicolon() throws IOException {
-        assertStatements("hello \"\n;\n\"\n;   \n", cypher("hello \"\n;\n\"\n;"));
+        assertStatements("hello \"\n;\n\"\n;   \n", cypher("hello \"\n;\n\"\n"));
     }
 
     @Test
     void escapedChars() throws IOException {
-        assertStatements("one \\;\n\"two \\\"\n;\n\";\n", cypher("one \\;\n\"two \\\"\n;\n\";"));
+        assertStatements("one \\;\n\"two \\\"\n;\n\";\n", cypher("one \\;\n\"two \\\"\n;\n\""));
     }
 
     @Test
     void nestedQuoting() throws IOException {
-        assertStatements("go `tick;'single;\"double;\nend`;\n", cypher("go `tick;'single;\"double;\nend`;"));
+        assertStatements("go `tick;'single\"double;\nend`;\n", cypher("go `tick;'single\"double;\nend`"));
     }
 
     @Test
@@ -105,7 +105,7 @@ class ShellStatementParserTest {
         assertStatements(
                 " :help me \n cypher me up \n :scotty \n ; \n :do it now! \n",
                 command(":help", List.of("me"), 1, 9),
-                cypher("cypher me up \n :scotty \n ;", 12),
+                cypher("cypher me up \n :scotty \n ", 12),
                 command(":do", List.of("it", "now!"), 41, 52));
     }
 
@@ -113,32 +113,32 @@ class ShellStatementParserTest {
     void commentHandlingIfSemicolon() throws IOException {
         assertStatements(
                 " first // ;\n// /* ;\n third ; // actually a semicolon here\n",
-                cypher("first // ;\n// /* ;\n third ;", 1));
+                cypher("first // ;\n// /* ;\n third ", 1));
     }
 
     @Test
     void backslashDeadInBlockQuote() throws IOException {
-        assertStatements("/* block \\*/\nCREATE ();", cypher("CREATE ();", 13));
+        assertStatements("/* block \\*/\nCREATE ();", cypher("CREATE ()", 13));
     }
 
     @Test
     void commentInQuote() throws IOException {
-        assertStatements("` here // comment `;", cypher("` here // comment `;"));
+        assertStatements("` here // comment `;", cypher("` here // comment `"));
     }
 
     @Test
     void blockCommentInQuote() throws IOException {
-        assertStatements("` here /* comment `;", cypher("` here /* comment `;"));
+        assertStatements("` here /* comment `;", cypher("` here /* comment `"));
     }
 
     @Test
     void quoteInComment() throws IOException {
-        assertStatements("// `;\n;", cypher(";", 6));
+        assertStatements("// `;\n;", cypher("", 6));
     }
 
     @Test
     void quoteInBlockomment() throws IOException {
-        assertStatements("/* `;\n;*/\n;", cypher(";", 10));
+        assertStatements("/* `;\n;*/\n;", cypher("", 10));
     }
 
     @Test
@@ -151,7 +151,7 @@ class ShellStatementParserTest {
         assertStatements(
                 "//comment \n:begin\nRETURN 42;\n:end\n",
                 command(":begin", List.of(), 11, 16),
-                cypher("RETURN 42;", 18),
+                cypher("RETURN 42", 18),
                 command(":end", List.of(), 29, 32));
     }
 
@@ -159,8 +159,8 @@ class ShellStatementParserTest {
     void trimWhiteSpace() throws IOException {
         assertStatements(
                 "\t \r\n match (n) return n;\n\t    return 3;\t\r\n ",
-                cypher("match (n) return n;", 5),
-                cypher("return 3;", 30));
+                cypher("match (n) return n", 5),
+                cypher("return 3", 30));
     }
 
     @Test
@@ -203,17 +203,17 @@ class ShellStatementParserTest {
     void shouldKeepTrackOfOffsets() throws IOException {
         assertStatements(
                 "return 1;\nreturn 2;\n",
-                new CypherStatement("return 1;", true, 0, 8),
-                new CypherStatement("return 2;", true, 10, 18));
+                new CypherStatement("return 1", true, 0, 7),
+                new CypherStatement("return 2", true, 10, 17));
         assertStatements(
                 "return\n1\n;return\n2;\n",
-                new CypherStatement("return\n1\n;", true, 0, 9),
-                new CypherStatement("return\n2;", true, 10, 18));
+                new CypherStatement("return\n1\n", true, 0, 8),
+                new CypherStatement("return\n2", true, 10, 17));
         assertStatements("return 1", new CypherStatement("return 1", false, 0, 7));
         assertStatements(
                 "// Hi\n/* Hello */ return 1;\n// Hi\n/* Hello */ return 2;",
-                new CypherStatement("return 1;", true, 18, 26),
-                new CypherStatement("return 2;", true, 46, 54));
+                new CypherStatement("return 1", true, 18, 25),
+                new CypherStatement("return 2", true, 46, 53));
         assertStatements(
                 ":help\n:help\r\n:help\r:help\n",
                 command(":help", List.of(), 0, 4),

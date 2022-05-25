@@ -87,6 +87,19 @@ class MainIntegrationTest {
     }
 
     @Test
+    void shouldRunShowUsers() throws Exception {
+        assumeAtLeastVersion("4.4.0");
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain")
+                .userInputLines("SHOW USERS;", ":exit")
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(
+                        containsString("\"neo4j\", [\"admin\", \"PUBLIC\"], FALSE, FALSE, NULL"),
+                        endsWithInteractiveExit);
+    }
+
+    @Test
     void promptsOnPasswordChangeRequiredSinceVersion4() throws Exception {
         assumeTrue(serverVersion.major() >= 4);
 

@@ -69,15 +69,15 @@ class StatementJlineParserTest {
 
     @Test
     void parseCypherForExecution() {
-        assertSimpleParse("return 1;", cypher("return 1;"));
+        assertSimpleParse("return 1;", cypher("return 1"));
         assertSimpleParse(
                 "/* comment; */ match (a) return a; // Comment;",
-                new CypherStatement("match (a) return a;", true, 15, 33));
-        assertSimpleParse("match (a) /* hi */ return a;", cypher("match (a) /* hi */ return a;"));
+                new CypherStatement("match (a) return a", true, 15, 32));
+        assertSimpleParse("match (a) /* hi */ return a;", cypher("match (a) /* hi */ return a"));
         assertSimpleParse(
                 "return 1; return 2;",
-                new CypherStatement("return 1;", true, 0, 8),
-                new CypherStatement("return 2;", true, 10, 18));
+                new CypherStatement("return 1", true, 0, 7),
+                new CypherStatement("return 2", true, 10, 17));
     }
 
     @Test

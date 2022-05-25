@@ -175,7 +175,7 @@ class NonInteractiveShellRunnerTest {
 
         // then
         assertEquals(99, code);
-        verify(cmdExecuter).execute(new CypherStatement("good1;", true, 0, 5));
+        verify(cmdExecuter).execute(new CypherStatement("good1", true, 0, 4));
         verifyNoMoreInteractions(cmdExecuter);
     }
 
@@ -206,7 +206,7 @@ class NonInteractiveShellRunnerTest {
 
         assertEquals(0, code, "Exit code incorrect");
         verify(printer, times(0)).printError(anyString());
-        verify(cmdExecuter).execute(new CypherStatement("good1;", true, 0, 5));
+        verify(cmdExecuter).execute(new CypherStatement("good1", true, 0, 4));
         verify(cmdExecuter).execute(new CypherStatement("no semicolon here\n// A comment at end", false, 7, 43));
         verifyNoMoreInteractions(cmdExecuter);
     }

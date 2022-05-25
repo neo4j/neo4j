@@ -59,7 +59,7 @@ class SourceTest {
     void runCommand() throws CommandException {
         // given
         cmd.execute(List.of(fileFromResource("test.cypher")));
-        verify(shell).execute(List.of(new CypherStatement("RETURN 42;", true, 0, 9)));
+        verify(shell).execute(List.of(new CypherStatement("RETURN 42", true, 0, 8)));
         verifyNoMoreInteractions(shell);
     }
 

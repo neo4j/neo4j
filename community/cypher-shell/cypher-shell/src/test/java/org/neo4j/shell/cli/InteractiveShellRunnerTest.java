@@ -125,8 +125,8 @@ class InteractiveShellRunnerTest {
         var runner = runner(lines("good1;", "good2;"));
         runner.runUntilEnd();
 
-        verify(cmdExecuter).execute(cypher("good1;"));
-        verify(cmdExecuter).execute(cypher("good2;"));
+        verify(cmdExecuter).execute(cypher("good1"));
+        verify(cmdExecuter).execute(cypher("good2"));
         verify(cmdExecuter, times(3)).lastNeo4jErrorCode();
         verifyNoMoreInteractions(cmdExecuter);
 
@@ -140,11 +140,11 @@ class InteractiveShellRunnerTest {
 
         assertEquals(0, code, "Wrong exit code");
 
-        verify(cmdExecuter).execute(cypher("good1;"));
-        verify(cmdExecuter).execute(cypher("bad1;"));
-        verify(cmdExecuter).execute(cypher("good2;"));
-        verify(cmdExecuter).execute(cypher("bad2;"));
-        verify(cmdExecuter).execute(cypher("good3;"));
+        verify(cmdExecuter).execute(cypher("good1"));
+        verify(cmdExecuter).execute(cypher("bad1"));
+        verify(cmdExecuter).execute(cypher("good2"));
+        verify(cmdExecuter).execute(cypher("bad2"));
+        verify(cmdExecuter).execute(cypher("good3"));
         verify(cmdExecuter, times(6)).lastNeo4jErrorCode();
         verifyNoMoreInteractions(cmdExecuter);
 
@@ -155,16 +155,16 @@ class InteractiveShellRunnerTest {
     void runUntilEndShouldStopOnExitExceptionAndReturnCode() throws CommandException {
         var runner = runner(lines("good1;", "bad1;", "good2;", "exit;", "bad2;", "good3;"));
 
-        doThrow(new ExitException(1234)).when(cmdExecuter).execute(statementContains("exit;"));
+        doThrow(new ExitException(1234)).when(cmdExecuter).execute(statementContains("exit"));
 
         int code = runner.runUntilEnd();
 
         assertEquals(1234, code, "Wrong exit code");
 
-        verify(cmdExecuter).execute(cypher("good1;"));
-        verify(cmdExecuter).execute(cypher("bad1;"));
-        verify(cmdExecuter).execute(cypher("good2;"));
-        verify(cmdExecuter).execute(cypher("exit;"));
+        verify(cmdExecuter).execute(cypher("good1"));
+        verify(cmdExecuter).execute(cypher("bad1"));
+        verify(cmdExecuter).execute(cypher("good2"));
+        verify(cmdExecuter).execute(cypher("exit"));
         verify(cmdExecuter, times(4)).lastNeo4jErrorCode();
         verifyNoMoreInteractions(cmdExecuter);
 
@@ -260,7 +260,7 @@ class InteractiveShellRunnerTest {
 
         // then
         assertThat(statements1, is(List.of()));
-        assertThat(statements2, is(List.of(cypher("CREATE (n:Person) RETURN n;"))));
+        assertThat(statements2, is(List.of(cypher("CREATE (n:Person) RETURN n"))));
     }
 
     @Test
@@ -442,7 +442,7 @@ class InteractiveShellRunnerTest {
         runner.runUntilEnd();
 
         // then
-        verify(cmdExecuter).execute(cypher("CREATE (n:Person) RETURN n\n;"));
+        verify(cmdExecuter).execute(cypher("CREATE (n:Person) RETURN n\n"));
     }
 
     @Test
@@ -454,7 +454,7 @@ class InteractiveShellRunnerTest {
         runner.runUntilEnd();
 
         // then
-        verify(cmdExecuter).execute(cypher("CREATE (n:Person) RETURN n;"));
+        verify(cmdExecuter).execute(cypher("CREATE (n:Person) RETURN n"));
     }
 
     @Test
@@ -511,7 +511,7 @@ class InteractiveShellRunnerTest {
         t.join();
 
         // then
-        verify(fakeShell).execute(cypher("RETURN 1;"));
+        verify(fakeShell).execute(cypher("RETURN 1"));
         verify(fakeShell).execute(new CommandStatement(":exit", List.of(), false, 0, 4));
         verify(fakeShell).reset();
         verify(boltStateHandler).reset();
