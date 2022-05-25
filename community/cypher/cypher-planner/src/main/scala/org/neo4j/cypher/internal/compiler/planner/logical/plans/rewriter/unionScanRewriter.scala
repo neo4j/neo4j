@@ -31,11 +31,13 @@ import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.topDown
 
-case object unionScanRewriter extends Rewriter {
+case class unionScanRewriter(solveds: Solveds, attributes: Attributes[LogicalPlan]) extends Rewriter {
 
   override def apply(input: AnyRef): AnyRef = {
     instance.apply(input)
@@ -44,10 +46,24 @@ case object unionScanRewriter extends Rewriter {
   private val instance: Rewriter = topDown(Rewriter.lift {
     case outer @ OrderedDistinct(
         CollectUnionLabels(idName, labels, arguments, indexOrder),
-        SingleGrouping(groupingName),
+        groupingExpressions,
         Seq(Variable(orderName))
-      ) if idName == groupingName && groupingName == orderName =>
-      UnionNodeByLabelsScan(idName, labels, argumentIds = arguments, indexOrder)(SameId(outer.id))
+      ) if idName == orderName =>
+      groupingExpressions.get(idName) match {
+        case Some(Variable(name)) if name == idName =>
+          val unionLabel =
+            UnionNodeByLabelsScan(idName, labels, argumentIds = arguments, indexOrder)(SameId(outer.id))
+          if (groupingExpressions.size == 1) {
+            unionLabel
+          } else {
+            val res = outer.copy(source = unionLabel)(
+              attributes.copy(outer.id)
+            )
+            solveds.copy(outer.id, res.id)
+            res
+          }
+        case None => outer
+      }
   })
 }
 

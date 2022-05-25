@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class UnionScanRewriterTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -168,5 +169,28 @@ class UnionScanRewriterTest extends CypherFunSuite with LogicalPlanningTestSuppo
       .build())
   }
 
-  private def rewrite(p: LogicalPlan): LogicalPlan = p.endoRewrite(unionScanRewriter)
+  test("should handle multiple projections in distinct") {
+    val input = new LogicalPlanBuilder()
+      .produceResults("n", "m")
+      .apply()
+      .|.orderedDistinct(Seq("n"), "n AS n", "m AS m")
+      .|.orderedUnion(Seq(Ascending("n")))
+      .|.|.nodeByLabelScan("n", "B", IndexOrderAscending, "m")
+      .|.nodeByLabelScan("n", "A", IndexOrderAscending, "m")
+      .limit(1)
+      .allNodeScan("m")
+      .build()
+
+    rewrite(input) should equal(new LogicalPlanBuilder()
+      .produceResults("n", "m")
+      .apply()
+      .|.orderedDistinct(Seq("n"), "n AS n", "m AS m")
+      .|.unionNodeByLabelsScan("n", Seq("A", "B"), IndexOrderAscending, "m")
+      .limit(1)
+      .allNodeScan("m")
+      .build())
+  }
+
+  private def rewrite(p: LogicalPlan): LogicalPlan =
+    p.endoRewrite(unionScanRewriter(new StubSolveds, Attributes(idGen)))
 }

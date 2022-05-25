@@ -131,7 +131,7 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .build()))
   }
 
-  test("should use ordered union for Label disjunction in tail") {
+  test("should use UnionNodeByLabelsScan for Label disjunction in tail") {
     val query = "MATCH (n) WITH n LIMIT 1 MATCH (m) WHERE m:A OR m:B RETURN m"
 
     val plan = plannerBuilder()
@@ -145,18 +145,14 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     plan should (equal(new LogicalPlanBuilder(wholePlan = false)
       .apply()
       .|.orderedDistinct(Seq("m"), "n AS n", "m AS m")
-      .|.orderedUnion(Seq(Ascending("m")))
-      .|.|.nodeByLabelScan("m", "A", IndexOrderAscending, "n")
-      .|.nodeByLabelScan("m", "B", IndexOrderAscending, "n")
+      .|.unionNodeByLabelsScan("m", Seq("A", "B"), IndexOrderAscending, "n")
       .limit(1)
       .allNodeScan("n")
       .build())
       or equal(new LogicalPlanBuilder(wholePlan = false)
         .apply()
         .|.orderedDistinct(Seq("m"), "n AS n", "m AS m")
-        .|.orderedUnion(Seq(Ascending("m")))
-        .|.|.nodeByLabelScan("m", "B", IndexOrderAscending, "n")
-        .|.nodeByLabelScan("m", "A", IndexOrderAscending, "n")
+        .|.unionNodeByLabelsScan("m", Seq("B", "A"), IndexOrderAscending, "n")
         .limit(1)
         .allNodeScan("n")
         .build()))
