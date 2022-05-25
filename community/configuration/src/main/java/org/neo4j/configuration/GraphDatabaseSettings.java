@@ -583,18 +583,18 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     // Index sampling
     @Description("Enable or disable background index sampling")
     public static final Setting<Boolean> index_background_sampling_enabled =
-            newBuilder("dbms.index_sampling.background_enabled", BOOL, true).build();
+            newBuilder("db.index_sampling.background_enabled", BOOL, true).build();
 
     @Description("Index sampling chunk size limit")
     public static final Setting<Integer> index_sample_size_limit = newBuilder(
-                    "dbms.index_sampling.sample_size_limit", INT, (int) mebiBytes(8))
+                    "db.index_sampling.sample_size_limit", INT, (int) mebiBytes(8))
             .addConstraint(range((int) mebiBytes(1), Integer.MAX_VALUE))
             .build();
 
     @Description("Percentage of index updates of total index size required before sampling of a given index is "
             + "triggered")
     public static final Setting<Integer> index_sampling_update_percentage = newBuilder(
-                    "dbms.index_sampling.update_percentage", INT, 5)
+                    "db.index_sampling.update_percentage", INT, 5)
             .addConstraint(min(0))
             .build();
 

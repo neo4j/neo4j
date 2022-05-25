@@ -52,6 +52,9 @@ import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_file
 import static org.neo4j.configuration.GraphDatabaseSettings.filewatcher_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.forbid_exhaustive_shortestpath;
 import static org.neo4j.configuration.GraphDatabaseSettings.forbid_shortestpath_common_nodes;
+import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.index_sample_size_limit;
+import static org.neo4j.configuration.GraphDatabaseSettings.index_sampling_update_percentage;
 import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.licenses_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.load_csv_file_url_root;
@@ -693,6 +696,16 @@ public final class SettingMigrators {
             migrateDefaultAddress(values, defaultValues, log);
             migrateQueryLoggingSettings(values, defaultValues, log);
             migrateJvmAdditional(values, defaultValues, log);
+            migrateSamplingSettings(values, defaultValues, log);
+        }
+
+        private void migrateSamplingSettings(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(
+                    values, log, "dbms.index_sampling.background_enabled", index_background_sampling_enabled);
+            migrateSettingNameChange(values, log, "dbms.index_sampling.sample_size_limit", index_sample_size_limit);
+            migrateSettingNameChange(
+                    values, log, "dbms.index_sampling.update_percentage", index_sampling_update_percentage);
         }
 
         private void migrateJvmAdditional(

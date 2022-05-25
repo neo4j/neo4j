@@ -37,19 +37,19 @@ public class FulltextSettings implements SettingsDeclaration {
 
     @Description("The name of the analyzer that the fulltext indexes should use by default.")
     public static final Setting<String> fulltext_default_analyzer = newBuilder(
-                    "dbms.index.fulltext.default_analyzer", STRING, DEFAULT_ANALYZER)
+                    "db.index.fulltext.default_analyzer", STRING, DEFAULT_ANALYZER)
             .build();
 
     @Description("Whether or not fulltext indexes should be eventually consistent by default or not.")
     public static final Setting<Boolean> eventually_consistent =
-            newBuilder("dbms.index.fulltext.eventually_consistent", BOOL, false).build();
+            newBuilder("db.index.fulltext.eventually_consistent", BOOL, false).build();
 
     @Description(
             "The eventually_consistent mode of the fulltext indexes works by queueing up index updates to be applied later in a background thread. "
                     + "This newBuilder sets an upper bound on how many index updates are allowed to be in this queue at any one point in time. When it is reached, "
                     + "the commit process will slow down and wait for the index update applier thread to make some more room in the queue.")
     public static final Setting<Integer> eventually_consistent_index_update_queue_max_length = newBuilder(
-                    "dbms.index.fulltext.eventually_consistent_index_update_queue_max_length", INT, 10000)
+                    "db.index.fulltext.eventually_consistent_index_update_queue_max_length", INT, 10000)
             .addConstraint(range(1, 50_000_000))
             .build();
 }
