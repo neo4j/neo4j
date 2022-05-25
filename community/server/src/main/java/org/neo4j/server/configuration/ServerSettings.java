@@ -152,11 +152,6 @@ public class ServerSettings implements SettingsDeclaration {
             .addConstraint(range(0L, Long.MAX_VALUE))
             .build();
 
-    @Description("Timeout for idle transactions in the REST endpoint.")
-    public static final Setting<Duration> transaction_idle_timeout = newBuilder(
-                    "dbms.rest.transaction.idle_timeout", DURATION, Duration.ofSeconds(60))
-            .build();
-
     @Description("Value of the HTTP Strict-Transport-Security (HSTS) response header. "
             + "This header tells browsers that a webpage should only be accessed using HTTPS instead of HTTP. It is attached to every HTTPS response. "
             + "Setting is not set by default so 'Strict-Transport-Security' header is not sent. "

@@ -20,6 +20,7 @@
 package org.neo4j.server.configuration;
 
 import static org.neo4j.configuration.SettingMigrators.migrateSettingNameChange;
+import static org.neo4j.configuration.SettingMigrators.migrateSettingRemoval;
 import static org.neo4j.server.configuration.ServerSettings.http_auth_allowlist;
 import static org.neo4j.server.configuration.ServerSettings.third_party_packages;
 import static org.neo4j.server.configuration.ServerSettings.webserver_max_threads;
@@ -36,5 +37,7 @@ public class ServerSettingsMigrator implements SettingMigrator {
         migrateSettingNameChange(values, log, "dbms.security.http_auth_whitelist", http_auth_allowlist);
         migrateSettingNameChange(values, log, "dbms.unmanaged_extension_classes", third_party_packages);
         migrateSettingNameChange(values, log, "dbms.threads.worker_count", webserver_max_threads);
+
+        migrateSettingRemoval(values, log, "dbms.rest.transaction.idle_timeout", "It no longer has any effect");
     }
 }

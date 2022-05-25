@@ -49,7 +49,6 @@ public class HttpTransactionManager {
     private final TransactionManager transactionManager;
     private final BoltGraphDatabaseManagementServiceSPI boltSPI;
     private final InternalLogProvider userLogProvider;
-    private final MemoryPool memoryPool;
     private final AuthManager authManager;
     private final Clock clock;
     private final boolean readByDefault;
@@ -70,7 +69,6 @@ public class HttpTransactionManager {
         this.transactionManager = transactionManager;
         this.boltSPI = boltSPI;
         this.userLogProvider = userLogProvider;
-        this.memoryPool = memoryPool;
         this.authManager = authManager;
         this.clock = clock;
         this.readByDefault = readByDefault;
@@ -113,25 +111,6 @@ public class HttpTransactionManager {
                 boltSPI,
                 authManager,
                 readByDefault);
-    }
-
-    public TransactionFacade createTransactionFacade(
-            GraphDatabaseAPI databaseAPI,
-            MemoryTracker memoryTracker,
-            String databaseName,
-            boolean isReadOnlyTransaction) {
-        var dependencyResolver = databaseAPI.getDependencyResolver();
-
-        memoryTracker.allocateHeap(TransactionFacade.SHALLOW_SIZE);
-        return new TransactionFacade(
-                databaseName,
-                dependencyResolver.resolveDependency(QueryExecutionEngine.class),
-                transactionRegistry,
-                transactionManager,
-                userLogProvider,
-                boltSPI,
-                authManager,
-                isReadOnlyTransaction);
     }
 
     private void scheduleTransactionTimeout(Duration timeout) {

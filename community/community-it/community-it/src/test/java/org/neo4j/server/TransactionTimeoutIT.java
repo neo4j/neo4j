@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.server.helpers.TestWebContainer;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 import org.neo4j.test.server.HTTP;
@@ -46,7 +46,7 @@ class TransactionTimeoutIT extends ExclusiveWebContainerTestBase {
     void shouldHonorReallyLowSessionTimeout() throws Exception {
         // Given
         testWebContainer = serverOnRandomPorts()
-                .withProperty(ServerSettings.transaction_idle_timeout.name(), "1")
+                .withProperty(GraphDatabaseSettings.transaction_timeout.name(), "1")
                 .build();
 
         String tx = HTTP.POST(txURI(), map("statements", singletonList(map("statement", "CREATE (n)"))))

@@ -34,7 +34,6 @@ import org.junit.jupiter.api.parallel.Resources;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.TestWebContainer;
 import org.neo4j.server.helpers.WebContainerHelper;
 import org.neo4j.test.extension.SuppressOutputExtension;
@@ -58,7 +57,6 @@ public class SharedWebContainerTestBase {
             setWebContainerBuilderProperty(BoltConnector.listen_address.name(), "localhost:0");
             setWebContainerBuilderProperty(BoltConnector.advertised_address.name(), ":0");
             setWebContainerBuilderProperty(GraphDatabaseSettings.transaction_timeout.name(), "300s");
-            setWebContainerBuilderProperty(ServerSettings.transaction_idle_timeout.name(), "300s");
             // Disable tracking of statement close calls, the reason being how periodic commit interacts with
             // ResultSubscriber
             // such that some statement somehow is expected to stay open after one of the internal transactions created
