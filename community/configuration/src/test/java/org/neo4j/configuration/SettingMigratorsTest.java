@@ -49,6 +49,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.cypher_planner;
 import static org.neo4j.configuration.GraphDatabaseSettings.cypher_render_plan_descriptions;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.database_dumps_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.filewatcher_enabled;
@@ -106,6 +108,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.FormattedLogFormat;
@@ -448,7 +451,7 @@ class SettingMigratorsTest {
                         "cypher.min_replan_interval=11s",
                         "cypher.planner=COST",
                         "cypher.render_plan_description=true",
-                        " cypher.statistics_divergence_threshold=0.42"));
+                        "cypher.statistics_divergence_threshold=0.42"));
 
         Config config = Config.newBuilder().fromFile(confFile).build();
         var logProvider = new AssertableLogProvider();
@@ -645,5 +648,17 @@ class SettingMigratorsTest {
         Config config = Config.newBuilder().fromFile(confFile).build();
         assertEquals(4242, config.get(dense_node_threshold));
         assertTrue(config.get(fail_on_missing_files));
+    }
+
+    @Test
+    void migrateDefaultAddress() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(
+                confFile,
+                List.of("dbms.default_listen_address=localhost1", "dbms.default_advertised_address=otherhost"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+        assertEquals(new SocketAddress("localhost1"), config.get(default_listen_address));
+        assertEquals(new SocketAddress("otherhost"), config.get(default_advertised_address));
     }
 }

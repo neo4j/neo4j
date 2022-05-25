@@ -44,6 +44,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.cypher_planner;
 import static org.neo4j.configuration.GraphDatabaseSettings.cypher_render_plan_descriptions;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.database_dumps_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.filewatcher_enabled;
@@ -672,6 +674,13 @@ public final class SettingMigrators {
             migrateWatcherSetting(values, defaultValues, log);
             migrateCsvImportSetting(values, defaultValues, log);
             migrateLockAcquisitionSetting(values, defaultValues, log);
+            migrateDefaultAddress(values, defaultValues, log);
+        }
+
+        private void migrateDefaultAddress(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.default_listen_address", default_listen_address);
+            migrateSettingNameChange(values, log, "dbms.default_advertised_address", default_advertised_address);
         }
 
         private void migrateLockAcquisitionSetting(
