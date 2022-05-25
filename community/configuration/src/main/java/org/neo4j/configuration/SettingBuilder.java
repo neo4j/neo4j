@@ -28,7 +28,7 @@ public interface SettingBuilder<T> {
     /**
      * Start construction of a new setting.
      *
-     * @param name Full name of the setting, e.g. 'dbms.logs.query.enabled'.
+     * @param name Full name of the setting, e.g. 'db.logs.query.enabled'.
      * @param parser A parser for converting a string representation into the setting type.
      * @param defaultValue Default value to use if no user specific value is provided.
      * @param <T> type of the setting.

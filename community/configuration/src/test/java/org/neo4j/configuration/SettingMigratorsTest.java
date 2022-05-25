@@ -31,6 +31,8 @@ import static org.neo4j.configuration.BootloaderSettings.lib_directory;
 import static org.neo4j.configuration.BootloaderSettings.run_directory;
 import static org.neo4j.configuration.BootloaderSettings.windows_service_name;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.upgrade_processors;
+import static org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel.INFO;
+import static org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel.VERBOSE;
 import static org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation.ON_HEAP;
 import static org.neo4j.configuration.GraphDatabaseSettings.TransactionTracingLevel.SAMPLE;
 import static org.neo4j.configuration.GraphDatabaseSettings.bookmark_ready_timeout;
@@ -60,6 +62,20 @@ import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.licenses_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.load_csv_file_url_root;
 import static org.neo4j.configuration.GraphDatabaseSettings.lock_acquisition_timeout;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_allocation_logging_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_detailed_time_logging_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_early_raw_logging_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_obfuscate_literals;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_page_detail_logging_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_parameter_full_entities;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_parameter_logging_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_query_plan;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_runtime_logging_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_threshold;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_transaction_id;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_transaction_threshold;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_transactions_level;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_transactions;
@@ -76,6 +92,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_store_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
 import static org.neo4j.configuration.GraphDatabaseSettings.query_cache_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.query_log_max_parameter_length;
 import static org.neo4j.configuration.GraphDatabaseSettings.query_statistics_divergence_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
 import static org.neo4j.configuration.GraphDatabaseSettings.script_root_path;
@@ -660,5 +677,46 @@ class SettingMigratorsTest {
         Config config = Config.newBuilder().fromFile(confFile).build();
         assertEquals(new SocketAddress("localhost1"), config.get(default_listen_address));
         assertEquals(new SocketAddress("otherhost"), config.get(default_advertised_address));
+    }
+
+    @Test
+    void migrateQueryLogsSettings() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(
+                confFile,
+                List.of(
+                        "dbms.logs.query.transaction_id.enabled=true",
+                        "dbms.logs.query.transaction.threshold=7d",
+                        "dbms.logs.query.transaction.enabled=INFO",
+                        "dbms.logs.query.time_logging_enabled=true",
+                        "dbms.logs.query.threshold=8m",
+                        "dbms.logs.query.runtime_logging_enabled=false",
+                        "dbms.logs.query.plan_description_enabled=true",
+                        "dbms.logs.query.parameter_logging_enabled=false",
+                        "dbms.logs.query.parameter_full_entities=true",
+                        "dbms.logs.query.page_logging_enabled=false",
+                        "dbms.logs.query.obfuscate_literals=true",
+                        "dbms.logs.query.max_parameter_length=9",
+                        "dbms.logs.query.enabled=VERBOSE",
+                        "dbms.logs.query.early_raw_logging_enabled=true",
+                        "dbms.logs.query.allocation_logging_enabled=false"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+
+        assertTrue(config.get(log_queries_transaction_id));
+        assertEquals(Duration.ofDays(7), config.get(log_queries_transaction_threshold));
+        assertEquals(INFO, config.get(log_queries_transactions_level));
+        assertTrue(config.get(log_queries_detailed_time_logging_enabled));
+        assertEquals(Duration.ofMinutes(8), config.get(log_queries_threshold));
+        assertFalse(config.get(log_queries_runtime_logging_enabled));
+        assertTrue(config.get(log_queries_query_plan));
+        assertFalse(config.get(log_queries_parameter_logging_enabled));
+        assertTrue(config.get(log_queries_parameter_full_entities));
+        assertFalse(config.get(log_queries_page_detail_logging_enabled));
+        assertTrue(config.get(log_queries_obfuscate_literals));
+        assertEquals(9, config.get(query_log_max_parameter_length));
+        assertEquals(VERBOSE, config.get(log_queries));
+        assertTrue(config.get(log_queries_early_raw_logging_enabled));
+        assertFalse(config.get(log_queries_allocation_logging_enabled));
     }
 }

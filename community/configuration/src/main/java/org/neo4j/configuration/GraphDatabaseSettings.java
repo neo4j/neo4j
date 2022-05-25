@@ -384,13 +384,13 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     @Description("Enables or disables tracking of how much time a query spends actively executing on the CPU. "
             + "Calling `dbms.listQueries` will display the time. "
-            + "This can also be logged in the query log by using `dbms.logs.query.time_logging_enabled`.")
+            + "This can also be logged in the query log by using `db.logs.query.time_logging_enabled`.")
     public static final Setting<Boolean> track_query_cpu_time =
             newBuilder("db.track_query_cpu_time", BOOL, false).dynamic().build();
 
     @Description("Enables or disables tracking of how many bytes are allocated by the execution of a query. "
             + "If enabled, calling `dbms.listQueries` will display the allocated bytes. "
-            + "This can also be logged in the query log by using `dbms.logs.query.allocation_logging_enabled`.")
+            + "This can also be logged in the query log by using `db.logs.query.allocation_logging_enabled`.")
     public static final Setting<Boolean> track_query_allocation =
             newBuilder("db.track_query_allocation", BOOL, true).dynamic().build();
 
@@ -737,12 +737,12 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .build();
 
     @Description("Log executed queries. Valid values are `OFF`, `INFO`, or `VERBOSE`.\n\n" + "`OFF`::  no logging.\n"
-            + "`INFO`:: log queries at the end of execution, that take longer than the configured threshold, `dbms.logs.query.threshold`.\n"
-            + "`VERBOSE`:: log queries at the start and end of execution, regardless of `dbms.logs.query.threshold`.\n\n"
+            + "`INFO`:: log queries at the end of execution, that take longer than the configured threshold, `db.logs.query.threshold`.\n"
+            + "`VERBOSE`:: log queries at the start and end of execution, regardless of `db.logs.query.threshold`.\n\n"
             + "Log entries are written to the query log (dbms.logs.query.path).\n\n"
             + "This feature is available in the Neo4j Enterprise Edition.")
     public static final Setting<LogQueryLevel> log_queries = newBuilder(
-                    "dbms.logs.query.enabled", ofEnum(LogQueryLevel.class), LogQueryLevel.VERBOSE)
+                    "db.logs.query.enabled", ofEnum(LogQueryLevel.class), LogQueryLevel.VERBOSE)
             .dynamic()
             .build();
 
@@ -760,18 +760,18 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     @Description("Log transaction ID for the executed queries.")
     public static final Setting<Boolean> log_queries_transaction_id = newBuilder(
-                    "dbms.logs.query.transaction_id.enabled", BOOL, false)
+                    "db.logs.query.transaction_id.enabled", BOOL, false)
             .dynamic()
             .build();
 
     @Description("Log the start and end of a transaction. Valid values are 'OFF', 'INFO', or 'VERBOSE'.\n"
             + "OFF:  no logging.\n"
-            + "INFO: log start and end of transactions that take longer than the configured threshold, dbms.logs.query.transaction.threshold.\n"
+            + "INFO: log start and end of transactions that take longer than the configured threshold, db.logs.query.transaction.threshold.\n"
             + "VERBOSE: log start and end of all transactions.\n"
             + "Log entries are written to the query log (dbms.logs.query.path).\n"
             + "This feature is available in the Neo4j Enterprise Edition.")
     public static final Setting<LogQueryLevel> log_queries_transactions_level = newBuilder(
-                    "dbms.logs.query.transaction.enabled", ofEnum(LogQueryLevel.class), LogQueryLevel.OFF)
+                    "db.logs.query.transaction.enabled", ofEnum(LogQueryLevel.class), LogQueryLevel.OFF)
             .dynamic()
             .build();
 
@@ -824,29 +824,29 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     @Description("Log parameters for the executed queries being logged.")
     public static final Setting<Boolean> log_queries_parameter_logging_enabled = newBuilder(
-                    "dbms.logs.query.parameter_logging_enabled", BOOL, true)
+                    "db.logs.query.parameter_logging_enabled", BOOL, true)
             .dynamic()
             .build();
 
     @Description("Sets a maximum character length use for each parameter in the log. "
-            + "This only takes effect if `dbms.logs.query.parameter_logging_enabled = true`.")
+            + "This only takes effect if `db.logs.query.parameter_logging_enabled = true`.")
     public static final Setting<Integer> query_log_max_parameter_length = newBuilder(
-                    "dbms.logs.query.max_parameter_length", INT, Integer.MAX_VALUE)
+                    "db.logs.query.max_parameter_length", INT, Integer.MAX_VALUE)
             .dynamic()
             .build();
 
     @Description(
             "Log complete parameter entities including id, labels or relationship type, and properties. If false, "
-                    + "only the entity id will be logged. This only takes effect if `dbms.logs.query.parameter_logging_enabled = true`.")
+                    + "only the entity id will be logged. This only takes effect if `db.logs.query.parameter_logging_enabled = true`.")
     public static final Setting<Boolean> log_queries_parameter_full_entities = newBuilder(
-                    "dbms.logs.query.parameter_full_entities", BOOL, false)
+                    "db.logs.query.parameter_full_entities", BOOL, false)
             .dynamic()
             .build();
 
     @Description(
             "Log detailed time information for the executed queries being logged, such as `(planning: 92, waiting: 0)`.")
     public static final Setting<Boolean> log_queries_detailed_time_logging_enabled = newBuilder(
-                    "dbms.logs.query.time_logging_enabled", BOOL, false)
+                    "db.logs.query.time_logging_enabled", BOOL, false)
             .dynamic()
             .build();
 
@@ -855,42 +855,42 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "i.e. for memory intense or long-running queries the value may be larger "
             + "than the current memory allocation. Requires `db.track_query_allocation=true`")
     public static final Setting<Boolean> log_queries_allocation_logging_enabled = newBuilder(
-                    "dbms.logs.query.allocation_logging_enabled", BOOL, true)
+                    "db.logs.query.allocation_logging_enabled", BOOL, true)
             .dynamic()
             .build();
 
     @Description("Logs which runtime that was used to run the query.")
     public static final Setting<Boolean> log_queries_runtime_logging_enabled = newBuilder(
-                    "dbms.logs.query.runtime_logging_enabled", BOOL, true)
+                    "db.logs.query.runtime_logging_enabled", BOOL, true)
             .dynamic()
             .build();
 
     @Description("Log page hits and page faults for the executed queries being logged.")
     public static final Setting<Boolean> log_queries_page_detail_logging_enabled = newBuilder(
-                    "dbms.logs.query.page_logging_enabled", BOOL, false)
+                    "db.logs.query.page_logging_enabled", BOOL, false)
             .dynamic()
             .build();
 
     @Description("Log query text and parameters without obfuscating passwords. "
             + "This allows queries to be logged earlier before parsing starts.")
     public static final Setting<Boolean> log_queries_early_raw_logging_enabled = newBuilder(
-                    "dbms.logs.query.early_raw_logging_enabled", BOOL, false)
+                    "db.logs.query.early_raw_logging_enabled", BOOL, false)
             .dynamic()
             .build();
 
     @Description("If the execution of query takes more time than this threshold, the query is logged once completed - "
             + "provided query logging is set to INFO. Defaults to 0 seconds, that is all queries are logged.")
     public static final Setting<Duration> log_queries_threshold = newBuilder(
-                    "dbms.logs.query.threshold", DURATION, Duration.ZERO)
+                    "db.logs.query.threshold", DURATION, Duration.ZERO)
             .dynamic()
             .build();
 
     @Description(
             "If the transaction is open for more time than this threshold, the transaction is logged once completed - "
-                    + "provided transaction logging (dbms.logs.query.transaction.enabled) is set to `INFO`. "
+                    + "provided transaction logging (db.logs.query.transaction.enabled) is set to `INFO`. "
                     + "Defaults to 0 seconds (all transactions are logged).")
     public static final Setting<Duration> log_queries_transaction_threshold = newBuilder(
-                    "dbms.logs.query.transaction.threshold", DURATION, Duration.ZERO)
+                    "db.logs.query.transaction.threshold", DURATION, Duration.ZERO)
             .dynamic()
             .build();
 
@@ -914,14 +914,14 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "Changing the setting will not affect queries that are cached. So, if you want the switch "
             + "to have immediate effect, you must also call `CALL db.clearQueryCaches()`.")
     public static final Setting<Boolean> log_queries_obfuscate_literals = newBuilder(
-                    "dbms.logs.query.obfuscate_literals", BOOL, false)
+                    "db.logs.query.obfuscate_literals", BOOL, false)
             .dynamic()
             .build();
 
     @Description("Log query plan description table, useful for debugging purposes.")
     @DocumentedDefaultValue("false")
     public static final Setting<Boolean> log_queries_query_plan = newBuilder(
-                    "dbms.logs.query.plan_description_enabled", BOOL, false)
+                    "db.logs.query.plan_description_enabled", BOOL, false)
             .dynamic()
             .build();
 

@@ -55,6 +55,20 @@ import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.licenses_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.load_csv_file_url_root;
 import static org.neo4j.configuration.GraphDatabaseSettings.lock_acquisition_timeout;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_allocation_logging_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_detailed_time_logging_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_early_raw_logging_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_obfuscate_literals;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_page_detail_logging_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_parameter_full_entities;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_parameter_logging_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_query_plan;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_runtime_logging_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_threshold;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_transaction_id;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_transaction_threshold;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_transactions_level;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_transactions;
@@ -71,6 +85,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_store_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
 import static org.neo4j.configuration.GraphDatabaseSettings.query_cache_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.query_log_max_parameter_length;
 import static org.neo4j.configuration.GraphDatabaseSettings.query_statistics_divergence_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
 import static org.neo4j.configuration.GraphDatabaseSettings.script_root_path;
@@ -675,6 +690,36 @@ public final class SettingMigrators {
             migrateCsvImportSetting(values, defaultValues, log);
             migrateLockAcquisitionSetting(values, defaultValues, log);
             migrateDefaultAddress(values, defaultValues, log);
+            migrateQueryLoggingSettings(values, defaultValues, log);
+        }
+
+        private void migrateQueryLoggingSettings(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.logs.query.transaction_id.enabled", log_queries_transaction_id);
+            migrateSettingNameChange(
+                    values, log, "dbms.logs.query.transaction.threshold", log_queries_transaction_threshold);
+            migrateSettingNameChange(
+                    values, log, "dbms.logs.query.transaction.enabled", log_queries_transactions_level);
+            migrateSettingNameChange(
+                    values, log, "dbms.logs.query.time_logging_enabled", log_queries_detailed_time_logging_enabled);
+            migrateSettingNameChange(values, log, "dbms.logs.query.threshold", log_queries_threshold);
+            migrateSettingNameChange(
+                    values, log, "dbms.logs.query.runtime_logging_enabled", log_queries_runtime_logging_enabled);
+            migrateSettingNameChange(values, log, "dbms.logs.query.plan_description_enabled", log_queries_query_plan);
+            migrateSettingNameChange(
+                    values, log, "dbms.logs.query.parameter_logging_enabled", log_queries_parameter_logging_enabled);
+            migrateSettingNameChange(
+                    values, log, "dbms.logs.query.parameter_full_entities", log_queries_parameter_full_entities);
+            migrateSettingNameChange(
+                    values, log, "dbms.logs.query.page_logging_enabled", log_queries_page_detail_logging_enabled);
+            migrateSettingNameChange(values, log, "dbms.logs.query.obfuscate_literals", log_queries_obfuscate_literals);
+            migrateSettingNameChange(
+                    values, log, "dbms.logs.query.max_parameter_length", query_log_max_parameter_length);
+            migrateSettingNameChange(values, log, "dbms.logs.query.enabled", log_queries);
+            migrateSettingNameChange(
+                    values, log, "dbms.logs.query.early_raw_logging_enabled", log_queries_early_raw_logging_enabled);
+            migrateSettingNameChange(
+                    values, log, "dbms.logs.query.allocation_logging_enabled", log_queries_allocation_logging_enabled);
         }
 
         private void migrateDefaultAddress(
