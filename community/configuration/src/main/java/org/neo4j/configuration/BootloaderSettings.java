@@ -66,21 +66,21 @@ public class BootloaderSettings implements SettingsDeclaration {
 
     @Description("GC Logging Options")
     public static final Setting<String> gc_logging_options = newBuilder(
-                    "dbms.logs.gc.options", STRING, "-Xlog:gc*,safepoint,age*=trace")
+                    "server.logs.gc.options", STRING, "-Xlog:gc*,safepoint,age*=trace")
             .build();
 
     @Description("Number of GC logs to keep.")
     public static final Setting<Integer> gc_logging_rotation_keep_number =
-            newBuilder("dbms.logs.gc.rotation.keep_number", INT, 5).build();
+            newBuilder("server.logs.gc.rotation.keep_number", INT, 5).build();
 
     @Description("Size of each GC log that is kept.")
     public static final Setting<Long> gc_logging_rotation_size = newBuilder(
-                    "dbms.logs.gc.rotation.size", BYTES, ByteUnit.mebiBytes(20))
+                    "server.logs.gc.rotation.size", BYTES, ByteUnit.mebiBytes(20))
             .build();
 
     @Description("Enable GC Logging")
     public static final Setting<Boolean> gc_logging_enabled =
-            newBuilder("dbms.logs.gc.enabled", BOOL, false).build();
+            newBuilder("server.logs.gc.enabled", BOOL, false).build();
 
     @Description("Path of the run directory. This directory holds Neo4j's runtime state, such as a pidfile when it "
             + "is running in the background. The pidfile is created when starting neo4j and removed when stopping it."

@@ -20,6 +20,10 @@
 package org.neo4j.configuration;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.neo4j.configuration.BootloaderSettings.gc_logging_enabled;
+import static org.neo4j.configuration.BootloaderSettings.gc_logging_options;
+import static org.neo4j.configuration.BootloaderSettings.gc_logging_rotation_keep_number;
+import static org.neo4j.configuration.BootloaderSettings.gc_logging_rotation_size;
 import static org.neo4j.configuration.BootloaderSettings.lib_directory;
 import static org.neo4j.configuration.BootloaderSettings.run_directory;
 import static org.neo4j.configuration.BootloaderSettings.windows_service_name;
@@ -644,6 +648,15 @@ public final class SettingMigrators {
             migrateCypherNamespace(values, defaultValues, log);
             migrateTxStateAndLogsSettings(values, defaultValues, log);
             migrateTransactionAndTrackingSettings(values, defaultValues, log);
+            migrateGcLogsSettings(values, defaultValues, log);
+        }
+
+        private void migrateGcLogsSettings(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.logs.gc.enabled", gc_logging_enabled);
+            migrateSettingNameChange(values, log, "dbms.logs.gc.options", gc_logging_options);
+            migrateSettingNameChange(values, log, "dbms.logs.gc.rotation.keep_number", gc_logging_rotation_keep_number);
+            migrateSettingNameChange(values, log, "dbms.logs.gc.rotation.size", gc_logging_rotation_size);
         }
 
         private void migrateTxStateAndLogsSettings(

@@ -22,6 +22,10 @@ package org.neo4j.configuration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.BootloaderSettings.gc_logging_enabled;
+import static org.neo4j.configuration.BootloaderSettings.gc_logging_options;
+import static org.neo4j.configuration.BootloaderSettings.gc_logging_rotation_keep_number;
+import static org.neo4j.configuration.BootloaderSettings.gc_logging_rotation_size;
 import static org.neo4j.configuration.BootloaderSettings.lib_directory;
 import static org.neo4j.configuration.BootloaderSettings.run_directory;
 import static org.neo4j.configuration.BootloaderSettings.windows_service_name;
@@ -495,5 +499,24 @@ class SettingMigratorsTest {
         assertEquals(78, config.get(transaction_sampling_percentage));
         assertEquals(Duration.ofSeconds(10), config.get(transaction_timeout));
         assertEquals(SAMPLE, config.get(transaction_tracing_level));
+    }
+
+    @Test
+    void migrateGcLogsSettings() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(
+                confFile,
+                List.of(
+                        "dbms.logs.gc.enabled=true",
+                        "dbms.logs.gc.options=niceOptions",
+                        "dbms.logs.gc.rotation.keep_number=7",
+                        "dbms.logs.gc.rotation.size=5m"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+
+        assertTrue(config.get(gc_logging_enabled));
+        assertEquals("niceOptions", config.get(gc_logging_options));
+        assertEquals(7, config.get(gc_logging_rotation_keep_number));
+        assertEquals(ByteUnit.mebiBytes(5), config.get(gc_logging_rotation_size));
     }
 }
