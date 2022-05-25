@@ -22,19 +22,17 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
-import org.neo4j.cypher.internal.logical.plans.OrderedUnion
+import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.test_helpers.Extractors.MapKeys
 import org.neo4j.graphdb.schema.IndexType
 
 class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
 
-  test("should use ordered union for Label disjunction") {
+  test("should use UnionNodeByLabelsScan for Label disjunction") {
     val query = "MATCH (m) WHERE m:A OR m:B RETURN m"
 
     val plan = plannerBuilder()
@@ -46,20 +44,14 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .stripProduceResults
 
     plan should (equal(new LogicalPlanBuilder(wholePlan = false)
-      .orderedDistinct(Seq("m"), "m AS m")
-      .orderedUnion(Seq(Ascending("m")))
-      .|.nodeByLabelScan("m", "A", IndexOrderAscending)
-      .nodeByLabelScan("m", "B", IndexOrderAscending)
+      .unionNodeByLabelsScan("m", Seq("A", "B"), IndexOrderAscending)
       .build())
       or equal(new LogicalPlanBuilder(wholePlan = false)
-        .orderedDistinct(Seq("m"), "m AS m")
-        .orderedUnion(Seq(Ascending("m")))
-        .|.nodeByLabelScan("m", "B", IndexOrderAscending)
-        .nodeByLabelScan("m", "A", IndexOrderAscending)
+        .unionNodeByLabelsScan("m", Seq("B", "A"), IndexOrderAscending)
         .build()))
   }
 
-  test("should use ordered union for Label disjunction between 3 labels") {
+  test("should use UnionNodeByLabelsScan Label disjunction between 3 labels") {
     val query = "MATCH (m) WHERE m:A OR m:B OR m:C RETURN m"
 
     val plan = plannerBuilder()
@@ -72,11 +64,7 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .stripProduceResults
 
     plan should beLike {
-      case OrderedDistinct(
-          _: OrderedUnion,
-          MapKeys("m"),
-          Seq(Variable("m"))
-        ) => ()
+      case UnionNodeByLabelsScan("m", labels, _, _) if labels.map(_.name).toSet == Set("A", "B", "C") => ()
     }
   }
 
@@ -100,7 +88,7 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     }
   }
 
-  test("should use ordered union for Label disjunction between 2 labels inside a conjunction") {
+  test("should use UnionNodeByLabelsScan for Label disjunction between 2 labels inside a conjunction") {
     val query = "MATCH (m)-[r]-(o) WHERE (m:A OR m:B) AND o.prop = 0 RETURN m"
 
     val plan = plannerBuilder()
@@ -115,22 +103,16 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     plan should (equal(new LogicalPlanBuilder(wholePlan = false)
       .filter("o.prop = 0")
       .expand("(m)-[r]-(o)")
-      .orderedDistinct(Seq("m"), "m AS m")
-      .orderedUnion(Seq(Ascending("m")))
-      .|.nodeByLabelScan("m", "A", IndexOrderAscending)
-      .nodeByLabelScan("m", "B", IndexOrderAscending)
+      .unionNodeByLabelsScan("m", Seq("A", "B"), IndexOrderAscending)
       .build())
       or equal(new LogicalPlanBuilder(wholePlan = false)
         .filter("o.prop = 0")
         .expand("(m)-[r]-(o)")
-        .orderedDistinct(Seq("m"), "m AS m")
-        .orderedUnion(Seq(Ascending("m")))
-        .|.nodeByLabelScan("m", "B", IndexOrderAscending)
-        .nodeByLabelScan("m", "A", IndexOrderAscending)
+        .unionNodeByLabelsScan("m", Seq("B", "A"), IndexOrderAscending)
         .build()))
   }
 
-  test("should use ordered union for Label disjunction in a WITHs WHERE clause") {
+  test("should use UnionNodeByLabelsScan for Label disjunction in a WITHs WHERE clause") {
     val query = "MATCH (m) WITH m WHERE m:A OR m:B RETURN m"
 
     val plan = plannerBuilder()
@@ -142,16 +124,10 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .stripProduceResults
 
     plan should (equal(new LogicalPlanBuilder(wholePlan = false)
-      .orderedDistinct(Seq("m"), "m AS m")
-      .orderedUnion(Seq(Ascending("m")))
-      .|.nodeByLabelScan("m", "A", IndexOrderAscending)
-      .nodeByLabelScan("m", "B", IndexOrderAscending)
+      .unionNodeByLabelsScan("m", Seq("A", "B"), IndexOrderAscending)
       .build())
       or equal(new LogicalPlanBuilder(wholePlan = false)
-        .orderedDistinct(Seq("m"), "m AS m")
-        .orderedUnion(Seq(Ascending("m")))
-        .|.nodeByLabelScan("m", "B", IndexOrderAscending)
-        .nodeByLabelScan("m", "A", IndexOrderAscending)
+        .unionNodeByLabelsScan("m", Seq("B", "A"), IndexOrderAscending)
         .build()))
   }
 
@@ -186,7 +162,7 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .build()))
   }
 
-  test("should use ordered union for Label in OPTIONAL MATCH") {
+  test("should use UnionNodeByLabelsScan for Label in OPTIONAL MATCH") {
     val query = "OPTIONAL MATCH (m) WHERE m:A OR m:B RETURN m"
 
     val plan = plannerBuilder()
@@ -199,21 +175,15 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     plan should (equal(new LogicalPlanBuilder(wholePlan = false)
       .optional()
-      .orderedDistinct(Seq("m"), "m AS m")
-      .orderedUnion(Seq(Ascending("m")))
-      .|.nodeByLabelScan("m", "A", IndexOrderAscending)
-      .nodeByLabelScan("m", "B", IndexOrderAscending)
+      .unionNodeByLabelsScan("m", Seq("A", "B"), IndexOrderAscending)
       .build())
       or equal(new LogicalPlanBuilder(wholePlan = false)
         .optional()
-        .orderedDistinct(Seq("m"), "m AS m")
-        .orderedUnion(Seq(Ascending("m")))
-        .|.nodeByLabelScan("m", "B", IndexOrderAscending)
-        .nodeByLabelScan("m", "A", IndexOrderAscending)
+        .unionNodeByLabelsScan("m", Seq("B", "A"), IndexOrderAscending)
         .build()))
   }
 
-  test("should use ordered union for Label disjunction with DISTINCT") {
+  test("should use UnionNodeByLabelsScan for Label disjunction with DISTINCT") {
     val query = "MATCH (n) WHERE n:A OR n:B RETURN DISTINCT n"
 
     val plan = plannerBuilder()
@@ -226,17 +196,11 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     plan should (equal(new LogicalPlanBuilder(wholePlan = false)
       .orderedDistinct(Seq("n"), "n AS n")
-      .orderedDistinct(Seq("n"), "n AS n")
-      .orderedUnion(Seq(Ascending("n")))
-      .|.nodeByLabelScan("n", "A", IndexOrderAscending)
-      .nodeByLabelScan("n", "B", IndexOrderAscending)
+      .unionNodeByLabelsScan("n", Seq("A", "B"), IndexOrderAscending)
       .build())
       or equal(new LogicalPlanBuilder(wholePlan = false)
         .orderedDistinct(Seq("n"), "n AS n")
-        .orderedDistinct(Seq("n"), "n AS n")
-        .orderedUnion(Seq(Ascending("n")))
-        .|.nodeByLabelScan("n", "B", IndexOrderAscending)
-        .nodeByLabelScan("n", "A", IndexOrderAscending)
+        .unionNodeByLabelsScan("n", Seq("B", "A"), IndexOrderAscending)
         .build()))
   }
 

@@ -81,7 +81,8 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
           cardinalities,
           otherAttributes.withAlso(effectiveCardinalities, solveds, providedOrders)
         ),
-        combineHasLabels
+        combineHasLabels,
+        unionScanRewriter
       )
     )
 

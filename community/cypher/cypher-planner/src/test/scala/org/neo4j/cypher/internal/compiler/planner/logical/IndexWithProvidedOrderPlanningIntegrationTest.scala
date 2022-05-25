@@ -295,7 +295,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
-    test(s"$cypherToken-$orderCapability: Should not need to sort after ordered union for Label disjunction") {
+    test(s"$cypherToken-$orderCapability: Should not need to sort after Label disjunction") {
       val query = s"MATCH (m) WHERE m:A OR m:B RETURN m ORDER BY m $cypherToken"
 
       val plan = plannerBuilder()
@@ -307,16 +307,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .stripProduceResults
 
       plan should (equal(new LogicalPlanBuilder(wholePlan = false)
-        .orderedDistinct(Seq("m"), "m AS m")
-        .orderedUnion(Seq(sortOrder("m")))
-        .|.nodeByLabelScan("m", "A", plannedOrder)
-        .nodeByLabelScan("m", "B", plannedOrder)
+        .unionNodeByLabelsScan("m", Seq("A", "B"), plannedOrder)
         .build())
         or equal(new LogicalPlanBuilder(wholePlan = false)
-          .orderedDistinct(Seq("m"), "m AS m")
-          .orderedUnion(Seq(sortOrder("m")))
-          .|.nodeByLabelScan("m", "B", plannedOrder)
-          .nodeByLabelScan("m", "A", plannedOrder)
+          .unionNodeByLabelsScan("m", Seq("B", "A"), plannedOrder)
           .build()))
     }
 
@@ -334,18 +328,12 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan should (equal(new LogicalPlanBuilder(wholePlan = false)
         .partialSort(Seq(sortOrder("m")), Seq(Ascending("m.prop")))
         .projection("m.prop AS `m.prop`")
-        .orderedDistinct(Seq("m"), "m AS m")
-        .orderedUnion(Seq(sortOrder("m")))
-        .|.nodeByLabelScan("m", "A", plannedOrder)
-        .nodeByLabelScan("m", "B", plannedOrder)
+        .unionNodeByLabelsScan("m", Seq("A", "B"), plannedOrder)
         .build())
         or equal(new LogicalPlanBuilder(wholePlan = false)
           .partialSort(Seq(sortOrder("m")), Seq(Ascending("m.prop")))
           .projection("m.prop AS `m.prop`")
-          .orderedDistinct(Seq("m"), "m AS m")
-          .orderedUnion(Seq(sortOrder("m")))
-          .|.nodeByLabelScan("m", "B", plannedOrder)
-          .nodeByLabelScan("m", "A", plannedOrder)
+          .unionNodeByLabelsScan("m", Seq("B", "A"), plannedOrder)
           .build()))
     }
 
