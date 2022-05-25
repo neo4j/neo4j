@@ -651,7 +651,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "this to `false` will allow Neo4j to create new empty missing files for the already existing  "
             + "database, but the integrity of the database might be compromised.")
     public static final Setting<Boolean> fail_on_missing_files =
-            newBuilder("dbms.recovery.fail_on_missing_files", BOOL, true).build();
+            newBuilder("db.recovery.fail_on_missing_files", BOOL, true).build();
 
     @Description("The amount of memory to use for mapping the store files. If Neo4j is running on a dedicated server, "
             + "then it is generally recommended to leave about 2-4 gigabytes for the operating system, give the "
@@ -732,7 +732,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     @Description("Relationship count threshold for considering a node to be dense.")
     public static final Setting<Integer> dense_node_threshold = newBuilder(
-                    "dbms.relationship_grouping_threshold", INT, 50)
+                    "db.relationship_grouping_threshold", INT, 50)
             .addConstraint(min(1))
             .build();
 

@@ -47,6 +47,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.cypher_planner;
 import static org.neo4j.configuration.GraphDatabaseSettings.cypher_render_plan_descriptions;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.database_dumps_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
+import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.forbid_exhaustive_shortestpath;
 import static org.neo4j.configuration.GraphDatabaseSettings.forbid_shortestpath_common_nodes;
 import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
@@ -595,5 +597,17 @@ class SettingMigratorsTest {
         assertEquals(mebiBytes(11), config.get(memory_transaction_database_max_size));
         assertEquals(mebiBytes(111), config.get(memory_transaction_global_max_size));
         assertEquals(mebiBytes(1111), config.get(memory_transaction_max_size));
+    }
+
+    @Test
+    void migrateGroupAndRecoverySettings() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(
+                confFile,
+                List.of("dbms.relationship_grouping_threshold=4242", "dbms.recovery.fail_on_missing_files=true"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+        assertEquals(4242, config.get(dense_node_threshold));
+        assertTrue(config.get(fail_on_missing_files));
     }
 }
