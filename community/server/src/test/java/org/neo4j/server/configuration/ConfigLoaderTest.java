@@ -227,9 +227,9 @@ class ConfigLoaderTest {
         List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get(ServerSettings.third_party_packages);
 
         assertEquals(3, thirdpartyJaxRsPackages.size());
-        assertEquals("/extension1", thirdpartyJaxRsPackages.get(0).getMountPoint());
-        assertEquals("/extension2", thirdpartyJaxRsPackages.get(1).getMountPoint());
-        assertEquals("/extension3", thirdpartyJaxRsPackages.get(2).getMountPoint());
+        assertEquals("/extension1", thirdpartyJaxRsPackages.get(0).mountPoint());
+        assertEquals("/extension2", thirdpartyJaxRsPackages.get(1).mountPoint());
+        assertEquals("/extension3", thirdpartyJaxRsPackages.get(2).mountPoint());
     }
 
     @Test

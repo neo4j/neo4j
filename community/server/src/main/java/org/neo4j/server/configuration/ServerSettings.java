@@ -116,7 +116,7 @@ public class ServerSettings implements SettingsDeclaration {
 
     @Description("Comma-separated list of <classname>=<mount point> for unmanaged extensions.")
     public static final Setting<List<ThirdPartyJaxRsPackage>> third_party_packages = newBuilder(
-                    "dbms.unmanaged_extension_classes", listOf(MOUNT_POINTS), emptyList())
+                    "server.unmanaged_extension_classes", listOf(MOUNT_POINTS), emptyList())
             .build();
 
     @Description("Value of the Access-Control-Allow-Origin header sent over any HTTP or HTTPS "

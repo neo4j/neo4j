@@ -46,13 +46,13 @@ public class ThirdPartyJAXRSModule implements ServerModule {
         this.packages = config.get(ServerSettings.third_party_packages);
         for (ThirdPartyJaxRsPackage tpp : packages) {
             List<String> packageNames = packagesFor(tpp);
-            webServer.addJAXRSPackages(packageNames, tpp.getMountPoint(), null);
-            log.info("Mounted unmanaged extension [%s] at [%s]", tpp.getPackageName(), tpp.getMountPoint());
+            webServer.addJAXRSPackages(packageNames, tpp.mountPoint(), null);
+            log.info("Mounted unmanaged extension [%s] at [%s]", tpp.packageName(), tpp.mountPoint());
         }
     }
 
     private static List<String> packagesFor(ThirdPartyJaxRsPackage tpp) {
-        return Collections.singletonList(tpp.getPackageName());
+        return Collections.singletonList(tpp.packageName());
     }
 
     @Override
@@ -62,7 +62,7 @@ public class ThirdPartyJAXRSModule implements ServerModule {
         }
 
         for (ThirdPartyJaxRsPackage tpp : packages) {
-            webServer.removeJAXRSPackages(packagesFor(tpp), tpp.getMountPoint());
+            webServer.removeJAXRSPackages(packagesFor(tpp), tpp.mountPoint());
         }
     }
 }

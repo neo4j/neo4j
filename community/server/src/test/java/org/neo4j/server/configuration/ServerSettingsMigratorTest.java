@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.server.configuration.ServerSettings.http_auth_allowlist;
+import static org.neo4j.server.configuration.ServerSettings.third_party_packages;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -57,5 +58,27 @@ class ServerSettingsMigratorTest {
                         "dbms.security.http_auth_whitelist", http_auth_allowlist.name());
 
         assertEquals(List.of("a", "b"), config.get(http_auth_allowlist));
+    }
+
+    @Test
+    void migrateThirdPartyPackagesSetting() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(
+                confFile, List.of(" dbms.unmanaged_extension_classes=org.neo4j.test.server.unmanaged=/examples/test"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger(logProvider.getLog(Config.class));
+
+        assertThat(logProvider)
+                .forClass(Config.class)
+                .forLevel(WARN)
+                .containsMessageWithArguments(
+                        "Use of deprecated setting '%s'. It is replaced by '%s'.",
+                        "dbms.unmanaged_extension_classes", third_party_packages.name());
+
+        assertThat(config.get(third_party_packages))
+                .hasSize(1)
+                .contains(new ThirdPartyJaxRsPackage("org.neo4j.test.server.unmanaged", "/examples/test"));
     }
 }

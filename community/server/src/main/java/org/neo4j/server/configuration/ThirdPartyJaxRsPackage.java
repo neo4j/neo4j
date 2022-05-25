@@ -19,20 +19,4 @@
  */
 package org.neo4j.server.configuration;
 
-public class ThirdPartyJaxRsPackage {
-    private final String packageName;
-    private final String mountPoint;
-
-    public ThirdPartyJaxRsPackage(String packageName, String mountPoint) {
-        this.packageName = packageName;
-        this.mountPoint = mountPoint;
-    }
-
-    public String getPackageName() {
-        return packageName;
-    }
-
-    public String getMountPoint() {
-        return mountPoint;
-    }
-}
+public record ThirdPartyJaxRsPackage(String packageName, String mountPoint) {}

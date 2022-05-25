@@ -19,19 +19,20 @@
  */
 package org.neo4j.server.configuration;
 
+import static org.neo4j.configuration.SettingMigrators.migrateSettingNameChange;
 import static org.neo4j.server.configuration.ServerSettings.http_auth_allowlist;
+import static org.neo4j.server.configuration.ServerSettings.third_party_packages;
 
 import java.util.Map;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.SettingMigrator;
-import org.neo4j.configuration.SettingMigrators;
 import org.neo4j.logging.InternalLog;
 
 @ServiceProvider
 public class ServerSettingsMigrator implements SettingMigrator {
     @Override
     public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-        SettingMigrators.migrateSettingNameChange(
-                values, log, "dbms.security.http_auth_whitelist", http_auth_allowlist);
+        migrateSettingNameChange(values, log, "dbms.security.http_auth_whitelist", http_auth_allowlist);
+        migrateSettingNameChange(values, log, "dbms.unmanaged_extension_classes", third_party_packages);
     }
 }
