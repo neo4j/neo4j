@@ -69,7 +69,11 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest {
         assertThat(actual, containsString("Plan: \"PROFILE\""));
         assertThat(actual, containsString("Statement: \"READ_ONLY\""));
         assertThat(actual, containsString("Planner: \"COST\""));
-        assertThat(actual, containsString("Runtime: \"SLOTTED\""));
+        if (runningAtLeast("5.0")) {
+            assertThat(actual, containsString("Runtime: \"SLOTTED\""));
+        } else {
+            assertThat(actual, containsString("Runtime: \"INTERPRETED\""));
+        }
         assertThat(actual, containsString("DbHits: 0"));
         assertThat(actual, containsString("Rows: 1"));
         assertThat(actual, containsString("null"));
