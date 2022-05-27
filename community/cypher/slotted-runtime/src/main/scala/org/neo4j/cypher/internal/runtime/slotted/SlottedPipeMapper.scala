@@ -61,6 +61,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWith
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.DirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
@@ -120,6 +121,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWi
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
@@ -215,6 +217,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.DirectedRelationshipIndex
 import org.neo4j.cypher.internal.runtime.slotted.pipes.DirectedRelationshipIndexScanSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.DirectedRelationshipIndexSeekSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.DirectedRelationshipTypeScanSlottedPipe
+import org.neo4j.cypher.internal.runtime.slotted.pipes.DirectedUnionRelationshipTypesScanSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.DistinctSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.DistinctSlottedPrimitivePipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.DistinctSlottedSinglePrimitivePipe
@@ -258,6 +261,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.UndirectedRelationshipInd
 import org.neo4j.cypher.internal.runtime.slotted.pipes.UndirectedRelationshipIndexScanSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.UndirectedRelationshipIndexSeekSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.UndirectedRelationshipTypeScanSlottedPipe
+import org.neo4j.cypher.internal.runtime.slotted.pipes.UndirectedUnionRelationshipTypesScanSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.UnionNodesByLabelsScanSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.UnionSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.UnwindSlottedPipe
@@ -472,6 +476,26 @@ class SlottedPipeMapper(
           slots.getLongOffsetFor(name),
           slots.getLongOffsetFor(start),
           LazyType(typ),
+          slots.getLongOffsetFor(end),
+          indexOrder
+        )(id)
+
+      case DirectedUnionRelationshipTypesScan(name, start, types, end, _, indexOrder) =>
+        indexRegistrator.registerTypeScan()
+        DirectedUnionRelationshipTypesScanSlottedPipe(
+          slots.getLongOffsetFor(name),
+          slots.getLongOffsetFor(start),
+          types.map(t => LazyType(t)(semanticTable)),
+          slots.getLongOffsetFor(end),
+          indexOrder
+        )(id)
+
+      case UndirectedUnionRelationshipTypesScan(name, start, types, end, _, indexOrder) =>
+        indexRegistrator.registerTypeScan()
+        UndirectedUnionRelationshipTypesScanSlottedPipe(
+          slots.getLongOffsetFor(name),
+          slots.getLongOffsetFor(start),
+          types.map(t => LazyType(t)(semanticTable)),
           slots.getLongOffsetFor(end),
           indexOrder
         )(id)
