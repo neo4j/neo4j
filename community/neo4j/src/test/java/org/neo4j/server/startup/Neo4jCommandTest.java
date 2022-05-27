@@ -413,7 +413,7 @@ class Neo4jCommandTest {
 
         public static class MyPluginSetting implements SettingsDeclaration {
             public static final Setting<String> setting =
-                    newBuilder("my.plugin.setting", STRING, "foo").build();
+                    newBuilder("db.my.plugin.setting", STRING, "foo").build();
         }
 
         @Test

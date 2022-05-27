@@ -80,6 +80,6 @@ public class ConfigurationIT {
 
     private static final class TestSettings implements SettingsDeclaration {
         static final Setting<String> stringSetting =
-                newBuilder("test.setting.string", STRING, "").build();
+                newBuilder("db.test.setting.string", STRING, "").build();
     }
 }

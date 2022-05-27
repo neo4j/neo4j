@@ -115,13 +115,31 @@ class ConfigTest {
     }
 
     @Test
+    void failToBuildConfigForSettingInWrongNamespace() {
+        var e = assertThrows(IllegalArgumentException.class, () -> Config.newBuilder()
+                .addSettingsClass(WrongNamespaceSettings.class)
+                .build());
+        assertThat(e)
+                .hasMessageContaining(
+                        "Setting: 'planet.express.open' name does not reside in any of the supported setting namespaces which are: dbms., db., browser., server., internal.");
+    }
+
+    @Test
+    void buildConfigForSettingInWrongNamespaceWhenStrictDisabled() {
+        assertDoesNotThrow(() -> Config.newBuilder()
+                .addSettingsClass(WrongNamespaceSettings.class)
+                .set(GraphDatabaseSettings.strict_config_validation, false)
+                .build());
+    }
+
+    @Test
     void failToBuildConfigForInternalSettingInWrongNamespace() {
         var e = assertThrows(IllegalArgumentException.class, () -> Config.newBuilder()
                 .addSettingsClass(InternalWrongNamespaceSettings.class)
                 .build());
         assertThat(e)
                 .hasMessageContaining(
-                        "Setting: 'setting.not_really.internal' is internal but does not reside in the correct internal settings namespace.");
+                        "Setting: 'server.setting.not_really.internal' is internal but does not reside in the correct internal settings namespace.");
     }
 
     @Test
@@ -465,7 +483,7 @@ class ConfigTest {
 
     @Test
     void testMalformedGroupSetting() {
-        Map<String, String> settings = Map.of("test.connection.http..foo.bar", "1111");
+        Map<String, String> settings = Map.of("dbms.test.connection.http..foo.bar", "1111");
 
         Config.Builder builder = Config.newBuilder()
                 .set(GraphDatabaseSettings.strict_config_validation, true)
@@ -642,16 +660,16 @@ class ConfigTest {
 
         @Override
         public String getPrefix() {
-            return "test.single_setting";
+            return "db.test.single_setting";
         }
     }
 
     @Test
     void testSingleSettingGroup() {
         Map<String, String> fromSettings = Map.of(
-                "test.single_setting.default", "default value",
-                "test.single_setting.foo", "foo",
-                "test.single_setting.bar", "bar");
+                "db.test.single_setting.default", "default value",
+                "db.test.single_setting.foo", "foo",
+                "db.test.single_setting.bar", "bar");
         Config config = Config.newBuilder()
                 .addGroupSettingClass(SingleSettingGroup.class)
                 .setRaw(fromSettings)
@@ -975,8 +993,8 @@ class ConfigTest {
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
         assertEquals(
-                "Error evaluating value for setting 'test.setting.integer'."
-                        + " Setting 'test.setting.integer' can not have value 'not an int'."
+                "Error evaluating value for setting 'db.test.setting.integer'."
+                        + " Setting 'db.test.setting.integer' can not have value 'not an int'."
                         + " Should be of type 'Integer', but is 'String'",
                 exception.getMessage());
     }
@@ -1065,7 +1083,7 @@ class ConfigTest {
         // Then
         String msg =
                 assertThrows(IllegalArgumentException.class, builder::build).getMessage();
-        assertThat(msg).contains("Error evaluating value for setting 'test.setting.integer'");
+        assertThat(msg).contains("Error evaluating value for setting 'db.test.setting.integer'");
     }
 
     @Test
@@ -1446,7 +1464,7 @@ class ConfigTest {
                 .addSettingsClass(BSettings.class)
                 .addSettingsClass(ASettings.class)
                 .build();
-        Object actual = config.settings.get("test.setting.marker");
+        Object actual = config.settings.get("dbms.test.setting.marker");
         assertThat(actual.toString()).contains("bValue");
     }
 
@@ -1478,36 +1496,43 @@ class ConfigTest {
 
     private static final class ASettings implements SettingsDeclaration {
         static final Setting<String> stringSetting =
-                newBuilder("test.setting.marker", STRING, "aValue").build();
+                newBuilder("dbms.test.setting.marker", STRING, "aValue").build();
     }
 
     private static final class BSettings implements SettingsDeclaration {
         static final Setting<String> stringSetting =
-                newBuilder("test.setting.marker", STRING, "bValue").build();
+                newBuilder("dbms.test.setting.marker", STRING, "bValue").build();
     }
 
     private static final class TestSettings implements SettingsDeclaration {
         static final Setting<String> stringSetting =
-                newBuilder("test.setting.string", STRING, "hello").build();
-        static final Setting<String> dynamicStringSetting = newBuilder("test.setting.dynamicstring", STRING, "hello")
+                newBuilder("db.test.setting.string", STRING, "hello").build();
+        static final Setting<String> dynamicStringSetting = newBuilder("db.test.setting.dynamicstring", STRING, "hello")
                 .dynamic()
                 .build();
         static final Setting<Integer> intSetting =
-                newBuilder("test.setting.integer", INT, 1).dynamic().build();
-        static final Setting<Integer> constrainedIntSetting = newBuilder("test.setting.constrained-integer", INT, 1)
+                newBuilder("db.test.setting.integer", INT, 1).dynamic().build();
+        static final Setting<Integer> constrainedIntSetting = newBuilder("db.test.setting.constrained-integer", INT, 1)
                 .addConstraint(max(3))
                 .dynamic()
                 .build();
-        static final Setting<List<Integer>> intListSetting =
-                newBuilder("test.setting.integerlist", listOf(INT), List.of(1)).build();
+        static final Setting<List<Integer>> intListSetting = newBuilder(
+                        "db.test.setting.integerlist", listOf(INT), List.of(1))
+                .build();
         static final Setting<Boolean> boolSetting =
-                newBuilder("test.setting.bool", BOOL, null).immutable().build();
+                newBuilder("db.test.setting.bool", BOOL, null).immutable().build();
     }
 
     private static final class InternalWrongNamespaceSettings implements SettingsDeclaration {
         @Internal
-        static final Setting<String> wrongInternalSetting =
-                newBuilder("setting.not_really.internal", STRING, "hello").build();
+        static final Setting<String> wrongInternalSetting = newBuilder(
+                        "server.setting.not_really.internal", STRING, "hello")
+                .build();
+    }
+
+    private static final class WrongNamespaceSettings implements SettingsDeclaration {
+        static final Setting<Boolean> wrongSetting =
+                newBuilder("planet.express.open", BOOL, false).build();
     }
 
     private static final class PublicWrongNamespaceSettings implements SettingsDeclaration {
@@ -1533,26 +1558,26 @@ class ConfigTest {
             }
         };
 
-        static final Setting<String> setting1 = newBuilder("test.setting.1", STRING, "aloha")
+        static final Setting<String> setting1 = newBuilder("db.test.setting.1", STRING, "aloha")
                 .addConstraint(circular)
                 .build();
-        static final Setting<Integer> setting2 = newBuilder("test.setting.2", INT, 1)
+        static final Setting<Integer> setting2 = newBuilder("db.test.setting.2", INT, 1)
                 .addConstraint(dependency(max(3), max(5), setting1, is("aloha")))
                 .build();
     }
 
     private static final class DynamicConstraintDependency implements SettingsDeclaration {
         static final Setting<Integer> setting1 =
-                newBuilder("test.setting.1", INT, 1).dynamic().build();
-        static final Setting<Integer> setting2 = newBuilder("test.setting.2", INT, 1)
+                newBuilder("browser.test.setting.1", INT, 1).dynamic().build();
+        static final Setting<Integer> setting2 = newBuilder("browser.test.setting.2", INT, 1)
                 .addConstraint(dependency(max(3), unconstrained(), setting1, is(5)))
                 .build();
     }
 
     private static final class ConstraintDependency implements SettingsDeclaration {
         static final Setting<Integer> setting1 =
-                newBuilder("test.setting.1", INT, 1).build();
-        static final Setting<Integer> setting2 = newBuilder("test.setting.2", INT, 1)
+                newBuilder("dbms.test.setting.1", INT, 1).build();
+        static final Setting<Integer> setting2 = newBuilder("dbms.test.setting.2", INT, 1)
                 .addConstraint(dependency(max(3), unconstrained(), setting1, is(5)))
                 .build();
     }
@@ -1571,7 +1596,7 @@ class ConfigTest {
 
         @Override
         public String getPrefix() {
-            return "test.connection.http";
+            return "server.test.connection.http";
         }
 
         public final Setting<Integer> port;
@@ -1601,7 +1626,7 @@ class ConfigTest {
 
         @Override
         public String getPrefix() {
-            return "test.dynamic";
+            return "dbms.test.dynamic";
         }
 
         public final Setting<String> value;
@@ -1646,7 +1671,7 @@ class ConfigTest {
 
         @Override
         public String getPrefix() {
-            return "test.inheritance";
+            return "db.test.inheritance";
         }
     }
 
@@ -1679,34 +1704,34 @@ class ConfigTest {
 
         @Override
         public String getPrefix() {
-            return "test.dynamic.inheritance";
+            return "server.test.dynamic.inheritance";
         }
     }
 
     private static final class DependencySettings implements SettingsDeclaration {
         static final Setting<Path> basePath = newBuilder(
-                        "test.base.path", PATH, Path.of("/base/").toAbsolutePath())
+                        "db.test.base.path", PATH, Path.of("/base/").toAbsolutePath())
                 .immutable()
                 .build();
-        static final Setting<Path> midPath = newBuilder("test.mid.path", PATH, Path.of("mid/"))
+        static final Setting<Path> midPath = newBuilder("db.test.mid.path", PATH, Path.of("mid/"))
                 .setDependency(basePath)
                 .immutable()
                 .build();
-        static final Setting<Path> endPath = newBuilder("test.end.path", PATH, Path.of("end/file"))
+        static final Setting<Path> endPath = newBuilder("db.test.end.path", PATH, Path.of("end/file"))
                 .setDependency(midPath)
                 .build();
         static final Setting<Path> absolute = newBuilder(
-                        "test.absolute.path",
+                        "db.test.absolute.path",
                         PATH,
                         Path.of("/another/path/file").toAbsolutePath())
                 .setDependency(midPath)
                 .build();
 
-        static final Setting<String> baseString = newBuilder("test.default.dependency.base", STRING, "base")
+        static final Setting<String> baseString = newBuilder("db.test.default.dependency.base", STRING, "base")
                 .immutable()
                 .build();
 
-        static final Setting<String> dependingString = newBuilder("test.default.dependency.dep", STRING, null)
+        static final Setting<String> dependingString = newBuilder("db.test.default.dependency.dep", STRING, null)
                 .setDependency(baseString)
                 .build();
     }

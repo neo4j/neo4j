@@ -81,6 +81,17 @@ public class Config implements Configuration {
     private static final String STRICT_FAILURE_MESSAGE =
             String.format(" Cleanup the config or disable '%s' to continue.", strict_config_validation.name());
     private static final String LEGACY_4_X_DBMS_JVM_ADDITIONAL = "dbms.jvm.additional";
+    private static final List<String> SUPPORTED_NAMESPACES = List.of(
+            "dbms.",
+            "db.",
+            "browser.",
+            "server.",
+            "internal.",
+            // temporary namespaces
+            "cluster.",
+            "fabric.",
+            "apoc.",
+            "clients.");
 
     public static final class Builder {
         // We use tree sets with comparators for setting classes and migrators to have
@@ -564,7 +575,8 @@ public class Config implements Configuration {
                     settingValueObjects,
                     fromConfig,
                     overriddenDefaultStrings,
-                    overriddenDefaultObjects);
+                    overriddenDefaultObjects,
+                    false);
             strict = get(strict_config_validation);
         }
 
@@ -579,7 +591,8 @@ public class Config implements Configuration {
                     settingValueObjects,
                     fromConfig,
                     overriddenDefaultStrings,
-                    overriddenDefaultObjects);
+                    overriddenDefaultObjects,
+                    strict);
             commandEvaluationTimeout = get(config_command_evaluation_timeout);
         }
 
@@ -591,7 +604,8 @@ public class Config implements Configuration {
                 settingValueObjects,
                 overriddenDefaultStrings,
                 overriddenDefaultObjects,
-                fromConfig);
+                fromConfig,
+                strict);
     }
 
     @SuppressWarnings("unchecked")
@@ -601,7 +615,8 @@ public class Config implements Configuration {
             Map<String, Object> settingValueObjects,
             Map<String, String> overriddenDefaultStrings,
             Map<String, Object> overriddenDefaultObjects,
-            Config fromConfig) {
+            Config fromConfig,
+            boolean strict) {
         Deque<SettingImpl<?>> newSettings = new ArrayDeque<>(settingsToEvaluate);
         while (!newSettings.isEmpty()) {
             boolean modified = false;
@@ -625,7 +640,8 @@ public class Config implements Configuration {
                                 settingValueObjects,
                                 fromConfig,
                                 overriddenDefaultStrings,
-                                overriddenDefaultObjects);
+                                overriddenDefaultObjects,
+                                strict);
                         modified = true;
                     } catch (AccessDuringEvaluationException e) {
                         // Constraint with internal dependencies yet not evaluated
@@ -723,12 +739,13 @@ public class Config implements Configuration {
             Map<String, Object> settingValueObjects,
             Config fromConfig,
             Map<String, String> overriddenDefaultStrings,
-            Map<String, Object> overriddenDefaultObjects) {
+            Map<String, Object> overriddenDefaultObjects,
+            boolean strict) {
         SettingImpl<Object> setting = (SettingImpl<Object>) untypedSetting;
         String key = setting.name();
 
         try {
-            validateSettingName(setting);
+            validateSettingName(setting, strict);
 
             Object defaultValue;
             if (overriddenDefaultObjects.containsKey(key)) // Map default value
@@ -768,8 +785,23 @@ public class Config implements Configuration {
         }
     }
 
-    private void validateSettingName(SettingImpl<Object> setting) {
+    private void validateSettingName(SettingImpl<Object> setting, boolean strict) {
         validateInternalNamespace(setting);
+        if (strict) {
+            validateSettingNamespace(setting);
+        }
+    }
+
+    private void validateSettingNamespace(SettingImpl<Object> setting) {
+        String name = setting.name();
+        for (String supportedNamespace : SUPPORTED_NAMESPACES) {
+            if (name.startsWith(supportedNamespace)) {
+                return;
+            }
+        }
+        throw new IllegalArgumentException(format(
+                "Setting: '%s' name does not reside in any of the supported setting namespaces which are: %s",
+                setting.name(), String.join(", ", SUPPORTED_NAMESPACES)));
     }
 
     private void validateInternalNamespace(SettingImpl<Object> setting) {
