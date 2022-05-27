@@ -1398,6 +1398,41 @@ class OrLeafPlanningIntegrationTest
     }
   }
 
+  test("should plan index with fuzzy expression in ORs") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("L", 50)
+      .addNodeIndex("L", Seq("a"), 0.5, 0.5)
+      .build()
+
+    val plan = cfg.plan(
+      """MATCH (n:L) WHERE n.a OR (((""=~"") AND NOT(true)) >= n.a) 
+        |RETURN n
+        |""".stripMargin
+    )
+    atLeast(1, plan.leaves) should matchPattern {
+      case _: NodeIndexSeek =>
+    }
+  }
+
+  test("should plan index with nested property in ORs") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("L", 50)
+      .addNodeIndex("L", Seq("a"), 0.5, 0.5)
+      .build()
+
+    val plan = cfg.plan(
+      """MATCH (x) WITH x SKIP 0 
+        |MATCH (n:L) WHERE n.a OR (((""=~"") AND x.b > 5) >= n.a) 
+        |RETURN n
+        |""".stripMargin
+    )
+    atLeast(1, plan.leaves) should matchPattern {
+      case _: NodeIndexSeek =>
+    }
+  }
+
   private def runWithTimeout[T](timeout: Long)(f: => T): T = {
     Await.result(scala.concurrent.Future(f)(scala.concurrent.ExecutionContext.global), Duration.apply(timeout, "s"))
   }
