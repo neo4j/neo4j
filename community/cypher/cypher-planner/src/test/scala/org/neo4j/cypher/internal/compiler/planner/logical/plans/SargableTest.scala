@@ -178,9 +178,9 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     val leftExpr = prop("a", "id")
     val min = literalInt(10)
     val max = literalFloat(20.5)
-    val table = mock[SemanticTable]
-    when(table.getActualTypeFor(min)).thenReturn(CTInteger.invariant)
-    when(table.getActualTypeFor(max)).thenReturn(CTFloat.invariant)
+    val table = SemanticTable()
+      .addTypeInfo(min, CTInteger.invariant)
+      .addTypeInfo(max, CTFloat.invariant)
     val AsValueRangeSeekable(seekable) = AndedPropertyInequalities(
       nodeA,
       leftExpr,
@@ -188,6 +188,20 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     )
 
     seekable.propertyValueType(table) should be(CTNumber)
+  }
+
+  test("InequalityRangeSeekable propertyValueType should tolerate missing type information") {
+    val leftExpr = prop("a", "id")
+    val min = literalInt(10)
+    val max = literalFloat(20.5)
+    val table = SemanticTable()
+    val AsValueRangeSeekable(seekable) = AndedPropertyInequalities(
+      nodeA,
+      leftExpr,
+      NonEmptyList(greaterThan(leftExpr, min), lessThanOrEqual(leftExpr, max))
+    )
+
+    seekable.propertyValueType(table) should be(CTAny)
   }
 
   test("PropertySeekable does not match if rhs depends on lhs variable") {

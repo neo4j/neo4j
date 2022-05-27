@@ -420,7 +420,8 @@ case class InequalityRangeSeekable(ident: LogicalVariable, property: LogicalProp
 
   override def propertyValueType(semanticTable: SemanticTable): CypherType = {
     Seekable.combineMultipleTypeSpecs(expr.inequalities.map(ineq =>
-      semanticTable.getActualTypeFor(ineq.rhs)
+      semanticTable.types.get(ineq.rhs)
+        .map(_.actual).getOrElse(TypeSpec.exact(CTAny))
     ).toIndexedSeq)
   }
 
