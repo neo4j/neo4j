@@ -58,11 +58,11 @@ public class BootloaderSettings implements SettingsDeclaration {
 
     @Description("Initial heap size. By default it is calculated based on available system resources.")
     public static final Setting<Long> initial_heap_size =
-            newBuilder("dbms.memory.heap.initial_size", BYTES, null).build();
+            newBuilder("server.memory.heap.initial_size", BYTES, null).build();
 
     @Description("Maximum heap size. By default it is calculated based on available system resources.")
     public static final Setting<Long> max_heap_size =
-            newBuilder("dbms.memory.heap.max_size", BYTES, null).build();
+            newBuilder("server.memory.heap.max_size", BYTES, null).build();
 
     @Description("GC Logging Options")
     public static final Setting<String> gc_logging_options = newBuilder(

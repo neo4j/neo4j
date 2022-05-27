@@ -423,12 +423,12 @@ public interface Status {
         TransactionMemoryLimit(
                 TransientError,
                 "There is not enough memory to perform the current task. Please try increasing "
-                        + "'dbms.memory.off_heap.max_size' in the neo4j configuration (normally in 'conf/neo4j.conf' or, if "
+                        + "'server.memory.off_heap.max_size' in the neo4j configuration (normally in 'conf/neo4j.conf' or, if "
                         + "you are using Neo4j Desktop, found through the user interface), and then restart the database."),
         OutOfMemoryError(
                 TransientError,
                 "There is not enough memory to perform the current task. Please try increasing "
-                        + "'dbms.memory.heap.max_size' in the neo4j configuration (normally in 'conf/neo4j.conf' or, if "
+                        + "'server.memory.heap.max_size' in the neo4j configuration (normally in 'conf/neo4j.conf' or, if "
                         + "you are using Neo4j Desktop, found through the user interface) or if you are running an embedded "
                         + "installation increase the heap by using '-Xmx' command line flag, and then restart the database."),
         StackOverFlowError(

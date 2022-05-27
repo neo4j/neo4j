@@ -662,12 +662,12 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             "By default the size of page cache will be 50% och available RAM minus the max heap size."
                     + "The size of the page cache will also not be larger than 70x the max heap size (due to some overhead of the page cache in the heap.")
     public static final Setting<Long> pagecache_memory =
-            newBuilder("dbms.memory.pagecache.size", BYTES, null).build();
+            newBuilder("server.memory.pagecache.size", BYTES, null).build();
 
     @Description("The maximum number of worker threads to use for pre-fetching data when doing sequential scans. "
             + "Set to '0' to disable pre-fetching for scans.")
     public static final Setting<Integer> pagecache_scan_prefetch = newBuilder(
-                    "dbms.memory.pagecache.scan.prefetchers", INT, 4)
+                    "server.memory.pagecache.scan.prefetchers", INT, 4)
             .addConstraint(range(0, 255))
             .build();
 
@@ -676,7 +676,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
                     + "cache pages into one bigger buffer to minimize the number of individual IOPS performed and better utilization of available "
                     + "I/O resources, especially when those are restricted.")
     public static final Setting<Boolean> pagecache_buffered_flush_enabled = newBuilder(
-                    "dbms.memory.pagecache.flush.buffer.enabled", BOOL, false)
+                    "server.memory.pagecache.flush.buffer.enabled", BOOL, false)
             .dynamic()
             .build();
 
@@ -687,7 +687,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
                     + "Use this setting to configure individual file flush buffer size in pages (8KiB). "
                     + "To be able to utilize this buffer during page cache flushing, buffered flush should be enabled.")
     public static final Setting<Integer> pagecache_flush_buffer_size_in_pages = newBuilder(
-                    "dbms.memory.pagecache.flush.buffer.size_in_pages", INT, 128)
+                    "server.memory.pagecache.flush.buffer.size_in_pages", INT, 128)
             .addConstraint(range(1, 512))
             .dynamic()
             .build();
@@ -723,7 +723,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             "Use direct I/O for page cache. "
                     + "Setting is supported only on Linux and only for a subset of record formats that use platform aligned page size.")
     public static final Setting<Boolean> pagecache_direct_io =
-            newBuilder("dbms.memory.pagecache.directio", BOOL, false).build();
+            newBuilder("server.memory.pagecache.directio", BOOL, false).build();
 
     @Description("Allows the enabling or disabling of the file watcher service. "
             + "This is an auxiliary service but should be left enabled in almost all cases.")
@@ -1045,14 +1045,14 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             "The maximum amount of off-heap memory that can be used to store transaction state data; it's a total amount of memory "
                     + "shared across all active transactions. Zero means 'unlimited'. Used when db.tx_state.memory_allocation is set to 'OFF_HEAP'.")
     public static final Setting<Long> tx_state_max_off_heap_memory = newBuilder(
-                    "dbms.memory.off_heap.max_size", BYTES, BYTES.parse("2G"))
+                    "server.memory.off_heap.max_size", BYTES, BYTES.parse("2G"))
             .addConstraint(min(0L))
             .build();
 
     @Description(
             "Defines the maximum size of an off-heap memory block that can be cached to speed up allocations. The value must be a power of 2.")
     public static final Setting<Long> tx_state_off_heap_max_cacheable_block_size = newBuilder(
-                    "dbms.memory.off_heap.max_cacheable_block_size", BYTES, ByteUnit.kibiBytes(512))
+                    "server.memory.off_heap.max_cacheable_block_size", BYTES, ByteUnit.kibiBytes(512))
             .addConstraint(min(kibiBytes(4)))
             .addConstraint(POWER_OF_2)
             .build();
@@ -1060,9 +1060,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     @Description(
             "Defines the size of the off-heap memory blocks cache. The cache will contain this number of blocks for each block size "
                     + "that is power of two. Thus, maximum amount of memory used by blocks cache can be calculated as "
-                    + "2 * dbms.memory.off_heap.max_cacheable_block_size * dbms.memory.off_heap.block_cache_size")
+                    + "2 * server.memory.off_heap.max_cacheable_block_size * server.memory.off_heap.block_cache_size")
     public static final Setting<Integer> tx_state_off_heap_block_cache_size = newBuilder(
-                    "dbms.memory.off_heap.block_cache_size", INT, 128)
+                    "server.memory.off_heap.block_cache_size", INT, 128)
             .addConstraint(min(16))
             .build();
 

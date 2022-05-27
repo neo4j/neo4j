@@ -28,7 +28,9 @@ import static org.neo4j.configuration.BootloaderSettings.gc_logging_enabled;
 import static org.neo4j.configuration.BootloaderSettings.gc_logging_options;
 import static org.neo4j.configuration.BootloaderSettings.gc_logging_rotation_keep_number;
 import static org.neo4j.configuration.BootloaderSettings.gc_logging_rotation_size;
+import static org.neo4j.configuration.BootloaderSettings.initial_heap_size;
 import static org.neo4j.configuration.BootloaderSettings.lib_directory;
+import static org.neo4j.configuration.BootloaderSettings.max_heap_size;
 import static org.neo4j.configuration.BootloaderSettings.run_directory;
 import static org.neo4j.configuration.BootloaderSettings.windows_service_name;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.upgrade_processors;
@@ -87,6 +89,11 @@ import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_d
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_global_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_buffered_flush_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_direct_io;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_flush_buffer_size_in_pages;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_scan_prefetch;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
@@ -115,6 +122,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_bl
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.configuration.connectors.BoltConnectorInternalSettings.thread_pool_shutdown_wait_time;
+import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -758,5 +766,38 @@ class SettingMigratorsTest {
         assertTrue(config.get(index_background_sampling_enabled));
         assertEquals(1048577, config.get(index_sample_size_limit));
         assertEquals(75, config.get(index_sampling_update_percentage));
+    }
+
+    @Test
+    void migratePageCacheAndMemorySettings() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(
+                confFile,
+                List.of(
+                        "dbms.memory.pagecache.size=1G",
+                        "dbms.memory.pagecache.scan.prefetchers=8",
+                        "dbms.memory.pagecache.flush.buffer.size_in_pages=129",
+                        "dbms.memory.pagecache.flush.buffer.enabled=true",
+                        "dbms.memory.pagecache.directio=true",
+                        "dbms.memory.off_heap.max_size=4G",
+                        "dbms.memory.off_heap.max_cacheable_block_size=2M",
+                        "dbms.memory.off_heap.block_cache_size=124",
+                        "dbms.memory.heap.max_size=512M",
+                        "dbms.memory.heap.initial_size=511M"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+
+        assertEquals(gibiBytes(1), config.get(pagecache_memory));
+        assertEquals(8, config.get(pagecache_scan_prefetch));
+        assertEquals(129, config.get(pagecache_flush_buffer_size_in_pages));
+        assertEquals(true, config.get(pagecache_buffered_flush_enabled));
+        assertEquals(true, config.get(pagecache_direct_io));
+
+        assertEquals(gibiBytes(4), config.get(tx_state_max_off_heap_memory));
+        assertEquals(mebiBytes(2), config.get(tx_state_off_heap_max_cacheable_block_size));
+        assertEquals(124, config.get(tx_state_off_heap_block_cache_size));
+
+        assertEquals(mebiBytes(512), config.get(max_heap_size));
+        assertEquals(mebiBytes(511), config.get(initial_heap_size));
     }
 }

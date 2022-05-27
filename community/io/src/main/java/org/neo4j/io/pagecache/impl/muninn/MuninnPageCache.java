@@ -984,7 +984,7 @@ public class MuninnPageCache implements PageCache {
                         + "out of it is by throwing this exception. This should be extremely rare, but can happen if the page "
                         + "cache size is tiny and the number of concurrently running transactions is very high. You should be "
                         + "able to get around this problem by increasing the amount of memory allocated to the page cache "
-                        + "with the `dbms.memory.pagecache.size` setting. Please contact Neo4j support if you need help tuning "
+                        + "with the `server.memory.pagecache.size` setting. Please contact Neo4j support if you need help tuning "
                         + "your database.");
     }
 

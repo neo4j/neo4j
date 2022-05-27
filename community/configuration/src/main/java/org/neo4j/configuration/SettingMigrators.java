@@ -25,7 +25,9 @@ import static org.neo4j.configuration.BootloaderSettings.gc_logging_enabled;
 import static org.neo4j.configuration.BootloaderSettings.gc_logging_options;
 import static org.neo4j.configuration.BootloaderSettings.gc_logging_rotation_keep_number;
 import static org.neo4j.configuration.BootloaderSettings.gc_logging_rotation_size;
+import static org.neo4j.configuration.BootloaderSettings.initial_heap_size;
 import static org.neo4j.configuration.BootloaderSettings.lib_directory;
+import static org.neo4j.configuration.BootloaderSettings.max_heap_size;
 import static org.neo4j.configuration.BootloaderSettings.run_directory;
 import static org.neo4j.configuration.BootloaderSettings.windows_service_name;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.upgrade_processors;
@@ -80,6 +82,11 @@ import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_d
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_global_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_buffered_flush_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_direct_io;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_flush_buffer_size_in_pages;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_scan_prefetch;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
@@ -697,6 +704,33 @@ public final class SettingMigrators {
             migrateQueryLoggingSettings(values, defaultValues, log);
             migrateJvmAdditional(values, defaultValues, log);
             migrateSamplingSettings(values, defaultValues, log);
+            migratePageCacheAndMemorySettings(values, defaultValues, log);
+        }
+
+        private void migratePageCacheAndMemorySettings(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.memory.pagecache.size", pagecache_memory);
+            migrateSettingNameChange(values, log, "dbms.memory.pagecache.scan.prefetchers", pagecache_scan_prefetch);
+            migrateSettingNameChange(
+                    values,
+                    log,
+                    "dbms.memory.pagecache.flush.buffer.size_in_pages",
+                    pagecache_flush_buffer_size_in_pages);
+            migrateSettingNameChange(
+                    values, log, "dbms.memory.pagecache.flush.buffer.enabled", pagecache_buffered_flush_enabled);
+            migrateSettingNameChange(values, log, "dbms.memory.pagecache.directio", pagecache_direct_io);
+
+            migrateSettingNameChange(values, log, "dbms.memory.off_heap.max_size", tx_state_max_off_heap_memory);
+            migrateSettingNameChange(
+                    values,
+                    log,
+                    "dbms.memory.off_heap.max_cacheable_block_size",
+                    tx_state_off_heap_max_cacheable_block_size);
+            migrateSettingNameChange(
+                    values, log, "dbms.memory.off_heap.block_cache_size", tx_state_off_heap_block_cache_size);
+
+            migrateSettingNameChange(values, log, "dbms.memory.heap.max_size", max_heap_size);
+            migrateSettingNameChange(values, log, "dbms.memory.heap.initial_size", initial_heap_size);
         }
 
         private void migrateSamplingSettings(
