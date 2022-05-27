@@ -619,6 +619,9 @@ private[internal] class TransactionBoundReadQueryContext(
   override def nodeLabelIndexCursor(): NodeLabelIndexCursor =
     transactionalContext.cursors.allocateNodeLabelIndexCursor(transactionalContext.cursorContext)
 
+  override def relationshipTypeIndexCursor(): RelationshipTypeIndexCursor =
+    transactionalContext.cursors.allocateRelationshipTypeIndexCursor(transactionalContext.cursorContext)
+
   override def traversalCursor(): RelationshipTraversalCursor =
     transactionalContext.cursors.allocateRelationshipTraversalCursor(transactionalContext.cursorContext)
 

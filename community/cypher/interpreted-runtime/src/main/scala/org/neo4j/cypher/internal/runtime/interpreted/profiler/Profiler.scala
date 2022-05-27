@@ -51,6 +51,7 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
+import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.storageengine.api.PropertySelection
@@ -290,6 +291,12 @@ final class ProfilingPipeQueryContext(inner: QueryContext, counter: Counter)
     val tracer = new PipeTracer
     nodeCursor.setTracer(tracer)
     nodeCursor
+  }
+
+  override protected def manyDbHits(relCursor: RelationshipTypeIndexCursor): RelationshipTypeIndexCursor = {
+    val tracer = new PipeTracer
+    relCursor.setTracer(tracer)
+    relCursor
   }
 
   override protected def manyDbHits(propertyCursor: PropertyCursor): PropertyCursor = {

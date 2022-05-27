@@ -21,7 +21,10 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.RelationshipIterator
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipTypeScanPipe.UndirectedIterator
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
@@ -36,47 +39,50 @@ case class UndirectedRelationshipTypeScanPipe(
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val typeId = typ.getId(state.query)
-    if (typeId == LazyType.UNKNOWN) ClosingIterator.empty
-    else {
-      new UndirectedIterator(ident, typeId, fromNode, toNode, rowFactory, state, indexOrder)
+    if (typeId == LazyType.UNKNOWN) {
+      ClosingIterator.empty
+    } else {
+      val relIterator = state.query.getRelationshipsByType(state.relTypeTokenReadSession.get, typeId, indexOrder)
+      new UndirectedIterator(relIterator, ident, fromNode, toNode, rowFactory, state)
     }
   }
 }
 
-private class UndirectedIterator(
-  relName: String,
-  relToken: Int,
-  fromNode: String,
-  toNode: String,
-  rowFactory: CypherRowFactory,
-  state: QueryState,
-  indexOrder: IndexOrder
-) extends ClosingIterator[CypherRow] {
+object UndirectedRelationshipTypeScanPipe {
 
-  private var emitSibling = false
-  private var lastRelationship: VirtualRelationshipValue = _
-  private var lastStart: VirtualNodeValue = _
-  private var lastEnd: VirtualNodeValue = _
+  class UndirectedIterator(
+    relIterator: ClosingLongIterator with RelationshipIterator,
+    relName: String,
+    fromNode: String,
+    toNode: String,
+    rowFactory: CypherRowFactory,
+    state: QueryState
+  ) extends ClosingIterator[CypherRow] {
 
-  private val baseContext = state.newRowWithArgument(rowFactory)
-  private val query = state.query
-  private val relIterator = query.getRelationshipsByType(state.relTypeTokenReadSession.get, relToken, indexOrder)
+    private var emitSibling = false
+    private var lastRelationship: VirtualRelationshipValue = _
+    private var lastStart: VirtualNodeValue = _
+    private var lastEnd: VirtualNodeValue = _
 
-  def next(): CypherRow = {
-    if (emitSibling) {
-      emitSibling = false
-      rowFactory.copyWith(baseContext, relName, lastRelationship, fromNode, lastEnd, toNode, lastStart)
-    } else {
-      emitSibling = true
-      lastRelationship = query.relationshipById(relIterator.next())
-      lastStart = query.nodeById(relIterator.startNodeId())
-      lastEnd = query.nodeById(relIterator.endNodeId())
-      rowFactory.copyWith(baseContext, relName, lastRelationship, fromNode, lastStart, toNode, lastEnd)
+    private val baseContext = state.newRowWithArgument(rowFactory)
+    private val query = state.query
+
+    def next(): CypherRow = {
+      if (emitSibling) {
+        emitSibling = false
+        rowFactory.copyWith(baseContext, relName, lastRelationship, fromNode, lastEnd, toNode, lastStart)
+      } else {
+        emitSibling = true
+        lastRelationship = query.relationshipById(relIterator.next())
+        lastStart = query.nodeById(relIterator.startNodeId())
+        lastEnd = query.nodeById(relIterator.endNodeId())
+        rowFactory.copyWith(baseContext, relName, lastRelationship, fromNode, lastStart, toNode, lastEnd)
+      }
     }
-  }
 
-  override protected[this] def closeMore(): Unit = {
-    relIterator.close()
+    override protected[this] def closeMore(): Unit = {
+      relIterator.close()
+    }
+    override protected[this] def innerHasNext: Boolean = emitSibling || relIterator.hasNext
   }
-  override protected[this] def innerHasNext: Boolean = emitSibling || relIterator.hasNext
 }

@@ -65,6 +65,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWith
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.DirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
@@ -152,6 +153,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWi
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
@@ -205,6 +207,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipI
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipIndexScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipIndexSeekPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipTypeScanPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedUnionRelationshipTypesScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerAggregationPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerPipe
@@ -292,6 +295,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshi
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipIndexScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipIndexSeekPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipTypeScanPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedUnionRelationshipTypesScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UnionNodeByLabelsScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UnionPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UnwindPipe
@@ -382,6 +386,26 @@ case class InterpretedPipeMapper(
       case UndirectedRelationshipTypeScan(ident, fromNode, typ, toNode, _, indexOrder) =>
         indexRegistrator.registerTypeScan()
         UndirectedRelationshipTypeScanPipe(ident, fromNode, LazyType(typ)(semanticTable), toNode, indexOrder)(id = id)
+
+      case DirectedUnionRelationshipTypesScan(ident, fromNode, types, endNode, _, indexOrder) =>
+        indexRegistrator.registerTypeScan()
+        DirectedUnionRelationshipTypesScanPipe(
+          ident,
+          fromNode,
+          types.map(l => LazyType(l)(semanticTable)),
+          endNode,
+          indexOrder
+        )(id = id)
+
+      case UndirectedUnionRelationshipTypesScan(ident, fromNode, types, endNode, _, indexOrder) =>
+        indexRegistrator.registerTypeScan()
+        UndirectedUnionRelationshipTypesScanPipe(
+          ident,
+          fromNode,
+          types.map(l => LazyType(l)(semanticTable)),
+          endNode,
+          indexOrder
+        )(id = id)
 
       case DirectedRelationshipIndexSeek(
           idName,

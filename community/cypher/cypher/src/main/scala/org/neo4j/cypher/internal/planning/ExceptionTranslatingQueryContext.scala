@@ -60,6 +60,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
+import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
@@ -354,6 +355,9 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
 
   override def nodeLabelIndexCursor(): NodeLabelIndexCursor =
     translateException(tokenNameLookup, inner.nodeLabelIndexCursor())
+
+  override def relationshipTypeIndexCursor(): RelationshipTypeIndexCursor =
+    translateException(tokenNameLookup, inner.relationshipTypeIndexCursor())
 
   override def traversalCursor(): RelationshipTraversalCursor =
     translateException(tokenNameLookup, inner.traversalCursor())

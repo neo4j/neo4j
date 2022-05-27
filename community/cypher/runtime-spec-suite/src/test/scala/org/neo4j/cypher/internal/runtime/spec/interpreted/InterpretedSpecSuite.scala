@@ -163,6 +163,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TriadicSelectionTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UndirectedRelationshipByIdSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UnionLabelScanTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.UnionRelationshipTypeTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UnionTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UnwindTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UserDefinedAggregationSupport
@@ -394,6 +395,9 @@ class InterpretedRollupApplyTest extends RollupApplyTestBase(COMMUNITY.EDITION, 
 
 class InterpretedRelationshipTypeScanTest
     extends RelationshipTypeScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+
+class InterpretedUnionRelationshipTypeTest
+    extends UnionRelationshipTypeTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
 class InterpretedTrailTest extends TrailTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
