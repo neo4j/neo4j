@@ -33,16 +33,13 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
-import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -74,7 +71,7 @@ class UnionNodeLabelIndexCursorTest {
         try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
                 var cursor1 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
                 var cursor2 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
-                var cursor3 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT); ) {
+                var cursor3 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT)) {
             var cursors = new NodeLabelIndexCursor[] {cursor1, cursor2, cursor3};
             var unionCursor = ascendingUnionNodeLabelIndexCursor(tx, labelsToLookFor, cursors);
 
@@ -103,7 +100,7 @@ class UnionNodeLabelIndexCursorTest {
         try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
                 var cursor1 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
                 var cursor2 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
-                var cursor3 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT); ) {
+                var cursor3 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT)) {
             var cursors = new NodeLabelIndexCursor[] {cursor1, cursor2, cursor3};
             var unionCursor = descendingUnionNodeLabelIndexCursor(tx, labelsToLookFor, cursors);
 
@@ -135,7 +132,7 @@ class UnionNodeLabelIndexCursorTest {
         try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
                 var cursor1 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
                 var cursor2 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
-                var cursor3 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT); ) {
+                var cursor3 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT)) {
             var cursors = new NodeLabelIndexCursor[] {cursor1, cursor2, cursor3};
             var unionCursor = ascendingUnionNodeLabelIndexCursor(tx, labelsToLookFor, cursors);
 
@@ -167,7 +164,7 @@ class UnionNodeLabelIndexCursorTest {
         try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
                 var cursor1 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
                 var cursor2 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
-                var cursor3 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT); ) {
+                var cursor3 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT)) {
             var cursors = new NodeLabelIndexCursor[] {cursor1, cursor2, cursor3};
             var unionCursor = descendingUnionNodeLabelIndexCursor(tx, labelsToLookFor, cursors);
 
@@ -204,7 +201,7 @@ class UnionNodeLabelIndexCursorTest {
         try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
                 var cursor1 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
                 var cursor2 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
-                var cursor3 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT); ) {
+                var cursor3 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT)) {
             var cursors = new NodeLabelIndexCursor[] {cursor1, cursor2, cursor3};
             var unionCursor = ascendingUnionNodeLabelIndexCursor(tx, labelsToLookFor, cursors);
 
@@ -240,7 +237,7 @@ class UnionNodeLabelIndexCursorTest {
         try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
                 var cursor1 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
                 var cursor2 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
-                var cursor3 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT); ) {
+                var cursor3 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT)) {
             var cursors = new NodeLabelIndexCursor[] {cursor1, cursor2, cursor3};
             var unionCursor = descendingUnionNodeLabelIndexCursor(tx, labelsToLookFor, cursors);
 
@@ -275,7 +272,7 @@ class UnionNodeLabelIndexCursorTest {
         try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
                 var cursor1 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
                 var cursor2 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
-                var cursor3 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT); ) {
+                var cursor3 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT)) {
             var cursors = new NodeLabelIndexCursor[] {cursor1, cursor2, cursor3};
             var unionCursor = ascendingUnionNodeLabelIndexCursor(tx, labelsToLookFor, cursors);
 
@@ -309,7 +306,7 @@ class UnionNodeLabelIndexCursorTest {
         try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
                 var cursor1 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
                 var cursor2 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
-                var cursor3 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT); ) {
+                var cursor3 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT)) {
             var cursors = new NodeLabelIndexCursor[] {cursor1, cursor2, cursor3};
             var unionCursor = descendingUnionNodeLabelIndexCursor(tx, labelsToLookFor, cursors);
 
@@ -373,7 +370,7 @@ class UnionNodeLabelIndexCursorTest {
                 var cursor2 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
                 var cursor3 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
                 var cursor4 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
-                var cursor5 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT); ) {
+                var cursor5 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT)) {
             var cursors = new NodeLabelIndexCursor[] {cursor1, cursor2, cursor3, cursor4, cursor5};
             var unionCursor = ascendingUnionNodeLabelIndexCursor(tx, labelsToLookFor, cursors);
 
@@ -436,7 +433,7 @@ class UnionNodeLabelIndexCursorTest {
                 var cursor2 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
                 var cursor3 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
                 var cursor4 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
-                var cursor5 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT); ) {
+                var cursor5 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT)) {
             var cursors = new NodeLabelIndexCursor[] {cursor1, cursor2, cursor3, cursor4, cursor5};
             var unionCursor = descendingUnionNodeLabelIndexCursor(tx, labelsToLookFor, cursors);
 
@@ -473,22 +470,8 @@ class UnionNodeLabelIndexCursorTest {
     private List<Long> asList(UnionNodeLabelIndexCursor cursor) {
         var result = new ArrayList<Long>();
         while (cursor.next()) {
-            result.add(cursor.nodeReference());
+            result.add(cursor.reference());
         }
         return result;
-    }
-
-    private void scan(KernelTransaction tx, NodeLabelIndexCursor cursor, int label) throws KernelException {
-        IndexDescriptor index = tx.schemaRead()
-                .index(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
-                .next();
-        TokenReadSession tokenReadSession = tx.dataRead().tokenReadSession(index);
-        tx.dataRead()
-                .nodeLabelScan(
-                        tokenReadSession,
-                        cursor,
-                        IndexQueryConstraints.ordered(IndexOrder.ASCENDING),
-                        new TokenPredicate(label),
-                        tx.cursorContext());
     }
 }

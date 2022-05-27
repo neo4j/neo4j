@@ -84,7 +84,7 @@ object UnionNodeByLabelsScanPipe {
       }
 
       new PrimitiveCursorIterator {
-        override protected def fetchNext(): Long = if (cursor.next()) cursor.nodeReference() else -1L
+        override protected def fetchNext(): Long = if (cursor.next()) cursor.reference() else -1L
 
         override def close(): Unit = IOUtils.closeAll(cursors: _*)
       }

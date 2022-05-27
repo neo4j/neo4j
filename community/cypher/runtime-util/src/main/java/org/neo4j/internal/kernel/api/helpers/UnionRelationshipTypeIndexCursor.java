@@ -21,64 +21,76 @@ package org.neo4j.internal.kernel.api.helpers;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
-import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.context.CursorContext;
 
-public abstract class UnionNodeLabelIndexCursor extends UnionTokenIndexCursor<NodeLabelIndexCursor> {
+public abstract class UnionRelationshipTypeIndexCursor extends UnionTokenIndexCursor<RelationshipTypeIndexCursor> {
 
-    public static UnionNodeLabelIndexCursor ascendingUnionNodeLabelIndexCursor(
+    public static UnionRelationshipTypeIndexCursor ascendingUnionRelationshipTypeIndexCursor(
             Read read,
             TokenReadSession tokenReadSession,
             CursorContext cursorContext,
-            int[] labels,
-            NodeLabelIndexCursor[] cursors)
+            int[] types,
+            RelationshipTypeIndexCursor[] cursors)
             throws KernelException {
-        assert labels.length == cursors.length;
-        for (int i = 0; i < labels.length; i++) {
-            read.nodeLabelScan(
+        assert types.length == cursors.length;
+        for (int i = 0; i < types.length; i++) {
+            read.relationshipTypeScan(
                     tokenReadSession,
                     cursors[i],
                     IndexQueryConstraints.ordered(IndexOrder.ASCENDING),
-                    new TokenPredicate(labels[i]),
+                    new TokenPredicate(types[i]),
                     cursorContext);
         }
-        return new AscendingUnionLabelIndexCursor(cursors);
+        return new AscendingUnionRelationshipTypeIndexCursor(cursors);
     }
 
-    public static UnionNodeLabelIndexCursor descendingUnionNodeLabelIndexCursor(
+    public static UnionRelationshipTypeIndexCursor descendingUnionRelationshipTypeIndexCursor(
             Read read,
             TokenReadSession tokenReadSession,
             CursorContext cursorContext,
-            int[] labels,
-            NodeLabelIndexCursor[] cursors)
+            int[] types,
+            RelationshipTypeIndexCursor[] cursors)
             throws KernelException {
-        assert labels.length == cursors.length;
-        for (int i = 0; i < labels.length; i++) {
-            read.nodeLabelScan(
+        assert types.length == cursors.length;
+        for (int i = 0; i < types.length; i++) {
+            read.relationshipTypeScan(
                     tokenReadSession,
                     cursors[i],
                     IndexQueryConstraints.ordered(IndexOrder.DESCENDING),
-                    new TokenPredicate(labels[i]),
+                    new TokenPredicate(types[i]),
                     cursorContext);
         }
-        return new DescendingUnionLabelIndexCursor(cursors);
+        return new DescendingUnionRelationshipTypeIndexCursor(cursors);
     }
 
-    UnionNodeLabelIndexCursor(NodeLabelIndexCursor[] cursors) {
+    UnionRelationshipTypeIndexCursor(RelationshipTypeIndexCursor[] cursors) {
         super(cursors);
     }
 
     @Override
-    long reference(NodeLabelIndexCursor cursor) {
-        return cursor.nodeReference();
+    long reference(RelationshipTypeIndexCursor cursor) {
+        return cursor.relationshipReference();
     }
 
-    private static final class AscendingUnionLabelIndexCursor extends UnionNodeLabelIndexCursor {
-        AscendingUnionLabelIndexCursor(NodeLabelIndexCursor[] cursors) {
+    public long sourceNodeReference() {
+        return current().sourceNodeReference();
+    }
+
+    public long targetNodeReference() {
+        return current().targetNodeReference();
+    }
+
+    public int type() {
+        return current().type();
+    }
+
+    private static final class AscendingUnionRelationshipTypeIndexCursor extends UnionRelationshipTypeIndexCursor {
+        AscendingUnionRelationshipTypeIndexCursor(RelationshipTypeIndexCursor[] cursors) {
             super(cursors);
         }
 
@@ -93,8 +105,8 @@ public abstract class UnionNodeLabelIndexCursor extends UnionTokenIndexCursor<No
         }
     }
 
-    private static final class DescendingUnionLabelIndexCursor extends UnionNodeLabelIndexCursor {
-        DescendingUnionLabelIndexCursor(NodeLabelIndexCursor[] cursors) {
+    private static final class DescendingUnionRelationshipTypeIndexCursor extends UnionRelationshipTypeIndexCursor {
+        DescendingUnionRelationshipTypeIndexCursor(RelationshipTypeIndexCursor[] cursors) {
             super(cursors);
         }
 
