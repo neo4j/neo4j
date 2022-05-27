@@ -182,6 +182,7 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.DirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExists
@@ -317,6 +318,7 @@ import org.neo4j.cypher.internal.logical.plans.TriadicFilter
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.Uniqueness
@@ -555,6 +557,50 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         NoChildren,
         Seq(details(s"${anonVar("123")}:X|Y|Z")),
         Set(anonVar("123"))
+      )
+    )
+  }
+
+  test("UnionRelationshipTypesScan") {
+    assertGood(
+      attach(
+        DirectedUnionRelationshipTypesScan(
+          "r",
+          "x",
+          Seq(relType("A"), relType("B"), relType("C")),
+          "y",
+          Set.empty,
+          IndexOrderNone
+        ),
+        23.0
+      ),
+      planDescription(
+        id,
+        "DirectedUnionRelationshipTypesScan",
+        NoChildren,
+        Seq(details("(x)-[r:A|B|C]->(y)")),
+        Set("r", "x", "y")
+      )
+    )
+
+    assertGood(
+      attach(
+        UndirectedUnionRelationshipTypesScan(
+          "r",
+          "x",
+          Seq(relType("A"), relType("B"), relType("C")),
+          "y",
+          Set.empty,
+          IndexOrderNone
+        ),
+        23.0
+      ),
+      planDescription(
+        id,
+        "UndirectedUnionRelationshipTypesScan",
+        NoChildren,
+        Seq(details("(x)-[r:A|B|C]-(y)")),
+        Set("r", "x", "y")
       )
     )
   }

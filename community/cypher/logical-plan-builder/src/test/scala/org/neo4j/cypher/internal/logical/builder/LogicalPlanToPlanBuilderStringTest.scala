@@ -153,6 +153,14 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
   )
 
   testPlan(
+    "unionRelationshipTypesScan",
+    new TestPlanBuilder()
+      .produceResults("r")
+      .unionRelationshipTypesScan("(a)-[r:A|B|C]->(b)", IndexOrderNone)
+      .build()
+  )
+
+  testPlan(
     "expandAll",
     new TestPlanBuilder()
       .produceResults("x")

@@ -57,6 +57,8 @@ import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.graphdb.schema.IndexType
 
+import scala.collection.mutable
+
 object LogicalPlanToPlanBuilderString {
   private val expressionStringifier = ExpressionStringifier(expressionStringifierExtension, preferSingleQuotes = true)
 
@@ -101,7 +103,7 @@ object LogicalPlanToPlanBuilderString {
     planPrefixDot: Option[LogicalPlan => String]
   ) = {
     var childrenStack = LevelPlanItem(0, logicalPlan) :: Nil
-    val sb = new StringBuilder()
+    val sb = new mutable.StringBuilder()
 
     while (childrenStack.nonEmpty) {
       val LevelPlanItem(level, plan) = childrenStack.head
@@ -213,6 +215,8 @@ object LogicalPlanToPlanBuilderString {
       case _: UndirectedRelationshipIndexScan         => "relationshipIndexOperator"
       case _: DirectedRelationshipTypeScan            => "relationshipTypeScan"
       case _: UndirectedRelationshipTypeScan          => "relationshipTypeScan"
+      case _: DirectedUnionRelationshipTypesScan      => "unionRelationshipTypesScan"
+      case _: UndirectedUnionRelationshipTypesScan    => "unionRelationshipTypesScan"
     }
     specialCases.applyOrElse(logicalPlan, classNameFormat)
   }
@@ -344,6 +348,17 @@ object LogicalPlanToPlanBuilderString {
           wrapInQuotations
         )
         args.mkString(", ")
+
+      case DirectedUnionRelationshipTypesScan(idName, start, types, end, argumentIds, indexOrder) =>
+        val typeNames = types.map(l => l.name).mkString("|")
+        val args = Seq(objectName(indexOrder)) ++ argumentIds.map(wrapInQuotations)
+        s""" "($start)-[$idName:$typeNames]->($end)", ${args.mkString(", ")} """.trim
+
+      case UndirectedUnionRelationshipTypesScan(idName, start, types, end, argumentIds, indexOrder) =>
+        val typeNames = types.map(l => l.name).mkString("|")
+        val args = Seq(objectName(indexOrder)) ++ argumentIds.map(wrapInQuotations)
+        s""" "($start)-[$idName:$typeNames]-($end)", ${args.mkString(", ")} """.trim
+
       case Optional(_, protectedSymbols) =>
         wrapInQuotationsAndMkString(protectedSymbols)
       case OptionalExpand(_, from, dir, types, to, relName, _, predicate) =>

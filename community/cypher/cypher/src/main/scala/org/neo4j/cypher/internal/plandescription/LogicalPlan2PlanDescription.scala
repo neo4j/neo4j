@@ -111,6 +111,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWith
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.DirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForFulltextIndex
@@ -222,6 +223,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWi
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.Uniqueness
@@ -329,6 +331,38 @@ case class LogicalPlan2PlanDescription(
         PlanDescriptionImpl(
           id,
           "UnionNodeByLabelsScan",
+          NoChildren,
+          Seq(Details(prettyDetails)),
+          variables,
+          withRawCardinalities
+        )
+
+      case DirectedUnionRelationshipTypesScan(idName, start, types, end, _, _) =>
+        val prettyTypes = types
+          .map(_.name)
+          .map(asPrettyString(_))
+          .mkPrettyString("|")
+        val prettyDetails =
+          pretty"(${asPrettyString(start)})-[${asPrettyString(idName)}:$prettyTypes]->(${asPrettyString(end)})"
+        PlanDescriptionImpl(
+          id,
+          "DirectedUnionRelationshipTypesScan",
+          NoChildren,
+          Seq(Details(prettyDetails)),
+          variables,
+          withRawCardinalities
+        )
+
+      case UndirectedUnionRelationshipTypesScan(idName, start, types, end, _, _) =>
+        val prettyTypes = types
+          .map(_.name)
+          .map(asPrettyString(_))
+          .mkPrettyString("|")
+        val prettyDetails =
+          pretty"(${asPrettyString(start)})-[${asPrettyString(idName)}:$prettyTypes]-(${asPrettyString(end)})"
+        PlanDescriptionImpl(
+          id,
+          "UndirectedUnionRelationshipTypesScan",
           NoChildren,
           Seq(Details(prettyDetails)),
           variables,

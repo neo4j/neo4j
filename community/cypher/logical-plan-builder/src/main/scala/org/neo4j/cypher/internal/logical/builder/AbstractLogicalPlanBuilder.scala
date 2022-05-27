@@ -102,6 +102,7 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.DirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.Eager
@@ -201,6 +202,7 @@ import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
@@ -801,6 +803,44 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       args.map(VariableParser.unescaped).toSet,
       indexOrder
     )(_)))
+  }
+
+  def unionRelationshipTypesScan(pattern: String, indexOrder: IndexOrder, args: String*): IMPL = {
+    val p = patternParser.parse(pattern)
+    newRelationship(varFor(p.relName))
+    newNode(varFor(p.from))
+    newNode(varFor(p.to))
+    if (!p.length.isSimple) throw new UnsupportedOperationException("Cannot do a scan from a variable pattern")
+
+    p.dir match {
+      case SemanticDirection.OUTGOING =>
+        appendAtCurrentIndent(LeafOperator(DirectedUnionRelationshipTypesScan(
+          p.relName,
+          p.from,
+          p.relTypes,
+          p.to,
+          args.toSet,
+          indexOrder
+        )(_)))
+      case SemanticDirection.INCOMING =>
+        appendAtCurrentIndent(LeafOperator(DirectedUnionRelationshipTypesScan(
+          p.relName,
+          p.to,
+          p.relTypes,
+          p.from,
+          args.toSet,
+          indexOrder
+        )(_)))
+      case SemanticDirection.BOTH =>
+        appendAtCurrentIndent(LeafOperator(UndirectedUnionRelationshipTypesScan(
+          p.relName,
+          p.from,
+          p.relTypes,
+          p.to,
+          args.toSet,
+          indexOrder
+        )(_)))
+    }
   }
 
   def nodeByIdSeek(node: String, args: Set[String], ids: Any*): IMPL = {
