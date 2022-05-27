@@ -335,6 +335,14 @@ public class ImportCommand extends AbstractCommand {
                     + "finally 'incremental_merge' (on stopped database)")
     private CsvImporter.ImportMode mode;
 
+    @Option(
+            names = "--storage-engine",
+            showDefaultValue = NEVER,
+            hidden = true,
+            description = "Name of storage engine. Imported database will be created of the format of the specified"
+                    + " storage engine.")
+    private String storageEngineName;
+
     public ImportCommand(ExecutionContext ctx) {
         super(ctx);
     }
@@ -370,7 +378,8 @@ public class ImportCommand extends AbstractCommand {
                     .withVerbose(verbose)
                     .withAutoSkipHeaders(autoSkipHeaders)
                     .withForce(force)
-                    .withMode(mode);
+                    .withMode(mode)
+                    .withStorageEngineName(storageEngineName);
 
             nodes.forEach(n -> importerBuilder.addNodeFiles(n.key, n.files));
 

@@ -121,6 +121,7 @@ class CsvImporter implements Importer {
     private final MemoryTracker memoryTracker;
     private final boolean force;
     private final ImportMode mode;
+    private final String storageEngineName;
 
     private CsvImporter(Builder b) {
         this.databaseLayout = requireNonNull(b.databaseLayout);
@@ -148,6 +149,7 @@ class CsvImporter implements Importer {
         this.stdErr = requireNonNull(b.stdErr);
         this.force = b.force;
         this.mode = b.mode;
+        this.storageEngineName = b.storageEngineName;
     }
 
     @Override
@@ -193,7 +195,9 @@ class CsvImporter implements Importer {
                 Log4jLogProvider logProvider = Util.configuredLogProvider(
                         databaseConfig, outputStream, databaseConfig.get(store_internal_log_format))) {
             // Let the storage engine factory be configurable in the tool later on...
-            StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
+            StorageEngineFactory storageEngineFactory = storageEngineName == null
+                    ? StorageEngineFactory.defaultStorageEngine()
+                    : StorageEngineFactory.selectStorageEngine(storageEngineName);
             var logService = new SimpleLogService(
                     NullLogProvider.getInstance(),
                     new PrefixedLogProvider(logProvider, databaseLayout.getDatabaseName()));
@@ -477,6 +481,7 @@ class CsvImporter implements Importer {
         private PrintStream stdErr = System.err;
         private boolean force;
         private ImportMode mode = ImportMode.initial;
+        private String storageEngineName;
 
         Builder withDatabaseLayout(DatabaseLayout databaseLayout) {
             this.databaseLayout = RecordDatabaseLayout.convert(databaseLayout);
@@ -598,6 +603,11 @@ class CsvImporter implements Importer {
 
         Builder withMode(ImportMode mode) {
             this.mode = mode;
+            return this;
+        }
+
+        Builder withStorageEngineName(String name) {
+            this.storageEngineName = name;
             return this;
         }
 
