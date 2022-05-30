@@ -1492,7 +1492,6 @@ class IndexPlanningIntegrationTest
       .setAllRelationshipsCardinality(1000)
       .setRelationshipCardinality("()-[:R]->()", 500)
       .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1)
-      .addSemanticFeature(SemanticFeature.RelationshipPatternPredicates)
       .build()
 
     val queries = Seq(

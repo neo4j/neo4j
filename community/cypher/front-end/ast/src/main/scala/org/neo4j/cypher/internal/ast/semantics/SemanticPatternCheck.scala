@@ -100,9 +100,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   private def checkRelationshipPatternPredicates(ctx: SemanticContext, pattern: RelationshipPattern): SemanticCheck =
     pattern.predicate.foldSemanticCheck { predicate =>
-      whenState(state => !state.features.contains(SemanticFeature.RelationshipPatternPredicates)) {
-        error("WHERE is not allowed inside a relationship pattern", predicate.position)
-      } chain when(ctx != SemanticContext.Match) {
+      when(ctx != SemanticContext.Match) {
         error(
           s"Relationship pattern predicates are not allowed in ${ctx.name}, but only in MATCH clause or inside a pattern comprehension",
           predicate.position

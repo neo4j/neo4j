@@ -36,9 +36,6 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite {
 
-  private val pipelineWithRelationshipPatternPredicates =
-    pipelineWithSemanticFeatures(SemanticFeature.RelationshipPatternPredicates)
-
   private val pipelineWithMultiGraphs = pipelineWithSemanticFeatures(
     SemanticFeature.MultipleGraphs,
     SemanticFeature.WithInitialQuerySignature
@@ -436,17 +433,6 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     )
   }
 
-  test("should not allow relationship pattern predicates when semantic feature isn't set") {
-    val query =
-      "WITH 123 AS minValue MATCH (n)-[r:Relationship {prop: 42} WHERE r.otherProp > minValue]->(m) RETURN r AS result"
-    expectErrorMessagesFrom(
-      query,
-      Set(
-        "WHERE is not allowed inside a relationship pattern"
-      )
-    )
-  }
-
   test("should not allow label expressions in shortestPath expression") {
     val query =
       """
@@ -486,7 +472,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
   test("should allow relationship pattern predicates in MATCH") {
     val query =
       "WITH 123 AS minValue MATCH (n)-[r:Relationship {prop: 42} WHERE r.otherProp > minValue]->(m) RETURN r AS result"
-    expectNoErrorsFrom(query, pipelineWithRelationshipPatternPredicates)
+    expectNoErrorsFrom(query)
   }
 
   test("should not allow relationship pattern predicates in MATCH when path length is provided") {
@@ -496,14 +482,13 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
       query,
       Set(
         "Relationship pattern predicates are not allowed when a path length is specified"
-      ),
-      pipelineWithRelationshipPatternPredicates
+      )
     )
   }
 
   test("should allow relationship pattern predicates in MATCH to refer to nodes") {
     val query = "MATCH (n)-[r:Relationship WHERE n.prop = 42]->(m:Label) RETURN r AS result"
-    expectNoErrorsFrom(query, pipelineWithRelationshipPatternPredicates)
+    expectNoErrorsFrom(query)
   }
 
   test("should not allow relationship pattern predicates in CREATE") {
@@ -512,8 +497,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
       query,
       Set(
         "Relationship pattern predicates are not allowed in CREATE, but only in MATCH clause or inside a pattern comprehension"
-      ),
-      pipelineWithRelationshipPatternPredicates
+      )
     )
   }
 
@@ -523,20 +507,19 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
       query,
       Set(
         "Relationship pattern predicates are not allowed in MERGE, but only in MATCH clause or inside a pattern comprehension"
-      ),
-      pipelineWithRelationshipPatternPredicates
+      )
     )
   }
 
   test("should allow relationship pattern predicates in pattern comprehension") {
     val query =
       "WITH 123 AS minValue RETURN [(n)-[r:Relationship {prop: 42} WHERE r.otherProp > minValue]->(m) | r] AS result"
-    expectNoErrorsFrom(query, pipelineWithRelationshipPatternPredicates)
+    expectNoErrorsFrom(query)
   }
 
   test("should allow relationship pattern predicates in pattern comprehension to refer to nodes") {
     val query = "RETURN [(n)-[r:Relationship WHERE n.prop = 42]->(m:Label) | r] AS result"
-    expectNoErrorsFrom(query, pipelineWithRelationshipPatternPredicates)
+    expectNoErrorsFrom(query)
   }
 
   test("should not allow relationship pattern predicates in pattern expression") {
@@ -547,8 +530,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
       query,
       Set(
         "Relationship pattern predicates are not allowed in expression, but only in MATCH clause or inside a pattern comprehension"
-      ),
-      pipelineWithRelationshipPatternPredicates
+      )
     )
   }
 
@@ -559,7 +541,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
         |MATCH p = shortestPath((n)-[r:Relationship WHERE r.prop > minValue]->(m))
         |RETURN r AS result
         |""".stripMargin
-    expectNoErrorsFrom(query, pipelineWithRelationshipPatternPredicates)
+    expectNoErrorsFrom(query)
   }
 
   test("should allow relationship pattern predicates in MATCH with shortestPath to refer to nodes") {
@@ -567,7 +549,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
       """
         |MATCH p = shortestPath((n)-[r:Relationship WHERE n.prop > 42]->(m))
         |RETURN n AS result""".stripMargin
-    expectNoErrorsFrom(query, pipelineWithRelationshipPatternPredicates)
+    expectNoErrorsFrom(query)
   }
 
   test("CALL IN TRANSACTIONS with batchSize 1") {
@@ -1528,6 +1510,21 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
       query,
       Set(
         "Query cannot conclude with MATCH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)"
+      )
+    )
+  }
+
+  test("Relationship Pattern predicates should be enabled by default") {
+    val query = "MATCH ()-[r:Rel WHERE r.prop > 42]->() return *"
+    expectNoErrorsFrom(query)
+  }
+
+  test("Relationship Pattern predicates should not be allowed with quantification") {
+    val query = "MATCH ()-[r:Rel* WHERE r.prop > 42]->() return *"
+    expectErrorMessagesFrom(
+      query,
+      Set(
+        "Relationship pattern predicates are not allowed when a path length is specified"
       )
     )
   }

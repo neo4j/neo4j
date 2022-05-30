@@ -54,11 +54,6 @@ object Neo4jAdapter {
   val defaultTestConfigValues: collection.Map[Setting[_], Object] = Map[Setting[_], Object](cypher_hints_error -> TRUE)
 
   def featureDependentSettings(featureName: String): collection.Map[Setting[_], Object] = featureName match {
-    case "RelationshipPatternPredicates" => Map[Setting[_], Object](
-        GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features -> Set(
-          SemanticFeature.RelationshipPatternPredicates.productPrefix
-        ).asJava
-      )
     case _ => Map.empty
   }
 
