@@ -47,7 +47,7 @@ import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.time.Clocks;
 
 @TestDirectoryExtension
-public class FullCheckFulltextIndexEmptyDocs {
+public class FullCheckFulltextIndexEmptyDocsIT {
     @Inject
     private TestDirectory testDirectory;
 
