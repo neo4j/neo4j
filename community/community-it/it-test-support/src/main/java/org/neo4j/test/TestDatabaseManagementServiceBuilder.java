@@ -65,6 +65,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     public static final String FABRIC_IN_EMBEDDED_TEST_TRANSACTIONS_FLAG_NAME = "fabric_in_embedded_test_transactions";
     public static final boolean FABRIC_IN_EMBEDDED_TEST_TRANSACTIONS_DEFAULT_VALUE = false;
 
+    private static final String OVERRIDE_STORAGE_ENGINE_KEY = "NEO4J_TEST_OVERRIDE_STORAGE_ENGINE";
     protected FileSystemAbstraction fileSystem;
     protected InternalLogProvider internalLogProvider;
     protected SystemNanoClock clock;
@@ -102,6 +103,11 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         Config cfg = config.set(GraphDatabaseSettings.neo4j_home, homeDirectory.toAbsolutePath())
                 .fromConfig(fromConfig)
                 .build();
+
+        String overrideStorageEngine = System.getProperty(OVERRIDE_STORAGE_ENGINE_KEY);
+        if (overrideStorageEngine != null) {
+            cfg.setIfNotSet(GraphDatabaseInternalSettings.storage_engine, overrideStorageEngine);
+        }
 
         var originalDependencies = dependencies;
         if (noOpSystemGraphInitializer) {
