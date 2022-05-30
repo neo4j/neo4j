@@ -19,55 +19,37 @@
  */
 package org.neo4j.bolt;
 
+import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
 import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.params.provider.Arguments;
-import org.neo4j.bolt.packstream.Neo4jPack;
-import org.neo4j.bolt.packstream.Neo4jPackV1;
-import org.neo4j.bolt.packstream.Neo4jPackV2;
-import org.neo4j.bolt.testing.TransportTestUtil;
-import org.neo4j.bolt.testing.client.SecureSocketConnection;
-import org.neo4j.bolt.testing.client.SecureWebSocketConnection;
-import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
-import org.neo4j.bolt.testing.client.WebSocketConnection;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.HostnamePort;
 
 public abstract class AbstractBoltTransportsTest {
-    private static final List<Class<? extends TransportConnection>> CONNECTION_CLASSES = Arrays.asList(
-            SocketConnection.class,
-            WebSocketConnection.class,
-            SecureSocketConnection.class,
-            SecureWebSocketConnection.class);
 
-    private static final List<Neo4jPack> NEO4J_PACK_VERSIONS = Arrays.asList(new Neo4jPackV1(), new Neo4jPackV2());
-
-    public Class<? extends TransportConnection> connectionClass;
-
-    public Neo4jPack neo4jPack;
-
-    public String name;
+    public TransportConnection.Factory connectionFactory;
 
     protected HostnamePort address;
     protected TransportConnection connection;
-    protected TransportTestUtil util;
 
-    protected void initParameters(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        this.connectionClass = connectionClass;
-        this.neo4jPack = neo4jPack;
-        this.name = name;
+    protected void initParameters(TransportConnection.Factory connectionFactory) throws Exception {
+        this.connectionFactory = connectionFactory;
 
         connection = newConnection();
-        util = new TransportTestUtil(neo4jPack);
+    }
+
+    protected void initConnection(TransportConnection.Factory factory) throws Exception {
+        this.initParameters(factory);
+
+        this.connection.connect().sendDefaultProtocolVersion().send(hello());
+
+        assertThat(connection).negotiatesDefaultVersion().receivesSuccess();
     }
 
     @AfterEach
@@ -77,19 +59,12 @@ public abstract class AbstractBoltTransportsTest {
         }
     }
 
-    protected static Stream<Arguments> argumentsProvider() {
-        List<Arguments> result = new ArrayList<>();
-
-        for (Class<? extends TransportConnection> connectionClass : CONNECTION_CLASSES) {
-            for (Neo4jPack neo4jPack : NEO4J_PACK_VERSIONS) {
-                result.add(Arguments.of(connectionClass, neo4jPack, newName(connectionClass, neo4jPack)));
-            }
-        }
-        return result.stream();
+    protected static Stream<TransportConnection.Factory> argumentsProvider() {
+        return TransportConnection.factories();
     }
 
     protected TransportConnection newConnection() throws Exception {
-        return connectionClass.getDeclaredConstructor().newInstance();
+        return connectionFactory.create(this.address);
     }
 
     protected void reconnect() throws Exception {
@@ -101,9 +76,5 @@ public abstract class AbstractBoltTransportsTest {
 
     protected Consumer<Map<Setting<?>, Object>> getSettingsFunction() {
         return withOptionalBoltEncryption();
-    }
-
-    private static String newName(Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack) {
-        return connectionClass.getSimpleName() + " & " + neo4jPack;
     }
 }

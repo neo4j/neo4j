@@ -20,7 +20,7 @@
 package org.neo4j.fabric.bookmark;
 
 import java.util.List;
-import org.neo4j.bolt.runtime.Bookmark;
+import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.fabric.bolt.FabricBookmark;
 import org.neo4j.fabric.executor.Location;
 

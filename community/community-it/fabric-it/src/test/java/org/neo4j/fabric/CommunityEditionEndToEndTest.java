@@ -41,7 +41,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.neo4j.bolt.v41.messaging.RoutingContext;
+import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
@@ -141,7 +141,7 @@ class CommunityEditionEndToEndTest {
         var transactionManager = dependencyResolver.resolveDependency(TransactionManager.class);
         var fabricExecutor = dependencyResolver.resolveDependency(FabricExecutor.class);
         var transactionInfo = new FabricTransactionInfo(
-                org.neo4j.bolt.runtime.AccessMode.READ,
+                org.neo4j.bolt.protocol.common.message.AccessMode.READ,
                 AUTH_DISABLED,
                 EMBEDDED_CONNECTION,
                 DatabaseIdFactory.from("mega", UUID.randomUUID()),

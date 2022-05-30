@@ -28,19 +28,16 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.neo4j.bolt.testing.TransportTestUtil;
-import org.neo4j.bolt.testing.client.SecureSocketConnection;
+import org.neo4j.bolt.testing.client.tls.SecureSocketConnection;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorType;
@@ -61,7 +58,6 @@ public class RoutingConnectorCertificatesIT {
     private static Path internalKeyFile;
     private static Path internalCertFile;
     private static SelfSignedCertificateFactory certFactory;
-    private static TransportTestUtil util;
 
     @Inject
     public Neo4jWithSocket server;
@@ -97,24 +93,23 @@ public class RoutingConnectorCertificatesIT {
     @Test
     public void shouldUseConfiguredCertificate() throws Exception {
         // GIVEN
-        SecureSocketConnection externalConnection = new SecureSocketConnection();
-        SecureSocketConnection internalConnection = new SecureSocketConnection();
+        SecureSocketConnection externalConnection =
+                new SecureSocketConnection(server.lookupConnector(ConnectorType.BOLT));
+        SecureSocketConnection internalConnection =
+                new SecureSocketConnection(server.lookupConnector(ConnectorType.INTRA_BOLT));
         try {
             // WHEN
-            externalConnection
-                    .connect(server.lookupConnector(ConnectorType.BOLT))
-                    .send(util.defaultAcceptedVersions());
-            internalConnection
-                    .connect(server.lookupConnector(ConnectorType.INTRA_BOLT))
-                    .send(util.defaultAcceptedVersions());
+            externalConnection.connect().sendDefaultProtocolVersion();
+            internalConnection.connect().sendDefaultProtocolVersion();
 
             // THEN
-            Set<X509Certificate> externalCertificatesSeen = externalConnection.getServerCertificatesSeen();
-            Set<X509Certificate> internalCertificatesSeen = internalConnection.getServerCertificatesSeen();
+            var externalCertificatesSeen = externalConnection.getServerCertificatesSeen();
+            var internalCertificatesSeen = internalConnection.getServerCertificatesSeen();
 
-            assertThat(externalCertificatesSeen).isNotEqualTo(internalCertificatesSeen);
+            assertThat(externalCertificatesSeen)
+                    .isNotEqualTo(internalCertificatesSeen)
+                    .containsExactly(loadCertificateFromDisk(externalCertFile));
 
-            assertThat(externalCertificatesSeen).containsExactly(loadCertificateFromDisk(externalCertFile));
             assertThat(internalCertificatesSeen).containsExactly(loadCertificateFromDisk(internalCertFile));
         } finally {
             externalConnection.disconnect();
@@ -123,10 +118,11 @@ public class RoutingConnectorCertificatesIT {
     }
 
     private static X509Certificate loadCertificateFromDisk(Path certFile) throws CertificateException, IOException {
-        Certificate[] certificates = PkiUtils.loadCertificates(certFile);
-        assertThat(certificates.length).isEqualTo(1);
+        var certificates = PkiUtils.loadCertificates(certFile);
 
-        return (X509Certificate) certificates[0];
+        assertThat(certificates).hasSize(1);
+
+        return certificates[0];
     }
 
     @BeforeAll
@@ -149,7 +145,5 @@ public class RoutingConnectorCertificatesIT {
         Files.delete(internalCertFile);
 
         certFactory.createSelfSignedCertificate(internalCertFile, internalKeyFile, "my.domain");
-
-        util = new TransportTestUtil();
     }
 }

@@ -19,13 +19,19 @@
  */
 package org.neo4j.configuration.connectors;
 
+import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
+import static org.neo4j.configuration.SettingConstraints.any;
+import static org.neo4j.configuration.SettingConstraints.is;
+import static org.neo4j.configuration.SettingConstraints.min;
+import static org.neo4j.configuration.SettingConstraints.range;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
 import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.PATH;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -91,5 +97,39 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration 
     @Description("The maximum time to wait for the thread pool to finish processing its pending jobs and shutdown")
     public static final Setting<Duration> thread_pool_shutdown_wait_time = newBuilder(
                     "internal.server.bolt.thread_pool_shutdown_wait_time", DURATION, ofSeconds(5))
+            .build();
+
+    @Internal
+    @Description("Whether to apply network level outbound network buffer based throttling")
+    public static final Setting<Boolean> bolt_outbound_buffer_throttle = newBuilder(
+                    "internal.dbms.bolt.outbound_buffer_throttle", BOOL, true)
+            .dynamic()
+            .build();
+
+    @Internal
+    @Description("When the size (in bytes) of outbound network buffers, used by bolt's network layer, "
+            + "grows beyond this value bolt channel will advertise itself as unwritable and will block "
+            + "related processing thread until it becomes writable again.")
+    public static final Setting<Integer> bolt_outbound_buffer_throttle_high_water_mark = newBuilder(
+                    "internal.dbms.bolt.outbound_buffer_throttle.high_watermark", INT, (int) kibiBytes(512))
+            .addConstraint(range((int) kibiBytes(64), Integer.MAX_VALUE))
+            .build();
+
+    @Internal
+    @Description("When the size (in bytes) of outbound network buffers, previously advertised as unwritable, "
+            + "gets below this value bolt channel will re-advertise itself as writable and blocked processing "
+            + "thread will resume execution.")
+    public static final Setting<Integer> bolt_outbound_buffer_throttle_low_water_mark = newBuilder(
+                    "internal.dbms.bolt.outbound_buffer_throttle.low_watermark", INT, (int) kibiBytes(128))
+            .addConstraint(range((int) kibiBytes(16), Integer.MAX_VALUE))
+            .build();
+
+    @Internal
+    @Description("When the total time outbound network buffer based throttle lock is held exceeds this value, "
+            + "the corresponding bolt channel will be aborted. Setting "
+            + "this to 0 will disable this behaviour.")
+    public static final Setting<Duration> bolt_outbound_buffer_throttle_max_duration = newBuilder(
+                    "internal.dbms.bolt.outbound_buffer_throttle.max_duration", DURATION, ofMinutes(15))
+            .addConstraint(any(min(ofSeconds(30)), is(Duration.ZERO)))
             .build();
 }

@@ -19,26 +19,26 @@
  */
 package org.neo4j.bolt.transport;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
+import static org.assertj.core.api.InstanceOfAssertFactories.list;
+import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.begin;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.pull;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.rollback;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.bolt.AbstractBoltTransportsTest;
-import org.neo4j.bolt.packstream.Neo4jPack;
-import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -57,24 +57,25 @@ public class ConcurrentAccessIT extends AbstractBoltTransportsTest {
     public void setup(TestInfo testInfo) throws IOException {
         server.setConfigure(getSettingsFunction());
         server.init(testInfo);
+
+        this.address = server.lookupDefaultConnector();
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {arguments}")
     @MethodSource("argumentsProvider")
-    public void shouldRunSimpleStatement(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldRunSimpleStatement(TransportConnection.Factory connectionFactory) throws Exception {
+        initParameters(connectionFactory);
 
         // Given
         int numWorkers = 5;
         int numRequests = 1_000;
 
-        List<Callable<Void>> workers = createWorkers(numWorkers, numRequests);
-        ExecutorService exec = Executors.newFixedThreadPool(numWorkers);
+        var workers = createWorkers(numWorkers, numRequests);
+        var exec = Executors.newFixedThreadPool(numWorkers);
 
         try {
             // When & then
-            for (Future<Void> f : exec.invokeAll(workers)) {
+            for (var f : exec.invokeAll(workers)) {
                 f.get(60, TimeUnit.SECONDS);
             }
         } finally {
@@ -91,53 +92,48 @@ public class ConcurrentAccessIT extends AbstractBoltTransportsTest {
         return workers;
     }
 
-    private Callable<Void> newWorker(final int iterationsToRun) throws Exception {
-        return new Callable<Void>() {
-            private final byte[] init = util.defaultAuth();
-            private final byte[] createAndRollback = util.defaultRunExplicitCommitTxAndRollBack("CREATE (n)");
-
-            private final byte[] matchAll = util.defaultRunAutoCommitTx("MATCH (n) RETURN n");
+    private Callable<Void> newWorker(final int iterationsToRun) {
+        return new Callable<>() {
 
             @Override
             public Void call() throws Exception {
                 // Connect
-                TransportConnection client = newConnection();
-                client.connect(server.lookupDefaultConnector()).send(util.defaultAcceptedVersions());
-                assertThat(client).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
+                var connection = newConnection();
 
-                init(client);
+                connection.connect().sendDefaultProtocolVersion().send(hello());
+
+                assertThat(connection).negotiatesDefaultVersion().receivesSuccess();
 
                 for (int i = 0; i < iterationsToRun; i++) {
-                    createAndRollback(client);
+                    createAndRollback(connection);
                 }
 
                 return null;
             }
 
-            private void init(TransportConnection client) throws Exception {
-                client.send(init);
-                assertThat(client).satisfies(util.eventuallyReceives(msgSuccess()));
-            }
+            private void createAndRollback(TransportConnection connection) throws Exception {
+                connection.send(begin()).send(run("CREATE (n)")).send(pull()).send(rollback());
 
-            private void createAndRollback(TransportConnection client) throws Exception {
-                client.send(createAndRollback);
-                assertThat(client)
-                        .satisfies(util.eventuallyReceives(
-                                msgSuccess(), // begin
-                                msgSuccess(message -> assertThat(message)
-                                        .containsKeys("t_first", "qid")
-                                        .containsEntry("fields", emptyList())), // run
-                                msgSuccess(message -> assertThat(message).containsKeys("t_last", "db")), // pull_all
-                                msgSuccess() // roll_back
-                                ));
+                assertThat(connection)
+                        .receivesSuccess()
+                        .receivesSuccess(meta -> assertThat(meta)
+                                .containsKeys("t_first", "qid")
+                                .hasEntrySatisfying("fields", fields -> assertThat(fields)
+                                        .asInstanceOf(list(String.class))
+                                        .isEmpty()))
+                        .receivesSuccess(meta -> assertThat(meta).containsKeys("t_last", "db"))
+                        .receivesSuccess();
 
-                client.send(matchAll);
-                assertThat(client)
-                        .satisfies(util.eventuallyReceives(
-                                msgSuccess(message -> assertThat(message)
-                                        .containsKey("t_first")
-                                        .containsEntry("fields", singletonList("n"))), // run
-                                msgSuccess(message -> assertThat(message).containsKeys("t_last", "db")))); // pull_all
+                connection.send(run("MATCH (n) RETURN n")).send(pull());
+
+                assertThat(connection)
+                        .receivesSuccess(meta -> assertThat(meta)
+                                .containsKeys("t_first")
+                                .hasEntrySatisfying("fields", fields -> assertThat(fields)
+                                        .asInstanceOf(list(String.class))
+                                        .hasSize(1)
+                                        .containsExactly("n")))
+                        .receivesSuccess(meta -> assertThat(meta).containsKeys("t_last", "db"));
             }
         };
     }

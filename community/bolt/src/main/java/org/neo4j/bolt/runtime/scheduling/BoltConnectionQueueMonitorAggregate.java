@@ -22,8 +22,8 @@ package org.neo4j.bolt.runtime.scheduling;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import org.neo4j.bolt.runtime.BoltConnection;
-import org.neo4j.bolt.runtime.Job;
+import org.neo4j.bolt.protocol.common.connection.BoltConnection;
+import org.neo4j.bolt.protocol.common.connection.Job;
 
 public class BoltConnectionQueueMonitorAggregate implements BoltConnectionQueueMonitor {
     private final List<BoltConnectionQueueMonitor> monitors;

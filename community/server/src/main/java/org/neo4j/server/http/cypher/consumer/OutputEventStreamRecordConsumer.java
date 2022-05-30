@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
-import org.neo4j.bolt.runtime.BoltResult;
+import org.neo4j.bolt.protocol.common.message.result.BoltResult;
 import org.neo4j.server.http.cypher.OutputEventStream;
 import org.neo4j.server.http.cypher.TransactionIndependentValueMapper;
 import org.neo4j.values.AnyValue;

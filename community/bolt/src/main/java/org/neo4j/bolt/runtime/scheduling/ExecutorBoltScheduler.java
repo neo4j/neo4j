@@ -29,12 +29,10 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
-import org.neo4j.bolt.runtime.BoltConnection;
-import org.neo4j.bolt.runtime.Job;
+import org.neo4j.bolt.protocol.common.connection.BoltConnection;
+import org.neo4j.bolt.protocol.common.connection.Job;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
@@ -57,10 +55,6 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
     private final Duration shutdownWaitTime;
 
     private ExecutorService threadPool;
-
-    private final BoltConnector.KeepAliveRequestType keepAliveRequestType;
-    private final Duration keepAliveSchedulingInterval;
-    private ScheduledExecutorService keepAliveService;
 
     public ExecutorBoltScheduler(
             String connector,
@@ -85,8 +79,6 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
         this.queueSize = queueSize;
         this.forkJoinPool = forkJoinPool;
         this.shutdownWaitTime = shutdownWaitTime;
-        this.keepAliveRequestType = keepAliveRequestType;
-        this.keepAliveSchedulingInterval = keepAliveSchedulingInterval;
     }
 
     boolean isRegistered(BoltConnection connection) {
@@ -115,34 +107,10 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
     }
 
     @Override
-    public void start() {
-        if (keepAliveRequestType != BoltConnector.KeepAliveRequestType.STREAMING
-                || keepAliveSchedulingInterval.isNegative()
-                || keepAliveSchedulingInterval.isZero()) {
-            log.debug("Bolt keep-alive service is disabled.");
-        } else {
-            keepAliveService = Executors.newSingleThreadScheduledExecutor();
-            keepAliveService.scheduleAtFixedRate(
-                    () -> {
-                        for (var id : activeWorkItems.keySet()) {
-                            var connection = activeConnections.get(id);
-                            connection.keepAlive();
-                        }
-                    },
-                    keepAliveSchedulingInterval.toMillis(),
-                    keepAliveSchedulingInterval.toMillis(),
-                    MILLISECONDS);
-            log.debug("Initialized bolt keep-alive service.");
-        }
-    }
+    public void start() {}
 
     @Override
     public void stop() {
-        if (keepAliveService != null) {
-            log.debug("Shutting down bolt keep-alive service.");
-            keepAliveService.shutdown();
-            log.debug("Bolt keep-alive service shut down.");
-        }
         // Close all idle connections
         log.debug("Stopping idle connections.");
         activeConnections.values().stream().filter(BoltConnection::idle).forEach(this::stopConnection);
@@ -204,10 +172,6 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
     public void drained(BoltConnection from, Collection<Job> batch) {}
 
     private void handleSubmission(BoltConnection connection) {
-        if (keepAliveService != null) {
-            // Only init timer if the service is enabled.
-            connection.initKeepAliveTimer();
-        }
         activeWorkItems.computeIfAbsent(connection.id(), key -> scheduleBatchOrHandleError(connection)
                 .whenCompleteAsync((result, error) -> handleCompletion(connection, result, error), forkJoinPool));
     }

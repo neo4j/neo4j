@@ -22,17 +22,14 @@ package org.neo4j.bolt.testing;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
+import java.util.Objects;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.SeverityLevel;
 
-public class TestNotification implements Notification {
-    private final String code;
-    private final String title;
-    private final String description;
-    private final SeverityLevel severityLevel;
-    private final InputPosition position;
-
+public record TestNotification(
+        String code, String title, String description, SeverityLevel severityLevel, InputPosition position)
+        implements Notification {
     public TestNotification(
             String code, String title, String description, SeverityLevel severityLevel, InputPosition position) {
         this.code = code;
@@ -104,19 +101,19 @@ public class TestNotification implements Notification {
 
         TestNotification that = (TestNotification) o;
 
-        if (code != null ? !code.equals(that.code) : that.code != null) {
+        if (!Objects.equals(code, that.code)) {
             return false;
         }
-        if (title != null ? !title.equals(that.title) : that.title != null) {
+        if (!Objects.equals(title, that.title)) {
             return false;
         }
-        if (description != null ? !description.equals(that.description) : that.description != null) {
+        if (!Objects.equals(description, that.description)) {
             return false;
         }
         if (severityLevel != that.severityLevel) {
             return false;
         }
-        return position != null ? position.equals(that.position) : that.position == null;
+        return Objects.equals(position, that.position);
     }
 
     @Override

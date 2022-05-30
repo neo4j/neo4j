@@ -19,18 +19,18 @@
  */
 package org.neo4j.bolt.transport;
 
-import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
+import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.pull;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
-import static org.neo4j.logging.LogAssertions.assertThat;
 
 import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.collection.RawIterator;
@@ -59,7 +59,6 @@ public class BoltKeepAliveSchedulingIT {
 
     private HostnamePort address;
     private TransportConnection connection;
-    private TransportTestUtil util;
 
     protected static Consumer<Map<Setting<?>, Object>> getSettingsFunction() {
         return settings -> {
@@ -76,26 +75,23 @@ public class BoltKeepAliveSchedulingIT {
         installSleepProcedure(server.graphDatabaseService());
 
         address = server.lookupDefaultConnector();
-        connection = new SocketConnection();
-        util = new TransportTestUtil();
+        connection = new SocketConnection(address);
     }
 
     @Test
     public void shouldSendNoOpForLongRunningTx() throws Exception {
-        connection.connect(address).send(util.defaultAcceptedVersions()).send(util.defaultAuth());
-        AtomicInteger noOpCounter = new AtomicInteger(0);
+        connection
+                .connect()
+                .sendDefaultProtocolVersion()
+                .send(hello())
+                .send(run("CALL boltissue.sleep()"))
+                .send(pull());
 
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
-        assertThat(connection).satisfies(util.eventuallyReceives(true, noOpCounter::incrementAndGet, msgSuccess()));
-
-        // when
-        connection.send(util.defaultRunAutoCommitTxWithoutResult("CALL boltissue.sleep()"));
-
-        // expect
         assertThat(connection)
-                .satisfies(util.eventuallyReceives(true, noOpCounter::incrementAndGet, msgSuccess(), msgSuccess()));
-
-        assertThat(noOpCounter.get()).isGreaterThan(1);
+                .negotiatesDefaultVersion()
+                .receivesSuccess(2)
+                .hasReceivedNoopChunks()
+                .receivesSuccess();
     }
 
     private static void installSleepProcedure(GraphDatabaseService db) throws ProcedureException {

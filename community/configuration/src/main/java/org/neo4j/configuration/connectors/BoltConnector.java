@@ -75,7 +75,7 @@ public final class BoltConnector implements SettingsDeclaration {
     public static final Setting<KeepAliveRequestType> connection_keep_alive_type = newBuilder(
                     "server.bolt.connection_keep_alive_for_requests",
                     ofEnum(KeepAliveRequestType.class),
-                    KeepAliveRequestType.STREAMING)
+                    KeepAliveRequestType.ALL)
             .build();
 
     @DocumentedDefaultValue("1m")

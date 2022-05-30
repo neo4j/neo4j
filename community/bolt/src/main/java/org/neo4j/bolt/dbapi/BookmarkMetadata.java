@@ -20,7 +20,7 @@
 package org.neo4j.bolt.dbapi;
 
 import java.util.function.BiFunction;
-import org.neo4j.bolt.runtime.Bookmark;
+import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 /**

@@ -1,0 +1,82 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.bolt.protocol.v43.message.request;
+
+import java.util.List;
+import java.util.Objects;
+import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
+import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
+import org.neo4j.values.virtual.MapValue;
+
+/**
+ * Message used to retrieve the routing table given a routing context and a database name.
+ */
+public class RouteMessage implements RequestMessage {
+    public static final byte SIGNATURE = 0x66;
+    private static final String NAME = "ROUTE";
+
+    private final MapValue requestContext;
+    private final List<Bookmark> bookmarks;
+    private final String databaseName;
+
+    public RouteMessage(MapValue requestContext, List<Bookmark> bookmarks, String databaseName) {
+        this.databaseName = databaseName;
+        this.requestContext = requestContext;
+        this.bookmarks = bookmarks;
+    }
+
+    public MapValue getRequestContext() {
+        return requestContext;
+    }
+
+    public List<Bookmark> getBookmarks() {
+        return bookmarks;
+    }
+
+    public String getDatabaseName() {
+        return databaseName;
+    }
+
+    @Override
+    public boolean safeToProcessInAnyState() {
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return NAME;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o instanceof RouteMessage that) {
+            return Objects.equals(requestContext, that.requestContext)
+                    && Objects.equals(databaseName, that.databaseName)
+                    && Objects.equals(this.bookmarks, that.bookmarks);
+        }
+
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(requestContext, bookmarks, databaseName);
+    }
+}

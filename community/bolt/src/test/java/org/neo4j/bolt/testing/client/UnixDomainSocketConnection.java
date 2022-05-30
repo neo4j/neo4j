@@ -19,51 +19,70 @@
  */
 package org.neo4j.bolt.testing.client;
 
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static java.util.Objects.requireNonNull;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
-import org.neo4j.internal.helpers.HostnamePort;
-import org.neo4j.io.memory.ByteBuffers;
 
-public class UnixDomainSocketConnection implements TransportConnection {
+public class UnixDomainSocketConnection extends AbstractTransportConnection {
+    private final SocketAddress address;
 
-    private SocketChannel socketChannel;
+    private SocketChannel channel;
 
-    @Override
-    public TransportConnection connect(HostnamePort address) throws Exception {
-        throw new UnsupportedOperationException("UnixDomainSocketConnection can't connect to " + address);
+    public UnixDomainSocketConnection(SocketAddress address) {
+        requireNonNull(address);
+
+        this.address = address;
     }
 
     @Override
-    public TransportConnection connect(SocketAddress address) throws Exception {
-        socketChannel = SocketChannel.open(address);
+    public TransportConnection connect() throws IOException {
+        if (this.channel != null && this.channel.isConnected()) {
+            return this;
+        }
+
+        this.channel = SocketChannel.open(this.address);
         return this;
     }
 
     @Override
-    public TransportConnection send(byte[] rawBytes) throws IOException {
-        socketChannel.write(ByteBuffer.wrap(rawBytes));
+    public TransportConnection disconnect() throws IOException {
+        if (this.channel == null) {
+            return this;
+        }
+
+        this.channel.close();
+        this.channel = null;
         return this;
     }
 
     @Override
-    public byte[] recv(int length) throws IOException {
-        ByteBuffer byteBuffer = ByteBuffers.allocate(length, ByteOrder.BIG_ENDIAN, INSTANCE);
-        while (byteBuffer.hasRemaining()) {
-            socketChannel.read(byteBuffer);
-        }
-        byteBuffer.flip();
-        return byteBuffer.array();
+    public TransportConnection sendRaw(ByteBuf buf) throws IOException {
+        var heap = ByteBuffer.allocate(128);
+        do {
+            heap.flip();
+            heap.limit(Math.min(buf.readableBytes(), heap.capacity()));
+
+            buf.readBytes(heap);
+            heap.flip();
+            this.channel.write(heap);
+        } while (buf.isReadable());
+
+        return this;
     }
 
     @Override
-    public void disconnect() throws IOException {
-        if (socketChannel != null) {
-            socketChannel.close();
+    public ByteBuf receive(int length) throws IOException {
+        var buffer = ByteBuffer.allocate(length);
+        while (buffer.hasRemaining()) {
+            channel.read(buffer);
         }
+        buffer.flip();
+
+        return Unpooled.wrappedBuffer(buffer);
     }
 }

@@ -20,10 +20,11 @@
 package org.neo4j.bolt.transport;
 
 import static java.util.Collections.singletonMap;
-import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.pull;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
@@ -31,30 +32,25 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 
 import java.io.IOException;
 import java.net.SocketException;
+import java.net.StandardSocketOptions;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.bolt.runtime.DefaultBoltConnection;
-import org.neo4j.bolt.testing.TransportTestUtil;
-import org.neo4j.bolt.testing.client.SecureSocketConnection;
+import org.neo4j.bolt.protocol.common.handler.HouseKeeperHandler;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.HostnamePort;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -75,13 +71,7 @@ public class BoltThrottleMaxDurationIT {
     private AssertableLogProvider logProvider;
 
     private HostnamePort address;
-    private TransportConnection client;
-    private TransportTestUtil util;
-
-    public static Stream<Arguments> factoryProvider() {
-        // we're not running with WebSocketChannels because of their duplex communication model
-        return Stream.of(Arguments.of(SocketConnection.class), Arguments.of(SecureSocketConnection.class));
-    }
+    private TransportConnection connection;
 
     @BeforeEach
     public void setup(TestInfo testInfo) throws IOException {
@@ -92,13 +82,12 @@ public class BoltThrottleMaxDurationIT {
         otherThread.set(5, TimeUnit.MINUTES);
 
         address = server.lookupDefaultConnector();
-        util = new TransportTestUtil();
     }
 
     @AfterEach
     public void cleanup() throws IOException {
-        if (client != null) {
-            client.disconnect();
+        if (connection != null) {
+            connection.disconnect();
         }
     }
 
@@ -116,43 +105,49 @@ public class BoltThrottleMaxDurationIT {
         return settings -> {
             settings.put(
                     BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout, Duration.ofMinutes(5));
+            settings.put(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_high_water_mark, (int)
+                    ByteUnit.kibiBytes(64));
+            settings.put(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_low_water_mark, (int)
+                    ByteUnit.kibiBytes(16));
             settings.put(
-                    GraphDatabaseInternalSettings.bolt_outbound_buffer_throttle_max_duration, Duration.ofSeconds(30));
+                    BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_max_duration, Duration.ofSeconds(30));
             settings.put(BoltConnector.encryption_level, OPTIONAL);
         };
     }
 
-    @ParameterizedTest(name = "{displayName} {index}")
-    @MethodSource("factoryProvider")
-    public void sendingButNotReceivingClientShouldBeKilledWhenWriteThrottleMaxDurationIsReached(
-            Class<? extends TransportConnection> c) throws Exception {
-        this.client = c.getDeclaredConstructor().newInstance();
+    @Test
+    public void sendingButNotReceivingClientShouldBeKilledWhenWriteThrottleMaxDurationIsReached() throws Exception {
+        var largeString = " ".repeat((int) ByteUnit.kibiBytes(64));
 
-        int numberOfRunDiscardPairs = 10_000;
-        String largeString = " ".repeat(8 * 1024);
+        // Explicitly set the receive buffer size ridiculously small so that we know when it will fill up
+        this.connection = new SocketConnection(address)
+                .connect()
+                .setOption(StandardSocketOptions.SO_RCVBUF, (int) ByteUnit.kibiBytes(32))
+                .sendDefaultProtocolVersion()
+                .send(hello());
 
-        client.connect(address).send(util.defaultAcceptedVersions()).send(util.defaultAuth());
+        assertThat(connection).negotiatesDefaultVersion().receivesSuccess();
 
-        assertThat(client).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
-        assertThat(client).satisfies(util.eventuallyReceives(msgSuccess()));
-
-        Future<?> sender = otherThread.execute(() -> {
-            for (int i = 0; i < numberOfRunDiscardPairs; i++) {
-                client.send(util.defaultRunAutoCommitTx(
-                        "RETURN $data as data", asMapValue(singletonMap("data", largeString))));
+        var sender = otherThread.execute(() -> {
+            // TODO: There seems to be additional buffering going on somewhere thus making this flakey unless we keep
+            //       spamming the server until the error is raised
+            while (!Thread.interrupted()) {
+                connection
+                        .send(run("RETURN $data as data", asMapValue(singletonMap("data", largeString))))
+                        .send(pull());
             }
 
             return null;
         });
 
-        var e = assertThrows(ExecutionException.class, () -> otherThread.get().awaitFuture(sender));
-
-        assertThat(getRootCause(e)).isInstanceOf(SocketException.class);
+        assertThatExceptionOfType(ExecutionException.class)
+                .isThrownBy(() -> otherThread.get().awaitFuture(sender))
+                .withRootCauseInstanceOf(SocketException.class);
 
         assertThat(logProvider)
-                .forClass(DefaultBoltConnection.class)
+                .forClass(HouseKeeperHandler.class)
                 .forLevel(ERROR)
-                .assertExceptionForLogMessage("Unexpected error detected in bolt session")
-                .hasStackTraceContaining("will be closed because the client did not consume outgoing buffers for ");
+                .assertExceptionForLogMessage("Fatal error occurred when handling a client connection")
+                .hasStackTraceContaining("Outbound network buffer has failed to flush within mandated period of");
     }
 }

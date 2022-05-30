@@ -24,7 +24,7 @@ import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.neo4j.bolt.runtime.Bookmark;
+import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.fabric.bolt.FabricBookmark;
 import org.neo4j.fabric.bolt.FabricBookmarkParser;
 import org.neo4j.fabric.executor.FabricException;

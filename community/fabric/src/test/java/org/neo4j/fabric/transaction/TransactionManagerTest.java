@@ -31,8 +31,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.shutdown_transaction
 import java.time.Duration;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.runtime.AccessMode;
-import org.neo4j.bolt.v41.messaging.RoutingContext;
+import org.neo4j.bolt.protocol.common.message.AccessMode;
+import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.config.FabricConfig;

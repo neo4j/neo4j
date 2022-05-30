@@ -21,11 +21,10 @@ package org.neo4j.bolt.transport;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.bolt.transport.TransportThrottleGroup.NO_THROTTLE;
+import static org.mockito.Mockito.when;
 
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -33,20 +32,25 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.neo4j.bolt.transport.pipeline.AuthenticationTimeoutHandler;
+import org.neo4j.bolt.protocol.BoltProtocolRegistry;
+import org.neo4j.bolt.protocol.common.connection.BoltConnectionFactory;
+import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
+import org.neo4j.bolt.protocol.common.handler.AuthenticationTimeoutHandler;
+import org.neo4j.bolt.protocol.common.handler.TransportSelectionHandler;
+import org.neo4j.bolt.security.Authentication;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryPool;
-import org.neo4j.memory.MemoryTracker;
 import org.neo4j.server.config.AuthConfigProvider;
 
 class SocketTransportTest {
     @Test
     void shouldManageChannelsInChannelInitializer() {
         NetworkConnectionTracker connectionTracker = mock(NetworkConnectionTracker.class);
-        SocketTransport socketTransport = newSocketTransport(connectionTracker, NO_THROTTLE);
+        SocketTransport socketTransport = newSocketTransport(connectionTracker);
 
         EmbeddedChannel channel = new EmbeddedChannel(socketTransport.channelInitializer());
 
@@ -60,23 +64,8 @@ class SocketTransportTest {
     }
 
     @Test
-    void shouldManageThrottlersInChannelInitializer() {
-        TransportThrottleGroup throttleGroup = mock(TransportThrottleGroup.class);
-        SocketTransport socketTransport = newSocketTransport(NetworkConnectionTracker.NO_OP, throttleGroup);
-
-        EmbeddedChannel channel = new EmbeddedChannel(socketTransport.channelInitializer());
-
-        verify(throttleGroup).install(eq(channel), any(MemoryTracker.class));
-        verify(throttleGroup, never()).uninstall(channel);
-
-        channel.close();
-
-        verify(throttleGroup).uninstall(channel);
-    }
-
-    @Test
     void shouldInstallAuthTimeoutHandler() {
-        SocketTransport socketTransport = newSocketTransport(NetworkConnectionTracker.NO_OP, NO_THROTTLE);
+        SocketTransport socketTransport = newSocketTransport(NetworkConnectionTracker.NO_OP);
 
         EmbeddedChannel channel = new EmbeddedChannel(socketTransport.channelInitializer());
 
@@ -85,7 +74,7 @@ class SocketTransportTest {
 
     @Test
     void shouldInstallTransportSelectionHandler() {
-        SocketTransport socketTransport = newSocketTransport(NetworkConnectionTracker.NO_OP, NO_THROTTLE);
+        SocketTransport socketTransport = newSocketTransport(NetworkConnectionTracker.NO_OP);
 
         EmbeddedChannel channel = new EmbeddedChannel(socketTransport.channelInitializer());
 
@@ -93,22 +82,24 @@ class SocketTransportTest {
         assertNotNull(handler);
     }
 
-    private static SocketTransport newSocketTransport(
-            NetworkConnectionTracker connectionTracker, TransportThrottleGroup throttleGroup) {
+    private static SocketTransport newSocketTransport(NetworkConnectionTracker connectionTracker) {
+        var config = mock(Config.class);
+        when(config.get(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout))
+                .thenReturn(Duration.ZERO);
         return new SocketTransport(
                 "bolt",
                 new InetSocketAddress("localhost", 7687),
                 null,
                 false,
                 NullLogProvider.getInstance(),
-                throttleGroup,
-                mock(BoltProtocolFactory.class),
+                mock(BoltProtocolRegistry.class),
+                mock(BoltConnectionFactory.class),
                 connectionTracker,
-                Duration.ZERO,
-                -1,
                 PooledByteBufAllocator.DEFAULT,
                 mock(MemoryPool.class),
+                mock(Authentication.class),
                 mock(AuthConfigProvider.class),
-                mock(Config.class));
+                mock(ConnectionHintProvider.class),
+                config);
     }
 }

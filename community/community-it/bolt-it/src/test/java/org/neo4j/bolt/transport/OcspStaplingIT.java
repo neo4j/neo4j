@@ -19,24 +19,18 @@
  */
 package org.neo4j.bolt.transport;
 
-import static java.util.Objects.isNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.PrivateKey;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Date;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -59,8 +53,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.neo4j.bolt.testing.TransportTestUtil;
-import org.neo4j.bolt.testing.client.CertConfiguredSecureSocketConnection;
+import org.neo4j.bolt.testing.client.tls.CertConfiguredSecureSocketConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.CommonConnectorConfig;
 import org.neo4j.configuration.connectors.ConnectorType;
@@ -102,30 +95,30 @@ class OcspStaplingIT {
     @Test
     void shouldReturnCertificatesWithStapledOcspResponses() throws Exception {
         // Given
-        X509Certificate rootCertificate = loadCertificateFromDisk();
-        CertConfiguredSecureSocketConnection connection = new CertConfiguredSecureSocketConnection(rootCertificate);
+        var rootCertificate = loadCertificateFromDisk();
+        var connection =
+                new CertConfiguredSecureSocketConnection(server.lookupConnector(ConnectorType.BOLT), rootCertificate);
 
         // When
-        connection
-                .connect(server.lookupConnector(ConnectorType.BOLT))
-                .send(TransportTestUtil.defaultAcceptedVersions());
+        connection.connect().sendDefaultProtocolVersion();
 
         // Then
-        Set<X509Certificate> certificatesSeen = connection.getServerCertificatesSeen();
-        List<BigInteger> certificateSerialNumbersSeen =
-                certificatesSeen.stream().map(X509Certificate::getSerialNumber).collect(Collectors.toList());
-        assertThat(certificatesSeen.size()).isEqualTo(3);
+        var certificatesSeen = connection.getServerCertificatesSeen();
+        var certificateSerialNumbersSeen =
+                certificatesSeen.stream().map(X509Certificate::getSerialNumber).toList();
 
-        Set<BasicOCSPResp> ocspResponsesSeen = connection.getSeenOcspResponses();
-        assertThat(ocspResponsesSeen.size()).isEqualTo(2);
+        assertThat(certificatesSeen).hasSize(3);
 
-        // checking all responses come back OK ( null means the certificate hasn't been revoked! )
-        assertTrue(ocspResponsesSeen.stream()
-                .allMatch(basicOCSPResp -> isNull(basicOCSPResp.getResponses()[0].getCertStatus())));
-        // responses match the certificates seen
-        assertTrue(ocspResponsesSeen.stream()
-                .allMatch(basicOCSPResp -> certificateSerialNumbersSeen.contains(
-                        basicOCSPResp.getResponses()[0].getCertID().getSerialNumber())));
+        var ocspResponsesSeen = connection.getSeenOcspResponses();
+
+        assertThat(ocspResponsesSeen).hasSize(2).allSatisfy(response -> assertThat(response.getResponses()[0])
+                .satisfies(res -> {
+                    // checking all responses come back OK ( null means the certificate hasn't been revoked! )
+                    assertThat(res.getCertStatus()).isNull();
+
+                    // responses match the certificates seen
+                    assertThat(res.getCertID().getSerialNumber()).isIn(certificateSerialNumbersSeen);
+                }));
     }
 
     private static X509Certificate loadCertificateFromDisk() throws CertificateException, IOException {

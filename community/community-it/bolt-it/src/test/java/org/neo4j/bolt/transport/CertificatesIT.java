@@ -30,14 +30,12 @@ import java.security.GeneralSecurityException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.Set;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.neo4j.bolt.testing.TransportTestUtil;
-import org.neo4j.bolt.testing.client.SecureSocketConnection;
+import org.neo4j.bolt.testing.client.tls.SecureSocketConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -53,7 +51,6 @@ public class CertificatesIT {
     private static Path keyFile;
     private static Path certFile;
     private static SelfSignedCertificateFactory certFactory;
-    private static TransportTestUtil util;
 
     @Inject
     private Neo4jWithSocket server;
@@ -76,13 +73,14 @@ public class CertificatesIT {
     @Test
     public void shouldUseConfiguredCertificate() throws Exception {
         // GIVEN
-        SecureSocketConnection connection = new SecureSocketConnection();
+        SecureSocketConnection connection = new SecureSocketConnection(server.lookupConnector(ConnectorType.BOLT));
         try {
             // WHEN
-            connection.connect(server.lookupConnector(ConnectorType.BOLT)).send(util.defaultAcceptedVersions());
+            connection.connect().sendDefaultProtocolVersion();
 
             // THEN
-            Set<X509Certificate> certificatesSeen = connection.getServerCertificatesSeen();
+            var certificatesSeen = connection.getServerCertificatesSeen();
+
             assertThat(certificatesSeen).containsExactly(loadCertificateFromDisk());
         } finally {
             connection.disconnect();
@@ -107,7 +105,5 @@ public class CertificatesIT {
         Files.delete(certFile);
 
         certFactory.createSelfSignedCertificate(certFile, keyFile, "my.domain");
-
-        util = new TransportTestUtil();
     }
 }

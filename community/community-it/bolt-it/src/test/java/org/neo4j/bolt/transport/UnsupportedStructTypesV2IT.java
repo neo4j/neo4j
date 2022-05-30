@@ -19,38 +19,30 @@
  */
 package org.neo4j.bolt.transport;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
-import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
-import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
+import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
 import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
 
+import io.netty.buffer.ByteBuf;
 import java.io.IOException;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.bolt.messaging.StructType;
-import org.neo4j.bolt.packstream.Neo4jPack;
-import org.neo4j.bolt.packstream.Neo4jPackV2;
-import org.neo4j.bolt.packstream.PackedOutputArray;
-import org.neo4j.bolt.testing.TransportTestUtil;
-import org.neo4j.bolt.testing.client.SecureSocketConnection;
-import org.neo4j.bolt.testing.client.SecureWebSocketConnection;
-import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
-import org.neo4j.bolt.testing.client.WebSocketConnection;
-import org.neo4j.bolt.v4.messaging.RunMessage;
-import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.bolt.testing.messages.BoltV40Wire;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.packstream.io.NativeStruct;
+import org.neo4j.packstream.io.NativeStructType;
+import org.neo4j.packstream.io.PackstreamBuf;
+import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.Values;
 
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
@@ -60,14 +52,12 @@ public class UnsupportedStructTypesV2IT {
 
     private HostnamePort address;
     private TransportConnection connection;
-    private TransportTestUtil util;
 
     @BeforeEach
     public void setup(TestInfo testInfo) throws IOException {
         server.setConfigure(withOptionalBoltEncryption());
         server.init(testInfo);
         address = server.lookupDefaultConnector();
-        util = new TransportTestUtil(new Neo4jPackV2());
     }
 
     @AfterEach
@@ -77,137 +67,102 @@ public class UnsupportedStructTypesV2IT {
         }
     }
 
-    public static Stream<Arguments> classProvider() {
-        return Stream.of(
-                Arguments.of(SocketConnection.class),
-                Arguments.of(WebSocketConnection.class),
-                Arguments.of(SecureSocketConnection.class),
-                Arguments.of(SecureWebSocketConnection.class));
+    public static Stream<TransportConnection.Factory> factoryProvider() {
+        return TransportConnection.factories();
     }
 
-    private void initConnection(Class<? extends TransportConnection> connectionClass) throws Exception {
-        connection = connectionClass.getDeclaredConstructor().newInstance();
+    private void initConnection(TransportConnection.Factory connectionFactory) throws Exception {
+        connection = connectionFactory.create(this.address);
     }
 
     @ParameterizedTest(name = "{displayName} {0}")
-    @MethodSource("classProvider")
-    public void shouldFailWhenPoint2DIsSentWithInvalidCrsId(Class<? extends TransportConnection> connectionClass)
+    @MethodSource("factoryProvider")
+    public void shouldFailWhenPoint2DIsSentWithInvalidCrsId(TransportConnection.Factory connectionFactory)
             throws Exception {
-        initConnection(connectionClass);
+        initConnection(connectionFactory);
 
         testFailureWithUnpackableValue(
-                packer -> {
-                    packer.packStructHeader(3, StructType.POINT_2D.signature());
-                    packer.pack(Values.of(5));
-                    packer.pack(Values.of(3.15));
-                    packer.pack(Values.of(4.012));
-                },
-                "Unable to construct Point value: `Unknown coordinate reference system code: 5`");
+                buf -> buf.writeStructHeader(new StructHeader(3, NativeStructType.POINT_2D.getTag()))
+                        .writeInt(5) // CRS
+                        .writeFloat(3.15) // X
+                        .writeFloat(4.012), // Y
+                "Illegal value for field \"params\": Illegal value for field \"crs\": Illegal coordinate reference system: \"5\"");
     }
 
     @ParameterizedTest(name = "{displayName} {0}")
-    @MethodSource("classProvider")
-    public void shouldFailWhenPoint3DIsSentWithInvalidCrsId(Class<? extends TransportConnection> connectionClass)
+    @MethodSource("factoryProvider")
+    public void shouldFailWhenPoint3DIsSentWithInvalidCrsId(TransportConnection.Factory connectionFactory)
             throws Exception {
-        initConnection(connectionClass);
+        initConnection(connectionFactory);
 
         testFailureWithUnpackableValue(
-                packer -> {
-                    packer.packStructHeader(4, StructType.POINT_3D.signature());
-                    packer.pack(Values.of(1200));
-                    packer.pack(Values.of(3.15));
-                    packer.pack(Values.of(4.012));
-                    packer.pack(Values.of(5.905));
-                },
-                "Unable to construct Point value: `Unknown coordinate reference system code: 1200`");
+                buf -> buf.writeStructHeader(new StructHeader(4, NativeStructType.POINT_3D.getTag()))
+                        .writeInt(1200) // CRS
+                        .writeFloat(3.15)
+                        .writeFloat(4.012)
+                        .writeFloat(5.905),
+                "Illegal value for field \"params\": Illegal value for field \"crs\": Illegal coordinate reference system: \"1200\"");
     }
 
     @ParameterizedTest(name = "{displayName} {0}")
-    @MethodSource("classProvider")
-    public void shouldFailWhenPoint2DDimensionsDoNotMatch(Class<? extends TransportConnection> connectionClass)
+    @MethodSource("factoryProvider")
+    public void shouldFailWhenPoint2DDimensionsDoNotMatch(TransportConnection.Factory connectionFactory)
             throws Exception {
-        initConnection(connectionClass);
-
-        testDisconnectWithUnpackableValue(
-                packer -> {
-                    packer.packStructHeader(3, StructType.POINT_3D.signature());
-                    packer.pack(Values.of(CoordinateReferenceSystem.CARTESIAN_3D.getCode()));
-                    packer.pack(Values.of(3.15));
-                    packer.pack(Values.of(4.012));
-                },
-                "Unable to construct Point value: `Cannot create point, CRS cartesian-3d expects 3 dimensions, but got coordinates [3.15, 4.012]`");
-    }
-
-    @ParameterizedTest(name = "{displayName} {0}")
-    @MethodSource("classProvider")
-    public void shouldFailWhenPoint3DDimensionsDoNotMatch(Class<? extends TransportConnection> connectionClass)
-            throws Exception {
-        initConnection(connectionClass);
+        initConnection(connectionFactory);
 
         testFailureWithUnpackableValue(
-                packer -> {
-                    packer.packStructHeader(4, StructType.POINT_3D.signature());
-                    packer.pack(Values.of(CoordinateReferenceSystem.CARTESIAN.getCode()));
-                    packer.pack(Values.of(3.15));
-                    packer.pack(Values.of(4.012));
-                    packer.pack(Values.of(5.905));
-                },
-                "Unable to construct Point value: `Cannot create point, CRS cartesian expects 2 dimensions, but got coordinates [3.15, 4.012, 5.905]`");
+                buf -> NativeStruct.writePoint2d(buf, CoordinateReferenceSystem.CARTESIAN_3D, 3.15, 4.012),
+                "Illegal value for field \"params\": Illegal value for field \"coords\": Illegal CRS/coords combination (crs=cartesian-3d, x=3.15, y=4.012)");
     }
 
     @ParameterizedTest(name = "{displayName} {0}")
-    @MethodSource("classProvider")
-    public void shouldFailWhenZonedDateTimeZoneIdIsNotKnown(Class<? extends TransportConnection> connectionClass)
+    @MethodSource("factoryProvider")
+    public void shouldFailWhenPoint3DDimensionsDoNotMatch(TransportConnection.Factory connectionFactory)
             throws Exception {
-        initConnection(connectionClass);
+        initConnection(connectionFactory);
 
         testFailureWithUnpackableValue(
-                packer -> {
-                    packer.packStructHeader(3, StructType.DATE_TIME_WITH_ZONE_NAME.signature());
-                    packer.pack(Values.of(0));
-                    packer.pack(Values.of(0));
-                    packer.pack(Values.of("Europe/Marmaris"));
-                },
-                "Unable to construct ZonedDateTime value: `Unknown time-zone ID: Europe/Marmaris`");
+                buf -> NativeStruct.writePoint3d(buf, CoordinateReferenceSystem.CARTESIAN, 3.15, 4.012, 5.905),
+                "Illegal value for field \"params\": Illegal value for field \"coords\": Illegal CRS/coords combination (crs=cartesian, x=3.15, y=4.012, z=5.905)");
     }
 
-    private void testFailureWithUnpackableValue(
-            ThrowingConsumer<Neo4jPack.Packer, IOException> valuePacker, String expectedMessage) throws Exception {
-        connection.connect(address).send(util.defaultAcceptedVersions());
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
-        connection.send(util.defaultAuth());
-        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
+    @ParameterizedTest(name = "{displayName} {0}")
+    @MethodSource("factoryProvider")
+    public void shouldFailWhenZonedDateTimeZoneIdIsNotKnown(TransportConnection.Factory connectionFactory)
+            throws Exception {
+        initConnection(connectionFactory);
 
-        connection.send(TransportTestUtil.chunk(64, createRunWith(valuePacker)));
-
-        assertThat(connection)
-                .satisfies(util.eventuallyReceives(msgFailure(Status.Statement.TypeError, expectedMessage)));
-        assertThat(connection).satisfies(eventuallyDisconnects());
+        testFailureWithUnpackableValue(
+                buf -> buf.writeStructHeader(new StructHeader(3, NativeStructType.DATE_TIME_ZONE_ID.getTag()))
+                        .writeInt(0)
+                        .writeInt(0)
+                        .writeString("Europe/Marmaris"),
+                "Illegal value for field \"params\": Illegal value for field \"tz_id\": Illegal zone identifier: \"Europe/Marmaris\"");
     }
 
-    private void testDisconnectWithUnpackableValue(
-            ThrowingConsumer<Neo4jPack.Packer, IOException> valuePacker, String expectedMessage) throws Exception {
-        connection.connect(address).send(util.defaultAcceptedVersions());
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
-        connection.send(util.defaultAuth());
-        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
+    private void testFailureWithUnpackableValue(Consumer<PackstreamBuf> packer, String expectedMessage)
+            throws Exception {
+        connection.connect().sendDefaultProtocolVersion().send(hello());
 
-        connection.send(TransportTestUtil.chunk(64, createRunWith(valuePacker)));
+        assertThat(connection).negotiatesDefaultVersion();
 
-        assertThat(connection).satisfies(eventuallyDisconnects());
+        assertThat(connection).receivesSuccess();
+
+        connection.send(createRunWith(packer));
+
+        assertThat(connection).receivesFailure(Status.Request.Invalid, expectedMessage);
     }
 
-    private static byte[] createRunWith(ThrowingConsumer<Neo4jPack.Packer, IOException> valuePacker)
-            throws IOException {
-        PackedOutputArray out = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPackV2().newPacker(out);
+    private static ByteBuf createRunWith(Consumer<PackstreamBuf> packer) throws IOException {
+        var buf = PackstreamBuf.allocUnpooled()
+                .writeStructHeader(new StructHeader(3, BoltV40Wire.MESSAGE_TAG_RUN))
+                .writeString("RETURN $x") // statement
+                .writeMapHeader(1) // parameters
+                .writeString("x");
 
-        packer.packStructHeader(2, RunMessage.SIGNATURE);
-        packer.pack("RETURN $x");
-        packer.packMapHeader(1);
-        packer.pack("x");
-        valuePacker.accept(packer);
+        packer.accept(buf);
 
-        return out.bytes();
+        return buf.writeMapHeader(0) // extra
+                .getTarget();
     }
 }

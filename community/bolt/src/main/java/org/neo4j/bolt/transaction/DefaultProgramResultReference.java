@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.transaction;
 
-import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
+import org.neo4j.bolt.protocol.common.transaction.statement.metadata.StatementMetadata;
 
 public final class DefaultProgramResultReference implements ProgramResultReference {
     private final String transactionId;

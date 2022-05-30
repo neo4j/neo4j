@@ -19,15 +19,15 @@
  */
 package org.neo4j.bolt.testing;
 
-import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.bolt.runtime.BoltResult;
-import org.neo4j.bolt.runtime.Neo4jError;
+import org.neo4j.bolt.protocol.common.message.Error;
+import org.neo4j.bolt.protocol.common.message.result.BoltResult;
+import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
 import org.neo4j.values.AnyValue;
 
 /**
  * Used by tests when the response for a request is not relevant.
  */
-public class NullResponseHandler implements BoltResponseHandler {
+public class NullResponseHandler implements ResponseHandler {
     private static final NullResponseHandler INSTANCE = new NullResponseHandler();
 
     public static NullResponseHandler nullResponseHandler() {
@@ -52,7 +52,7 @@ public class NullResponseHandler implements BoltResponseHandler {
     }
 
     @Override
-    public void markFailed(Neo4jError error) {
+    public void markFailed(Error error) {
         // this page intentionally left blank
     }
 

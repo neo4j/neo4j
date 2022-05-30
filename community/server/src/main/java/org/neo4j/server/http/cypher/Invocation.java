@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
+import org.neo4j.bolt.protocol.common.transaction.statement.metadata.StatementMetadata;
 import org.neo4j.bolt.transaction.ResultNotFoundException;
 import org.neo4j.bolt.transaction.TransactionNotFoundException;
 import org.neo4j.exceptions.KernelException;

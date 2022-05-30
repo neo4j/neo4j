@@ -1,0 +1,76 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.bolt.protocol.common.handler;
+
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.concurrent.EventExecutorGroup;
+import org.neo4j.bolt.protocol.common.connection.BoltConnection;
+import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.memory.HeapEstimator;
+
+public class HouseKeeperHandler extends ChannelInboundHandlerAdapter {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(HouseKeeperHandler.class);
+
+    private final BoltConnection connection;
+    private final InternalLog log;
+    private boolean failed;
+
+    public HouseKeeperHandler(BoltConnection connection, InternalLog log) {
+        this.connection = connection;
+        this.log = log;
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) {
+        connection.stop();
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        if (failed || isShuttingDown(ctx)) {
+            return;
+        }
+        failed = true; // log only the first exception to not pollute the log
+
+        try {
+            // Netty throws a NativeIoException on connection reset - directly importing that class
+            // caused a host of linking errors, because it depends on JNI to work. Hence, we just
+            // test on the message we know we'll get.
+            if (Exceptions.contains(
+                    cause, e -> e.getMessage() != null && e.getMessage().contains("Connection reset by peer"))) {
+                log.warn(
+                        "Fatal error occurred when handling a client connection, "
+                                + "remote peer unexpectedly closed connection: %s",
+                        ctx.channel());
+            } else {
+                log.error("Fatal error occurred when handling a client connection: " + ctx.channel(), cause);
+            }
+        } finally {
+            ctx.close();
+        }
+    }
+
+    private static boolean isShuttingDown(ChannelHandlerContext ctx) {
+        EventExecutorGroup eventLoopGroup = ctx.executor().parent();
+        return eventLoopGroup != null && eventLoopGroup.isShuttingDown();
+    }
+}

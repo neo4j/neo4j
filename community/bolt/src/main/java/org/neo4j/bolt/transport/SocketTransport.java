@@ -24,11 +24,17 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.handler.ssl.SslContext;
 import java.net.SocketAddress;
-import java.time.Duration;
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.transport.pipeline.ChannelProtector;
-import org.neo4j.bolt.transport.pipeline.UnauthenticatedChannelProtector;
+import org.neo4j.bolt.protocol.BoltProtocolRegistry;
+import org.neo4j.bolt.protocol.common.connection.BoltConnectionFactory;
+import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
+import org.neo4j.bolt.protocol.common.handler.DiscoveryResponseHandler;
+import org.neo4j.bolt.protocol.common.handler.TransportSelectionHandler;
+import org.neo4j.bolt.protocol.common.protector.ChannelProtector;
+import org.neo4j.bolt.protocol.common.protector.UnauthenticatedChannelProtector;
+import org.neo4j.bolt.security.Authentication;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.HeapEstimator;
@@ -46,15 +52,15 @@ public class SocketTransport implements NettyServer.ProtocolInitializer {
     private final SslContext sslCtx;
     private final boolean encryptionRequired;
     private final InternalLogProvider logging;
-    private final TransportThrottleGroup throttleGroup;
-    private final BoltProtocolFactory boltProtocolFactory;
+    private final BoltConnectionFactory connectionFactory;
+    private final BoltProtocolRegistry protocolRegistry;
+    private final Config config;
     private final NetworkConnectionTracker connectionTracker;
-    private final Duration channelTimeout;
-    private final long maxMessageSize;
     private final ByteBufAllocator allocator;
     private final MemoryPool memoryPool;
+    private final Authentication authentication;
     private final AuthConfigProvider authConfigProvider;
-    private final Config config;
+    private final ConnectionHintProvider connectionHintProvider;
 
     public SocketTransport(
             String connector,
@@ -62,27 +68,27 @@ public class SocketTransport implements NettyServer.ProtocolInitializer {
             SslContext sslCtx,
             boolean encryptionRequired,
             InternalLogProvider logging,
-            TransportThrottleGroup throttleGroup,
-            BoltProtocolFactory boltProtocolFactory,
+            BoltProtocolRegistry protocolRegistry,
+            BoltConnectionFactory connectionFactory,
             NetworkConnectionTracker connectionTracker,
-            Duration channelTimeout,
-            long maxMessageSize,
             ByteBufAllocator allocator,
             MemoryPool memoryPool,
+            Authentication authentication,
             AuthConfigProvider authConfigProvider,
+            ConnectionHintProvider connectionHintProvider,
             Config config) {
         this.connector = connector;
         this.address = address;
         this.sslCtx = sslCtx;
         this.encryptionRequired = encryptionRequired;
         this.logging = logging;
-        this.throttleGroup = throttleGroup;
-        this.boltProtocolFactory = boltProtocolFactory;
+        this.protocolRegistry = protocolRegistry;
+        this.connectionFactory = connectionFactory;
         this.connectionTracker = connectionTracker;
-        this.channelTimeout = channelTimeout;
-        this.maxMessageSize = maxMessageSize;
         this.allocator = allocator;
         this.memoryPool = memoryPool;
+        this.authentication = authentication;
+        this.connectionHintProvider = connectionHintProvider;
         this.authConfigProvider = authConfigProvider;
         this.config = config;
     }
@@ -100,30 +106,28 @@ public class SocketTransport implements NettyServer.ProtocolInitializer {
                 memoryTracker.allocateHeap(HeapEstimator.sizeOf(ch));
 
                 memoryTracker.allocateHeap(UnauthenticatedChannelProtector.SHALLOW_SIZE + BoltChannel.SHALLOW_SIZE);
-                var channelProtector =
-                        new UnauthenticatedChannelProtector(ch, channelTimeout, maxMessageSize, memoryTracker);
-                BoltChannel boltChannel = newBoltChannel(ch, channelProtector, memoryTracker);
+                var channelProtector = new UnauthenticatedChannelProtector(
+                        ch,
+                        config.get(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout),
+                        memoryTracker);
+                var boltChannel = newBoltChannel(ch, channelProtector, memoryTracker);
                 connectionTracker.add(boltChannel);
                 ch.closeFuture().addListener(future -> connectionTracker.remove(boltChannel));
 
-                // install throttles
-                throttleGroup.install(ch, memoryTracker);
-
-                // add a close listener that will uninstall throttles
-                ch.closeFuture().addListener(future -> throttleGroup.uninstall(ch));
-
                 memoryTracker.allocateHeap(TransportSelectionHandler.SHALLOW_SIZE);
                 var discoveryServiceHandler = new DiscoveryResponseHandler(authConfigProvider);
-                TransportSelectionHandler transportSelectionHandler = new TransportSelectionHandler(
+
+                var transportSelectionHandler = new TransportSelectionHandler(
                         boltChannel,
                         sslCtx,
                         encryptionRequired,
                         false,
                         logging,
-                        boltProtocolFactory,
-                        channelProtector,
-                        memoryTracker,
-                        discoveryServiceHandler);
+                        connectionFactory,
+                        protocolRegistry,
+                        discoveryServiceHandler,
+                        config);
+
                 ch.pipeline().addLast(transportSelectionHandler);
             }
         };
@@ -135,6 +139,15 @@ public class SocketTransport implements NettyServer.ProtocolInitializer {
     }
 
     private BoltChannel newBoltChannel(Channel ch, ChannelProtector channelProtector, MemoryTracker memoryTracker) {
-        return new BoltChannel(connectionTracker.newConnectionId(connector), connector, ch, channelProtector);
+        var channel = new BoltChannel(
+                connectionTracker.newConnectionId(connector),
+                connector,
+                ch,
+                authentication,
+                channelProtector,
+                connectionHintProvider,
+                memoryTracker);
+        channelProtector.afterChannelCreated();
+        return channel;
     }
 }

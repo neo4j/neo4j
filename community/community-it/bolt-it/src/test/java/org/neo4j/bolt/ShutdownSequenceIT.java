@@ -25,12 +25,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
-import static org.neo4j.bolt.testing.MessageConditions.either;
-import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
-import static org.neo4j.bolt.testing.MessageConditions.msgRecord;
-import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
-import static org.neo4j.bolt.testing.StreamConditions.eqRecord;
-import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
+import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
+import static org.neo4j.bolt.testing.messages.BoltV44Wire.hello;
+import static org.neo4j.bolt.testing.messages.BoltV44Wire.pull;
+import static org.neo4j.bolt.testing.messages.BoltV44Wire.run;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -42,7 +40,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,9 +48,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 import org.neo4j.bolt.runtime.scheduling.ExecutorBoltScheduler;
-import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.bolt.testing.messages.BoltV44Wire;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -76,7 +73,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
-import org.neo4j.values.AnyValue;
 
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
@@ -92,7 +88,6 @@ public class ShutdownSequenceIT {
     @Inject
     private Neo4jWithSocket server;
 
-    private final TransportTestUtil util = new TransportTestUtil();
     private HostnamePort address;
     private CountDownLatch txStarted;
     private CountDownLatch boltWorkerThreadPoolShuttingDown;
@@ -123,7 +118,7 @@ public class ShutdownSequenceIT {
     public void shutdownShouldResultInFailureMessageForTransactionAwareConnections() throws Exception {
         var connection = connectAndAuthenticate();
 
-        connection.send(util.defaultRunAutoCommitTx("CALL test.stream.nodes()"));
+        connection.send(run("CALL test.stream.nodes()")).send(BoltV44Wire.pull());
 
         // Wait for a transaction to start on the server side
         assertTrue(txStarted.await(1, MINUTES));
@@ -142,12 +137,22 @@ public class ShutdownSequenceIT {
         server.getManagementService().shutdown();
 
         // Expect the connection to have the following interactions
-        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
         assertThat(connection)
-                .satisfies(util.eventuallyReceives(either(
-                        msgFailure(Status.Transaction.Terminated, "The transaction has been terminated"),
-                        msgFailure(Status.General.UnknownError, "The transaction has been terminated"))));
-        assertThat(connection).satisfies(eventuallyDisconnects());
+                .receivesSuccess()
+                .receivesFailure(
+                        meta -> assertThat(meta)
+                                // todo this should not be a transient error such as Status.Transaction.Terminated
+                                .containsEntry(
+                                        "code",
+                                        Status.Database.DatabaseUnavailable.code()
+                                                .serialize())
+                                .containsEntry(
+                                        "message",
+                                        "The transaction has been terminated. Retry your operation in a new transaction, "
+                                                + "and you should see a successful result. The database is not currently available to serve your request, "
+                                                + "refer to the database logs for more details. Retrying your request at a later time may succeed. "))
+                .isEventuallyTerminated();
+
         assertThat(internalLogProvider)
                 .forClass(ExecutorBoltScheduler.class)
                 .forLevel(DEBUG)
@@ -163,7 +168,8 @@ public class ShutdownSequenceIT {
         server.getManagementService().shutdown();
 
         // Expect the connection to be silently closed.
-        assertThat(connection).satisfies(eventuallyDisconnects());
+        assertThat(connection).isEventuallyTerminated();
+
         assertThat(internalLogProvider)
                 .forClass(ExecutorBoltScheduler.class)
                 .forLevel(DEBUG)
@@ -174,7 +180,7 @@ public class ShutdownSequenceIT {
     public void shutdownShouldWaitForNonTransactionAwareConnections() throws Exception {
         var connection = connectAndAuthenticate();
 
-        connection.send(util.defaultRunAutoCommitTx("CALL test.stream.strings()"));
+        connection.send(run("CALL test.stream.strings()")).send(pull());
 
         // Wait for a transaction to start on the server side
         assertTrue(txStarted.await(1, MINUTES));
@@ -193,14 +199,23 @@ public class ShutdownSequenceIT {
         server.getManagementService().shutdown();
 
         // Expect the connection to have the following interactions
-        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
-        Condition<AnyValue> equalRecord = new Condition<>(record -> record.equals(stringValue("0")), "Equal record");
-        assertThat(connection).satisfies(util.eventuallyReceives(msgRecord(eqRecord(equalRecord))));
         assertThat(connection)
-                .satisfies(util.eventuallyReceives(either(
-                        msgFailure(Status.Transaction.Terminated, "The transaction has been terminated."),
-                        msgFailure(Status.General.UnknownError, "The transaction has been terminated"))));
-        assertThat(connection).satisfies(eventuallyDisconnects());
+                .receivesSuccess()
+                .receivesRecord(record -> assertThat(record).hasSize(1).contains(stringValue("0")))
+                .receivesFailure(
+                        meta -> assertThat(meta)
+                                // todo this should not be a transient error such as Status.Transaction.Terminated
+                                .containsEntry(
+                                        "code",
+                                        Status.Database.DatabaseUnavailable.code()
+                                                .serialize())
+                                .containsEntry(
+                                        "message",
+                                        "The transaction has been terminated. Retry your operation in a new transaction, "
+                                                + "and you should see a successful result. The database is not currently available to serve your request, "
+                                                + "refer to the database logs for more details. Retrying your request at a later time may succeed. "))
+                .isEventuallyTerminated();
+
         assertThat(internalLogProvider)
                 .forClass(ExecutorBoltScheduler.class)
                 .forLevel(DEBUG)
@@ -208,13 +223,14 @@ public class ShutdownSequenceIT {
     }
 
     private TransportConnection connectAndAuthenticate() throws Exception {
-        var connection = new SocketConnection();
+        var connection = new SocketConnection(address)
+                .connect()
+                .sendDefaultProtocolVersion()
+                .send(hello());
 
-        connection.connect(address).send(util.defaultAcceptedVersions());
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
+        assertThat(connection).negotiatesDefaultVersion();
 
-        connection.send(util.defaultAuth());
-        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
+        assertThat(connection).receivesSuccess();
 
         return connection;
     }

@@ -19,11 +19,18 @@
  */
 package org.neo4j.bolt.transport;
 
+import static java.lang.String.format;
+import static org.apache.commons.lang3.time.DurationFormatUtils.formatDurationHMS;
+
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 
 public class TransportThrottleException extends BoltConnectionFatality {
 
-    public TransportThrottleException(String message) {
-        super(message, null);
+    public TransportThrottleException(long maxWriteLockMillis) {
+        super(
+                format(
+                        "Outbound network buffer has failed to flush within mandated period of %s",
+                        formatDurationHMS(maxWriteLockMillis)),
+                null);
     }
 }

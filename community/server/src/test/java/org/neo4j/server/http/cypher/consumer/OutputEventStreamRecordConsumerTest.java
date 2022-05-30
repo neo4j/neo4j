@@ -42,7 +42,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
-import org.neo4j.bolt.runtime.BoltResult;
+import org.neo4j.bolt.protocol.common.message.result.BoltResult;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.server.http.cypher.CachingWriter;
 import org.neo4j.server.http.cypher.OutputEventStream;

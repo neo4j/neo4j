@@ -20,8 +20,10 @@
 package org.neo4j.bolt.runtime;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
-import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
+import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.discard;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -35,12 +37,10 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.bolt.AbstractBoltTransportsTest;
-import org.neo4j.bolt.packstream.Neo4jPack;
-import org.neo4j.bolt.testing.TransportTestUtil;
+import org.neo4j.bolt.protocol.common.connection.DefaultBoltConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
-import org.neo4j.bolt.v4.messaging.BoltV4Messages;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
@@ -97,14 +97,14 @@ class BoltSchedulerBusyIT extends AbstractBoltTransportsTest {
         close(connection4);
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {1}")
     @MethodSource("argumentsProvider")
-    public void shouldReportFailureWhenAllThreadsInThreadPoolAreBusy(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Throwable {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldReportFailureWhenAllThreadsInThreadPoolAreBusy(TransportConnection.Factory connectionFactory)
+            throws Throwable {
+        initParameters(connectionFactory);
 
         // it's enough to get the bolt state machine into streaming mode to have
-        // the thread sticked to the connection, causing all the available threads
+        // the thread stickied to the connection, causing all the available threads
         // to be busy (logically)
         connection1 = enterStreaming();
         connection2 = enterStreaming();
@@ -112,11 +112,12 @@ class BoltSchedulerBusyIT extends AbstractBoltTransportsTest {
         try {
             connection3 = connectAndPerformBoltHandshake(newConnection());
 
-            connection3.send(util.defaultAuth());
+            connection3.sendDefaultProtocolVersion().send(hello());
+
             assertThat(connection3)
-                    .satisfies(util.eventuallyReceives(msgFailure(
+                    .receivesFailureFuzzy(
                             Status.Request.NoThreadsAvailable,
-                            "There are no available threads to serve this request at the moment")));
+                            "There are no available threads to serve this request at the moment");
 
             assertThat(userLogProvider)
                     .containsMessages(
@@ -133,11 +134,11 @@ class BoltSchedulerBusyIT extends AbstractBoltTransportsTest {
         }
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {arguments}")
     @MethodSource("argumentsProvider")
-    public void shouldStopConnectionsWhenRelatedJobIsRejectedOnShutdown(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Throwable {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldStopConnectionsWhenRelatedJobIsRejectedOnShutdown(TransportConnection.Factory connectionFactory)
+            throws Throwable {
+        initParameters(connectionFactory);
 
         // Connect and get two connections into idle state
         connection1 = enterStreaming();
@@ -173,7 +174,6 @@ class BoltSchedulerBusyIT extends AbstractBoltTransportsTest {
             try {
                 connection = newConnection();
                 enterStreaming(connection, i);
-                error = null;
                 return connection;
             } catch (Throwable t) {
                 // failed to enter the streaming state, record the error and retry
@@ -188,35 +188,35 @@ class BoltSchedulerBusyIT extends AbstractBoltTransportsTest {
             }
         }
 
-        if (error != null) {
-            throw error;
-        }
-
-        throw new IllegalStateException("Unable to enter the streaming state");
+        throw error;
     }
 
     private void enterStreaming(TransportConnection connection, int sleepSeconds) throws Exception {
         connectAndPerformBoltHandshake(connection);
 
-        connection.send(util.defaultAuth());
-        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
+        connection.send(hello());
 
-        SECONDS.sleep(sleepSeconds); // sleep a bit to allow worker thread return back to the pool
+        assertThat(connection).receivesSuccess();
 
-        connection.send(util.chunk(BoltV4Messages.run("UNWIND RANGE (1, 100) AS x RETURN x")));
-        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
+        SECONDS.sleep(sleepSeconds); // sleep a bit to allow the worker thread to return to the pool
+
+        connection.send(run("UNWIND RANGE (1, 100) AS x RETURN x"));
+
+        assertThat(connection).receivesSuccess();
     }
 
     private TransportConnection connectAndPerformBoltHandshake(TransportConnection connection) throws Exception {
-        connection.connect(address).send(util.defaultAcceptedVersions());
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
+        connection.connect().sendDefaultProtocolVersion();
+
+        assertThat(connection).negotiatesDefaultVersion();
+
         return connection;
     }
 
     private void exitStreaming(TransportConnection connection) throws Exception {
-        connection.send(util.chunk(BoltV4Messages.discardAll()));
+        connection.send(discard());
 
-        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
+        assertThat(connection).receivesSuccess();
     }
 
     private static void close(TransportConnection connection) {

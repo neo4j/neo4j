@@ -21,7 +21,7 @@ package org.neo4j.server.http.cypher.consumer;
 
 import java.io.IOException;
 import java.util.function.Consumer;
-import org.neo4j.bolt.runtime.BoltResult;
+import org.neo4j.bolt.protocol.common.message.result.BoltResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.server.http.cypher.CachingWriter;
 import org.neo4j.values.AnyValue;

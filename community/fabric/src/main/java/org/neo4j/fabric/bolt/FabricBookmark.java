@@ -30,8 +30,8 @@ import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import org.neo4j.bolt.dbapi.BookmarkMetadata;
-import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.bolt.runtime.Bookmark;
+import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
+import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
 import org.neo4j.fabric.bookmark.BookmarkStateSerializer;
 import org.neo4j.fabric.bookmark.RemoteBookmark;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -68,7 +68,7 @@ public class FabricBookmark extends BookmarkMetadata implements Bookmark {
     }
 
     @Override
-    public void attachTo(BoltResponseHandler state) {
+    public void attachTo(ResponseHandler state) {
         state.onMetadata(BOOKMARK_KEY, utf8Value(serialize()));
     }
 

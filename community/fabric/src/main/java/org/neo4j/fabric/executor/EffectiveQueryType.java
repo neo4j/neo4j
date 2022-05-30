@@ -19,7 +19,7 @@
  */
 package org.neo4j.fabric.executor;
 
-import org.neo4j.bolt.runtime.AccessMode;
+import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.fabric.planning.FabricPlan;
 import org.neo4j.fabric.planning.QueryType;
 import org.neo4j.graphdb.QueryExecutionType;

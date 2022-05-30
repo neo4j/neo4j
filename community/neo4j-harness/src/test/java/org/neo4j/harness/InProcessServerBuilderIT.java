@@ -248,7 +248,11 @@ class InProcessServerBuilderIT {
             URI uri = neo4j.boltURI();
 
             // when
-            assertDoesNotThrow(() -> new SocketConnection().connect(new HostnamePort(uri.getHost(), uri.getPort())));
+            assertDoesNotThrow(() -> {
+                try (var connection = new SocketConnection(new HostnamePort(uri.getHost(), uri.getPort()))) {
+                    connection.connect();
+                }
+            });
         }
     }
 

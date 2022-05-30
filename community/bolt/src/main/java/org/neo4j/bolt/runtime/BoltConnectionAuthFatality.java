@@ -21,7 +21,7 @@ package org.neo4j.bolt.runtime;
 
 import static java.util.Objects.requireNonNull;
 
-import org.neo4j.bolt.security.auth.AuthenticationException;
+import org.neo4j.bolt.security.error.AuthenticationException;
 
 /**
  * Indicates that bolt connection has been fatally misused and therefore the server should close the connection.

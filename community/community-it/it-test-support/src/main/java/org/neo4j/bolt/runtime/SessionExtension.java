@@ -21,6 +21,7 @@ package org.neo4j.bolt.runtime;
 
 import static java.time.Duration.ofSeconds;
 
+import io.netty.channel.embedded.EmbeddedChannel;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
@@ -34,13 +35,20 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.BoltProtocolVersion;
-import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
+import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
-import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
-import org.neo4j.bolt.runtime.statemachine.impl.BoltStateMachineFactoryImpl;
-import org.neo4j.bolt.security.auth.Authentication;
-import org.neo4j.bolt.security.auth.BasicAuthentication;
+import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.protocol.BoltProtocolRegistry;
+import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
+import org.neo4j.bolt.protocol.common.fsm.StateMachine;
+import org.neo4j.bolt.protocol.common.protector.ChannelProtector;
+import org.neo4j.bolt.protocol.v40.BoltProtocolV40;
+import org.neo4j.bolt.protocol.v40.bookmark.BookmarksParserV40;
+import org.neo4j.bolt.protocol.v41.BoltProtocolV41;
+import org.neo4j.bolt.protocol.v43.BoltProtocolV43;
+import org.neo4j.bolt.protocol.v44.BoltProtocolV44;
+import org.neo4j.bolt.security.Authentication;
+import org.neo4j.bolt.security.basic.BasicAuthentication;
 import org.neo4j.bolt.transaction.StatementProcessorTxManager;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -50,24 +58,23 @@ import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.database.DatabaseIdRepository;
-import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.internal.NullLogService;
-import org.neo4j.memory.MemoryTracker;
+import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.server.security.systemgraph.CommunityDefaultDatabaseResolver;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.time.Clocks;
-import org.neo4j.time.SystemNanoClock;
-import org.neo4j.values.virtual.MapValue;
 
 public class SessionExtension implements BeforeEachCallback, AfterEachCallback {
     private final Supplier<TestDatabaseManagementServiceBuilder> builderFactory;
+
     private GraphDatabaseAPI gdb;
-    private BoltStateMachineFactoryImpl boltFactory;
-    private List<BoltStateMachine> runningMachines = new ArrayList<>();
+    private BoltProtocolRegistry protocolRegistry;
     private DatabaseManagementService managementService;
+
+    private final List<StateMachine> runningMachines = new ArrayList<>();
     private boolean authEnabled;
 
     public SessionExtension() {
@@ -78,12 +85,16 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback {
         this.builderFactory = builderFactory;
     }
 
-    public BoltStateMachine newMachine(
-            BoltProtocolVersion version, BoltChannel boltChannel, MemoryTracker memoryTracker) {
+    public StateMachine newMachine(ProtocolVersion version, BoltChannel channel) {
         assertTestStarted();
-        BoltStateMachine machine = boltFactory.newStateMachine(version, boltChannel, MapValue.EMPTY, memoryTracker);
-        runningMachines.add(machine);
-        return machine;
+
+        var protocol = protocolRegistry
+                .get(version, channel)
+                .orElseThrow(() -> new IllegalArgumentException("Unsupported protocol version: " + version));
+
+        var stateMachine = protocol.createStateMachine(channel);
+        runningMachines.add(stateMachine);
+        return stateMachine;
     }
 
     public DatabaseManagementService managementService() {
@@ -105,6 +116,22 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback {
         return databaseManager.databaseIdRepository();
     }
 
+    public BoltChannel channel() {
+        assertTestStarted();
+        var resolver = gdb.getDependencyResolver();
+
+        var authentication = authentication(resolver.resolveDependency(AuthManager.class));
+
+        return new BoltChannel(
+                "bolt-test",
+                "bolt",
+                new EmbeddedChannel(),
+                authentication,
+                ChannelProtector.NULL,
+                ConnectionHintProvider.noop(),
+                EmptyMemoryTracker.INSTANCE);
+    }
+
     @Override
     public void beforeEach(ExtensionContext extensionContext) {
         managementService = builderFactory
@@ -113,33 +140,59 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback {
                 .setConfig(GraphDatabaseSettings.auth_enabled, authEnabled)
                 .build();
         gdb = (GraphDatabaseAPI) managementService.database(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
-        DependencyResolver resolver = gdb.getDependencyResolver();
-        Authentication authentication = authentication(resolver.resolveDependency(AuthManager.class));
-        Config config = resolver.resolveDependency(Config.class);
-        StatementProcessorTxManager statementProcessorTxManager = new StatementProcessorTxManager();
-        SystemNanoClock clock = Clocks.nanoClock();
-        DefaultDatabaseResolver defaultDatabaseResolver = new CommunityDefaultDatabaseResolver(
+
+        var resolver = gdb.getDependencyResolver();
+        var config = resolver.resolveDependency(Config.class);
+        var logService = resolver.resolveDependency(LogService.class);
+        var databaseContextProvider = resolver.resolveDependency(DatabaseContextProvider.class);
+
+        var clock = Clocks.nanoClock();
+        var txManager = new StatementProcessorTxManager();
+        var defaultDatabaseResolver = new CommunityDefaultDatabaseResolver(
                 config, () -> managementService.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME));
-        BoltGraphDatabaseManagementServiceSPI databaseManagementService =
-                new BoltKernelDatabaseManagementServiceProvider(
-                        managementService, new Monitors(), clock, ofSeconds(30));
-        boltFactory = new BoltStateMachineFactoryImpl(
-                databaseManagementService,
-                authentication,
-                clock,
-                config,
-                NullLogService.getInstance(),
-                defaultDatabaseResolver,
-                statementProcessorTxManager);
+        var databaseManagementService = new BoltKernelDatabaseManagementServiceProvider(
+                managementService, new Monitors(), clock, ofSeconds(30));
+
+        var bookmarksParser = new BookmarksParserV40(
+                databaseContextProvider.databaseIdRepository(), CustomBookmarkFormatParser.DEFAULT);
+
+        protocolRegistry = BoltProtocolRegistry.builder()
+                .register(new BoltProtocolV40(
+                        bookmarksParser,
+                        logService,
+                        databaseManagementService,
+                        defaultDatabaseResolver,
+                        txManager,
+                        clock))
+                .register(new BoltProtocolV41(
+                        bookmarksParser,
+                        logService,
+                        databaseManagementService,
+                        defaultDatabaseResolver,
+                        txManager,
+                        clock))
+                .register(new BoltProtocolV43(
+                        bookmarksParser,
+                        logService,
+                        databaseManagementService,
+                        defaultDatabaseResolver,
+                        txManager,
+                        clock))
+                .register(new BoltProtocolV44(
+                        bookmarksParser,
+                        logService,
+                        databaseManagementService,
+                        defaultDatabaseResolver,
+                        txManager,
+                        clock))
+                .build();
     }
 
     @Override
     public void afterEach(ExtensionContext extensionContext) {
         try {
-            if (runningMachines != null) {
-                IOUtils.closeAll(runningMachines);
-                runningMachines.clear();
-            }
+            IOUtils.closeAll(runningMachines);
+            runningMachines.clear();
         } catch (Throwable e) {
             e.printStackTrace();
         }
@@ -148,7 +201,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback {
     }
 
     private void assertTestStarted() {
-        if (boltFactory == null || gdb == null) {
+        if (protocolRegistry == null || gdb == null) {
             throw new IllegalStateException("Cannot access test environment before test is running.");
         }
     }

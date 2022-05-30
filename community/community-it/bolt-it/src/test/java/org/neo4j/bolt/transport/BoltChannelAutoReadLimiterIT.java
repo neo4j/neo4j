@@ -20,7 +20,10 @@
 package org.neo4j.bolt.transport;
 
 import static java.util.Collections.singletonMap;
-import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
+import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.discard;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -31,7 +34,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.neo4j.bolt.runtime.scheduling.BoltConnectionReadLimiter;
-import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.collection.RawIterator;
@@ -39,7 +41,6 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
@@ -63,18 +64,14 @@ class BoltChannelAutoReadLimiterIT {
     private Neo4jWithSocket server;
 
     private AssertableLogProvider logProvider;
-    private HostnamePort address;
     private TransportConnection connection;
-    private TransportTestUtil util;
 
     @BeforeEach
     public void setup(TestInfo testInfo) throws Exception {
         server.setGraphDatabaseFactory(getTestGraphDatabaseFactory());
         server.setConfigure(getSettingsFunction());
         server.init(testInfo);
-        address = server.lookupDefaultConnector();
-        connection = new SocketConnection();
-        util = new TransportTestUtil();
+        connection = new SocketConnection(server.lookupDefaultConnector());
 
         installSleepProcedure(server.graphDatabaseService());
     }
@@ -102,20 +99,21 @@ class BoltChannelAutoReadLimiterIT {
         int numberOfRunDiscardPairs = 20;
         String largeString = " ".repeat(8 * 1024);
 
-        connection.connect(address).send(util.defaultAcceptedVersions()).send(util.defaultAuth());
+        connection.connect().sendDefaultProtocolVersion().send(hello());
 
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
-        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
+        assertThat(connection).negotiatesDefaultVersion().receivesSuccess();
 
         // when
         for (int i = 0; i < numberOfRunDiscardPairs; i++) {
-            connection.send(util.defaultRunAutoCommitTxWithoutResult(
-                    "CALL boltissue.sleep( $data )", ValueUtils.asMapValue(singletonMap("data", largeString))));
+            connection
+                    .send(run(
+                            "CALL boltissue.sleep( $data )", ValueUtils.asMapValue(singletonMap("data", largeString))))
+                    .send(discard());
         }
 
         // expect
         for (int i = 0; i < numberOfRunDiscardPairs; i++) {
-            assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess(), msgSuccess()));
+            assertThat(connection).receivesSuccess().receivesSuccess();
         }
 
         assertThat(logProvider)

@@ -19,8 +19,7 @@
  */
 package org.neo4j.bolt.transport;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.DISABLED;
 
 import java.io.IOException;
@@ -31,10 +30,9 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.bolt.testing.TransportTestUtil;
-import org.neo4j.bolt.testing.client.SecureSocketConnection;
-import org.neo4j.bolt.testing.client.SecureWebSocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.bolt.testing.client.tls.SecureSocketConnection;
+import org.neo4j.bolt.testing.client.websocket.SecureWebSocketConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -45,6 +43,8 @@ public class RejectTransportEncryptionIT {
     @Inject
     private Neo4jWithSocket server;
 
+    private TransportConnection connection;
+
     @BeforeEach
     public void setup(TestInfo testInfo) throws IOException {
         server.setConfigure(settings -> {
@@ -53,37 +53,30 @@ public class RejectTransportEncryptionIT {
         server.init(testInfo);
     }
 
-    private TransportConnection client;
-    private TransportTestUtil util;
-
     public static Stream<Arguments> transportFactory() {
         return Stream.of(
                 Arguments.of(
-                        SecureWebSocketConnection.class,
+                        SecureWebSocketConnection.factory(),
                         new IOException("Failed to connect to the server within 5 minutes")),
-                Arguments.of(SecureSocketConnection.class, new IOException("Remote host terminated the handshake")));
-    }
-
-    @BeforeEach
-    public void setup() {
-        this.util = new TransportTestUtil();
+                Arguments.of(
+                        SecureSocketConnection.factory(), new IOException("Remote host terminated the handshake")));
     }
 
     @AfterEach
     public void teardown() throws Exception {
-        if (client != null) {
-            client.disconnect();
+        if (connection != null) {
+            connection.disconnect();
         }
     }
 
     @ParameterizedTest(name = "{displayName} {index}")
     @MethodSource("transportFactory")
-    public void shouldRejectConnectionAfterHandshake(Class<? extends TransportConnection> c, Exception expected)
+    public void shouldRejectConnectionAfterHandshake(TransportConnection.Factory c, Exception expected)
             throws Exception {
-        this.client = c.getDeclaredConstructor().newInstance();
+        this.connection = c.create(server.lookupDefaultConnector());
 
-        var exception = assertThrows(expected.getClass(), () -> client.connect(server.lookupDefaultConnector())
-                .send(util.defaultAcceptedVersions()));
-        assertEquals(expected.getMessage(), exception.getMessage());
+        assertThatExceptionOfType(expected.getClass())
+                .isThrownBy(() -> connection.connect().sendDefaultProtocolVersion())
+                .withMessage(expected.getMessage());
     }
 }

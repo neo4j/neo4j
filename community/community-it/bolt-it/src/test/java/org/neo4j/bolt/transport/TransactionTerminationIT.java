@@ -19,24 +19,18 @@
  */
 package org.neo4j.bolt.transport;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
-import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
-import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceivesSelectedProtocolVersion;
-import static org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory.newMessageEncoder;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.begin;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.reset;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
-import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SocketConnection;
-import org.neo4j.bolt.v3.messaging.request.BeginMessage;
-import org.neo4j.bolt.v3.messaging.request.HelloMessage;
-import org.neo4j.bolt.v3.messaging.request.ResetMessage;
-import org.neo4j.bolt.v3.messaging.request.RunMessage;
+import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -50,7 +44,6 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 @Neo4jWithSocketExtension
 public class TransactionTerminationIT {
 
-    private TransportTestUtil util;
     private HostnamePort serverAddress;
 
     @Inject
@@ -67,25 +60,24 @@ public class TransactionTerminationIT {
         server.init(testInfo);
 
         serverAddress = server.lookupConnector(ConnectorType.BOLT);
-        util = new TransportTestUtil(newMessageEncoder());
     }
 
     @Test
     @Timeout(15)
     void killTxViaReset() throws Exception {
-        SocketConnection connA = initializeConnection(serverAddress);
+        var connection = initializeConnection(serverAddress);
 
-        connA.send(util.chunk(new BeginMessage()));
-        connA.send(util.chunk(new RunMessage("UNWIND range(1, 2000000) AS i CREATE (n)")));
+        connection.send(begin()).send(run("UNWIND range(1, 2000000) AS i CREATE (n)"));
 
         // let the query start actually executing
         awaitTransactionStart();
 
-        connA.send(util.chunk(ResetMessage.INSTANCE));
+        connection.send(reset());
 
-        assertThat(connA).satisfies(util.eventuallyReceives(msgSuccess()));
-        assertThat(connA).satisfies(util.eventuallyReceives(msgFailure(Status.Transaction.Terminated)));
-        assertThat(connA).satisfies(util.eventuallyReceives(msgSuccess()));
+        assertThat(connection)
+                .receivesSuccess()
+                .receivesFailure(Status.Transaction.Terminated)
+                .receivesSuccess();
     }
 
     public void awaitTransactionStart() throws InterruptedException {
@@ -93,22 +85,20 @@ public class TransactionTerminationIT {
         while (txCount <= 1) {
             var tx = server.graphDatabaseService().beginTx();
             var result = tx.execute("SHOW TRANSACTIONS");
-            txCount = result.stream().collect(Collectors.toList()).size();
-            System.out.println(txCount);
+            txCount = result.stream().toList().size();
             tx.close();
             Thread.sleep(100);
         }
     }
 
-    private SocketConnection initializeConnection(HostnamePort address) throws Exception {
-        SocketConnection socketConnection = new SocketConnection();
+    private TransportConnection initializeConnection(HostnamePort address) throws Exception {
+        var connection = new SocketConnection(address)
+                .connect()
+                .sendDefaultProtocolVersion()
+                .send(hello());
 
-        socketConnection.connect(address).send(TransportTestUtil.defaultAcceptedVersions());
-        assertThat(socketConnection).satisfies(eventuallyReceivesSelectedProtocolVersion());
+        assertThat(connection).negotiatesDefaultVersion().receivesSuccess();
 
-        socketConnection.send(util.chunk(new HelloMessage(map("user_agent", "TESTCLIENT/4.2"))));
-        assertThat(socketConnection).satisfies(util.eventuallyReceives(msgSuccess()));
-
-        return socketConnection;
+        return connection;
     }
 }

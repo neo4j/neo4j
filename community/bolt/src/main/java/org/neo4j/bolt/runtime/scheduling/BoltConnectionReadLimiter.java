@@ -21,8 +21,8 @@ package org.neo4j.bolt.runtime.scheduling;
 
 import io.netty.channel.Channel;
 import java.util.Collection;
-import org.neo4j.bolt.runtime.BoltConnection;
-import org.neo4j.bolt.runtime.Job;
+import org.neo4j.bolt.protocol.common.connection.BoltConnection;
+import org.neo4j.bolt.protocol.common.connection.Job;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 

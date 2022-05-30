@@ -40,9 +40,9 @@ import java.util.Arrays;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.runtime.BoltConnection;
-import org.neo4j.bolt.runtime.Job;
-import org.neo4j.bolt.v3.messaging.request.HelloMessage;
+import org.neo4j.bolt.protocol.common.connection.BoltConnection;
+import org.neo4j.bolt.protocol.common.connection.Job;
+import org.neo4j.bolt.protocol.v40.messaging.request.HelloMessage;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 

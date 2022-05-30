@@ -19,38 +19,32 @@
  */
 package org.neo4j.bolt.v4.runtime;
 
-import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.bolt.testing.BoltConditions.containsRecord;
-import static org.neo4j.bolt.testing.BoltConditions.failedWithStatus;
-import static org.neo4j.bolt.testing.BoltConditions.succeeded;
-import static org.neo4j.bolt.testing.BoltConditions.succeededWithMetadata;
-import static org.neo4j.bolt.testing.BoltConditions.succeededWithRecord;
-import static org.neo4j.bolt.testing.BoltConditions.succeededWithoutMetadata;
-import static org.neo4j.bolt.testing.BoltConditions.verifyKillsConnection;
-import static org.neo4j.bolt.testing.BoltConditions.wasIgnored;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
-import static org.neo4j.bolt.v4.messaging.BoltV4Messages.begin;
-import static org.neo4j.bolt.v4.messaging.BoltV4Messages.commit;
-import static org.neo4j.bolt.v4.messaging.BoltV4Messages.discardAll;
-import static org.neo4j.bolt.v4.messaging.BoltV4Messages.pullAll;
-import static org.neo4j.bolt.v4.messaging.BoltV4Messages.reset;
-import static org.neo4j.bolt.v4.messaging.BoltV4Messages.rollback;
-import static org.neo4j.bolt.v4.messaging.BoltV4Messages.run;
-import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
+import static org.neo4j.bolt.testing.assertions.AnyValueAssertions.assertThat;
+import static org.neo4j.bolt.testing.assertions.MapValueAssertions.assertThat;
+import static org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions.assertThat;
+import static org.neo4j.bolt.testing.assertions.StateMachineAssertions.assertThat;
+import static org.neo4j.bolt.testing.messages.BoltV40Messages.begin;
+import static org.neo4j.bolt.testing.messages.BoltV40Messages.commit;
+import static org.neo4j.bolt.testing.messages.BoltV40Messages.discard;
+import static org.neo4j.bolt.testing.messages.BoltV40Messages.pull;
+import static org.neo4j.bolt.testing.messages.BoltV40Messages.reset;
+import static org.neo4j.bolt.testing.messages.BoltV40Messages.rollback;
+import static org.neo4j.bolt.testing.messages.BoltV40Messages.run;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
+import static org.neo4j.values.virtual.VirtualValues.list;
 
-import java.util.List;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.protocol.common.fsm.StateMachine;
+import org.neo4j.bolt.protocol.common.message.response.SuccessMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
-import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
-import org.neo4j.bolt.testing.BoltResponseRecorder;
+import org.neo4j.bolt.testing.response.ResponseRecorder;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.util.concurrent.BinaryLatch;
 import org.neo4j.values.storable.TextValue;
@@ -62,40 +56,36 @@ class TransactionIT extends BoltStateMachineV4StateTestBase {
     @Test
     void shouldHandleBeginCommit() throws Throwable {
         // Given
-        var recorder = new BoltResponseRecorder();
+        var recorder = new ResponseRecorder();
         var machine = newStateMachineAfterAuth();
 
         // When
         machine.process(begin(), recorder);
 
         machine.process(run("CREATE (n:InTx)"), recorder);
-        machine.process(discardAll(), nullResponseHandler());
+        machine.process(discard(), nullResponseHandler());
 
         machine.process(commit(), recorder);
 
         // Then
-        assertThat(recorder.nextResponse()).satisfies(succeeded());
-        assertThat(recorder.nextResponse()).satisfies(succeeded());
-        assertThat(recorder.nextResponse()).satisfies(succeeded());
+        assertThat(recorder).hasSuccessResponse(3);
     }
 
     @Test
     void shouldHandleBeginRollback() throws Throwable {
         // Given
-        var recorder = new BoltResponseRecorder();
+        var recorder = new ResponseRecorder();
         var machine = newStateMachineAfterAuth();
 
         // When
         machine.process(begin(), recorder);
 
         machine.process(run("CREATE (n:InTx)"), recorder);
-        machine.process(discardAll(), nullResponseHandler());
+        machine.process(discard(), nullResponseHandler());
         machine.process(rollback(), recorder);
 
         // Then
-        assertThat(recorder.nextResponse()).satisfies(succeeded());
-        assertThat(recorder.nextResponse()).satisfies(succeeded());
-        assertThat(recorder.nextResponse()).satisfies(succeeded());
+        assertThat(recorder).hasSuccessResponse(3);
     }
 
     @Test
@@ -119,60 +109,69 @@ class TransactionIT extends BoltStateMachineV4StateTestBase {
     @Test
     void shouldReceiveBookmarkOnCommit() throws Throwable {
         // Given
-        var recorder = new BoltResponseRecorder();
+        var recorder = new ResponseRecorder();
         var machine = newStateMachineAfterAuth();
 
         // When
         machine.process(begin(), nullResponseHandler());
 
         machine.process(run("CREATE (a:Person)"), nullResponseHandler());
-        machine.process(discardAll(), nullResponseHandler());
+        machine.process(discard(), nullResponseHandler());
 
         machine.process(commit(), recorder);
 
         // Then
-        assertThat(recorder.nextResponse()).satisfies(succeededWithMetadata("bookmark", BOOKMARK_PATTERN));
+        assertThat(recorder).hasSuccessResponse(meta -> assertThat(meta)
+                .containsEntry("bookmark", value -> assertThat(value).asString().matches(BOOKMARK_PATTERN)));
     }
 
     @Test
     void shouldNotReceiveBookmarkOnRollback() throws Throwable {
         // Given
-        var recorder = new BoltResponseRecorder();
+        var recorder = new ResponseRecorder();
         var machine = newStateMachineAfterAuth();
 
         // When
         machine.process(begin(), nullResponseHandler());
 
         machine.process(run("CREATE (a:Person)"), nullResponseHandler());
-        machine.process(discardAll(), nullResponseHandler());
+        machine.process(discard(), nullResponseHandler());
 
         machine.process(rollback(), recorder);
 
         // Then
-        assertThat(recorder.nextResponse()).satisfies(succeededWithoutMetadata("bookmark"));
+        assertThat(recorder).hasSuccessResponse(meta -> assertThat(meta).doesNotContainKey("bookmark"));
     }
 
     @Test
     void shouldReadYourOwnWrites() throws Exception {
         var latch = new BinaryLatch();
 
-        String bookmarkPrefix = null;
+        String bookmarkPrefix;
         try (var machine = newStateMachineAfterAuth()) {
-            var recorder = new BoltResponseRecorder();
+            var recorder = new ResponseRecorder();
             machine.process(run("CREATE (n:A {prop:'one'})"), nullResponseHandler());
-            machine.process(pullAll(), recorder);
+            machine.process(pull(), recorder);
 
-            var bookmark = ((TextValue) recorder.nextResponse().metadata("bookmark")).stringValue();
+            var response = recorder.next();
+
+            assertThat(response.isResponse()).isTrue();
+
+            var msg = response.asResponse();
+
+            assertThat(msg).isInstanceOf(SuccessMessage.class);
+
+            var bookmark = ((TextValue) ((SuccessMessage) msg).meta().get("bookmark")).stringValue();
             bookmarkPrefix = bookmark.split(":")[0];
         }
 
         var dbVersion = env.lastClosedTxId();
         var thread = new Thread(() -> {
-            try (BoltStateMachine machine = newStateMachineAfterAuth()) {
+            try (StateMachine machine = newStateMachineAfterAuth()) {
                 latch.await();
-                var recorder = new BoltResponseRecorder();
+                var recorder = new ResponseRecorder();
                 machine.process(run("MATCH (n:A) SET n.prop = 'two'", EMPTY_MAP), nullResponseHandler());
-                machine.process(pullAll(), recorder);
+                machine.process(pull(), recorder);
             } catch (Throwable connectionFatality) {
                 throw new RuntimeException(connectionFatality);
             }
@@ -181,22 +180,22 @@ class TransactionIT extends BoltStateMachineV4StateTestBase {
 
         var dbVersionAfterWrite = dbVersion + 1;
         try (var machine = newStateMachineAfterAuth()) {
-            var recorder = new BoltResponseRecorder();
+            var recorder = new ResponseRecorder();
             latch.release();
-            var bookmark = bookmarkPrefix + ":" + dbVersionAfterWrite;
+            var bookmark = stringValue(bookmarkPrefix + ":" + dbVersionAfterWrite);
 
-            machine.process(
-                    begin(env.databaseIdRepository(), asMapValue(singletonMap("bookmarks", List.of(bookmark)))),
-                    recorder);
+            machine.process(begin(env.databaseIdRepository(), list(bookmark)), recorder);
             machine.process(run("MATCH (n:A) RETURN n.prop"), recorder);
-            machine.process(pullAll(), recorder);
+            machine.process(pull(), recorder);
             machine.process(commit(), recorder);
 
-            assertThat(recorder.nextResponse()).satisfies(succeeded());
-            assertThat(recorder.nextResponse()).satisfies(succeeded());
-
-            assertThat(recorder.nextResponse()).satisfies(succeededWithRecord("two"));
-            assertThat(recorder.nextResponse()).satisfies(succeededWithMetadata("bookmark", BOOKMARK_PATTERN));
+            assertThat(recorder)
+                    .hasSuccessResponse(2)
+                    .hasRecord(stringValue("two"))
+                    .hasSuccessResponse()
+                    .hasSuccessResponse(meta -> assertThat(meta).containsEntry("bookmark", value -> assertThat(value)
+                            .asString()
+                            .matches(BOOKMARK_PATTERN)));
         }
 
         thread.join();
@@ -206,88 +205,88 @@ class TransactionIT extends BoltStateMachineV4StateTestBase {
     void shouldAllowNewRunAfterRunFailure() throws Throwable {
         // Given
         var machine = newStateMachineAfterAuth();
-        var recorder = new BoltResponseRecorder();
+        var recorder = new ResponseRecorder();
 
         // When
         machine.process(run("INVALID QUERY"), recorder);
-        machine.process(pullAll(), recorder);
+        machine.process(pull(), recorder);
         resetReceived(machine, recorder);
         machine.process(run("RETURN 2", EMPTY_MAP), recorder);
-        machine.process(pullAll(), recorder);
+        machine.process(pull(), recorder);
 
         // Then
-        assertThat(recorder.nextResponse()).satisfies(failedWithStatus(Status.Statement.SyntaxError));
-        assertThat(recorder.nextResponse()).satisfies(wasIgnored());
-        assertThat(recorder.nextResponse()).satisfies(succeeded());
-        assertThat(recorder.nextResponse()).satisfies(succeeded());
-        assertThat(recorder.nextResponse()).satisfies(succeededWithRecord(2L));
-        assertEquals(0, recorder.responseCount());
+        assertThat(recorder)
+                .hasFailureResponse(Status.Statement.SyntaxError)
+                .hasIgnoredResponse()
+                .hasSuccessResponse(2)
+                .hasRecord(longValue(2))
+                .hasSuccessResponse()
+                .hasNoRemainingResponses();
     }
 
     @Test
     void shouldAllowNewRunAfterStreamingFailure() throws Throwable {
         // Given
         var machine = newStateMachineAfterAuth();
-        var recorder = new BoltResponseRecorder();
+        var recorder = new ResponseRecorder();
 
         // When
         machine.process(run("UNWIND [1, 0] AS x RETURN 1 / x"), recorder);
-        machine.process(pullAll(), recorder);
+        machine.process(pull(), recorder);
         resetReceived(machine, recorder);
         machine.process(run("RETURN 2"), recorder);
-        machine.process(pullAll(), recorder);
+        machine.process(pull(), recorder);
 
         // Then
-        assertThat(recorder.nextResponse()).satisfies(succeeded());
-        assertThat(recorder.nextResponse())
-                .satisfies(containsRecord(1L))
-                .satisfies(failedWithStatus(Status.Statement.ArithmeticError));
-        assertThat(recorder.nextResponse()).satisfies(succeeded());
-        assertThat(recorder.nextResponse()).satisfies(succeeded());
-        assertThat(recorder.nextResponse()).satisfies(succeededWithRecord(2L));
-        assertEquals(0, recorder.responseCount());
+        assertThat(recorder)
+                .hasSuccessResponse()
+                .hasRecord(longValue(1))
+                .hasFailureResponse(Status.Statement.ArithmeticError)
+                .hasSuccessResponse(2)
+                .hasRecord(longValue(2))
+                .hasSuccessResponse()
+                .hasNoRemainingResponses();
     }
 
     @Test
     void shouldNotAllowNewRunAfterRunFailure() throws Throwable {
         // Given
         var machine = newStateMachineAfterAuth();
-        var recorder = new BoltResponseRecorder();
+        var recorder = new ResponseRecorder();
 
         // When
         machine.process(run("INVALID QUERY"), nullResponseHandler());
-        machine.process(pullAll(), nullResponseHandler());
+        machine.process(pull(), nullResponseHandler());
 
         // If I do not ack failure, then I shall not be able to do anything
         machine.process(run(), recorder);
-        machine.process(pullAll(), recorder);
+        machine.process(pull(), recorder);
 
         // Then
-        assertThat(recorder.nextResponse()).satisfies(wasIgnored());
-        assertThat(recorder.nextResponse()).satisfies(wasIgnored());
-        assertEquals(0, recorder.responseCount());
+        assertThat(recorder).hasIgnoredResponse(2).hasNoRemainingResponses();
     }
 
     @Test
     void shouldNotAllowNewRunAfterStreamingFailure() throws Throwable {
         // Given
         var machine = newStateMachineAfterAuth();
-        var recorder = new BoltResponseRecorder();
+        var recorder = new ResponseRecorder();
 
         // When
         machine.process(run("UNWIND [1, 0] AS x RETURN 1 / x"), recorder);
-        machine.process(pullAll(), recorder);
+        machine.process(pull(), recorder);
 
         // If I do not ack failure, then I shall not be able to do anything
         machine.process(run(), recorder);
-        machine.process(pullAll(), recorder);
+        machine.process(pull(), recorder);
 
         // Then
-        assertThat(recorder.nextResponse()).satisfies(succeeded());
-        assertThat(recorder.nextResponse()).satisfies(failedWithStatus(Status.Statement.ArithmeticError));
-        assertThat(recorder.nextResponse()).satisfies(wasIgnored());
-        assertThat(recorder.nextResponse()).satisfies(wasIgnored());
-        assertEquals(0, recorder.responseCount());
+        assertThat(recorder)
+                .hasSuccessResponse()
+                .hasRecord(longValue(1))
+                .hasFailureResponse(Status.Statement.ArithmeticError)
+                .hasIgnoredResponse(2)
+                .hasNoRemainingResponses();
     }
 
     @Test
@@ -297,13 +296,12 @@ class TransactionIT extends BoltStateMachineV4StateTestBase {
         var machine = newStateMachineAfterAuth();
 
         // When
-        verifyKillsConnection(() -> machine.process(commit(), nullResponseHandler()));
-        assertFalse(machine.hasOpenStatement());
-        assertNull(machine.state());
+        assertThat(machine)
+                .shouldKillConnection(fsm -> fsm.process(commit(), nullResponseHandler()))
+                .isInInvalidState();
     }
 
-    private static void resetReceived(BoltStateMachine machine, BoltResponseRecorder recorder)
-            throws BoltConnectionFatality {
+    private static void resetReceived(StateMachine machine, ResponseRecorder recorder) throws BoltConnectionFatality {
         machine.interrupt();
         machine.process(reset(), recorder);
     }

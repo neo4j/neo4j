@@ -23,8 +23,6 @@ import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
-import static org.neo4j.configuration.SettingConstraints.any;
-import static org.neo4j.configuration.SettingConstraints.is;
 import static org.neo4j.configuration.SettingConstraints.max;
 import static org.neo4j.configuration.SettingConstraints.min;
 import static org.neo4j.configuration.SettingConstraints.range;
@@ -598,39 +596,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     "internal.server.directories.auth", PATH, Path.of("dbms"))
             .immutable()
             .setDependency(GraphDatabaseSettings.data_directory)
-            .build();
-
-    @Internal
-    @Description("Whether to apply network level outbound network buffer based throttling")
-    public static final Setting<Boolean> bolt_outbound_buffer_throttle = newBuilder(
-                    "internal.dbms.bolt.outbound_buffer_throttle", BOOL, true)
-            .build();
-
-    @Internal
-    @Description("When the size (in bytes) of outbound network buffers, used by bolt's network layer, "
-            + "grows beyond this value bolt channel will advertise itself as unwritable and will block "
-            + "related processing thread until it becomes writable again.")
-    public static final Setting<Integer> bolt_outbound_buffer_throttle_high_water_mark = newBuilder(
-                    "internal.dbms.bolt.outbound_buffer_throttle.high_watermark", INT, (int) kibiBytes(512))
-            .addConstraint(range((int) kibiBytes(64), Integer.MAX_VALUE))
-            .build();
-
-    @Internal
-    @Description("When the size (in bytes) of outbound network buffers, previously advertised as unwritable, "
-            + "gets below this value bolt channel will re-advertise itself as writable and blocked processing "
-            + "thread will resume execution.")
-    public static final Setting<Integer> bolt_outbound_buffer_throttle_low_water_mark = newBuilder(
-                    "internal.dbms.bolt.outbound_buffer_throttle.low_watermark", INT, (int) kibiBytes(128))
-            .addConstraint(range((int) kibiBytes(16), Integer.MAX_VALUE))
-            .build();
-
-    @Internal
-    @Description("When the total time outbound network buffer based throttle lock is held exceeds this value, "
-            + "the corresponding bolt channel will be aborted. Setting "
-            + "this to 0 will disable this behaviour.")
-    public static final Setting<Duration> bolt_outbound_buffer_throttle_max_duration = newBuilder(
-                    "internal.dbms.bolt.outbound_buffer_throttle.max_duration", DURATION, ofMinutes(15))
-            .addConstraint(any(min(ofSeconds(30)), is(Duration.ZERO)))
             .build();
 
     @Internal

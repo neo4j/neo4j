@@ -48,7 +48,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
-import org.neo4j.bolt.runtime.BoltConnection;
+import org.neo4j.bolt.protocol.common.connection.BoltConnection;
 import org.neo4j.bolt.testing.Jobs;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.function.Predicates;

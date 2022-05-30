@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.testing;
 
-import org.neo4j.bolt.runtime.Job;
+import org.neo4j.bolt.protocol.common.connection.Job;
 
 public class Jobs {
 

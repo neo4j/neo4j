@@ -20,39 +20,36 @@
 package org.neo4j.bolt.v4.runtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.bolt.testing.BoltConditions.failedWithStatus;
-import static org.neo4j.bolt.testing.BoltConditions.succeeded;
-import static org.neo4j.bolt.testing.BoltConditions.succeededWithRecord;
-import static org.neo4j.bolt.testing.BoltConditions.wasIgnored;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
-import static org.neo4j.bolt.v4.messaging.BoltV4Messages.begin;
-import static org.neo4j.bolt.v4.messaging.BoltV4Messages.commit;
-import static org.neo4j.bolt.v4.messaging.BoltV4Messages.discardAll;
-import static org.neo4j.bolt.v4.messaging.BoltV4Messages.pullAll;
-import static org.neo4j.bolt.v4.messaging.BoltV4Messages.reset;
-import static org.neo4j.bolt.v4.messaging.BoltV4Messages.rollback;
-import static org.neo4j.bolt.v4.messaging.BoltV4Messages.run;
+import static org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions.assertThat;
+import static org.neo4j.bolt.testing.assertions.StateMachineAssertions.assertThat;
+import static org.neo4j.bolt.testing.messages.BoltV40Messages.begin;
+import static org.neo4j.bolt.testing.messages.BoltV40Messages.commit;
+import static org.neo4j.bolt.testing.messages.BoltV40Messages.discard;
+import static org.neo4j.bolt.testing.messages.BoltV40Messages.pull;
+import static org.neo4j.bolt.testing.messages.BoltV40Messages.reset;
+import static org.neo4j.bolt.testing.messages.BoltV40Messages.rollback;
+import static org.neo4j.bolt.testing.messages.BoltV40Messages.run;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
+import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.protocol.common.fsm.AbstractStateMachine;
+import org.neo4j.bolt.protocol.common.fsm.StateMachine;
+import org.neo4j.bolt.protocol.common.message.Error;
+import org.neo4j.bolt.protocol.common.message.result.BoltResult;
+import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
+import org.neo4j.bolt.protocol.v40.fsm.StateMachineV40;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.bolt.runtime.BoltResult;
-import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.runtime.SessionExtension;
-import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
-import org.neo4j.bolt.runtime.statemachine.impl.AbstractBoltStateMachine;
-import org.neo4j.bolt.testing.BoltResponseRecorder;
+import org.neo4j.bolt.testing.response.ResponseRecorder;
 import org.neo4j.bolt.transaction.StatementProcessorTxManager;
 import org.neo4j.bolt.transaction.TransactionManager;
-import org.neo4j.bolt.v4.BoltStateMachineV4;
-import org.neo4j.bolt.v4.messaging.BoltV4Messages;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -64,37 +61,44 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase {
     @Test
     void shouldExecuteStatement() throws Throwable {
         // Given
+        var runRecorder = new ResponseRecorder();
         var machine = newStateMachineAfterAuth();
 
         // When
-        var runRecorder = new BoltResponseRecorder();
         machine.process(run("CREATE (n {k:'k'}) RETURN n.k"), runRecorder);
+
         // Then
-        assertThat(runRecorder.nextResponse()).satisfies(succeeded());
+        assertThat(runRecorder).hasSuccessResponse();
+
+        // Given
+        var pullRecorder = new ResponseRecorder();
 
         // When
-        var pullRecorder = new BoltResponseRecorder();
-        machine.process(pullAll(), pullRecorder);
+        machine.process(pull(), pullRecorder);
+
         // Then
-        pullRecorder.nextResponse().assertRecord(0, stringValue("k"));
+        assertThat(pullRecorder).hasRecord(stringValue("k"));
     }
 
     @Test
     void shouldHandleImplicitCommitFailure() throws Throwable {
         // Given
         var machine = newStateMachineAfterAuth();
+        var recorder = new ResponseRecorder();
+
         machine.process(run("CREATE (n:Victim)-[:REL]->()"), nullResponseHandler());
-        machine.process(discardAll(), nullResponseHandler());
+        machine.process(discard(), nullResponseHandler());
 
         // When I perform an action that will fail on commit
-        var recorder = new BoltResponseRecorder();
         machine.process(run("MATCH (n:Victim) DELETE n"), recorder);
+
         // Then the statement running should have succeeded
-        assertThat(recorder.nextResponse()).satisfies(succeeded());
+        assertThat(recorder).hasSuccessResponse();
 
         // But the streaming should have failed, since it implicitly triggers commit and thus triggers a failure
-        machine.process(discardAll(), recorder);
-        assertThat(recorder.nextResponse()).satisfies(failedWithStatus(Status.Schema.ConstraintValidationFailed));
+        machine.process(discard(), recorder);
+
+        assertThat(recorder).hasFailureResponse(Status.Schema.ConstraintValidationFailed);
     }
 
     @Test
@@ -104,27 +108,29 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase {
         // and send a `RESET`, because that means that all failures in the
         // transaction, be they client-local or inside neo, can be handled the
         // same way by a driver.
+        var recorder = new ResponseRecorder();
         var machine = newStateMachineAfterAuth();
 
         machine.process(begin(), nullResponseHandler());
         machine.process(run("CREATE (n:Victim)-[:REL]->()"), nullResponseHandler());
-        machine.process(discardAll(), nullResponseHandler());
+        machine.process(discard(), nullResponseHandler());
 
         // When I perform an action that will fail
-        var recorder = new BoltResponseRecorder();
         machine.process(run("this is not valid syntax"), recorder);
+
         // Then I should see a failure
-        assertThat(recorder.nextResponse()).satisfies(failedWithStatus(Status.Statement.SyntaxError));
+        assertThat(recorder).hasFailureResponse(Status.Statement.SyntaxError);
+
         // This result in an illegal state change, and closes all open statement by default.
-        assertFalse(machine.hasOpenStatement());
+        assertThat(machine).doesNotHaveOpenStatement();
 
         // And when I reset that failure, and the tx should be rolled back
         recorder.reset();
         resetReceived(machine, recorder);
 
         // Then both operations should succeed
-        assertThat(recorder.nextResponse()).satisfies(succeeded());
-        assertFalse(machine.hasOpenStatement());
+        assertThat(recorder).hasSuccessResponse();
+        assertThat(machine).doesNotHaveOpenStatement();
     }
 
     @Test
@@ -132,11 +138,11 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase {
         // Given
         var machine = newStateMachineAfterAuth();
         var pullAllCallbackCalled = new CountDownLatch(1);
-        var error = new AtomicReference<Neo4jError>();
+        var error = new AtomicReference<Error>();
 
         // When something fails while publishing the result stream
         machine.process(run(), nullResponseHandler());
-        machine.process(pullAll(), new BoltResponseHandler() {
+        machine.process(pull(), new ResponseHandler() {
             @Override
             public boolean onPullRecords(BoltResult result, long size) {
                 throw new RuntimeException("Ooopsies!");
@@ -151,7 +157,7 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase {
             public void onMetadata(String key, AnyValue value) {}
 
             @Override
-            public void markFailed(Neo4jError err) {
+            public void markFailed(Error err) {
                 error.set(err);
                 pullAllCallbackCalled.countDown();
             }
@@ -173,41 +179,50 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase {
     @Test
     void shouldBeAbleToCleanlyRunMultipleSessionsInSingleThread() throws Throwable {
         // Given
+        var recorder = new ResponseRecorder();
         var firstMachine = newStateMachineAfterAuth("conn1");
         var secondMachine = newStateMachineAfterAuth("conn2");
 
         // And given I've started a transaction in one session
-        firstMachine.process(begin(), nullResponseHandler());
+        firstMachine.process(begin(), recorder);
+
+        assertThat(recorder).hasSuccessResponse();
 
         // When I issue a statement in a separate session
-        secondMachine.process(run("CREATE (a:Person) RETURN id(a)"), nullResponseHandler());
+        secondMachine.process(run("CREATE (a:Person) RETURN id(a)"), recorder);
+        secondMachine.process(pull(), recorder);
 
-        var recorder = new BoltResponseRecorder();
-        secondMachine.process(pullAll(), recorder);
-        var response = recorder.nextResponse();
-        var id = ((LongValue) response.singleValueRecord()).longValue();
-        assertThat(response).satisfies(succeeded());
+        assertThat(recorder).hasSuccessResponse();
+
+        var response = recorder.next();
+        assertThat(response.isRecord()).isTrue();
+
+        var id = ((LongValue) response.asRecord()[0]).longValue();
+
+        assertThat(recorder).hasSuccessResponse();
 
         // And when I roll back that first session transaction
-        firstMachine.process(BoltV4Messages.rollback(), nullResponseHandler());
+        firstMachine.process(rollback(), recorder);
+
+        assertThat(recorder).hasSuccessResponse();
 
         // Then the two should not have interfered with each other
         recorder.reset();
         secondMachine.process(run("MATCH (a:Person) WHERE id(a) = " + id + " RETURN COUNT(*)"), recorder);
-        secondMachine.process(pullAll(), recorder);
-        assertThat(recorder.nextResponse()).satisfies(succeeded());
-        assertThat(recorder.nextResponse()).satisfies(succeededWithRecord(1L));
+        secondMachine.process(pull(), recorder);
+
+        assertThat(recorder).hasSuccessResponse().hasRecord(longValue(1));
     }
 
     @Test
     void shouldSupportUsingExplainCallInTransactionsInTransaction() throws Exception {
         // Given
+        ResponseRecorder recorder = new ResponseRecorder();
         var machine = newStateMachineAfterAuth();
         var params = map("csvFileUrl", createLocalIrisData(machine));
-        machine.process(begin(), nullResponseHandler());
 
         // When
-        BoltResponseRecorder recorder = new BoltResponseRecorder();
+        machine.process(begin(), nullResponseHandler());
         machine.process(
                 run(
                         joinAsLines(
@@ -227,7 +242,7 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase {
                 recorder);
 
         // Then
-        assertThat(recorder.nextResponse()).satisfies(succeeded());
+        assertThat(recorder).hasSuccessResponse();
     }
 
     @Test
@@ -239,32 +254,34 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase {
         runAndPull(machine);
         machine.process(commit(), nullResponseHandler());
 
-        assertFalse(hasTransaction(machine));
+        assertThat(machine).doesNotHaveTransaction();
     }
 
     @Test
     void shouldCloseTransactionEvenIfCommitFails() throws Exception {
         // Given
+        var recorder = new ResponseRecorder();
         var machine = newStateMachineAfterAuth();
 
         machine.process(begin(), nullResponseHandler());
-        var recorder = new BoltResponseRecorder();
         machine.process(run("X"), recorder);
-        machine.process(pullAll(), recorder);
-        assertThat(recorder.nextResponse()).satisfies(failedWithStatus(Status.Statement.SyntaxError));
-        assertThat(recorder.nextResponse()).satisfies(wasIgnored());
+        machine.process(pull(), recorder);
+
+        assertThat(recorder).hasFailureResponse(Status.Statement.SyntaxError).hasIgnoredResponse();
 
         // The tx shall still be open.
-        assertTrue(hasTransaction(machine));
+        assertThat(machine).hasTransaction();
 
         recorder.reset();
         machine.process(commit(), recorder);
-        assertThat(recorder.nextResponse()).satisfies(wasIgnored());
+
+        assertThat(recorder).hasIgnoredResponse();
 
         resetReceived(machine, recorder);
-        assertThat(recorder.nextResponse()).satisfies(succeeded());
 
-        assertFalse(hasTransaction(machine));
+        assertThat(recorder).hasSuccessResponse();
+
+        assertThat(machine).doesNotHaveTransaction();
     }
 
     @Test
@@ -276,35 +293,37 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase {
         runAndPull(machine);
         machine.process(rollback(), nullResponseHandler());
 
-        assertFalse(hasTransaction(machine));
+        assertThat(machine).doesNotHaveTransaction();
     }
 
     @Test
     void shouldCloseTransactionOnRollbackAfterFailure() throws Exception {
         // Given
+        var recorder = new ResponseRecorder();
         var machine = newStateMachineAfterAuth();
 
         machine.process(begin(), nullResponseHandler());
-        var recorder = new BoltResponseRecorder();
         machine.process(run("X"), recorder);
-        machine.process(pullAll(), recorder);
+        machine.process(pull(), recorder);
 
-        assertThat(recorder.nextResponse()).satisfies(failedWithStatus(Status.Statement.SyntaxError));
-        assertThat(recorder.nextResponse()).satisfies(wasIgnored());
+        assertThat(recorder).hasFailureResponse(Status.Statement.SyntaxError).hasIgnoredResponse();
 
         // The tx shall still be open.
-        assertTrue(hasTransaction(machine));
+        assertThat(machine).hasTransaction();
 
         recorder.reset();
         machine.process(rollback(), recorder);
-        assertThat(recorder.nextResponse()).satisfies(wasIgnored());
-        resetReceived(machine, recorder);
-        assertThat(recorder.nextResponse()).satisfies(succeeded());
 
-        assertFalse(hasTransaction(machine));
+        assertThat(recorder).hasIgnoredResponse();
+
+        resetReceived(machine, recorder);
+
+        assertThat(recorder).hasSuccessResponse();
+
+        assertThat(machine).doesNotHaveTransaction();
     }
 
-    private static void resetReceived(BoltStateMachineV4 machine, BoltResponseRecorder recorder)
+    private static void resetReceived(StateMachineV40 machine, ResponseRecorder recorder)
             throws BoltConnectionFatality {
         // Reset is two steps now: When parsing reset message we immediately interrupt, and then ignores all other
         // messages until reset is reached.
@@ -312,13 +331,13 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase {
         machine.process(reset(), recorder);
     }
 
-    private static boolean hasTransaction(BoltStateMachine machine) {
+    private static boolean hasTransaction(StateMachine machine) {
         TransactionManager txManager =
-                ((AbstractBoltStateMachine) machine).stateMachineContext().getTransactionManager();
+                ((AbstractStateMachine) machine).stateMachineContext().transactionManager();
         return ((StatementProcessorTxManager) txManager).getCurrentNoOfOpenTx() > 0;
     }
 
-    static String createLocalIrisData(BoltStateMachine machine) throws Exception {
+    static String createLocalIrisData(StateMachine machine) throws Exception {
         for (String className : IRIS_CLASS_NAMES) {
             MapValue params = map("className", className);
             runAndPull(machine, "CREATE (c:Class {name: $className}) RETURN c", params);
@@ -327,16 +346,17 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase {
         return SessionExtension.putTmpFile("iris", ".csv", IRIS_DATA).toExternalForm();
     }
 
-    private static void runAndPull(BoltStateMachine machine) throws Exception {
+    private static void runAndPull(StateMachine machine) throws Exception {
         runAndPull(machine, "RETURN 1", EMPTY_PARAMS);
     }
 
-    private static void runAndPull(BoltStateMachine machine, String statement, MapValue params) throws Exception {
-        var recorder = new BoltResponseRecorder();
+    private static void runAndPull(StateMachine machine, String statement, MapValue params) throws Exception {
+        var recorder = new ResponseRecorder();
+
         machine.process(run(statement, params), recorder);
-        machine.process(pullAll(), recorder);
-        assertThat(recorder.nextResponse()).satisfies(succeeded());
-        assertThat(recorder.nextResponse()).satisfies(succeeded());
+        machine.process(pull(), recorder);
+
+        assertThat(recorder).hasSuccessResponse().hasRecord().hasSuccessResponse();
     }
 
     private static MapValue map(Object... keyValues) {

@@ -25,8 +25,8 @@ import static org.mockito.Mockito.verify;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.runtime.BoltConnection;
-import org.neo4j.bolt.runtime.Job;
+import org.neo4j.bolt.protocol.common.connection.BoltConnection;
+import org.neo4j.bolt.protocol.common.connection.Job;
 
 public class BoltConnectionQueueMonitorAggregateTest {
     private final BoltConnection connection = mock(BoltConnection.class);

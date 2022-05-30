@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -52,7 +51,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.runtime.BoltConnection;
+import org.neo4j.bolt.protocol.common.connection.BoltConnection;
 import org.neo4j.bolt.testing.Jobs;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.function.Predicates;
@@ -91,77 +90,6 @@ class ExecutorBoltSchedulerTest {
     void cleanup() throws Throwable {
         boltScheduler.stop();
         boltScheduler.shutdown();
-    }
-
-    @Test
-    void shouldScheduleKeepAliveService() throws Throwable {
-        // Given
-        var id = UUID.randomUUID().toString();
-        var exitCondition = new AtomicBoolean();
-        var connection = newConnection(id);
-        when(connection.processNextBatch()).thenAnswer(inv -> awaitExit(exitCondition));
-
-        var scheduledCondition = new AtomicBoolean();
-        doAnswer(inv -> {
-                    scheduledCondition.set(true);
-                    return null;
-                })
-                .when(connection)
-                .keepAlive();
-
-        var boltScheduler = new ExecutorBoltScheduler(
-                CONNECTOR_KEY,
-                executorFactory,
-                jobScheduler,
-                logService,
-                0,
-                10,
-                Duration.ofMinutes(1),
-                0,
-                ForkJoinPool.commonPool(),
-                Duration.ZERO,
-                BoltConnector.KeepAliveRequestType.STREAMING,
-                Duration.ofMillis(10));
-        boltScheduler.init();
-        boltScheduler.created(connection);
-
-        // When
-        boltScheduler.start();
-        boltScheduler.enqueued(connection, Jobs.noop());
-
-        // Then
-        Predicates.await(() -> boltScheduler.isActive(connection), 1, MINUTES);
-        Predicates.await(scheduledCondition::get, 1, MINUTES);
-        verify(connection).initKeepAliveTimer();
-        verify(connection, atLeastOnce()).keepAlive();
-        exitCondition.set(true);
-        Predicates.await(() -> !boltScheduler.isActive(connection), 1, MINUTES);
-
-        boltScheduler.stop();
-        boltScheduler.shutdown();
-    }
-
-    @Test
-    void nonPositiveScheduleIntervalShouldTurnOffKeepAliveService() throws Throwable {
-        // Given
-        var id = UUID.randomUUID().toString();
-        var exitCondition = new AtomicBoolean();
-        var connection = newConnection(id);
-        when(connection.processNextBatch()).thenAnswer(inv -> awaitExit(exitCondition));
-
-        boltScheduler.init();
-        boltScheduler.created(connection);
-
-        // When
-        boltScheduler.start();
-        boltScheduler.enqueued(connection, Jobs.noop());
-
-        // Then
-        Predicates.await(() -> boltScheduler.isActive(connection), 1, MINUTES);
-        verify(connection, never()).initKeepAliveTimer();
-        verify(connection, never()).keepAlive();
-        exitCondition.set(true);
-        Predicates.await(() -> !boltScheduler.isActive(connection), 1, MINUTES);
     }
 
     @Test

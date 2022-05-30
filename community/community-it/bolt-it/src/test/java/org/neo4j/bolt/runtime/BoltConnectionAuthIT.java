@@ -19,86 +19,79 @@
  */
 package org.neo4j.bolt.runtime;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.bolt.testing.BoltConditions.failedWithStatus;
-import static org.neo4j.bolt.testing.BoltConditions.succeededWithMetadata;
-import static org.neo4j.bolt.testing.BoltConditions.verifyKillsConnection;
+import static org.neo4j.bolt.testing.assertions.MapValueAssertions.assertThat;
+import static org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions.assertThat;
+import static org.neo4j.bolt.testing.assertions.StateMachineAssertions.assertThat;
 import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
-import static org.neo4j.values.storable.Values.TRUE;
-import static org.neo4j.values.storable.Values.stringValue;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
-import org.neo4j.bolt.testing.BoltResponseRecorder;
-import org.neo4j.bolt.testing.BoltTestUtil;
-import org.neo4j.bolt.v4.BoltProtocolV4;
-import org.neo4j.bolt.v4.BoltStateMachineV4;
-import org.neo4j.bolt.v4.messaging.BoltV4Messages;
+import org.neo4j.bolt.protocol.v44.BoltProtocolV44;
+import org.neo4j.bolt.protocol.v44.fsm.StateMachineV44;
+import org.neo4j.bolt.testing.messages.BoltV44Messages;
+import org.neo4j.bolt.testing.response.ResponseRecorder;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.internal.Version;
-import org.neo4j.memory.EmptyMemoryTracker;
-import org.neo4j.memory.MemoryTracker;
+import org.neo4j.values.storable.Values;
 
 class BoltConnectionAuthIT {
-    private static final BoltChannel BOLT_CHANNEL = BoltTestUtil.newTestBoltChannel("conn-v4-test-boltchannel-id");
-    private static final MemoryTracker MEMORY_TRACKER = EmptyMemoryTracker.INSTANCE;
 
     @RegisterExtension
     static final SessionExtension env = new SessionExtension().withAuthEnabled(true);
 
-    protected BoltStateMachineV4 newStateMachine() {
-        return (BoltStateMachineV4) env.newMachine(BoltProtocolV4.VERSION, BOLT_CHANNEL, MEMORY_TRACKER);
+    protected StateMachineV44 newStateMachine() {
+        return (StateMachineV44) env.newMachine(BoltProtocolV44.VERSION, env.channel());
     }
 
     @Test
     void shouldGiveCredentialsExpiredStatusOnExpiredCredentials() throws Throwable {
         // Given it is important for client applications to programmatically
         // identify expired credentials as the cause of not being authenticated
-        BoltStateMachine machine = newStateMachine();
-        BoltResponseRecorder recorder = new BoltResponseRecorder();
+        var machine = newStateMachine();
+        var recorder = new ResponseRecorder();
 
         // When
-        var hello = BoltV4Messages.hello(newBasicAuthToken("neo4j", "neo4j"));
+        var hello = BoltV44Messages.hello(newBasicAuthToken("neo4j", "neo4j"));
 
         machine.process(hello, recorder);
-        machine.process(BoltV4Messages.run("CREATE ()"), recorder);
+        machine.process(BoltV44Messages.run("CREATE ()"), recorder);
 
         // Then
-        assertThat(recorder.nextResponse()).satisfies(succeededWithMetadata("credentials_expired", TRUE));
-        assertThat(recorder.nextResponse()).satisfies(failedWithStatus(Status.Security.CredentialsExpired));
+        assertThat(recorder)
+                .hasSuccessResponse(meta -> assertThat(meta).containsEntry("credentials_expired", Values.TRUE))
+                .hasFailureResponse(Status.Security.CredentialsExpired);
     }
 
     @Test
     void shouldGiveKernelVersionOnInit() throws Throwable {
         // Given it is important for client applications to programmatically
         // identify expired credentials as the cause of not being authenticated
-        BoltStateMachine machine = newStateMachine();
-        BoltResponseRecorder recorder = new BoltResponseRecorder();
-        String version = "Neo4j/" + Version.getNeo4jVersion();
+        var machine = newStateMachine();
+        var recorder = new ResponseRecorder();
+        var version = "Neo4j/" + Version.getNeo4jVersion();
 
         // When
-        var hello = BoltV4Messages.hello(newBasicAuthToken("neo4j", "neo4j"));
+        var hello = BoltV44Messages.hello(newBasicAuthToken("neo4j", "neo4j"));
 
         machine.process(hello, recorder);
-        machine.process(BoltV4Messages.run("CREATE ()"), recorder);
+        machine.process(BoltV44Messages.run("CREATE ()"), recorder);
 
         // Then
-        assertThat(recorder.nextResponse()).satisfies(succeededWithMetadata("server", stringValue(version)));
+        assertThat(recorder)
+                .hasSuccessResponse(
+                        meta -> assertThat(meta).extractingEntry("server").isEqualTo(version));
     }
 
     @Test
     void shouldCloseConnectionAfterAuthenticationFailure() throws Throwable {
         // Given
-        BoltStateMachine machine = newStateMachine();
-        BoltResponseRecorder recorder = new BoltResponseRecorder();
+        var machine = newStateMachine();
+        var recorder = new ResponseRecorder();
 
         // When... then
-        var hello = BoltV4Messages.hello(newBasicAuthToken("neo4j", "j4oen"));
-        verifyKillsConnection(() -> machine.process(hello, recorder));
+        var hello = BoltV44Messages.hello(newBasicAuthToken("neo4j", "j4oen"));
 
-        // ...and
-        assertThat(recorder.nextResponse()).satisfies(failedWithStatus(Status.Security.Unauthorized));
+        assertThat(machine).shouldKillConnection(fsm -> fsm.process(hello, recorder));
+        assertThat(recorder).hasFailureResponse(Status.Security.Unauthorized);
     }
 }

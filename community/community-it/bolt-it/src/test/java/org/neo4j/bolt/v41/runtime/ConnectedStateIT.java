@@ -19,75 +19,32 @@
  */
 package org.neo4j.bolt.v41.runtime;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.neo4j.bolt.runtime.statemachine.impl.BoltStateMachineSPIImpl.BOLT_SERVER_VERSION_PREFIX;
-import static org.neo4j.bolt.testing.BoltConditions.failedWithStatus;
-import static org.neo4j.bolt.testing.BoltConditions.succeededWithMetadata;
-import static org.neo4j.bolt.testing.BoltConditions.verifyKillsConnection;
+import static org.neo4j.bolt.protocol.common.fsm.StateMachineSPIImpl.BOLT_SERVER_VERSION_PREFIX;
+import static org.neo4j.bolt.testing.assertions.MapValueAssertions.assertThat;
+import static org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions.assertThat;
+import static org.neo4j.bolt.testing.assertions.StateMachineAssertions.assertThat;
+import static org.neo4j.values.storable.Values.stringValue;
 
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.bolt.messaging.BoltIOException;
-import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.testing.BoltResponseRecorder;
-import org.neo4j.bolt.testing.RecordedBoltResponse;
-import org.neo4j.bolt.v3.messaging.BoltV3Messages;
-import org.neo4j.bolt.v4.runtime.ReadyState;
-import org.neo4j.bolt.v41.BoltStateMachineV41;
-import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.bolt.protocol.v40.fsm.ReadyState;
+import org.neo4j.bolt.testing.response.ResponseRecorder;
 import org.neo4j.kernel.internal.Version;
 
 class ConnectedStateIT extends BoltStateMachineV41StateTestBase {
     @Test
     void shouldHandleHelloMessage() throws Throwable {
         // Given
-        BoltStateMachineV41 machine = newStateMachine();
-        BoltResponseRecorder recorder = new BoltResponseRecorder();
+        var machine = newStateMachine();
+        var recorder = new ResponseRecorder();
 
         // When
         machine.process(newHelloMessage(), recorder);
 
         // Then
-        RecordedBoltResponse response = recorder.nextResponse();
-        assertThat(response)
-                .satisfies(succeededWithMetadata("server", BOLT_SERVER_VERSION_PREFIX + Version.getNeo4jVersion()));
-        assertThat(response).satisfies(succeededWithMetadata("connection_id", "conn-v41-test-boltchannel-id"));
-        assertThat(machine.state()).isInstanceOf(ReadyState.class);
-    }
+        assertThat(recorder).hasSuccessResponse(meta -> assertThat(meta)
+                .containsEntry("server", stringValue(BOLT_SERVER_VERSION_PREFIX + Version.getNeo4jVersion()))
+                .containsEntry("connection_id", stringValue("conn-v41-test-boltchannel-id")));
 
-    @ParameterizedTest
-    @MethodSource("illegalV3Messages")
-    void shouldCloseConnectionOnIllegalV3Messages(RequestMessage message) throws Throwable {
-        shouldCloseConnectionOnIllegalMessages(message);
-    }
-
-    @ParameterizedTest
-    @MethodSource("illegalV4Messages")
-    void shouldCloseConnectionOnIllegalV2Messages(RequestMessage message) throws Throwable {
-        shouldCloseConnectionOnIllegalMessages(message);
-    }
-
-    private void shouldCloseConnectionOnIllegalMessages(RequestMessage message) throws InterruptedException {
-        // Given
-        BoltStateMachineV41 machine = newStateMachine();
-
-        // when
-        BoltResponseRecorder recorder = new BoltResponseRecorder();
-        verifyKillsConnection(() -> machine.process(message, recorder));
-
-        // then
-        assertThat(recorder.nextResponse()).satisfies(failedWithStatus(Status.Request.Invalid));
-        assertNull(machine.state());
-    }
-
-    private static Stream<RequestMessage> illegalV3Messages() {
-        return BoltV3Messages.supported().filter(e -> !e.equals(BoltV3Messages.hello()));
-    }
-
-    private static Stream<RequestMessage> illegalV4Messages() throws BoltIOException {
-        return BoltV3Messages.unsupported();
+        assertThat(machine).isInState(ReadyState.class);
     }
 }

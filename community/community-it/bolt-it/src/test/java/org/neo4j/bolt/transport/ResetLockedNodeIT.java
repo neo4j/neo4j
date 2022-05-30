@@ -19,29 +19,21 @@
  */
 package org.neo4j.bolt.transport;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
-import static org.neo4j.bolt.testing.MessageConditions.msgIgnored;
-import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
-import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceivesSelectedProtocolVersion;
-import static org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory.newMessageEncoder;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
+import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.begin;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.commit;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.goodbye;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.pull;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.reset;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 import static org.neo4j.values.storable.Values.intValue;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
-import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SocketConnection;
-import org.neo4j.bolt.v3.messaging.request.BeginMessage;
-import org.neo4j.bolt.v3.messaging.request.CommitMessage;
-import org.neo4j.bolt.v3.messaging.request.GoodbyeMessage;
-import org.neo4j.bolt.v3.messaging.request.HelloMessage;
-import org.neo4j.bolt.v3.messaging.request.ResetMessage;
-import org.neo4j.bolt.v3.messaging.request.RunMessage;
-import org.neo4j.bolt.v4.messaging.PullMessage;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -56,7 +48,6 @@ import org.neo4j.values.virtual.MapValueBuilder;
 @Neo4jWithSocketExtension
 public class ResetLockedNodeIT {
 
-    private TransportTestUtil util;
     private HostnamePort serverAddress;
 
     @Inject
@@ -72,64 +63,65 @@ public class ResetLockedNodeIT {
         server.init(testInfo);
 
         serverAddress = server.lookupConnector(ConnectorType.BOLT);
-        util = new TransportTestUtil(newMessageEncoder());
 
-        SocketConnection connection = new SocketConnection();
-        initializeConnection(connection, serverAddress);
-        connection.send(util.chunk(new RunMessage("CREATE (n {id: 123})")));
-        connection.send(util.chunk(new PullMessage(asMapValue(map("n", 100L)))));
-        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
-        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
-        connection.send(util.chunk(GoodbyeMessage.GOODBYE_MESSAGE));
+        SocketConnection connection = new SocketConnection(serverAddress);
+        initializeConnection(connection);
+
+        connection.send(run("CREATE (n {id: 123})")).send(pull(100));
+
+        assertThat(connection).receivesSuccess(2);
+
+        connection.send(goodbye());
     }
 
     @Test
     @Timeout(15)
     void shouldErrorWhenResettingAConnectionWaitingOnALock() throws Exception {
-        SocketConnection connA = new SocketConnection();
-        SocketConnection connB = new SocketConnection();
+        SocketConnection connA = new SocketConnection(serverAddress);
+        SocketConnection connB = new SocketConnection(serverAddress);
 
-        initializeConnection(connA, serverAddress);
-        initializeConnection(connB, serverAddress);
+        initializeConnection(connA);
+        initializeConnection(connB);
+
+        var paramsA = new MapValueBuilder();
+        paramsA.add("currentId", intValue(123));
+        paramsA.add("newId", intValue(456));
+
+        var paramsB = new MapValueBuilder();
+        paramsB.add("currentId", intValue(123));
+        paramsB.add("newId", intValue(789));
 
         // Given a connectionA has acquired a lock whilst updating a node.
-        connA.send(util.chunk(new BeginMessage()));
-        MapValueBuilder parameterValue = new MapValueBuilder();
-        parameterValue.add("currentId", intValue(123));
-        parameterValue.add("newId", intValue(456));
-        connA.send(util.chunk(new RunMessage("MATCH (n {id: $currentId}) SET n.id = $newId", parameterValue.build())));
-        connA.send(util.chunk(new PullMessage(asMapValue(map("n", 100L)))));
-        assertThat(connA).satisfies(util.eventuallyReceives(msgSuccess()));
-        assertThat(connA).satisfies(util.eventuallyReceives(msgSuccess()));
-        assertThat(connA).satisfies(util.eventuallyReceives(msgSuccess()));
+        connA.send(begin())
+                .send(run("MATCH (n {id: $currentId}) SET n.id = $newId", paramsA.build()))
+                .send(pull(100));
+
+        assertThat(connA).receivesSuccess(3);
 
         // And when connectionB is blocked waiting to acquire the same lock.
-        MapValueBuilder parameterValueB = new MapValueBuilder();
-        parameterValueB.add("currentId", intValue(123));
-        parameterValueB.add("newId", intValue(789));
-        connB.send(util.chunk(
-                new RunMessage("MATCH (n {id: $currentId}) SET n.id = $newId", parameterValueB.build()),
-                new PullMessage(asMapValue(map("n", 100L)))));
+        connB.send(run("MATCH (n {id: $currentId}) SET n.id = $newId", paramsB.build()))
+                .send(pull(100));
+
         Thread.sleep(300); // Allow time for connection B to become blocked on a lock.
 
         // When the connectionB is RESET
-        connB.send(util.chunk(ResetMessage.INSTANCE));
+        connB.send(reset());
 
         // Then that connection receives an error
-        assertThat(connB).satisfies(util.eventuallyReceives(msgFailure(Status.Transaction.LockClientStopped)));
-        assertThat(connB).satisfies(util.eventuallyReceives(msgIgnored()));
-        assertThat(connB).satisfies(util.eventuallyReceives(msgSuccess()));
+        assertThat(connB)
+                .receivesFailure(Status.Transaction.LockClientStopped)
+                .receivesIgnored()
+                .receivesSuccess();
 
         // And the other connection can commit successfully.
-        connA.send(util.chunk(CommitMessage.COMMIT_MESSAGE));
-        assertThat(connA).satisfies(util.eventuallyReceives(msgSuccess()));
+        connA.send(commit());
+
+        assertThat(connA).receivesSuccess();
     }
 
-    private void initializeConnection(SocketConnection connection, HostnamePort address) throws Exception {
-        connection.connect(address).send(TransportTestUtil.defaultAcceptedVersions());
-        assertThat(connection).satisfies(eventuallyReceivesSelectedProtocolVersion());
+    private void initializeConnection(SocketConnection connection) throws Exception {
+        connection.connect().sendDefaultProtocolVersion().send(hello());
 
-        connection.send(util.chunk(new HelloMessage(map("user_agent", "TESTCLIENT/4.2"))));
-        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
+        assertThat(connection).negotiatesDefaultVersion().receivesSuccess();
     }
 }

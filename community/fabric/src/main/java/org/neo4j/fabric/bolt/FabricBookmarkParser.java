@@ -22,7 +22,7 @@ package org.neo4j.fabric.bolt;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
-import org.neo4j.bolt.runtime.Bookmark;
+import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.fabric.bookmark.BookmarkStateSerializer;
 
 public class FabricBookmarkParser implements CustomBookmarkFormatParser {

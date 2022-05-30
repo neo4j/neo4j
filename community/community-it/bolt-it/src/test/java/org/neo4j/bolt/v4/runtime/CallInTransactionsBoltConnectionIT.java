@@ -19,20 +19,19 @@
  */
 package org.neo4j.bolt.v4.runtime;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.bolt.testing.BoltConditions.succeeded;
-import static org.neo4j.bolt.testing.BoltConditions.succeededWithRecord;
-import static org.neo4j.bolt.v4.messaging.BoltV4Messages.pullAll;
-import static org.neo4j.bolt.v4.messaging.BoltV4Messages.run;
+import static org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions.assertThat;
+import static org.neo4j.bolt.testing.messages.BoltV40Messages.run;
+import static org.neo4j.bolt.testing.messages.BoltV44Messages.pull;
 import static org.neo4j.bolt.v4.runtime.BoltConnectionIT.IRIS_DATA;
 import static org.neo4j.bolt.v4.runtime.BoltConnectionIT.createLocalIrisData;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
+import static org.neo4j.values.storable.Values.longValue;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.bolt.runtime.SessionExtension;
-import org.neo4j.bolt.testing.BoltResponseRecorder;
+import org.neo4j.bolt.testing.response.ResponseRecorder;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.util.ValueUtils;
 
@@ -49,7 +48,7 @@ class CallInTransactionsBoltConnectionIT {
         var batch = 40;
 
         // When
-        var recorder = new BoltResponseRecorder();
+        var recorder = new ResponseRecorder();
         machine.process(
                 run(
                         joinAsLines(
@@ -67,11 +66,10 @@ class CallInTransactionsBoltConnectionIT {
                                 "RETURN count(*) AS c"),
                         params),
                 recorder);
-        machine.process(pullAll(), recorder);
+        machine.process(pull(), recorder);
 
         // Then
-        assertThat(recorder.nextResponse()).satisfies(succeeded());
-        assertThat(recorder.nextResponse()).satisfies(succeededWithRecord(150L));
+        assertThat(recorder).hasSuccessResponse().hasRecord(longValue(150L)).hasSuccessResponse();
 
         /*
          * 7 tokens have been created for

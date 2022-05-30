@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.transaction;
 
-import org.neo4j.bolt.runtime.statemachine.impl.StatementProcessorProvider;
+import org.neo4j.bolt.protocol.common.transaction.statement.StatementProcessorProvider;
 
 public class InitializeContext {
     private final String connectionId;

@@ -19,8 +19,6 @@
  */
 package org.neo4j.bolt.transport;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.REQUIRED;
 
 import java.io.IOException;
@@ -29,12 +27,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.bolt.testing.TransportTestUtil;
+import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
-import org.neo4j.bolt.testing.client.WebSocketConnection;
+import org.neo4j.bolt.testing.client.websocket.WebSocketConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.test.extension.Inject;
@@ -44,11 +41,10 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 @Neo4jWithSocketExtension
 public class RequiredTransportEncryptionIT {
     private HostnamePort address;
-    private TransportConnection client;
-    private TransportTestUtil util;
+    private TransportConnection connection;
 
-    public static Stream<Arguments> factoryProvider() {
-        return Stream.of(Arguments.of(SocketConnection.class), Arguments.of(WebSocketConnection.class));
+    public static Stream<TransportConnection.Factory> factoryProvider() {
+        return Stream.of(SocketConnection.factory(), WebSocketConnection.factory());
     }
 
     @Inject
@@ -60,25 +56,24 @@ public class RequiredTransportEncryptionIT {
         server.init(testInfo);
 
         address = server.lookupDefaultConnector();
-        util = new TransportTestUtil();
     }
 
     @AfterEach
     public void cleanup() throws IOException {
-        if (client != null) {
-            client.disconnect();
+        if (connection != null) {
+            connection.disconnect();
         }
     }
 
     @ParameterizedTest(name = "{displayName} {index}")
     @MethodSource("factoryProvider")
-    public void shouldCloseUnencryptedConnectionOnHandshakeWhenEncryptionIsRequired(
-            Class<? extends TransportConnection> c) throws Exception {
-        this.client = c.getDeclaredConstructor().newInstance();
+    public void shouldCloseUnencryptedConnectionOnHandshakeWhenEncryptionIsRequired(TransportConnection.Factory c)
+            throws Exception {
+        this.connection = c.create(address);
 
         // When
-        client.connect(address).send(util.defaultAcceptedVersions());
+        connection.connect().sendDefaultProtocolVersion();
 
-        assertThat(client).satisfies(eventuallyDisconnects());
+        BoltConnectionAssertions.assertThat(connection).isEventuallyTerminated();
     }
 }

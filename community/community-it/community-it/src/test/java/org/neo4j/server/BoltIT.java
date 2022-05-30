@@ -22,6 +22,7 @@ package org.neo4j.server;
 import static java.net.http.HttpClient.newHttpClient;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 
@@ -109,12 +110,11 @@ class BoltIT extends ExclusiveWebContainerTestBase {
     }
 
     private static void assertEventuallyServerResponds(String host, int port) throws Exception {
-        SocketConnection conn = new SocketConnection();
-        conn.connect(new HostnamePort(host, port));
-        conn.send(new byte[] {
-            (byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-        });
-        assertThat(conn.recv(4)).isEqualTo(new byte[] {0, 0, 0, 4});
+        try (var connection = new SocketConnection(new HostnamePort(host, port))) {
+            connection.connect().sendDefaultProtocolVersion();
+
+            assertThat(connection).negotiatesDefaultVersion();
+        }
     }
 
     private <T> T getDependency(Class<T> clazz) {

@@ -26,16 +26,19 @@ import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.data.Index.atIndex;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.neo4j.bolt.testing.MessageConditions.msgRecord;
-import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
-import static org.neo4j.bolt.testing.StreamConditions.eqRecord;
+import static org.neo4j.bolt.testing.assertions.AnyValueAssertions.assertThat;
+import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
+import static org.neo4j.bolt.testing.assertions.ListValueAssertions.assertThat;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.pull;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
 import static org.neo4j.net.ConnectionTrackingIT.TestConnector.BOLT;
 import static org.neo4j.net.ConnectionTrackingIT.TestConnector.HTTP;
@@ -71,14 +74,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
-import org.assertj.core.api.Condition;
 import org.assertj.core.api.HamcrestCondition;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.configuration.connectors.HttpConnector;
@@ -114,7 +115,6 @@ class ConnectionTrackingIT {
     private final ExecutorService executor = Executors.newCachedThreadPool();
     private final Set<TransportConnection> connections = ConcurrentHashMap.newKeySet();
     private final Set<HttpClient> httpClients = ConcurrentHashMap.newKeySet();
-    private final TransportTestUtil util = new TransportTestUtil();
 
     @Inject
     private TestDirectory dir;
@@ -308,9 +308,10 @@ class ConnectionTrackingIT {
     }
 
     private TransportConnection connectSocketTo(URI uri) throws IOException {
-        SocketConnection connection = new SocketConnection();
+        var connection = new SocketConnection(new HostnamePort(uri.getHost(), uri.getPort())).connect();
+
         connections.add(connection);
-        connection.connect(new HostnamePort(uri.getHost(), uri.getPort()));
+
         return connection;
     }
 
@@ -471,9 +472,10 @@ class ConnectionTrackingIT {
     private Future<Void> updateNodeViaBolt(long id, String username, String password) {
         return executor.submit(() -> {
             connectSocketTo(neo4j.boltURI())
-                    .send(util.defaultAcceptedVersions())
-                    .send(auth(username, password))
-                    .send(util.defaultRunAutoCommitTx("MATCH (n) WHERE id(n) = " + id + " SET n.prop = 42"));
+                    .sendDefaultProtocolVersion()
+                    .send(hello(username, password))
+                    .send(run("MATCH (n) WHERE id(n) = " + id + " SET n.prop = 42"))
+                    .send(pull());
 
             return null;
         });
@@ -486,28 +488,25 @@ class ConnectionTrackingIT {
     }
 
     private void killConnectionViaBolt(TrackedNetworkConnection trackedConnection) throws Exception {
-        String id = trackedConnection.id();
-        String user = trackedConnection.username();
+        var id = trackedConnection.id();
+        var user = trackedConnection.username();
 
-        TransportConnection connection = connectSocketTo(neo4j.boltURI());
-        try {
+        try (var connection = connectSocketTo(neo4j.boltURI())) {
             connection
-                    .send(util.defaultAcceptedVersions())
-                    .send(auth("neo4j", NEO4J_USER_PWD))
-                    .send(util.defaultRunAutoCommitTx("CALL dbms.killConnection('" + id + "')"));
+                    .sendDefaultProtocolVersion()
+                    .send(hello("neo4j", NEO4J_USER_PWD))
+                    .send(run("CALL dbms.killConnection('" + id + "')"))
+                    .send(pull());
 
-            assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
             assertThat(connection)
-                    .satisfies(util.eventuallyReceives(
-                            msgSuccess(),
-                            msgSuccess(),
-                            msgRecord(eqRecord(
-                                    new Condition<>(anyValue -> true, "any value"),
-                                    new Condition<>(v -> v.equals(stringOrNoValue(user)), "user value"),
-                                    new Condition<>(v -> v.equals(stringValue("Connection found")), "connection"))),
-                            msgSuccess()));
-        } finally {
-            connection.disconnect();
+                    .negotiatesDefaultVersion()
+                    .receivesSuccess(2)
+                    .receivesRecord(fields -> assertThat(fields)
+                            .hasSize(3)
+                            .satisfies(element -> assertThat(element).isNotNull(), atIndex(0))
+                            .contains(stringOrNoValue(user), atIndex(1))
+                            .contains(stringValue("Connection found"), atIndex(2)))
+                    .receivesSuccess();
         }
     }
 
@@ -517,8 +516,8 @@ class ConnectionTrackingIT {
 
     private static boolean connectionIsBroken(TransportConnection connection) {
         try {
-            connection.send(new byte[] {1});
-            connection.recv(1);
+            connection.sendRaw(new byte[] {1});
+            connection.receive(1);
             return false;
         } catch (SocketException e) {
             return true;
@@ -544,16 +543,10 @@ class ConnectionTrackingIT {
         return rawPayload("{\"statements\":[{\"statement\":\"" + statement + "\"}]}");
     }
 
-    private byte[] auth(String username, String password) throws IOException {
-        Map<String, Object> authToken =
-                map("scheme", "basic", "principal", username, "credentials", password, "user_agent", BOLT.userAgent);
-        return util.defaultAuth(authToken);
-    }
-
     enum TestConnector {
         HTTP("http", "http-user-agent"),
         HTTPS("https", "https-user-agent"),
-        BOLT("bolt", "bolt-user-agent");
+        BOLT("bolt", "BoltDefaultWire/0.0");
 
         final String name;
         final String userAgent;

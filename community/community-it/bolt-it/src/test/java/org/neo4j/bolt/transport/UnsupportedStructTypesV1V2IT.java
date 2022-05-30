@@ -19,37 +19,34 @@
  */
 package org.neo4j.bolt.transport;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.bolt.packstream.example.Edges.ALICE_KNOWS_BOB;
-import static org.neo4j.bolt.packstream.example.Nodes.ALICE;
-import static org.neo4j.bolt.packstream.example.Paths.ALL_PATHS;
-import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
-import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
-import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
-import static org.neo4j.kernel.api.exceptions.Status.Statement.TypeError;
+import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.reset;
+import static org.neo4j.packstream.testing.example.Paths.ALL_PATHS;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.bolt.AbstractBoltTransportsTest;
-import org.neo4j.bolt.packstream.Neo4jPack;
-import org.neo4j.bolt.packstream.PackedOutputArray;
-import org.neo4j.bolt.testing.TransportTestUtil;
+import org.neo4j.bolt.protocol.io.BoltValueWriter;
 import org.neo4j.bolt.testing.client.TransportConnection;
-import org.neo4j.bolt.v4.messaging.RunMessage;
+import org.neo4j.bolt.testing.messages.BoltV40Wire;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.packstream.io.PackstreamBuf;
+import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
-import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.PathValue;
 
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
 public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest {
-    public static final byte DEFAULT_SIGNATURE = RunMessage.SIGNATURE;
 
     @Inject
     private Neo4jWithSocket server;
@@ -61,164 +58,112 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest {
         address = server.lookupDefaultConnector();
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    private void sendRun(Consumer<PackstreamBuf> packer) throws IOException {
+        var buf = PackstreamBuf.allocUnpooled()
+                .writeStructHeader(new StructHeader(3, BoltV40Wire.MESSAGE_TAG_RUN))
+                .writeString("RETURN $x") // statement
+                .writeMapHeader(1) // parameters
+                .writeString("x");
+
+        packer.accept(buf);
+
+        this.connection.send(buf.writeMapHeader(0) // extra
+                .getTarget());
+    }
+
+    @ParameterizedTest(name = "{displayName} {arguments}")
     @MethodSource("argumentsProvider")
-    public void shouldFailWhenNullKeyIsSent(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldFailWhenNullKeyIsSent(TransportConnection.Factory connectionFactory) throws Exception {
+        this.initConnection(connectionFactory);
 
-        connection.connect(address).send(util.defaultAcceptedVersions());
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
-        connection.send(util.defaultAuth());
-        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
+        this.sendRun(buf -> buf.writeMapHeader(1).writeNull().writeString("foo"));
 
-        connection.send(TransportTestUtil.chunk(64, createMsgWithNullKey()));
-
-        assertThat(connection)
-                .satisfies(util.eventuallyReceives(msgFailure(
+        assertThat(this.connection)
+                .receivesFailure(
                         Status.Request.Invalid,
-                        "Value `null` is not supported as key in maps, must be a non-nullable string.")));
-        assertThat(connection).satisfies(eventuallyDisconnects());
+                        "Illegal value for field \"params\": Unexpected type: Expected STRING but got NONE");
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {arguments}")
     @MethodSource("argumentsProvider")
-    public void shouldFailWhenDuplicateKey(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldFailWhenDuplicateKeyIsSent(TransportConnection.Factory connectionFactory) throws Exception {
+        this.initConnection(connectionFactory);
 
-        connection.connect(address).send(util.defaultAcceptedVersions());
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
-        connection.send(util.defaultAuth());
-        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
+        this.sendRun(buf -> buf.writeMapHeader(2)
+                .writeString("foo")
+                .writeString("bar")
+                .writeString("foo")
+                .writeString("changed_my_mind"));
 
-        connection.send(TransportTestUtil.chunk(64, createMsgWithDuplicateKey()));
-
-        assertThat(connection)
-                .satisfies(util.eventuallyReceives(msgFailure(Status.Request.Invalid, "Duplicate map key `key1`.")));
-        assertThat(connection).satisfies(eventuallyDisconnects());
+        assertThat(this.connection)
+                .receivesFailure(
+                        Status.Request.Invalid, "Illegal value for field \"params\": Duplicate map key: \"foo\"");
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {arguments}")
     @MethodSource("argumentsProvider")
-    public void shouldFailWhenNodeIsSentWithRun(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldFailWhenNodeIsSentWithRun(TransportConnection.Factory connectionFactory) throws Exception {
+        this.initConnection(connectionFactory);
 
-        testFailureWithV1Value(ALICE, "Node");
+        var properties = new MapValueBuilder();
+        properties.add("the_answer", longValue(42));
+        properties.add("one_does_not_simply", stringValue("break_decoding"));
+
+        this.sendRun(buf -> new BoltValueWriter(buf)
+                .writeNode(42, Values.stringArray("Broken", "Dreams"), properties.build(), false));
+
+        assertThat(this.connection)
+                .receivesFailure(
+                        Status.Request.Invalid, "Illegal value for field \"params\": Unexpected struct tag: 0x4E");
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {arguments}")
     @MethodSource("argumentsProvider")
-    public void shouldFailWhenRelationshipIsSentWithRun(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldFailWhenRelationshipIsSentWithRun(TransportConnection.Factory connectionFactory)
+            throws Exception {
+        this.initConnection(connectionFactory);
 
-        testFailureWithV1Value(ALICE_KNOWS_BOB, "Relationship");
+        var properties = new MapValueBuilder();
+        properties.add("the_answer", longValue(42));
+        properties.add("one_does_not_simply", stringValue("break_decoding"));
+
+        this.sendRun(buf -> new BoltValueWriter(buf)
+                .writeRelationship(42, 21, 84, stringValue("RUINS_EXPECTATIONS"), properties.build(), false));
+
+        assertThat(this.connection)
+                .receivesFailure(
+                        Status.Request.Invalid, "Illegal value for field \"params\": Unexpected struct tag: 0x52");
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {arguments}")
     @MethodSource("argumentsProvider")
-    public void shouldFailWhenPathIsSentWithRun(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldFailWhenPathIsSentWithRun(TransportConnection.Factory connectionFactory) throws Exception {
+        this.initConnection(connectionFactory);
 
         for (PathValue path : ALL_PATHS) {
-            try {
-                testFailureWithV1Value(path, "Path");
-            } finally {
-                reconnect();
-            }
+            this.sendRun(buf -> path.writeTo(new BoltValueWriter(buf)));
+
+            assertThat(connection)
+                    .receivesFailure(
+                            Status.Request.Invalid, "Illegal value for field \"params\": Unexpected struct tag: 0x50");
+
+            this.connection.send(reset());
+
+            assertThat(connection).receivesSuccess();
         }
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {arguments}")
     @MethodSource("argumentsProvider")
-    public void shouldTerminateConnectionWhenUnknownMessageIsSent(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldTerminateConnectionWhenUnknownMessageIsSent(TransportConnection.Factory connectionFactory)
+            throws Exception {
+        this.initConnection(connectionFactory);
 
-        connection.connect(address).send(util.defaultAcceptedVersions());
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
-        connection.send(util.defaultAuth());
-        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
+        this.connection.send(PackstreamBuf.allocUnpooled()
+                .writeStructHeader(new StructHeader(1, (short) 0x42))
+                .writeListHeader(1)
+                .writeInt(42));
 
-        connection.send(TransportTestUtil.chunk(64, createUnknownMsg()));
-
-        assertThat(connection).satisfies(eventuallyDisconnects());
-    }
-
-    private void testFailureWithV1Value(AnyValue value, String description) throws Exception {
-        connection.connect(address).send(util.defaultAcceptedVersions());
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
-        connection.send(util.defaultAuth());
-        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
-
-        connection.send(TransportTestUtil.chunk(64, createRunWithUnknownValue(value)));
-
-        assertThat(connection)
-                .satisfies(util.eventuallyReceives(
-                        msgFailure(TypeError, description + " values cannot be unpacked with this version of bolt.")));
-        assertThat(connection).satisfies(eventuallyDisconnects());
-    }
-
-    private byte[] createRunWithUnknownValue(AnyValue value) throws IOException {
-        PackedOutputArray out = new PackedOutputArray();
-        Neo4jPack.Packer packer = neo4jPack.newPacker(out);
-
-        packer.packStructHeader(2, RunMessage.SIGNATURE);
-        packer.pack("RETURN $x");
-        packer.packMapHeader(1);
-        packer.pack("x");
-        packer.pack(value);
-
-        return out.bytes();
-    }
-
-    private byte[] createUnknownMsg() throws IOException {
-        PackedOutputArray out = new PackedOutputArray();
-        Neo4jPack.Packer packer = neo4jPack.newPacker(out);
-
-        packer.packStructHeader(0, DEFAULT_SIGNATURE);
-
-        return out.bytes();
-    }
-
-    private byte[] createMsgWithNullKey() throws IOException {
-        PackedOutputArray out = new PackedOutputArray();
-        Neo4jPack.Packer packer = neo4jPack.newPacker(out);
-
-        packer.packStructHeader(2, DEFAULT_SIGNATURE);
-        packer.pack("Text");
-        packMapWithNullKey(packer);
-
-        return out.bytes();
-    }
-
-    private byte[] createMsgWithDuplicateKey() throws IOException {
-        PackedOutputArray out = new PackedOutputArray();
-        Neo4jPack.Packer packer = neo4jPack.newPacker(out);
-
-        packer.packStructHeader(2, DEFAULT_SIGNATURE);
-        packer.pack("Text");
-        packMapWithDuplicateKey(packer);
-
-        return out.bytes();
-    }
-
-    private static void packMapWithNullKey(Neo4jPack.Packer packer) throws IOException {
-        packer.packMapHeader(2);
-        packer.pack("key1");
-        packer.pack(ValueUtils.of(null));
-        packer.pack(ValueUtils.of(null));
-        packer.pack("value1");
-    }
-
-    private static void packMapWithDuplicateKey(Neo4jPack.Packer packer) throws IOException {
-        packer.packMapHeader(2);
-        packer.pack("key1");
-        packer.pack("value1");
-        packer.pack("key1");
-        packer.pack("value2");
+        assertThat(connection).isEventuallyTerminated();
     }
 }

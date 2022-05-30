@@ -19,39 +19,30 @@
  */
 package org.neo4j.bolt.transport;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.bolt.testing.MessageConditions.hasNotification;
-import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
-import static org.neo4j.bolt.testing.MessageConditions.msgIgnored;
-import static org.neo4j.bolt.testing.MessageConditions.msgRecord;
-import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
-import static org.neo4j.bolt.testing.StreamConditions.eqRecord;
-import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceives;
+import static org.assertj.core.api.InstanceOfAssertFactories.list;
+import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
+import static org.neo4j.bolt.testing.client.TransportConnection.DEFAULT_PROTOCOL_VERSION;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.discard;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.pull;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.reset;
+import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.bolt.AbstractBoltTransportsTest;
-import org.neo4j.bolt.packstream.Neo4jPack;
-import org.neo4j.bolt.testing.TestNotification;
-import org.neo4j.bolt.testing.TransportTestUtil;
+import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.testing.client.TransportConnection;
-import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.packstream.io.Type;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
-import org.neo4j.values.AnyValue;
 
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
@@ -66,343 +57,290 @@ public class TransportSessionIT extends AbstractBoltTransportsTest {
         address = server.lookupDefaultConnector();
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {arguments}")
     @MethodSource("argumentsProvider")
-    public void shouldNegotiateProtocolVersion(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldNegotiateProtocolVersion(TransportConnection.Factory connectionFactory) throws Exception {
+        initParameters(connectionFactory);
 
         // When
-        connection.connect(address).send(util.defaultAcceptedVersions());
+        connection.connect().sendDefaultProtocolVersion();
 
         // Then
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
+        assertThat(connection).negotiatesDefaultVersion();
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {arguments}")
     @MethodSource("argumentsProvider")
-    public void shouldReturnNilOnNoApplicableVersion(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldReturnNilOnNoApplicableVersion(TransportConnection.Factory connectionFactory) throws Exception {
+        initParameters(connectionFactory);
 
         // When
-        connection.connect(address).send(TransportTestUtil.acceptedVersions(1337, 0, 0, 0));
+        connection.connect().send(new ProtocolVersion(254, 0, 0));
 
         // Then
-        assertThat(connection).satisfies(eventuallyReceives(new byte[] {0, 0, 0, 0}));
+        assertThat(connection).failsToNegotiateVersion();
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {arguments}")
     @MethodSource("argumentsProvider")
-    public void shouldRunSimpleStatement(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldNegotiateOnRange(TransportConnection.Factory connectionFactory) throws Exception {
+        initParameters(connectionFactory);
+
+        var range = new ProtocolVersion(DEFAULT_PROTOCOL_VERSION.major(), 9, 9);
+
+        connection.connect().send(range);
+
+        assertThat(connection).negotiates(range);
+    }
+
+    @ParameterizedTest(name = "{displayName} {arguments}")
+    @MethodSource("argumentsProvider")
+    public void shouldNegotiateWhenPreferredIsUnavailable(TransportConnection.Factory connectionFactory)
+            throws Exception {
+        initParameters(connectionFactory);
+        connection.connect();
+
+        connection.send(new ProtocolVersion(ProtocolVersion.MAX_MAJOR_BIT - 1, 0, 0), DEFAULT_PROTOCOL_VERSION);
+
+        assertThat(connection).negotiatesDefaultVersion();
+    }
+
+    @ParameterizedTest(name = "{displayName} {arguments}")
+    @MethodSource("argumentsProvider")
+    public void shouldRunSimpleStatement(TransportConnection.Factory connectionFactory) throws Exception {
+        this.initConnection(connectionFactory);
 
         // When
-        connection
-                .connect(address)
-                .send(util.defaultAcceptedVersions())
-                .send(util.defaultAuth())
-                .send(util.defaultRunAutoCommitTx("UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared"));
+        connection.send(run("UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared")).send(pull());
 
         // Then
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
         assertThat(connection)
-                .satisfies(util.eventuallyReceives(
-                        msgSuccess(),
-                        msgSuccess(message -> assertThat(message)
-                                .containsKey("t_first")
-                                .containsEntry("fields", asList("a", "a_squared"))),
-                        msgRecord(eqRecord(longEquals(1L), longEquals(1L))),
-                        msgRecord(eqRecord(longEquals(2L), longEquals(4L))),
-                        msgRecord(eqRecord(longEquals(3L), longEquals(9L))),
-                        msgSuccess(message ->
-                                assertThat(message).containsKey("t_last").containsEntry("type", "r"))));
+                .receivesSuccess(meta -> assertThat(meta)
+                        .containsKey("t_first")
+                        .hasEntrySatisfying("fields", fields -> assertThat(fields)
+                                .asInstanceOf(list(String.class))
+                                .hasSize(2)
+                                .containsExactly("a", "a_squared")))
+                .receivesRecord(longValue(1), longValue(1))
+                .receivesRecord(longValue(2), longValue(4))
+                .receivesRecord(longValue(3), longValue(9))
+                .receivesSuccess(meta -> assertThat(meta).containsKey("t_last").containsEntry("type", "r"));
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {arguments}")
     @MethodSource("argumentsProvider")
-    public void shouldRespondWithMetadataToDiscardAll(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldRespondWithMetadataToDiscardAll(TransportConnection.Factory connectionFactory) throws Exception {
+        this.initConnection(connectionFactory);
 
         // When
-        connection
-                .connect(address)
-                .send(util.defaultAcceptedVersions())
-                .send(util.defaultAuth())
-                .send(util.defaultRunAutoCommitTxWithoutResult("UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared"));
+        connection.send(run("UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared")).send(discard());
 
         // Then
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
         assertThat(connection)
-                .satisfies(util.eventuallyReceives(
-                        msgSuccess(),
-                        msgSuccess(message -> assertThat(message)
-                                .containsKey("t_first")
-                                .containsEntry("fields", asList("a", "a_squared"))),
-                        msgSuccess(message ->
-                                assertThat(message).containsKey("t_last").containsEntry("type", "r"))));
+                .receivesSuccess(meta -> assertThat(meta)
+                        .containsKey("t_first")
+                        .hasEntrySatisfying("fields", fields -> assertThat(fields)
+                                .asInstanceOf(list(String.class))
+                                .hasSize(2)
+                                .containsExactly("a", "a_squared")))
+                .receivesSuccess(meta -> assertThat(meta).containsKey("t_last").containsEntry("type", "r"));
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {arguments}")
     @MethodSource("argumentsProvider")
-    public void shouldBeAbleToRunQueryAfterAckFailure(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldBeAbleToRunQueryAfterAckFailure(TransportConnection.Factory connectionFactory) throws Exception {
+        this.initConnection(connectionFactory);
 
         // Given
-        connection
-                .connect(address)
-                .send(util.defaultAcceptedVersions())
-                .send(util.defaultAuth())
-                .send(util.defaultRunAutoCommitTx("QINVALID"));
+        connection.send(run("QINVALID")).send(pull());
 
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
         assertThat(connection)
-                .satisfies(util.eventuallyReceives(
-                        msgSuccess(),
-                        msgFailure(Status.Statement.SyntaxError, String.format("line 1, column 1")),
-                        msgIgnored()));
+                .receivesFailureFuzzy(Status.Statement.SyntaxError, "line 1, column 1")
+                .receivesIgnored();
 
         // When
-        connection.send(util.defaultReset()).send(util.defaultRunAutoCommitTx("RETURN 1"));
+        connection.send(reset()).send(run("RETURN 1")).send(pull());
 
         // Then
         assertThat(connection)
-                .satisfies(util.eventuallyReceives(
-                        msgSuccess(), msgSuccess(), msgRecord(eqRecord(longEquals(1L))), msgSuccess()));
+                .receivesSuccess()
+                .receivesSuccess()
+                .receivesRecord(longValue(1))
+                .receivesSuccess();
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {arguments}")
     @MethodSource("argumentsProvider")
-    public void shouldRunProcedure(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldRunProcedure(TransportConnection.Factory connectionFactory) throws Exception {
+        this.initConnection(connectionFactory);
 
         // Given
-        connection
-                .connect(address)
-                .send(util.defaultAcceptedVersions())
-                .send(util.defaultAuth())
-                .send(util.defaultRunAutoCommitTx("CREATE (n:Test {age: 2}) RETURN n.age AS age"));
+        connection.send(run("CREATE (n:Test {age: 2}) RETURN n.age AS age")).send(pull());
 
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
         assertThat(connection)
-                .satisfies(util.eventuallyReceives(
-                        msgSuccess(),
-                        msgSuccess(message -> assertThat(message)
-                                .containsKey("t_first")
-                                .containsEntry("fields", singletonList("age"))),
-                        msgRecord(eqRecord(longEquals(2L))),
-                        msgSuccess()));
+                .receivesSuccess(meta -> assertThat(meta)
+                        .containsKey("t_first")
+                        .hasEntrySatisfying("fields", fields -> assertThat(fields)
+                                .asInstanceOf(list(String.class))
+                                .hasSize(1)
+                                .containsExactly("age")))
+                .receivesRecord(longValue(2))
+                .receivesSuccess(meta -> assertThat(meta).containsKey("t_last"));
 
         // When
-        connection.send(util.defaultRunAutoCommitTx("CALL db.labels() YIELD label"));
+        connection.send(run("CALL db.labels() YIELD label")).send(pull());
 
         // Then
         assertThat(connection)
-                .satisfies(util.eventuallyReceives(
-                        msgSuccess(message -> assertThat(message)
-                                .containsKey("t_first")
-                                .containsEntry("fields", singletonList("label"))),
-                        msgRecord(eqRecord(new Condition<>(v -> v.equals(stringValue("Test")), "Test value"))),
-                        msgSuccess()));
+                .receivesSuccess(meta -> assertThat(meta)
+                        .containsKey("t_first")
+                        .hasEntrySatisfying("fields", fields -> assertThat(fields)
+                                .asInstanceOf(list(String.class))
+                                .hasSize(1)
+                                .containsExactly("label")))
+                .receivesRecord(stringValue("Test"))
+                .receivesSuccess();
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {arguments}")
     @MethodSource("argumentsProvider")
-    public void shouldHandleDeletedNodes(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldHandleDeletedNodes(TransportConnection.Factory connectionFactory) throws Exception {
+        this.initConnection(connectionFactory);
+
+        // When
+        connection.send(run("CREATE (n:Test) DELETE n RETURN n")).send(pull());
+
+        // Then
+        assertThat(connection)
+                .receivesSuccess(meta -> assertThat(meta)
+                        .containsKey("t_first")
+                        .hasEntrySatisfying("fields", fields -> assertThat(fields)
+                                .asInstanceOf(list(String.class))
+                                .hasSize(1)
+                                .containsExactly("n")))
+                .packstreamSatisfies(pack -> pack.receivesMessage()
+                        // Record(0x71) {
+                        //  fields: [
+                        //      Node(0x4E) {
+                        //          id: 00
+                        //          labels: [] (90)
+                        //          props: {} (A)
+                        //      }
+                        //  ]
+                        // }
+                        .containsStruct(0x71, 1)
+                        .containsLengthPrefixMarker(Type.LIST, 1)
+                        .containsStruct(0x4E, 3)
+                        .containsInt(0)
+                        .containsList(labels -> assertThat(labels).isEmpty())
+                        .containsMap(props -> assertThat(props).isEmpty())
+                        .asBuffer()
+                        .hasNoRemainingReadableBytes())
+                .receivesSuccess(meta -> assertThat(meta).containsKey("t_last"));
+    }
+
+    @ParameterizedTest(name = "{displayName} {arguments}")
+    @MethodSource("argumentsProvider")
+    public void shouldHandleDeletedRelationships(TransportConnection.Factory connectionFactory) throws Exception {
+        this.initConnection(connectionFactory);
 
         // When
         connection
-                .connect(address)
-                .send(util.defaultAcceptedVersions())
-                .send(util.defaultAuth())
-                .send(util.defaultRunAutoCommitTx("CREATE (n:Test) DELETE n RETURN n"));
+                .send(run("CREATE (a)-[r:T {prop: 42}]->(b) DELETE r RETURN r"))
+                .send(pull());
 
         // Then
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
-        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess(), msgSuccess(message -> assertThat(message)
-                .containsKey("t_first")
-                .containsEntry("fields", singletonList("n")))));
-
-        //
-        // Record(0x71) {
-        //    fields: [ Node(0x4E) {
-        //                 id: 00
-        //                 labels: [] (90)
-        //                  props: {} (A)]
-        // }
         assertThat(connection)
-                .satisfies(eventuallyReceives(
-                        bytes(0x00, 0x08, 0xB1, 0x71, 0x91, 0xB3, 0x4E, 0x00, 0x90, 0xA0, 0x00, 0x00)));
-        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
+                .receivesSuccess(meta -> assertThat(meta)
+                        .containsKey("t_first")
+                        .hasEntrySatisfying("fields", fields -> assertThat(fields)
+                                .asInstanceOf(list(String.class))
+                                .hasSize(1)
+                                .containsExactly("r")))
+                .packstreamSatisfies(pack -> pack.receivesMessage()
+                        // Record(0x71) {
+                        //  fields: [
+                        //      Relationship(0x52) {
+                        //          relId: 00
+                        //          startId: -01
+                        //          endId: -01
+                        //          type: "" (80)
+                        //          props: {} (A0)
+                        //      }
+                        //  ]
+                        // }
+                        .containsStruct(0x71, 1)
+                        .containsLengthPrefixMarker(Type.LIST, 1)
+                        .containsStruct(0x52, 5)
+                        .containsInt(0)
+                        .containsInt(-1)
+                        .containsInt(-1)
+                        .containsString("")
+                        .containsMap(props -> assertThat(props).isEmpty())
+                        .asBuffer()
+                        .hasNoRemainingReadableBytes())
+                .receivesSuccess();
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {arguments}")
     @MethodSource("argumentsProvider")
-    public void shouldHandleDeletedRelationships(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
-
-        // When
-        connection
-                .connect(address)
-                .send(util.defaultAcceptedVersions())
-                .send(util.defaultAuth())
-                .send(util.defaultRunAutoCommitTx("CREATE ()-[r:T {prop: 42}]->() DELETE r RETURN r"));
-
-        // Then
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
-        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess(), msgSuccess(message -> assertThat(message)
-                .containsKey("t_first")
-                .containsEntry("fields", singletonList("r")))));
-
-        //
-        // Record(0x71) {
-        //    fields: [ Relationship(0x52) {
-        //                 relId: 00
-        //                 startId: -01
-        //                 endId: -01
-        //                 type: "" (80)
-        //                 props: {} (A0)]
-        // }
-        assertThat(connection)
-                .satisfies(eventuallyReceives(
-                        bytes(0x00, 0x0A, 0xB1, 0x71, 0x91, 0xB5, 0x52, 0x00, -0x01, -0x01, 0x80, 0xA0, 0x00, 0x00)));
-        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
-    }
-
-    @ParameterizedTest(name = "{displayName} {2}")
-    @MethodSource("argumentsProvider")
-    public void shouldNotLeakStatsToNextStatement(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldNotLeakStatsToNextStatement(TransportConnection.Factory connectionFactory) throws Exception {
+        this.initConnection(connectionFactory);
 
         // Given
-        connection
-                .connect(address)
-                .send(util.defaultAcceptedVersions())
-                .send(util.defaultAuth())
-                .send(util.defaultRunAutoCommitTx("CREATE (n)"));
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
-        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess(), msgSuccess(), msgSuccess()));
+        connection.send(run("CREATE (n)")).send(pull());
+
+        assertThat(connection).receivesSuccess(2);
 
         // When
-        connection.send(util.defaultRunAutoCommitTx("RETURN 1"));
+        connection.send(run("RETURN 1")).send(pull());
 
         // Then
-        assertThat(connection)
-                .satisfies(util.eventuallyReceives(
-                        msgSuccess(), msgRecord(eqRecord(longEquals(1L))), msgSuccess(message -> assertThat(message)
-                                .containsKey("t_last")
-                                .containsEntry("type", "r"))));
+        assertThat(connection).receivesSuccess().receivesRecord(longValue(1)).receivesSuccess(meta -> assertThat(meta)
+                .containsKey("t_last")
+                .containsEntry("type", "r"));
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {arguments}")
     @MethodSource("argumentsProvider")
-    public void shouldSendNotifications(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldSendNotifications(TransportConnection.Factory connectionFactory) throws Exception {
+        this.initConnection(connectionFactory);
 
         // When
         connection
-                .connect(address)
-                .send(util.defaultAcceptedVersions())
-                .send(util.defaultAuth())
-                .send(util.defaultRunAutoCommitTx("EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)"));
+                .send(run("EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)"))
+                .send(pull());
 
         // Then
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
         assertThat(connection)
-                .satisfies(util.eventuallyReceives(
-                        msgSuccess(),
-                        msgSuccess(),
-                        hasNotification(new TestNotification(
-                                "Neo.ClientNotification.Statement.UnknownLabelWarning",
-                                "The provided label is not in the database.",
-                                "One of the labels in your query is not available in the database, "
-                                        + "make sure you didn't misspell it or that the label is available when "
-                                        + "you run this statement in your application (the missing label name is: "
-                                        + "THIS_IS_NOT_A_LABEL)",
-                                SeverityLevel.WARNING,
-                                new InputPosition(17, 1, 18)))));
+                .receivesSuccess()
+                .receivesSuccessWithNotification(
+                        "Neo.ClientNotification.Statement.UnknownLabelWarning",
+                        "The provided label is not in the database.",
+                        "One of the labels in your query is not available in the database, "
+                                + "make sure you didn't misspell it or that the label is available when "
+                                + "you run this statement in your application (the missing label name is: "
+                                + "THIS_IS_NOT_A_LABEL)",
+                        SeverityLevel.WARNING,
+                        17,
+                        1,
+                        18);
     }
 
-    private static byte[] bytes(int... ints) {
-        byte[] bytes = new byte[ints.length];
-        for (int i = 0; i < ints.length; i++) {
-            bytes[i] = (byte) ints[i];
-        }
-        return bytes;
-    }
-
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {arguments}")
     @MethodSource("argumentsProvider")
-    public void shouldFailNicelyOnNullKeysInMap(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
-
-        // Given
-        Map<String, Object> params = new HashMap<>();
-        Map<String, Object> inner = new HashMap<>();
-        inner.put(null, 42L);
-        inner.put("foo", 1337L);
-        params.put("p", inner);
+    public void shouldFailNicelyWhenDroppingUnknownIndex(TransportConnection.Factory connectionFactory)
+            throws Exception {
+        this.initConnection(connectionFactory);
 
         // When
-        connection
-                .connect(address)
-                .send(util.defaultAcceptedVersions())
-                .send(util.defaultAuth())
-                .send(util.defaultRunAutoCommitTx("RETURN {p}", ValueUtils.asMapValue(params)));
-
-        // Then
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
-        assertThat(connection)
-                .satisfies(util.eventuallyReceives(
-                        msgSuccess(),
-                        msgFailure(
-                                Status.Request.Invalid,
-                                "Value `null` is not supported as key in maps, must be a non-nullable string."),
-                        msgIgnored()));
-
-        connection.send(util.defaultReset()).send(util.defaultRunAutoCommitTx("RETURN 1"));
+        connection.send(run("DROP INDEX my_index")).send(pull());
 
         // Then
         assertThat(connection)
-                .satisfies(util.eventuallyReceives(
-                        msgSuccess(), msgSuccess(), msgRecord(eqRecord(longEquals(1L))), msgSuccess()));
-    }
-
-    @ParameterizedTest(name = "{displayName} {2}")
-    @MethodSource("argumentsProvider")
-    public void shouldFailNicelyWhenDroppingUnknownIndex(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
-
-        // When
-        connection
-                .connect(address)
-                .send(util.defaultAcceptedVersions())
-                .send(util.defaultAuth())
-                .send(util.defaultRunAutoCommitTx("DROP INDEX my_index"));
-
-        // Then
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
-        assertThat(connection)
-                .satisfies(util.eventuallyReceives(
-                        msgSuccess(),
-                        msgFailure(
-                                Status.Schema.IndexDropFailed,
-                                "Unable to drop index called `my_index`. There is no such index."),
-                        msgIgnored()));
-    }
-
-    private static Condition<AnyValue> longEquals(long expected) {
-        return new Condition<>(value -> value.equals(longValue(expected)), "long equals");
+                .receivesFailure(
+                        Status.Schema.IndexDropFailed,
+                        "Unable to drop index called `my_index`. There is no such index.")
+                .receivesIgnored();
     }
 }

@@ -21,18 +21,16 @@ package org.neo4j.fabric.bookmark;
 
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.InvalidBookmark;
 
+import io.netty.buffer.Unpooled;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
-import org.neo4j.bolt.packstream.PackOutput;
-import org.neo4j.bolt.packstream.PackStream;
-import org.neo4j.bolt.packstream.PackedInputArray;
+import java.util.stream.Collectors;
 import org.neo4j.fabric.bolt.FabricBookmark;
 import org.neo4j.fabric.executor.FabricException;
+import org.neo4j.packstream.error.reader.PackstreamReaderException;
+import org.neo4j.packstream.io.PackstreamBuf;
 
 public class BookmarkStateSerializer {
     public static String serialize(FabricBookmark fabricBookmark) {
@@ -56,8 +54,7 @@ public class BookmarkStateSerializer {
     }
 
     private static class Packer {
-        final PackedOutputArray packedOutputArray = new PackedOutputArray();
-        final PackStream.Packer packer = new BookmarkPackStreamPacker(packedOutputArray);
+        final PackstreamBuf buf = PackstreamBuf.allocUnpooled();
         final FabricBookmark fabricBookmark;
 
         Packer(FabricBookmark fabricBookmark) {
@@ -67,124 +64,88 @@ public class BookmarkStateSerializer {
         String pack() throws IOException {
             packInternalGraphs(fabricBookmark.getInternalGraphStates());
             packExternalGraphs(fabricBookmark.getExternalGraphStates());
-            packer.flush();
-            return Base64.getEncoder().encodeToString(packedOutputArray.bytes());
+
+            var heap = new byte[this.buf.getTarget().readableBytes()];
+            buf.getTarget().readBytes(heap);
+
+            return Base64.getEncoder().encodeToString(heap);
         }
 
-        void packInternalGraphs(List<FabricBookmark.InternalGraphState> internalGraphStates) throws IOException {
-            packer.packListHeader(internalGraphStates.size());
-
-            for (var internalGraphState : internalGraphStates) {
-                packInternalGraph(internalGraphState);
-            }
+        void packInternalGraphs(List<FabricBookmark.InternalGraphState> internalGraphStates) {
+            buf.writeList(internalGraphStates, this::packInternalGraph);
         }
 
-        void packInternalGraph(FabricBookmark.InternalGraphState internalGraphState) throws IOException {
-            packUuid(internalGraphState.getGraphUuid());
-            packer.pack(internalGraphState.getTransactionId());
+        void packInternalGraph(PackstreamBuf buf, FabricBookmark.InternalGraphState internalGraphState) {
+            packUuid(buf, internalGraphState.getGraphUuid());
+            buf.writeInt(internalGraphState.getTransactionId());
         }
 
-        void packExternalGraphs(List<FabricBookmark.ExternalGraphState> externalGraphStates) throws IOException {
-            packer.packListHeader(externalGraphStates.size());
-
-            for (var externalGraphState : externalGraphStates) {
-                packExternalGraph(externalGraphState);
-            }
+        void packExternalGraphs(List<FabricBookmark.ExternalGraphState> externalGraphStates) {
+            buf.writeList(externalGraphStates, this::packExternalGraph);
         }
 
-        void packExternalGraph(FabricBookmark.ExternalGraphState externalGraphState) throws IOException {
-            packUuid(externalGraphState.getGraphUuid());
-            packer.packListHeader(externalGraphState.getBookmarks().size());
-            for (var remoteBookmark : externalGraphState.getBookmarks()) {
-                packer.pack(remoteBookmark.getSerialisedState());
-            }
+        void packExternalGraph(PackstreamBuf buf, FabricBookmark.ExternalGraphState externalGraphState) {
+            packUuid(buf, externalGraphState.getGraphUuid());
+            buf.writeList(
+                    externalGraphState.getBookmarks(), (b, bookmark) -> b.writeString(bookmark.getSerialisedState()));
         }
 
-        void packUuid(UUID uuid) throws IOException {
-            ByteBuffer buffer = ByteBuffer.allocate(16);
-            buffer.putLong(uuid.getMostSignificantBits());
-            buffer.putLong(uuid.getLeastSignificantBits());
-            packer.pack(buffer.array());
+        void packUuid(PackstreamBuf buf, UUID uuid) {
+            buf.writeBytes(Unpooled.buffer(16)
+                    .writeLong(uuid.getMostSignificantBits())
+                    .writeLong(uuid.getLeastSignificantBits()));
         }
     }
 
     private static class Unpacker {
-        final PackStream.Unpacker unpacker;
+        final PackstreamBuf buf;
 
         Unpacker(String serializedBookmark) {
             var bytes = Base64.getDecoder().decode(serializedBookmark);
-            var packedInputArray = new PackedInputArray(bytes);
-            unpacker = new PackStream.Unpacker(packedInputArray);
+            buf = PackstreamBuf.wrap(Unpooled.wrappedBuffer(bytes));
         }
 
         FabricBookmark unpack() throws IOException {
-            var internalGraphs = unpackInternalGraphs();
-            var externalGraphs = unpackExternalGraphs();
+            try {
+                var internalGraphs = unpackInternalGraphs();
+                var externalGraphs = unpackExternalGraphs();
 
-            return new FabricBookmark(internalGraphs, externalGraphs);
+                return new FabricBookmark(internalGraphs, externalGraphs);
+            } catch (PackstreamReaderException ex) {
+                throw new IOException(ex);
+            }
         }
 
         List<FabricBookmark.InternalGraphState> unpackInternalGraphs() throws IOException {
-            int listSize = (int) unpacker.unpackListHeader();
-            List<FabricBookmark.InternalGraphState> internalGraphs = new ArrayList<>(listSize);
-            for (int i = 0; i < listSize; i++) {
-                var internalGraphState = unpackInternalGraph();
-                internalGraphs.add(internalGraphState);
-            }
-
-            return internalGraphs;
+            return buf.readList(this::unpackInternalGraph);
         }
 
-        FabricBookmark.InternalGraphState unpackInternalGraph() throws IOException {
-            UUID graphUuid = unpackUuid();
-            long txId = unpacker.unpackLong();
+        FabricBookmark.InternalGraphState unpackInternalGraph(PackstreamBuf buf) throws PackstreamReaderException {
+            UUID graphUuid = unpackUuid(buf);
+            long txId = buf.readInt();
 
             return new FabricBookmark.InternalGraphState(graphUuid, txId);
         }
 
         List<FabricBookmark.ExternalGraphState> unpackExternalGraphs() throws IOException {
-            int listSize = (int) unpacker.unpackListHeader();
-            List<FabricBookmark.ExternalGraphState> externalGraphs = new ArrayList<>(listSize);
-            for (int i = 0; i < listSize; i++) {
-                var externalGraphState = unpackExternalGraph();
-                externalGraphs.add(externalGraphState);
-            }
-
-            return externalGraphs;
+            return buf.readList(this::unpackExternalGraph);
         }
 
-        FabricBookmark.ExternalGraphState unpackExternalGraph() throws IOException {
-            UUID graphUuid = unpackUuid();
-            int listSize = (int) unpacker.unpackListHeader();
-
-            List<RemoteBookmark> remoteBookmarks = new ArrayList<>(listSize);
-            for (int i = 0; i < listSize; i++) {
-                String serializedRemoteBookmark = unpacker.unpackString();
-                remoteBookmarks.add(new RemoteBookmark(serializedRemoteBookmark));
-            }
+        FabricBookmark.ExternalGraphState unpackExternalGraph(PackstreamBuf buf) throws PackstreamReaderException {
+            UUID graphUuid = unpackUuid(buf);
+            var remoteBookmarks = buf.readList(PackstreamBuf::readString).stream()
+                    .map(RemoteBookmark::new)
+                    .collect(Collectors.toList());
 
             return new FabricBookmark.ExternalGraphState(graphUuid, remoteBookmarks);
         }
 
-        UUID unpackUuid() throws IOException {
-            byte[] uuidBytes = unpacker.unpackBytes();
-            ByteBuffer byteBuffer = ByteBuffer.wrap(uuidBytes);
-            long high = byteBuffer.getLong();
-            long low = byteBuffer.getLong();
+        UUID unpackUuid(PackstreamBuf buf) throws PackstreamReaderException {
+            var uuidBytes = buf.readBytes();
+            long high = uuidBytes.readLong();
+            long low = uuidBytes.readLong();
 
             return new UUID(high, low);
-        }
-    }
-
-    private static class BookmarkPackStreamPacker extends PackStream.Packer {
-        // The default PackStream.Packer creates a UTF-8 encoder
-        // whose construction is quite expensive (created using reflection, allocating 16K buffer, ...).
-        // And since external bookmarks are the only Strings encoded,
-        // it is better to use the JDK UTF 8 encoder.
-        // Also the external bookmarks should be already UTF-8 encoded (we should not rely on that),
-        // which means quite an easy job for the encoder.
-        BookmarkPackStreamPacker(PackOutput out) {
-            super(out, input -> ByteBuffer.wrap(input.getBytes(StandardCharsets.UTF_8)));
         }
     }
 }

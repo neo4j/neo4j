@@ -27,7 +27,7 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
-import org.neo4j.bolt.runtime.AccessMode;
+import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.logging.InternalLog;
 

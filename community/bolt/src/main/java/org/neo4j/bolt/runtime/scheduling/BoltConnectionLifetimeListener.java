@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.runtime.scheduling;
 
-import org.neo4j.bolt.runtime.BoltConnection;
+import org.neo4j.bolt.protocol.common.connection.BoltConnection;
 
 public interface BoltConnectionLifetimeListener {
 

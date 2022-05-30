@@ -28,20 +28,22 @@ import java.time.Duration;
 import java.util.Collections;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
-import org.neo4j.bolt.runtime.statemachine.MutableConnectionState;
-import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
-import org.neo4j.bolt.runtime.statemachine.impl.BoltStateMachineContextImpl;
-import org.neo4j.bolt.runtime.statemachine.impl.BoltStateMachineSPIImpl;
-import org.neo4j.bolt.runtime.statemachine.impl.StatementProcessorProvider;
-import org.neo4j.bolt.security.auth.BasicAuthentication;
+import org.neo4j.bolt.protocol.common.MutableConnectionState;
+import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
+import org.neo4j.bolt.protocol.common.fsm.StateMachineContextImpl;
+import org.neo4j.bolt.protocol.common.fsm.StateMachineSPIImpl;
+import org.neo4j.bolt.protocol.common.protector.ChannelProtector;
+import org.neo4j.bolt.protocol.common.transaction.statement.StatementProcessorProvider;
+import org.neo4j.bolt.protocol.common.transaction.statement.metadata.StatementMetadata;
+import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
+import org.neo4j.bolt.protocol.v43.fsm.StateMachineV43;
+import org.neo4j.bolt.protocol.v44.transaction.TransactionStateMachineSPIProviderV44;
+import org.neo4j.bolt.security.Authentication;
+import org.neo4j.bolt.security.basic.BasicAuthentication;
 import org.neo4j.bolt.transaction.CleanUpTransactionContext;
 import org.neo4j.bolt.transaction.InitializeContext;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.transaction.TransactionNotFoundException;
-import org.neo4j.bolt.transport.pipeline.ChannelProtector;
-import org.neo4j.bolt.v41.messaging.RoutingContext;
-import org.neo4j.bolt.v43.BoltStateMachineV43;
-import org.neo4j.bolt.v44.runtime.TransactionStateMachineSPIProviderV44;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -56,7 +58,6 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.server.http.cypher.format.api.Statement;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 import org.neo4j.time.SystemNanoClock;
-import org.neo4j.values.virtual.MapValue;
 
 /**
  * Encapsulates executing statements in a transaction, committing the transaction, or rolling it back.
@@ -209,34 +210,26 @@ public class TransactionHandle implements TransactionTerminationHandle {
     This will be removed completely when a global transaction aware TransactionManager is implemented.
      */
     private void setUpStatementProcessor() {
-        var boltChannel = new DummyBoltChannel(Long.toString(id), clientConnectionInfo);
+        Authentication authentication = new BasicAuthentication(authManager);
+
+        var boltChannel = new DummyBoltChannel(Long.toString(id), clientConnectionInfo, authentication, memoryTracker);
 
         var transactionStateMachineSPIProvider =
                 new TransactionStateMachineSPIProviderV44(boltSPI, boltChannel, clock, memoryTracker);
 
-        var boltStateMachineSPI = new BoltStateMachineSPIImpl(
-                new SimpleLogService(userLogProvider),
-                new BasicAuthentication(authManager),
-                transactionStateMachineSPIProvider,
-                boltChannel);
+        var boltStateMachineSPI = new StateMachineSPIImpl(
+                new SimpleLogService(userLogProvider), transactionStateMachineSPIProvider, boltChannel);
 
-        var boltStateMachine = new BoltStateMachineV43(
-                boltStateMachineSPI,
-                boltChannel,
-                clock,
-                fixedHttpDatabaseResolver(),
-                MapValue.EMPTY,
-                memoryTracker,
-                transactionManager);
+        var boltStateMachine = new StateMachineV43(
+                boltStateMachineSPI, boltChannel, clock, fixedHttpDatabaseResolver(), transactionManager);
 
-        var statementProcessorReleaseManager = new BoltStateMachineContextImpl(
+        var statementProcessorReleaseManager = new StateMachineContextImpl(
                 boltStateMachine,
                 boltChannel,
                 boltStateMachineSPI,
                 new MutableConnectionState(),
                 clock,
                 fixedHttpDatabaseResolver(),
-                memoryTracker,
                 transactionManager);
 
         var statementProcessorProvider = new StatementProcessorProvider(
@@ -288,8 +281,16 @@ public class TransactionHandle implements TransactionTerminationHandle {
     private static class DummyBoltChannel extends BoltChannel {
         private final ClientConnectionInfo info;
 
-        DummyBoltChannel(String id, ClientConnectionInfo info) {
-            super(id, info.protocol(), new EmbeddedChannel(), ChannelProtector.NULL);
+        DummyBoltChannel(
+                String id, ClientConnectionInfo info, Authentication authentication, MemoryTracker memoryTracker) {
+            super(
+                    id,
+                    info.protocol(),
+                    new EmbeddedChannel(),
+                    authentication,
+                    ChannelProtector.NULL,
+                    ConnectionHintProvider.noop(),
+                    memoryTracker);
             this.info = info;
         }
 

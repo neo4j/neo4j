@@ -20,15 +20,15 @@
 package org.neo4j.bolt.dbapi;
 
 import java.util.List;
-import org.neo4j.bolt.runtime.Bookmark;
+import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
+import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
 
 /**
  * A parser of custom bookmark format. It can parse a serialized bookmark into a subclass of {@link Bookmark}.
  * <p>
  * The state-carrying part of a bookmark consists of a long representing a transaction ID, if a transaction state cannot be represented as a single long,
  * {@link BoltGraphDatabaseManagementServiceSPI} can use a custom format for its bookmarks. This class represents a parsing part of the custom bookmark logic.
- * The serialization part is represented by {@link BookmarkMetadata#toBookmark(java.util.function.BiFunction)}
- * and {@link Bookmark#attachTo(org.neo4j.bolt.runtime.BoltResponseHandler)}
+ * The serialization part is represented by {@link BookmarkMetadata#toBookmark(java.util.function.BiFunction)} and {@link Bookmark#attachTo(ResponseHandler)}
  */
 public interface CustomBookmarkFormatParser {
     boolean isCustomBookmark(String string);

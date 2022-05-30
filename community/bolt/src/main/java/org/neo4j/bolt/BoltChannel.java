@@ -20,13 +20,15 @@
 package org.neo4j.bolt;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
 import java.net.SocketAddress;
-import org.neo4j.bolt.transport.pipeline.ChannelProtector;
+import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
+import org.neo4j.bolt.protocol.common.protector.ChannelProtector;
+import org.neo4j.bolt.security.Authentication;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
 import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * A channel through which Bolt messaging can occur.
@@ -38,30 +40,37 @@ public class BoltChannel implements TrackedNetworkConnection {
     private final long connectTime;
     private final String connector;
     private final Channel rawChannel;
+    private final Authentication authentication;
     private final ChannelProtector protector;
+    private final ConnectionHintProvider connectionHintProvider;
+    private final MemoryTracker memoryTracker;
 
     private volatile String username;
     private volatile String userAgent;
     private volatile ClientConnectionInfo info;
     private volatile String defaultDatabase;
 
-    public BoltChannel(String id, String connector, Channel rawChannel, ChannelProtector protector) {
+    public BoltChannel(
+            String id,
+            String connector,
+            Channel rawChannel,
+            Authentication authentication,
+            ChannelProtector protector,
+            ConnectionHintProvider connectionHintProvider,
+            MemoryTracker memoryTracker) {
         this.id = id;
         this.connectTime = System.currentTimeMillis();
         this.connector = connector;
         this.rawChannel = rawChannel;
         this.info = createConnectionInfo();
+        this.authentication = authentication;
         this.protector = protector;
-        this.protector.afterChannelCreated();
+        this.connectionHintProvider = connectionHintProvider;
+        this.memoryTracker = memoryTracker;
     }
 
     public Channel rawChannel() {
         return rawChannel;
-    }
-
-    public void installBoltProtocol(ChannelHandler... handlers) {
-        protector.beforeBoltProtocolInstalled();
-        rawChannel.pipeline().addLast(handlers);
     }
 
     public ClientConnectionInfo info() {
@@ -91,6 +100,22 @@ public class BoltChannel implements TrackedNetworkConnection {
     @Override
     public SocketAddress clientAddress() {
         return rawChannel.remoteAddress();
+    }
+
+    public Authentication authentication() {
+        return authentication;
+    }
+
+    public ChannelProtector protector() {
+        return protector;
+    }
+
+    public ConnectionHintProvider connectionHintProvider() {
+        return connectionHintProvider;
+    }
+
+    public MemoryTracker memoryTracker() {
+        return memoryTracker;
     }
 
     @Override

@@ -32,9 +32,9 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 import java.util.Arrays;
 import java.util.Map;
-import org.neo4j.bolt.messaging.ResultConsumer;
-import org.neo4j.bolt.runtime.BoltResult;
-import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
+import org.neo4j.bolt.protocol.common.message.result.BoltResult;
+import org.neo4j.bolt.protocol.common.message.result.ResultConsumer;
+import org.neo4j.bolt.protocol.common.transaction.statement.metadata.StatementMetadata;
 import org.neo4j.fabric.stream.summary.EmptyExecutionPlanDescription;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;

@@ -1,0 +1,81 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.bolt.protocol.common.handler;
+
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.DecoderException;
+import org.neo4j.bolt.protocol.common.connection.BoltConnection;
+import org.neo4j.bolt.protocol.common.message.Error;
+import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
+import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.packstream.error.reader.PackstreamReaderException;
+
+/**
+ * Enqueues requests and error handling logic on the connection state machine.
+ * <p>
+ * This handler only considers Packstream and status bearing errors within its error handling logic. Any remaining exceptions will be forwarded to the following
+ * handlers as-is and will thus be considered protocol errors which require connection termination.
+ */
+public class RequestHandler extends SimpleChannelInboundHandler<RequestMessage> {
+    private final BoltConnection connection;
+    private final ResponseHandler responseHandler;
+
+    public RequestHandler(BoltConnection connection, ResponseHandler responseHandler) {
+        this.connection = connection;
+        this.responseHandler = responseHandler;
+    }
+
+    @Override
+    protected void channelRead0(ChannelHandlerContext ctx, RequestMessage msg) throws Exception {
+        connection.enqueue(fsm -> fsm.process(msg, responseHandler));
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        var ex = cause;
+
+        // unpack DecoderException if possible as netty will use this type to wrap any exceptions thrown within a
+        // Decoder
+        // implementation thus hiding important argument related errors from us
+        if (cause instanceof DecoderException) {
+            var inner = cause.getCause();
+            if (inner != null) {
+                ex = inner;
+            }
+        }
+
+        // filter any unknown exception types and pass them to following handlers within the pipeline as we cannot
+        // generate
+        // a valid response otherwise.
+        if (!(ex instanceof PackstreamReaderException) && !(ex instanceof Status.HasStatus)) {
+            // re-fire with original parameters instead of unpacked exception as we do not wish to remove any
+            // information
+            // that other handlers may wish to retain (such as HouseKeeperHandler)
+            super.exceptionCaught(ctx, cause);
+            return;
+        }
+
+        // all status bearing errors are enqueued on the state machine for reporting (e.g. as a FAILURE message)
+        var error = Error.from(cause);
+        connection.enqueue(fsm -> fsm.handleExternalFailure(error, responseHandler));
+    }
+}

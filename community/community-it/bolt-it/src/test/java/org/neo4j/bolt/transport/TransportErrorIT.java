@@ -19,24 +19,20 @@
  */
 package org.neo4j.bolt.transport;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.bolt.testing.MessageConditions.serialize;
-import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
+import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
 
 import java.io.IOException;
-import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.bolt.AbstractBoltTransportsTest;
-import org.neo4j.bolt.messaging.RecordingByteChannel;
-import org.neo4j.bolt.packstream.BufferedChannelOutput;
-import org.neo4j.bolt.packstream.Neo4jPack;
-import org.neo4j.bolt.packstream.PackStream;
-import org.neo4j.bolt.testing.TransportTestUtil;
+import org.neo4j.bolt.protocol.v40.messaging.request.RunMessage;
 import org.neo4j.bolt.testing.client.TransportConnection;
-import org.neo4j.bolt.v4.messaging.RunMessage;
+import org.neo4j.bolt.testing.messages.BoltDefaultWire;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.packstream.io.PackstreamBuf;
+import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
@@ -54,105 +50,79 @@ public class TransportErrorIT extends AbstractBoltTransportsTest {
         address = server.lookupDefaultConnector();
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {arguments}")
     @MethodSource("argumentsProvider")
-    public void shouldHandleIncorrectFraming(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldHandleIncorrectFraming(TransportConnection.Factory connectionFactory) throws Exception {
+        this.initParameters(connectionFactory);
 
         // Given I have a message that gets truncated in the chunking, so part of it is missing
-        byte[] truncated =
-                serialize(util.getNeo4jPack(), new RunMessage("UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared"));
-        truncated = Arrays.copyOf(truncated, truncated.length - 12);
+        var msg = BoltDefaultWire.run("UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared");
+        var truncated = msg.readSlice(msg.readableBytes() - 12);
 
         // When
-        connection.connect(address).send(util.defaultAcceptedVersions()).send(TransportTestUtil.chunk(32, truncated));
+        connection.connect().sendDefaultProtocolVersion().send(truncated);
 
         // Then
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
-        assertThat(connection).satisfies(eventuallyDisconnects());
+        assertThat(connection).negotiatesDefaultVersion().isEventuallyTerminated();
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {arguments}")
     @MethodSource("argumentsProvider")
-    public void shouldHandleMessagesWithIncorrectFields(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldHandleMessagesWithIncorrectFields(TransportConnection.Factory connectionFactory)
+            throws Exception {
+        this.initConnection(connectionFactory);
 
         // Given I send a message with the wrong types in its fields
-        final RecordingByteChannel rawData = new RecordingByteChannel();
-        final PackStream.Packer packer = new PackStream.Packer(new BufferedChannelOutput(rawData));
-
-        packer.packStructHeader(2, RunMessage.SIGNATURE);
-        packer.pack("RETURN 1");
-        packer.pack(1234); // Should've been a map
-        packer.flush();
-
-        byte[] invalidMessage = rawData.getBytes();
+        var msg = PackstreamBuf.allocUnpooled()
+                .writeStructHeader(new StructHeader(3, RunMessage.SIGNATURE))
+                .writeString("RETURN 1")
+                .writeMapHeader(0)
+                .writeInt(42);
 
         // When
-        connection
-                .connect(address)
-                .send(util.defaultAcceptedVersions())
-                .send(TransportTestUtil.chunk(32, invalidMessage));
+        connection.send(msg);
 
         // Then
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
-        assertThat(connection).satisfies(eventuallyDisconnects());
+        assertThat(connection)
+                .receivesFailure(
+                        Status.Request.Invalid,
+                        "Illegal value for field \"metadata\": Unexpected type: Expected MAP but got INT");
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {arguments}")
     @MethodSource("argumentsProvider")
-    public void shouldHandleUnknownMessages(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldHandleUnknownMarkerBytes(TransportConnection.Factory connectionFactory) throws Exception {
+        this.initConnection(connectionFactory);
 
         // Given I send a message with an invalid type
-        final RecordingByteChannel rawData = new RecordingByteChannel();
-        final PackStream.Packer packer = new PackStream.Packer(new BufferedChannelOutput(rawData));
-
-        packer.packStructHeader(1, (byte) 0x66); // Invalid message type
-        packer.pack(1234);
-        packer.flush();
-
-        byte[] invalidMessage = rawData.getBytes();
+        var msg = PackstreamBuf.allocUnpooled()
+                .writeStructHeader(new StructHeader(3, RunMessage.SIGNATURE))
+                .writeMarkerByte(0xC7)
+                .writeMapHeader(0)
+                .writeMapHeader(0);
 
         // When
-        connection
-                .connect(address)
-                .send(util.defaultAcceptedVersions())
-                .send(TransportTestUtil.chunk(32, invalidMessage));
+        connection.send(msg);
 
         // Then
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
-        assertThat(connection).satisfies(eventuallyDisconnects());
+        assertThat(connection)
+                .receivesFailure(
+                        Status.Request.Invalid,
+                        "Illegal value for field \"statement\": Unexpected type: Expected STRING but got RESERVED");
     }
 
-    @ParameterizedTest(name = "{displayName} {2}")
+    @ParameterizedTest(name = "{displayName} {index}")
     @MethodSource("argumentsProvider")
-    public void shouldHandleUnknownMarkerBytes(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
-        initParameters(connectionClass, neo4jPack, name);
+    public void shouldCloseConnectionOnInvalidHandshake(TransportConnection.Factory connectionFactory)
+            throws Exception {
+        this.initParameters(connectionFactory);
 
-        // Given I send a message with an invalid type
-        final RecordingByteChannel rawData = new RecordingByteChannel();
-        final BufferedChannelOutput out = new BufferedChannelOutput(rawData);
-        final PackStream.Packer packer = new PackStream.Packer(out);
+        // GIVEN
+        this.connection.connect().sendRaw(new byte[] {
+            (byte) 0xDE, (byte) 0xAD, (byte) 0xB0, (byte) 0x17, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        });
 
-        packer.packStructHeader(2, RunMessage.SIGNATURE);
-        out.writeByte(PackStream.RESERVED_C7); // Invalid marker byte
-        out.flush();
-
-        byte[] invalidMessage = rawData.getBytes();
-
-        // When
-        connection
-                .connect(address)
-                .send(util.defaultAcceptedVersions())
-                .send(TransportTestUtil.chunk(32, invalidMessage));
-
-        // Then
-        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
-        assertThat(connection).satisfies(eventuallyDisconnects());
+        // THEN
+        assertThat(connection).isEventuallyTerminated();
     }
 }
