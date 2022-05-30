@@ -76,36 +76,6 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .build()
   }
 
-  test("Should plan sort (on top of apply) such that LeftOuterHashJoin can be unnested from apply") {
-    val cfg = plannerBuilder()
-      .setAllNodesCardinality(10)
-      .build()
-
-    val array = (1 to 10).mkString("[", ",", "]")
-
-    val query =
-      s"""
-        |MATCH (n1)
-        |UNWIND $array AS a0
-        |OPTIONAL MATCH (n1), (n2)
-        |WITH a0
-        |RETURN a0 ORDER BY a0
-        |""".stripMargin
-
-    val plan = cfg.plan(query).stripProduceResults
-
-    plan shouldEqual cfg.subPlanBuilder()
-      .sort(Seq(Ascending("a0")))
-      .leftOuterHashJoin("n1")
-      .|.cartesianProduct()
-      .|.|.allNodeScan("n2")
-      .|.filterExpression(assertIsNode("n1"))
-      .|.allNodeScan("n1")
-      .unwind(s"$array AS a0")
-      .allNodeScan("n1")
-      .build()
-  }
-
   // TODO: This is a suggestion for a (better) plan that the planner currently isn't capable of producing.
   ignore("Should plan sort (under hash join) if LeftOuterHashJoin can be unnested from apply") {
     // The actual plan we get (sort on top of hash join) is correct, but sub-optimal.
