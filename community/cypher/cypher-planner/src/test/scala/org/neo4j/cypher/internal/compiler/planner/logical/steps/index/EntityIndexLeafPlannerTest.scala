@@ -113,7 +113,6 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
       property = property,
       predicate = stringPredicate,
       queryExpression = ExistenceQueryExpression(),
-      propertyType = CTAny,
       predicateExactness = NonSeekablePredicate,
       solvedPredicate = Some(stringPredicate),
       dependencies = Set.empty,
@@ -187,13 +186,12 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
         case AsBoundingBoxSeekable(seekable) => seekable.asQueryExpression
         case AsDistanceSeekable(seekable)    => seekable.asQueryExpression
       },
-      propertyType = CTPoint,
       predicateExactness = NotExactPredicate,
       solvedPredicate = solvedPredicate.map(_.apply(pointPredicate)).orElse(Some(pointPredicate)),
       dependencies = Set.empty,
       compatibleIndexTypes = Set(IndexType.Point)
     )
-    val implicitExistencePredicate = makeImplicitExistencePredicate(pointPredicate).copy(propertyType = CTPoint)
+    val implicitExistencePredicate = makeImplicitExistencePredicate(pointPredicate)
     testFindIndexCompatiblePredicate(
       predicateName,
       pointPredicate,
@@ -207,7 +205,6 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
       property = property,
       predicate = predicate,
       queryExpression = ExistenceQueryExpression(),
-      propertyType = CTAny,
       predicateExactness = NotExactPredicate,
       solvedPredicate = Some(PartialPredicate(isNotNull(property), predicate)),
       dependencies = Set.empty,

@@ -27,10 +27,12 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.Qu
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
+import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
@@ -63,9 +65,8 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
-import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.ASC
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.BOTH
-import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.DESC
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.NONE
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -97,15 +98,12 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     indexOrderCapability: IndexOrderCapability,
     sortOrder: String => ColumnOrder
   )
-  private val ASCENDING = TestOrder(IndexOrderAscending, "ASC", ASC, Ascending)
-  private val DESCENDING = TestOrder(IndexOrderDescending, "DESC", DESC, Descending)
+  private val ASCENDING_BOTH = TestOrder(IndexOrderAscending, "ASC", BOTH, Ascending)
   private val DESCENDING_BOTH = TestOrder(IndexOrderDescending, "DESC", BOTH, Descending)
 
   override val pushdownPropertyReads: Boolean = false
 
-  for (
-    TestOrder(plannedOrder, cypherToken, orderCapability, sortOrder) <- List(ASCENDING, DESCENDING, DESCENDING_BOTH)
-  ) {
+  for (TestOrder(plannedOrder, cypherToken, orderCapability, sortOrder) <- List(ASCENDING_BOTH, DESCENDING_BOTH)) {
 
     test(s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order") {
       val plan =
@@ -1434,7 +1432,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       }.getLogicalPlanFor("MATCH (a:A) WHERE a.prop IS NOT NULL RETURN DISTINCT a.prop")._1
 
       // We should prefer ASC index order if we can choose between both
-      val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending
+      val expectedPlannedOrder = IndexOrderAscending
 
       val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
         .orderedDistinct(Seq("cache[a.prop]"), "cache[a.prop] AS `a.prop`")
@@ -1459,7 +1457,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       }.getLogicalPlanFor("MATCH (a:A) WHERE a.prop IS NOT NULL RETURN DISTINCT a.foo, a.prop")._1
 
       // We should prefer ASC index order if we can choose between both
-      val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending
+      val expectedPlannedOrder = IndexOrderAscending
 
       val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
         .orderedDistinct(Seq("cache[a.prop]"), "a.foo AS `a.foo`", "cache[a.prop] AS `a.prop`")
@@ -1484,7 +1482,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       }.getLogicalPlanFor("MATCH (a:A) WHERE a.prop IS NOT NULL AND a.foo IS NOT NULL RETURN DISTINCT a.foo, a.prop")._1
 
       // We should prefer ASC index order if we can choose between both
-      val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending
+      val expectedPlannedOrder = IndexOrderAscending
 
       val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
         .orderedDistinct(Seq("cache[a.foo]", "cache[a.prop]"), "cache[a.foo] AS `a.foo`", "cache[a.prop] AS `a.prop`")
@@ -1509,7 +1507,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       }.getLogicalPlanFor("MATCH (a:A) WHERE a.prop IS NOT NULL AND a.foo IS NOT NULL RETURN DISTINCT a.prop, a.foo")._1
 
       // We should prefer ASC index order if we can choose between both
-      val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending
+      val expectedPlannedOrder = IndexOrderAscending
 
       val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
         .orderedDistinct(Seq("cache[a.foo]", "cache[a.prop]"), "cache[a.foo] AS `a.foo`", "cache[a.prop] AS `a.prop`")
@@ -1534,7 +1532,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       }.getLogicalPlanFor(s"MATCH (a:A) WHERE a.prop > 0 RETURN a.prop, count(*) AS c ORDER BY c $cypherToken")._1
 
       // We should prefer ASC index order if we can choose between both
-      val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending
+      val expectedPlannedOrder = IndexOrderAscending
 
       val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
         .sort(Seq(sortOrder("c")))
@@ -1567,7 +1565,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .stripProduceResults
 
       // We should prefer ASC index order if we can choose between both
-      val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending
+      val expectedPlannedOrder = IndexOrderAscending
 
       plan should equal(planner.subPlanBuilder()
         .sort(Seq(sortOrder("c")))
@@ -1598,7 +1596,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .stripProduceResults
 
       // We should prefer ASC index order if we can choose between both
-      val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending
+      val expectedPlannedOrder = IndexOrderAscending
 
       plan should equal(planner.subPlanBuilder()
         .sort(Seq(sortOrder("c")))
@@ -1623,121 +1621,103 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       .setRelationshipCardinality("()-[:REL]-()", 10)
 
   // (orderByString, orderCapability, indexOrder, shouldFullSort, sortOnOnlyOne, sortItems, shouldPartialSort, alreadySorted)
-  private def compositeIndexOnRangeTestData(variable: String) = Seq(
-    // Ascending index
-    (s"$variable.prop1 ASC", ASC, IndexOrderAscending, false, false, Seq.empty, false, Seq.empty),
-    (s"$variable.prop1 DESC", ASC, IndexOrderNone, true, true, Seq(Descending(s"$variable.prop1")), false, Seq.empty),
-    (s"$variable.prop1 ASC, $variable.prop2 ASC", ASC, IndexOrderAscending, false, false, Seq.empty, false, Seq.empty),
-    (
-      s"$variable.prop1 ASC, $variable.prop2 DESC",
-      ASC,
-      IndexOrderAscending,
-      false,
-      false,
-      Seq(Descending(s"$variable.prop2")),
-      true,
-      Seq(Ascending(s"$variable.prop1"))
-    ),
-    (
-      s"$variable.prop1 DESC, $variable.prop2 ASC",
-      ASC,
-      IndexOrderNone,
-      true,
-      false,
-      Seq(Descending(s"$variable.prop1"), Ascending(s"$variable.prop2")),
-      false,
-      Seq.empty
-    ),
-    (
-      s"$variable.prop1 DESC, $variable.prop2 DESC",
-      ASC,
-      IndexOrderNone,
-      true,
-      false,
-      Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2")),
-      false,
-      Seq.empty
-    ),
-
-    // Descending index
-    (s"$variable.prop1 ASC", DESC, IndexOrderNone, true, true, Seq(Ascending(s"$variable.prop1")), false, Seq.empty),
-    (s"$variable.prop1 DESC", DESC, IndexOrderDescending, false, false, Seq.empty, false, Seq.empty),
-    (
-      s"$variable.prop1 ASC, $variable.prop2 ASC",
-      DESC,
-      IndexOrderNone,
-      true,
-      false,
-      Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2")),
-      false,
-      Seq.empty
-    ),
-    (
-      s"$variable.prop1 ASC, $variable.prop2 DESC",
-      DESC,
-      IndexOrderNone,
-      true,
-      false,
-      Seq(Ascending(s"$variable.prop1"), Descending(s"$variable.prop2")),
-      false,
-      Seq.empty
-    ),
-    (
-      s"$variable.prop1 DESC, $variable.prop2 ASC",
-      DESC,
-      IndexOrderDescending,
-      false,
-      false,
-      Seq(Ascending(s"$variable.prop2")),
-      true,
-      Seq(Descending(s"$variable.prop1"))
-    ),
-    (
-      s"$variable.prop1 DESC, $variable.prop2 DESC",
-      DESC,
-      IndexOrderDescending,
-      false,
-      false,
-      Seq.empty,
-      false,
-      Seq.empty
-    ),
-
-    // Both index
-    (s"$variable.prop1 ASC", BOTH, IndexOrderAscending, false, false, Seq.empty, false, Seq.empty),
-    (s"$variable.prop1 DESC", BOTH, IndexOrderDescending, false, false, Seq.empty, false, Seq.empty),
-    (s"$variable.prop1 ASC, $variable.prop2 ASC", BOTH, IndexOrderAscending, false, false, Seq.empty, false, Seq.empty),
-    (
-      s"$variable.prop1 ASC, $variable.prop2 DESC",
-      BOTH,
-      IndexOrderAscending,
-      false,
-      false,
-      Seq(Descending(s"$variable.prop2")),
-      true,
-      Seq(Ascending(s"$variable.prop1"))
-    ),
-    (
-      s"$variable.prop1 DESC, $variable.prop2 ASC",
-      BOTH,
-      IndexOrderDescending,
-      false,
-      false,
-      Seq(Ascending(s"$variable.prop2")),
-      true,
-      Seq(Descending(s"$variable.prop1"))
-    ),
-    (
-      s"$variable.prop1 DESC, $variable.prop2 DESC",
-      BOTH,
-      IndexOrderDescending,
-      false,
-      false,
-      Seq.empty,
-      false,
-      Seq.empty
+  private def compositeIndexOnRangeTestData(variable: String)
+    : Seq[(String, IndexOrderCapability, IndexOrder, Boolean, Boolean, Seq[ColumnOrder], Boolean, Seq[ColumnOrder])] =
+    Seq(
+      (
+        s"$variable.prop1 DESC",
+        NONE,
+        IndexOrderNone,
+        true,
+        true,
+        Seq(Descending(s"$variable.prop1")),
+        false,
+        Seq.empty
+      ),
+      (
+        s"$variable.prop1 DESC, $variable.prop2 ASC",
+        NONE,
+        IndexOrderNone,
+        true,
+        false,
+        Seq(Descending(s"$variable.prop1"), Ascending(s"$variable.prop2")),
+        false,
+        Seq.empty
+      ),
+      (
+        s"$variable.prop1 DESC, $variable.prop2 DESC",
+        NONE,
+        IndexOrderNone,
+        true,
+        false,
+        Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2")),
+        false,
+        Seq.empty
+      ),
+      (s"$variable.prop1 ASC", NONE, IndexOrderNone, true, true, Seq(Ascending(s"$variable.prop1")), false, Seq.empty),
+      (
+        s"$variable.prop1 ASC, $variable.prop2 ASC",
+        NONE,
+        IndexOrderNone,
+        true,
+        false,
+        Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2")),
+        false,
+        Seq.empty
+      ),
+      (
+        s"$variable.prop1 ASC, $variable.prop2 DESC",
+        NONE,
+        IndexOrderNone,
+        true,
+        false,
+        Seq(Ascending(s"$variable.prop1"), Descending(s"$variable.prop2")),
+        false,
+        Seq.empty
+      ),
+      (s"$variable.prop1 ASC", BOTH, IndexOrderAscending, false, false, Seq.empty, false, Seq.empty),
+      (s"$variable.prop1 DESC", BOTH, IndexOrderDescending, false, false, Seq.empty, false, Seq.empty),
+      (
+        s"$variable.prop1 ASC, $variable.prop2 ASC",
+        BOTH,
+        IndexOrderAscending,
+        false,
+        false,
+        Seq.empty,
+        false,
+        Seq.empty
+      ),
+      (
+        s"$variable.prop1 ASC, $variable.prop2 DESC",
+        BOTH,
+        IndexOrderAscending,
+        false,
+        false,
+        Seq(Descending(s"$variable.prop2")),
+        true,
+        Seq(Ascending(s"$variable.prop1"))
+      ),
+      (
+        s"$variable.prop1 DESC, $variable.prop2 ASC",
+        BOTH,
+        IndexOrderDescending,
+        false,
+        false,
+        Seq(Ascending(s"$variable.prop2")),
+        true,
+        Seq(Descending(s"$variable.prop1"))
+      ),
+      (
+        s"$variable.prop1 DESC, $variable.prop2 DESC",
+        BOTH,
+        IndexOrderDescending,
+        false,
+        false,
+        Seq.empty,
+        false,
+        Seq.empty
+      )
     )
-  )
 
   test("Order by index backed for composite node index on range") {
     val projectionBoth = Map(
@@ -1874,20 +1854,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     val descProp3 = Seq(Descending(s"$variable.prop3"))
 
     Seq(
-      // Ascending index
-      (s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC", ASC, IndexOrderAscending, asc, ascProp3),
-      (s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC", ASC, IndexOrderAscending, asc, descProp3),
-
-      // Descending index
-      (s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC", DESC, IndexOrderDescending, desc, ascProp3),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        DESC,
-        IndexOrderDescending,
-        desc,
-        descProp3
-      ),
-
       // Both index
       (s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC", BOTH, IndexOrderAscending, asc, ascProp3),
       (s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC", BOTH, IndexOrderAscending, asc, descProp3),
@@ -1972,7 +1938,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
   }
 
   // (orderByString, orderCapability, indexOrder, fullSort, sortItems, partialSort, alreadySorted)
-  private def compositeIndexOrderByMorePropsTestData(variable: String) = {
+  private def compositeIndexOrderByMorePropsTestData(variable: String)
+    : Seq[(String, IndexOrderCapability, IndexOrder, Boolean, Seq[ColumnOrder], Boolean, Seq[ColumnOrder])] = {
     val ascAll = Seq(
       Ascending(s"$variable.prop1"),
       Ascending(s"$variable.prop2"),
@@ -1989,173 +1956,24 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     val desc1_2 = Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2"))
 
     Seq(
-      // Ascending index
-      (
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 ASC",
-        ASC,
-        IndexOrderAscending,
-        false,
-        Seq.empty,
-        false,
-        Seq.empty
-      ),
-      (
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 DESC",
-        ASC,
-        IndexOrderAscending,
-        false,
-        Seq(Descending(s"$variable.prop4")),
-        true,
-        Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2"), Ascending(s"$variable.prop3"))
-      ),
-      (
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 ASC",
-        ASC,
-        IndexOrderAscending,
-        false,
-        Seq(Descending(s"$variable.prop3"), Ascending(s"$variable.prop4")),
-        true,
-        asc1_2
-      ),
-      (
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 DESC",
-        ASC,
-        IndexOrderAscending,
-        false,
-        Seq(Descending(s"$variable.prop3"), Descending(s"$variable.prop4")),
-        true,
-        asc1_2
-      ),
-      (
-        s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 ASC",
-        ASC,
-        IndexOrderAscending,
-        false,
-        Seq(Descending(s"$variable.prop2"), Ascending(s"$variable.prop3"), Ascending(s"$variable.prop4")),
-        true,
-        Seq(Ascending(s"$variable.prop1"))
-      ),
-      (
-        s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 DESC",
-        ASC,
-        IndexOrderAscending,
-        false,
-        Seq(Descending(s"$variable.prop2"), Ascending(s"$variable.prop3"), Descending(s"$variable.prop4")),
-        true,
-        Seq(Ascending(s"$variable.prop1"))
-      ),
-      (
-        s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 ASC",
-        ASC,
-        IndexOrderAscending,
-        false,
-        Seq(Descending(s"$variable.prop2"), Descending(s"$variable.prop3"), Ascending(s"$variable.prop4")),
-        true,
-        Seq(Ascending(s"$variable.prop1"))
-      ),
-      (
-        s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 DESC",
-        ASC,
-        IndexOrderAscending,
-        false,
-        Seq(Descending(s"$variable.prop2"), Descending(s"$variable.prop3"), Descending(s"$variable.prop4")),
-        true,
-        Seq(Ascending(s"$variable.prop1"))
-      ),
       (
         s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 DESC",
-        ASC,
+        NONE,
         IndexOrderNone,
         true,
         descAll,
         false,
         Seq.empty
       ),
-
-      // Descending index
-      (
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 DESC",
-        DESC,
-        IndexOrderDescending,
-        false,
-        Seq.empty,
-        false,
-        Seq.empty
-      ),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 ASC",
-        DESC,
-        IndexOrderDescending,
-        false,
-        Seq(Ascending(s"$variable.prop4")),
-        true,
-        Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2"), Descending(s"$variable.prop3"))
-      ),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 DESC",
-        DESC,
-        IndexOrderDescending,
-        false,
-        Seq(Ascending(s"$variable.prop3"), Descending(s"$variable.prop4")),
-        true,
-        desc1_2
-      ),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 ASC",
-        DESC,
-        IndexOrderDescending,
-        false,
-        Seq(Ascending(s"$variable.prop3"), Ascending(s"$variable.prop4")),
-        true,
-        desc1_2
-      ),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 DESC",
-        DESC,
-        IndexOrderDescending,
-        false,
-        Seq(Ascending(s"$variable.prop2"), Descending(s"$variable.prop3"), Descending(s"$variable.prop4")),
-        true,
-        Seq(Descending(s"$variable.prop1"))
-      ),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 ASC",
-        DESC,
-        IndexOrderDescending,
-        false,
-        Seq(Ascending(s"$variable.prop2"), Descending(s"$variable.prop3"), Ascending(s"$variable.prop4")),
-        true,
-        Seq(Descending(s"$variable.prop1"))
-      ),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 DESC",
-        DESC,
-        IndexOrderDescending,
-        false,
-        Seq(Ascending(s"$variable.prop2"), Ascending(s"$variable.prop3"), Descending(s"$variable.prop4")),
-        true,
-        Seq(Descending(s"$variable.prop1"))
-      ),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 ASC",
-        DESC,
-        IndexOrderDescending,
-        false,
-        Seq(Ascending(s"$variable.prop2"), Ascending(s"$variable.prop3"), Ascending(s"$variable.prop4")),
-        true,
-        Seq(Descending(s"$variable.prop1"))
-      ),
       (
         s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 ASC",
-        DESC,
+        NONE,
         IndexOrderNone,
         true,
         ascAll,
         false,
         Seq.empty
       ),
-
-      // Both index
       (
         s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 ASC",
         BOTH,
@@ -2597,7 +2415,19 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     variable: String,
     cachedEntityProp: (String, String) => CachedProperty,
     cachedEntityPropFromStore: (String, String) => CachedProperty
-  ) = {
+  ): Seq[(
+    String,
+    String,
+    IndexOrderCapability,
+    IndexOrder,
+    Boolean,
+    Boolean,
+    Map[String, LogicalProperty],
+    Map[String, Expression],
+    Ands,
+    Seq[ColumnOrder],
+    Seq[ColumnOrder]
+  )] = {
     val expr = ands(
       lessThanOrEqual(prop(variable, "prop2"), literalInt(3)),
       greaterThan(prop(variable, "prop3"), literalString(""))
@@ -2635,11 +2465,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     val desc_1_2_3 = Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2"), Descending(s"$variable.prop3"))
 
     Seq(
-      // Ascending index
       (
         s"$variable.prop1",
         s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
-        ASC,
+        BOTH,
         IndexOrderAscending,
         false,
         false,
@@ -2651,34 +2480,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       ),
       (
         s"$variable.prop1",
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC",
-        ASC,
-        IndexOrderAscending,
-        false,
-        true,
-        map_1,
-        map_2_3_cached,
-        expr_2_3_cached,
-        desc_3,
-        asc_1_2
-      ),
-      (
-        s"$variable.prop1",
-        s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC",
-        ASC,
-        IndexOrderAscending,
-        false,
-        true,
-        map_1,
-        map_2_3_cached,
-        expr_2_3_cached,
-        desc_2_asc_3,
-        asc_1
-      ),
-      (
-        s"$variable.prop1",
         s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        ASC,
+        NONE,
         IndexOrderNone,
         true,
         false,
@@ -2691,7 +2494,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       (
         s"$variable.prop2",
         s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
-        ASC,
+        BOTH,
         IndexOrderAscending,
         false,
         false,
@@ -2704,7 +2507,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       (
         s"$variable.prop2",
         s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        ASC,
+        NONE,
         IndexOrderNone,
         true,
         false,
@@ -2717,7 +2520,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       (
         s"$variable.prop3",
         s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
-        ASC,
+        BOTH,
         IndexOrderAscending,
         false,
         false,
@@ -2730,7 +2533,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       (
         s"$variable.prop3",
         s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        ASC,
+        NONE,
         IndexOrderNone,
         true,
         false,
@@ -2743,7 +2546,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       (
         s"$variable.prop1, $variable.prop2",
         s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
-        ASC,
+        BOTH,
         IndexOrderAscending,
         false,
         false,
@@ -2755,34 +2558,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       ),
       (
         s"$variable.prop1, $variable.prop2",
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC",
-        ASC,
-        IndexOrderAscending,
-        false,
-        true,
-        map_1 ++ map_2_cached,
-        map_3_cached,
-        expr_2_3_cached,
-        desc_3,
-        asc_1_2
-      ),
-      (
-        s"$variable.prop1, $variable.prop2",
-        s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC",
-        ASC,
-        IndexOrderAscending,
-        false,
-        true,
-        map_1 ++ map_2_cached,
-        map_3_cached,
-        expr_2_3_cached,
-        desc_2_asc_3,
-        asc_1
-      ),
-      (
-        s"$variable.prop1, $variable.prop2",
         s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        ASC,
+        NONE,
         IndexOrderNone,
         true,
         false,
@@ -2795,7 +2572,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       (
         s"$variable.prop1, $variable.prop3",
         s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
-        ASC,
+        BOTH,
         IndexOrderAscending,
         false,
         false,
@@ -2807,34 +2584,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       ),
       (
         s"$variable.prop1, $variable.prop3",
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC",
-        ASC,
-        IndexOrderAscending,
-        false,
-        true,
-        map_1 ++ map_3_cached,
-        map_2_cached,
-        expr_2_3_cached,
-        desc_3,
-        asc_1_2
-      ),
-      (
-        s"$variable.prop1, $variable.prop3",
-        s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC",
-        ASC,
-        IndexOrderAscending,
-        false,
-        true,
-        map_1 ++ map_3_cached,
-        map_2_cached,
-        expr_2_3_cached,
-        desc_2_asc_3,
-        asc_1
-      ),
-      (
-        s"$variable.prop1, $variable.prop3",
         s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        ASC,
+        NONE,
         IndexOrderNone,
         true,
         false,
@@ -2844,12 +2595,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         desc_1_2_3,
         Seq.empty
       ),
-
-      // Descending index
       (
         s"$variable.prop1",
         s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
-        DESC,
+        NONE,
         IndexOrderNone,
         true,
         false,
@@ -2861,34 +2610,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       ),
       (
         s"$variable.prop1",
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC",
-        DESC,
-        IndexOrderDescending,
-        false,
-        true,
-        map_1,
-        map_2_3_cached,
-        expr_2_3_cached,
-        asc_3,
-        desc_1_2
-      ),
-      (
-        s"$variable.prop1",
-        s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC",
-        DESC,
-        IndexOrderDescending,
-        false,
-        true,
-        map_1,
-        map_2_3_cached,
-        expr_2_3_cached,
-        asc_2_3,
-        desc_1
-      ),
-      (
-        s"$variable.prop1",
         s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        DESC,
+        BOTH,
         IndexOrderDescending,
         false,
         false,
@@ -2901,7 +2624,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       (
         s"$variable.prop2",
         s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
-        DESC,
+        NONE,
         IndexOrderNone,
         true,
         false,
@@ -2914,7 +2637,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       (
         s"$variable.prop2",
         s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        DESC,
+        BOTH,
         IndexOrderDescending,
         false,
         false,
@@ -2927,7 +2650,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       (
         s"$variable.prop3",
         s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
-        DESC,
+        NONE,
         IndexOrderNone,
         true,
         false,
@@ -2940,7 +2663,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       (
         s"$variable.prop3",
         s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        DESC,
+        BOTH,
         IndexOrderDescending,
         false,
         false,
@@ -2953,7 +2676,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       (
         s"$variable.prop1, $variable.prop2",
         s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
-        DESC,
+        NONE,
         IndexOrderNone,
         true,
         false,
@@ -2965,34 +2688,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       ),
       (
         s"$variable.prop1, $variable.prop2",
-        s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC",
-        DESC,
-        IndexOrderDescending,
-        false,
-        true,
-        map_1 ++ map_2_cached,
-        map_3_cached,
-        expr_2_3_cached,
-        asc_2_3,
-        desc_1
-      ),
-      (
-        s"$variable.prop1, $variable.prop2",
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC",
-        DESC,
-        IndexOrderDescending,
-        false,
-        true,
-        map_1 ++ map_2_cached,
-        map_3_cached,
-        expr_2_3_cached,
-        asc_3,
-        desc_1_2
-      ),
-      (
-        s"$variable.prop1, $variable.prop2",
         s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        DESC,
+        BOTH,
         IndexOrderDescending,
         false,
         false,
@@ -3005,7 +2702,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       (
         s"$variable.prop1, $variable.prop3",
         s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
-        DESC,
+        NONE,
         IndexOrderNone,
         true,
         false,
@@ -3017,34 +2714,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       ),
       (
         s"$variable.prop1, $variable.prop3",
-        s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC",
-        DESC,
-        IndexOrderDescending,
-        false,
-        true,
-        map_1 ++ map_3_cached,
-        map_2_cached,
-        expr_2_3_cached,
-        asc_2_3,
-        desc_1
-      ),
-      (
-        s"$variable.prop1, $variable.prop3",
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC",
-        DESC,
-        IndexOrderDescending,
-        false,
-        true,
-        map_1 ++ map_3_cached,
-        map_2_cached,
-        expr_2_3_cached,
-        asc_3,
-        desc_1_2
-      ),
-      (
-        s"$variable.prop1, $variable.prop3",
         s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        DESC,
+        BOTH,
         IndexOrderDescending,
         false,
         false,
@@ -3054,8 +2725,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         Seq.empty,
         Seq.empty
       ),
-
-      // Both index
       (
         s"$variable.prop1",
         s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC",
@@ -3328,66 +2997,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
   }
 
   // (orderByString, orderCapability, indexOrder, shouldSort, alreadySorted, toBeSorted)
-  private def compositeIndexOrderByDifferentDirectionsFirstPropTestData(variable: String) = Seq(
-    // Ascending index
-    (s"$variable.prop1 ASC", ASC, IndexOrderAscending, false, Seq.empty, Seq.empty),
-    (s"$variable.prop1 DESC", ASC, IndexOrderAscending, false, Seq.empty, Seq.empty), // Index gives ASC, reports DESC
-    (s"$variable.prop1 ASC, $variable.prop2 ASC", ASC, IndexOrderAscending, false, Seq.empty, Seq.empty),
-    (
-      s"$variable.prop1 ASC, $variable.prop2 DESC",
-      ASC,
-      IndexOrderAscending,
-      true,
-      Seq(Ascending(s"$variable.prop1")),
-      Seq(Descending(s"$variable.prop2"))
-    ),
-    (
-      s"$variable.prop1 DESC, $variable.prop2 ASC",
-      ASC,
-      IndexOrderAscending,
-      false,
-      Seq.empty,
-      Seq.empty
-    ), // Index gives ASC ASC, reports DESC ASC
-    (
-      s"$variable.prop1 DESC, $variable.prop2 DESC",
-      ASC,
-      IndexOrderAscending,
-      true,
-      Seq(Descending(s"$variable.prop1")),
-      Seq(Descending(s"$variable.prop2"))
-    ), // Index gives ASC ASC, reports DESC ASC
-
-    // Descending index
-    (s"$variable.prop1 ASC", DESC, IndexOrderDescending, false, Seq.empty, Seq.empty), // Index gives DESC, reports ASC
-    (s"$variable.prop1 DESC", DESC, IndexOrderDescending, false, Seq.empty, Seq.empty),
-    (
-      s"$variable.prop1 ASC, $variable.prop2 ASC",
-      DESC,
-      IndexOrderDescending,
-      true,
-      Seq(Ascending(s"$variable.prop1")),
-      Seq(Ascending(s"$variable.prop2"))
-    ), // Index gives DESC DESC, reports ASC DESC
-    (
-      s"$variable.prop1 ASC, $variable.prop2 DESC",
-      DESC,
-      IndexOrderDescending,
-      false,
-      Seq.empty,
-      Seq.empty
-    ), // Index gives DESC DESC, reports ASC DESC
-    (
-      s"$variable.prop1 DESC, $variable.prop2 ASC",
-      DESC,
-      IndexOrderDescending,
-      true,
-      Seq(Descending(s"$variable.prop1")),
-      Seq(Ascending(s"$variable.prop2"))
-    ),
-    (s"$variable.prop1 DESC, $variable.prop2 DESC", DESC, IndexOrderDescending, false, Seq.empty, Seq.empty),
-
-    // Both index
+  private def compositeIndexOrderByDifferentDirectionsFirstPropTestData(variable: String)
+    : Seq[(String, IndexOrderCapability, IndexOrder, Boolean, Seq[ColumnOrder], Seq[ColumnOrder])] = Seq(
     (s"$variable.prop1 ASC", BOTH, IndexOrderAscending, false, Seq.empty, Seq.empty),
     (
       s"$variable.prop1 DESC",
@@ -3503,56 +3114,36 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
   }
 
   // (orderByString, orderCapability, indexOrder, shouldSort, toBeSorted)
-  private def compositeIndexOrderByDifferentDirectionsSecondPropTestData(variable: String) = Seq(
-    // Ascending index
-    (s"$variable.prop1 ASC, $variable.prop2 ASC", ASC, IndexOrderAscending, false, Seq.empty),
-    (
-      s"$variable.prop1 ASC, $variable.prop2 DESC",
-      ASC,
-      IndexOrderAscending,
-      false,
-      Seq.empty
-    ), // Index gives ASC ASC, reports ASC DESC (true after filter at least)
+  private def compositeIndexOrderByDifferentDirectionsSecondPropTestData(variable: String)
+    : Seq[(String, IndexOrderCapability, IndexOrder, Boolean, Seq[ColumnOrder])] = Seq(
     (
       s"$variable.prop1 DESC, $variable.prop2 ASC",
-      ASC,
+      NONE,
       IndexOrderNone,
       true,
       Seq(Descending(s"$variable.prop1"), Ascending(s"$variable.prop2"))
     ),
     (
       s"$variable.prop1 DESC, $variable.prop2 DESC",
-      ASC,
+      NONE,
       IndexOrderNone,
       true,
       Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2"))
     ),
-
-    // Descending index
     (
       s"$variable.prop1 ASC, $variable.prop2 ASC",
-      DESC,
+      NONE,
       IndexOrderNone,
       true,
       Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2"))
     ),
     (
       s"$variable.prop1 ASC, $variable.prop2 DESC",
-      DESC,
+      NONE,
       IndexOrderNone,
       true,
       Seq(Ascending(s"$variable.prop1"), Descending(s"$variable.prop2"))
     ),
-    (
-      s"$variable.prop1 DESC, $variable.prop2 ASC",
-      DESC,
-      IndexOrderDescending,
-      false,
-      Seq.empty
-    ), // Index gives DESC DESC, reports DESC ASC (true after filter at least)
-    (s"$variable.prop1 DESC, $variable.prop2 DESC", DESC, IndexOrderDescending, false, Seq.empty),
-
-    // Both index
     (s"$variable.prop1 ASC, $variable.prop2 ASC", BOTH, IndexOrderAscending, false, Seq.empty),
     (
       s"$variable.prop1 ASC, $variable.prop2 DESC",
@@ -3660,28 +3251,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
   }
 
   // (orderByString, orderCapability, indexOrder)
-  private def compositeIndexOrderByDifferentDirectionsBothPropsTestData(variable: String) = Seq(
-    // Ascending index
-    (s"$variable.prop1 ASC, $variable.prop2 ASC", ASC, IndexOrderAscending),
-    (s"$variable.prop1 ASC, $variable.prop2 DESC", ASC, IndexOrderAscending), // Index gives ASC ASC, reports ASC DESC
-    (s"$variable.prop1 DESC, $variable.prop2 ASC", ASC, IndexOrderAscending), // Index gives ASC ASC, reports DESC ASC
-    (s"$variable.prop1 DESC, $variable.prop2 DESC", ASC, IndexOrderAscending), // Index gives ASC ASC, reports DESC DESC
-
-    // Descending index
-    (s"$variable.prop1 ASC, $variable.prop2 ASC", DESC, IndexOrderDescending), // Index gives DESC DESC, reports ASC ASC
-    (
-      s"$variable.prop1 ASC, $variable.prop2 DESC",
-      DESC,
-      IndexOrderDescending
-    ), // Index gives DESC DESC, reports ASC DESC
-    (
-      s"$variable.prop1 DESC, $variable.prop2 ASC",
-      DESC,
-      IndexOrderDescending
-    ), // Index gives DESC DESC, reports DESC ASC
-    (s"$variable.prop1 DESC, $variable.prop2 DESC", DESC, IndexOrderDescending),
-
-    // Both index
+  private def compositeIndexOrderByDifferentDirectionsBothPropsTestData(variable: String)
+    : Seq[(String, IndexOrderCapability, IndexOrder)] = Seq(
     (s"$variable.prop1 ASC, $variable.prop2 ASC", BOTH, IndexOrderAscending),
     (s"$variable.prop1 ASC, $variable.prop2 DESC", BOTH, IndexOrderAscending), // Index gives ASC ASC, reports ASC DESC
     (s"$variable.prop1 DESC, $variable.prop2 ASC", BOTH, IndexOrderAscending), // Index gives ASC ASC, reports DESC ASC
@@ -3766,12 +3337,9 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     .setAllRelationshipsCardinality(500)
     .setRelationshipCardinality("()-[:REL]->()", 100)
 
-  // Tests (ASC, min), (DESC, max), (BOTH, min), (BOTH, max) -> interesting and provided order are the same
-  private val ASCENDING_BOTH = TestOrder(IndexOrderAscending, "ASC", BOTH, Ascending)
-
   for (
     (TestOrder(plannedOrder, cypherToken, orderCapability, _), functionName) <-
-      List((ASCENDING, "min"), (DESCENDING, "max"), (ASCENDING_BOTH, "min"), (DESCENDING_BOTH, "max"))
+      List((ASCENDING_BOTH, "min"), (DESCENDING_BOTH, "max"))
   ) {
 
     // Node label scan
@@ -4192,84 +3760,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             "(n)-[r:REL(prop > 0)]->(m)",
             getValue = _ => GetValue,
             indexOrder = IndexOrderNone,
-            indexType = IndexType.RANGE
-          )
-          .build()
-    }
-
-  }
-
-  // Tests (ASC, max), (DESC, min) -> interesting and provided order differs
-  for ((TestOrder(_, _, orderCapability, _), functionName) <- List((ASCENDING, "max"), (DESCENDING, "min"))) {
-
-    test(s"$orderCapability-$functionName: cannot use provided node index scan order") {
-      val plan =
-        new given {
-          indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
-        } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN $functionName(n.prop)"
-
-      plan._1 should equal(
-        Aggregation(
-          NodeIndexScan(
-            "n",
-            LabelToken("Awesome", LabelId(0)),
-            Seq(indexedProperty("prop", 0, GetValue, NODE_TYPE)),
-            Set.empty,
-            IndexOrderNone,
-            IndexType.RANGE
-          ),
-          Map.empty,
-          Map(s"$functionName(n.prop)" -> function(functionName, cachedNodeProp("n", "prop")))
-        )
-      )
-    }
-
-    test(s"$orderCapability-$functionName: cannot use provided node index seek order") {
-      val plan =
-        new given {
-          indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
-        } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop)"
-
-      plan._1 should equal(
-        Aggregation(
-          nodeIndexSeek("n:Awesome(prop > 0)", getValue = _ => GetValue),
-          Map.empty,
-          Map(s"$functionName(n.prop)" -> function(functionName, cachedNodeProp("n", "prop")))
-        )
-      )
-    }
-
-    test(s"$orderCapability-$functionName: cannot use provided relationship index scan order") {
-      val planner = relationshipIndexMinMaxSetup
-        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1, withValues = true, providesOrder = orderCapability)
-        .build()
-
-      val plan = planner
-        .plan(s"MATCH (n)-[r:REL]->(m) WHERE r.prop IS NOT NULL RETURN $functionName(r.prop)")
-
-      plan shouldEqual
-        planner.planBuilder()
-          .produceResults(s"`$functionName(r.prop)`")
-          .aggregation(Seq(), Seq(s"$functionName(cacheR[r.prop]) AS `$functionName(r.prop)`"))
-          .relationshipIndexOperator("(n)-[r:REL(prop)]->(m)", getValue = _ => GetValue, indexType = IndexType.RANGE)
-          .build()
-    }
-
-    test(s"$orderCapability-$functionName: cannot use provided relationship index seek order") {
-      val planner = relationshipIndexMinMaxSetup
-        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1, withValues = true, providesOrder = orderCapability)
-        .build()
-
-      val plan = planner
-        .plan(s"MATCH (n)-[r:REL]->(m) WHERE r.prop > 0 RETURN $functionName(r.prop)")
-
-      plan shouldEqual
-        planner.planBuilder()
-          .produceResults(s"`$functionName(r.prop)`")
-          .aggregation(Seq(), Seq(s"$functionName(cacheR[r.prop]) AS `$functionName(r.prop)`"))
-          .relationshipIndexOperator(
-            "(n)-[r:REL(prop > 0)]->(m)",
-            getValue = _ => GetValue,
             indexType = IndexType.RANGE
           )
           .build()

@@ -29,8 +29,6 @@ import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.planner.spi.EventuallyConsistent
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.OrderCapability
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.ValueCapability
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
@@ -288,17 +286,17 @@ class TransactionBoundPlanContext(
           val properties = reference.schema.getPropertyIds.map(PropertyKeyId)
           val isUnique = reference.isUnique
           val behaviours = reference.getCapability.behaviours().map(kernelToCypher).toSet
-          val orderCapability: OrderCapability = _ =>
+          val orderCapability =
             if (reference.getCapability.supportsOrdering()) {
               IndexOrderCapability.BOTH
             } else {
               IndexOrderCapability.NONE
             }
-          val valueCapability: ValueCapability = tps =>
+          val valueCapability =
             if (reference.getCapability.supportsReturningValues()) {
-              tps.map(_ => CanGetValue)
+              CanGetValue
             } else {
-              tps.map(_ => DoNotGetValue)
+              DoNotGetValue
             }
           if (behaviours.contains(EventuallyConsistent)) {
             // Ignore eventually consistent indexes. Those are for explicit querying via procedures.

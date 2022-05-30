@@ -78,8 +78,6 @@ import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.OrderCapability
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.ValueCapability
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
@@ -289,10 +287,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       }.toIterator
 
       private def newIndexDescriptor(indexDef: IndexDef, indexAttributes: IndexAttributes) = {
-        // Our fake index either can always or never return property values
         val canGetValue = if (indexAttributes.withValues) CanGetValue else DoNotGetValue
-        val valueCapability: ValueCapability = _ => indexDef.propertyKeys.map(_ => canGetValue)
-        val orderCapability: OrderCapability = _ => indexAttributes.withOrdering
         val entityType = indexDef.entityType match {
           case IndexDefinition.EntityType.Node(label) => IndexDescriptor.EntityType.Node(
               semanticTable.resolvedLabelNames(label)
@@ -305,8 +300,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           indexDef.indexType,
           entityType,
           indexDef.propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_)),
-          valueCapability = valueCapability,
-          orderCapability = orderCapability,
+          valueCapability = canGetValue,
+          orderCapability = indexAttributes.withOrdering,
           isUnique = indexAttributes.isUnique
         )
       }

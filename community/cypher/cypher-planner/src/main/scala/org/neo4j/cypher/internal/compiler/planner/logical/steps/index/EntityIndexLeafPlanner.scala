@@ -98,7 +98,6 @@ object EntityIndexLeafPlanner {
       property,
       predicate,
       ExistenceQueryExpression(),
-      CTAny,
       predicateExactness = NotExactPredicate,
       solvedPredicate = None,
       dependencies = Set.empty,
@@ -151,9 +150,8 @@ object EntityIndexLeafPlanner {
     interestingOrderConfig: InterestingOrderConfig,
     providedOrderFactory: ProvidedOrderFactory
   ): PredicatesForIndex = {
-    val types = matchingPredicates.map(mp => mp.propertyType)
 
-    // Ask the index for its order capabilities for the types in prefix/subset defined by the interesting order
+    // Ask the index for its order capability
     val indexPropertiesAndPredicateTypes = matchingPredicates.map(mp => {
       val property = Property(mp.variable, mp.propertyKeyName)(mp.property.position)
       PropertyAndPredicateType(property, mp.predicateExactness == SingleExactPredicate)
@@ -163,7 +161,6 @@ object EntityIndexLeafPlanner {
       ResultOrdering.providedOrderForIndexOperator(
         interestingOrderConfig.orderToSolve,
         indexPropertiesAndPredicateTypes,
-        types,
         indexDescriptor.orderCapability,
         providedOrderFactory
       )
@@ -180,7 +177,6 @@ object EntityIndexLeafPlanner {
    * @param property             The property involved in the predicate
    * @param predicate            The original predicate from the query
    * @param queryExpression      The index query expression
-   * @param propertyType         The cypher type of the property
    * @param predicateExactness   Determines seek possibility
    * @param solvedPredicate      If a plan is created, this is what to register as solved predicate
    * @param dependencies         Predicate dependencies
@@ -192,7 +188,6 @@ object EntityIndexLeafPlanner {
     property: LogicalProperty,
     predicate: Expression,
     queryExpression: QueryExpression[Expression],
-    propertyType: CypherType,
     predicateExactness: PredicateExactness,
     solvedPredicate: Option[Expression],
     dependencies: Set[LogicalVariable],
@@ -241,14 +236,11 @@ object EntityIndexLeafPlanner {
     propertyPredicates: Seq[IndexCompatiblePredicate],
     exactPredicatesCanGetValue: Boolean
   ): Seq[GetValueFromIndexBehavior] = {
-    // Ask the index for its value capabilities for the types of all properties.
-    // We might override some of these later if they value is known in an equality predicate
-    val types = propertyPredicates.map(mp => mp.propertyType)
-    val propertyBehaviorFromIndex = indexDescriptor.valueCapability(types)
+    val propertyBehaviorFromIndex = indexDescriptor.valueCapability
 
-    propertyBehaviorFromIndex.zip(propertyPredicates).map {
-      case (_, predicate) if predicate.predicateExactness.isExact && exactPredicatesCanGetValue => CanGetValue
-      case (behavior, _)                                                                        => behavior
+    propertyPredicates.map {
+      case predicate if predicate.predicateExactness.isExact && exactPredicatesCanGetValue => CanGetValue
+      case _                                                                               => propertyBehaviorFromIndex
     }
   }
 

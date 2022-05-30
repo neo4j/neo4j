@@ -23,13 +23,10 @@ import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.EntityType
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.OrderCapability
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.ValueCapability
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
-import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.graphdb
 
 import scala.language.implicitConversions
@@ -38,34 +35,14 @@ sealed trait IndexBehaviour
 case object SkipAndLimit extends IndexBehaviour
 case object EventuallyConsistent extends IndexBehaviour
 
-sealed trait IndexOrderCapability {
-  def asc: Boolean
-  def desc: Boolean
-}
+sealed trait IndexOrderCapability
 
 object IndexOrderCapability {
-  protected class BASE(override val asc: Boolean, override val desc: Boolean) extends IndexOrderCapability
-  case object NONE extends BASE(false, false)
-  case object ASC extends BASE(true, false)
-  case object DESC extends BASE(false, true)
-  case object BOTH extends BASE(true, true)
+  case object NONE extends IndexOrderCapability
+  case object BOTH extends IndexOrderCapability
 }
 
 object IndexDescriptor {
-
-  /**
-   * Given the actual types of properties (one for a single-property index and multiple for a composite index)
-   * can this index guarantee ordered retrieval?
-   */
-  type OrderCapability = Seq[CypherType] => IndexOrderCapability
-  val noOrderCapability: OrderCapability = _ => IndexOrderCapability.NONE
-
-  /**
-   * Given the actual types of properties (one for a single-property index and multiple for a composite index)
-   * does the index provide the actual values?
-   */
-  type ValueCapability = Seq[CypherType] => Seq[GetValueFromIndexBehavior]
-  val noValueCapability: ValueCapability = s => s.map(_ => DoNotGetValue)
 
   def forLabel(indexType: IndexType, labelId: LabelId, properties: Seq[PropertyKeyId]): IndexDescriptor =
     IndexDescriptor(indexType, EntityType.Node(labelId), properties)
@@ -122,8 +99,8 @@ case class IndexDescriptor(
   entityType: EntityType,
   properties: Seq[PropertyKeyId],
   behaviours: Set[IndexBehaviour] = Set.empty[IndexBehaviour],
-  orderCapability: OrderCapability = IndexDescriptor.noOrderCapability,
-  valueCapability: ValueCapability = IndexDescriptor.noValueCapability,
+  orderCapability: IndexOrderCapability = IndexOrderCapability.NONE,
+  valueCapability: GetValueFromIndexBehavior = DoNotGetValue,
   isUnique: Boolean = false
 ) {
   val isComposite: Boolean = properties.length > 1
@@ -153,7 +130,7 @@ case class IndexDescriptor(
   }
 
   def withBehaviours(bs: Set[IndexBehaviour]): IndexDescriptor = copy(behaviours = bs)
-  def withOrderCapability(oc: OrderCapability): IndexDescriptor = copy(orderCapability = oc)
-  def withValueCapability(vc: ValueCapability): IndexDescriptor = copy(valueCapability = vc)
+  def withOrderCapability(oc: IndexOrderCapability): IndexDescriptor = copy(orderCapability = oc)
+  def withValueCapability(vc: GetValueFromIndexBehavior): IndexDescriptor = copy(valueCapability = vc)
   def unique(setUnique: Boolean = true): IndexDescriptor = copy(isUnique = setUnique)
 }

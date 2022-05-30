@@ -51,14 +51,14 @@ class LimitPropagationPlanningIntegrationTest
       .setRelationshipCardinality("(:C)-[:REL_CB]->(:B)", 4444)
       .setRelationshipCardinality("()-[:REL_CB]->(:B)", 10000)
       .setRelationshipCardinality("()-[:REL_CB]->()", 10000)
-      .addNodeIndex("A", Seq("id"), 0.5, 1.0 / 111.0, providesOrder = IndexOrderCapability.ASC)
-      .addNodeIndex("C", Seq("id"), 0.5, 1.0 / 2222.0, providesOrder = IndexOrderCapability.ASC)
+      .addNodeIndex("A", Seq("id"), 0.5, 1.0 / 111.0, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("C", Seq("id"), 0.5, 1.0 / 2222.0, providesOrder = IndexOrderCapability.BOTH)
       .addRelationshipIndex(
         "REL_CB",
         Seq("id"),
         0.5,
         1.0 / 10000,
-        providesOrder = IndexOrderCapability.ASC,
+        providesOrder = IndexOrderCapability.BOTH,
         indexType = IndexType.RANGE
       )
       .addRelationshipIndex(
@@ -66,7 +66,7 @@ class LimitPropagationPlanningIntegrationTest
         Seq("id"),
         0.5,
         1.0 / 10000,
-        providesOrder = IndexOrderCapability.ASC,
+        providesOrder = IndexOrderCapability.BOTH,
         indexType = IndexType.TEXT
       )
       .build()

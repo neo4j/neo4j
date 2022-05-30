@@ -289,7 +289,7 @@ object VerifyBestPlan {
         predicates,
         semanticTable
       ).collect {
-        case pred @ IndexCompatiblePredicate(`variable`, LogicalProperty(_, `propertyName`), _, _, _, _, _, _, _, _) =>
+        case pred @ IndexCompatiblePredicate(`variable`, LogicalProperty(_, `propertyName`), _, _, _, _, _, _, _) =>
           pred
       }
       if (matchingPredicates.exists(_.compatibleIndexTypes.contains(IndexType.Text))) {

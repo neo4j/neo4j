@@ -2305,7 +2305,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         existsSelectivity = 0.9,
         uniqueSelectivity = 0.9,
         withValues = true,
-        providesOrder = IndexOrderCapability.ASC
+        providesOrder = IndexOrderCapability.BOTH
       )
       .build()
 

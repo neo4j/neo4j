@@ -59,8 +59,6 @@ import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.OrderCapability
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.ValueCapability
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
@@ -825,10 +823,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
       override def txStateHasChanges(): Boolean = options.txStateHasChanges
 
       private def newIndexDescriptor(indexDef: IndexDefinition): Option[IndexDescriptor] = {
-        // Our fake index either can always or never return property values
         val canGetValue = if (indexDef.withValues) CanGetValue else DoNotGetValue
-        val valueCapability: ValueCapability = _ => indexDef.propertyKeys.map(_ => canGetValue)
-        val orderCapability: OrderCapability = _ => indexDef.withOrdering
 
         val props = indexDef.propertyKeys.map(p => PropertyKeyId(resolver.getPropertyKeyId(p)))
 
@@ -844,8 +839,8 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
             indexType,
             entityType,
             props,
-            valueCapability = valueCapability,
-            orderCapability = orderCapability,
+            valueCapability = canGetValue,
+            orderCapability = indexDef.withOrdering,
             isUnique = indexDef.isUnique
           )
         }
