@@ -405,7 +405,7 @@ class Neo4jCommandTest {
 
             // Start with strict validation
             addConf(GraphDatabaseSettings.strict_config_validation, "true");
-            addConf(GraphDatabaseSettings.plugin_dir, maybePlugins.toString());
+            addConf(GraphDatabaseSettings.plugin_dir, maybePlugins.toString().replace("\\", "\\\\"));
             addConf(MyPluginSetting.setting, "foo");
             assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
             assertThat(err.toString()).isEmpty();
