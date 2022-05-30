@@ -191,6 +191,48 @@ class UnionScanRewriterTest extends CypherFunSuite with LogicalPlanningTestSuppo
       .build())
   }
 
+  test("should rewrite directed plan") {
+    val input = new LogicalPlanBuilder()
+      .produceResults("r")
+      .orderedDistinct(Seq("r"), "r AS r", "a AS a", "b AS b")
+      .orderedUnion(Seq(Ascending("r")))
+      .|.relationshipTypeScan("(a)-[r:B]->(b)", IndexOrderAscending)
+      .relationshipTypeScan("(a)-[r:A]->(b)", IndexOrderAscending)
+      .build()
+
+    rewrite(input) should equal(new LogicalPlanBuilder()
+      .produceResults("r")
+      .unionRelationshipTypesScan("(a)-[r:A|B]->(b)", IndexOrderAscending)
+      .build())
+  }
+
+  test("should rewrite undirected plan") {
+    val input = new LogicalPlanBuilder()
+      .produceResults("r")
+      .orderedDistinct(Seq("r"), "r AS r", "a AS a", "b AS b")
+      .orderedUnion(Seq(Ascending("r")))
+      .|.relationshipTypeScan("(a)-[r:B]-(b)", IndexOrderAscending)
+      .relationshipTypeScan("(a)-[r:A]-(b)", IndexOrderAscending)
+      .build()
+
+    rewrite(input) should equal(new LogicalPlanBuilder()
+      .produceResults("r")
+      .unionRelationshipTypesScan("(a)-[r:A|B]-(b)", IndexOrderAscending)
+      .build())
+  }
+
+  test("should not rewrite if directed and undirected") {
+    val input = new LogicalPlanBuilder()
+      .produceResults("r")
+      .orderedDistinct(Seq("r"), "r AS r", "a AS a", "b AS b")
+      .orderedUnion(Seq(Ascending("r")))
+      .|.relationshipTypeScan("(a)-[r:B]->(b)", IndexOrderAscending)
+      .relationshipTypeScan("(a)-[r:A]-(b)", IndexOrderAscending)
+      .build()
+
+    rewrite(input) should equal(input)
+  }
+
   private def rewrite(p: LogicalPlan): LogicalPlan =
     p.endoRewrite(unionScanRewriter(new StubSolveds, Attributes(idGen)))
 }

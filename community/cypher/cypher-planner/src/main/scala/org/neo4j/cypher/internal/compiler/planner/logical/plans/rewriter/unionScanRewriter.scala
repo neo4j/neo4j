@@ -21,8 +21,11 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.DirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
@@ -30,6 +33,8 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Rewriter
@@ -62,8 +67,41 @@ case class unionScanRewriter(solveds: Solveds, attributes: Attributes[LogicalPla
             solveds.copy(outer.id, res.id)
             res
           }
+
         case None => outer
       }
+
+    case outer @ OrderedDistinct(
+        CollectUnionTypes(directed, idName, start, end, types, arguments, indexOrder),
+        groupingExpressions,
+        Seq(Variable(orderName))
+      ) if idName == orderName =>
+      (groupingExpressions.get(idName), groupingExpressions.get(start), groupingExpressions.get(end)) match {
+        case (Some(Variable(relVar)), Some(Variable(startVar)), Some(Variable(endVar)))
+          if relVar == idName && startVar == start && endVar == end =>
+          val unionScan =
+            if (directed) {
+              DirectedUnionRelationshipTypesScan(idName, start, types, end, argumentIds = arguments, indexOrder)(
+                SameId(outer.id)
+              )
+            } else {
+              UndirectedUnionRelationshipTypesScan(idName, start, types, end, argumentIds = arguments, indexOrder)(
+                SameId(outer.id)
+              )
+            }
+          if (groupingExpressions.size == 3) {
+            unionScan
+          } else {
+            val res = outer.copy(source = unionScan)(
+              attributes.copy(outer.id)
+            )
+            solveds.copy(outer.id, res.id)
+            res
+          }
+
+        case _ => outer
+      }
+
   })
 }
 
@@ -113,16 +151,89 @@ object CollectUnionLabels {
   }
 }
 
-object SingleGrouping {
+object CollectUnionTypes {
 
-  def unapply(grouping: Map[String, Expression]): Option[String] = {
-    if (grouping.size == 1) {
-      grouping.head match {
-        case (n, Variable(name)) if n == name => Some(n)
-        case _                                => None
+  def unapply(plan: LogicalPlan)
+    : Option[(Boolean, String, String, String, Seq[RelTypeName], Set[String], IndexOrder)] = {
+    var planToTest = plan
+    var types: List[RelTypeName] = Nil
+    var foundState: Option[(String, String, String, ColumnOrder, IndexOrder, Set[String], Boolean)] = None
+
+    // I don't think we will ever plan inconsistent plans with varying name, index order etc as it
+    // would probably indicate a planner bug, but if we encounter an inconsistency let's not rewrite
+    // and make matters worse.
+    def checkConsistency(
+      r: String,
+      s: String,
+      e: String,
+      co: ColumnOrder,
+      io: IndexOrder,
+      as: Set[String],
+      directed: Boolean
+    ): Boolean = {
+      foundState match {
+        case Some((idName, start, end, columnOrder, indexOrder, arguments, isDirected)) =>
+          r == idName && s == start && e == end && co == columnOrder && io == indexOrder && as == arguments && directed == isDirected
+        case None =>
+          io match {
+            case IndexOrderAscending if !co.isAscending => false
+            case IndexOrderDescending if co.isAscending => false
+            case _ if r != co.id                        => false
+            case _ =>
+              foundState = Some((r, s, e, co, io, as, directed))
+              true
+          }
       }
-    } else {
-      None
     }
+
+    while (true) {
+      planToTest match {
+        case OrderedUnion(
+            DirectedRelationshipTypeScan(r1, s1, t1, e1, a1, o1),
+            DirectedRelationshipTypeScan(r2, s2, t2, e2, a2, o2),
+            Seq(colOrder)
+          )
+          if r1 == r2 && s1 == s2 && e1 == e2 && o1 == o2 && a1 == a2 && checkConsistency(
+            r1,
+            s1,
+            e1,
+            colOrder,
+            o1,
+            a1,
+            directed = true
+          ) =>
+          types = t1 :: t2 :: types
+          return Some((true, r1, s1, e1, types, a1, o1))
+        case OrderedUnion(
+            UndirectedRelationshipTypeScan(r1, s1, t1, e1, a1, o1),
+            UndirectedRelationshipTypeScan(r2, s2, t2, e2, a2, o2),
+            Seq(colOrder)
+          )
+          if r1 == r2 && s1 == s2 && e1 == e2 && o1 == o2 && a1 == a2 && checkConsistency(
+            r1,
+            s1,
+            e1,
+            colOrder,
+            o1,
+            a1,
+            directed = false
+          ) =>
+          types = t1 :: t2 :: types
+          return Some((false, r1, s1, e1, types, a1, o1))
+        case OrderedUnion(inner: OrderedUnion, DirectedRelationshipTypeScan(r, s, t, e, a, o), Seq(colOrder))
+          if checkConsistency(r, s, e, colOrder, o, a, directed = true) =>
+          planToTest = inner
+          types = t :: types
+        case OrderedUnion(inner: OrderedUnion, UndirectedRelationshipTypeScan(r, s, t, e, a, o), Seq(colOrder))
+          if checkConsistency(r, s, e, colOrder, o, a, directed = false) =>
+          planToTest = inner
+          types = t :: types
+        case _ =>
+          return None
+      }
+    }
+
+    // will not be reached
+    throw new IllegalStateException("Reached impossible condition")
   }
 }
