@@ -136,7 +136,7 @@ public interface Status {
                         + "You may however chain bookmarks generated from system database with bookmarks from another database."),
         Terminated(ClientError, "Explicitly terminated by the user."),
         LockAcquisitionTimeout(
-                ClientError, "Unable to acquire lock within configured timeout (db.lock.acquisition.timeout)."),
+                TransientError, "Unable to acquire lock within configured timeout (db.lock.acquisition.timeout)."),
 
         // database errors
         TransactionStartFailed(DatabaseError, "The database was unable to start the transaction."),
@@ -161,7 +161,7 @@ public interface Status {
                 "Transaction has seen state which has been invalidated by applied updates while "
                         + "transaction was active. Transaction may succeed if retried."),
         LockClientStopped(
-                TransientError,
+                ClientError,
                 "The transaction has been terminated, so no more locks can be acquired. This can occur because the "
                         + "transaction ran longer than the configured transaction timeout, or because a human operator manually "
                         + "terminated the transaction, or because the database is shutting down."),
