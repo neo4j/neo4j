@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.graphcounts.GraphCountsJson
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
-import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
-import org.neo4j.graphdb.schema.IndexType
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getProvidesOrder
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getWithValues
+import org.neo4j.internal.schema.IndexType
 import org.scalatest.FunSuite
 import org.scalatest.Matchers.contain
 import org.scalatest.Matchers.convertToAnyShouldWrapper
@@ -33,7 +34,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends FunSuite
   /**
    * These index types are currently handled differently from all the other property indexes.
    */
-  val unsupportedIndexTypes = Set(IndexType.LOOKUP, IndexType.FULLTEXT)
+  val unsupportedIndexTypes: Set[IndexType] = Set(IndexType.LOOKUP, IndexType.FULLTEXT)
 
   test("processGraphCount for node indexes") {
     IndexType.values()
@@ -68,12 +69,12 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends FunSuite
           val planner = plannerBuilder().processGraphCounts(graphCountData)
           planner.indexes.propertyIndexes should contain only IndexDefinition(
             entityType = IndexDefinition.EntityType.Node("Person"),
-            indexType = indexType,
+            indexType = indexType.toPublicApi,
             propertyKeys = Seq("name"),
             uniqueValueSelectivity = 1,
             propExistsSelectivity = 1.0 / personCount,
-            withValues = true,
-            withOrdering = IndexOrderCapability.BOTH
+            withValues = getWithValues(indexType),
+            withOrdering = getProvidesOrder(indexType)
           )
         }
       }
@@ -115,12 +116,12 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends FunSuite
           val planner = plannerBuilder().processGraphCounts(graphCountData)
           planner.indexes.propertyIndexes should contain only IndexDefinition(
             entityType = IndexDefinition.EntityType.Relationship("FRIEND"),
-            indexType = indexType,
+            indexType = indexType.toPublicApi,
             propertyKeys = Seq("name"),
             uniqueValueSelectivity = 1,
             propExistsSelectivity = 1.0 / friendCount,
-            withValues = true,
-            withOrdering = IndexOrderCapability.BOTH
+            withValues = getWithValues(indexType),
+            withOrdering = getProvidesOrder(indexType)
           )
         }
       }

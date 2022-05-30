@@ -42,6 +42,8 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Indexes
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Options
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.RelDef
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getProvidesOrder
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getWithValues
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ConfigurableIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
@@ -73,9 +75,12 @@ import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.graphdb
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.schema.ConstraintType
+import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.IndexType.FULLTEXT
 import org.neo4j.internal.schema.IndexType.LOOKUP
+import org.neo4j.internal.schema.IndexType.POINT
 import org.neo4j.internal.schema.IndexType.RANGE
+import org.neo4j.internal.schema.IndexType.TEXT
 
 trait StatisticsBackedLogicalPlanningSupport {
 
@@ -199,6 +204,22 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
   }
 
   case class ExistenceConstraintDefinition(entityType: IndexDefinition.EntityType, propertyKey: String)
+
+  def getProvidesOrder(indexType: IndexType): IndexOrderCapability = indexType match {
+    case FULLTEXT => IndexOrderCapability.NONE
+    case LOOKUP   => IndexOrderCapability.BOTH
+    case TEXT     => IndexOrderCapability.NONE
+    case RANGE    => IndexOrderCapability.BOTH
+    case POINT    => IndexOrderCapability.NONE
+  }
+
+  def getWithValues(indexType: IndexType): Boolean = indexType match {
+    case FULLTEXT => false
+    case LOOKUP   => true
+    case TEXT     => false
+    case RANGE    => true
+    case POINT    => true
+  }
 }
 
 case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
@@ -493,8 +514,8 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
             existsSelectivity,
             uniqueSelectivity,
             isUnique = isUnique,
-            withValues = true,
-            providesOrder = IndexOrderCapability.BOTH,
+            withValues = getWithValues(indexType),
+            providesOrder = getProvidesOrder(indexType),
             indexType.toPublicApi
           )
         case (builder, i @ Index(None, Some(Seq(relType)), indexType, properties, totalSize, estimatedUniqueSize, _)) =>
@@ -507,8 +528,8 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
             existsSelectivity,
             uniqueSelectivity,
             isUnique = isUnique,
-            withValues = true,
-            providesOrder = IndexOrderCapability.BOTH,
+            withValues = getWithValues(indexType),
+            providesOrder = getProvidesOrder(indexType),
             indexType.toPublicApi
           )
         case (_, index) => throw new IllegalArgumentException(s"Unsupported index: $index")
