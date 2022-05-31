@@ -63,31 +63,23 @@ object LabelExpressionEvaluator {
     labelExpression: Expression,
     nodes: NodesToCheckOverlap,
     labels: Set[String]
-  ): Option[Boolean] = {
+  ): TailRecOption[Boolean] = {
     labelExpression match {
       case HasLabels(Variable(node), hasLabels) if nodes.contains(node) =>
-        Some(labels.exists(hasLabels.map(_.name).contains))
-      case And(lhs, rhs) => evalBinFunc(nodes, lhs, rhs, labels, (lhs, rhs) => lhs && rhs)
-      case Or(lhs, rhs)  => evalBinFunc(nodes, lhs, rhs, labels, (lhs, rhs) => lhs || rhs)
-      case Not(expr)     => labelExpressionEvaluator(expr, nodes, labels).map(!_)
+        TailRecOption.some(labels.exists(hasLabels.map(_.name).contains))
+      case And(lhs, rhs) => TailRecOption.tailcall(evalBinFunc(nodes, lhs, rhs, labels, (lhs, rhs) => lhs && rhs))
+      case Or(lhs, rhs)  => TailRecOption.tailcall(evalBinFunc(nodes, lhs, rhs, labels, (lhs, rhs) => lhs || rhs))
+      case Not(expr)     => TailRecOption.tailcall(labelExpressionEvaluator(expr, nodes, labels)).map(!_)
       case Ors(exprs) =>
-        val evaluatedExprs = exprs.map(expr => labelExpressionEvaluator(expr, nodes, labels))
-        if (evaluatedExprs.contains(None)) {
-          None
-        } else {
-          Some(evaluatedExprs.flatten.contains(true))
-        }
+        TailRecOption.traverse(exprs)(expr => labelExpressionEvaluator(expr, nodes, labels))
+          .map(_.contains(true))
       case Ands(exprs) =>
-        val evaluatedExprs = exprs.map(expr => labelExpressionEvaluator(expr, nodes, labels))
-        if (evaluatedExprs.contains(None)) {
-          None
-        } else {
-          Some(!evaluatedExprs.flatten.contains(false))
-        }
+        TailRecOption.traverse(exprs)(expr => labelExpressionEvaluator(expr, nodes, labels))
+          .map(!_.contains(false))
       case Xor(lhs, rhs)       => evalBinFunc(nodes, lhs, rhs, labels, (lhs, rhs) => lhs ^ rhs)
       case Equals(lhs, rhs)    => evalBinFunc(nodes, lhs, rhs, labels, (lhs, rhs) => lhs == rhs)
       case NotEquals(lhs, rhs) => evalBinFunc(nodes, lhs, rhs, labels, (lhs, rhs) => lhs != rhs)
-      case _                   => None
+      case _                   => TailRecOption.none
     }
   }
 
@@ -97,9 +89,9 @@ object LabelExpressionEvaluator {
     b: Expression,
     labels: Set[String],
     op: (Boolean, Boolean) => Boolean
-  ): Option[Boolean] =
+  ): TailRecOption[Boolean] =
     for {
-      lhs <- labelExpressionEvaluator(a, nodes, labels)
-      rhs <- labelExpressionEvaluator(b, nodes, labels)
+      lhs <- TailRecOption.tailcall(labelExpressionEvaluator(a, nodes, labels))
+      rhs <- TailRecOption.tailcall(labelExpressionEvaluator(b, nodes, labels))
     } yield op(lhs, rhs)
 }
