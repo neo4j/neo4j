@@ -77,11 +77,9 @@ trait IndexPipeWithValues extends Pipe {
       while (cursor.next()) {
 
         val relationship = queryContext.relationshipById(cursor.relationshipReference())
-        val relScanCursor = state.cursors.relationshipScanCursor
-        state.query.singleRelationship(relationship.id(), relScanCursor)
-        if (relScanCursor.next()) {
-          val source = queryContext.nodeById(relScanCursor.sourceNodeReference())
-          val target = queryContext.nodeById(relScanCursor.targetNodeReference())
+        if (cursor.readFromStore()) {
+          val source = queryContext.nodeById(cursor.sourceNodeReference())
+          val target = queryContext.nodeById(cursor.targetNodeReference())
           val newContext = rowFactory.copyWith(baseContext, ident, relationship, startNode, source, endNode, target)
           var i = 0
           while (i < indexPropertyIndices.length) {
@@ -121,11 +119,9 @@ trait IndexPipeWithValues extends Pipe {
           var ctx: CypherRow = null
           while (ctx == null && cursor.next()) {
             lastRelationship = queryContext.relationshipById(cursor.relationshipReference())
-            val relScanCursor = state.cursors.relationshipScanCursor
-            queryContext.singleRelationship(lastRelationship.id(), relScanCursor)
-            if (relScanCursor.next()) {
-              lastStart = queryContext.nodeById(relScanCursor.sourceNodeReference())
-              lastEnd = queryContext.nodeById(relScanCursor.targetNodeReference())
+            if (cursor.readFromStore()) {
+              lastStart = queryContext.nodeById(cursor.sourceNodeReference())
+              lastEnd = queryContext.nodeById(cursor.targetNodeReference())
               emitSibling = true
               ctx = rowFactory.copyWith(baseContext, ident, lastRelationship, startNode, lastStart, endNode, lastEnd)
             }

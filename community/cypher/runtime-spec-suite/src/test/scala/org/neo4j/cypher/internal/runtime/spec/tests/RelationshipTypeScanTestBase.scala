@@ -308,7 +308,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     // TODO: Interpreted and slotted doesn't count relationshipById as a dbhit
     //      is this a bug?
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should
-      (be(sizeHint) or be(sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/ ) or be(
+      (be(sizeHint + 1) or be(sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/ ) or be(
         2 * sizeHint + 1 + 0 /*costOfRelationshipTypeLookup*/
       ))
   }
@@ -331,7 +331,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     // TODO: Interpreted and slotted doesn't count relationshipById as a dbhit
     //      is this a bug?
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should
-      (be(sizeHint) or be(sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/ ) or be(
+      (be(sizeHint + 1) or be(sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/ ) or be(
         2 * sizeHint + 1 + 0 /*costOfRelationshipTypeLookup*/
       ))
   }

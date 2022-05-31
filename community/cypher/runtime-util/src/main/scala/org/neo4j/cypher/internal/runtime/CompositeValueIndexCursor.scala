@@ -153,6 +153,8 @@ private class UnorderedRelationshipCursor(cursors: Array[RelationshipValueIndexC
 
   override protected def innerNext(cursor: RelationshipValueIndexCursor): Boolean = cursor.next()
 
+  override def readFromStore(): Boolean = current.readFromStore()
+
   override def source(cursor: NodeCursor): Unit = current.source(cursor)
 
   override def target(cursor: NodeCursor): Unit = current.target(cursor)
@@ -241,6 +243,8 @@ private class MergeSortRelationshipCursor(
     closed = true
     IOUtils.closeAll(cursors: _*)
   }
+
+  override def readFromStore(): Boolean = current.readFromStore()
 
   override def source(cursor: NodeCursor): Unit = current.source(cursor)
 

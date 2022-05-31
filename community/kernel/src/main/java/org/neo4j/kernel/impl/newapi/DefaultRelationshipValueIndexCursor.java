@@ -38,7 +38,6 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
         implements RelationshipValueIndexCursor {
     private final DefaultRelationshipScanCursor relationshipScanCursor;
     private int[] propertyIds;
-    private boolean cursorIsInPosition;
 
     DefaultRelationshipValueIndexCursor(
             CursorPool<DefaultRelationshipValueIndexCursor> pool,
@@ -50,19 +49,19 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
 
     @Override
     public void source(NodeCursor cursor) {
-        positionInnerCursor();
+        checkReadFromStore();
         read.singleNode(relationshipScanCursor.sourceNodeReference(), cursor);
     }
 
     @Override
     public void target(NodeCursor cursor) {
-        positionInnerCursor();
+        checkReadFromStore();
         read.singleNode(relationshipScanCursor.targetNodeReference(), cursor);
     }
 
     @Override
     public int type() {
-        positionInnerCursor();
+        checkReadFromStore();
         return relationshipScanCursor.type();
     }
 
@@ -73,39 +72,42 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
 
     @Override
     public long sourceNodeReference() {
-        positionInnerCursor();
+        checkReadFromStore();
         return relationshipScanCursor.sourceNodeReference();
     }
 
     @Override
     public long targetNodeReference() {
-        positionInnerCursor();
+        checkReadFromStore();
         return relationshipScanCursor.targetNodeReference();
     }
 
     @Override
     public void properties(PropertyCursor cursor, PropertySelection selection) {
-        positionInnerCursor();
+        checkReadFromStore();
         relationshipScanCursor.properties(cursor, selection);
     }
 
     @Override
     public Reference propertiesReference() {
-        positionInnerCursor();
+        checkReadFromStore();
         return relationshipScanCursor.propertiesReference();
     }
 
     @Override
-    public boolean next() {
-        cursorIsInPosition = false;
-        return super.next();
+    public boolean readFromStore() {
+        if (relationshipScanCursor.relationshipReference() == entity) {
+            // A security check, or a previous call to this method for this relationship already seems to have loaded
+            // this relationship
+            return true;
+        }
+        relationshipScanCursor.single(entity, read);
+        return relationshipScanCursor.next();
     }
 
-    private void positionInnerCursor() {
-        if (!cursorIsInPosition) {
-            cursorIsInPosition = true;
-            relationshipScanCursor.single(entity, read);
-            relationshipScanCursor.next();
+    private void checkReadFromStore() {
+        if (relationshipScanCursor.relationshipReference() != entity) {
+            throw new IllegalStateException("Relationship hasn't been read from store");
         }
     }
 

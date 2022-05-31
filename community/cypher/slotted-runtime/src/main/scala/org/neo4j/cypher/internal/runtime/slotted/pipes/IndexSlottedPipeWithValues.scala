@@ -66,13 +66,11 @@ trait IndexSlottedPipeWithValues extends Pipe {
     override protected def fetchNext(): CypherRow = {
       while (cursor.next()) {
         // NOTE: sourceNodeReference and targetNodeReference is not implemented yet on the cursor
-        val internalCursor = state.cursors.relationshipScanCursor
-        state.query.singleRelationship(cursor.relationshipReference(), internalCursor)
-        if (internalCursor.next()) {
+        if (cursor.readFromStore()) {
           val slottedContext = state.newRowWithArgument(rowFactory)
           slottedContext.setLongAt(offset, cursor.relationshipReference())
-          slottedContext.setLongAt(startOffset, internalCursor.sourceNodeReference())
-          slottedContext.setLongAt(endOffset, internalCursor.targetNodeReference())
+          slottedContext.setLongAt(startOffset, cursor.sourceNodeReference())
+          slottedContext.setLongAt(endOffset, cursor.targetNodeReference())
           var i = 0
           while (i < indexPropertyIndices.length) {
             val value = cursor.propertyValue(indexPropertyIndices(i))
@@ -112,12 +110,10 @@ trait IndexSlottedPipeWithValues extends Pipe {
           while (slottedContext == null && cursor.next()) {
             emitSibling = true
             // NOTE: sourceNodeReference and targetNodeReference is not implemented yet on the cursor
-            val internalCursor = state.cursors.relationshipScanCursor
-            state.query.singleRelationship(cursor.relationshipReference(), internalCursor)
-            if (internalCursor.next()) {
-              lastRelationship = internalCursor.relationshipReference()
-              lastStart = internalCursor.sourceNodeReference()
-              lastEnd = internalCursor.targetNodeReference()
+            if (cursor.readFromStore()) {
+              lastRelationship = cursor.relationshipReference()
+              lastStart = cursor.sourceNodeReference()
+              lastEnd = cursor.targetNodeReference()
               slottedContext = state.newRowWithArgument(rowFactory)
               slottedContext.setLongAt(offset, lastRelationship)
               slottedContext.setLongAt(startOffset, lastStart)

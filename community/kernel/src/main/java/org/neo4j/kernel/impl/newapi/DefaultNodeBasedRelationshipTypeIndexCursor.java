@@ -55,6 +55,12 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor extends DefaultRelation
     }
 
     @Override
+    public boolean readFromStore() {
+        // The inner relationship traversal cursor is already placed at the current relationship
+        return true;
+    }
+
+    @Override
     protected boolean innerNext() {
         do {
             if (relationshipTraversalCursor.next()) {

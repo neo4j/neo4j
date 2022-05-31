@@ -69,7 +69,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         extends KernelAPIReadTestBase<ReadTestSupport> {
     private static final int TOTAL_ENTITY_COUNT = 37;
     private static final String COMPOSITE_INDEX_NAME = "compositeIndex";
-    private static final String PROP_INDEX_NAME = "nodeProp";
+    protected static final String PROP_INDEX_NAME = "nodeProp";
     private static final String PROP_2_INDEX_NAME = "nodeProp2";
     private static final String PROP_3_INDEX_NAME = "nodeProp3";
     private static final String WHAT_EVER_INDEX_NAME = "whatEver";
@@ -82,7 +82,12 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
     public static final String PERSON_TOKEN = "Person";
     public static final String WHAT_TOKEN = "What";
     public static final String EVER_PROP_NAME = "ever";
-    private static long strOne, strTwo1, strTwo2, strThree1, strThree2, strThree3;
+    protected static long strOne;
+    protected static long strTwo1;
+    protected static long strTwo2;
+    protected static long strThree1;
+    protected static long strThree2;
+    protected static long strThree3;
     private static long boolTrue, num5, num6, num12a, num12b;
     private static long strOneNoLabel;
     private static long joeDalton, williamDalton, jackDalton, averellDalton;
@@ -96,8 +101,8 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
     private static final PointValue POINT_2 =
             PointValue.parse("{latitude: 40.7128, longitude: -74.006000001, crs: 'wgs-84'}");
 
-    private final EntityParams<ENTITY_VALUE_INDEX_CURSOR> entityParams = getEntityParams();
-    private final IndexParams indexParams = getIndexParams();
+    protected final EntityParams<ENTITY_VALUE_INDEX_CURSOR> entityParams = getEntityParams();
+    protected final IndexParams indexParams = getIndexParams();
 
     protected abstract EntityParams<ENTITY_VALUE_INDEX_CURSOR> getEntityParams();
 
@@ -1025,7 +1030,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         assertFalse(cursor.next(), "no more than " + expectedCount + " entities");
     }
 
-    private void assertFoundEntitiesAndValue(
+    protected void assertFoundEntitiesAndValue(
             ENTITY_VALUE_INDEX_CURSOR cursor,
             MutableLongSet uniqueIds,
             boolean expectValue,

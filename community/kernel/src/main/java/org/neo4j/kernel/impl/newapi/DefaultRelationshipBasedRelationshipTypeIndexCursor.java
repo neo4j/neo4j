@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
@@ -33,7 +32,6 @@ import org.neo4j.storageengine.api.StorageEngineIndexingBehaviour;
  */
 public class DefaultRelationshipBasedRelationshipTypeIndexCursor extends DefaultRelationshipTypeIndexCursor {
     private final DefaultRelationshipScanCursor relationshipScanCursor;
-    private boolean cursorIsInPosition;
 
     DefaultRelationshipBasedRelationshipTypeIndexCursor(
             CursorPool<DefaultRelationshipTypeIndexCursor> pool, DefaultRelationshipScanCursor relationshipScanCursor) {
@@ -50,29 +48,28 @@ public class DefaultRelationshipBasedRelationshipTypeIndexCursor extends Default
         return relationshipScanCursor.next();
     }
 
-    private RelationshipDataAccessor positionedRelationshipCursor() {
-        positionInnerCursor();
-        return relationshipScanCursor;
-    }
-
     @Override
     public void source(NodeCursor cursor) {
-        read.singleNode(positionedRelationshipCursor().sourceNodeReference(), cursor);
+        checkReadFromStore();
+        read.singleNode(relationshipScanCursor.sourceNodeReference(), cursor);
     }
 
     @Override
     public void target(NodeCursor cursor) {
-        read.singleNode(positionedRelationshipCursor().targetNodeReference(), cursor);
+        checkReadFromStore();
+        read.singleNode(relationshipScanCursor.targetNodeReference(), cursor);
     }
 
     @Override
     public long sourceNodeReference() {
-        return positionedRelationshipCursor().sourceNodeReference();
+        checkReadFromStore();
+        return relationshipScanCursor.sourceNodeReference();
     }
 
     @Override
     public long targetNodeReference() {
-        return positionedRelationshipCursor().targetNodeReference();
+        checkReadFromStore();
+        return relationshipScanCursor.targetNodeReference();
     }
 
     @Override
@@ -82,41 +79,36 @@ public class DefaultRelationshipBasedRelationshipTypeIndexCursor extends Default
 
     @Override
     public void properties(PropertyCursor cursor, PropertySelection selection) {
-        positionedRelationshipCursor().properties(cursor, selection);
+        checkReadFromStore();
+        relationshipScanCursor.properties(cursor, selection);
     }
 
     @Override
     public Reference propertiesReference() {
-        return positionedRelationshipCursor().propertiesReference();
+        checkReadFromStore();
+        return relationshipScanCursor.propertiesReference();
     }
 
     @Override
-    public boolean next() {
-        cursorIsInPosition = false;
-        return super.next();
+    public boolean readFromStore() {
+        if (relationshipScanCursor.relationshipReference() == entity) {
+            // A security check, or a previous call to this method for this relationship already seems to have loaded
+            // this relationship
+            return true;
+        }
+        relationshipScanCursor.single(entity, read);
+        return relationshipScanCursor.next();
     }
 
-    // For relationships in tx-state we haven't already positioned the internal relationship scan cursor on that
-    // relationship,
-    // therefore make that check here.
-    private void positionInnerCursor() {
-        if (!cursorIsInPosition) {
-            relationshipScanCursor.single(entity, read);
-            relationshipScanCursor.next();
-            cursorIsInPosition = true;
+    private void checkReadFromStore() {
+        if (relationshipScanCursor.relationshipReference() != entity) {
+            throw new IllegalStateException("Relationship hasn't been read from store");
         }
-    }
-
-    @Override
-    public void closeInternal() {
-        if (!isClosed()) {
-            relationshipScanCursor.close();
-        }
-        super.closeInternal();
     }
 
     @Override
     public void release() {
+        relationshipScanCursor.close();
         relationshipScanCursor.release();
     }
 }

@@ -602,7 +602,6 @@ private[internal] class TransactionBoundReadQueryContext(
     val read = reads()
     val typeCursor =
       transactionalContext.cursors.allocateRelationshipTypeIndexCursor(transactionalContext.cursorContext)
-    val relCursor = transactionalContext.cursors.allocateRelationshipScanCursor(transactionalContext.cursorContext)
     read.relationshipTypeScan(
       session,
       typeCursor,
@@ -611,8 +610,7 @@ private[internal] class TransactionBoundReadQueryContext(
       transactionalContext.cursorContext
     )
     resources.trace(typeCursor)
-    resources.trace(relCursor)
-    new RelationshipTypeCursorIterator(read, typeCursor, relCursor)
+    new RelationshipTypeCursorIterator(read, typeCursor)
   }
 
   override def nodeCursor(): NodeCursor =
@@ -1663,8 +1661,7 @@ object TransactionBoundQueryContext {
 
   class RelationshipTypeCursorIterator(
     read: Read,
-    typeIndexCursor: RelationshipTypeIndexCursor,
-    scanCursor: RelationshipScanCursor
+    typeIndexCursor: RelationshipTypeIndexCursor
   ) extends BaseRelationshipCursorIterator {
 
     override def relationshipVisit[EXCEPTION <: Exception](
@@ -1675,30 +1672,24 @@ object TransactionBoundQueryContext {
       true
     }
 
-    private def nextFromRelStore(): Boolean = {
-      read.singleRelationship(typeIndexCursor.relationshipReference(), scanCursor)
-      scanCursor.next()
-    }
-
     override protected def fetchNext(): Long = {
       while (typeIndexCursor.next()) {
         // check that relationship was successfully retrieved from store (protect against concurrent deletes)
-        if (nextFromRelStore()) {
-          return scanCursor.relationshipReference()
+        if (typeIndexCursor.readFromStore()) {
+          return typeIndexCursor.relationshipReference()
         }
       }
       -1L
     }
 
     override protected def storeState(): Unit = {
-      relTypeId = scanCursor.`type`()
-      source = scanCursor.sourceNodeReference()
-      target = scanCursor.targetNodeReference()
+      relTypeId = typeIndexCursor.`type`()
+      source = typeIndexCursor.sourceNodeReference()
+      target = typeIndexCursor.targetNodeReference()
     }
 
     override def close(): Unit = {
       typeIndexCursor.close()
-      scanCursor.close()
     }
   }
 

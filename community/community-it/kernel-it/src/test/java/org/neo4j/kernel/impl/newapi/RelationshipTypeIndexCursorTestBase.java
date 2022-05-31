@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertRelationshipCount;
 import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertRelationships;
@@ -40,6 +42,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEvent;
+import org.neo4j.memory.EmptyMemoryTracker;
 
 abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G> {
@@ -171,6 +174,126 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
                         new TraceEvent(Relationship, second),
                         new TraceEvent(Relationship, third));
             }
+        }
+    }
+
+    @Test
+    void shouldReadRelationshipOnReadFromStore() throws Exception {
+        // given
+        long first;
+        long second;
+        long third;
+        try (var tx = beginTransaction()) {
+            first = createRelationship(tx.dataWrite(), typeOne);
+            second = createRelationship(tx.dataWrite(), typeOne);
+            third = createRelationship(tx.dataWrite(), typeOne);
+            tx.commit();
+        }
+
+        try (var tx = beginTransaction();
+                var cursor = tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT);
+                var scanCursor = tx.cursors().allocateRelationshipScanCursor(NULL_CONTEXT)) {
+            var read = tx.dataRead();
+            read.singleRelationship(first, scanCursor);
+            assertThat(scanCursor.next()).isTrue();
+            var relSourceNode = scanCursor.sourceNodeReference();
+            var relTargetNode = scanCursor.targetNodeReference();
+
+            // when
+            relationshipTypeScan(tx, typeOne, cursor, IndexOrder.NONE);
+            assertThat(cursor.next()).isTrue();
+            assertThat(cursor.readFromStore()).isTrue();
+            try (var tx2 = beginTransaction()) {
+                tx2.dataWrite().relationshipDelete(first);
+                tx2.commit();
+            }
+
+            // then
+            assertThat(cursor.type()).isEqualTo(typeOne);
+            assertThat(cursor.sourceNodeReference()).isEqualTo(relSourceNode);
+            assertThat(cursor.targetNodeReference()).isEqualTo(relTargetNode);
+
+            assertThat(cursor.next()).isTrue();
+            assertThat(cursor.relationshipReference()).isEqualTo(second);
+            assertThat(cursor.next()).isTrue();
+            assertThat(cursor.relationshipReference()).isEqualTo(third);
+            assertThat(cursor.next()).isFalse();
+        }
+    }
+
+    @Test
+    void shouldNotLoadDeletedRelationshipOnReadFromStore() throws Exception {
+        // given
+        long first;
+        long second;
+        long third;
+        try (var tx = beginTransaction()) {
+            first = createRelationship(tx.dataWrite(), typeOne);
+            second = createRelationship(tx.dataWrite(), typeOne);
+            third = createRelationship(tx.dataWrite(), typeOne);
+            tx.commit();
+        }
+
+        try (var tx = beginTransaction();
+                var cursor = tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT);
+                var scanCursor = tx.cursors().allocateRelationshipScanCursor(NULL_CONTEXT)) {
+            var read = tx.dataRead();
+            read.singleRelationship(second, scanCursor);
+            assertThat(scanCursor.next()).isTrue();
+            var relSourceNode = scanCursor.sourceNodeReference();
+            var relTargetNode = scanCursor.targetNodeReference();
+
+            // when
+            relationshipTypeScan(tx, typeOne, cursor, IndexOrder.NONE);
+            assertThat(cursor.next()).isTrue();
+            try (var tx2 = beginTransaction()) {
+                tx2.dataWrite().relationshipDelete(first);
+                tx2.commit();
+            }
+
+            // then
+            assertThat(cursor.readFromStore()).isFalse();
+
+            assertThat(cursor.next()).isTrue();
+            assertThat(cursor.readFromStore()).isTrue();
+            assertThat(cursor.type()).isEqualTo(typeOne);
+            assertThat(cursor.sourceNodeReference()).isEqualTo(relSourceNode);
+            assertThat(cursor.targetNodeReference()).isEqualTo(relTargetNode);
+
+            assertThat(cursor.next()).isTrue();
+            assertThat(cursor.relationshipReference()).isEqualTo(third);
+            assertThat(cursor.next()).isFalse();
+        }
+    }
+
+    @Test
+    void shouldFailOnReadRelationshipBeforeReadFromStore() throws Exception {
+        // given
+        long rel;
+        try (var tx = beginTransaction()) {
+            rel = createRelationship(tx.dataWrite(), typeOne);
+            tx.commit();
+        }
+
+        try (var tx = beginTransaction();
+                var cursor = tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var propertyCursor = tx.cursors().allocatePropertyCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE)) {
+            // when
+            relationshipTypeScan(tx, typeOne, cursor, IndexOrder.NONE);
+            assertThat(cursor.next()).isTrue();
+
+            // then these should fail
+            assertThatThrownBy(() -> cursor.source(nodeCursor)).isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(cursor::sourceNodeReference).isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(() -> cursor.target(nodeCursor)).isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(cursor::targetNodeReference).isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(() -> cursor.properties(propertyCursor)).isInstanceOf(IllegalStateException.class);
+
+            // although these should succeed, since it already has those from the index
+            assertThat(cursor.type()).isEqualTo(typeOne);
+            assertThat(cursor.relationshipReference()).isEqualTo(rel);
+            assertThat(cursor.next()).isFalse();
         }
     }
 

@@ -89,6 +89,11 @@ public interface RelationshipValueIndexCursor extends RelationshipIndexCursor, V
         }
 
         @Override
+        public boolean readFromStore() {
+            return false;
+        }
+
+        @Override
         public void setTracer(KernelReadTracer tracer) {}
 
         @Override

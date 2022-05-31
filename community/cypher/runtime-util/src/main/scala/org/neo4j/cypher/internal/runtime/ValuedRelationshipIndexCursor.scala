@@ -39,6 +39,8 @@ class ValuedRelationshipIndexCursor(val inner: RelationshipValueIndexCursor, val
 
   override def next(): Boolean = inner.next()
 
+  override def readFromStore(): Boolean = inner.readFromStore()
+
   override def closeInternal(): Unit = inner.close()
 
   override def isClosed: Boolean = inner.isClosed

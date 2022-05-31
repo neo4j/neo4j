@@ -43,6 +43,7 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
+import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenPredicate;
@@ -262,8 +263,6 @@ public class AllStoreHolder extends Read {
                     long count = 0;
                     try (DefaultRelationshipTypeIndexCursor relationshipsWithType =
                                     cursors.allocateRelationshipTypeIndexCursor(cursorContext);
-                            DefaultRelationshipScanCursor relationship =
-                                    cursors.allocateRelationshipScanCursor(cursorContext);
                             DefaultNodeCursor sourceNode = cursors.allocateNodeCursor(cursorContext);
                             DefaultNodeCursor targetNode = cursors.allocateNodeCursor(cursorContext)) {
                         var session = tokenReadSession(index);
@@ -297,23 +296,48 @@ public class AllStoreHolder extends Read {
     }
 
     private static long countRelationshipsWithEndLabels(
-            RelationshipDataAccessor relationship,
+            RelationshipIndexCursor relationship,
             DefaultNodeCursor sourceNode,
             DefaultNodeCursor targetNode,
             int startLabelId,
             int endLabelId) {
         long internalCount = 0;
         while (relationship.next()) {
-            relationship.source(sourceNode);
-            relationship.target(targetNode);
-            if (sourceNode.next()
-                    && (startLabelId == TokenRead.ANY_LABEL || sourceNode.hasLabel(startLabelId))
-                    && targetNode.next()
-                    && (endLabelId == TokenRead.ANY_LABEL || targetNode.hasLabel(endLabelId))) {
+            if (relationship.readFromStore()
+                    && matchesLabels(relationship, sourceNode, targetNode, startLabelId, endLabelId)) {
                 internalCount++;
             }
         }
         return internalCount;
+    }
+
+    private static long countRelationshipsWithEndLabels(
+            RelationshipScanCursor relationship,
+            DefaultNodeCursor sourceNode,
+            DefaultNodeCursor targetNode,
+            int startLabelId,
+            int endLabelId) {
+        long internalCount = 0;
+        while (relationship.next()) {
+            if (matchesLabels(relationship, sourceNode, targetNode, startLabelId, endLabelId)) {
+                internalCount++;
+            }
+        }
+        return internalCount;
+    }
+
+    private static boolean matchesLabels(
+            RelationshipDataAccessor relationship,
+            DefaultNodeCursor sourceNode,
+            DefaultNodeCursor targetNode,
+            int startLabelId,
+            int endLabelId) {
+        relationship.source(sourceNode);
+        relationship.target(targetNode);
+        return sourceNode.next()
+                && (startLabelId == TokenRead.ANY_LABEL || sourceNode.hasLabel(startLabelId))
+                && targetNode.next()
+                && (endLabelId == TokenRead.ANY_LABEL || targetNode.hasLabel(endLabelId));
     }
 
     private long countsForRelationshipInTxState(int startLabelId, int typeId, int endLabelId) {

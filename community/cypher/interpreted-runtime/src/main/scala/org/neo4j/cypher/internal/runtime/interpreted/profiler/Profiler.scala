@@ -336,6 +336,7 @@ final class ProfilingPipeQueryContext(inner: QueryContext, counter: Counter)
       override def properties(cursor: PropertyCursor, selection: PropertySelection): Unit =
         inner.properties(cursor, selection)
       override def propertiesReference(): Reference = inner.propertiesReference()
+      override def readFromStore(): Boolean = inner.readFromStore()
     }
 
   override protected def manyDbHits(inner: RelationshipTraversalCursor): RelationshipTraversalCursor = {
