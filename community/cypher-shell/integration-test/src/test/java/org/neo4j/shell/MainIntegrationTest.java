@@ -39,6 +39,7 @@ import static org.neo4j.shell.util.Versions.majorVersion;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.hamcrest.Matcher;
@@ -58,6 +59,7 @@ import org.neo4j.shell.prettyprint.PrettyConfig;
 import org.neo4j.shell.prettyprint.PrettyPrinter;
 import org.neo4j.shell.printer.AnsiPrinter;
 import org.neo4j.shell.state.BoltStateHandler;
+import org.neo4j.shell.terminal.TestSimplePrompt;
 import org.neo4j.shell.test.AssertableMain;
 import org.neo4j.shell.util.Version;
 import org.neo4j.shell.util.Versions;
@@ -83,7 +85,7 @@ class MainIntegrationTest {
                 .userInputLines("kate", "bush", "return 42 as x;", ":exit")
                 .run()
                 .assertSuccess()
-                .assertThatOutput(startsWith(format("username: kate%npassword: ****%n")), returned42AndExited());
+                .assertThatOutput(startsWith(format("username: kate%npassword: %n")), returned42AndExited());
     }
 
     @Test
@@ -111,7 +113,7 @@ class MainIntegrationTest {
                 .assertThatOutput(
                         startsWith(
                                 format(
-                                        "username: bob%npassword: *******%nPassword change required%nnew password: *******%nconfirm password: *******%n")),
+                                        "username: bob%npassword: %nPassword change required%nnew password: %nconfirm password: %n")),
                         returned42AndExited());
     }
 
@@ -189,7 +191,7 @@ class MainIntegrationTest {
                 .userInputLines("holy", "ghost")
                 .run()
                 .assertSuccessAndConnected()
-                .assertOutputLines("username: holy", "password: *****", "x", "42");
+                .assertOutputLines("username: holy", "password: ", "x", "42");
     }
 
     @Test
@@ -228,7 +230,7 @@ class MainIntegrationTest {
                 .userInputLines("jacob", "collier")
                 .run()
                 .assertSuccessAndConnected()
-                .assertOutputLines("username: jacob", "password: *******", "result", "42");
+                .assertOutputLines("username: jacob", "password: ", "result", "42");
     }
 
     @Test
@@ -580,11 +582,7 @@ class MainIntegrationTest {
                 .userInputLines("kate", "bush", "betterpassword", "betterpassword")
                 .run()
                 .assertSuccess()
-                .assertOutputLines(
-                        "username: kate",
-                        "password: ****",
-                        "new password: **************",
-                        "confirm password: **************");
+                .assertOutputLines("username: kate", "password: ", "new password: ", "confirm password: ");
 
         assertUserCanConnectAndRunQuery("kate", "betterpassword");
     }
@@ -596,11 +594,7 @@ class MainIntegrationTest {
                 .userInputLines("paul", "simon", "newpassword", "newpassword")
                 .run()
                 .assertSuccess()
-                .assertOutputLines(
-                        "username: paul",
-                        "password: *****",
-                        "new password: ***********",
-                        "confirm password: ***********");
+                .assertOutputLines("username: paul", "password: ", "new password: ", "confirm password: ");
 
         assertUserCanConnectAndRunQuery("paul", "newpassword");
     }
@@ -612,7 +606,7 @@ class MainIntegrationTest {
                 .userInputLines("oldfield", "newfield", "newfield")
                 .run()
                 .assertSuccess()
-                .assertOutputLines("password: ********", "new password: ********", "confirm password: ********");
+                .assertOutputLines("password: ", "new password: ", "confirm password: ");
 
         assertUserCanConnectAndRunQuery("mike", "newfield");
     }
@@ -625,7 +619,7 @@ class MainIntegrationTest {
                 .run()
                 .assertFailure()
                 .assertThatErrorOutput(startsWith("Failed to change password"))
-                .assertOutputLines("password: ******************", "new password: ******", "confirm password: ******");
+                .assertOutputLines("password: ", "new password: ", "confirm password: ");
     }
 
     @Test
@@ -1087,6 +1081,7 @@ class MainIntegrationTest {
             var terminal = terminalBuilder()
                     .dumb()
                     .streams(in, outPrintStream)
+                    .simplePromptSupplier(() -> new TestSimplePrompt(in, new PrintWriter(out)))
                     .interactive(!args.getNonInteractive())
                     .logger(logger)
                     .build();

@@ -21,6 +21,7 @@ package org.neo4j.shell;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -73,7 +74,7 @@ class MainTest {
                 .userInput("no newline")
                 .run()
                 .assertFailure("No text could be read, exiting...")
-                .assertOutputLines("username: no newline");
+                .assertThatOutput(containsString("username: no newline"));
     }
 
     @Test
@@ -91,7 +92,7 @@ class MainTest {
                 .userInputLines("bob", "secret")
                 .run()
                 .assertSuccess()
-                .assertOutputLines("username: bob", "password: ******");
+                .assertOutputLines("username: bob", "password: ");
     }
 
     @Test
@@ -101,7 +102,7 @@ class MainTest {
                 .userInputLines("bob", "secret")
                 .run()
                 .assertSuccess()
-                .assertOutputLines("username: bob", "password: ******");
+                .assertOutputLines("username: bob", "password: ");
     }
 
     @Test
@@ -146,7 +147,7 @@ class MainTest {
                 .userInputLines("secret")
                 .run()
                 .assertSuccess()
-                .assertOutputLines("password: ******");
+                .assertOutputLines("password: ");
 
         verify(mockShell, times(1)).connect(any());
     }
@@ -159,7 +160,7 @@ class MainTest {
                 .userInputLines("secret")
                 .run()
                 .assertSuccess()
-                .assertOutputLines("password: ******");
+                .assertOutputLines("password: ");
 
         verify(mockShell, times(1)).connect(any());
     }
@@ -172,13 +173,13 @@ class MainTest {
                 .assertSuccess()
                 .assertOutputLines(
                         "username: expired_bob",
-                        "password: ***********",
+                        "password: ",
                         "Password change required",
                         "new password: ",
                         "new password cannot be empty",
                         "",
-                        "new password: ***********",
-                        "confirm password: ***********");
+                        "new password: ",
+                        "confirm password: ");
 
         verify(mockShell, times(3)).connect(any());
     }
@@ -191,9 +192,9 @@ class MainTest {
                 .assertFailure("Passwords are not matching.")
                 .assertOutputLines(
                         "username: expired_bob",
-                        "password: ***********",
+                        "password: ",
                         "Password change required",
-                        "new password: ***********",
+                        "new password: ",
                         "confirm password: ");
 
         verify(mockShell, times(2)).connect(any());
@@ -205,7 +206,7 @@ class MainTest {
                 .userInputLines("bo!b", "sec!ret")
                 .run()
                 .assertSuccess()
-                .assertOutputLines("username: bo!b", "password: *******");
+                .assertOutputLines("username: bo!b", "password: ");
 
         verify(mockShell, times(2)).connect(any());
     }
@@ -227,7 +228,7 @@ class MainTest {
                 .userInputLines("", "bob", "secret")
                 .run()
                 .assertSuccess()
-                .assertOutputLines("username: ", "username cannot be empty", "", "username: bob", "password: ******");
+                .assertOutputLines("username: ", "username cannot be empty", "", "username: bob", "password: ");
 
         verify(mockShell, times(2)).connect(any());
     }
@@ -239,7 +240,7 @@ class MainTest {
                 .outputInteractive(false)
                 .run()
                 .assertFailure(authException.getMessage())
-                .assertOutputLines("username: ", "password: ******");
+                .assertOutputLines("username: ", "password: ");
 
         verify(mockShell, times(2)).connect(any());
     }

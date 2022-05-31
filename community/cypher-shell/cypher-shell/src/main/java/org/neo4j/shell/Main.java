@@ -33,8 +33,6 @@ import org.neo4j.shell.cli.CliArgs;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.commands.CommandHelper;
 import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.exception.NoMoreInputException;
-import org.neo4j.shell.exception.UserInterruptException;
 import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parser.ShellStatementParser;
@@ -246,10 +244,11 @@ public class Main {
         String username = connectionConfig.username();
         String password = connectionConfig.password();
         if (username.isEmpty()) {
-            username = isOutputInteractive ? promptForNonEmptyText("username", null) : promptForText("username", null);
+            username =
+                    isOutputInteractive ? promptForNonEmptyText("username", false) : promptForText("username", false);
         }
         if (password.isEmpty()) {
-            password = promptForText("password", '*');
+            password = promptForText("password", true);
         }
         return connectionConfig.withUsernameAndPassword(username, password);
     }
@@ -262,16 +261,17 @@ public class Main {
         }
         String username = connectionConfig.username();
         if (username.isEmpty()) {
-            username = isOutputInteractive ? promptForNonEmptyText("username", null) : promptForText("username", null);
+            username =
+                    isOutputInteractive ? promptForNonEmptyText("username", false) : promptForText("username", false);
         }
         String password = connectionConfig.password();
         if (password.isEmpty()) {
-            password = promptForText("password", '*');
+            password = promptForText("password", true);
         }
         connectionConfig = connectionConfig.withUsernameAndPassword(username, password);
         String newPassword =
-                isOutputInteractive ? promptForNonEmptyText("new password", '*') : promptForText("new password", '*');
-        String reenteredNewPassword = promptForText("confirm password", '*');
+                isOutputInteractive ? promptForNonEmptyText("new password", true) : promptForText("new password", true);
+        String reenteredNewPassword = promptForText("confirm password", true);
 
         if (!reenteredNewPassword.equals(newPassword)) {
             throw new CommandException("Passwords are not matching.");
@@ -286,22 +286,26 @@ public class Main {
         return shell;
     }
 
-    private String promptForNonEmptyText(String prompt, Character mask) throws Exception {
-        String text = promptForText(prompt, mask);
-        if (!text.isEmpty()) {
-            return text;
+    private String promptForNonEmptyText(String prompt, boolean maskInput) throws Exception {
+        String text = promptForText(prompt, maskInput);
+        while (text.isEmpty()) {
+            text = promptForText(String.format("%s cannot be empty%n%n%s", prompt, prompt), maskInput);
         }
-        terminal.write().println(prompt + " cannot be empty");
-        terminal.write().println();
-        return promptForNonEmptyText(prompt, mask);
+        return text;
     }
 
-    private String promptForText(String prompt, Character mask) throws CommandException {
-        try {
-            return terminal.read().simplePrompt(prompt + ": ", mask);
-        } catch (NoMoreInputException | UserInterruptException e) {
+    private String promptForText(String prompt, boolean maskInput) throws CommandException {
+        String read;
+        try (final var simplePrompt = terminal.simplePrompt()) {
+            final var promptWithColon = prompt + ": ";
+            read = maskInput ? simplePrompt.readPassword(promptWithColon) : simplePrompt.readLine(promptWithColon);
+        } catch (Exception e) {
             log.error(e);
             throw new CommandException("No text could be read, exiting...");
         }
+        if (read == null) {
+            throw new CommandException("No text could be read, exiting...");
+        }
+        return read;
     }
 }

@@ -25,6 +25,7 @@ import static java.util.stream.StreamSupport.stream;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Supplier;
 import org.jline.reader.Expander;
 import org.jline.reader.History;
 import org.jline.reader.LineReader;
@@ -50,12 +51,18 @@ public class JlineTerminal implements CypherShellTerminal {
     private final Reader reader;
     private final Writer writer;
     private final boolean isInteractive;
+    private final Supplier<SimplePrompt> simplePromptSupplier;
 
-    public JlineTerminal(LineReader jLineReader, boolean isInteractive, Printer printer) {
+    public JlineTerminal(
+            LineReader jLineReader,
+            boolean isInteractive,
+            Printer printer,
+            Supplier<SimplePrompt> simplePromptSupplier) {
         assert jLineReader.getParser() instanceof StatementJlineParser;
         this.jLineReader = jLineReader;
         this.printer = printer;
         this.isInteractive = isInteractive;
+        this.simplePromptSupplier = simplePromptSupplier;
         this.reader = new JLineReader();
         this.writer = new JLineWriter();
     }
@@ -66,7 +73,13 @@ public class JlineTerminal implements CypherShellTerminal {
 
     @Override
     public Reader read() {
+        jLineReader.getTerminal().resume();
         return reader;
+    }
+
+    @Override
+    public SimplePrompt simplePrompt() {
+        return simplePromptSupplier.get();
     }
 
     @Override

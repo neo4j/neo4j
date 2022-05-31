@@ -38,6 +38,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,6 +54,7 @@ import org.neo4j.shell.cli.CliArgs;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.printer.AnsiPrinter;
+import org.neo4j.shell.terminal.TestSimplePrompt;
 
 public class AssertableMain {
     private final int exitCode;
@@ -197,9 +199,11 @@ public class AssertableMain {
             var errPrintStream = new PrintStream(err);
             var args = parseArgs();
             var logger = new AnsiPrinter(Format.VERBOSE, outPrintStream, errPrintStream);
+
             var terminal = terminalBuilder()
                     .dumb()
                     .streams(in, outPrintStream)
+                    .simplePromptSupplier(() -> new TestSimplePrompt(in, new PrintWriter(out)))
                     .interactive(!args.getNonInteractive())
                     .logger(logger)
                     .build();

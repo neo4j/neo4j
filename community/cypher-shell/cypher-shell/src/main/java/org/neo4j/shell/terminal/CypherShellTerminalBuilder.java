@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.function.Supplier;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.impl.history.DefaultHistory;
@@ -48,6 +49,7 @@ public class CypherShellTerminalBuilder {
     private boolean isInteractive = true;
     private boolean dumb;
     private ParameterService parameters;
+    private Supplier<SimplePrompt> simplePromptSupplier = SimplePrompt::defaultPrompt;
 
     /** if enabled is true, this is an interactive terminal that supports user input */
     public CypherShellTerminalBuilder interactive(boolean isInteractive) {
@@ -80,6 +82,12 @@ public class CypherShellTerminalBuilder {
         return this;
     }
 
+    @VisibleForTesting
+    public CypherShellTerminalBuilder simplePromptSupplier(Supplier<SimplePrompt> simplePromptSupplier) {
+        this.simplePromptSupplier = simplePromptSupplier;
+        return this;
+    }
+
     public CypherShellTerminal build() {
         assert printer != null;
 
@@ -102,6 +110,7 @@ public class CypherShellTerminalBuilder {
         var jLineTerminal = TerminalBuilder.builder();
 
         jLineTerminal.nativeSignals(true);
+        jLineTerminal.paused(true); // Needed for SimplePrompt to work.
 
         if (in != null) {
             jLineTerminal.streams(in, out);
@@ -130,7 +139,7 @@ public class CypherShellTerminalBuilder {
                 .appName("Cypher Shell")
                 .build();
 
-        return new JlineTerminal(reader, isInteractive, printer);
+        return new JlineTerminal(reader, isInteractive, printer, simplePromptSupplier);
     }
 
     public static CypherShellTerminalBuilder terminalBuilder() {

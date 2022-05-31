@@ -32,8 +32,15 @@ import org.neo4j.shell.printer.AnsiFormattedText;
 public interface CypherShellTerminal {
     int PROMPT_MAX_LENGTH = 50;
 
-    /** Read from terminal */
+    /** Start reading statements interactively */
     Reader read();
+
+    /**
+     * Read simple string from user, intended to be short-lived.
+     *
+     * This is a workaround, I couldn't get jline to mask input when output is redirected.
+     */
+    SimplePrompt simplePrompt();
 
     /** Write to the terminal */
     Writer write();

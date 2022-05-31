@@ -41,6 +41,11 @@ public class WriteOnlyCypherShellTerminal implements CypherShellTerminal {
     }
 
     @Override
+    public SimplePrompt simplePrompt() {
+        throw new UnsupportedOperationException("Could not read input");
+    }
+
+    @Override
     public Writer write() {
         return writer;
     }
