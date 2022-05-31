@@ -169,7 +169,28 @@ public class EncodingIdMapperTest {
 
         // THEN
         assertEquals(1L, mapper.get("1", globalGroup));
-        assertEquals(-1L, mapper.get("", globalGroup));
+        assertEquals(IdMapper.ID_NOT_FOUND, mapper.get("", globalGroup));
+    }
+
+    @Test
+    public void shouldDetectUnknownInputIdWhenStrict() {
+        final var existingInputId = "A";
+        final var nonExistingCollidingInputId = "Ŀ";
+        // First make sure that assumptions of hashing function holds, that is the two input ids above gets the same
+        // hash. If the following assert fails a new pair of input ids needs to be found unless the hash function
+        // has found the perfect non colliding hash function.
+        var encoder = new StringEncoder();
+        assertThat(encoder.encode(existingInputId)).isEqualTo(encoder.encode(nonExistingCollidingInputId));
+
+        // Now the strict mapper should detect that these two are not the same by using the property value lookup
+        var mapper = strictMapper(encoder, Radix.STRING, EncodingIdMapper.NO_MONITOR, 1);
+        final var nodeId = 7L;
+        mapper.put(existingInputId, nodeId, globalGroup);
+        Collector collector = mock(Collector.class);
+        mapper.prepare(x -> existingInputId, collector, NONE);
+
+        assertEquals(nodeId, mapper.get(existingInputId, globalGroup));
+        assertEquals(IdMapper.ID_NOT_FOUND, mapper.get(nonExistingCollidingInputId, globalGroup));
     }
 
     @Test
@@ -671,10 +692,21 @@ public class EncodingIdMapperTest {
         return value -> values[toIntExact(value)];
     }
 
+    private IdMapper strictMapper(
+            Encoder encoder, Factory<Radix> radix, EncodingIdMapper.Monitor monitor, int processors) {
+        return mapper(encoder, true, radix, monitor, processors);
+    }
+
     private IdMapper mapper(Encoder encoder, Factory<Radix> radix, EncodingIdMapper.Monitor monitor, int processors) {
+        return mapper(encoder, false, radix, monitor, processors);
+    }
+
+    private IdMapper mapper(
+            Encoder encoder, boolean strict, Factory<Radix> radix, EncodingIdMapper.Monitor monitor, int processors) {
         return new EncodingIdMapper(
                 NumberArrayFactories.HEAP,
                 encoder,
+                strict,
                 radix,
                 monitor,
                 RANDOM_TRACKER_FACTORY,
@@ -696,6 +728,7 @@ public class EncodingIdMapperTest {
         return new EncodingIdMapper(
                 NumberArrayFactories.HEAP,
                 encoder,
+                false,
                 radix,
                 monitor,
                 RANDOM_TRACKER_FACTORY,

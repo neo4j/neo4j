@@ -110,10 +110,14 @@ public class IdMappers {
      * @return {@link IdMapper} for when input ids are strings.
      */
     public static IdMapper strings(
-            NumberArrayFactory cacheFactory, ReadableGroups groups, MemoryTracker memoryTracker) {
+            NumberArrayFactory cacheFactory,
+            ReadableGroups groups,
+            boolean strictNodeCheck,
+            MemoryTracker memoryTracker) {
         return new EncodingIdMapper(
                 cacheFactory,
                 new StringEncoder(),
+                strictNodeCheck,
                 Radix.STRING,
                 NO_MONITOR,
                 dynamic(memoryTracker),
@@ -134,6 +138,7 @@ public class IdMappers {
         return new EncodingIdMapper(
                 cacheFactory,
                 new LongEncoder(),
+                false /* no need for strict checkups for longs*/,
                 Radix.LONG,
                 NO_MONITOR,
                 dynamic(memoryTracker),

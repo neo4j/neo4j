@@ -136,7 +136,6 @@ public class RelationshipImporter extends EntityImporter {
             relationshipRecord.setInUse(false);
             return IdMapper.ID_NOT_FOUND;
         }
-
         return nodeId;
     }
 

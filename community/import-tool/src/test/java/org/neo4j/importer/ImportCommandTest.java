@@ -82,6 +82,7 @@ class ImportCommandTest {
         "--skip-bad-entries-logging",
         "--skip-bad-relationships",
         "--skip-duplicate-nodes",
+        "--strict",
         "--normalize-types",
         "--nodes",
         "--relationships",

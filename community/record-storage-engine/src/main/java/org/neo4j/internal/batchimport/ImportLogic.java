@@ -211,7 +211,8 @@ public class ImportLogic implements Closeable {
 
     protected IdMapper instantiateIdMapper(Input input) {
         return switch (input.idType()) {
-            case STRING -> IdMappers.strings(numberArrayFactory, input.groups(), memoryTracker);
+            case STRING -> IdMappers.strings(
+                    numberArrayFactory, input.groups(), config.strictNodeCheck(), memoryTracker);
             case INTEGER -> IdMappers.longs(numberArrayFactory, input.groups(), memoryTracker);
             case ACTUAL -> IdMappers.actual();
         };
@@ -278,8 +279,7 @@ public class ImportLogic implements Closeable {
             MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider(neoStore, idMapper);
             try (var cursorContext = contextFactory.create(ID_MAPPER_PREPARATION_TAG);
                     var cursors = new CachedStoreCursors(neoStore.getTemporaryNeoStores(), cursorContext)) {
-                PropertyValueLookup inputIdLookup =
-                        new NodeInputIdPropertyLookup(neoStore.getTemporaryPropertyStore(), cursors);
+                var inputIdLookup = new NodeInputIdPropertyLookup(neoStore.getTemporaryPropertyStore(), cursors);
                 executeStage(
                         new IdMapperPreparationStage(config, idMapper, inputIdLookup, badCollector, memoryUsageStats));
             }
@@ -327,6 +327,7 @@ public class ImportLogic implements Closeable {
                 input,
                 neoStore,
                 idMapper,
+                config.strictNodeCheck(),
                 badCollector,
                 executionMonitor,
                 storeUpdateMonitor,

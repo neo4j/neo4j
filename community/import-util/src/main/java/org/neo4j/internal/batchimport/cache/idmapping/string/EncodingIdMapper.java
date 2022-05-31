@@ -148,6 +148,12 @@ public class EncodingIdMapper implements IdMapper {
     private final MemoryTracker memoryTracker;
     private final Comparator comparator;
 
+    // Indicates if get on an input id should double check that the hashed input id matches the value
+    // on the node. This is to detect cases where relationships refer to none existant nodes by input
+    // id that happen to get the same hash as an existing input id.
+    private final boolean strictNodeCheck;
+    private PropertyValueLookup inputIdLookup;
+
     private ByteArray collisionNodeIdCache;
     // These 3 caches below are needed only during duplicate input id detection, but referenced here so
     // that the memory visitor can see them when they are active.
@@ -166,6 +172,7 @@ public class EncodingIdMapper implements IdMapper {
     public EncodingIdMapper(
             NumberArrayFactory cacheFactory,
             Encoder encoder,
+            boolean strictNodeCheck,
             Factory<Radix> radixFactory,
             Monitor monitor,
             TrackerFactory trackerFactory,
@@ -175,6 +182,7 @@ public class EncodingIdMapper implements IdMapper {
         this(
                 cacheFactory,
                 encoder,
+                strictNodeCheck,
                 radixFactory,
                 monitor,
                 trackerFactory,
@@ -189,6 +197,7 @@ public class EncodingIdMapper implements IdMapper {
     EncodingIdMapper(
             NumberArrayFactory cacheFactory,
             Encoder encoder,
+            boolean strictNodeCheck,
             Factory<Radix> radixFactory,
             Monitor monitor,
             TrackerFactory trackerFactory,
@@ -205,6 +214,7 @@ public class EncodingIdMapper implements IdMapper {
         this.collisionValuesFactory = collisionValuesFactory;
         this.comparator = comparator;
         this.processorsForParallelWork = max(processorsForParallelWork, 1);
+        this.strictNodeCheck = strictNodeCheck;
         this.memoryTracker = memoryTracker;
         this.dataCache = cacheFactory.newDynamicLongArray(chunkSize, GAP_VALUE, memoryTracker);
         this.groupCache = GroupCache.select(cacheFactory, chunkSize, groups.size(), memoryTracker);
@@ -286,6 +296,10 @@ public class EncodingIdMapper implements IdMapper {
                     + "onwards will cause a chain reaction which will cause a panic in the whole import, "
                     + "so mission accomplished");
         }
+        if (strictNodeCheck) {
+            // Need this for strict checkup
+            this.inputIdLookup = inputIdLookup;
+        }
         readyForUse = true;
     }
 
@@ -313,13 +327,20 @@ public class EncodingIdMapper implements IdMapper {
             }
         }
 
-        long returnVal = binarySearch(x, inputId, low, high, groupId);
-        if (returnVal == ID_NOT_FOUND) {
+        long nodeId = binarySearch(x, inputId, low, high, groupId);
+        if (nodeId == ID_NOT_FOUND) {
             low = 0;
             high = highestSetTrackerIndex;
-            returnVal = binarySearch(x, inputId, low, high, groupId);
+            nodeId = binarySearch(x, inputId, low, high, groupId);
         }
-        return returnVal;
+        // Strict check needed?
+        if (nodeId != ID_NOT_FOUND && inputIdLookup != null) {
+            var referenceInputId = inputIdLookup.lookupProperty(nodeId);
+            if (!inputId.equals(referenceInputId)) {
+                nodeId = ID_NOT_FOUND;
+            }
+        }
+        return nodeId;
     }
 
     private static long setCollision(long eId) {

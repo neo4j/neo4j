@@ -272,6 +272,17 @@ public class ImportCommand {
         private boolean skipBadRelationships;
 
         @Option(
+                names = "--strict",
+                arity = "0..1",
+                showDefaultValue = ALWAYS,
+                paramLabel = "<true/false>",
+                description =
+                        "Whether or not the lookup of nodes referred to from relationships needs to be checked strict. "
+                                + "If disabled, most but not all relationships referring to non-existent nodes will be detected. "
+                                + "If enabled all those relationships will be found but to the cost of lower performance")
+        private boolean strict = true;
+
+        @Option(
                 names = "--skip-duplicate-nodes",
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
@@ -426,6 +437,11 @@ public class ImportCommand {
                 @Override
                 public IndexConfig indexConfig() {
                     return IndexConfig.create().withLabelIndex().withRelationshipTypeIndex();
+                }
+
+                @Override
+                public boolean strictNodeCheck() {
+                    return strict;
                 }
             };
         }

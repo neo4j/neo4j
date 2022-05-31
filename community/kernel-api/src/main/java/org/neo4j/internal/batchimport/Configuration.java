@@ -158,6 +158,16 @@ public interface Configuration {
     }
 
     /**
+     * Wheter or not identity of nodes referred to by relationships should be checked strict.
+     * A strict check means that the id of the referred node must match not only by hash but
+     * also by value. This will detect non-existing nodes that happen to have the same id hash
+     * as an existing node during relationship import.
+     */
+    default boolean strictNodeCheck() {
+        return false;
+    }
+
+    /**
      * @return index related configurations.
      */
     default IndexConfig indexConfig() {
