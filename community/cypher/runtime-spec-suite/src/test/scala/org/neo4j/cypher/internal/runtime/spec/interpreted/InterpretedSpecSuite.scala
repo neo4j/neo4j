@@ -175,6 +175,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipIndexEnds
 import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipIndexScanConcurrencyStressTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipIndexSeekConcurrencyStressTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipTypeScanConcurrencyStressTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.stress.UnionRelationshipTypesScanConcurrencyStressTestBase
 import org.neo4j.cypher.internal.util.test_helpers.TimeLimitedCypherTest
 
 object InterpretedSpecSuite {
@@ -463,6 +464,9 @@ class InterpretedRemoveLabelsTest extends RemoveLabelsTestBase(COMMUNITY.EDITION
 // CONCURRENT UPDATE STRESS TESTS
 class InterpretedRelationshipTypeScanConcurrencyStressTest
     extends RelationshipTypeScanConcurrencyStressTestBase(COMMUNITY.EDITION, InterpretedRuntime)
+
+class InterpretedUnionRelationshipTypesScanConcurrencyStressTest
+    extends UnionRelationshipTypesScanConcurrencyStressTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 
 class InterpretedRelationshipIndexScanConcurrencyStressTest
     extends RelationshipIndexScanConcurrencyStressTestBase(COMMUNITY.EDITION, InterpretedRuntime)
