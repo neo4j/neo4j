@@ -65,6 +65,7 @@ public class LogHeaderWriter {
             buffer.flip();
             channel.writeAll(buffer);
         }
+        channel.flush();
     }
 
     public static long encodeLogVersion(long logVersion, long formatVersion) {
