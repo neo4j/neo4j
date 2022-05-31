@@ -49,7 +49,7 @@ Before you start running the unit and integration tests in the Neo4j Maven proje
 * To build product packages, do `export PATH="bin:$PATH" && make clean all` in the packaging directory after building artifacts with Maven.
 * To build the documentation see the https://github.com/neo4j/neo4j-documentation/[Neo4j documentation].
 * If you are running into problems building on Windows you can try building Neo4j in a Ubuntu virtual machine.
-* You may need to increase the memory available to Maven: `export MAVEN_OPTS="-Xmx512m"`.
+* You may need to increase the memory available to Maven: `export MAVEN_OPTS="-Xmx2048m"`.
 
 == Running Neo4j ==
 
