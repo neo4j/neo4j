@@ -73,8 +73,9 @@ class CompositeStringLengthValidationIT {
 
     @BeforeEach
     void calculateSlotSizes() {
-        int totalSpace = TreeNodeDynamicSize.keyValueSizeCapFromPageSize(pageCache.payloadSize())
-                - NativeIndexKey.ENTITY_ID_SIZE;
+        // TODO mvcc: this test should verify smaller limit for mvcc record format when we can start db with that format
+        int totalSpace =
+                TreeNodeDynamicSize.keyValueSizeCapFromPageSize(pageCache.pageSize()) - NativeIndexKey.ENTITY_ID_SIZE;
         int perSlotOverhead = GenericKey.TYPE_ID_SIZE + Types.SIZE_STRING_LENGTH;
         int firstSlotSpace = totalSpace / 2;
         int secondSlotSpace = totalSpace - firstSlotSpace;

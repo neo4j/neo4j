@@ -27,6 +27,9 @@ import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeC
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.io.IOException;
+import java.nio.file.OpenOption;
+import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.io.pagecache.PageCache;
@@ -50,6 +53,10 @@ class SizeEstimationTest {
     @Inject
     private RandomSupport random;
 
+    ImmutableSet<OpenOption> getOpenOptions() {
+        return Sets.immutable.empty();
+    }
+
     @Test
     void shouldEstimateSizeOnFixedSizeKeys() throws IOException {
         SimpleLongLayout layout = SimpleLongLayout.longLayout().build();
@@ -58,14 +65,17 @@ class SizeEstimationTest {
 
     @Test
     void shouldEstimateSizeOnDynamicSizeKeys() throws IOException {
-        int largeEntriesSize = keyValueSizeCapFromPageSize(pageCache.payloadSize()) / 2;
+        int largeEntriesSize =
+                keyValueSizeCapFromPageSize(GBPTreeTestUtil.calculatePayloadSize(pageCache, getOpenOptions())) / 2;
         int largeEntryModulo = random.nextInt(0, 10); // 0 = no large keys
         SimpleByteArrayLayout layout = new SimpleByteArrayLayout(largeEntriesSize, largeEntryModulo);
         assertEstimateSizeCorrectly(layout);
     }
 
     private <KEY, VALUE> void assertEstimateSizeCorrectly(TestLayout<KEY, VALUE> layout) throws IOException {
-        try (GBPTree<KEY, VALUE> tree = new GBPTreeBuilder<>(pageCache, testDirectory.file("tree"), layout).build()) {
+        try (GBPTree<KEY, VALUE> tree = new GBPTreeBuilder<>(pageCache, testDirectory.file("tree"), layout)
+                .with(getOpenOptions())
+                .build()) {
             // given
             int count = random.nextInt(500, 2_500);
             try (Writer<KEY, VALUE> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {

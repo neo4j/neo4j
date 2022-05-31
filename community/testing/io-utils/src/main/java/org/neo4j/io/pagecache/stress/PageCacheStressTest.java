@@ -20,11 +20,13 @@
 package org.neo4j.io.pagecache.stress;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.io.pagecache.PageCache.RESERVED_BYTES;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -58,24 +60,26 @@ public class PageCacheStressTest {
     private final int numberOfThreads;
 
     private final int numberOfCachePages;
-    private final int reservedPageBytes;
 
     private final PageCacheTracer tracer;
     private final Condition condition;
 
     private final Path workingDirectory;
 
+    private final ImmutableSet<OpenOption> openOptions;
+
     private PageCacheStressTest(Builder builder) {
         this.numberOfPages = builder.numberOfPages;
         this.numberOfThreads = builder.numberOfThreads;
 
         this.numberOfCachePages = builder.numberOfCachePages;
-        this.reservedPageBytes = builder.reservedPageBytes;
 
         this.tracer = builder.tracer;
         this.condition = builder.condition;
 
         this.workingDirectory = builder.workingDirectory;
+
+        this.openOptions = builder.openOptions;
     }
 
     public void run() throws Exception {
@@ -84,11 +88,9 @@ public class PageCacheStressTest {
             PageSwapperFactory swapperFactory =
                     new SingleFilePageSwapperFactory(fs, tracer, EmptyMemoryTracker.INSTANCE);
             try (PageCache pageCacheUnderTest = new MuninnPageCache(
-                    swapperFactory,
-                    jobScheduler,
-                    config(numberOfCachePages).pageCacheTracer(tracer).reservedPageBytes(reservedPageBytes))) {
+                    swapperFactory, jobScheduler, config(numberOfCachePages).pageCacheTracer(tracer))) {
                 PageCacheStresser pageCacheStresser =
-                        new PageCacheStresser(numberOfPages, numberOfThreads, workingDirectory);
+                        new PageCacheStresser(numberOfPages, numberOfThreads, workingDirectory, openOptions);
                 pageCacheStresser.stress(pageCacheUnderTest, tracer, condition);
             }
         }
@@ -99,12 +101,13 @@ public class PageCacheStressTest {
         int numberOfThreads = 7;
 
         int numberOfCachePages = 1000;
-        int reservedPageBytes = RESERVED_BYTES;
 
         PageCacheTracer tracer = NULL;
         Condition condition;
 
         Path workingDirectory;
+
+        ImmutableSet<OpenOption> openOptions = Sets.immutable.empty();
 
         public PageCacheStressTest build() {
             assertThat(numberOfPages)
@@ -133,11 +136,6 @@ public class PageCacheStressTest {
             return this;
         }
 
-        public Builder withReservedPageBytes(int reservedPageBytes) {
-            this.reservedPageBytes = reservedPageBytes;
-            return this;
-        }
-
         public Builder withNumberOfCachePages(int numberOfCachePages) {
             this.numberOfCachePages = numberOfCachePages;
             return this;
@@ -145,6 +143,11 @@ public class PageCacheStressTest {
 
         public Builder withWorkingDirectory(Path workingDirectory) {
             this.workingDirectory = workingDirectory;
+            return this;
+        }
+
+        public Builder with(ImmutableSet<OpenOption> openOptions) {
+            this.openOptions = openOptions;
             return this;
         }
     }

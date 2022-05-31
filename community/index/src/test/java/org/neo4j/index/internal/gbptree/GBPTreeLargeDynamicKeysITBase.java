@@ -19,15 +19,18 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
+import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.calculatePayloadSize;
 import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeCapFromPageSize;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -35,10 +38,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.RandomSupport;
@@ -59,6 +65,10 @@ abstract class GBPTreeLargeDynamicKeysITBase {
     private TestDirectory testDirectory;
 
     protected abstract PageCache getPageCache();
+
+    ImmutableSet<OpenOption> getOpenOptions() {
+        return Sets.immutable.empty();
+    }
 
     @Test
     void putSingleKeyLargerThanInlineCap() throws IOException {
@@ -114,6 +124,9 @@ abstract class GBPTreeLargeDynamicKeysITBase {
 
     @Test
     void putAndRemoveRandomlyDistributedKeys() throws IOException {
+        assumeThat(getOpenOptions())
+                .as("TODO mvcc: mvcc variant doesn't work here because of reentrant write locks on pages.")
+                .doesNotContain(PageCacheOpenOptions.MULTI_VERSIONED);
         try (GBPTree<RawBytes, RawBytes> tree = createIndex()) {
             int keyValueSizeOverflow = tree.keyValueSizeCap() + 1;
 
@@ -160,7 +173,7 @@ abstract class GBPTreeLargeDynamicKeysITBase {
 
     @Test
     void shouldWriteAndReadSmallToSemiLargeEntries() throws IOException {
-        int keyValueSizeCap = keyValueSizeCapFromPageSize(getPageCache().payloadSize());
+        int keyValueSizeCap = keyValueSizeCapFromPageSize(calculatePayloadSize(getPageCache(), getOpenOptions()));
         int minValueSize = 0;
         int maxValueSize = random.nextInt(200);
         int minKeySize = 4;
@@ -170,7 +183,7 @@ abstract class GBPTreeLargeDynamicKeysITBase {
 
     @Test
     void shouldWriteAndReadSmallToLargeEntries() throws IOException {
-        int keyValueSizeCap = keyValueSizeCapFromPageSize(getPageCache().payloadSize());
+        int keyValueSizeCap = keyValueSizeCapFromPageSize(calculatePayloadSize(getPageCache(), getOpenOptions()));
         int minValueSize = 0;
         int maxValueSize = random.nextInt(200);
         int minKeySize = 4;
@@ -180,7 +193,7 @@ abstract class GBPTreeLargeDynamicKeysITBase {
 
     @Test
     void shouldWriteAndReadSemiLargeToLargeEntries() throws IOException {
-        int keyValueSizeCap = keyValueSizeCapFromPageSize(getPageCache().payloadSize());
+        int keyValueSizeCap = keyValueSizeCapFromPageSize(calculatePayloadSize(getPageCache(), getOpenOptions()));
         int minValueSize = 0;
         int maxValueSize = random.nextInt(200);
         int minKeySize = keyValueSizeCap / 5;
@@ -274,7 +287,9 @@ abstract class GBPTreeLargeDynamicKeysITBase {
 
     private GBPTree<RawBytes, RawBytes> createIndex() {
         // some random padding
-        return new GBPTreeBuilder<>(getPageCache(), testDirectory.file("index"), layout).build();
+        return new GBPTreeBuilder<>(getPageCache(), testDirectory.file("index"), layout)
+                .with(getOpenOptions())
+                .build();
     }
 
     private static byte[] asBytes(int value) {

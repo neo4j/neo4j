@@ -19,13 +19,22 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import static org.neo4j.util.FeatureToggles.flag;
+
 import java.io.IOException;
+import org.eclipse.collections.api.map.primitive.MutableLongLongMap;
+import org.eclipse.collections.impl.factory.primitive.LongLongMaps;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 
 final class MuninnWritePageCursor extends MuninnPageCursor {
+
+    private static final MutableLongLongMap LOCKED_PAGES = flag(MuninnWritePageCursor.class, "CHECK_WRITE_LOCKS", false)
+            ? LongLongMaps.mutable.empty().asSynchronized()
+            : null;
+
     MuninnWritePageCursor(long victimPage, CursorContext cursorContext) {
         super(victimPage, cursorContext);
     }
@@ -45,13 +54,19 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
             if (eagerFlush) {
                 eagerlyFlushAndUnlockPage(pageRef);
             } else {
-                PageList.unlockWrite(pageRef);
+                unlockPage(pageRef);
             }
         }
         clearPageCursorState();
     }
 
     private void eagerlyFlushAndUnlockPage(long pageRef) {
+        if (LOCKED_PAGES != null && multiVersioned) {
+            var locker = LOCKED_PAGES.removeKeyIfAbsent(pageRef, -1);
+            if (locker != Thread.currentThread().getId()) {
+                throw new IllegalStateException("oops");
+            }
+        }
         long flushStamp = PageList.unlockWriteAndTryTakeFlushLock(pageRef);
         if (flushStamp != 0) {
             boolean success = false;
@@ -90,11 +105,32 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
 
     @Override
     protected boolean tryLockPage(long pageRef) {
-        return PageList.tryWriteLock(pageRef, multiVersioned);
+        if (LOCKED_PAGES != null && multiVersioned) {
+            // you see we are not atomic or synchronized here, this is ok, because we care about *current* thread
+            // already being successful in taking write lock on this page
+            var locker = LOCKED_PAGES.getIfAbsent(pageRef, -1);
+            var threadId = Thread.currentThread().getId();
+            if (locker == threadId) {
+                throw new IllegalStateException("Multiversioned page locks are not reentrant. Thread " + threadId
+                        + " already holds write lock on page " + pageRef);
+            }
+        }
+        var writeLock = PageList.tryWriteLock(pageRef, multiVersioned);
+        if (LOCKED_PAGES != null && multiVersioned && writeLock) {
+            LOCKED_PAGES.put(pageRef, Thread.currentThread().getId());
+        }
+        return writeLock;
     }
 
     @Override
     protected void unlockPage(long pageRef) {
+        if (LOCKED_PAGES != null && multiVersioned) {
+            // remove before unlock to avoid clearing others lock
+            var locker = LOCKED_PAGES.removeKeyIfAbsent(pageRef, -1);
+            if (locker != Thread.currentThread().getId()) {
+                throw new IllegalStateException("oops");
+            }
+        }
         PageList.unlockWrite(pageRef);
     }
 
@@ -123,6 +159,9 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
     @Override
     protected void convertPageFaultLock(long pageRef) {
         PageList.unlockExclusiveAndTakeWriteLock(pageRef);
+        if (LOCKED_PAGES != null && multiVersioned) {
+            LOCKED_PAGES.put(pageRef, Thread.currentThread().getId());
+        }
     }
 
     @Override

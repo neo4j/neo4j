@@ -24,12 +24,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
-import static org.neo4j.io.pagecache.PageCache.RESERVED_BYTES;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,6 +39,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -85,7 +87,9 @@ abstract class GBPTreeRecoveryITBase<KEY, VALUE> {
 
     @BeforeEach
     void setUp() {
-        this.layout = getLayout(random, PAGE_SIZE - RESERVED_BYTES);
+        try (var pageCache = createPageCache()) {
+            this.layout = getLayout(random, GBPTreeTestUtil.calculatePayloadSize(pageCache, getOpenOptions()));
+        }
         loadCountTransactions = random.intBetween(300, 1_000);
         minInsertCountPerBatch = 30;
         maxInsertCountPerBatch = 200;
@@ -94,6 +98,10 @@ abstract class GBPTreeRecoveryITBase<KEY, VALUE> {
     }
 
     protected abstract TestLayout<KEY, VALUE> getLayout(RandomSupport random, int pageSize);
+
+    ImmutableSet<OpenOption> getOpenOptions() {
+        return Sets.immutable.empty();
+    }
 
     @Test
     void shouldRecoverFromCrashBeforeFirstCheckpoint() throws Exception {
@@ -392,7 +400,9 @@ abstract class GBPTreeRecoveryITBase<KEY, VALUE> {
     }
 
     private GBPTree<KEY, VALUE> createIndex(PageCache pageCache, Path file) {
-        return new GBPTreeBuilder<>(pageCache, file, layout).build();
+        return new GBPTreeBuilder<>(pageCache, file, layout)
+                .with(getOpenOptions())
+                .build();
     }
 
     private PageCache createPageCache() {

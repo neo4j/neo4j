@@ -19,7 +19,6 @@
  */
 package org.neo4j.io.pagecache;
 
-import static org.neo4j.io.pagecache.PageCache.RESERVED_BYTES;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.nio.BufferOverflowException;
@@ -49,11 +48,11 @@ public class StubPageCursor extends PageCursor {
     private int mark;
 
     public StubPageCursor(long initialPageId, int pageSize) {
-        this(initialPageId, ByteBuffers.allocate(pageSize, ByteOrder.LITTLE_ENDIAN, INSTANCE), RESERVED_BYTES);
+        this(initialPageId, ByteBuffers.allocate(pageSize, ByteOrder.LITTLE_ENDIAN, INSTANCE), 0);
     }
 
     public StubPageCursor(long initialPageId, ByteBuffer buffer) {
-        this(initialPageId, buffer, RESERVED_BYTES);
+        this(initialPageId, buffer, 0);
     }
 
     public StubPageCursor(long initialPageId, ByteBuffer buffer, int reservedBytes) {
@@ -77,7 +76,7 @@ public class StubPageCursor extends PageCursor {
 
     @Override
     public PagedFile getPagedFile() {
-        return new StubPagedFile(pageSize);
+        return new StubPagedFile(pageSize, reservedBytes);
     }
 
     @Override
@@ -172,7 +171,8 @@ public class StubPageCursor extends PageCursor {
 
     @Override
     public PageCursor openLinkedCursor(long pageId) {
-        linkedCursor = new StubPageCursor(pageId, pageSize);
+        linkedCursor = new StubPageCursor(
+                pageId, ByteBuffers.allocate(pageSize, ByteOrder.LITTLE_ENDIAN, INSTANCE), reservedBytes);
         return linkedCursor;
     }
 

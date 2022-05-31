@@ -131,7 +131,7 @@ public abstract class MuninnPageCursor extends PageCursor {
         this.swapper = pagedFile.swapper;
         this.swapperId = pagedFile.swapperId;
         this.filePageSize = pagedFile.filePageSize;
-        this.pageReservedBytes = pagedFile.pageCache.pageReservedBytes();
+        this.pageReservedBytes = pagedFile.pageReservedBytes();
         this.versionStorage = pagedFile.versionStorage;
         this.multiVersioned = pagedFile.multiVersioned;
         this.pagedFile = pagedFile;

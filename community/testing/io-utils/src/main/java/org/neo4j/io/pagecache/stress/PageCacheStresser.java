@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.LinkedList;
@@ -32,7 +33,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -51,32 +52,34 @@ import org.neo4j.util.concurrent.Futures;
  * as well.
  */
 public class PageCacheStresser {
-    private static final String PAGE_CACHE_STRESSER = "pageCacheStresser";
     private final int maxPages;
     private final int numberOfThreads;
+    private final ImmutableSet<OpenOption> openOptions;
 
     private final Path workingDirectory;
 
-    public PageCacheStresser(int maxPages, int numberOfThreads, Path workingDirectory) {
+    public PageCacheStresser(
+            int maxPages, int numberOfThreads, Path workingDirectory, ImmutableSet<OpenOption> openOptions) {
         this.maxPages = maxPages;
         this.numberOfThreads = numberOfThreads;
         this.workingDirectory = workingDirectory;
+        this.openOptions = openOptions;
     }
 
     public void stress(PageCache pageCache, PageCacheTracer cacheTracer, Condition condition) throws Exception {
         String prefix = "pagecacheundertest";
         Path file = Files.createTempFile(workingDirectory, prefix, ".bin");
 
-        int cachePageSize = pageCache.pageSize();
-        RecordFormat format = new RecordFormat(numberOfThreads, cachePageSize, pageCache.payloadSize());
-        int filePageSize = format.getFilePageSize();
+        var reservedBytes = pageCache.pageReservedBytes(openOptions);
+        var format = new RecordFormat(numberOfThreads, pageCache.pageSize() - reservedBytes);
+        int filePageSize = format.getFilePayloadSize() + reservedBytes;
 
-        try (PagedFile pagedFile =
-                pageCache.map(file, filePageSize, prefix, Sets.immutable.of(StandardOpenOption.DELETE_ON_CLOSE))) {
-            List<RecordStresser> recordStressers = prepare(condition, pagedFile, format, cacheTracer);
-            verifyResults(format, pagedFile, recordStressers, cacheTracer);
+        try (var pagedFile =
+                pageCache.map(file, filePageSize, prefix, openOptions.newWith(StandardOpenOption.DELETE_ON_CLOSE))) {
+            var recordStressers = prepare(condition, pagedFile, format, cacheTracer);
+            verifyResults(format, pagedFile, recordStressers);
             execute(recordStressers);
-            verifyResults(format, pagedFile, recordStressers, cacheTracer);
+            verifyResults(format, pagedFile, recordStressers);
         }
     }
 
@@ -105,8 +108,7 @@ public class PageCacheStresser {
         assertTrue(executorService.awaitTermination(10, TimeUnit.SECONDS));
     }
 
-    private static void verifyResults(
-            RecordFormat format, PagedFile pagedFile, List<RecordStresser> recordStressers, PageCacheTracer cacheTracer)
+    private static void verifyResults(RecordFormat format, PagedFile pagedFile, List<RecordStresser> recordStressers)
             throws IOException {
         for (RecordStresser stresser : recordStressers) {
             stresser.verifyCounts();

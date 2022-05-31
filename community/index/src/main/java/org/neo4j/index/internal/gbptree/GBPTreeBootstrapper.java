@@ -20,7 +20,6 @@
 package org.neo4j.index.internal.gbptree;
 
 import static org.eclipse.collections.impl.factory.Sets.immutable;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
@@ -82,9 +81,9 @@ public class GBPTreeBootstrapper implements Closeable {
             if (!isReasonablePageSize(meta.getPayloadSize())) {
                 throw new MetadataMismatchException("Unexpected page size " + meta.getPayloadSize());
             }
-            if (meta.getPayloadSize() != pageCache.payloadSize()) {
+            if (meta.getPayloadSize() != expectedPayload(pageCache, openOptions)) {
                 // GBPTree was created with a different page size, re-instantiate page cache and re-read meta.
-                instantiatePageCache(fs, jobScheduler, pageCachePageForPayload(meta.getPayloadSize()));
+                instantiatePageCache(fs, jobScheduler, pageCachePageForPayload(meta.getPayloadSize(), openOptions));
                 metaVisitor = visitMeta(file, openOptions);
                 meta = metaVisitor.meta;
             }
@@ -115,8 +114,14 @@ public class GBPTreeBootstrapper implements Closeable {
         }
     }
 
-    private int pageCachePageForPayload(int payload) {
-        return payload + pageCache.pageReservedBytes();
+    private int pageCachePageForPayload(int payload, ImmutableSet<OpenOption> openOptions) {
+        var reservedBytes = pageCache.pageReservedBytes(openOptions);
+        return payload + reservedBytes;
+    }
+
+    private int expectedPayload(PageCache pageCache, ImmutableSet<OpenOption> openOptions) {
+        var reservedBytes = pageCache.pageReservedBytes(openOptions);
+        return pageCache.pageSize() - reservedBytes;
     }
 
     @Override
@@ -153,8 +158,7 @@ public class GBPTreeBootstrapper implements Closeable {
                 swapper,
                 jobScheduler,
                 config(createAllocator(expectedMemory, EmptyMemoryTracker.INSTANCE))
-                        .pageSize(pageSize)
-                        .reservedPageBytes(reserved_page_header_bytes.defaultValue()));
+                        .pageSize(pageSize));
     }
 
     private void closePageCache() {

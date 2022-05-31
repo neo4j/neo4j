@@ -59,7 +59,13 @@ public class MultiVersionFormat extends BaseRecordFormats {
     public static final String NAME = "multiversion";
 
     private MultiVersionFormat() {
-        super(MULTIVERSION, 1, 0, FormatFamily.multiversion.formatCapability(), RecordStorageCapability.LITTLE_ENDIAN);
+        super(
+                MULTIVERSION,
+                1,
+                0,
+                FormatFamily.multiversion.formatCapability(),
+                RecordStorageCapability.LITTLE_ENDIAN,
+                RecordStorageCapability.MULTI_VERSIONED);
     }
 
     @Override

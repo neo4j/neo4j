@@ -26,16 +26,14 @@ import org.neo4j.io.pagecache.PageCursor;
 
 public class RecordFormat {
     private final int numberOfThreads;
-    private final int payloadSize;
+    private final int pagePayloadSize;
     private final int fieldSize;
     private final int checksumFieldOffset;
     private final int recordSize;
-    private final int reservedBytes;
 
-    public RecordFormat(int numberOfThreads, int cachePageSize, int payloadSize) {
+    public RecordFormat(int numberOfThreads, int pagePayloadSize) {
         this.numberOfThreads = numberOfThreads;
-        this.payloadSize = payloadSize;
-        this.reservedBytes = cachePageSize - payloadSize;
+        this.pagePayloadSize = pagePayloadSize;
         this.fieldSize = Long.BYTES;
         this.checksumFieldOffset = numberOfThreads * fieldSize;
         this.recordSize = checksumFieldOffset + fieldSize; // extra field for keeping the checksum.
@@ -46,11 +44,11 @@ public class RecordFormat {
     }
 
     public int getRecordsPerPage() {
-        return payloadSize / getRecordSize();
+        return pagePayloadSize / getRecordSize();
     }
 
-    public int getFilePageSize() {
-        return reservedBytes + getRecordsPerPage() * getRecordSize();
+    public int getFilePayloadSize() {
+        return getRecordsPerPage() * getRecordSize();
     }
 
     /**

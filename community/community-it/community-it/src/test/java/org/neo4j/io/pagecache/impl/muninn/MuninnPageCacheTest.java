@@ -58,6 +58,7 @@ import java.util.concurrent.Future;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
@@ -73,6 +74,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.DelegatingPageSwapper;
 import org.neo4j.io.pagecache.IOController;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCacheTest;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
@@ -104,8 +106,8 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
 
 public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
-    private final long x = 0xCAFEBABEDEADBEEFL;
-    private final long y = 0xDECAFC0FFEEDECAFL;
+    private static final long X = 0xCAFEBABEDEADBEEFL;
+    private static final long Y = 0xDECAFC0FFEEDECAFL;
     private MuninnPageCacheFixture fixture;
 
     @Override
@@ -133,28 +135,34 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     }
 
     @Test
-    void payloadSizeEqualsPageSizePlusReservedBytes() {
-        try (var pageCache = createPageCache(fs, 1024, new DefaultPageCacheTracer())) {
-            assertEquals(pageCache.pageSize(), pageCache.payloadSize() + pageCache.pageReservedBytes());
+    void payloadSizeEqualsPageSizePlusReservedBytes() throws IOException {
+        try (var pageCache = createPageCache(fs, 1024, new DefaultPageCacheTracer());
+                var pageFile = map(pageCache, file("a"), pageCache.pageSize())) {
+            assertEquals(pageFile.pageSize(), pageFile.payloadSize() + pageFile.pageReservedBytes());
         }
     }
 
     @Test
-    void payloadSizeForCacheWithCustomConfiguration() {
+    void payloadSizeForCacheWithCustomConfiguration() throws IOException {
         int reservedBytes = 24;
         var customFixture = new MuninnPageCacheFixture();
         customFixture.withReservedBytes(reservedBytes);
         var cacheTracer = PageCacheTracer.NULL;
         try (var pageCache = customFixture.createPageCache(
-                new SingleFilePageSwapperFactory(fs, cacheTracer, EmptyMemoryTracker.INSTANCE),
-                10,
-                cacheTracer,
-                jobScheduler,
-                DISABLED_BUFFER_FACTORY)) {
-            assertEquals(reservedBytes, pageCache.pageReservedBytes());
-            assertEquals(PAGE_SIZE, pageCache.pageSize());
-            assertEquals(PAGE_SIZE - reservedBytes, pageCache.payloadSize());
-            assertEquals(reservedBytes, pageCache.pageSize() - pageCache.payloadSize());
+                        new SingleFilePageSwapperFactory(fs, cacheTracer, EmptyMemoryTracker.INSTANCE),
+                        10,
+                        cacheTracer,
+                        jobScheduler,
+                        DISABLED_BUFFER_FACTORY);
+                var pageFile = map(
+                        pageCache,
+                        file("a"),
+                        pageCache.pageSize(),
+                        Sets.immutable.of(PageCacheOpenOptions.MULTI_VERSIONED))) {
+            assertEquals(reservedBytes, pageFile.pageReservedBytes());
+            assertEquals(PAGE_SIZE, pageFile.pageSize());
+            assertEquals(PAGE_SIZE - reservedBytes, pageFile.payloadSize());
+            assertEquals(reservedBytes, pageFile.pageSize() - pageFile.payloadSize());
         }
     }
 
@@ -164,7 +172,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 var pageFile = map(pageCache, file("a"), pageCache.pageSize());
                 var pageCursor = pageFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
             assertTrue(pageCursor.next());
-            for (int i = 0; i < pageCache.payloadSize(); i++) {
+            for (int i = 0; i < pageFile.payloadSize(); i++) {
                 pageCursor.putByte((byte) 1);
             }
             assertFalse(pageCursor.checkAndClearBoundsFlag());
@@ -186,21 +194,21 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
 
             try (var mutator = pageFile.io(20, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                 assertTrue(mutator.next());
-                for (int i = 0; i < pageCache.payloadSize(); i++) {
+                for (int i = 0; i < pageFile.payloadSize(); i++) {
                     mutator.putByte((byte) 1);
                 }
             }
 
             try (var reader = pageFile.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
                 assertTrue(reader.next());
-                for (int i = 0; i < pageCache.payloadSize(); i++) {
+                for (int i = 0; i < pageFile.payloadSize(); i++) {
                     assertEquals(0, reader.getByte());
                 }
             }
 
             try (var reader = pageFile.io(10, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
                 assertTrue(reader.next());
-                for (int i = 0; i < pageCache.payloadSize(); i++) {
+                for (int i = 0; i < pageFile.payloadSize(); i++) {
                     assertEquals(0, reader.getByte());
                 }
             }
@@ -553,7 +561,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
             assertThat(clockArm).isEqualTo(1L);
             assertNotNull(tracer.observe(Evict.class));
 
-            checkFileWithTwoLongs("a", 0L, y);
+            checkFileWithTwoLongs("a", 0L, Y);
         }
     }
 
@@ -580,7 +588,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
             assertThat(clockArm).isEqualTo(1L);
             assertNotNull(tracer.observe(Evict.class));
 
-            checkFileWithTwoLongs("a", x, 0L);
+            checkFileWithTwoLongs("a", X, 0L);
         }
     }
 
@@ -1596,7 +1604,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
             long clockArm = pageCache.evictPages(1, 0, EvictionRunEvent.NULL);
             assertThat(clockArm).isEqualTo(1L);
 
-            checkFileWithTwoLongs("a", 42L, y);
+            checkFileWithTwoLongs("a", 42L, Y);
         }
     }
 
@@ -1801,6 +1809,58 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         }
     }
 
+    @Test
+    void pageCursorsHaveCorrectPayloadSize() throws IOException {
+        try (var pageCache = getPageCache(fs, 1024, new DefaultPageCacheTracer());
+                var pagedFile = map(file("a"), pageCache.pageSize())) {
+            try (MuninnPageCursor writer = (MuninnPageCursor) pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                assertTrue(writer.next());
+                assertEquals(pagedFile.payloadSize(), writer.getPayloadSize());
+                assertEquals(pageCache.pageSize() - pagedFile.pageReservedBytes(), writer.getPayloadSize());
+                assertEquals(pageCache.pageSize(), writer.getPageSize());
+            }
+
+            try (MuninnPageCursor reader = (MuninnPageCursor) pagedFile.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                assertTrue(reader.next());
+                assertEquals(pagedFile.payloadSize(), reader.getPayloadSize());
+                assertEquals(pageCache.pageSize() - pagedFile.pageReservedBytes(), reader.getPayloadSize());
+                assertEquals(pageCache.pageSize(), reader.getPageSize());
+            }
+        }
+    }
+
+    @Test
+    void unboundPageCursorPayload() throws IOException {
+        try (var pageCache = getPageCache(fs, 1024, new DefaultPageCacheTracer());
+                var pagedFile = map(file("a"), pageCache.pageSize())) {
+            try (var writer = (MuninnPageCursor) pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                assertEquals(writer.getPayloadSize(), 0);
+            }
+
+            try (var reader = (MuninnPageCursor) pagedFile.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                assertEquals(reader.getPayloadSize(), 0);
+            }
+        }
+    }
+
+    @Test
+    void linkedCursorsPreservePayloadSize() throws IOException {
+        try (var pageCache = getPageCache(fs, 1024, new DefaultPageCacheTracer())) {
+            var file = file("a");
+            generateFileWithRecords(
+                    file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes, pageCachePageSize);
+
+            try (var pagedFile = map(file("a"), pageCache.pageSize());
+                    var reader = pagedFile.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                assertTrue(reader.next());
+                try (var linkedReader = (MuninnPageCursor) reader.openLinkedCursor(1)) {
+                    assertTrue(linkedReader.next());
+                    assertEquals(pageCache.pageSize() - pagedFile.pageReservedBytes(), linkedReader.getPayloadSize());
+                }
+            }
+        }
+    }
+
     private static class FlushRendezvousTracer extends DefaultPageCacheTracer {
         private final CountDownLatch latch;
 
@@ -1838,9 +1898,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         try (StoreChannel channel = fs.write(path)) {
             ByteBuffer buf = ByteBuffers.allocate(16 + 2 * reservedBytes, ByteOrder.LITTLE_ENDIAN, INSTANCE);
             buf.put(ByteBuffer.allocate(reservedBytes));
-            buf.putLong(x);
+            buf.putLong(X);
             buf.put(ByteBuffer.allocate(reservedBytes));
-            buf.putLong(y);
+            buf.putLong(Y);
             buf.flip();
             channel.writeAll(buf);
         }

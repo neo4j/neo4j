@@ -42,7 +42,12 @@ public enum RecordStorageCapability implements Capability {
     /**
      * Store files are in little-endian format
      */
-    LITTLE_ENDIAN(CapabilityType.FORMAT, CapabilityType.STORE);
+    LITTLE_ENDIAN(CapabilityType.FORMAT, CapabilityType.STORE),
+
+    /**
+     * Store supports mvcc
+     */
+    MULTI_VERSIONED(CapabilityType.FORMAT, CapabilityType.STORE);
 
     private final CapabilityType[] types;
     private final boolean additive;

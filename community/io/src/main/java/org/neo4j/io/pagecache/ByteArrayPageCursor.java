@@ -356,6 +356,11 @@ public class ByteArrayPageCursor extends PageCursor {
         }
 
         @Override
+        public int pageReservedBytes() {
+            return 0;
+        }
+
+        @Override
         public long fileSize() throws IOException {
             return pageSize;
         }

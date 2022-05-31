@@ -37,7 +37,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.parallel.ResourceLock;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -86,11 +85,15 @@ public abstract class PageCacheTestSupport<T extends PageCache> {
 
     protected abstract Fixture<T> createFixture();
 
+    protected boolean isMultiVersioned() {
+        return false;
+    }
+
     @BeforeEach
     public void setUp() throws IOException {
         fixture = createFixture();
-        reservedBytes = fixture.getReservedBytes();
-        multiVersioned = reservedBytes > 0;
+        multiVersioned = isMultiVersioned();
+        reservedBytes = isMultiVersioned() ? fixture.getReservedBytes() : 0;
         //noinspection ResultOfMethodCallIgnored
         Thread.interrupted(); // Clear stray interrupts
         fs = createFileSystemAbstraction();
@@ -114,7 +117,7 @@ public abstract class PageCacheTestSupport<T extends PageCache> {
         T pageCache =
                 fixture.createPageCache(swapperFactory, maxPages, tracer, jobScheduler, fixture.getBufferFactory());
         pageCachePageSize = pageCache.pageSize();
-        pageCachePayloadSize = pageCache.payloadSize();
+        pageCachePayloadSize = pageCache.pageSize() - reservedBytes;
         recordsPerFilePage = pageCachePayloadSize / recordSize;
         recordCount = 5 * maxPages * recordsPerFilePage;
         filePayloadSize = recordsPerFilePage * recordSize;
@@ -327,7 +330,7 @@ public abstract class PageCacheTestSupport<T extends PageCache> {
         private Supplier<FileSystemAbstraction> fileSystemAbstractionSupplier = EphemeralFileSystemAbstraction::new;
         private Function<String, Path> fileConstructor = Path::of;
         private IOBufferFactory bufferFactory;
-        private int reservedBytes = GraphDatabaseInternalSettings.reserved_page_header_bytes.defaultValue();
+        private int reservedBytes = PageCache.RESERVED_BYTES;
 
         public abstract T createPageCache(
                 PageSwapperFactory swapperFactory,

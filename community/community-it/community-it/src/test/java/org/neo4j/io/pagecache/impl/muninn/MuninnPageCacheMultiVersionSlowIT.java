@@ -17,28 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.internal.gbptree;
+package org.neo4j.io.pagecache.impl.muninn;
 
 import java.nio.file.OpenOption;
-import java.util.Comparator;
-import java.util.List;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Predicate;
+import java.util.stream.IntStream;
+import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 
-class GBPTreeTestUtil {
-    static <KEY> boolean contains(List<KEY> expectedKeys, KEY key, Comparator<KEY> comparator) {
-        return expectedKeys.stream().map(bind(comparator::compare, key)).anyMatch(Predicate.isEqual(0));
+public class MuninnPageCacheMultiVersionSlowIT extends MuninnPageCacheSlowIT {
+    @Override
+    protected ImmutableSet<OpenOption> getOpenOptions() {
+        return Sets.immutable.of(PageCacheOpenOptions.MULTI_VERSIONED);
     }
 
-    private static <T, U, R> Function<U, R> bind(BiFunction<T, U, R> f, T t) {
-        return u -> f.apply(t, u);
-    }
-
-    static int calculatePayloadSize(PageCache pageCache, ImmutableSet<OpenOption> openOptions) {
-        var reservedBytes = pageCache.pageReservedBytes(openOptions);
-        return pageCache.pageSize() - reservedBytes;
+    @Override
+    protected IntStream maybeDistinct(IntStream stream) {
+        return stream.distinct();
     }
 }

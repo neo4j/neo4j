@@ -76,8 +76,11 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     private static final long NOT_INITIALIZED = Long.MIN_VALUE;
     static final UUID NOT_INITIALIZED_UUID = new UUID(NOT_INITIALIZED, NOT_INITIALIZED);
 
-    // MetaDataStore always big-endian so we can read store version regardless of endianness of other stores
+    // MetaDataStore always big-endian and never multi-versioned, so we can read store version regardless of endianness
+    // of other stores
     private static final ImmutableSet<OpenOption> REQUIRED_OPTIONS = immutable.of(PageCacheOpenOptions.BIG_ENDIAN);
+    private static final ImmutableSet<OpenOption> FORBIDDEN_OPTIONS =
+            immutable.of(PageCacheOpenOptions.MULTI_VERSIONED);
 
     // Positions of meta-data records
     public enum Position {
@@ -162,7 +165,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
                 NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT,
                 readOnlyChecker,
                 databaseName,
-                openOptions.newWithAll(REQUIRED_OPTIONS));
+                buildOptions(openOptions));
 
         checkpointLogVersion.set(logTailMetadata.getCheckpointLogVersion());
         kernelVersion = logTailMetadata.getKernelVersion();
@@ -179,6 +182,10 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
             lastCommittedTx.checksum(),
             lastCommittedTx.commitTimestamp()
         });
+    }
+
+    private static ImmutableSet<OpenOption> buildOptions(ImmutableSet<OpenOption> openOptions) {
+        return openOptions.newWithoutAll(FORBIDDEN_OPTIONS).newWithAll(REQUIRED_OPTIONS);
     }
 
     @Override
@@ -319,10 +326,10 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
             PageCache pageCache, Path neoStore, Position position, String databaseName, CursorContext cursorContext)
             throws IOException {
         var recordFormat = new MetaDataRecordFormat();
-        int payloadSize = pageCache.payloadSize();
         long value = FIELD_NOT_PRESENT;
         try (PagedFile pagedFile =
                 pageCache.map(neoStore, pageCache.pageSize(), databaseName, REQUIRED_OPTIONS, DISABLED)) {
+            int payloadSize = pagedFile.payloadSize();
             if (pagedFile.getLastPageId() >= 0) {
                 try (PageCursor cursor = pagedFile.io(0, PF_SHARED_READ_LOCK, cursorContext)) {
                     if (cursor.next()) {

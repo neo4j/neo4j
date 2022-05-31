@@ -681,10 +681,10 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         try {
             // We're only interested in the page size really
             Meta meta = RootLayerSupport.readMeta(pagedFile, cursorContext);
-            if (meta.getPayloadSize() != pageCache.payloadSize()) {
+            if (meta.getPayloadSize() != pagedFile.payloadSize()) {
                 throw new MetadataMismatchException(format(
                         "Tried to open the tree using page payload size %d, but the tree was original created with page payload size %d so cannot be opened.",
-                        pageCache.payloadSize(), meta.getPayloadSize()));
+                        pagedFile.payloadSize(), meta.getPayloadSize()));
             }
             success = true;
             return pagedFile;

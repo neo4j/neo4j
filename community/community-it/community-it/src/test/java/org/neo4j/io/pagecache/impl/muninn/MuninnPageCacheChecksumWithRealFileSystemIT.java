@@ -34,7 +34,6 @@ public class MuninnPageCacheChecksumWithRealFileSystemIT extends MuninnPageCache
     @Override
     protected PageCacheTestSupport.Fixture<MuninnPageCache> createFixture() {
         return new MuninnPageCacheFixture()
-                .withReservedBytes(Long.BYTES * 3)
                 .withFileSystemAbstraction(DefaultFileSystemAbstraction::new)
                 .withFileConstructor(directory::file);
     }

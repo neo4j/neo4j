@@ -77,7 +77,7 @@ class CrashGenerationCleanerCrashTest {
 
     private static CrashGenerationCleaner newCrashingCrashGenerationCleaner(String message) {
         int pageSize = 8192;
-        PagedFile pagedFile = new StubPagedFile(pageSize) {
+        PagedFile pagedFile = new StubPagedFile(pageSize, 0) {
             final AtomicBoolean first = new AtomicBoolean(true);
 
             @Override

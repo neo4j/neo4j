@@ -32,11 +32,14 @@ import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.nio.file.OpenOption;
 import java.util.BitSet;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
+import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -79,8 +82,11 @@ abstract class GBPTreeITBase<KEY, VALUE> {
         int pageSize = 512;
         pageCache = PageCacheSupportExtension.getPageCache(
                 fileSystem, config().withPageSize(pageSize).withAccessChecks(true));
-        layout = getLayout(random, pageCache.payloadSize());
-        index = new GBPTreeBuilder<>(pageCache, testDirectory.file("index"), layout).build();
+        var openOptions = getOpenOptions();
+        layout = getLayout(random, GBPTreeTestUtil.calculatePayloadSize(pageCache, openOptions));
+        index = new GBPTreeBuilder<>(pageCache, testDirectory.file("index"), layout)
+                .with(openOptions)
+                .build();
     }
 
     @AfterEach
@@ -91,6 +97,10 @@ abstract class GBPTreeITBase<KEY, VALUE> {
 
     private Writer<KEY, VALUE> createWriter(GBPTree<KEY, VALUE> index, WriterFactory factory) throws IOException {
         return factory.create(index, flags);
+    }
+
+    ImmutableSet<OpenOption> getOpenOptions() {
+        return Sets.immutable.empty();
     }
 
     abstract TestLayout<KEY, VALUE> getLayout(RandomSupport random, int pageSize);

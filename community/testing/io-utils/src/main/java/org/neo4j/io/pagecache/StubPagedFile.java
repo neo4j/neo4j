@@ -19,8 +19,12 @@
  */
 package org.neo4j.io.pagecache;
 
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.monitoring.PageFileCounters;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -29,16 +33,19 @@ import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
 public class StubPagedFile implements PagedFile {
     private final int pageSize;
     public final int exposedPageSize;
+    private final int reservedBytes;
     public long lastPageId = 1;
 
-    public StubPagedFile(int pageSize) {
+    public StubPagedFile(int pageSize, int reservedBytes) {
         this.pageSize = pageSize;
         this.exposedPageSize = pageSize;
+        this.reservedBytes = reservedBytes;
     }
 
     @Override
     public PageCursor io(long pageId, int pf_flags, CursorContext context) throws IOException {
-        StubPageCursor cursor = new StubPageCursor(pageId, pageSize);
+        StubPageCursor cursor = new StubPageCursor(
+                pageId, ByteBuffers.allocate(pageSize, ByteOrder.LITTLE_ENDIAN, INSTANCE), reservedBytes);
         prepareCursor(cursor);
         return cursor;
     }
@@ -52,7 +59,12 @@ public class StubPagedFile implements PagedFile {
 
     @Override
     public int payloadSize() {
-        return pageSize - PageCache.RESERVED_BYTES;
+        return pageSize - reservedBytes;
+    }
+
+    @Override
+    public int pageReservedBytes() {
+        return reservedBytes;
     }
 
     @Override

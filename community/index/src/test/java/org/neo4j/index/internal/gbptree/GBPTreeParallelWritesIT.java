@@ -26,13 +26,16 @@ import static org.neo4j.test.Race.throwing;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.junit.jupiter.api.AfterEach;
@@ -78,11 +81,18 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
 
     abstract TestLayout<KEY, VALUE> getLayout(RandomSupport random, int payloadSize);
 
+    ImmutableSet<OpenOption> getOpenOptions() {
+        return Sets.immutable.empty();
+    }
+
     @Test
     void shouldDoRandomWritesInParallel() throws IOException {
         // given
-        var layout = getLayout(random, pageCache.payloadSize());
-        try (var index = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout).build()) {
+        var openOptions = getOpenOptions();
+        var layout = getLayout(random, GBPTreeTestUtil.calculatePayloadSize(pageCache, openOptions));
+        try (var index = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout)
+                .with(openOptions)
+                .build()) {
             var threads = Runtime.getRuntime().availableProcessors();
             MutableLongObjectMap<Pair<KEY, VALUE>>[] dataPerThread = new MutableLongObjectMap[threads];
             for (int i = 0; i < threads; i++) {
@@ -146,8 +156,11 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
     @Test
     void shouldWriteInParallelThroughCheckpoints() throws Exception {
         // given
-        var layout = getLayout(random, pageCache.payloadSize());
-        try (var tree = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout).build()) {
+        var openOptions = getOpenOptions();
+        var layout = getLayout(random, GBPTreeTestUtil.calculatePayloadSize(pageCache, openOptions));
+        try (var tree = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout)
+                .with(openOptions)
+                .build()) {
             var numTasks = 10_000;
             var numCompletedTasks = new LongAdder();
             var numThreads = 8;

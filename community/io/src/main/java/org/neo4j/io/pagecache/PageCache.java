@@ -46,9 +46,9 @@ public interface PageCache extends AutoCloseable {
     int PAGE_SIZE = 8192;
 
     /**
-     * Page reserved bytes
+     * Page reserved bytes when file is mapped with {@link PageCacheOpenOptions#MULTI_VERSIONED} option.
      */
-    int RESERVED_BYTES = Boolean.getBoolean("internal.dbms.multiversioned.store.override") ? Long.BYTES * 3 : 0;
+    int RESERVED_BYTES = Long.BYTES * 3;
 
     /**
      * Ask for a handle to a paged file, backed by an empty set of file open options.
@@ -178,14 +178,9 @@ public interface PageCache extends AutoCloseable {
     int pageSize();
 
     /**
-     * The size in bytes of page area that can be used to store user data
+     * Number of reserved bytes in pages when file is mapped with provided options.
      */
-    int payloadSize();
-
-    /**
-     * Number of reserved bytes in pages that are managed by this cache.
-     */
-    int pageReservedBytes();
+    int pageReservedBytes(ImmutableSet<OpenOption> openOptions);
 
     /**
      * The max number of cached pages.

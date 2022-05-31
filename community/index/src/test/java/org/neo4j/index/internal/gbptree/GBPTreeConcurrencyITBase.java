@@ -29,6 +29,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -50,6 +51,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
+import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -104,11 +107,18 @@ public abstract class GBPTreeConcurrencyITBase<KEY, VALUE> {
         int pageSize = 512;
         pageCache = PageCacheSupportExtension.getPageCache(
                 fileSystem, config().withPageSize(pageSize).withAccessChecks(true));
-        layout = getLayout(random, pageCache.payloadSize());
-        return this.index = new GBPTreeBuilder<>(pageCache, testDirectory.file("index"), layout).build();
+        var openOptions = getOpenOptions();
+        layout = getLayout(random, GBPTreeTestUtil.calculatePayloadSize(pageCache, openOptions));
+        return this.index = new GBPTreeBuilder<>(pageCache, testDirectory.file("index"), layout)
+                .with(openOptions)
+                .build();
     }
 
     protected abstract TestLayout<KEY, VALUE> getLayout(RandomSupport random, int payloadSize);
+
+    ImmutableSet<OpenOption> getOpenOptions() {
+        return Sets.immutable.empty();
+    }
 
     @AfterEach
     void consistencyCheckAndClose() throws IOException {

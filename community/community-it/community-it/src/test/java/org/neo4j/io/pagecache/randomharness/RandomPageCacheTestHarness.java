@@ -19,7 +19,6 @@
  */
 package org.neo4j.io.pagecache.randomharness;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import java.io.Closeable;
@@ -27,6 +26,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -41,6 +41,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -83,7 +85,6 @@ public class RandomPageCacheTestHarness implements Closeable {
     private int filePageSize;
     private PageCacheTracer tracer;
     private int commandCount;
-    private final int reservedPageBytes;
     private final double[] commandProbabilityFactors;
     private long randomSeed;
     private boolean fixedRandomSeed;
@@ -94,6 +95,7 @@ public class RandomPageCacheTestHarness implements Closeable {
     private Phase verification;
     private RecordFormat recordFormat;
     private Path basePath;
+    private ImmutableSet<OpenOption> openOptions;
 
     public RandomPageCacheTestHarness() {
         mischiefRate = 0.1;
@@ -105,7 +107,6 @@ public class RandomPageCacheTestHarness implements Closeable {
         filePageCount = cachePageCount * 10;
         tracer = PageCacheTracer.NULL;
         commandCount = 1000;
-        reservedPageBytes = reserved_page_header_bytes.defaultValue();
 
         Command[] commands = Command.values();
         commandProbabilityFactors = new double[commands.length];
@@ -117,6 +118,7 @@ public class RandomPageCacheTestHarness implements Closeable {
         useAdversarialIO = true;
         recordFormat = new StandardRecordFormat();
         basePath = Path.of("random-harness-default-path");
+        openOptions = Sets.immutable.empty();
     }
 
     /**
@@ -263,6 +265,10 @@ public class RandomPageCacheTestHarness implements Closeable {
         this.basePath = basePath;
     }
 
+    public void setOpenOptions(ImmutableSet<OpenOption> openOptions) {
+        this.openOptions = openOptions;
+    }
+
     /**
      * Write out a textual description of the last run iteration, including the exact plan and what thread
      * executed which command, and the random seed that can be used to recreate that plan for improved repeatability.
@@ -354,7 +360,7 @@ public class RandomPageCacheTestHarness implements Closeable {
         MuninnPageCache cache = new MuninnPageCache(
                 swapperFactory,
                 jobScheduler,
-                MuninnPageCache.config(cachePageCount).pageCacheTracer(tracer).reservedPageBytes(reservedPageBytes));
+                MuninnPageCache.config(cachePageCount).pageCacheTracer(tracer));
         if (filePageSize == 0) {
             filePageSize = cache.pageSize();
         }
@@ -362,7 +368,7 @@ public class RandomPageCacheTestHarness implements Closeable {
         Map<Path, PagedFile> fileMap = new HashMap<>(files.length);
         for (int i = 0; i < Math.min(files.length, initialMappedFiles); i++) {
             Path file = files[i];
-            fileMap.put(file, cache.map(file, filePageSize, DEFAULT_DATABASE_NAME));
+            fileMap.put(file, cache.map(file, filePageSize, DEFAULT_DATABASE_NAME, openOptions));
         }
 
         plan = plan(cache, files, fileMap);
@@ -453,7 +459,8 @@ public class RandomPageCacheTestHarness implements Closeable {
         int[] commandWeights = computeCommandWeights();
         int commandWeightSum = sum(commandWeights);
         Random rng = new Random(randomSeed);
-        CommandPrimer primer = new CommandPrimer(rng, cache, files, fileMap, filePageCount, filePageSize, recordFormat);
+        var primer =
+                new CommandPrimer(rng, cache, files, fileMap, filePageCount, filePageSize, recordFormat, openOptions);
 
         for (int i = 0; i < plan.length; i++) {
             Command command = pickCommand(rng.nextInt(commandWeightSum), commandWeights);

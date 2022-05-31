@@ -27,10 +27,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
+import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -77,6 +80,10 @@ abstract class GBPTreeReadWriteTestBase<KEY, VALUE> {
     }
 
     abstract TestLayout<KEY, VALUE> getLayout(RandomSupport random, int pageSize);
+
+    ImmutableSet<OpenOption> getOpenOptions() {
+        return Sets.immutable.empty();
+    }
 
     @ParameterizedTest
     @MethodSource("pageSizes")
@@ -172,11 +179,14 @@ abstract class GBPTreeReadWriteTestBase<KEY, VALUE> {
     private void setupTest(int pageSize) {
         indexFile = testDirectory.file("index");
         pageCache = StandalonePageCacheFactory.createPageCache(fs, new ThreadPoolJobScheduler(), pageSize);
-        layout = getLayout(random, pageCache.payloadSize());
+        var payloadSize = GBPTreeTestUtil.calculatePayloadSize(pageCache, getOpenOptions());
+        layout = getLayout(random, payloadSize);
     }
 
     private GBPTree<KEY, VALUE> index() {
-        return new GBPTreeBuilder<>(pageCache, indexFile, layout).build();
+        return new GBPTreeBuilder<>(pageCache, indexFile, layout)
+                .with(getOpenOptions())
+                .build();
     }
 
     private boolean removeFromList(List<KEY> list, KEY item) {

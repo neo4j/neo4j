@@ -84,7 +84,8 @@ public abstract class StringLengthIndexValidationIT {
 
     @BeforeEach
     void setUp() {
-        singleKeySizeLimit = getSingleKeySizeLimit(pageCache.payloadSize());
+        // TODO mvcc: this test should verify smaller limit for mvcc record format when we can start db with that format
+        singleKeySizeLimit = getSingleKeySizeLimit(pageCache.pageSize());
     }
 
     @ExtensionCallback

@@ -34,7 +34,6 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -66,24 +65,25 @@ import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
 @EphemeralPageCacheExtension
 class AbstractDynamicStoreTest {
-    private static final int BLOCK_SIZE = 60;
+    protected static final int BLOCK_SIZE = 60;
 
     @Inject
-    private EphemeralFileSystemAbstraction fs;
+    protected EphemeralFileSystemAbstraction fs;
 
     @Inject
-    private PageCache pageCache;
+    protected PageCache pageCache;
 
-    private final Path storeFile = Path.of("store");
+    protected final Path storeFile = Path.of("store");
     private final Path idFile = Path.of("idStore");
     private final RecordFormats formats = defaultFormat();
 
     @BeforeEach
     void before() throws IOException {
         try (StoreChannel channel = fs.write(storeFile)) {
-            ByteBuffer buffer = ByteBuffers.allocate(pageCache.payloadSize(), getByteOrder(), INSTANCE);
+            var buffer = ByteBuffers.allocate(pageCache.pageSize(), getByteOrder(), INSTANCE);
+            buffer.putInt(BLOCK_SIZE);
             while (buffer.hasRemaining()) {
-                buffer.putInt(BLOCK_SIZE);
+                buffer.put((byte) 0);
             }
             buffer.flip();
             channel.writeAll(buffer);
@@ -273,6 +273,8 @@ class AbstractDynamicStoreTest {
     }
 
     protected ByteOrder getByteOrder() {
-        return ByteOrder.BIG_ENDIAN;
+        return getOpenOptions().contains(PageCacheOpenOptions.BIG_ENDIAN)
+                ? ByteOrder.BIG_ENDIAN
+                : ByteOrder.LITTLE_ENDIAN;
     }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.io.pagecache.randomharness;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -97,14 +96,14 @@ public abstract class RecordFormat {
                 + Arrays.toString(bytes);
     }
 
-    public final void assertRecordsWrittenCorrectly(Path file, StoreChannel channel) throws IOException {
+    public final void assertRecordsWrittenCorrectly(Path file, StoreChannel channel, int reservedBytes)
+            throws IOException {
         int recordSize = getRecordSize();
-        int reservedBytes = reserved_page_header_bytes.defaultValue();
         long pagesInFile = channel.size() / PAGE_SIZE;
         int recordsInPage = (PAGE_SIZE - reservedBytes) / recordSize;
         long recordsInFile = pagesInFile * recordsInPage;
         ByteBuffer buffer = ByteBuffers.allocate(recordSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
-        StubPageCursor cursor = new StubPageCursor(0, buffer, 0);
+        StubPageCursor cursor = new StubPageCursor(0, buffer);
         int page = 0;
         for (int i = 0; i < recordsInFile; i++) {
             if (i % recordsInPage == 0) {

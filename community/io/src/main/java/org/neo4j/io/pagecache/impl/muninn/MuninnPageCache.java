@@ -45,7 +45,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.Supplier;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.neo4j.function.Suppliers;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.IOController;
@@ -160,11 +162,13 @@ public class MuninnPageCache implements PageCache {
     // tryGetNumberOfAvailablePages.
     private static final int UNKNOWN_PAGES_TO_EVICT = -1;
 
+    // this implementation requires at least 3 longs reserved in order to map multiversioned pages
+    private static final int MINIMUM_RESERVED_BYTES = Long.BYTES * 3;
+
     private final int pageCacheId;
     private final PageSwapperFactory swapperFactory;
     private final int cachePageSize;
-    private final int payloadSize;
-    private final int reservedPageBytes;
+    private final int pageReservedBytes;
     private final int keepFree;
     private final PageCacheTracer pageCacheTracer;
     private final IOBufferFactory bufferFactory;
@@ -211,7 +215,7 @@ public class MuninnPageCache implements PageCache {
     // 'true' (the default) if we should print any exceptions we get when unmapping a file.
     private boolean printExceptionsOnClose;
 
-    private VersionStorage versionStorage;
+    private final Supplier<VersionStorage> versionStorage;
 
     static {
         try {
@@ -478,8 +482,7 @@ public class MuninnPageCache implements PageCache {
         this.pageCacheId = pageCacheIdCounter.incrementAndGet();
         this.swapperFactory = swapperFactory;
         this.cachePageSize = configuration.pageSize;
-        this.reservedPageBytes = requireNonNegative(configuration.reservedPageSize);
-        this.payloadSize = cachePageSize - reservedPageBytes;
+        this.pageReservedBytes = requireNonNegative(configuration.reservedPageSize);
         this.keepFree = calculatePagesToKeepFree(maxPages);
         this.pageCacheTracer = configuration.pageCacheTracer;
         this.printExceptionsOnClose = true;
@@ -497,9 +500,8 @@ public class MuninnPageCache implements PageCache {
         this.faultLockStriping = configuration.faultLockStriping;
         this.enableEvictionThread = configuration.enableEvictionThread;
         this.preallocateStoreFiles = configuration.preallocateStoreFiles;
-        versionStorage = reservedPageBytes > 0
-                ? new InMemoryVersionStorage(configuration.memoryAllocator, cachePageSize)
-                : VersionStorage.EMPTY_STORAGE;
+        versionStorage =
+                Suppliers.lazySingleton(() -> new InMemoryVersionStorage(configuration.memoryAllocator, cachePageSize));
         setFreelistHead(new AtomicInteger());
 
         // Expose the total number of pages
@@ -560,6 +562,7 @@ public class MuninnPageCache implements PageCache {
         boolean anyPageSize = false;
         boolean useDirectIO = false;
         boolean littleEndian = true;
+        boolean multiVersioned = false;
         for (OpenOption option : openOptions) {
             if (option.equals(StandardOpenOption.CREATE)) {
                 createIfNotExists = true;
@@ -573,6 +576,14 @@ public class MuninnPageCache implements PageCache {
                 useDirectIO = true;
             } else if (option.equals(PageCacheOpenOptions.BIG_ENDIAN)) {
                 littleEndian = false;
+            } else if (option.equals(PageCacheOpenOptions.MULTI_VERSIONED)) {
+                if (pageReservedBytes < MINIMUM_RESERVED_BYTES) {
+                    throw new IllegalArgumentException("Cannot map file " + path
+                            + " as multiversioned, because configured reserved bytes for page cache "
+                            + pageReservedBytes + " is less then minimum " + MINIMUM_RESERVED_BYTES
+                            + " bytes required for mvcc.");
+                }
+                multiVersioned = true;
             } else if (!ignoredOpenOptions.contains(option)) {
                 throw new UnsupportedOperationException("Unsupported OpenOption: " + option);
             }
@@ -597,6 +608,12 @@ public class MuninnPageCache implements PageCache {
                             + "littleEndian "
                             + pagedFile.littleEndian);
                 }
+                if (pagedFile.multiVersioned != multiVersioned) {
+                    throw new IllegalArgumentException("Cannot map file " + path + " with " + "multiVersioned "
+                            + multiVersioned + ", " + "because it has already been mapped with a "
+                            + "multiVersioned "
+                            + pagedFile.multiVersioned);
+                }
                 if (truncateExisting) {
                     throw new UnsupportedOperationException("Cannot truncate a file that is already mapped");
                 }
@@ -613,7 +630,7 @@ public class MuninnPageCache implements PageCache {
         }
 
         // there was no existing mapping
-        MuninnPagedFile pagedFile = new MuninnPagedFile(
+        var pagedFile = new MuninnPagedFile(
                 path,
                 this,
                 filePageSize,
@@ -626,7 +643,9 @@ public class MuninnPageCache implements PageCache {
                 databaseName,
                 faultLockStriping,
                 ioController,
-                versionStorage,
+                multiVersioned,
+                multiVersioned ? pageReservedBytes : 0,
+                multiVersioned ? versionStorage.get() : VersionStorage.EMPTY_STORAGE,
                 littleEndian);
         pagedFile.incrementRefCount();
         pagedFile.setDeleteOnClose(deleteOnClose);
@@ -857,13 +876,8 @@ public class MuninnPageCache implements PageCache {
     }
 
     @Override
-    public int payloadSize() {
-        return payloadSize;
-    }
-
-    @Override
-    public int pageReservedBytes() {
-        return reservedPageBytes;
+    public int pageReservedBytes(ImmutableSet<OpenOption> openOptions) {
+        return openOptions.contains(PageCacheOpenOptions.MULTI_VERSIONED) ? pageReservedBytes : 0;
     }
 
     @Override

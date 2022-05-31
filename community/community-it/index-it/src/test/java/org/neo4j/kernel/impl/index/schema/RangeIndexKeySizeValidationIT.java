@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
 import static org.neo4j.kernel.impl.index.schema.PointKeyUtil.SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE;
@@ -71,6 +70,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -103,6 +103,7 @@ public class RangeIndexKeySizeValidationIT {
     private DatabaseManagementService dbms;
     private GraphDatabaseAPI db;
     private JobScheduler scheduler;
+    private PageCache pageCache;
 
     @AfterEach
     private void cleanup() throws Exception {
@@ -245,7 +246,7 @@ public class RangeIndexKeySizeValidationIT {
             String[] propKeys = generatePropertyKeys(numberOfSlots);
 
             createIndex(propKeys);
-            int keySizeLimit = TreeNodeDynamicSize.keyValueSizeCapFromPageSize(pageSize - PageCache.RESERVED_BYTES);
+            int keySizeLimit = TreeNodeDynamicSize.keyValueSizeCapFromPageSize(pageSize - calculateReservedBytes());
             int keySizeLimitPerSlot = keySizeLimit / propKeys.length - ESTIMATED_OVERHEAD_PER_SLOT;
             int wiggleRoomPerSlot = WIGGLE_ROOM / propKeys.length;
             SuccessAndFail successAndFail = new SuccessAndFail();
@@ -270,6 +271,12 @@ public class RangeIndexKeySizeValidationIT {
             }
             successAndFail.verifyBothSuccessAndFail();
         }
+    }
+
+    private int calculateReservedBytes() {
+        return pageCache.pageReservedBytes(db.getDependencyResolver()
+                .resolveDependency(StorageEngine.class)
+                .getOpenOptions());
     }
 
     private static Stream<Integer> payloadSize() {
@@ -342,11 +349,8 @@ public class RangeIndexKeySizeValidationIT {
     private void startDb(int pageSize) {
         TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder(neo4jLayout);
         scheduler = JobSchedulerFactory.createInitialisedScheduler();
-        PageCache pageCache = StandalonePageCacheFactory.createPageCache(
-                fs,
-                scheduler,
-                PageCacheTracer.NULL,
-                config(100).pageSize(pageSize).reservedPageBytes(reserved_page_header_bytes.defaultValue()));
+        pageCache = StandalonePageCacheFactory.createPageCache(
+                fs, scheduler, PageCacheTracer.NULL, config(100).pageSize(pageSize));
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency(pageCache);
         builder.setExternalDependencies(dependencies);

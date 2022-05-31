@@ -20,7 +20,6 @@
 package org.neo4j.index;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
@@ -54,7 +53,7 @@ public class SetInitialStateInNativeIndex extends NativeIndexRestartAction {
             IndexDirectoryStructure indexDirectoryStructure,
             ImmutableSet<OpenOption> openOptions)
             throws IOException {
-        var config = MuninnPageCache.config(100).reservedPageBytes(reserved_page_header_bytes.defaultValue());
+        var config = MuninnPageCache.config(100);
         try (PageCache pageCache = StandalonePageCacheFactory.createPageCache(
                 fs, JobSchedulerFactory.createInitialisedScheduler(), PageCacheTracer.NULL, config)) {
             int filesChanged = setInitialState(fs, indexDirectoryStructure.rootDirectory(), pageCache, openOptions);

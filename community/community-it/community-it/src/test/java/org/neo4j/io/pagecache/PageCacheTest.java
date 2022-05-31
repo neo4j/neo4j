@@ -114,24 +114,19 @@ import org.neo4j.util.concurrent.BinaryLatch;
 import org.neo4j.util.concurrent.Futures;
 
 public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSupport<T> {
-    // Sub-classes can override this. The reason this isn't a constructor parameter is that it would require this test
-    // class
-    // to have two constructors, one zero-parameter for junit and one internally with the intention to have one
-    // sub-class have its own
-    // zero-parameter constructor calling super constructor with a specific set of option options... and junit doesn't
-    // allow multiple
-    // constructors on a test class. Making this class abstract and have one sub-class with no specific open options and
-    // another for
-    // specific open options seemed a bit excessive, that's all.
-    protected ImmutableSet<OpenOption> openOptions = immutable.empty();
 
-    protected PagedFile map(PageCache pageCache, Path file, int filePageSize) throws IOException {
-        return map(pageCache, file, filePageSize, immutable.empty());
+    protected ImmutableSet<OpenOption> getOpenOptions() {
+        return immutable.empty();
     }
 
     protected PagedFile map(PageCache pageCache, Path file, int filePageSize, ImmutableSet<OpenOption> options)
             throws IOException {
-        return pageCache.map(file, filePageSize, DEFAULT_DATABASE_NAME, openOptions.newWithAll(options));
+        return pageCache.map(
+                file, filePageSize, DEFAULT_DATABASE_NAME, getOpenOptions().newWithAll(options));
+    }
+
+    protected PagedFile map(PageCache pageCache, Path file, int filePageSize) throws IOException {
+        return map(pageCache, file, filePageSize, immutable.empty());
     }
 
     protected PagedFile map(Path file, int filePageSize) throws IOException {
@@ -152,12 +147,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void mustReportConfiguredCachePageSize() {
         configureStandardPageCache();
         assertThat(pageCache.pageSize()).isEqualTo(pageCachePageSize);
-    }
-
-    @Test
-    void mustReportConfiguredCachePayloadSize() {
-        configureStandardPageCache();
-        assertThat(pageCache.payloadSize()).isEqualTo(pageCachePayloadSize);
     }
 
     @Test

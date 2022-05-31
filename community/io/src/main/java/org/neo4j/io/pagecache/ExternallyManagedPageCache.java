@@ -84,13 +84,8 @@ public class ExternallyManagedPageCache implements PageCache {
     }
 
     @Override
-    public int payloadSize() {
-        return delegate.payloadSize();
-    }
-
-    @Override
-    public int pageReservedBytes() {
-        return delegate.pageReservedBytes();
+    public int pageReservedBytes(ImmutableSet<OpenOption> openOptions) {
+        return delegate.pageReservedBytes(openOptions);
     }
 
     @Override

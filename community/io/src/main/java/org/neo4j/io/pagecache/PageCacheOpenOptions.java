@@ -47,5 +47,10 @@ public enum PageCacheOpenOptions implements OpenOption {
     /**
      * Use big-endian byte order when operating with mapped file
      */
-    BIG_ENDIAN
+    BIG_ENDIAN,
+
+    /**
+     * Map with mvcc support. Each page has some bytes reserved for version data.
+     */
+    MULTI_VERSIONED
 }

@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.ChecksumMismatchException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCacheTestSupport;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
@@ -49,6 +50,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 public class MuninnPageCacheChecksumIT extends PageCacheTestSupport<MuninnPageCache> {
 
+    public static final ImmutableSet<OpenOption> OPEN_OPTIONS = immutable.of(PageCacheOpenOptions.MULTI_VERSIONED);
     private final DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
     private final CursorContextFactory contextFactory =
             new CursorContextFactory(tracer, EmptyVersionContextSupplier.EMPTY);
@@ -56,7 +58,7 @@ public class MuninnPageCacheChecksumIT extends PageCacheTestSupport<MuninnPageCa
 
     @Override
     protected Fixture<MuninnPageCache> createFixture() {
-        return new MuninnPageCacheFixture().withReservedBytes(Long.BYTES * 3);
+        return new MuninnPageCacheFixture();
     }
 
     @Test
@@ -86,7 +88,8 @@ public class MuninnPageCacheChecksumIT extends PageCacheTestSupport<MuninnPageCa
     void anyByteChangeInfluencesChecksum() throws IOException {
         try (var pageCache = createPageCache(fs, 1024, tracer)) {
             long previousChecksum = 0;
-            for (int offset = 0; offset < pageCache.payloadSize(); offset++) {
+            var payloadSize = pageCache.pageSize() - pageCache.pageReservedBytes(OPEN_OPTIONS);
+            for (int offset = 0; offset < payloadSize; offset++) {
                 try (var pageFile = map(pageCache, file("a"), pageCache.pageSize());
                         var context = contextFactory.create("anyByteChangeInfluencesChecksum");
                         var mutator = pageFile.io(0, PF_SHARED_WRITE_LOCK, context)) {
@@ -299,20 +302,7 @@ public class MuninnPageCacheChecksumIT extends PageCacheTestSupport<MuninnPageCa
         return super.createPageCache(pageSwapperFactory, maxPages, tracer);
     }
 
-    protected PagedFile map(PageCache pageCache, Path file, int filePageSize) throws IOException {
-        return map(pageCache, file, filePageSize, immutable.empty());
-    }
-
-    protected PagedFile map(PageCache pageCache, Path file, int filePageSize, ImmutableSet<OpenOption> options)
-            throws IOException {
-        return pageCache.map(file, filePageSize, DEFAULT_DATABASE_NAME, options);
-    }
-
-    protected PagedFile map(Path file, int filePageSize) throws IOException {
-        return map(pageCache, file, filePageSize, immutable.empty());
-    }
-
-    protected PagedFile map(Path file, int filePageSize, ImmutableSet<OpenOption> options) throws IOException {
-        return map(pageCache, file, filePageSize, options);
+    private PagedFile map(PageCache pageCache, Path file, int filePageSize) throws IOException {
+        return pageCache.map(file, filePageSize, DEFAULT_DATABASE_NAME, OPEN_OPTIONS);
     }
 }

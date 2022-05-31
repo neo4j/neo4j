@@ -34,16 +34,17 @@ import static org.neo4j.io.pagecache.randomharness.Command.WriteMulti;
 import static org.neo4j.io.pagecache.randomharness.Command.WriteRecord;
 import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
+import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheTestSupport;
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.randomharness.PageCountRecordFormat;
 import org.neo4j.io.pagecache.randomharness.Phase;
 import org.neo4j.io.pagecache.randomharness.RandomPageCacheTestHarness;
@@ -59,6 +60,10 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
     @Inject
     public TestDirectory directory;
 
+    ImmutableSet<OpenOption> getOpenOptions() {
+        return Sets.immutable.empty();
+    }
+
     @RepeatedTest(10)
     void readsAndWritesMustBeMutuallyConsistent() throws Exception {
         int filePageCount = 100;
@@ -72,6 +77,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setFileSystem(fs);
             harness.setVerification(filesAreCorrectlyWrittenVerification(new StandardRecordFormat(), filePageCount));
             harness.setBasePath(directory.directory("readsAndWritesMustBeMutuallyConsistent"));
+            harness.setOpenOptions(getOpenOptions());
             harness.run(SEMI_LONG_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
         }
     }
@@ -90,11 +96,12 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setRecordFormat(recordFormat);
             harness.setFileSystem(fs);
             harness.setBasePath(directory.directory("concurrentPageFaultingMustNotPutInterleavedDataIntoPages"));
+            harness.setOpenOptions(getOpenOptions());
             harness.disableCommands(FlushCache, FlushFile, MapFile, UnmapFile, WriteRecord, WriteMulti);
             harness.setPreparation((cache, fs, filesTouched) -> {
                 Path file = filesTouched.iterator().next();
-                try (PagedFile pf = cache.map(file, cache.pageSize(), DEFAULT_DATABASE_NAME);
-                        PageCursor cursor = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                try (var pf = cache.map(file, cache.pageSize(), DEFAULT_DATABASE_NAME, getOpenOptions());
+                        var cursor = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                     for (int pageId = 0; pageId < filePageCount; pageId++) {
                         cursor.next();
                         recordFormat.fillWithRecords(cursor);
@@ -119,6 +126,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setCommandCount(15_000);
             harness.setFileSystem(fs);
             harness.setBasePath(directory.directory("concurrentFlushingMustNotPutInterleavedDataIntoFile"));
+            harness.setOpenOptions(getOpenOptions());
             harness.disableCommands(MapFile, UnmapFile, ReadRecord, ReadMulti);
             harness.setVerification(filesAreCorrectlyWrittenVerification(recordFormat, filePageCount));
 
@@ -142,6 +150,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setCommandCount(15_000);
             harness.setFileSystem(fs);
             harness.setBasePath(directory.directory("concurrentFlushingWithMischiefMustNotPutInterleavedDataIntoFile"));
+            harness.setOpenOptions(getOpenOptions());
             harness.disableCommands(MapFile, UnmapFile, ReadRecord, ReadMulti);
             harness.setVerification(filesAreCorrectlyWrittenVerification(recordFormat, filePageCount));
 
@@ -165,6 +174,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setCommandCount(15_000);
             harness.setFileSystem(fs);
             harness.setBasePath(directory.directory("concurrentFlushingWithFailuresMustNotPutInterleavedDataIntoFile"));
+            harness.setOpenOptions(getOpenOptions());
             harness.disableCommands(MapFile, UnmapFile, ReadRecord, ReadMulti);
             harness.setVerification(filesAreCorrectlyWrittenVerification(recordFormat, filePageCount));
 
@@ -172,12 +182,12 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    private static Phase filesAreCorrectlyWrittenVerification(
-            final RecordFormat recordFormat, final int filePageCount) {
+    private Phase filesAreCorrectlyWrittenVerification(final RecordFormat recordFormat, final int filePageCount) {
         return (cache, fs1, filesTouched) -> {
             for (Path file : filesTouched) {
-                try (PagedFile pf = cache.map(file, cache.pageSize(), DEFAULT_DATABASE_NAME);
-                        PageCursor cursor = pf.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                var openOptions = getOpenOptions();
+                try (var pf = cache.map(file, cache.pageSize(), DEFAULT_DATABASE_NAME, openOptions);
+                        var cursor = pf.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
                     for (int pageId = 0; pageId < filePageCount && cursor.next(); pageId++) {
                         try {
                             recordFormat.assertRecordsWrittenCorrectly(cursor);
@@ -187,8 +197,9 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
                         }
                     }
                 }
+                var reservedBytes = cache.pageReservedBytes(openOptions);
                 try (StoreChannel channel = fs1.read(file)) {
-                    recordFormat.assertRecordsWrittenCorrectly(file, channel);
+                    recordFormat.assertRecordsWrittenCorrectly(file, channel, reservedBytes);
                 }
             }
         };

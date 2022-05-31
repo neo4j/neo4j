@@ -30,17 +30,30 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Test;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
 public class MuninnPageCacheWithReserveBytesTest extends MuninnPageCacheTest {
+
+    private static final ImmutableSet<OpenOption> TEST_OPEN_OPTIONS =
+            Sets.immutable.of(PageCacheOpenOptions.MULTI_VERSIONED);
+
     @Override
-    protected Fixture<MuninnPageCache> createFixture() {
-        return super.createFixture().withReservedBytes(Long.BYTES * 3);
+    protected ImmutableSet<OpenOption> getOpenOptions() {
+        return TEST_OPEN_OPTIONS;
+    }
+
+    @Override
+    protected boolean isMultiVersioned() {
+        return true;
     }
 
     @Test

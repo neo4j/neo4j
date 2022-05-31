@@ -31,17 +31,16 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 import java.io.IOException;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCacheTestSupport;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -60,7 +59,7 @@ public class MuninnPageCacheMultiVersionIT extends PageCacheTestSupport<MuninnPa
 
     @Override
     protected Fixture<MuninnPageCache> createFixture() {
-        return new MuninnPageCacheFixture().withReservedBytes(Long.BYTES * 3);
+        return new MuninnPageCacheFixture();
     }
 
     @Test
@@ -126,7 +125,7 @@ public class MuninnPageCacheMultiVersionIT extends PageCacheTestSupport<MuninnPa
                 context.setWriteAndReadVersion(4);
 
                 assertTrue(pageCursor.next());
-                for (int i = 0; i < pageCache.payloadSize(); i++) {
+                for (int i = 0; i < pageFile.payloadSize(); i++) {
                     assertEquals(0, pageCursor.getByte());
                 }
             }
@@ -143,7 +142,7 @@ public class MuninnPageCacheMultiVersionIT extends PageCacheTestSupport<MuninnPa
 
                 assertTrue(mutator.next());
 
-                for (int i = 0; i < pageCache.payloadSize(); i += Integer.BYTES) {
+                for (int i = 0; i < pageFile.payloadSize(); i += Integer.BYTES) {
                     mutator.putInt(i);
                 }
             }
@@ -155,7 +154,7 @@ public class MuninnPageCacheMultiVersionIT extends PageCacheTestSupport<MuninnPa
                 context.setWriteAndReadVersion(4);
 
                 assertTrue(pageCursor.next());
-                for (int i = 0; i < pageCache.payloadSize(); i += Integer.BYTES) {
+                for (int i = 0; i < pageFile.payloadSize(); i += Integer.BYTES) {
                     assertEquals(0, pageCursor.getInt());
                 }
             }
@@ -164,7 +163,7 @@ public class MuninnPageCacheMultiVersionIT extends PageCacheTestSupport<MuninnPa
                 context.setWriteAndReadVersion(17);
 
                 assertTrue(pageCursor.next());
-                for (int i = 0; i < pageCache.payloadSize(); i += Integer.BYTES) {
+                for (int i = 0; i < pageFile.payloadSize(); i += Integer.BYTES) {
                     assertEquals(i, pageCursor.getInt());
                 }
             }
@@ -181,7 +180,7 @@ public class MuninnPageCacheMultiVersionIT extends PageCacheTestSupport<MuninnPa
 
                 assertTrue(mutator.next());
 
-                for (int i = 0; i < pageCache.payloadSize(); i += Integer.BYTES) {
+                for (int i = 0; i < pageFile.payloadSize(); i += Integer.BYTES) {
                     mutator.putInt(i);
                 }
             }
@@ -193,7 +192,7 @@ public class MuninnPageCacheMultiVersionIT extends PageCacheTestSupport<MuninnPa
                 context.setWriteAndReadVersion(2);
 
                 assertTrue(pageCursor.next());
-                for (int i = 0; i < pageCache.payloadSize(); i += Integer.BYTES) {
+                for (int i = 0; i < pageFile.payloadSize(); i += Integer.BYTES) {
                     assertEquals(0, pageCursor.getInt());
                 }
             }
@@ -202,7 +201,7 @@ public class MuninnPageCacheMultiVersionIT extends PageCacheTestSupport<MuninnPa
                 context.setWriteAndReadVersion(10, 2);
 
                 assertTrue(pageCursor.next());
-                for (int i = 0; i < pageCache.payloadSize(); i += Integer.BYTES) {
+                for (int i = 0; i < pageFile.payloadSize(); i += Integer.BYTES) {
                     assertEquals(i, pageCursor.getInt());
                 }
             }
@@ -990,20 +989,8 @@ public class MuninnPageCacheMultiVersionIT extends PageCacheTestSupport<MuninnPa
         }
     }
 
-    protected PagedFile map(PageCache pageCache, Path file, int filePageSize) throws IOException {
-        return map(pageCache, file, filePageSize, immutable.empty());
-    }
-
-    protected PagedFile map(PageCache pageCache, Path file, int filePageSize, ImmutableSet<OpenOption> options)
-            throws IOException {
-        return pageCache.map(file, filePageSize, DEFAULT_DATABASE_NAME, options);
-    }
-
-    protected PagedFile map(Path file, int filePageSize) throws IOException {
-        return map(pageCache, file, filePageSize, immutable.empty());
-    }
-
-    protected PagedFile map(Path file, int filePageSize, ImmutableSet<OpenOption> options) throws IOException {
-        return map(pageCache, file, filePageSize, options);
+    private static PagedFile map(PageCache pageCache, Path file, int filePageSize) throws IOException {
+        return pageCache.map(
+                file, filePageSize, DEFAULT_DATABASE_NAME, immutable.of(PageCacheOpenOptions.MULTI_VERSIONED));
     }
 }

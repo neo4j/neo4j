@@ -19,19 +19,36 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.nio.ByteOrder;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
+import java.io.IOException;
 import java.nio.file.OpenOption;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.junit.jupiter.api.BeforeEach;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 
 public class AbstractDynamicStoreLETest extends AbstractDynamicStoreTest {
-    @Override
-    protected ImmutableSet<OpenOption> getOpenOptions() {
-        return Sets.immutable.empty();
+
+    @BeforeEach
+    void before() throws IOException {
+        try (StoreChannel channel = fs.write(storeFile)) {
+            var buffer = ByteBuffers.allocate(pageCache.pageSize(), getByteOrder(), INSTANCE);
+            // keep reserved bytes as zeros
+            buffer.position(pageCache.pageReservedBytes(getOpenOptions()));
+            buffer.putInt(BLOCK_SIZE);
+            while (buffer.hasRemaining()) {
+                buffer.putInt((byte) 0);
+            }
+            buffer.flip();
+            channel.writeAll(buffer);
+        }
     }
 
     @Override
-    protected ByteOrder getByteOrder() {
-        return ByteOrder.LITTLE_ENDIAN;
+    protected ImmutableSet<OpenOption> getOpenOptions() {
+        return Sets.immutable.of(PageCacheOpenOptions.MULTI_VERSIONED);
     }
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
 
@@ -41,11 +40,8 @@ public class NumberArrayPageCacheTestSupport {
         Path dir = testDirectory.prepareDirectoryForTest("test");
         ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
         var contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
-        PageCache pageCache = StandalonePageCacheFactory.createPageCache(
-                fileSystem,
-                scheduler,
-                PageCacheTracer.NULL,
-                config(1024).reservedPageBytes(reserved_page_header_bytes.defaultValue()));
+        PageCache pageCache =
+                StandalonePageCacheFactory.createPageCache(fileSystem, scheduler, PageCacheTracer.NULL, config(1024));
         return new Fixture(pageCache, fileSystem, dir, scheduler, contextFactory);
     }
 

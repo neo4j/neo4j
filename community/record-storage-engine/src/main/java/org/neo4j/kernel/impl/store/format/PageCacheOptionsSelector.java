@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.format;
 import java.nio.file.OpenOption;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.api.set.MutableSet;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 
 public class PageCacheOptionsSelector {
@@ -29,12 +30,15 @@ public class PageCacheOptionsSelector {
      * Builds set of options required for provided format
      */
     public static ImmutableSet<OpenOption> select(RecordFormats recordFormats) {
-        if (recordFormats.hasCapability(
-                RecordStorageCapability
-                        .LITTLE_ENDIAN)) // old formats don't have such capability, so they are big-endian
-        {
-            return Sets.immutable.empty();
+        MutableSet<OpenOption> options = Sets.mutable.empty();
+        // old formats don't have such capability, so they are big-endian
+        if (!recordFormats.hasCapability(RecordStorageCapability.LITTLE_ENDIAN)) {
+
+            options.add(PageCacheOpenOptions.BIG_ENDIAN);
         }
-        return Sets.immutable.of(PageCacheOpenOptions.BIG_ENDIAN);
+        if (recordFormats.hasCapability(RecordStorageCapability.MULTI_VERSIONED)) {
+            options.add(PageCacheOpenOptions.MULTI_VERSIONED);
+        }
+        return options.toImmutable();
     }
 }

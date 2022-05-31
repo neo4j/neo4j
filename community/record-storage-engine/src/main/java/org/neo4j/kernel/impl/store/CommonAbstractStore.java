@@ -209,6 +209,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
                     // Map the file with the correct page size
                     pagedFile = pageCache.map(storageFile, filePageSize, databaseName, openOptions);
                 }
+                determineRecordsPerPage();
             } catch (NoSuchFileException | StoreNotFoundException e) {
                 if (pagedFile != null) {
                     pagedFile.close();
@@ -274,6 +275,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
         // Determine record size right after writing the header since some stores
         // use it when initializing their stores to write some records.
         recordSize = determineRecordSize();
+        determineRecordsPerPage();
     }
 
     private HEADER readStoreHeaderAndDetermineRecordSize(PagedFile pagedFile, CursorContext cursorContext)
@@ -351,6 +353,13 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
         storeHeader = header;
         recordSize = determineRecordSize();
         filePageSize = recordFormat.getFilePageSize(pageCache.pageSize(), recordSize);
+    }
+
+    /**
+     * Determines number of records per page and end offset of the records.
+     * Should be called after page file is mapped, as we need to know actual number of reserved bytes.
+     */
+    private void determineRecordsPerPage() {
         // We have aligned and non-aligned formats. For aligned formats file page size is the same as for page cache and
         // all is fine,
         // and it should be possible to use payload size easily but another second set of formats are non-aligned.
@@ -358,7 +367,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
         // cache itself
         // has no idea about those dances. As result we can't use the payload to begin with for file page size there
         // since its a page size that should be used to map files and those are with reserved bytes
-        recordsPerPage = (filePageSize - pageCache.pageReservedBytes()) / recordSize;
+        recordsPerPage = (filePageSize - pagedFile.pageReservedBytes()) / recordSize;
         recordsEndOffset = recordsPerPage * recordSize; // Truncated file page size to whole multiples of record size.
     }
 

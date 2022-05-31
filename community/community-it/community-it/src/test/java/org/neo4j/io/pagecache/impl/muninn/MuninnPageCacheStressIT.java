@@ -21,7 +21,11 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import static org.neo4j.io.pagecache.stress.Conditions.numberOfEvictions;
 
+import java.nio.file.OpenOption;
+import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Test;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.stress.Condition;
 import org.neo4j.io.pagecache.stress.PageCacheStressTest;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -34,7 +38,7 @@ import org.neo4j.test.utils.TestDirectory;
  *
  * Uses @PageCacheStressTest - see details there.
  *
- * Configured to run until it sees a million evictions, which should take few minutes.
+ * Configured to run until it sees 100 000 evictions, which should take few seconds.
  */
 @TestDirectoryExtension
 class MuninnPageCacheStressIT {
@@ -43,6 +47,15 @@ class MuninnPageCacheStressIT {
 
     @Test
     void shouldHandleTheStressOfManyManyEvictions() throws Exception {
+        runTest(Sets.immutable.empty());
+    }
+
+    @Test
+    void shouldHandleTheStressOfManyManyEvictionsMultiversion() throws Exception {
+        runTest(Sets.immutable.of(PageCacheOpenOptions.MULTI_VERSIONED));
+    }
+
+    private void runTest(ImmutableSet<OpenOption> openOptions) throws Exception {
         DefaultPageCacheTracer monitor = new DefaultPageCacheTracer();
         Condition condition = numberOfEvictions(monitor, 100_000);
 
@@ -50,6 +63,7 @@ class MuninnPageCacheStressIT {
                 .withWorkingDirectory(testDirectory.homePath())
                 .with(monitor)
                 .with(condition)
+                .with(openOptions)
                 .build();
 
         runner.run();

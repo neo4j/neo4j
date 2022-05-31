@@ -116,13 +116,8 @@ public class DatabasePageCache implements PageCache {
     }
 
     @Override
-    public int payloadSize() {
-        return globalPageCache.payloadSize();
-    }
-
-    @Override
-    public int pageReservedBytes() {
-        return globalPageCache.pageReservedBytes();
+    public int pageReservedBytes(ImmutableSet<OpenOption> openOptions) {
+        return globalPageCache.pageReservedBytes(openOptions);
     }
 
     @Override
@@ -180,6 +175,11 @@ public class DatabasePageCache implements PageCache {
         @Override
         public int payloadSize() {
             return delegate.payloadSize();
+        }
+
+        @Override
+        public int pageReservedBytes() {
+            return delegate.pageReservedBytes();
         }
 
         @Override

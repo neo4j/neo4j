@@ -150,6 +150,11 @@ public interface PagedFile extends AutoCloseable {
     int payloadSize();
 
     /**
+     * Number of reserved bytes in pages of this file.
+     */
+    int pageReservedBytes();
+
+    /**
      * Size of file, in bytes.
      */
     long fileSize() throws IOException;

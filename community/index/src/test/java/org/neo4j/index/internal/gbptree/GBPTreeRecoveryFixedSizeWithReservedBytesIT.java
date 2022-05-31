@@ -20,25 +20,16 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.nio.file.OpenOption;
-import java.util.Comparator;
-import java.util.List;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Predicate;
+import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.neo4j.io.pagecache.PageCache;
+import org.junit.jupiter.api.Disabled;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 
-class GBPTreeTestUtil {
-    static <KEY> boolean contains(List<KEY> expectedKeys, KEY key, Comparator<KEY> comparator) {
-        return expectedKeys.stream().map(bind(comparator::compare, key)).anyMatch(Predicate.isEqual(0));
-    }
+@Disabled("TODO mvcc: GBPTree requires reentrant write locks on page cache pages")
+public class GBPTreeRecoveryFixedSizeWithReservedBytesIT extends GBPTreeRecoveryFixedSizeIT {
 
-    private static <T, U, R> Function<U, R> bind(BiFunction<T, U, R> f, T t) {
-        return u -> f.apply(t, u);
-    }
-
-    static int calculatePayloadSize(PageCache pageCache, ImmutableSet<OpenOption> openOptions) {
-        var reservedBytes = pageCache.pageReservedBytes(openOptions);
-        return pageCache.pageSize() - reservedBytes;
+    @Override
+    ImmutableSet<OpenOption> getOpenOptions() {
+        return Sets.immutable.of(PageCacheOpenOptions.MULTI_VERSIONED);
     }
 }

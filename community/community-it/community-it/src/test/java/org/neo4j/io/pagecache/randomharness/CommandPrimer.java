@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.io.pagecache.PageCursor;
@@ -51,6 +53,7 @@ class CommandPrimer {
     private final int filePageCount;
     private final int filePageSize;
     private final RecordFormat recordFormat;
+    private final ImmutableSet<OpenOption> openOptions;
     private final int maxRecordCount;
     private final int recordsPerPage;
     // Entity-locks that protect the individual records, since page write locks are not exclusive.
@@ -63,7 +66,8 @@ class CommandPrimer {
             Map<Path, PagedFile> fileMap,
             int filePageCount,
             int filePageSize,
-            RecordFormat recordFormat) {
+            RecordFormat recordFormat,
+            ImmutableSet<OpenOption> openOptions) {
         this.rng = rng;
         this.cache = cache;
         this.files = files;
@@ -71,12 +75,15 @@ class CommandPrimer {
         this.filePageCount = filePageCount;
         this.filePageSize = filePageSize;
         this.recordFormat = recordFormat;
+        this.openOptions = openOptions;
         mappedFiles = new ArrayList<>();
         mappedFiles.addAll(fileMap.keySet());
         filesTouched = new HashSet<>();
         filesTouched.addAll(mappedFiles);
         recordsWrittenTo = new HashMap<>();
-        recordsPerPage = cache.payloadSize() / recordFormat.getRecordSize();
+        var reservedBytes = cache.pageReservedBytes(openOptions);
+        var payloadSize = cache.pageSize() - reservedBytes;
+        recordsPerPage = payloadSize / recordFormat.getRecordSize();
         maxRecordCount = filePageCount * recordsPerPage;
         recordLocks = new TinyLockManager();
 
@@ -141,7 +148,7 @@ class CommandPrimer {
         return new Action(Command.MapFile, "[file=%s]", file) {
             @Override
             public void perform() throws Exception {
-                fileMap.put(file, cache.map(file, filePageSize, DEFAULT_DATABASE_NAME));
+                fileMap.put(file, cache.map(file, filePageSize, DEFAULT_DATABASE_NAME, openOptions));
             }
         };
     }

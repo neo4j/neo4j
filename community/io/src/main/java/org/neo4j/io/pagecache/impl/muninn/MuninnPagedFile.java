@@ -141,6 +141,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
      * @param databaseName an optional name of the database this file belongs to. This option associates the mapped file with a database.
      * This information is currently used only for monitoring purposes.
      * @param ioController io controller to report page file io operations
+     * @param multiVersioned if file is mutli versioned
      * @param versionStorage page file old versioned pages storage
      * @param littleEndian page file endianess
      * @throws IOException If the {@link PageSwapper} could not be created.
@@ -158,15 +159,17 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
             String databaseName,
             int faultLockStriping,
             IOController ioController,
+            boolean multiVersioned,
+            int reservedBytes,
             VersionStorage versionStorage,
             boolean littleEndian)
             throws IOException {
         super(pageCache.pages);
         this.pageCache = pageCache;
         this.filePageSize = filePageSize;
-        this.fileReservedPageBytes = pageCache.pageReservedBytes();
+        this.fileReservedPageBytes = reservedBytes;
         this.versionStorage = versionStorage;
-        this.multiVersioned = fileReservedPageBytes > 0;
+        this.multiVersioned = multiVersioned;
         this.littleEndian = littleEndian;
         this.cursorFactory = new CursorFactory(this);
         this.pageCacheTracer = pageCacheTracer;
@@ -195,7 +198,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
         swapper = swapperFactory.createPageSwapper(
                 path,
                 filePageSize,
-                fileReservedPageBytes,
+                reservedBytes,
                 onEviction,
                 createIfNotExists,
                 useDirectIo,
@@ -260,6 +263,11 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     @Override
     public int payloadSize() {
         return filePageSize - fileReservedPageBytes;
+    }
+
+    @Override
+    public int pageReservedBytes() {
+        return fileReservedPageBytes;
     }
 
     @Override
