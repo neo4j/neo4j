@@ -20,10 +20,17 @@
 package org.neo4j.cypher.internal.ir.helpers
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.helpers.LabelExpressionEvaluator.NodesToCheckOverlap
 import org.neo4j.cypher.internal.ir.helpers.LabelExpressionEvaluator.labelExpressionEvaluator
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+
+import scala.annotation.tailrec
 
 class LabelExpressionEvaluatorTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -34,8 +41,8 @@ class LabelExpressionEvaluatorTest extends CypherFunSuite with AstConstructionTe
     val expr = labelA
     val nodesToCheckOverlap = NodesToCheckOverlap(None, "n")
 
-    def testLabel(labels: Set[String], expectedResult: Boolean): Unit = {
-      labelExpressionEvaluator(expr, nodesToCheckOverlap, labels) shouldBe Some(expectedResult)
+    def testLabel(labels: Set[String], expectedResult: Boolean): Unit = withClue(labels) {
+      labelExpressionEvaluator(expr, nodesToCheckOverlap, labels).result shouldBe Some(expectedResult)
     }
 
     testLabel(Set("A"), expectedResult = true)
@@ -47,8 +54,8 @@ class LabelExpressionEvaluatorTest extends CypherFunSuite with AstConstructionTe
     val expr = not(labelA)
     val nodesToCheckOverlap = NodesToCheckOverlap(None, "n")
 
-    def testNot(labels: Set[String], expectedResult: Boolean): Unit = {
-      labelExpressionEvaluator(expr, nodesToCheckOverlap, labels) shouldBe Some(expectedResult)
+    def testNot(labels: Set[String], expectedResult: Boolean): Unit = withClue(labels) {
+      labelExpressionEvaluator(expr, nodesToCheckOverlap, labels).result shouldBe Some(expectedResult)
     }
 
     testNot(Set("A"), expectedResult = false)
@@ -61,9 +68,9 @@ class LabelExpressionEvaluatorTest extends CypherFunSuite with AstConstructionTe
     val exprAnds = ands(labelA, labelB)
     val nodesToCheckOverlap = NodesToCheckOverlap(None, "n")
 
-    def testAnd(labels: Set[String], expectedResult: Boolean): Unit = {
-      labelExpressionEvaluator(exprAnd, nodesToCheckOverlap, labels) shouldBe Some(expectedResult)
-      labelExpressionEvaluator(exprAnds, nodesToCheckOverlap, labels) shouldBe Some(expectedResult)
+    def testAnd(labels: Set[String], expectedResult: Boolean): Unit = withClue(labels) {
+      labelExpressionEvaluator(exprAnd, nodesToCheckOverlap, labels).result shouldBe Some(expectedResult)
+      labelExpressionEvaluator(exprAnds, nodesToCheckOverlap, labels).result shouldBe Some(expectedResult)
     }
 
     testAnd(Set("A"), expectedResult = false)
@@ -78,9 +85,9 @@ class LabelExpressionEvaluatorTest extends CypherFunSuite with AstConstructionTe
     val exprOrs = ors(labelA, labelB)
     val nodesToCheckOverlap = NodesToCheckOverlap(None, "n")
 
-    def testOr(labels: Set[String], expectedResult: Boolean): Unit = {
-      labelExpressionEvaluator(exprOrs, nodesToCheckOverlap, labels)
-      labelExpressionEvaluator(exprOr, nodesToCheckOverlap, labels)
+    def testOr(labels: Set[String], expectedResult: Boolean): Unit = withClue(labels) {
+      labelExpressionEvaluator(exprOrs, nodesToCheckOverlap, labels).result shouldBe Some(expectedResult)
+      labelExpressionEvaluator(exprOr, nodesToCheckOverlap, labels).result shouldBe Some(expectedResult)
     }
 
     testOr(Set("A"), expectedResult = true)
@@ -94,24 +101,24 @@ class LabelExpressionEvaluatorTest extends CypherFunSuite with AstConstructionTe
     val exprXor = xor(labelA, labelB)
     val nodesToCheckOverlap = NodesToCheckOverlap(None, "n")
 
-    def testOr(labels: Set[String], expectedResult: Boolean): Unit = {
-      labelExpressionEvaluator(exprXor, nodesToCheckOverlap, labels)
+    def testXor(labels: Set[String], expectedResult: Boolean): Unit = withClue(labels) {
+      labelExpressionEvaluator(exprXor, nodesToCheckOverlap, labels).result shouldBe Some(expectedResult)
     }
 
-    testOr(Set("A"), expectedResult = true)
-    testOr(Set("B"), expectedResult = true)
-    testOr(Set("A, C"), expectedResult = true)
-    testOr(Set("C"), expectedResult = false)
-    testOr(Set("A", "B"), expectedResult = false)
-    testOr(Set("C", "A", "B"), expectedResult = false)
+    testXor(Set("A"), expectedResult = true)
+    testXor(Set("B"), expectedResult = true)
+    testXor(Set("A", "C"), expectedResult = true)
+    testXor(Set("C"), expectedResult = false)
+    testXor(Set("A", "B"), expectedResult = false)
+    testXor(Set("C", "A", "B"), expectedResult = false)
   }
 
   test("should work for expression: A=B") {
     val exprEquals = equals(labelA, labelB)
     val nodesToCheckOverlap = NodesToCheckOverlap(None, "n")
 
-    def testEquals(labels: Set[String], expectedResult: Boolean): Unit = {
-      labelExpressionEvaluator(exprEquals, nodesToCheckOverlap, labels)
+    def testEquals(labels: Set[String], expectedResult: Boolean): Unit = withClue(labels) {
+      labelExpressionEvaluator(exprEquals, nodesToCheckOverlap, labels).result shouldBe Some(expectedResult)
     }
 
     testEquals(Set("A"), expectedResult = false)
@@ -125,8 +132,8 @@ class LabelExpressionEvaluatorTest extends CypherFunSuite with AstConstructionTe
     val exprNotEquals = notEquals(labelA, labelB)
     val nodesToCheckOverlap = NodesToCheckOverlap(None, "n")
 
-    def testNotEquals(labels: Set[String], expectedResult: Boolean): Unit = {
-      labelExpressionEvaluator(exprNotEquals, nodesToCheckOverlap, labels)
+    def testNotEquals(labels: Set[String], expectedResult: Boolean): Unit = withClue(labels) {
+      labelExpressionEvaluator(exprNotEquals, nodesToCheckOverlap, labels).result shouldBe Some(expectedResult)
     }
 
     testNotEquals(Set("A"), expectedResult = true)
@@ -144,8 +151,8 @@ class LabelExpressionEvaluatorTest extends CypherFunSuite with AstConstructionTe
       )
     val nodesToCheckOverlap = NodesToCheckOverlap(None, "n")
 
-    def testNotEquals(labels: Set[String], expectedResult: Boolean): Unit = {
-      labelExpressionEvaluator(bigExpr, nodesToCheckOverlap, labels)
+    def testNotEquals(labels: Set[String], expectedResult: Boolean): Unit = withClue(labels) {
+      labelExpressionEvaluator(bigExpr, nodesToCheckOverlap, labels).result shouldBe Some(expectedResult)
     }
 
     testNotEquals(Set("A"), expectedResult = true)
@@ -163,7 +170,7 @@ class LabelExpressionEvaluatorTest extends CypherFunSuite with AstConstructionTe
     val nodesToCheckOverlap = NodesToCheckOverlap(None, "n")
     val labels = Set("A")
 
-    val resultExpr = labelExpressionEvaluator(expr, nodesToCheckOverlap, labels)
+    val resultExpr = labelExpressionEvaluator(expr, nodesToCheckOverlap, labels).result
 
     resultExpr shouldBe None
   }
@@ -173,8 +180,25 @@ class LabelExpressionEvaluatorTest extends CypherFunSuite with AstConstructionTe
     val nodesToCheckOverlap = NodesToCheckOverlap(None, "n")
     val labels = Set("A")
 
-    val resultExpr = labelExpressionEvaluator(expr, nodesToCheckOverlap, labels)
+    val resultExpr = labelExpressionEvaluator(expr, nodesToCheckOverlap, labels).result
 
     resultExpr shouldBe None
+  }
+
+  test("labelExpressionEvaluator is stack-safe") {
+    @tailrec
+    def buildExpression(i: Int, expression: Expression): Expression =
+      if (i <= 0) expression else buildExpression(i - 1, Not(expression)(InputPosition.NONE))
+
+    val n = Variable("n")(InputPosition.NONE)
+    val label = LabelName("a")(InputPosition.NONE)
+    val hasLabels = HasLabels(n, Seq(label))(InputPosition.NONE)
+    val labelExpression = buildExpression(10_000, hasLabels)
+
+    LabelExpressionEvaluator.labelExpressionEvaluator(
+      labelExpression,
+      NodesToCheckOverlap(Some("n"), "n"),
+      Set("a")
+    ).result shouldBe Some(true)
   }
 }
