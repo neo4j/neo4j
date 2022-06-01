@@ -42,7 +42,7 @@ public class RelationshipPropertyExistenceConstraintDefinition extends Relations
     @Override
     public String toString() {
         return format(
-                "ON ()-[%1$s:%2$s]-() ASSERT (%1$s.%3$s) IS NOT NULL",
+                "FOR ()-[%1$s:%2$s]-() REQUIRE %1$s.%3$s IS NOT NULL",
                 relationshipType.name().toLowerCase(), relationshipType.name(), propertyKey);
     }
 }

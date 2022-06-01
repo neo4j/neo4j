@@ -39,6 +39,7 @@ public class UniquenessConstraintDefinition extends NodeConstraintDefinition {
 
     @Override
     public String toString() {
-        return format("ON (%1$s:%2$s) ASSERT %3$s IS UNIQUE", label.name().toLowerCase(), label.name(), propertyText());
+        return format(
+                "FOR (%1$s:%2$s) REQUIRE %3$s IS UNIQUE", label.name().toLowerCase(), label.name(), propertyText());
     }
 }

@@ -39,14 +39,7 @@ public class NodePropertyExistenceConstraintDefinition extends NodeConstraintDef
 
     @Override
     public String toString() {
-        if (propertyKeys.length == 1) {
-            return format(
-                    "ON (%1$s:%2$s) ASSERT (%3$s) IS NOT NULL",
-                    label.name().toLowerCase(), label.name(), propertyText());
-        } else {
-            return format(
-                    "ON (%1$s:%2$s) ASSERT %3$s IS COMPOSITE KEY",
-                    label.name().toLowerCase(), label.name(), propertyText());
-        }
+        return format(
+                "FOR (%1$s:%2$s) REQUIRE %3$s IS NOT NULL", label.name().toLowerCase(), label.name(), propertyText());
     }
 }
