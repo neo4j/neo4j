@@ -653,10 +653,10 @@ public class SchemaImpl implements Schema {
         public IndexDescriptor createIndex(
                 String indexName, SchemaDescriptor schema, IndexType indexType, IndexConfig indexConfig)
                 throws KernelException {
-            IndexPrototype prototype = IndexPrototype.forSchema(schema);
-            prototype = prototype.withName(indexName);
-            prototype = prototype.withIndexType(fromPublicApi(indexType));
-            prototype = prototype.withIndexConfig(indexConfig);
+            IndexPrototype prototype = IndexPrototype.forSchema(schema)
+                    .withName(indexName)
+                    .withIndexType(fromPublicApi(indexType))
+                    .withIndexConfig(indexConfig);
             return transaction.schemaWrite().indexCreate(prototype);
         }
 
@@ -691,10 +691,10 @@ public class SchemaImpl implements Schema {
                         single(indexDefinition.getLabels()).name());
                 int[] propertyKeyIds = getOrCreatePropertyKeyIds(tokenWrite, indexDefinition);
                 LabelSchemaDescriptor schema = forLabel(labelId, propertyKeyIds);
-                IndexPrototype prototype =
-                        IndexPrototype.uniqueForSchema(schema).withName(name);
-                prototype = prototype.withIndexType(fromPublicApi(indexType));
-                prototype = prototype.withIndexConfig(indexConfig);
+                IndexPrototype prototype = IndexPrototype.uniqueForSchema(schema)
+                        .withName(name)
+                        .withIndexType(fromPublicApi(indexType))
+                        .withIndexConfig(indexConfig);
                 ConstraintDescriptor constraint = transaction.schemaWrite().uniquePropertyConstraintCreate(prototype);
                 return new UniquenessConstraintDefinition(this, constraint, indexDefinition);
             } catch (AlreadyConstrainedException
@@ -736,10 +736,10 @@ public class SchemaImpl implements Schema {
                         single(indexDefinition.getLabels()).name());
                 int[] propertyKeyIds = getOrCreatePropertyKeyIds(tokenWrite, indexDefinition);
                 LabelSchemaDescriptor schema = forLabel(labelId, propertyKeyIds);
-                IndexPrototype prototype =
-                        IndexPrototype.uniqueForSchema(schema).withName(name);
-                prototype = prototype.withIndexType(fromPublicApi(indexType));
-                prototype = prototype.withIndexConfig(indexConfig);
+                IndexPrototype prototype = IndexPrototype.uniqueForSchema(schema)
+                        .withName(name)
+                        .withIndexType(fromPublicApi(indexType))
+                        .withIndexConfig(indexConfig);
                 ConstraintDescriptor constraint = transaction.schemaWrite().nodeKeyConstraintCreate(prototype);
                 return new NodeKeyConstraintDefinition(this, constraint, indexDefinition);
             } catch (AlreadyConstrainedException

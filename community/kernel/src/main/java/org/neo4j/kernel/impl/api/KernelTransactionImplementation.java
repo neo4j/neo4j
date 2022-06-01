@@ -775,6 +775,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
             // Convert changes into commands and commit
             if (hasChanges()) {
+                schemaTransactionVersionReset();
                 forceThawLocks();
                 lockClient.prepareForCommit();
 
@@ -838,6 +839,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             }
             transactionMonitor.addHeapTransactionSize(memoryTracker.heapHighWaterMark());
             transactionMonitor.addNativeTransactionSize(memoryTracker.usedNativeMemory());
+        }
+    }
+
+    // Because of current constraint creation dance we need to refresh context version to be able
+    // to read schema records that were created in inner transactions
+    private void schemaTransactionVersionReset() {
+        if (isSchemaTransaction()) {
+            cursorContext.getVersionContext().initRead();
         }
     }
 
