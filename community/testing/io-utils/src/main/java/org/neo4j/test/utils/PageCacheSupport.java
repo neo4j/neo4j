@@ -100,9 +100,12 @@ public class PageCacheSupport {
         MuninnPageCache.Configuration configuration =
                 MuninnPageCache.config(mman).memoryTracker(memoryTracker).clock(clock);
         Integer pageSize = selectConfig(baseConfig.pageSize, overriddenConfig.pageSize, null);
-        configuration = pageSize == null ? configuration : configuration.pageSize(pageSize);
+        configuration = pageSize != null ? configuration.pageSize(pageSize) : configuration;
         PageCacheTracer cacheTracer = selectConfig(baseConfig.tracer, overriddenConfig.tracer, PageCacheTracer.NULL);
         configuration = configuration.pageCacheTracer(cacheTracer);
+        Integer reservedPageBytes =
+                selectConfig(baseConfig.reservedPageBytes, overriddenConfig.reservedPageBytes, null);
+        configuration = reservedPageBytes != null ? configuration.reservedPageBytes(reservedPageBytes) : configuration;
         initializeJobScheduler();
         pageCache = new MuninnPageCache(factory, jobScheduler, configuration);
         pageCachePostConstruct(overriddenConfig);

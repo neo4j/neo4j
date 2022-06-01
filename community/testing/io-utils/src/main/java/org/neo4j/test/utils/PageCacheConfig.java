@@ -31,6 +31,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 public final class PageCacheConfig {
     Boolean inconsistentReads;
     Integer pageSize;
+    Integer reservedPageBytes;
     AtomicBoolean nextReadIsInconsistent;
     PageCacheTracer tracer;
     boolean accessChecks;
@@ -81,6 +82,17 @@ public final class PageCacheConfig {
      */
     public PageCacheConfig withPageSize(int pageSize) {
         this.pageSize = pageSize;
+        return this;
+    }
+
+    /**
+     * Makes PageCache have the specified number of reserved bytes.
+     *
+     * @param reservedPageBytes number of reserved bytes to use.
+     * @return this instance.
+     */
+    public PageCacheConfig withReservedPageBytes(int reservedPageBytes) {
+        this.reservedPageBytes = reservedPageBytes;
         return this;
     }
 
