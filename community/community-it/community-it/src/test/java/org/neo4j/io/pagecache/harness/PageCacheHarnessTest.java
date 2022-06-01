@@ -36,6 +36,7 @@ import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheTestSupport;
+import org.neo4j.io.pagecache.randomharness.Command;
 import org.neo4j.io.pagecache.randomharness.PageCountRecordFormat;
 import org.neo4j.io.pagecache.randomharness.Phase;
 import org.neo4j.io.pagecache.randomharness.RandomPageCacheTestHarness;
@@ -64,11 +66,16 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
         return Sets.immutable.empty();
     }
 
+    List<Command> additionalDisabledCommands() {
+        return List.of();
+    }
+
     @RepeatedTest(10)
     void readsAndWritesMustBeMutuallyConsistent() throws Exception {
         int filePageCount = 100;
         try (RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness()) {
             harness.disableCommands(FlushCache, FlushFile, MapFile, UnmapFile);
+            additionalDisabledCommands().forEach(harness::disableCommands);
             harness.setCommandProbabilityFactor(ReadRecord, 0.5);
             harness.setCommandProbabilityFactor(WriteRecord, 0.5);
             harness.setConcurrencyLevel(8);
@@ -98,6 +105,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setBasePath(directory.directory("concurrentPageFaultingMustNotPutInterleavedDataIntoPages"));
             harness.setOpenOptions(getOpenOptions());
             harness.disableCommands(FlushCache, FlushFile, MapFile, UnmapFile, WriteRecord, WriteMulti);
+            additionalDisabledCommands().forEach(harness::disableCommands);
             harness.setPreparation((cache, fs, filesTouched) -> {
                 Path file = filesTouched.iterator().next();
                 try (var pf = cache.map(file, cache.pageSize(), DEFAULT_DATABASE_NAME, getOpenOptions());
@@ -128,6 +136,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setBasePath(directory.directory("concurrentFlushingMustNotPutInterleavedDataIntoFile"));
             harness.setOpenOptions(getOpenOptions());
             harness.disableCommands(MapFile, UnmapFile, ReadRecord, ReadMulti);
+            additionalDisabledCommands().forEach(harness::disableCommands);
             harness.setVerification(filesAreCorrectlyWrittenVerification(recordFormat, filePageCount));
 
             harness.run(LONG_TIMEOUT_MILLIS, MILLISECONDS);
@@ -152,6 +161,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setBasePath(directory.directory("concurrentFlushingWithMischiefMustNotPutInterleavedDataIntoFile"));
             harness.setOpenOptions(getOpenOptions());
             harness.disableCommands(MapFile, UnmapFile, ReadRecord, ReadMulti);
+            additionalDisabledCommands().forEach(harness::disableCommands);
             harness.setVerification(filesAreCorrectlyWrittenVerification(recordFormat, filePageCount));
 
             harness.run(LONG_TIMEOUT_MILLIS, MILLISECONDS);
@@ -176,6 +186,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setBasePath(directory.directory("concurrentFlushingWithFailuresMustNotPutInterleavedDataIntoFile"));
             harness.setOpenOptions(getOpenOptions());
             harness.disableCommands(MapFile, UnmapFile, ReadRecord, ReadMulti);
+            additionalDisabledCommands().forEach(harness::disableCommands);
             harness.setVerification(filesAreCorrectlyWrittenVerification(recordFormat, filePageCount));
 
             harness.run(LONG_TIMEOUT_MILLIS, MILLISECONDS);

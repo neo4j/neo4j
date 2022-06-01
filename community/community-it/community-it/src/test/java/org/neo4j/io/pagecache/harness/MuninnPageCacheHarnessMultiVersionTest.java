@@ -20,17 +20,25 @@
 package org.neo4j.io.pagecache.harness;
 
 import java.nio.file.OpenOption;
+import java.util.List;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.junit.jupiter.api.Disabled;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
+import org.neo4j.io.pagecache.randomharness.Command;
 
 // TODO mvcc make harness test to work in mixed mode with files mapped using different options at the same time
-@Disabled("TODO mvcc this test deadlocks now")
 public class MuninnPageCacheHarnessMultiVersionTest extends MuninnPageCacheHarnessTest {
 
     @Override
     ImmutableSet<OpenOption> getOpenOptions() {
         return Sets.immutable.of(PageCacheOpenOptions.MULTI_VERSIONED);
+    }
+
+    @Override
+    List<Command> additionalDisabledCommands() {
+        // WriteMulti command runs command within scope of write cursor of outer command
+        // This can result in several unrelated cursors trying to pin the same page which is not possible in
+        // multiversioned mode as it uses exclusive write locks on pages
+        return List.of(Command.WriteMulti);
     }
 }
