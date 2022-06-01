@@ -33,6 +33,8 @@ import org.neo4j.memory.HeapHighWaterMarkTracker
 
 import java.util
 
+import scala.util.Using
+
 /**
  * Results, as produced by a system command.
  */
@@ -58,16 +60,11 @@ case class SystemCommandRuntimeResult(
   override def queryProfile(): QueryProfile = SystemCommandProfile(0, 1)
 
   override def request(numberOfRecords: Long): Unit = {
-    var revertSecurityContextChange: KernelTransaction.Revertable = null
-    try {
-      revertSecurityContextChange = kernelTransaction.overrideWith(securityContext)
-
+    Using.resource(kernelTransaction.overrideWith(securityContext)) { _ =>
       state = ConsumptionState.HAS_MORE
       execution.inner.request(numberOfRecords)
       // The lower level (execution) is capturing exceptions using the subscriber, but this level is expecting to do the same higher up, so re-throw to trigger that code path
       subscriber.assertNotFailed(e => execution.inner.close(Error(e)))
-    } finally {
-      if (revertSecurityContextChange != null) revertSecurityContextChange.close()
     }
   }
 

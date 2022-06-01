@@ -35,11 +35,12 @@ import org.neo4j.graphdb.Transaction
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
-import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
+
+import scala.util.Using
 
 /**
  * Execution plan for performing system commands, i.e. creating databases or showing roles and users.
@@ -69,12 +70,8 @@ case class SystemCommandExecutionPlan(
 
     val tc: TransactionalContext = ctx.kernelTransactionalContext
 
-    var revertAccessModeChange: KernelTransaction.Revertable = null
-    try {
+    withFullDatabaseAccess(tc) { elevatedSecurityContext =>
       val securityContext = tc.securityContext()
-      if (checkCredentialsExpired) securityContext.assertCredentialsNotExpired(securityAuthorizationHandler)
-      val fullReadAccess = modeConverter(securityContext)
-      revertAccessModeChange = tc.kernelTransaction().overrideWith(fullReadAccess)
       val tx = tc.transaction()
       val updatedParams =
         parameterConverter(tx, safeMergeParameters(systemParams, params, parameterGenerator.apply(tx, securityContext)))
@@ -94,11 +91,9 @@ case class SystemCommandExecutionPlan(
         ctx,
         new SystemCommandExecutionResult(execution),
         systemSubscriber,
-        fullReadAccess,
+        elevatedSecurityContext,
         tc.kernelTransaction()
       )
-    } finally {
-      if (revertAccessModeChange != null) revertAccessModeChange.close()
     }
   }
 
@@ -107,6 +102,16 @@ case class SystemCommandExecutionPlan(
   override def metadata: Seq[Argument] = Nil
 
   override def notifications: Set[InternalNotification] = Set.empty
+
+  private def withFullDatabaseAccess(tc: TransactionalContext)(elevatedWork: SecurityContext => RuntimeResult)
+    : RuntimeResult = {
+    val securityContext = tc.securityContext()
+    if (checkCredentialsExpired) securityContext.assertCredentialsNotExpired(securityAuthorizationHandler)
+    val elevatedSecurityContext = modeConverter(securityContext)
+    Using.resource(tc.kernelTransaction().overrideWith(elevatedSecurityContext)) { _ =>
+      elevatedWork(elevatedSecurityContext)
+    }
+  }
 }
 
 /**

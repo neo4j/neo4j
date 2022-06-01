@@ -36,10 +36,12 @@ import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
-import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
+
+import scala.util.Using
 
 /**
  * Execution plan for performing system commands, i.e. starting, stopping or dropping databases.
@@ -53,8 +55,7 @@ case class UpdatingSystemCommandExecutionPlan(
   queryHandler: QueryHandler,
   source: Option[ExecutionPlan] = None,
   checkCredentialsExpired: Boolean = true,
-  initFunction: MapValue => Boolean = _ => true,
-  finallyFunction: MapValue => Unit = _ => {},
+  initAndFinally: InitAndFinally = NoInitAndFinally,
   parameterGenerator: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY,
   parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p,
   assertPrivilegeAction: Transaction => Unit = _ => {},
@@ -72,15 +73,8 @@ case class UpdatingSystemCommandExecutionPlan(
 
     val tc = ctx.kernelTransactionalContext
 
-    var revertAccessModeChange: KernelTransaction.Revertable = null
-    try {
-      val securityContext = tc.securityContext()
-      if (securityContext.impersonating()) throw new AuthorizationViolationException(
-        "Not allowed to run updating system commands when impersonating a user."
-      )
-      if (checkCredentialsExpired) securityContext.assertCredentialsNotExpired(securityAuthorizationHandler)
-      val fullAccess = securityContext.withMode(AccessMode.Static.FULL)
-      revertAccessModeChange = tc.kernelTransaction().overrideWith(fullAccess)
+    val securityContext = tc.securityContext()
+    withFullDatabaseAccess(tc) { () =>
       val tx = tc.transaction()
       assertPrivilegeAction(tx)
 
@@ -89,45 +83,31 @@ case class UpdatingSystemCommandExecutionPlan(
       val systemSubscriber =
         new SystemCommandQuerySubscriber(ctx, new RowDroppingQuerySubscriber(subscriber), queryHandler, updatedParams)
       val newContext = ctx.withContextVars(contextUpdates(updatedParams))
-      try {
-        tc.kernelTransaction().dataWrite() // assert that we are allowed to write
-      } catch {
-        case e: Throwable =>
-          systemSubscriber.onError(e)
-      }
-      systemSubscriber.assertNotFailed()
-      try {
-        if (initFunction(updatedParams)) {
-          val execution = normalExecutionEngine.executeSubquery(
-            query,
-            updatedParams,
-            tc,
-            isOutermostQuery = false,
-            executionMode == ProfileMode,
-            prePopulateResults,
-            systemSubscriber
-          ).asInstanceOf[InternalExecutionResult]
-          try {
-            execution.consumeAll()
-          } catch {
-            case _: Throwable =>
-            // do nothing, exceptions are handled by SystemCommandQuerySubscriber
-          }
-          systemSubscriber.assertNotFailed()
+      assertCanWrite(tc, systemSubscriber)
+      initAndFinally.execute(newContext, updatedParams) { () =>
+        val execution = normalExecutionEngine.executeSubquery(
+          query,
+          updatedParams,
+          tc,
+          isOutermostQuery = false,
+          executionMode == ProfileMode,
+          prePopulateResults,
+          systemSubscriber
+        ).asInstanceOf[InternalExecutionResult]
+        try {
+          execution.consumeAll()
+        } catch {
+          case _: Throwable =>
+          // do nothing, exceptions are handled by SystemCommandQuerySubscriber
+        }
+        systemSubscriber.assertNotFailed()
 
-          if (systemSubscriber.shouldIgnoreResult()) {
-            IgnoredRuntimeResult
-          } else {
-            UpdatingSystemCommandRuntimeResult(newContext)
-          }
+        if (systemSubscriber.shouldIgnoreResult()) {
+          IgnoredRuntimeResult
         } else {
           UpdatingSystemCommandRuntimeResult(newContext)
         }
-      } finally {
-        finallyFunction(updatedParams)
       }
-    } finally {
-      if (revertAccessModeChange != null) revertAccessModeChange.close()
     }
   }
 
@@ -136,6 +116,30 @@ case class UpdatingSystemCommandExecutionPlan(
   override def metadata: Seq[Argument] = Nil
 
   override def notifications: Set[InternalNotification] = Set.empty
+
+  private def withFullDatabaseAccess(tc: TransactionalContext)(elevatedWork: () => RuntimeResult): RuntimeResult = {
+    val securityContext = tc.securityContext()
+    if (securityContext.impersonating()) {
+      throw new AuthorizationViolationException(
+        "Not allowed to run updating system commands when impersonating a user."
+      )
+    }
+    if (checkCredentialsExpired) securityContext.assertCredentialsNotExpired(securityAuthorizationHandler)
+    Using.resource(tc.kernelTransaction().overrideWith(securityContext.withMode(AccessMode.Static.FULL))) { _ =>
+      elevatedWork()
+    }
+  }
+
+  private def assertCanWrite(tc: TransactionalContext, systemSubscriber: SystemCommandQuerySubscriber): Unit = {
+    try {
+      tc.kernelTransaction().dataWrite() // assert that we are allowed to write
+    } catch {
+      case e: Throwable =>
+        systemSubscriber.onError(e)
+    }
+    systemSubscriber.assertNotFailed()
+  }
+
 }
 
 // The main point of this class is to support the reactive results version of SystemCommandExecutionResult, but return no results in the outer system command
@@ -205,4 +209,34 @@ object QueryHandler {
     new QueryHandlerBuilder(new QueryHandler).handleResult(handler)
 
   def ignoreOnResult(): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).ignoreOnResult()
+}
+
+sealed trait InitAndFinally {
+
+  def execute(
+    context: SystemUpdateCountingQueryContext,
+    params: MapValue
+  )(queryFunction: () => RuntimeResult): RuntimeResult = queryFunction()
+}
+
+case object NoInitAndFinally extends InitAndFinally
+
+case class InitAndFinallyFunctions(
+  initFunction: MapValue => Boolean = _ => true,
+  finallyFunction: MapValue => Unit = _ => {}
+) extends InitAndFinally {
+
+  override def execute(
+    context: SystemUpdateCountingQueryContext,
+    params: MapValue
+  )(queryFunction: () => RuntimeResult): RuntimeResult =
+    try {
+      if (initFunction(params)) {
+        queryFunction()
+      } else {
+        UpdatingSystemCommandRuntimeResult(context)
+      }
+    } finally {
+      finallyFunction(params)
+    }
 }

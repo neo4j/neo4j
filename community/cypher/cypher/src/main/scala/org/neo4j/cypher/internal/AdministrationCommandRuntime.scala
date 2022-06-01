@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NameValidator
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
+import org.neo4j.cypher.internal.procs.InitAndFinallyFunctions
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
 import org.neo4j.cypher.internal.security.SecureHasher
@@ -235,8 +236,10 @@ object AdministrationCommandRuntime {
           }
         ),
       sourcePlan,
-      finallyFunction = p => p.get(credentials.bytesKey).asInstanceOf[ByteArray].zero(),
-      initFunction = params => NameValidator.assertValidUsername(runtimeStringValue(userName, params)),
+      initAndFinally = InitAndFinallyFunctions(
+        initFunction = params => NameValidator.assertValidUsername(runtimeStringValue(userName, params)),
+        finallyFunction = p => p.get(credentials.bytesKey).asInstanceOf[ByteArray].zero()
+      ),
       parameterConverter = mapValueConverter
     )
   }
@@ -334,7 +337,9 @@ object AdministrationCommandRuntime {
           }
         ),
       sourcePlan,
-      finallyFunction = p => maybePw.foreach(newPw => p.get(newPw.bytesKey).asInstanceOf[ByteArray].zero()),
+      initAndFinally = InitAndFinallyFunctions(finallyFunction =
+        p => maybePw.foreach(newPw => p.get(newPw.bytesKey).asInstanceOf[ByteArray].zero())
+      ),
       parameterConverter = mapper
     )
   }
@@ -394,7 +399,7 @@ object AdministrationCommandRuntime {
           }
         ),
       sourcePlan,
-      initFunction = initFunction,
+      initAndFinally = InitAndFinallyFunctions(initFunction = initFunction),
       parameterConverter = mapValueConverter
     )
   }
