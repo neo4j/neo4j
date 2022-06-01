@@ -1001,11 +1001,6 @@ public class LiteralInterpreter
     }
 
     @Override
-    public Object hasLabelsOrTypes(Object subject, List<StringPos<NULL>> labels) {
-        throw new UnsupportedOperationException("hasLabels is not a literal");
-    }
-
-    @Override
     public Object property(Object subject, StringPos<NULL> propertyKeyName) {
         throw new UnsupportedOperationException("property is not a literal");
     }

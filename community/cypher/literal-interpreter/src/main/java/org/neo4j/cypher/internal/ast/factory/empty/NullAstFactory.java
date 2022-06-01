@@ -154,11 +154,6 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL hasLabelsOrTypes(NULL subject, List<StringPos<NULL>> labels) {
-        return null;
-    }
-
-    @Override
     public NULL property(NULL subject, StringPos<NULL> propertyKeyName) {
         return null;
     }
