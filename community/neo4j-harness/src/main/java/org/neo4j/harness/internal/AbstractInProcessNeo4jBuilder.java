@@ -99,6 +99,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder {
 
     @Override
     public InProcessNeo4j build() {
+        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         Path userLogFile = serverFolder.resolve("neo4j.log");
         Path internalLogFile = serverFolder.resolve("debug.log");
 
@@ -115,7 +116,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder {
         if (dbConfig.get(HttpsConnector.enabled)
                 || dbConfig.get(BoltConnector.enabled)
                         && dbConfig.get(BoltConnector.encryption_level) != BoltConnector.EncryptionLevel.DISABLED) {
-            SelfSignedCertificateFactory.create(certificates);
+            SelfSignedCertificateFactory.create(fs, certificates);
             List<SslPolicyConfig> policies = List.of(SslPolicyConfig.forScope(HTTPS), SslPolicyConfig.forScope(BOLT));
             for (SslPolicyConfig policy : policies) {
                 config.set(policy.enabled, Boolean.TRUE);
@@ -126,8 +127,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder {
             dbConfig = config.build();
         }
 
-        Neo4jLoggerContext loggerContext = LogConfig.createBuilder(
-                        new DefaultFileSystemAbstraction(), userLogFile, Level.INFO)
+        Neo4jLoggerContext loggerContext = LogConfig.createBuilder(fs, userLogFile, Level.INFO)
                 .withTimezone(dbConfig.get(db_timezone))
                 .build();
         var userLogProvider = new Log4jLogProvider(loggerContext);

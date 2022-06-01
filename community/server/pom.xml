@@ -175,17 +175,6 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk15on</artifactId>
-        </dependency>
-        <!-- This dependency is needed for Netty to be able to generate
-    self signed certificate on a JDK without sun.security.* package -->
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk15on</artifactId>
-        </dependency>
-
         <!--JAXB dependencies are not part of latest JDK distribution anymore-->
         <dependency>
             <groupId>org.glassfish.jaxb</groupId>

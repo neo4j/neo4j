@@ -59,12 +59,14 @@ import org.neo4j.configuration.connectors.CommonConnectorConfig;
 import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
-import org.neo4j.ssl.PkiUtils;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.pki.PkiUtils;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.ssl.CertificateChainFactory;
 
-@EphemeralTestDirectoryExtension
+@TestDirectoryExtension
 @Neo4jWithSocketExtension
 class OcspStaplingIT {
     private static Path endUserKeyFile;
@@ -75,6 +77,9 @@ class OcspStaplingIT {
 
     @Inject
     private Neo4jWithSocket server;
+
+    @Inject
+    private FileSystemAbstraction fileSystem;
 
     @BeforeEach
     void setup(TestInfo testInfo) throws IOException {
@@ -121,8 +126,8 @@ class OcspStaplingIT {
                 }));
     }
 
-    private static X509Certificate loadCertificateFromDisk() throws CertificateException, IOException {
-        X509Certificate[] certificates = PkiUtils.loadCertificates(rootCertFile);
+    private X509Certificate loadCertificateFromDisk() throws CertificateException, IOException {
+        X509Certificate[] certificates = PkiUtils.loadCertificates(fileSystem, rootCertFile);
         assertThat(certificates.length).isEqualTo(1);
 
         return certificates[0];
@@ -187,8 +192,9 @@ class OcspStaplingIT {
 
         private void serveResponse(HttpServletResponse httpResponse) {
             try {
-                X509Certificate[] issueCert = PkiUtils.loadCertificates(endUserCertFile);
-                PrivateKey privateKey = PkiUtils.loadPrivateKey(intKeyFile, null);
+                DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+                X509Certificate[] issueCert = PkiUtils.loadCertificates(fs, endUserCertFile);
+                PrivateKey privateKey = PkiUtils.loadPrivateKey(fs, intKeyFile);
 
                 X509CertificateHolder[] certChain = new X509CertificateHolder[] {
                     new X509CertificateHolder(issueCert[0].getEncoded()),
@@ -232,8 +238,9 @@ class OcspStaplingIT {
 
         private void serveResponse(HttpServletResponse httpResponse) {
             try {
-                X509Certificate[] issueCert = PkiUtils.loadCertificates(endUserCertFile);
-                PrivateKey privateKey = PkiUtils.loadPrivateKey(rootKeyFile, null);
+                DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+                X509Certificate[] issueCert = PkiUtils.loadCertificates(fs, endUserCertFile);
+                PrivateKey privateKey = PkiUtils.loadPrivateKey(fs, rootKeyFile);
 
                 X509CertificateHolder[] certChain = new X509CertificateHolder[] {
                     new X509CertificateHolder(issueCert[0].getEncoded()),

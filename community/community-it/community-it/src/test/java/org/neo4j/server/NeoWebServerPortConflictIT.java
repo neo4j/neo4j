@@ -81,6 +81,7 @@ class NeoWebServerPortConflictIT extends ExclusiveWebContainerTestBase {
             TestWebContainer testWebContainer = null;
             try {
                 testWebContainer = builder(logProvider)
+                        .persistent()
                         .onAddress(unContestedAddress)
                         .onHttpsAddress(httpsAddress)
                         .withHttpsEnabled()

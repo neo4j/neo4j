@@ -44,6 +44,7 @@ import org.neo4j.configuration.ssl.ClientAuth;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -158,7 +159,7 @@ public class CommunityWebContainerBuilder {
 
         if (httpsEnabled) {
             var certificates = temporaryFolder.resolve("certificates");
-            SelfSignedCertificateFactory.create(certificates);
+            SelfSignedCertificateFactory.create(new DefaultFileSystemAbstraction(), certificates);
             SslPolicyConfig policy = SslPolicyConfig.forScope(SslPolicyScope.HTTPS);
             properties.put(policy.enabled.name(), Boolean.TRUE.toString());
             properties.put(

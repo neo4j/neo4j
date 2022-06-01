@@ -110,7 +110,8 @@ public class CommunityEditionModule extends StandaloneEditionModule implements D
         LogService logService = globalModule.getLogService();
         this.globalModule = globalModule;
 
-        this.sslPolicyLoader = SslPolicyLoader.create(globalConfig, logService.getInternalLogProvider());
+        this.sslPolicyLoader =
+                SslPolicyLoader.create(globalModule.getFileSystem(), globalConfig, logService.getInternalLogProvider());
         globalDependencies.satisfyDependency(sslPolicyLoader); // for bolt and web server
         globalDependencies.satisfyDependency(new DatabaseOperationCounts.Counter()); // for global metrics
 

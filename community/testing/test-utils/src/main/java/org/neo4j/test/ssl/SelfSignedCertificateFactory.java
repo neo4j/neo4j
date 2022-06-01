@@ -21,8 +21,11 @@ package org.neo4j.test.ssl;
 
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.exists;
+import static org.neo4j.io.fs.FileSystemUtils.writeAllBytes;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -32,9 +35,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
-import java.security.Provider;
 import java.security.SecureRandom;
-import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.Date;
 import java.util.Set;
@@ -52,6 +53,9 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemWriter;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.memory.EmptyMemoryTracker;
 
 public class SelfSignedCertificateFactory {
     /* Generating SSL certificates takes a long time.
@@ -65,29 +69,23 @@ public class SelfSignedCertificateFactory {
     /** The maximum possible value in X.509 specification: 9999-12-31 23:59:59 */
     private static final Date NOT_AFTER = new Date(253_402_300_799_000L);
 
-    private static final Provider PROVIDER = new BouncyCastleProvider();
-
     private static final String DEFAULT_KEY_FILE_NAME = "private.key";
     private static final String DEFAULT_CERT_FILE_NAME = "public.crt";
     private static final String DEFAULT_HOST_NAME = "localhost";
 
     private static volatile boolean cleanupRequired = true;
 
-    static {
-        Security.addProvider(PROVIDER);
+    public static void create(FileSystemAbstraction fs, Path certDir) {
+        create(fs, certDir, DEFAULT_KEY_FILE_NAME, DEFAULT_CERT_FILE_NAME);
     }
 
-    public static void create(Path certDir) {
-        create(certDir, DEFAULT_KEY_FILE_NAME, DEFAULT_CERT_FILE_NAME);
-    }
-
-    public static void create(Path certDir, String keyFileName, String certFileName) {
+    public static void create(FileSystemAbstraction fs, Path certDir, String keyFileName, String certFileName) {
         var certificateFactory = new SelfSignedCertificateFactory();
         var privateKeyFile = certDir.resolve(keyFileName);
         var certificateFile = certDir.resolve(certFileName);
         if (!exists(privateKeyFile) && !exists(certificateFile)) {
             try {
-                certificateFactory.createSelfSignedCertificate(certificateFile, privateKeyFile, DEFAULT_HOST_NAME);
+                certificateFactory.createSelfSignedCertificate(fs, certificateFile, privateKeyFile, DEFAULT_HOST_NAME);
             } catch (Exception e) {
                 throw new RuntimeException("Failed to generate private key and certificate", e);
             }
@@ -98,7 +96,8 @@ public class SelfSignedCertificateFactory {
         random = useInsecureCertificateGeneration ? new InsecureRandom() : new SecureRandom();
     }
 
-    public void createSelfSignedCertificate(Path certificatePath, Path privateKeyPath, String hostName)
+    public void createSelfSignedCertificate(
+            FileSystemAbstraction fs, Path certificatePath, Path privateKeyPath, String hostName)
             throws GeneralSecurityException, IOException, OperatorCreationException {
         installCleanupHook(certificatePath, privateKeyPath);
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance(DEFAULT_ENCRYPTION);
@@ -117,15 +116,16 @@ public class SelfSignedCertificateFactory {
         PrivateKey privateKey = keypair.getPrivate();
         ContentSigner signer = new JcaContentSignerBuilder("SHA512WithRSAEncryption").build(privateKey);
         X509CertificateHolder certHolder = builder.build(signer);
-        X509Certificate cert =
-                new JcaX509CertificateConverter().setProvider(PROVIDER).getCertificate(certHolder);
+        X509Certificate cert = new JcaX509CertificateConverter()
+                .setProvider(new BouncyCastleProvider())
+                .getCertificate(certHolder);
 
         // check so that cert is valid
         cert.verify(keypair.getPublic());
 
         // write to disk
-        writePem("CERTIFICATE", cert.getEncoded(), certificatePath);
-        writePem("PRIVATE KEY", privateKey.getEncoded(), privateKeyPath);
+        writePem(fs, "CERTIFICATE", cert.getEncoded(), certificatePath);
+        writePem(fs, "PRIVATE KEY", privateKey.getEncoded(), privateKeyPath);
         // Mark as done so we don't clean up certificates
         cleanupRequired = false;
     }
@@ -157,21 +157,26 @@ public class SelfSignedCertificateFactory {
         }));
     }
 
-    private static void writePem(String type, byte[] encodedContent, Path path) throws IOException {
-        Files.createDirectories(path.getParent());
-        try (PemWriter writer = new PemWriter(Files.newBufferedWriter(path, StandardCharsets.UTF_8))) {
+    private static void writePem(FileSystemAbstraction fs, String type, byte[] encodedContent, Path path)
+            throws IOException {
+        fs.mkdirs(path.getParent());
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try (PemWriter writer = new PemWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8))) {
             writer.writeObject(new PemObject(type, encodedContent));
-            writer.flush();
         }
-        try {
-            Files.setPosixFilePermissions(
-                    path, Set.of(PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_READ));
-        } catch (UnsupportedOperationException ignore) {
-            // Fallback for windows
-            path.toFile().setReadable(false, false);
-            path.toFile().setWritable(false, false);
-            path.toFile().setReadable(true);
-            path.toFile().setWritable(true);
+        writeAllBytes(fs, path, out.toByteArray(), EmptyMemoryTracker.INSTANCE);
+
+        if (fs instanceof DefaultFileSystemAbstraction) {
+            try {
+                Files.setPosixFilePermissions(
+                        path, Set.of(PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_READ));
+            } catch (UnsupportedOperationException ignore) {
+                // Fallback for windows
+                path.toFile().setReadable(false, false);
+                path.toFile().setWritable(false, false);
+                path.toFile().setReadable(true);
+                path.toFile().setWritable(true);
+            }
         }
     }
 }

@@ -77,7 +77,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
     @BeforeEach
     void before() {
         bootstrapper = newBootstrapper();
-        SelfSignedCertificateFactory.create(testDirectory.homePath());
+        SelfSignedCertificateFactory.create(testDirectory.getFileSystem(), testDirectory.homePath());
     }
 
     @AfterEach
@@ -305,7 +305,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
         SslPolicyConfig httpsPolicy = SslPolicyConfig.forScope(SslPolicyScope.HTTPS);
         if (httpsEnabled) {
             // create self signed
-            SelfSignedCertificateFactory.create(testDirectory.absolutePath());
+            SelfSignedCertificateFactory.create(testDirectory.getFileSystem(), testDirectory.absolutePath());
         }
 
         String[] config = {

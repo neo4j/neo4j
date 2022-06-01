@@ -196,7 +196,7 @@ class FixturesTestIT {
     }
 
     private Neo4jBuilder getServerBuilder(Path targetFolder) {
-        SelfSignedCertificateFactory.create(testDir.homePath());
+        SelfSignedCertificateFactory.create(testDir.getFileSystem(), testDir.homePath());
         return Neo4jBuilders.newInProcessBuilder(targetFolder)
                 .withConfig(SslPolicyConfig.forScope(BOLT).enabled, Boolean.TRUE)
                 .withConfig(SslPolicyConfig.forScope(BOLT).base_directory, testDir.homePath())

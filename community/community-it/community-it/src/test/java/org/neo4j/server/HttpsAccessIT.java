@@ -113,6 +113,7 @@ class HttpsAccessIT extends ExclusiveWebContainerTestBase {
 
     private void startServer(boolean httpEnabled, boolean httpsEnabled) throws Exception {
         CommunityWebContainerBuilder serverBuilder = serverOnRandomPorts()
+                .persistent()
                 .usingDataDir(
                         testDirectory.directory(methodName).toAbsolutePath().toString());
         if (!httpEnabled) {

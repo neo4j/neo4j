@@ -139,7 +139,7 @@ public class Neo4jWithSocket {
         if (encryptionLevel != DISABLED) {
             // Install self-signed certs if ssl is enabled
             var certificates = workingDirectory.resolve("certificates");
-            SelfSignedCertificateFactory.create(certificates);
+            SelfSignedCertificateFactory.create(fileSystemProvider.get(), certificates);
 
             settings.put(SslPolicyConfig.forScope(SslPolicyScope.BOLT).enabled, Boolean.TRUE);
             settings.put(SslPolicyConfig.forScope(SslPolicyScope.BOLT).base_directory, certificates);
@@ -148,7 +148,7 @@ public class Neo4jWithSocket {
         SslPolicyConfig clusterConfig = SslPolicyConfig.forScope(SslPolicyScope.CLUSTER);
         if (settings.containsKey(clusterConfig.enabled)) {
             var clusterCertificates = workingDirectory.resolve("cluster-cert");
-            SelfSignedCertificateFactory.create(clusterCertificates);
+            SelfSignedCertificateFactory.create(fileSystemProvider.get(), clusterCertificates);
 
             settings.put(SslPolicyConfig.forScope(SslPolicyScope.CLUSTER).enabled, Boolean.TRUE);
             settings.put(SslPolicyConfig.forScope(SslPolicyScope.CLUSTER).base_directory, clusterCertificates);

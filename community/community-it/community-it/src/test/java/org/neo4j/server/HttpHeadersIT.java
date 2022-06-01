@@ -99,6 +99,7 @@ class HttpHeadersIT extends ExclusiveWebContainerTestBase {
 
     private TestWebContainer buildServer(String hstsValue) throws Exception {
         var builder = serverOnRandomPorts()
+                .persistent()
                 .withHttpsEnabled()
                 .usingDataDir(
                         testDirectory.directory(methodName).toAbsolutePath().toString());

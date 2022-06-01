@@ -24,14 +24,11 @@ import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.O
 import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import org.bouncycastle.operator.OperatorCreationException;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -40,23 +37,39 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
-import org.neo4j.ssl.PkiUtils;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.pki.PkiUtils;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
+import org.neo4j.test.utils.TestDirectory;
 
-@EphemeralTestDirectoryExtension
+@TestDirectoryExtension
 @Neo4jWithSocketExtension
-public class CertificatesIT {
-    private static Path keyFile;
-    private static Path certFile;
-    private static SelfSignedCertificateFactory certFactory;
+class CertificatesIT {
+    private Path keyFile;
+    private Path certFile;
 
     @Inject
     private Neo4jWithSocket server;
 
+    @Inject
+    private TestDirectory testDirectory;
+
+    @Inject
+    private FileSystemAbstraction fileSystem;
+
     @BeforeEach
-    public void setup(TestInfo testInfo) throws IOException {
+    void setup(TestInfo testInfo) throws IOException, GeneralSecurityException, OperatorCreationException {
+        keyFile = testDirectory.file("key.pem");
+        certFile = testDirectory.file("key.crt");
+
+        // make sure files are not there
+        fileSystem.delete(keyFile);
+        fileSystem.delete(certFile);
+
+        new SelfSignedCertificateFactory().createSelfSignedCertificate(fileSystem, certFile, keyFile, "my.domain");
+
         server.setConfigure(settings -> {
             SslPolicyConfig policy = SslPolicyConfig.forScope(BOLT);
             settings.put(policy.enabled, true);
@@ -71,7 +84,7 @@ public class CertificatesIT {
     }
 
     @Test
-    public void shouldUseConfiguredCertificate() throws Exception {
+    void shouldUseConfiguredCertificate() throws Exception {
         // GIVEN
         SecureSocketConnection connection = new SecureSocketConnection(server.lookupConnector(ConnectorType.BOLT));
         try {
@@ -87,23 +100,10 @@ public class CertificatesIT {
         }
     }
 
-    private static X509Certificate loadCertificateFromDisk() throws CertificateException, IOException {
-        Certificate[] certificates = PkiUtils.loadCertificates(certFile);
+    private X509Certificate loadCertificateFromDisk() throws CertificateException, IOException {
+        X509Certificate[] certificates = PkiUtils.loadCertificates(fileSystem, certFile);
         assertThat(certificates.length).isEqualTo(1);
 
-        return (X509Certificate) certificates[0];
-    }
-
-    @BeforeAll
-    public static void setup() throws IOException, GeneralSecurityException, OperatorCreationException {
-        certFactory = new SelfSignedCertificateFactory();
-        keyFile = Files.createTempFile("key", "pem");
-        certFile = Files.createTempFile("key", "pem");
-
-        // make sure files are not there
-        Files.delete(keyFile);
-        Files.delete(certFile);
-
-        certFactory.createSelfSignedCertificate(certFile, keyFile, "my.domain");
+        return certificates[0];
     }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache;
 
+import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -27,16 +28,24 @@ import static org.neo4j.io.pagecache.PageCursorUtil._2B_MASK;
 import static org.neo4j.io.pagecache.PageCursorUtil._3B_MASK;
 import static org.neo4j.io.pagecache.PageCursorUtil._6B_MASK;
 
+import java.util.Random;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.neo4j.test.RandomSupport;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.RandomExtension;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.TestWatcher;
+import org.opentest4j.AssertionFailedError;
 
-@ExtendWith(RandomExtension.class)
+@ExtendWith(PageCursorUtilTest.PrintOnFailure.class)
 class PageCursorUtilTest {
-    @Inject
-    private RandomSupport random;
+    private static Random random;
+    private static long seed;
+
+    @BeforeEach
+    void setUp() {
+        seed = System.currentTimeMillis();
+        random = new Random(seed);
+    }
 
     @Test
     void shouldPutAndGet6BLongs() {
@@ -204,6 +213,13 @@ class PageCursorUtilTest {
                 assertThrows(IllegalArgumentException.class, () -> PageCursorUtil.put6BLong(cursor, expected));
                 i++;
             }
+        }
+    }
+
+    public static class PrintOnFailure implements TestWatcher {
+        @Override
+        public void testFailed(ExtensionContext context, Throwable cause) {
+            throw new AssertionFailedError(format("%s [ random seed used: %dL ]", cause.getMessage(), seed), cause);
         }
     }
 }

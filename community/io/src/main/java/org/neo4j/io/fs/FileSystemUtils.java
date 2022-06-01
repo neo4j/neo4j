@@ -61,7 +61,7 @@ public final class FileSystemUtils {
      *
      * The semantics of how this file is opened for write is the same as underlying file system {@link FileSystemAbstraction#write(Path)} call.
      * Write will happen using intermediate direct byte buffer which will be created and released during this call.
-     * Byte buffer is always little endian.
+     *
      * @param fs user provided file system.
      * @param path the path to the file to write.
      * @param value string value to write.
@@ -70,8 +70,24 @@ public final class FileSystemUtils {
      */
     public static void writeString(FileSystemAbstraction fs, Path path, String value, MemoryTracker memoryTracker)
             throws IOException {
+        writeAllBytes(fs, path, value.getBytes(UTF_8), memoryTracker);
+    }
+
+    /**
+     * Writes provided byte array into a file denoted by the {@code path} using provided file system.
+     *
+     * The semantics of how this file is opened for write is the same as underlying file system {@link FileSystemAbstraction#write(Path)} call.
+     * Write will happen using intermediate direct byte buffer which will be created and released during this call.
+     *
+     * @param fs user provided file system.
+     * @param path the path to the file to write.
+     * @param data byte array to write.
+     * @param memoryTracker tracker where allocated direct byte buffer will be tracked.
+     * @throws IOException on I/O error opening/creating/writing the file.
+     */
+    public static void writeAllBytes(FileSystemAbstraction fs, Path path, byte[] data, MemoryTracker memoryTracker)
+            throws IOException {
         try (StoreChannel storeChannel = fs.write(path)) {
-            byte[] data = value.getBytes(UTF_8);
             try (var scopedBuffer = new NativeScopedBuffer(data.length, ByteOrder.LITTLE_ENDIAN, memoryTracker)) {
                 ByteBuffer buffer = scopedBuffer.getBuffer();
                 buffer.put(data);
@@ -86,7 +102,7 @@ public final class FileSystemUtils {
      *
      * The semantics of how this file is opened for read is the same as underlying file system {@link FileSystemAbstraction#read(Path)} call.
      * Read will happen using intermediate direct byte buffer which will be created and released during this call.
-     * Byte buffer is always little endian.
+     *
      * @param fs user provided file system.
      * @param path the path to the file to read.
      * @param memoryTracker tracker where allocated direct byte buffer will be tracked.
@@ -97,6 +113,22 @@ public final class FileSystemUtils {
         if (!fs.fileExists(path)) {
             return null;
         }
+        return new String(readAllBytes(fs, path, memoryTracker), UTF_8);
+    }
+
+    /**
+     * Read all bytes from a file denoted by the {@code path} using the provided file system.
+     *
+     * The semantics of how this file is opened for read is the same as underlying file system {@link FileSystemAbstraction#read(Path)} call.
+     * Read will happen using intermediate direct byte buffer which will be created and released during this call.
+     *
+     * @param fs user provided file system.
+     * @param path the path to the file to read.
+     * @param memoryTracker tracker where allocated direct byte buffer will be tracked.
+     * @throws IOException on I/O error opening/creating/writing the file.
+     */
+    public static byte[] readAllBytes(FileSystemAbstraction fs, Path path, MemoryTracker memoryTracker)
+            throws IOException {
         long fileSize = fs.getFileSize(path);
         try (StoreChannel reader = fs.read(path);
                 var scopedBuffer = new NativeScopedBuffer(fileSize, ByteOrder.LITTLE_ENDIAN, memoryTracker)) {
@@ -105,7 +137,7 @@ public final class FileSystemUtils {
             buffer.flip();
             var data = new byte[(int) fileSize];
             buffer.get(data);
-            return new String(data, UTF_8);
+            return data;
         }
     }
 
@@ -114,7 +146,7 @@ public final class FileSystemUtils {
      *
      * The semantics of how this file is opened for read is the same as underlying file system {@link FileSystemAbstraction#read(Path)} call.
      * Read will happen using intermediate direct byte buffer which will be created and released during this call.
-     * Byte buffer is always little endian.
+     *
      * @param fs user provided file system.
      * @param path the path to the file to read.
      * @param memoryTracker tracker where allocated direct byte buffer will be tracked.

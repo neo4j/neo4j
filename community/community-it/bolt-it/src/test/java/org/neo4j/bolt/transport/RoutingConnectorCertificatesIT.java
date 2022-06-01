@@ -25,15 +25,11 @@ import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 import static org.neo4j.configuration.ssl.SslPolicyScope.CLUSTER;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.GeneralSecurityException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Map;
 import java.util.function.Consumer;
-import org.bouncycastle.operator.OperatorCreationException;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -45,30 +41,56 @@ import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.ssl.ClientAuth;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.ssl.PkiUtils;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.pki.PkiUtils;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
+import org.neo4j.test.utils.TestDirectory;
 
-@EphemeralTestDirectoryExtension
+@TestDirectoryExtension
 @Neo4jWithSocketExtension
 public class RoutingConnectorCertificatesIT {
-    private static Path externalKeyFile;
-    private static Path externalCertFile;
-    private static Path internalKeyFile;
-    private static Path internalCertFile;
-    private static SelfSignedCertificateFactory certFactory;
+    private Path externalKeyFile;
+    private Path externalCertFile;
+    private Path internalKeyFile;
+    private Path internalCertFile;
 
     @Inject
     public Neo4jWithSocket server;
 
+    @Inject
+    private TestDirectory testDirectory;
+
+    @Inject
+    private FileSystemAbstraction fileSystem;
+
     @BeforeEach
-    public void setup(TestInfo testInfo) throws Exception {
+    void setup(TestInfo testInfo) throws Exception {
+        SelfSignedCertificateFactory certFactory = new SelfSignedCertificateFactory();
+        externalKeyFile = testDirectory.file("key.pem");
+        externalCertFile = testDirectory.file("key.crt");
+
+        // make sure files are not there
+        fileSystem.delete(externalKeyFile);
+        fileSystem.delete(externalCertFile);
+
+        certFactory.createSelfSignedCertificate(fileSystem, externalCertFile, externalKeyFile, "my.domain");
+
+        internalKeyFile = testDirectory.file("internal_key.pem");
+        internalCertFile = testDirectory.file("internal_key.crt");
+
+        // make sure files are not there
+        fileSystem.delete(internalKeyFile);
+        fileSystem.delete(internalCertFile);
+
+        certFactory.createSelfSignedCertificate(fileSystem, internalCertFile, internalKeyFile, "my.domain");
+
         server.setConfigure(getSettingsFunction());
         server.init(testInfo);
     }
 
-    private static Consumer<Map<Setting<?>, Object>> getSettingsFunction() {
+    private Consumer<Map<Setting<?>, Object>> getSettingsFunction() {
         return settings -> {
             SslPolicyConfig externalPolicy = SslPolicyConfig.forScope(BOLT);
             settings.put(externalPolicy.enabled, true);
@@ -91,7 +113,7 @@ public class RoutingConnectorCertificatesIT {
     }
 
     @Test
-    public void shouldUseConfiguredCertificate() throws Exception {
+    void shouldUseConfiguredCertificate() throws Exception {
         // GIVEN
         SecureSocketConnection externalConnection =
                 new SecureSocketConnection(server.lookupConnector(ConnectorType.BOLT));
@@ -117,33 +139,11 @@ public class RoutingConnectorCertificatesIT {
         }
     }
 
-    private static X509Certificate loadCertificateFromDisk(Path certFile) throws CertificateException, IOException {
-        var certificates = PkiUtils.loadCertificates(certFile);
+    private X509Certificate loadCertificateFromDisk(Path certFile) throws CertificateException, IOException {
+        var certificates = PkiUtils.loadCertificates(fileSystem, certFile);
 
         assertThat(certificates).hasSize(1);
 
         return certificates[0];
-    }
-
-    @BeforeAll
-    public static void setUp() throws IOException, GeneralSecurityException, OperatorCreationException {
-        certFactory = new SelfSignedCertificateFactory();
-        externalKeyFile = Files.createTempFile("key", "pem");
-        externalCertFile = Files.createTempFile("key", "pem");
-
-        // make sure files are not there
-        Files.delete(externalKeyFile);
-        Files.delete(externalCertFile);
-
-        certFactory.createSelfSignedCertificate(externalCertFile, externalKeyFile, "my.domain");
-
-        internalKeyFile = Files.createTempFile("key", "pem");
-        internalCertFile = Files.createTempFile("key", "pem");
-
-        // make sure files are not there
-        Files.delete(internalKeyFile);
-        Files.delete(internalCertFile);
-
-        certFactory.createSelfSignedCertificate(internalCertFile, internalKeyFile, "my.domain");
     }
 }

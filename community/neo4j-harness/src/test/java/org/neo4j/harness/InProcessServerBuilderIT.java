@@ -116,7 +116,7 @@ class InProcessServerBuilderIT {
         SslPolicyConfig pem = SslPolicyConfig.forScope(HTTPS);
 
         var certificates = directory.directory("certificates");
-        SelfSignedCertificateFactory.create(certificates, "private.key", "public.crt");
+        SelfSignedCertificateFactory.create(directory.getFileSystem(), certificates, "private.key", "public.crt");
         Files.createDirectories(certificates.resolve("trusted"));
         Files.createDirectories(certificates.resolve("revoked"));
 
@@ -314,7 +314,7 @@ class InProcessServerBuilderIT {
                 .withConfig(BoltConnector.listen_address, new SocketAddress(0));
 
         if (httpsEnabled) {
-            SelfSignedCertificateFactory.create(certificates);
+            SelfSignedCertificateFactory.create(directory.getFileSystem(), certificates);
             serverBuilder.withConfig(SslPolicyConfig.forScope(HTTPS).enabled, Boolean.TRUE);
             serverBuilder.withConfig(SslPolicyConfig.forScope(HTTPS).base_directory, certificates);
         }

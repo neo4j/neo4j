@@ -20,14 +20,13 @@
 package org.neo4j.ssl.config;
 
 import static java.lang.String.format;
-import static java.nio.file.Files.exists;
+import static org.neo4j.pki.PkiUtils.CERTIFICATE_FACTORY;
 
 import io.netty.handler.ssl.SslProvider;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -36,7 +35,6 @@ import java.security.PrivateKey;
 import java.security.cert.CRLException;
 import java.security.cert.CertStore;
 import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.security.cert.CollectionCertStoreParameters;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.X509CRL;
@@ -47,7 +45,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.StreamSupport;
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.TrustManagerFactory;
 import org.neo4j.configuration.Config;
@@ -56,9 +53,10 @@ import org.neo4j.configuration.SslSystemSettings;
 import org.neo4j.configuration.ssl.ClientAuth;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyScope;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
-import org.neo4j.ssl.PkiUtils;
+import org.neo4j.pki.PkiUtils;
 import org.neo4j.ssl.SslPolicy;
 import org.neo4j.string.SecureString;
 
@@ -82,8 +80,10 @@ public class SslPolicyLoader {
     private final InternalLogProvider logProvider;
     private final InternalLog log;
     private final boolean skipDotFiles;
+    private final FileSystemAbstraction fileSystem;
 
-    private SslPolicyLoader(Config config, InternalLogProvider logProvider) {
+    private SslPolicyLoader(FileSystemAbstraction fileSystem, Config config, InternalLogProvider logProvider) {
+        this.fileSystem = fileSystem;
         this.config = config;
         this.skipDotFiles = config.get(SslSystemInternalSettings.ignore_dotfiles);
         this.sslProvider = config.get(SslSystemSettings.netty_ssl_provider);
@@ -97,8 +97,9 @@ public class SslPolicyLoader {
      * @param config The configuration for the SSL policies.
      * @return A factory populated with SSL policies.
      */
-    public static SslPolicyLoader create(Config config, InternalLogProvider logProvider) {
-        SslPolicyLoader policyFactory = new SslPolicyLoader(config, logProvider);
+    public static SslPolicyLoader create(
+            FileSystemAbstraction fileSystem, Config config, InternalLogProvider logProvider) {
+        SslPolicyLoader policyFactory = new SslPolicyLoader(fileSystem, config, logProvider);
         policyFactory.load();
         return policyFactory;
     }
@@ -151,7 +152,7 @@ public class SslPolicyLoader {
         Path baseDirectory = config.get(policyConfig.base_directory);
         Path revokedCertificatesDir = config.get(policyConfig.revoked_dir);
 
-        if (Files.notExists(baseDirectory)) {
+        if (!fileSystem.fileExists(baseDirectory)) {
             throw new IllegalArgumentException(format(
                     "Base directory '%s' for SSL policy with name '%s' does not exist.",
                     baseDirectory, policyConfig.name()));
@@ -159,7 +160,7 @@ public class SslPolicyLoader {
 
         KeyAndChain keyAndChain = pemKeyAndChain(policyConfig);
 
-        Collection<X509CRL> crls = getCRLs(revokedCertificatesDir, certificateFilenameFilter());
+        Collection<X509CRL> crls = getCRLs(fileSystem, revokedCertificatesDir, certificateFilenameFilter());
         TrustManagerFactory trustManagerFactory;
         try {
             trustManagerFactory =
@@ -198,7 +199,7 @@ public class SslPolicyLoader {
             throw new RuntimeException("Failed to create trust manager based on: " + trustedCertificatesDir, e);
         }
 
-        if (policyConfig.getScope().isClientOnly() && !exists(privateKeyFile)) {
+        if (policyConfig.getScope().isClientOnly() && !fileSystem.fileExists(privateKeyFile)) {
             return new KeyAndChain(null, new X509Certificate[0], trustStore);
         }
 
@@ -207,36 +208,30 @@ public class SslPolicyLoader {
         X509Certificate[] keyCertChain;
         Path keyCertChainFile = config.get(policyConfig.public_certificate);
 
-        privateKey = loadPrivateKey(privateKeyFile, privateKeyPassword);
-        keyCertChain = loadCertificateChain(keyCertChainFile);
+        privateKey = loadPrivateKey(fileSystem, privateKeyFile, privateKeyPassword);
+        keyCertChain = loadCertificateChain(fileSystem, keyCertChainFile);
 
         return new KeyAndChain(privateKey, keyCertChain, trustStore);
     }
 
-    private static Collection<X509CRL> getCRLs(Path revokedCertificatesDir, DirectoryStream.Filter<Path> filter) {
-        if (Files.notExists(revokedCertificatesDir)) {
+    private static Collection<X509CRL> getCRLs(
+            FileSystemAbstraction fileSystem, Path revokedCertificatesDir, DirectoryStream.Filter<Path> filter) {
+        if (!fileSystem.fileExists(revokedCertificatesDir)) {
             return new ArrayList<>();
         }
 
         Path[] revocationFiles;
-        try (DirectoryStream<Path> paths = Files.newDirectoryStream(revokedCertificatesDir, filter)) {
-            revocationFiles = StreamSupport.stream(paths.spliterator(), false).toArray(Path[]::new);
+        try {
+            revocationFiles = fileSystem.listFiles(revokedCertificatesDir, filter);
         } catch (IOException e) {
             throw new RuntimeException(
                     format("Could not find or list files in revoked directory: %s", revokedCertificatesDir), e);
         }
 
-        CertificateFactory certificateFactory;
-        try {
-            certificateFactory = CertificateFactory.getInstance(PkiUtils.CERTIFICATE_TYPE);
-        } catch (CertificateException e) {
-            throw new RuntimeException("Could not generated certificate factory", e);
-        }
-
         Collection<X509CRL> crls = new ArrayList<>();
         for (Path crl : revocationFiles) {
-            try (InputStream input = Files.newInputStream(crl)) {
-                crls.addAll((Collection<X509CRL>) certificateFactory.generateCRLs(input));
+            try (InputStream input = fileSystem.openAsInputStream(crl)) {
+                crls.addAll((Collection<X509CRL>) PkiUtils.CERTIFICATE_FACTORY.generateCRLs(input));
             } catch (IOException | CRLException e) {
                 throw new RuntimeException(format("Could not load CRL: %s", crl), e);
             }
@@ -245,19 +240,20 @@ public class SslPolicyLoader {
         return crls;
     }
 
-    private static X509Certificate[] loadCertificateChain(Path keyCertChainFile) {
+    private static X509Certificate[] loadCertificateChain(FileSystemAbstraction fs, Path keyCertChainFile) {
         try {
-            return PkiUtils.loadCertificates(keyCertChainFile);
+            return PkiUtils.loadCertificates(fs, keyCertChainFile);
         } catch (Exception e) {
             throw new RuntimeException("Failed to load public certificate chain: " + keyCertChainFile, e);
         }
     }
 
-    private static PrivateKey loadPrivateKey(Path privateKeyFile, SecureString privateKeyPassword) {
+    private static PrivateKey loadPrivateKey(
+            FileSystemAbstraction fs, Path privateKeyFile, SecureString privateKeyPassword) {
         String password = privateKeyPassword != null ? privateKeyPassword.getString() : null;
 
         try {
-            return PkiUtils.loadPrivateKey(privateKeyFile, password);
+            return PkiUtils.loadPrivateKey(fs, privateKeyFile, password);
         } catch (Exception e) {
             throw new RuntimeException(
                     "Failed to load private key: " + privateKeyFile
@@ -294,19 +290,11 @@ public class SslPolicyLoader {
         KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
         trustStore.load(null, null);
 
-        if (Files.notExists(trustedCertificatesDir)) {
+        if (!fileSystem.fileExists(trustedCertificatesDir)) {
             return trustStore;
         }
 
-        Path[] trustedCertFiles;
-        try (DirectoryStream<Path> paths =
-                Files.newDirectoryStream(trustedCertificatesDir, certificateFilenameFilter())) {
-            trustedCertFiles = StreamSupport.stream(paths.spliterator(), false).toArray(Path[]::new);
-        } catch (IOException e) {
-            throw new RuntimeException(
-                    format("Could not find or list files in trusted directory: %s", trustedCertificatesDir), e);
-        }
-
+        Path[] trustedCertFiles = fileSystem.listFiles(trustedCertificatesDir, certificateFilenameFilter());
         if (clientAuth == ClientAuth.REQUIRE && trustedCertFiles.length == 0) {
             throw new RuntimeException(
                     format("Client auth is required but no trust anchors found in: %s", trustedCertificatesDir));
@@ -314,11 +302,10 @@ public class SslPolicyLoader {
 
         int i = 0;
         for (Path trustedCertFile : trustedCertFiles) {
-            CertificateFactory certificateFactory = CertificateFactory.getInstance(PkiUtils.CERTIFICATE_TYPE);
-            try (InputStream input = Files.newInputStream(trustedCertFile)) {
+            try (InputStream input = fileSystem.openAsInputStream(trustedCertFile)) {
                 while (input.available() > 0) {
                     try {
-                        X509Certificate cert = (X509Certificate) certificateFactory.generateCertificate(input);
+                        X509Certificate cert = (X509Certificate) CERTIFICATE_FACTORY.generateCertificate(input);
                         trustStore.setCertificateEntry(Integer.toString(i++), cert);
                     } catch (Exception e) {
                         throw new CertificateException("Error loading certificate file: " + trustedCertFile, e);
