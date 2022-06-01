@@ -109,26 +109,6 @@ case class IndexDescriptor(
     if (isComposite) throw new IllegalArgumentException("Cannot get single property of multi-property index")
     else properties.head
 
-  def canEqual(other: Any): Boolean = other.isInstanceOf[IndexDescriptor]
-
-  // The lambda functions `orderCapability` and `valueCapability` cannot sensibly be compared for equality.
-  // By excluding them from equals and hashCode, we make the assumption that they should be always the same for (label, properties) combination
-  override def equals(other: Any): Boolean = other match {
-    case that: IndexDescriptor =>
-      (that canEqual this) &&
-        indexType == that.indexType &&
-        entityType == that.entityType &&
-        properties == that.properties &&
-        behaviours == that.behaviours &&
-        isUnique == that.isUnique
-    case _ => false
-  }
-
-  override def hashCode(): Int = {
-    val state: Seq[Any] = Seq(indexType, entityType, properties, behaviours, isUnique)
-    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
-  }
-
   def withBehaviours(bs: Set[IndexBehaviour]): IndexDescriptor = copy(behaviours = bs)
   def withOrderCapability(oc: IndexOrderCapability): IndexDescriptor = copy(orderCapability = oc)
   def withValueCapability(vc: GetValueFromIndexBehavior): IndexDescriptor = copy(valueCapability = vc)
