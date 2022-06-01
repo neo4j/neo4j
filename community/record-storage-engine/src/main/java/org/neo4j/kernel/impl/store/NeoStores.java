@@ -20,11 +20,8 @@
 package org.neo4j.kernel.impl.store;
 
 import static org.apache.commons.lang3.ArrayUtils.contains;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
-import static org.neo4j.storageengine.api.StoreVersion.versionLongToString;
 
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.function.Consumer;
@@ -32,7 +29,6 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
-import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
@@ -48,15 +44,11 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.StoreId;
-import org.neo4j.storageengine.api.format.CapabilityType;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
@@ -122,20 +114,17 @@ public class NeoStores implements AutoCloseable {
         stores = new CommonAbstractStore[StoreType.values().length];
         // First open the meta data store so that we can verify the record format. We know that this store is of the
         // type MetaDataStore
-        try (var cursorContext = contextFactory.create(OPEN_ALL_STORES_TAG)) {
-            try {
-                verifyRecordFormat(storeTypes, cursorContext);
-                for (StoreType type : storeTypes) {
-                    getOrOpenStore(type);
-                }
-            } catch (RuntimeException initException) {
-                try {
-                    close();
-                } catch (RuntimeException closeException) {
-                    initException.addSuppressed(closeException);
-                }
-                throw initException;
+        try {
+            for (StoreType type : storeTypes) {
+                getOrOpenStore(type);
             }
+        } catch (RuntimeException initException) {
+            try {
+                close();
+            } catch (RuntimeException closeException) {
+                initException.addSuppressed(closeException);
+            }
+            throw initException;
         }
         initializedStores = storeTypes;
     }
@@ -157,55 +146,6 @@ public class NeoStores implements AutoCloseable {
         if (ex != null) {
             throw ex;
         }
-    }
-
-    private void verifyRecordFormat(StoreType[] storeTypes, CursorContext cursorContext) {
-        String expectedStoreVersion = recordFormats.storeVersion();
-        long existingFormat;
-        if (!fileSystem.fileExists(layout.metadataStore())) {
-            // If the meta data store doesn't even exist then look no further, there's nothing to verify
-            return;
-        }
-
-        if (contains(storeTypes, StoreType.META_DATA)) {
-            // We're going to open this store anyway so might as well do it here, like we open the others
-            MetaDataStore metaDataStore = (MetaDataStore) getOrOpenStore(StoreType.META_DATA);
-            try (var cursor = metaDataStore.openPageCursorForReading(STORE_VERSION.id(), cursorContext)) {
-                existingFormat = metaDataStore
-                        .getRecordByCursor(STORE_VERSION.id(), metaDataStore.newRecord(), RecordLoad.CHECK, cursor)
-                        .getValue();
-            }
-        } else {
-            // We're not quite expected to open this store among the other stores, so instead just read the single
-            // version record
-            // from the meta data store and be done with it. This will avoid the unwanted side-effect of creating the
-            // meta data store
-            // if we have createIfNotExists set, but don't have the meta data store in the list of stores to open
-            try {
-                existingFormat = MetaDataStore.getRecord(
-                        pageCache, layout.metadataStore(), STORE_VERSION, layout.getDatabaseName(), cursorContext);
-            } catch (NoSuchFileException e) {
-                // Weird that the file isn't here after we passed the exists check above. Regardless, treat this the
-                // same way as above.
-                return;
-            } catch (IOException e) {
-                throw new UnderlyingStorageException(e);
-            }
-        }
-
-        if (existingFormat != MetaDataRecordFormat.FIELD_NOT_PRESENT) {
-            String actualStoreVersion = versionLongToString(existingFormat);
-            RecordFormats actualStoreFormat = RecordFormatSelector.selectForVersion(actualStoreVersion);
-            if (!isCompatibleFormats(actualStoreFormat)) {
-                throw new UnexpectedStoreVersionException(actualStoreVersion, expectedStoreVersion);
-            }
-        }
-    }
-
-    private boolean isCompatibleFormats(RecordFormats storeFormat) {
-        return recordFormats.hasCompatibleCapabilities(storeFormat, CapabilityType.FORMAT)
-                && recordFormats.majorVersion() == storeFormat.majorVersion()
-                && recordFormats.minorVersion() >= storeFormat.minorVersion();
     }
 
     private void closeStore(StoreType type) {

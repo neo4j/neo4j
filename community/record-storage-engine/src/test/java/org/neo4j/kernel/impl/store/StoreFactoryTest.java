@@ -157,7 +157,7 @@ class StoreFactoryTest {
         StoreFactory storeFactory = storeFactory(defaults());
         storeFactory.openAllNeoStores(true).close();
         for (Path f : fileSystem.listFiles(databaseLayout.databaseDirectory())) {
-            if (!f.getFileName().toString().endsWith(".id")) {
+            if (!f.getFileName().toString().endsWith(".id") && !f.equals(databaseLayout.metadataStore())) {
                 fileSystem.truncate(f, 0);
             }
         }

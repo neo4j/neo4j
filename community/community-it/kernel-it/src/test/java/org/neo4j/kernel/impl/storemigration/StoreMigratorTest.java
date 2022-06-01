@@ -227,8 +227,8 @@ class StoreMigratorTest {
                         any(),
                         any(),
                         any(),
-                        argThat(new VersionMatcher(Standard.LATEST_STORE_VERSION)),
-                        argThat(new VersionMatcher(PageAlignedTestFormat.WithMajorVersionBump.VERSION_STRING)),
+                        argThat(new VersionMatcher(Standard.LATEST_RECORD_FORMATS)),
+                        argThat(new VersionMatcher(new PageAlignedTestFormat.WithMajorVersionBump())),
                         any(),
                         any());
         verify(observingParticipant).moveMigratedFiles(any(), any(), any(), any());
@@ -268,23 +268,23 @@ class StoreMigratorTest {
                 .moveMigratedFiles(
                         any(),
                         any(),
-                        argThat(new VersionMatcher(StandardFormatWithMinorVersionBump.VERSION_STRING)),
-                        argThat(new VersionMatcher(PageAlignedTestFormat.WithMajorVersionBump.VERSION_STRING)));
+                        argThat(new VersionMatcher(new StandardFormatWithMinorVersionBump())),
+                        argThat(new VersionMatcher(new PageAlignedTestFormat.WithMajorVersionBump())));
         verify(observingParticipant)
                 .migrate(
                         any(),
                         any(),
                         any(),
-                        argThat(new VersionMatcher(StandardFormatWithMinorVersionBump.VERSION_STRING)),
-                        argThat(new VersionMatcher(PageAlignedTestFormat.WithMajorVersionBump.VERSION_STRING)),
+                        argThat(new VersionMatcher(new StandardFormatWithMinorVersionBump())),
+                        argThat(new VersionMatcher(new PageAlignedTestFormat.WithMajorVersionBump())),
                         any(),
                         any());
         verify(observingParticipant)
                 .moveMigratedFiles(
                         any(),
                         any(),
-                        argThat(new VersionMatcher(StandardFormatWithMinorVersionBump.VERSION_STRING)),
-                        argThat(new VersionMatcher(PageAlignedTestFormat.WithMajorVersionBump.VERSION_STRING)));
+                        argThat(new VersionMatcher(new StandardFormatWithMinorVersionBump())),
+                        argThat(new VersionMatcher(new PageAlignedTestFormat.WithMajorVersionBump())));
         verify(observingParticipant, times(2)).cleanup(any(DatabaseLayout.class));
 
         verifyDbStartAndFormat(new PageAlignedTestFormat.WithMajorVersionBump());
@@ -322,8 +322,8 @@ class StoreMigratorTest {
                         any(),
                         any(),
                         any(),
-                        argThat(new VersionMatcher(Standard.LATEST_STORE_VERSION)),
-                        argThat(new VersionMatcher(StandardFormatWithMinorVersionBump.VERSION_STRING)),
+                        argThat(new VersionMatcher(Standard.LATEST_RECORD_FORMATS)),
+                        argThat(new VersionMatcher(new StandardFormatWithMinorVersionBump())),
                         any(),
                         any());
         verify(observingParticipant).moveMigratedFiles(any(), any(), any(), any());
@@ -375,15 +375,20 @@ class StoreMigratorTest {
     }
 
     public static class VersionMatcher implements ArgumentMatcher<StoreVersion> {
-        private final String expected;
+        private final RecordFormats expected;
 
-        VersionMatcher(String expected) {
+        VersionMatcher(RecordFormats expected) {
             this.expected = expected;
         }
 
         @Override
         public boolean matches(StoreVersion right) {
-            return expected.equals(right.storeVersion());
+            if (right instanceof RecordStoreVersion recordStorageVersion) {
+
+                return expected.name().equals(recordStorageVersion.getFormat().name());
+            } else {
+                return false;
+            }
         }
     }
 

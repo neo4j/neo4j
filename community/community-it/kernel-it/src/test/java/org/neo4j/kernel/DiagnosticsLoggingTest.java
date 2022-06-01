@@ -26,7 +26,6 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.io.ByteUnit;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
@@ -45,9 +44,11 @@ class DiagnosticsLoggingTest {
             // THEN we should have logged
             assertThat(logProvider).containsMessages("Network information", "Local timezone", "Page cache: 4.00MiB");
             // neostore records
-            for (MetaDataStore.Position position : MetaDataStore.Position.values()) {
-                assertThat(logProvider).containsMessages(position.name());
-            }
+            assertThat(logProvider)
+                    .containsMessages("EXTERNAL_STORE_UUID")
+                    .containsMessages("DATABASE_ID")
+                    .containsMessages("LEGACY_STORE_VERSION")
+                    .containsMessages("STORE_ID");
             // transaction log info
             assertThat(logProvider).containsMessages("Transaction log", "TimeZone version: ");
         } finally {

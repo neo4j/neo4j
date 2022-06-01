@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.storemigration;
 import static java.util.Arrays.asList;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.RecordStorageMigrator.createTokenHolders;
-import static org.neo4j.kernel.impl.storemigration.RecordStorageMigrator.getValueOrDefault;
 import static org.neo4j.kernel.impl.storemigration.StoreMigratorFileOperation.fileOperation;
 
 import java.io.IOException;
@@ -34,7 +33,6 @@ import java.util.StringJoiner;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.SchemaIdType;
@@ -52,22 +50,19 @@ import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.LegacyMetadataHandler;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.storemigration.SchemaStoreMigration.SchemaStoreMigrator;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore44Reader;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.SchemaRule44;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
@@ -230,24 +225,23 @@ public class SchemaStore44Migration {
             PageCacheTracer pageCacheTracer,
             CursorContextFactory contextFactory,
             IdGeneratorFactory srcIdGeneratorFactory,
-            StoreFactory srcFactory) {
+            StoreFactory srcFactory)
+            throws IOException {
         try (NeoStores srcStore = srcFactory.openNeoStores(
                         false,
                         StoreType.SCHEMA,
                         StoreType.PROPERTY,
-                        StoreType.META_DATA,
                         StoreType.LABEL_TOKEN,
                         StoreType.RELATIONSHIP_TYPE_TOKEN,
                         StoreType.PROPERTY_KEY_TOKEN);
                 var srcCursors = new CachedStoreCursors(srcStore, cursorContext)) {
             // Need the kernel version from the old metadata store to know if we have injected NLI
-            MetaDataStore oldMetadataStore = srcStore.getMetaDataStore();
-            KernelVersion kernelVersion;
-            try (PageCursor pageCursor = oldMetadataStore.openPageCursorForReading(0, cursorContext)) {
-                MetaDataRecord record = new MetaDataRecord();
-                long kernelVersionBits = getValueOrDefault(oldMetadataStore, 19, record, pageCursor);
-                kernelVersion = KernelVersion.getForVersion(Numbers.safeCastLongToByte(kernelVersionBits));
-            }
+            KernelVersion kernelVersion = LegacyMetadataHandler.readMetadata44FromStore(
+                            pageCache,
+                            directoryLayout.metadataStore(),
+                            directoryLayout.getDatabaseName(),
+                            cursorContext)
+                    .kernelVersion();
 
             var srcTokensHolders = createTokenHolders(srcStore, srcCursors);
             try (var schemaStore44Reader = getSchemaStore44Reader(
@@ -260,7 +254,7 @@ public class SchemaStore44Migration {
                     pageCache,
                     pageCacheTracer,
                     contextFactory,
-                    () -> kernelVersion)) {
+                    kernelVersion)) {
                 return getSchemaStoreMigration44(
                         schemaStore44Reader,
                         srcCursors,
@@ -434,11 +428,11 @@ public class SchemaStore44Migration {
             PageCache pageCache,
             PageCacheTracer pageCacheTracer,
             CursorContextFactory contextFactory,
-            KernelVersionRepository kernelVersionRepository) {
+            KernelVersion kernelVersion) {
         return new SchemaStore44Reader(
                 neoStores.getPropertyStore(),
                 tokenHolders,
-                kernelVersionRepository,
+                kernelVersion,
                 recordDatabaseLayout.schemaStore(),
                 recordDatabaseLayout.idSchemaStore(),
                 config,

@@ -26,7 +26,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.ExternalStoreId;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
@@ -75,18 +74,13 @@ public class SimpleMetaDataProvider implements MetadataProvider {
     }
 
     @Override
-    public LegacyStoreId getLegacyStoreId() {
-        return LegacyStoreId.UNKNOWN;
-    }
-
-    @Override
     public StoreId getStoreId() {
         return new StoreId(1, 1, "engine-1", "format-1", 1, 1);
     }
 
     @Override
-    public Optional<ExternalStoreId> getExternalStoreId() {
-        return Optional.of(externalStoreId);
+    public ExternalStoreId getExternalStoreId() {
+        return externalStoreId;
     }
 
     @Override
@@ -159,7 +153,7 @@ public class SimpleMetaDataProvider implements MetadataProvider {
     }
 
     @Override
-    public void regenerateMetadata(LegacyStoreId storeId, UUID externalStoreUUID, CursorContext cursorContext) {
+    public void regenerateMetadata(StoreId storeId, UUID externalStoreUUID, CursorContext cursorContext) {
         throw new UnsupportedOperationException("RegenerateMetadata is not supported.");
     }
 }

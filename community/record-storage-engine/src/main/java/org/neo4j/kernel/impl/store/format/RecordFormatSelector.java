@@ -25,7 +25,6 @@ import static java.util.Comparator.comparingInt;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterables.concat;
 import static org.neo4j.internal.helpers.collection.Iterables.map;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -43,18 +42,18 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.kernel.impl.store.LegacyMetadataHandler;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV4_3;
 import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV5_0;
 import org.neo4j.kernel.impl.store.format.multiversion.MultiVersionFormat;
-import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV5_0;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.service.Services;
-import org.neo4j.storageengine.api.StoreVersion;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersionIdentifier;
 import org.neo4j.util.FeatureToggles;
 
@@ -106,35 +105,6 @@ public class RecordFormatSelector {
     }
 
     /**
-     * Select record formats for provided store version.
-     *
-     * @param storeVersion store version to find format for
-     * @return record formats
-     * @throws IllegalArgumentException if format for specified store version not found
-     */
-    @Deprecated
-    public static RecordFormats selectForVersion(String storeVersion) {
-        // Format can be supplied in two ways:
-        // - The high-level/user-friendly name of the format (potentially also having a version)
-        // - The internal version that gets put into the meta-data store
-        // Here we check for both
-
-        // First check for matching name
-        RecordFormats recordFormatsMatchingName = loadRecordFormat(storeVersion, true);
-        if (recordFormatsMatchingName != null) {
-            return recordFormatsMatchingName;
-        }
-
-        // The check for matching internal store version
-        for (RecordFormats format : allFormats()) {
-            if (format.storeVersion().equals(storeVersion)) {
-                return format;
-            }
-        }
-        throw new IllegalArgumentException("Unknown store version '" + storeVersion + "'");
-    }
-
-    /**
      * Select record formats for provided store version identifier.
      */
     public static Optional<RecordFormats> selectForStoreVersionIdentifier(
@@ -148,8 +118,6 @@ public class RecordFormatSelector {
 
     /**
      * Select record format for the given store directory.
-     * <p>
-     * <b>Note:</b> package private only for testing.
      *
      * @param databaseLayout directory with the store
      * @param fs file system used to access store files
@@ -167,21 +135,30 @@ public class RecordFormatSelector {
         Path neoStoreFile = databaseLayout.metadataStore();
         if (fs.fileExists(neoStoreFile)) {
             try (var cursorContext = contextFactory.create(STORE_SELECTION_TAG)) {
-                long value = MetaDataStore.getRecord(
-                        pageCache, neoStoreFile, STORE_VERSION, databaseLayout.getDatabaseName(), cursorContext);
-                if (value != MetaDataRecordFormat.FIELD_NOT_PRESENT) {
-                    String storeVersion = StoreVersion.versionLongToString(value);
+                var filedAccess = MetaDataStore.getFieldAccess(
+                        pageCache, neoStoreFile, databaseLayout.getDatabaseName(), cursorContext);
+                StoreId storeId;
+                if (filedAccess.isLegacyFieldValid()) {
+                    storeId = filedAccess.readStoreId();
+                } else {
+                    storeId = LegacyMetadataHandler.readMetadata44FromStore(
+                                    pageCache,
+                                    databaseLayout.metadataStore(),
+                                    databaseLayout.getDatabaseName(),
+                                    cursorContext)
+                            .storeId();
+                }
 
-                    for (RecordFormats format : allFormats()) {
-                        if (format.storeVersion().equals(storeVersion)) {
+                return selectForStoreVersionIdentifier(storeId)
+                        .map(format -> {
                             info(
                                     logProvider,
                                     "Selected " + format + " record format from store "
                                             + databaseLayout.databaseDirectory());
                             return format;
-                        }
-                    }
-                }
+                        })
+                        .orElse(null);
+
             } catch (IOException e) {
                 info(
                         logProvider,
@@ -262,34 +239,6 @@ public class RecordFormatSelector {
             return selectSpecificFormat(RECORD_FORMAT_OVERRIDE, true);
         }
         return null;
-    }
-
-    private static boolean formatSameFamilyAndVersion(RecordFormats left, RecordFormats right) {
-        return left.getFormatFamily().equals(right.getFormatFamily()) && left.majorVersion() == right.majorVersion();
-    }
-
-    /**
-     * Check if a format is compatible with another format. In case if format is not configured or store does not
-     * exist yet - we consider formats as compatible.
-     * @param format a {@link RecordFormats}
-     * @param otherFormat another {@link RecordFormats} to compare with.
-     * @return true if the two formats are compatible, false otherwise.
-     */
-    public static boolean isStoreAndConfigFormatsCompatible(RecordFormats format, RecordFormats otherFormat) {
-        return (format == null) || (otherFormat == null) || formatSameFamilyAndVersion(format, otherFormat);
-    }
-
-    public static Optional<RecordFormats> findLatestSupportedFormatInFamily(RecordFormats result, Config config) {
-        var specificFormat = trySelectSpecificFormat(config);
-        if (specificFormat != null) {
-            return Optional.of(specificFormat);
-        }
-        return findLatestFormatInFamily(
-                result, config.get(GraphDatabaseInternalSettings.include_versions_under_development));
-    }
-
-    public static Optional<RecordFormats> findLatestSupportedFormatInFamily(RecordFormats result) {
-        return findLatestFormatInFamily(result, false);
     }
 
     private static Optional<RecordFormats> findLatestFormatInFamily(RecordFormats result, boolean includeDevFormats) {

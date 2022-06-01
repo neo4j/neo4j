@@ -31,9 +31,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * A representation of store ID.
- * <p>
- * TODO: The aim is to have this as the only representation of store ID and store version
- * and get rid of the 'String' and 'long' representation of store version and {@link LegacyStoreId}.
  */
 public class StoreId extends StoreVersionIdentifier {
     public static final StoreId UNKNOWN = new StoreId(0, 0, "", "", 0, 0);

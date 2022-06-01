@@ -32,18 +32,23 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
+import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.StoreVersionIdentifier;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -91,15 +96,33 @@ class RecordStoreMigratorTest {
         // Migrate with two storeversions that have the same FORMAT capabilities
         DatabaseLayout migrationLayout = neo4jLayout.databaseLayout("migrationDir");
         fileSystem.mkdirs(migrationLayout.databaseDirectory());
+
+        var format = Standard.LATEST_RECORD_FORMATS;
         fileSystem.write(migrationLayout.metadataStore()).close();
+        var fieldAccess = MetaDataStore.getFieldAccess(
+                pageCache,
+                migrationLayout.metadataStore(),
+                migrationLayout.getDatabaseName(),
+                CursorContext.NULL_CONTEXT);
+        fieldAccess.writeStoreId(StoreId.generateNew(
+                RecordStorageEngineFactory.NAME,
+                format.getFormatFamily().name(),
+                format.majorVersion(),
+                format.minorVersion()));
+
+        var storeVersionIdentifier = new StoreVersionIdentifier(
+                RecordStorageEngineFactory.NAME,
+                format.getFormatFamily().name(),
+                format.majorVersion(),
+                format.minorVersion());
 
         var storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
         migrator.migrate(
                 dbLayout,
                 migrationLayout,
                 progressReporter,
-                storageEngineFactory.versionInformation(Standard.LATEST_STORE_VERSION),
-                storageEngineFactory.versionInformation(Standard.LATEST_STORE_VERSION),
+                storageEngineFactory.versionInformation(storeVersionIdentifier).orElseThrow(),
+                storageEngineFactory.versionInformation(storeVersionIdentifier).orElseThrow(),
                 IndexImporterFactory.EMPTY,
                 LogTailMetadata.EMPTY_LOG_TAIL);
 

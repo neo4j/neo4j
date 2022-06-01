@@ -28,14 +28,9 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_PROPERT
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 import static org.neo4j.io.layout.recordstorage.RecordDatabaseLayout.convert;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.TIME;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStore;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfigForNewDbs;
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
 import java.io.IOException;
@@ -112,11 +107,9 @@ import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.PageCacheOptionsSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
-import org.neo4j.kernel.impl.storemigration.RecordStoreRollingUpgradeCompatibility;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersion;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore44Reader;
@@ -134,7 +127,6 @@ import org.neo4j.storageengine.ReadOnlyLogVersionRepository;
 import org.neo4j.storageengine.ReadOnlyTransactionIdStore;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.MetadataProvider;
@@ -149,7 +141,6 @@ import org.neo4j.storageengine.api.StoreVersionIdentifier;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.format.Index44Compatibility;
-import org.neo4j.storageengine.migration.RollingUpgradeCompatibility;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.token.DelegatingTokenHolder;
@@ -173,39 +164,9 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     public StoreId retrieveStoreId(
             FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext)
             throws IOException {
-        long version = MetaDataStore.getRecord(
-                pageCache,
-                databaseLayout.metadataStore(),
-                STORE_VERSION,
-                databaseLayout.getDatabaseName(),
-                cursorContext);
-        assertMetaDataFieldPresent(version, STORE_VERSION, databaseLayout);
-
-        long creationTime = MetaDataStore.getRecord(
-                pageCache, databaseLayout.metadataStore(), TIME, databaseLayout.getDatabaseName(), cursorContext);
-        assertMetaDataFieldPresent(creationTime, TIME, databaseLayout);
-        long random = MetaDataStore.getRecord(
-                pageCache,
-                databaseLayout.metadataStore(),
-                RANDOM_NUMBER,
-                databaseLayout.getDatabaseName(),
-                cursorContext);
-        assertMetaDataFieldPresent(random, RANDOM_NUMBER, databaseLayout);
-
-        return LegacyMetadataHandler.storeIdFromLegacyMetadata(creationTime, random, version);
-    }
-
-    @Override
-    public StoreId convertLegacyStoreId(LegacyStoreId legacyStoreId) {
-        return LegacyMetadataHandler.storeIdFromLegacyMetadata(
-                legacyStoreId.getCreationTime(), legacyStoreId.getRandomId(), legacyStoreId.getStoreVersion());
-    }
-
-    private void assertMetaDataFieldPresent(long value, MetaDataStore.Position field, DatabaseLayout databaseLayout) {
-        if (value == MetaDataRecordFormat.FIELD_NOT_PRESENT) {
-            throw new IllegalStateException(
-                    "Uninitialized '" + field.name() + "' field in " + databaseLayout.metadataStore());
-        }
+        MetaDataStore.FieldAccess fieldAccess = MetaDataStore.getFieldAccess(
+                pageCache, databaseLayout.metadataStore(), databaseLayout.getDatabaseName(), cursorContext);
+        return fieldAccess.readStoreId();
     }
 
     @Override
@@ -223,26 +184,6 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     public Optional<StoreVersion> versionInformation(StoreVersionIdentifier storeVersionIdentifier) {
         var maybeRecordFormat = RecordFormatSelector.selectForStoreVersionIdentifier(storeVersionIdentifier);
         return maybeRecordFormat.map(RecordStoreVersion::new);
-    }
-
-    @Override
-    public StoreVersion versionInformation(String storeVersion) {
-        return new RecordStoreVersion(RecordFormatSelector.selectForVersion(storeVersion));
-    }
-
-    @Override
-    public StoreVersion versionInformation(LegacyStoreId storeId) {
-        return versionInformation(StoreVersion.versionLongToString(storeId.getStoreVersion()));
-    }
-
-    @Override
-    public StoreVersion defaultStoreVersion() {
-        return new RecordStoreVersion(defaultFormat());
-    }
-
-    @Override
-    public RollingUpgradeCompatibility rollingUpgradeCompatibility() {
-        return new RecordStoreRollingUpgradeCompatibility(RecordFormatSelector.allFormats());
     }
 
     @Override
@@ -380,14 +321,6 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     }
 
     @Override
-    public LegacyStoreId storeId(
-            FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext)
-            throws IOException {
-        return MetaDataStore.getStoreId(
-                pageCache, convert(databaseLayout).metadataStore(), databaseLayout.getDatabaseName(), cursorContext);
-    }
-
-    @Override
     public void resetMetadata(
             FileSystemAbstraction fs,
             DatabaseLayout databaseLayout,
@@ -395,7 +328,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             PageCache pageCache,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
-            LegacyStoreId storeId,
+            StoreId storeId,
             UUID externalStoreId)
             throws IOException {
         try (var metadataProvider = transactionMetaDataStore(
@@ -413,67 +346,15 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     }
 
     @Override
-    public void resetMetadata(
-            FileSystemAbstraction fs,
-            DatabaseLayout databaseLayout,
-            Config config,
-            PageCache pageCache,
-            CursorContextFactory contextFactory,
-            PageCacheTracer pageCacheTracer,
-            StoreId storeId,
-            UUID externalStoreId)
-            throws IOException {
-        RecordFormats recordFormat = RecordFormatSelector.selectForStoreVersionIdentifier(storeId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Unknown store version '" + storeId.getStoreVersionUserString() + "'"));
-        long version = StoreVersion.versionStringToLong(recordFormat.storeVersion());
-        LegacyStoreId legacyStoreId = new LegacyStoreId(storeId.getCreationTime(), storeId.getRandom(), version);
-
-        resetMetadata(
-                fs, databaseLayout, config, pageCache, contextFactory, pageCacheTracer, legacyStoreId, externalStoreId);
-    }
-
-    @Override
     public Optional<UUID> databaseIdUuid(
             FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext) {
-        return MetaDataStore.getDatabaseIdUuid(
+        var fieldAccess = MetaDataStore.getFieldAccess(
                 pageCache, convert(databaseLayout).metadataStore(), databaseLayout.getDatabaseName(), cursorContext);
-    }
-
-    @Override
-    public SchemaRuleMigrationAccess schemaRuleMigrationAccess(
-            FileSystemAbstraction fs,
-            PageCache pageCache,
-            Config config,
-            DatabaseLayout layout,
-            LogService logService,
-            String recordFormats,
-            CursorContextFactory contextFactory,
-            PageCacheTracer pageCacheTracer,
-            MemoryTracker memoryTracker) {
-        RecordDatabaseLayout databaseLayout = convert(layout);
-        RecordFormats formats = selectForVersion(recordFormats);
-        StoreFactory factory = new StoreFactory(
-                databaseLayout,
-                config,
-                new DefaultIdGeneratorFactory(fs, immediate(), pageCacheTracer, databaseLayout.getDatabaseName()),
-                pageCache,
-                pageCacheTracer,
-                fs,
-                formats,
-                logService.getInternalLogProvider(),
-                contextFactory,
-                writable(),
-                EMPTY_LOG_TAIL,
-                immutable.empty());
-        NeoStores stores =
-                factory.openNeoStores(true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY);
-        try (var cursorContext = contextFactory.create("schemaRuleMigrationAccess")) {
-            stores.start(cursorContext);
+        try {
+            return fieldAccess.readDatabaseUUID();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-        return createMigrationTargetSchemaRuleAccess(stores, contextFactory, memoryTracker);
     }
 
     @Override
@@ -509,15 +390,26 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 readOnly(),
                 logTailMetadata);
         try (var cursorContext = contextFactory.create("loadSchemaRules");
-                var stores = factory.openAllNeoStores();
+                var stores = factory.openNeoStores(
+                        StoreType.SCHEMA,
+                        StoreType.PROPERTY,
+                        StoreType.LABEL_TOKEN,
+                        StoreType.RELATIONSHIP_TYPE_TOKEN,
+                        StoreType.PROPERTY_KEY_TOKEN);
                 var storeCursors = new CachedStoreCursors(stores, cursorContext)) {
             stores.start(cursorContext);
             TokenHolders tokenHolders = loadReadOnlyTokens(stores, true, contextFactory);
 
+            var metadata = LegacyMetadataHandler.readMetadata44FromStore(
+                    pageCache,
+                    recordDatabaseLayout.metadataStore(),
+                    recordDatabaseLayout.getDatabaseName(),
+                    cursorContext);
+
             try (SchemaStore44Reader schemaStoreReader = new SchemaStore44Reader(
                     stores.getPropertyStore(),
                     tokenHolders,
-                    stores.getMetaDataStore(),
+                    metadata.kernelVersion(),
                     recordDatabaseLayout.schemaStore(),
                     recordDatabaseLayout.idSchemaStore(),
                     config,
@@ -748,6 +640,9 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             boolean compactNodeIdSpace,
             CursorContextFactory contextFactory,
             LogTailMetadata logTailMetadata) {
+        var storesToOpen = Arrays.stream(StoreType.values())
+                .filter(storeType -> storeType != META_DATA)
+                .toArray(StoreType[]::new);
         NeoStores neoStores = new StoreFactory(
                         databaseLayout,
                         config,
@@ -759,7 +654,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                         contextFactory,
                         readOnly(),
                         logTailMetadata)
-                .openAllNeoStores();
+                .openNeoStores(storesToOpen);
         return new LenientStoreInput(
                 neoStores,
                 readBehaviour.decorateTokenHolders(loadReadOnlyTokens(neoStores, true, contextFactory)),

@@ -257,9 +257,7 @@ class RecordStorageMigratorIT {
             assertEquals(
                     new UUID(1, 2),
                     metaDataStore.getDatabaseIdUuid(NULL_CONTEXT).orElseThrow());
-            assertEquals(
-                    new UUID(3, 4),
-                    metaDataStore.getExternalStoreId().orElseThrow().getId());
+            assertEquals(new UUID(3, 4), metaDataStore.getExternalStoreId().getId());
         }
     }
 
@@ -333,7 +331,7 @@ class RecordStorageMigratorIT {
             MetadataProvider metadataProvider =
                     database.getDependencyResolver().resolveDependency(MetadataProvider.class);
             storeId = metadataProvider.getStoreId();
-            externalStoreId = metadataProvider.getExternalStoreId().orElseThrow();
+            externalStoreId = metadataProvider.getExternalStoreId();
 
             metadataProvider.setDatabaseIdUuid(databaseUUID, NULL_CONTEXT);
         } finally {
@@ -395,7 +393,7 @@ class RecordStorageMigratorIT {
             assertEquals(storeId.getRandom(), newStoreId.getRandom());
             assertEquals(
                     databaseUUID, metaDataStore.getDatabaseIdUuid(NULL_CONTEXT).orElseThrow());
-            assertEquals(externalStoreId, metaDataStore.getExternalStoreId().orElseThrow());
+            assertEquals(externalStoreId, metaDataStore.getExternalStoreId());
         }
     }
 

@@ -102,7 +102,6 @@ import org.neo4j.storageengine.api.CommandStream;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.IndexUpdateListener;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -638,11 +637,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     @VisibleForTesting
     public SchemaRuleAccess testAccessSchemaRules() {
         return schemaRuleAccess;
-    }
-
-    @Override
-    public LegacyStoreId getStoreId() {
-        return neoStores.getMetaDataStore().getLegacyStoreId();
     }
 
     @Override

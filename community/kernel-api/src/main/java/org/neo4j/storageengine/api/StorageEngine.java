@@ -162,12 +162,6 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
      */
     void listStorageFiles(Collection<StoreFileMetadata> atomic, Collection<StoreFileMetadata> replayable);
 
-    /**
-     * @return the {@link LegacyStoreId} of the underlying store.
-     */
-    @Deprecated
-    LegacyStoreId getStoreId();
-
     StoreId retrieveStoreId();
 
     /**

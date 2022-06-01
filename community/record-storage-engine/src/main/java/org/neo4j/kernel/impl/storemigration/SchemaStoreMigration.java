@@ -154,7 +154,8 @@ public class SchemaStoreMigration {
             PageCache pageCache,
             PageCacheTracer pageCacheTracer,
             FileSystemAbstraction fileSystem,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory)
+            throws IOException {
         IdGeneratorFactory srcIdGeneratorFactory = new ScanOnOpenReadOnlyIdGeneratorFactory();
         StoreFactory srcFactory = createStoreFactory(
                 directoryLayout,

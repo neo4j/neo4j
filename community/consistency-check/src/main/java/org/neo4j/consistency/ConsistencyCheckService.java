@@ -84,7 +84,6 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.time.Clocks;
 
@@ -545,11 +544,7 @@ public class ConsistencyCheckService {
                 fileSystem, layout, config, pageCache, new SimpleLogService(logProvider), contextFactory);
 
         try (var cursorContext = contextFactory.create("consistencyCheck")) {
-            String storeVersion = storeVersionCheck
-                    .storeVersion(cursorContext)
-                    .orElseThrow(() -> new RuntimeException("No store version found"));
-            StoreVersion version = storageEngineFactory.versionInformation(storeVersion);
-            if (version.onlyForMigration()) {
+            if (!storeVersionCheck.isCurrentStoreVersionFullySupported(cursorContext)) {
                 throw new IllegalStateException(
                         "The store must be upgraded or migrated to a supported version before it is possible to "
                                 + "check consistency");

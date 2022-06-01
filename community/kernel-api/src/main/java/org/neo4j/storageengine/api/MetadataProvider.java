@@ -33,5 +33,5 @@ public interface MetadataProvider
                 StoreIdProvider,
                 KernelVersionRepository,
                 Closeable {
-    void regenerateMetadata(LegacyStoreId storeId, UUID externalStoreUUID, CursorContext cursorContext);
+    void regenerateMetadata(StoreId storeId, UUID externalStoreUUID, CursorContext cursorContext);
 }

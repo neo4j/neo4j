@@ -23,13 +23,13 @@ import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.internal.Version;
-import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StoreId;
 
 public class VersionDiagnostics extends NamedDiagnosticsProvider {
     private final DbmsInfo dbmsInfo;
-    private final LegacyStoreId storeId;
+    private final StoreId storeId;
 
-    VersionDiagnostics(DbmsInfo dbmsInfo, LegacyStoreId storeId) {
+    VersionDiagnostics(DbmsInfo dbmsInfo, StoreId storeId) {
         super("Version");
         this.dbmsInfo = dbmsInfo;
         this.storeId = storeId;
@@ -37,7 +37,7 @@ public class VersionDiagnostics extends NamedDiagnosticsProvider {
 
     @Override
     public void dump(DiagnosticsLogger logger) {
-        logger.log("DBMS: " + dbmsInfo + " " + storeId);
+        logger.log("DBMS: " + dbmsInfo + " " + storeId.getStoreVersionUserString());
         logger.log("Kernel version: " + Version.getKernelVersion());
     }
 }

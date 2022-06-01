@@ -60,7 +60,6 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.logging.InternalLogProvider;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.SchemaRule44;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -112,12 +111,12 @@ public class SchemaStore44Reader implements AutoCloseable {
     private final SchemaStore44 schemaStore;
     private final PropertyStore propertyStore;
     private final TokenHolders tokenHolders;
-    private final KernelVersionRepository versionSupplier;
+    private final KernelVersion kernelVersion;
 
     public SchemaStore44Reader(
             PropertyStore propertyStore,
             TokenHolders tokenHolders,
-            KernelVersionRepository versionSupplier,
+            KernelVersion kernelVersion,
             Path schemaStoreLocation,
             Path idFile,
             Config conf,
@@ -132,7 +131,7 @@ public class SchemaStore44Reader implements AutoCloseable {
             ImmutableSet<OpenOption> openOptions) {
         this.propertyStore = propertyStore;
         this.tokenHolders = tokenHolders;
-        this.versionSupplier = versionSupplier;
+        this.kernelVersion = kernelVersion;
         this.schemaStore = new SchemaStore44(
                 schemaStoreLocation,
                 idFile,
@@ -175,9 +174,7 @@ public class SchemaStore44Reader implements AutoCloseable {
     }
 
     private void maybeAddFormerLabelScanStore(List<SchemaRule44> schemaRules) {
-        KernelVersion currentVersion = versionSupplier.kernelVersion();
-
-        if (currentVersion.isLessThan(KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED)) {
+        if (kernelVersion.isLessThan(KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED)) {
             schemaRules.add(constructFormerLabelScanStoreSchemaRule());
         }
     }

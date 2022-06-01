@@ -19,27 +19,11 @@
  */
 package org.neo4j.storageengine.api;
 
-import java.util.Optional;
 import org.neo4j.io.pagecache.context.CursorContext;
 
 public interface StoreVersionCheck {
-    /**
-     * Store version of an existing store (this instance knows which store it's about).
-     *
-     * @param cursorContext underlying page cursor context.
-     * @return store version of the existing store.
-     */
-    @Deprecated
-    Optional<String> storeVersion(CursorContext cursorContext);
 
-    /**
-     * Convert a store version to String form.
-     *
-     * @param storeVersion the store version to convert
-     * @return store version of the existing store.
-     */
-    @Deprecated
-    String storeVersionToString(long storeVersion);
+    boolean isCurrentStoreVersionFullySupported(CursorContext cursorContext);
 
     /**
      * Figures out the migration target version and checks if migration to that version is possible.

@@ -74,8 +74,6 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
-import org.neo4j.storageengine.migration.RollingUpgradeCompatibility;
-import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.token.TokenHolders;
 
@@ -99,14 +97,6 @@ public interface StorageEngineFactory {
             throws IOException;
 
     /**
-     * TODO:
-     * This is a very temporary method, because there are some chicken and egg problems when gradually converting
-     * uses of {@link LegacyStoreId} to {@link StoreId}.
-     * Please, use this method only when there is no other way how to get {@link StoreId}.
-     */
-    StoreId convertLegacyStoreId(LegacyStoreId legacyStoreId);
-
-    /**
      * Returns a {@link StoreVersionCheck} which can provide both configured and existing store versions
      * and means of checking upgradability between them.
      * @return StoreVersionCheck to check store version as well as upgradability to other versions.
@@ -128,16 +118,6 @@ public interface StorageEngineFactory {
      * between cluster members that can be on different versions of the binaries.
      */
     Optional<StoreVersion> versionInformation(StoreVersionIdentifier storeVersionIdentifier);
-
-    @Deprecated
-    StoreVersion versionInformation(String storeVersion);
-
-    @Deprecated
-    StoreVersion versionInformation(LegacyStoreId storeId);
-
-    StoreVersion defaultStoreVersion();
-
-    RollingUpgradeCompatibility rollingUpgradeCompatibility();
 
     /**
      * Returns a {@link StoreMigrationParticipant} which will be able to participate in a store migration.
@@ -230,22 +210,6 @@ public interface StorageEngineFactory {
             PageCacheTracer pageCacheTracer)
             throws IOException;
 
-    @Deprecated
-    LegacyStoreId storeId(
-            FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext)
-            throws IOException;
-
-    void resetMetadata(
-            FileSystemAbstraction fs,
-            DatabaseLayout databaseLayout,
-            Config config,
-            PageCache pageCache,
-            CursorContextFactory contextFactory,
-            PageCacheTracer pageCacheTracer,
-            LegacyStoreId storeId,
-            UUID externalStoreId)
-            throws IOException;
-
     void resetMetadata(
             FileSystemAbstraction fs,
             DatabaseLayout databaseLayout,
@@ -259,17 +223,6 @@ public interface StorageEngineFactory {
 
     Optional<UUID> databaseIdUuid(
             FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext);
-
-    SchemaRuleMigrationAccess schemaRuleMigrationAccess(
-            FileSystemAbstraction fs,
-            PageCache pageCache,
-            Config config,
-            DatabaseLayout databaseLayout,
-            LogService logService,
-            String recordFormats,
-            CursorContextFactory contextFactory,
-            PageCacheTracer pageCacheTracer,
-            MemoryTracker memoryTracker);
 
     /**
      * Reads schema rules from 4.4 schema store and ignores malformed rules while doing so.

@@ -56,6 +56,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -326,6 +327,7 @@ class DbmsDiagnosticsManagerTest {
         when(database.getNamedDatabaseId()).thenReturn(databaseId);
         when(database.isStarted()).thenReturn(true);
         when(database.getDatabaseLayout()).thenReturn(DatabaseLayout.ofFlat(directory.homePath()));
+        when(database.getStoreId()).thenReturn(StoreId.generateNew("engine_1", "format_1", 1, 1));
         return database;
     }
 }

@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.storageengine.api.StoreVersion;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -83,13 +83,11 @@ class DatabaseStartupTest {
         try (FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
                 ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
                 PageCache pageCache = createPageCache(fileSystem, scheduler, PageCacheTracer.NULL)) {
-            MetaDataStore.setRecord(
-                    pageCache,
-                    databaseLayout.metadataStore(),
-                    MetaDataStore.Position.STORE_VERSION,
-                    StoreVersion.versionStringToLong("bad"),
-                    databaseLayout.getDatabaseName(),
-                    NULL_CONTEXT);
+            var fieldAccess = MetaDataStore.getFieldAccess(
+                    pageCache, databaseLayout.metadataStore(), databaseLayout.getDatabaseName(), NULL_CONTEXT);
+            StoreId originalId = fieldAccess.readStoreId();
+            fieldAccess.writeStoreId(
+                    new StoreId(originalId.getCreationTime(), originalId.getRandom(), "bad", "even_worse", 1, 1));
         }
 
         managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
@@ -105,7 +103,7 @@ class DatabaseStartupTest {
                             .causeOfFailure(databaseService.databaseId())
                             .get())
                     .hasRootCauseExactlyInstanceOf(IllegalArgumentException.class)
-                    .hasRootCauseMessage("Unknown store version 'bad'");
+                    .hasRootCauseMessage("Unknown store version 'bad-even_worse-1-1'");
         } finally {
             managementService.shutdown();
         }
@@ -127,14 +125,16 @@ class DatabaseStartupTest {
         try (FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
                 ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
                 PageCache pageCache = createPageCache(fileSystem, scheduler, PageCacheTracer.NULL)) {
-            long newTime = System.currentTimeMillis() + 1;
-            MetaDataStore.setRecord(
-                    pageCache,
-                    databaseLayout.metadataStore(),
-                    MetaDataStore.Position.TIME,
-                    newTime,
-                    databaseLayout.getDatabaseName(),
-                    NULL_CONTEXT);
+            var fieldAccess = MetaDataStore.getFieldAccess(
+                    pageCache, databaseLayout.metadataStore(), databaseLayout.getDatabaseName(), NULL_CONTEXT);
+            StoreId originalId = fieldAccess.readStoreId();
+            fieldAccess.writeStoreId(new StoreId(
+                    System.currentTimeMillis() + 1,
+                    originalId.getRandom(),
+                    originalId.getStorageEngineName(),
+                    originalId.getFormatFamilyName(),
+                    originalId.getMajorVersion(),
+                    originalId.getMinorVersion()));
         }
 
         // Try to start

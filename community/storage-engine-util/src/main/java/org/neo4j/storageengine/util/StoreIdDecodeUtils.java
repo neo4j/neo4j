@@ -19,8 +19,6 @@
  */
 package org.neo4j.storageengine.util;
 
-import static java.lang.String.format;
-
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import org.neo4j.storageengine.api.StoreIdProvider;
@@ -32,11 +30,7 @@ public class StoreIdDecodeUtils {
     private StoreIdDecodeUtils() {}
 
     public static String decodeId(StoreIdProvider storeIdProvider) throws NoSuchAlgorithmException {
-        var externalStoreId = storeIdProvider.getExternalStoreId();
-        var storeId = storeIdProvider.getLegacyStoreId();
-        var storeIdString = externalStoreId.isPresent()
-                ? externalStoreId.get().toString()
-                : format("%d%d%d", storeId.getCreationTime(), storeId.getRandomId(), storeId.getStoreVersion());
+        var storeIdString = storeIdProvider.getExternalStoreId().toString();
         var messageDigest = MessageDigest.getInstance(DEFAULT_ALGORITHM);
         messageDigest.update(storeIdString.getBytes());
         return HexString.encodeHexString(messageDigest.digest());

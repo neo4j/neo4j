@@ -19,21 +19,17 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
-
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Optional;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.impl.store.LegacyMetadataHandler;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
-import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.StoreVersionIdentifier;
 
@@ -51,34 +47,37 @@ public class RecordStoreVersionCheck implements StoreVersionCheck {
     }
 
     @Override
-    public Optional<String> storeVersion(CursorContext cursorContext) {
+    public boolean isCurrentStoreVersionFullySupported(CursorContext cursorContext) {
+        StoreVersionIdentifier currentVersion;
         try {
-            String version = readVersion(cursorContext);
-            return Optional.of(version);
-        } catch (IOException e) {
-            return Optional.empty();
+            currentVersion = readVersion(cursorContext);
+        } catch (Exception e) {
+            return false;
         }
+
+        return RecordFormatSelector.selectForStoreVersionIdentifier(currentVersion)
+                .map(format -> !format.onlyForMigration())
+                .orElse(false);
     }
 
-    @Override
-    public String storeVersionToString(long storeVersion) {
-        return StoreVersion.versionLongToString(storeVersion);
-    }
-
-    private String readVersion(CursorContext cursorContext) throws IOException {
-        long version = MetaDataStore.getRecord(pageCache, metaDataFile, STORE_VERSION, databaseName, cursorContext);
-        if (version == MetaDataRecordFormat.FIELD_NOT_PRESENT) {
-            throw new IllegalStateException("Uninitialized version field in " + metaDataFile);
+    private StoreVersionIdentifier readVersion(CursorContext cursorContext) throws IOException {
+        var fieldAccess = MetaDataStore.getFieldAccess(pageCache, metaDataFile, databaseName, cursorContext);
+        if (fieldAccess.isLegacyFieldValid()) {
+            return fieldAccess.readStoreId();
         }
-        return StoreVersion.versionLongToString(version);
+
+        return LegacyMetadataHandler.readMetadata44FromStore(pageCache, metaDataFile, databaseName, cursorContext)
+                .storeId();
     }
 
     @Override
     public MigrationCheckResult getAndCheckMigrationTargetVersion(String formatFamily, CursorContext cursorContext) {
         RecordFormats formatToMigrateFrom;
         try {
-            String currentVersion = readVersion(cursorContext);
-            formatToMigrateFrom = RecordFormatSelector.selectForVersion(currentVersion);
+            StoreVersionIdentifier currentVersion = readVersion(cursorContext);
+            formatToMigrateFrom = RecordFormatSelector.selectForStoreVersionIdentifier(currentVersion)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Unknown store version '" + currentVersion.getStoreVersionUserString() + "'"));
         } catch (Exception e) {
             return new MigrationCheckResult(MigrationOutcome.STORE_VERSION_RETRIEVAL_FAILURE, null, null, e);
         }
@@ -124,8 +123,10 @@ public class RecordStoreVersionCheck implements StoreVersionCheck {
     public UpgradeCheckResult getAndCheckUpgradeTargetVersion(CursorContext cursorContext) {
         RecordFormats formatToUpgradeFrom;
         try {
-            String currentVersion = readVersion(cursorContext);
-            formatToUpgradeFrom = RecordFormatSelector.selectForVersion(currentVersion);
+            StoreVersionIdentifier currentVersion = readVersion(cursorContext);
+            formatToUpgradeFrom = RecordFormatSelector.selectForStoreVersionIdentifier(currentVersion)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Unknown store version '" + currentVersion.getStoreVersionUserString() + "'"));
         } catch (Exception e) {
             return new UpgradeCheckResult(UpgradeOutcome.STORE_VERSION_RETRIEVAL_FAILURE, null, null, e);
         }

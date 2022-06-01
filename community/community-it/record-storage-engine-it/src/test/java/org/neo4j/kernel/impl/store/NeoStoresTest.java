@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
-import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -53,9 +52,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.LongSupplier;
-import org.assertj.core.api.Assertions;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,7 +77,6 @@ import org.neo4j.internal.recordstorage.CommandLockVerification;
 import org.neo4j.internal.recordstorage.LockVerificationMonitor;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
@@ -93,8 +89,6 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -105,7 +99,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.CommandCreationContext;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.Reference;
@@ -118,7 +111,6 @@ import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
-import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -135,7 +127,7 @@ import org.neo4j.values.storable.Values;
 
 @EphemeralNeo4jLayoutExtension
 @EphemeralPageCacheExtension
-public class NeoStoresTest {
+class NeoStoresTest {
     private static final NullLogProvider LOG_PROVIDER = NullLogProvider.getInstance();
     private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
 
@@ -171,26 +163,6 @@ public class NeoStoresTest {
             life.shutdown();
             life = null;
         }
-    }
-
-    @Test
-    void shouldCloseStoresOnInvalidStoreId() throws IOException {
-        // Given
-        RecordStorageEngineFactory sef = new RecordStorageEngineFactory();
-        StoreFactory sf = getStoreFactory(Config.defaults(), databaseLayout, fs, NullLogProvider.getInstance());
-        sef.resetMetadata(
-                fs,
-                databaseLayout,
-                Config.defaults(),
-                pageCache,
-                CONTEXT_FACTORY,
-                PageCacheTracer.NULL,
-                new LegacyStoreId(123),
-                new UUID(2, 3));
-
-        // When
-        Assertions.assertThatCode(() -> sf.openAllNeoStores(true)).isInstanceOf(IllegalArgumentException.class);
-        // Should be able to close pagecache!
     }
 
     @Test
@@ -536,32 +508,6 @@ public class NeoStoresTest {
             // then
             assertFalse(NeoStores.isStorePresent(fs, databaseLayout));
         }
-    }
-
-    private static long defaultStoreVersion() {
-        return StoreVersion.versionStringToLong(
-                RecordFormatSelector.defaultFormat().storeVersion());
-    }
-
-    private static StoreFactory newStoreFactory(
-            RecordDatabaseLayout databaseLayout, PageCache pageCache, FileSystemAbstraction fs) {
-        RecordFormats recordFormats = RecordFormatSelector.defaultFormat();
-        Config config = Config.defaults();
-        IdGeneratorFactory idGeneratorFactory =
-                new DefaultIdGeneratorFactory(fs, immediate(), PageCacheTracer.NULL, databaseLayout.getDatabaseName());
-        return new StoreFactory(
-                databaseLayout,
-                config,
-                idGeneratorFactory,
-                pageCache,
-                PageCacheTracer.NULL,
-                fs,
-                recordFormats,
-                LOG_PROVIDER,
-                CONTEXT_FACTORY,
-                writable(),
-                EMPTY_LOG_TAIL,
-                immutable.empty());
     }
 
     private void reinitializeStores(RecordDatabaseLayout databaseLayout) {

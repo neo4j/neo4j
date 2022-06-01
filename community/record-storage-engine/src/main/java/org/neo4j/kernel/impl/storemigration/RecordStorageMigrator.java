@@ -29,8 +29,6 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.batchimport.Configuration.defaultConfiguration;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess;
 import static org.neo4j.internal.recordstorage.StoreTokens.allTokens;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
@@ -65,7 +63,6 @@ import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.internal.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
-import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -73,6 +70,7 @@ import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -82,13 +80,12 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
+import org.neo4j.kernel.impl.store.LegacyMetadataHandler;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -97,8 +94,6 @@ import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.MetaDataRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.storemigration.SchemaStoreMigration.SchemaStoreMigrator;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
@@ -106,10 +101,10 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.storageengine.api.SchemaRule44;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -238,36 +233,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                 IdGeneratorFactory srcIdGeneratorFactory = new ScanOnOpenReadOnlyIdGeneratorFactory();
 
                 StoreFactory dstFactory = createStoreFactory(migrationLayout, newFormat, idGeneratorFactory);
-                StoreFactory srcFactory = createStoreFactory(directoryLayout, oldFormat, srcIdGeneratorFactory);
 
-                LegacyStoreId storeId;
-                UUID externalId;
-                KernelVersion kernelVersion;
-                UUID databaseId;
-                try (NeoStores srcStore = srcFactory.openNeoStores(false, StoreType.META_DATA)) {
-                    MetaDataStore oldMetadataStore = srcStore.getMetaDataStore();
-
-                    try (PageCursor pageCursor = oldMetadataStore.openPageCursorForReading(0, cursorContext)) {
-                        MetaDataRecord record = new MetaDataRecord();
-
-                        long creationTime = getValueOrDefault(oldMetadataStore, 0, record, pageCursor);
-                        long random = getValueOrDefault(oldMetadataStore, 1, record, pageCursor);
-                        long storeVersion = getValueOrDefault(oldMetadataStore, 4, record, pageCursor);
-
-                        long externalMostBits = getValueOrDefault(oldMetadataStore, 16, record, pageCursor);
-                        long externalLeastBits = getValueOrDefault(oldMetadataStore, 17, record, pageCursor);
-
-                        long kernelVersionBits = getValueOrDefault(oldMetadataStore, 19, record, pageCursor);
-
-                        long databaseMostBits = getValueOrDefault(oldMetadataStore, 20, record, pageCursor);
-                        long databaseLeastBits = getValueOrDefault(oldMetadataStore, 21, record, pageCursor);
-
-                        storeId = new LegacyStoreId(creationTime, random, storeVersion);
-                        externalId = new UUID(externalMostBits, externalLeastBits);
-                        kernelVersion = KernelVersion.getForVersion(Numbers.safeCastLongToByte(kernelVersionBits));
-                        databaseId = new UUID(databaseMostBits, databaseLeastBits);
-                    }
-                }
+                var metadata44 = LegacyMetadataHandler.readMetadata44FromStore(
+                        pageCache, directoryLayout.metadataStore(), directoryLayout.getDatabaseName(), cursorContext);
 
                 try (NeoStores dstStore = dstFactory.openNeoStores(
                                 true,
@@ -281,9 +249,13 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                         var dstAccess =
                                 createMigrationTargetSchemaRuleAccess(dstStore, contextFactory, memoryTracker)) {
                     MetaDataStore metaDataStore = dstStore.getMetaDataStore();
-                    metaDataStore.regenerateMetadata(storeId, externalId, cursorContext);
-                    metaDataStore.setDatabaseIdUuid(databaseId, cursorContext);
-                    metaDataStore.setKernelVersion(kernelVersion);
+                    metaDataStore.regenerateMetadata(
+                            metadata44.storeId(),
+                            metadata44.maybeExternalId() != null ? metadata44.maybeExternalId() : UUID.randomUUID(),
+                            cursorContext);
+                    if (metadata44.maybeDatabaseId() != null) {
+                        metaDataStore.setDatabaseIdUuid(metadata44.maybeDatabaseId(), cursorContext);
+                    }
 
                     dstStore.start(cursorContext);
                     var dstTokensHolders = createTokenHolders(dstStore, dstCursors);
@@ -309,32 +281,26 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                     true,
                     false,
                     ExistingTargetStrategy.SKIP);
-            MetaDataStore.setRecord(
-                    pageCache,
-                    migrationLayout.metadataStore(),
-                    STORE_VERSION,
-                    StoreVersion.versionStringToLong(newFormat.storeVersion()),
-                    migrationLayout.getDatabaseName(),
-                    cursorContext);
+            var fieldAccess = MetaDataStore.getFieldAccess(
+                    pageCache, migrationLayout.metadataStore(), migrationLayout.getDatabaseName(), cursorContext);
 
+            StoreId oldStoreId = fieldAccess.readStoreId();
+            long random = oldStoreId.getRandom();
             // Update store id if we have done a migration
             if (oldFormat.getFormatFamily() != newFormat.getFormatFamily()
                     || oldFormat.majorVersion() != newFormat.majorVersion()) {
-                MetaDataStore.setRecord(
-                        pageCache,
-                        migrationLayout.metadataStore(),
-                        RANDOM_NUMBER,
-                        new SecureRandom().nextLong(),
-                        migrationLayout.getDatabaseName(),
-                        cursorContext);
+                random = new SecureRandom().nextLong();
             }
-        }
-    }
 
-    static long getValueOrDefault(
-            MetaDataStore oldMetadataStore, int id, MetaDataRecord record, PageCursor pageCursor) {
-        MetaDataRecord recordByCursor = oldMetadataStore.getRecordByCursor(id, record, RecordLoad.FORCE, pageCursor);
-        return recordByCursor.inUse() ? recordByCursor.getValue() : -1;
+            StoreId newStoreId = new StoreId(
+                    oldStoreId.getCreationTime(),
+                    random,
+                    RecordStorageEngineFactory.NAME,
+                    newFormat.getFormatFamily().name(),
+                    newFormat.majorVersion(),
+                    newFormat.minorVersion());
+            fieldAccess.writeStoreId(newStoreId);
+        }
     }
 
     private void migrateWithBatchImporter(
@@ -439,6 +405,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
     }
 
     private NeoStores instantiateLegacyStore(RecordFormats format, RecordDatabaseLayout directoryStructure) {
+        var storesToOpen = Arrays.stream(StoreType.values())
+                .filter(storeType -> storeType != StoreType.META_DATA)
+                .toArray(StoreType[]::new);
         return new StoreFactory(
                         directoryStructure,
                         config,
@@ -452,7 +421,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                         readOnly(),
                         EMPTY_LOG_TAIL,
                         Sets.immutable.empty())
-                .openAllNeoStores(true);
+                .openNeoStores(true, storesToOpen);
     }
 
     private void prepareBatchImportMigration(

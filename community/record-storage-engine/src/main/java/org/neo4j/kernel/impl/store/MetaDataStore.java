@@ -19,16 +19,14 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import static java.lang.String.valueOf;
-import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.internal.id.EmptyIdGeneratorFactory.EMPTY_ID_GENERATOR_FACTORY;
 import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
-import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.RECORD_SIZE;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -51,21 +49,17 @@ import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.StoreFileClosedException;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.ExternalStoreId;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StoreId;
-import org.neo4j.storageengine.api.StoreVersion;
+import org.neo4j.storageengine.api.StoreIdSerialization;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.util.HighestTransactionId;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
@@ -74,7 +68,9 @@ import org.neo4j.util.concurrent.OutOfOrderSequence;
 public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHeader> implements MetadataProvider {
     private static final String TYPE_DESCRIPTOR = "NeoStore";
     private static final long NOT_INITIALIZED = Long.MIN_VALUE;
-    static final UUID NOT_INITIALIZED_UUID = new UUID(NOT_INITIALIZED, NOT_INITIALIZED);
+    // Stores created post 5.0 and migrated 4.4 stores must have LEGACY_STORE_VERSION position set to this value
+    // if you ever wonder what this is, it is just a random 8 byte prime number
+    private static final long LEGACY_STORE_VERSION_VALUE = 0xcf1bbcdcb7a56463L;
 
     // MetaDataStore always big-endian and never multi-versioned, so we can read store version regardless of endianness
     // of other stores
@@ -83,42 +79,34 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
             immutable.of(PageCacheOpenOptions.MULTI_VERSIONED);
 
     // Positions of meta-data records
-    public enum Position {
-        EXTERNAL_STORE_UUID_MOST_SIGN_BITS(
+    // Metadata store is split into fixed 8 byte slots.
+    // Most values stored in the store take more than one slot.
+    // Position is information about which slots are occupied by which value.
+    private enum Position {
+        EXTERNAL_STORE_UUID(
                 0,
-                "Database identifier exposed as external store identity. "
-                        + "Generated on creation and never updated. Most significant bits."),
-        EXTERNAL_STORE_UUID_LEAST_SIGN_BITS(
+                2,
+                "Database identifier exposed as external store identity. Generated on creation and never updated"),
+        DATABASE_ID(2, 2, "The last used DatabaseId for this database"),
+        LEGACY_STORE_VERSION(
+                4,
                 1,
-                "Database identifier exposed as external store identity. "
-                        + "Generated on creation and never updated. Least significant bits"),
-        DATABASE_ID_MOST_SIGN_BITS(2, "The last used DatabaseId for this database. Most significant bits"),
-        DATABASE_ID_LEAST_SIGN_BITS(3, "The last used DatabaseId for this database. Least significant bits"),
-        STORE_VERSION(4, "Store format version"),
-        TIME(5, "Creation time"),
-        RANDOM_NUMBER(6, "Random number for store id");
-        public static final Position[] POSITIONS_VALUES = Position.values();
+                "Legacy store format version. This field is used from 5.0 onwards only to distinguish non-migrated pre 5.0 metadata stores."),
+        STORE_ID(5, 8, "Store ID");
 
-        private final int id;
+        private final int firstSlotId;
+        private final int slotCount;
         private final String description;
 
-        Position(int id, String description) {
-            this.id = id;
+        Position(int firstSlotId, int slotCount, String description) {
+            this.firstSlotId = firstSlotId;
+            this.slotCount = slotCount;
             this.description = description;
-        }
-
-        public int id() {
-            return id;
-        }
-
-        public String description() {
-            return description;
         }
     }
 
-    private volatile long creationTime = NOT_INITIALIZED;
-    private volatile long randomNumber = NOT_INITIALIZED;
-    private volatile long storeIdStoreVersion = NOT_INITIALIZED;
+    private volatile StoreId storeId;
+    private volatile long legacyStoreVersion = LEGACY_STORE_VERSION_VALUE;
     private volatile UUID externalStoreUUID;
     private volatile UUID databaseUUID;
 
@@ -192,14 +180,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     protected void initialiseNewStoreFile(FileFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
         super.initialiseNewStoreFile(flushEvent, cursorContext);
         StoreId storeId = storeIdFactory.get();
-        // TODO: this is am ugly temporary solution until the new Store ID is stored in meta data store
-        var format =
-                RecordFormatSelector.selectForStoreVersionIdentifier(storeId).orElseThrow();
-        LegacyStoreId legacyStoreId = new LegacyStoreId(
-                storeId.getCreationTime(),
-                storeId.getRandom(),
-                StoreVersion.versionStringToLong(format.storeVersion()));
-        generateMetadataFile(legacyStoreId, UUID.randomUUID(), NOT_INITIALIZED_UUID, cursorContext);
+        generateMetadataFile(storeId, UUID.randomUUID(), null, cursorContext);
     }
 
     @Override
@@ -212,8 +193,9 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
 
     @Override
     public long getHighId() {
-        Position[] values = Position.POSITIONS_VALUES;
-        return values[values.length - 1].id + 1;
+        Position[] values = Position.values();
+        Position lastPosition = values[values.length - 1];
+        return lastPosition.firstSlotId + lastPosition.slotCount + 1;
     }
 
     public void setKernelVersion(KernelVersion kernelVersion) {
@@ -252,182 +234,36 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         highestCommittedTransaction.set(transactionId, checksum, commitTimestamp);
     }
 
-    /**
-     * Writes a record in a neostore file.
-     * This method only works for neostore files of the current version.
-     *
-     * @param pageCache {@link PageCache} the {@code neostore} file lives in.
-     * @param neoStore {@link Path} pointing to the neostore.
-     * @param position record {@link Position}.
-     * @param value value to write in that record.
-     * @param databaseName name of database this metadata store belongs to.
-     * @param cursorContext underlying page cursor context.
-     * @return the previous value before writing.
-     * @throws IOException if any I/O related error occurs.
-     */
-    public static long setRecord(
-            PageCache pageCache,
-            Path neoStore,
-            Position position,
-            long value,
-            String databaseName,
-            CursorContext cursorContext)
-            throws IOException {
-        long previousValue = NOT_INITIALIZED;
-        int pageSize = pageCache.pageSize();
-        try (PagedFile pagedFile = pageCache.map(neoStore, pageSize, databaseName, REQUIRED_OPTIONS)) {
-            int offset = offset(position);
-            try (PageCursor cursor = pagedFile.io(0, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext)) {
-                if (cursor.next()) {
-                    // We're overwriting a record, get the previous value
-                    cursor.setOffset(offset);
-                    byte inUse = cursor.getByte();
-                    long record = cursor.getLong();
-
-                    if (inUse == Record.IN_USE.byteValue()) {
-                        previousValue = record;
-                    }
-
-                    // Write the value
-                    cursor.setOffset(offset);
-                    cursor.putByte(Record.IN_USE.byteValue());
-                    cursor.putLong(value);
-                    if (cursor.checkAndClearBoundsFlag()) {
-                        MetaDataRecord neoStoreRecord = new MetaDataRecord();
-                        neoStoreRecord.setId(position.id);
-                        throw new UnderlyingStorageException(buildOutOfBoundsExceptionMessage(
-                                neoStoreRecord,
-                                0,
-                                offset,
-                                RECORD_SIZE,
-                                pageSize,
-                                neoStore.toAbsolutePath().toString()));
-                    }
-                }
-            }
-        }
-        return previousValue;
-    }
-
-    private static int offset(Position position) {
-        return RECORD_SIZE * position.id;
-    }
-
-    /**
-     * Reads a record from a neostore file.
-     *
-     * @param pageCache {@link PageCache} the {@code neostore} file lives in.
-     * @param neoStore {@link Path} pointing to the neostore.
-     * @param position record {@link Position}.
-     * @param cursorContext underlying page cursor context.
-     * @return the read record value specified by {@link Position}.
-     */
-    public static long getRecord(
-            PageCache pageCache, Path neoStore, Position position, String databaseName, CursorContext cursorContext)
-            throws IOException {
-        var recordFormat = new MetaDataRecordFormat();
-        long value = FIELD_NOT_PRESENT;
-        try (PagedFile pagedFile =
-                pageCache.map(neoStore, pageCache.pageSize(), databaseName, REQUIRED_OPTIONS, DISABLED)) {
-            int payloadSize = pagedFile.payloadSize();
-            if (pagedFile.getLastPageId() >= 0) {
-                try (PageCursor cursor = pagedFile.io(0, PF_SHARED_READ_LOCK, cursorContext)) {
-                    if (cursor.next()) {
-                        MetaDataRecord record = new MetaDataRecord();
-                        record.setId(position.id);
-                        do {
-                            recordFormat.read(record, cursor, RecordLoad.CHECK, RECORD_SIZE, payloadSize / RECORD_SIZE);
-                            if (record.inUse()) {
-                                value = record.getValue();
-                            } else {
-                                value = FIELD_NOT_PRESENT;
-                            }
-                        } while (cursor.shouldRetry());
-                        if (cursor.checkAndClearBoundsFlag()) {
-                            int offset = offset(position);
-                            throw new UnderlyingStorageException(buildOutOfBoundsExceptionMessage(
-                                    record,
-                                    0,
-                                    offset,
-                                    RECORD_SIZE,
-                                    payloadSize,
-                                    neoStore.toAbsolutePath().toString()));
-                        }
-                    }
-                }
-            }
-        }
-        return value;
-    }
-
     @Override
-    public void regenerateMetadata(LegacyStoreId storeId, UUID externalStoreUUID, CursorContext cursorContext) {
-        generateMetadataFile(storeId, externalStoreUUID, NOT_INITIALIZED_UUID, cursorContext);
+    public void regenerateMetadata(StoreId storeId, UUID externalStoreUUID, CursorContext cursorContext) {
+        generateMetadataFile(storeId, externalStoreUUID, null, cursorContext);
         readMetadataFile(cursorContext);
     }
 
     @Override
     public void setDatabaseIdUuid(UUID uuid, CursorContext cursorContext) {
         assertNotClosed();
-        generateMetadataFile(getLegacyStoreId(), externalStoreUUID, uuid, cursorContext);
+        generateMetadataFile(getStoreId(), externalStoreUUID, uuid, cursorContext);
         readMetadataFile(cursorContext);
-    }
-
-    public static Optional<UUID> getDatabaseIdUuid(
-            PageCache pageCache, Path neoStore, String databaseName, CursorContext cursorContext) {
-        try {
-            long msb = getRecord(pageCache, neoStore, Position.DATABASE_ID_MOST_SIGN_BITS, databaseName, cursorContext);
-            long lsb =
-                    getRecord(pageCache, neoStore, Position.DATABASE_ID_LEAST_SIGN_BITS, databaseName, cursorContext);
-            var uuid = new UUID(msb, lsb);
-            return wrapDatabaseIdUuid(uuid);
-        } catch (IOException e) {
-            return Optional.empty();
-        }
     }
 
     @Override
     public Optional<UUID> getDatabaseIdUuid(CursorContext cursorContext) {
         assertNotClosed();
         var databaseUUID = this.databaseUUID;
-        return isNotInitializedUUID(databaseUUID) ? Optional.empty() : Optional.of(databaseUUID);
-    }
-
-    @Override
-    public LegacyStoreId getLegacyStoreId() {
-        return new LegacyStoreId(getCreationTime(), getRandomNumber(), getStoreVersion());
+        return Optional.ofNullable(databaseUUID);
     }
 
     @Override
     public StoreId getStoreId() {
-        return LegacyMetadataHandler.storeIdFromLegacyMetadata(getCreationTime(), getRandomNumber(), getStoreVersion());
+        assertNotClosed();
+        return storeId;
     }
 
     @Override
-    public Optional<ExternalStoreId> getExternalStoreId() {
+    public ExternalStoreId getExternalStoreId() {
         assertNotClosed();
-        var externalStoreUUID = this.externalStoreUUID;
-        return isNotInitializedUUID(externalStoreUUID)
-                ? Optional.empty()
-                : Optional.of(new ExternalStoreId(externalStoreUUID));
-    }
-
-    public static LegacyStoreId getStoreId(
-            PageCache pageCache, Path neoStore, String databaseName, CursorContext cursorContext) throws IOException {
-        return new LegacyStoreId(
-                getRecord(pageCache, neoStore, Position.TIME, databaseName, cursorContext),
-                getRecord(pageCache, neoStore, Position.RANDOM_NUMBER, databaseName, cursorContext),
-                getRecord(pageCache, neoStore, Position.STORE_VERSION, databaseName, cursorContext));
-    }
-
-    public long getCreationTime() {
-        assertNotClosed();
-        return creationTime;
-    }
-
-    public long getRandomNumber() {
-        assertNotClosed();
-        return randomNumber;
+        return new ExternalStoreId(externalStoreUUID);
     }
 
     @Override
@@ -444,11 +280,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     @Override
     public long incrementAndGetVersion() {
         return logVersion.incrementAndGet();
-    }
-
-    public long getStoreVersion() {
-        assertNotClosed();
-        return storeIdStoreVersion;
     }
 
     public long getLatestConstraintIntroducingTx() {
@@ -518,24 +349,16 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     }
 
     public void logRecords(final DiagnosticsLogger logger) {
-        for (Position position : Position.POSITIONS_VALUES) {
-            var logRecord =
+        for (Position position : Position.values()) {
+            var value =
                     switch (position) {
-                        case TIME -> new PositionLogRecord(creationTime);
-                        case RANDOM_NUMBER -> new PositionLogRecord(randomNumber);
-                        case STORE_VERSION -> new PositionLogRecord(
-                                valueOf(storeIdStoreVersion),
-                                " (" + StoreVersion.versionLongToString(storeIdStoreVersion) + ")");
-                        case EXTERNAL_STORE_UUID_MOST_SIGN_BITS -> new PositionLogRecord(
-                                externalStoreUUID.getMostSignificantBits());
-                        case EXTERNAL_STORE_UUID_LEAST_SIGN_BITS -> new PositionLogRecord(
-                                externalStoreUUID.getLeastSignificantBits());
-                        case DATABASE_ID_MOST_SIGN_BITS -> new PositionLogRecord(databaseUUID.getMostSignificantBits());
-                        case DATABASE_ID_LEAST_SIGN_BITS -> new PositionLogRecord(
-                                databaseUUID.getLeastSignificantBits());
+                        case STORE_ID -> storeId;
+                        case EXTERNAL_STORE_UUID -> externalStoreUUID;
+                        case DATABASE_ID -> databaseUUID;
+                        case LEGACY_STORE_VERSION -> Long.toString(legacyStoreVersion);
                     };
 
-            logger.log(position.name() + " (" + position.description() + "): " + logRecord);
+            logger.log(position.name() + " (" + position.description + "): " + value);
         }
     }
 
@@ -573,16 +396,22 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     }
 
     private void generateMetadataFile(
-            LegacyStoreId storeId, UUID externalStoreUUID, UUID databaseUUID, CursorContext cursorContext) {
+            StoreId storeId, UUID externalStoreUUID, UUID databaseUUID, CursorContext cursorContext) {
         try (var cursor = openPageCursorForWriting(0, cursorContext)) {
             if (cursor.next()) {
                 writeLongRecord(cursor, externalStoreUUID.getMostSignificantBits());
                 writeLongRecord(cursor, externalStoreUUID.getLeastSignificantBits());
-                writeLongRecord(cursor, databaseUUID.getMostSignificantBits());
-                writeLongRecord(cursor, databaseUUID.getLeastSignificantBits());
-                writeLongRecord(cursor, storeId.getStoreVersion());
-                writeLongRecord(cursor, storeId.getCreationTime());
-                writeLongRecord(cursor, storeId.getRandomId());
+                if (databaseUUID != null) {
+                    writeLongRecord(cursor, databaseUUID.getMostSignificantBits());
+                    writeLongRecord(cursor, databaseUUID.getLeastSignificantBits());
+                } else {
+                    writeEmptyRecord(cursor);
+                    writeEmptyRecord(cursor);
+                }
+                writeLongRecord(cursor, LEGACY_STORE_VERSION_VALUE);
+
+                writeStoreId(cursor, storeId);
+
             } else {
                 throw new IllegalStateException("Unable to write metadata store page.");
             }
@@ -594,9 +423,39 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         }
     }
 
+    private void writeStoreId(PageCursor cursor, StoreId storeId) throws IOException {
+        ByteBuffer buffer = allocateBufferForPosition(Position.STORE_ID);
+        StoreIdSerialization.serializeWithFixedSize(storeId, buffer);
+        buffer.flip();
+
+        while (buffer.hasRemaining()) {
+            writeLongRecord(cursor, buffer.getLong());
+        }
+    }
+
+    private StoreId readStoreId(PageCursor cursor) throws IOException {
+        ByteBuffer buffer = allocateBufferForPosition(Position.STORE_ID);
+        cursor.mark();
+        do {
+            cursor.setOffsetToMark();
+            buffer.clear();
+            while (buffer.hasRemaining()) {
+                buffer.putLong(readLongRecord(cursor));
+            }
+        } while (cursor.shouldRetry());
+        buffer.flip();
+
+        return StoreIdSerialization.deserializeWithFixedSize(buffer);
+    }
+
     private void writeLongRecord(PageCursor cursor, long value) {
         cursor.putByte(Record.IN_USE.byteValue());
         cursor.putLong(value);
+    }
+
+    private void writeEmptyRecord(PageCursor cursor) {
+        cursor.putByte(Record.NOT_IN_USE.byteValue());
+        cursor.putLong(0);
     }
 
     private long readLongRecord(PageCursor cursor) {
@@ -607,20 +466,28 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     private void readMetadataFile(CursorContext cursorContext) {
         try (var cursor = openPageCursorForReading(0, cursorContext)) {
             if (cursor.next()) {
-                LegacyStoreId metadataStoreId;
                 UUID metadataExternalUUID;
                 UUID metadataDatabaseUUID;
+                long metadataLegacyStoreVersion;
                 do {
                     cursor.setOffset(0);
                     metadataExternalUUID = new UUID(readLongRecord(cursor), readLongRecord(cursor));
+                    cursor.mark();
+                    boolean databaseIdInUse = cursor.getByte() == Record.IN_USE.byteValue();
+                    cursor.setOffsetToMark();
                     metadataDatabaseUUID = new UUID(readLongRecord(cursor), readLongRecord(cursor));
-                    long storeVersion = readLongRecord(cursor);
-                    metadataStoreId = new LegacyStoreId(readLongRecord(cursor), readLongRecord(cursor), storeVersion);
+                    if (!databaseIdInUse) {
+                        metadataDatabaseUUID = null;
+                    }
+                    metadataLegacyStoreVersion = readLongRecord(cursor);
                 } while (cursor.shouldRetry());
 
-                creationTime = metadataStoreId.getCreationTime();
-                randomNumber = metadataStoreId.getRandomId();
-                storeIdStoreVersion = metadataStoreId.getStoreVersion();
+                if (metadataLegacyStoreVersion != LEGACY_STORE_VERSION_VALUE) {
+                    throw new IllegalStateException("Trying to read metadata store in unrecognised format");
+                }
+
+                storeId = readStoreId(cursor);
+                legacyStoreVersion = metadataLegacyStoreVersion;
                 externalStoreUUID = metadataExternalUUID;
                 databaseUUID = metadataDatabaseUUID;
             }
@@ -629,22 +496,135 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         }
     }
 
-    private static Optional<UUID> wrapDatabaseIdUuid(UUID uuid) {
-        return isNotInitializedUUID(uuid) ? Optional.empty() : Optional.of(uuid);
+    /**
+     * Obtaining access to read or write fields when the store is not started.
+     */
+    public static FieldAccess getFieldAccess(
+            PageCache pageCache, Path neoStore, String databaseName, CursorContext cursorContext) {
+
+        return new FieldAccess(pageCache, neoStore, databaseName, cursorContext);
     }
 
-    private static boolean isNotInitializedUUID(UUID uuid) {
-        return NOT_INITIALIZED_UUID.equals(uuid);
+    private static ByteBuffer allocateBufferForPosition(Position position) {
+        return ByteBuffer.allocate(position.slotCount * Long.BYTES);
     }
 
-    private record PositionLogRecord(String value, String additionalDescriptor) {
-        private PositionLogRecord(long value) {
-            this(valueOf(value), EMPTY);
+    /**
+     * Access to read or write fields when the store is not started.
+     */
+    public static class FieldAccess {
+        private final PageCache pageCache;
+        private final Path neoStore;
+        private final String databaseName;
+        private final CursorContext cursorContext;
+
+        private FieldAccess(PageCache pageCache, Path neoStore, String databaseName, CursorContext cursorContext) {
+            this.pageCache = pageCache;
+            this.neoStore = neoStore;
+            this.databaseName = databaseName;
+            this.cursorContext = cursorContext;
         }
 
-        @Override
-        public String toString() {
-            return value + additionalDescriptor;
+        public StoreId readStoreId() throws IOException {
+            ByteBuffer buffer = allocateBufferForPosition(Position.STORE_ID);
+            if (!readValue(Position.STORE_ID, buffer)) {
+                // Store ID must always be present in a valid metadata store
+                throw new IllegalStateException("Trying to read Store ID field from uninitialised metadata store");
+            }
+
+            return StoreIdSerialization.deserializeWithFixedSize(buffer);
         }
+
+        public Optional<UUID> readDatabaseUUID() throws IOException {
+            var uuid = readUUID(Position.DATABASE_ID);
+            return Optional.ofNullable(uuid);
+        }
+
+        private UUID readUUID(Position position) throws IOException {
+            ByteBuffer buffer = allocateBufferForPosition(position);
+            if (!readValue(position, buffer)) {
+                return null;
+            }
+
+            return new UUID(buffer.getLong(), buffer.getLong());
+        }
+
+        /**
+         * There is a field with value set to a constant in 5.0+ metadata stores.
+         * If the field is not set to the constant it means that the metadata store is either an unmigrated 4.4 store
+         * or simply some garbage.
+         * This field is very important in migration code to determine if a database store is unmigrated 4.4 store.
+         */
+        public boolean isLegacyFieldValid() throws IOException {
+            ByteBuffer buffer = allocateBufferForPosition(Position.LEGACY_STORE_VERSION);
+            if (!readValue(Position.LEGACY_STORE_VERSION, buffer)) {
+                return false;
+            }
+
+            return LEGACY_STORE_VERSION_VALUE == buffer.getLong();
+        }
+
+        public void writeStoreId(StoreId storeId) throws IOException {
+            ByteBuffer buffer = allocateBufferForPosition(Position.STORE_ID);
+            StoreIdSerialization.serializeWithFixedSize(storeId, buffer);
+            buffer.flip();
+            writeValue(Position.STORE_ID, buffer);
+        }
+
+        private boolean readValue(Position position, ByteBuffer value) throws IOException {
+            boolean inUse = false;
+            try (PagedFile pagedFile =
+                    pageCache.map(neoStore, pageCache.pageSize(), databaseName, REQUIRED_OPTIONS, DISABLED)) {
+                if (pagedFile.getLastPageId() < 0) {
+                    return false;
+                }
+
+                try (PageCursor cursor = pagedFile.io(0, PF_SHARED_READ_LOCK, cursorContext)) {
+                    if (!cursor.next()) {
+                        return false;
+                    }
+
+                    value.mark();
+
+                    do {
+                        value.reset();
+                        for (int slot = 0; slot < position.slotCount; slot++) {
+                            cursor.setOffset(RECORD_SIZE * (position.firstSlotId + slot));
+                            inUse = cursor.getByte() == Record.IN_USE.byteValue();
+                            if (!inUse) {
+                                break;
+                            }
+                            value.putLong(cursor.getLong());
+                        }
+                    } while (cursor.shouldRetry());
+                }
+            }
+
+            value.flip();
+            return inUse;
+        }
+
+        private void writeValue(Position position, ByteBuffer value) throws IOException {
+            try (PagedFile pagedFile = pageCache.map(neoStore, pageCache.pageSize(), databaseName, REQUIRED_OPTIONS)) {
+                try (PageCursor cursor = pagedFile.io(0, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext)) {
+                    // This should not happen since the cursor is not open with PF_NO_GROW option,
+                    // but better safe than sorry.
+                    if (!cursor.next()) {
+                        throw new IllegalStateException("Failed to write metadata store");
+                    }
+
+                    for (int slot = 0; slot < position.slotCount; slot++) {
+                        cursor.setOffset(RECORD_SIZE * (position.firstSlotId + slot));
+                        cursor.putByte(Record.IN_USE.byteValue());
+                        cursor.putLong(value.getLong());
+                    }
+                }
+            }
+        }
+    }
+
+    public static long lastOccupiedSlot() {
+        var lastPosition = Position.values()[Position.values().length - 1];
+        return lastPosition.firstSlotId + lastPosition.slotCount - 1;
     }
 }

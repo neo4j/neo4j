@@ -60,7 +60,6 @@ import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandStream;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -361,11 +360,6 @@ class ParallelRecoveryVisitorTest {
 
         @Override
         public void listStorageFiles(Collection<StoreFileMetadata> atomic, Collection<StoreFileMetadata> replayable) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public LegacyStoreId getStoreId() {
             throw new UnsupportedOperationException();
         }
 
