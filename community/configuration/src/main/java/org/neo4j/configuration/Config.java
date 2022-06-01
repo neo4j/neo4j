@@ -87,11 +87,11 @@ public class Config implements Configuration {
             "browser.",
             "server.",
             "internal.",
+            "client.",
             // temporary namespaces
             "cluster.",
             "fabric.",
-            "apoc.",
-            "clients.");
+            "apoc.");
 
     public static final class Builder {
         // We use tree sets with comparators for setting classes and migrators to have

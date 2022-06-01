@@ -175,7 +175,7 @@ public class BuiltInDbmsProcedures {
                         "dbms.security.auth_enabled",
                         "browser.remote_content_hostname_whitelist",
                         "browser.post_connect_cmd",
-                        "clients.allow_telemetry",
+                        "client.allow_telemetry",
                         "server.metrics.prefix",
                         "server.metrics.namespaces.enabled",
                         "dbms.default_database")

@@ -20,9 +20,11 @@
 package org.neo4j.server.configuration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.server.configuration.ConfigurableServerModules.TRANSACTIONAL_ENDPOINTS;
+import static org.neo4j.server.configuration.ServerSettings.allow_telemetry;
 import static org.neo4j.server.configuration.ServerSettings.http_auth_allowlist;
 import static org.neo4j.server.configuration.ServerSettings.http_enabled_modules;
 import static org.neo4j.server.configuration.ServerSettings.third_party_packages;
@@ -103,5 +105,15 @@ class ServerSettingsMigratorTest {
         Config config = Config.newBuilder().fromFile(confFile).build();
 
         assertEquals(Set.of(TRANSACTIONAL_ENDPOINTS), config.get(http_enabled_modules));
+    }
+
+    @Test
+    void migrateClientsTelemetrySetting() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(confFile, List.of("client.allow_telemetry=false"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+
+        assertFalse(config.get(allow_telemetry));
     }
 }

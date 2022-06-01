@@ -218,7 +218,7 @@ public class ServerSettings implements SettingsDeclaration {
     @SuppressWarnings("unused") // accessed from browser and other graph apps
     @Description("Configure client applications such as Browser and Bloom to send Product Analytics data.")
     public static final Setting<Boolean> allow_telemetry =
-            newBuilder("clients.allow_telemetry", BOOL, true).build();
+            newBuilder("client.allow_telemetry", BOOL, true).build();
 
     @Internal
     @Description("The legacy manage endpoint. This is kept for back-compatibility purpose.")

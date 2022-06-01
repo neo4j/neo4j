@@ -107,7 +107,7 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest {
 
         assertEquals(stringValue("browser.post_connect_cmd"), config.get(0)[0]);
         assertEquals(stringValue("browser.remote_content_hostname_whitelist"), config.get(1)[0]);
-        assertEquals(stringValue("clients.allow_telemetry"), config.get(2)[0]);
+        assertEquals(stringValue("client.allow_telemetry"), config.get(2)[0]);
         assertEquals(stringValue("dbms.default_database"), config.get(3)[0]);
         assertEquals(stringValue("dbms.security.auth_enabled"), config.get(4)[0]);
     }

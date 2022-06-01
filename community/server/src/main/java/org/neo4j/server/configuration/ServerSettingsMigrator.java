@@ -21,6 +21,7 @@ package org.neo4j.server.configuration;
 
 import static org.neo4j.configuration.SettingMigrators.migrateSettingNameChange;
 import static org.neo4j.configuration.SettingMigrators.migrateSettingRemoval;
+import static org.neo4j.server.configuration.ServerSettings.allow_telemetry;
 import static org.neo4j.server.configuration.ServerSettings.http_auth_allowlist;
 import static org.neo4j.server.configuration.ServerSettings.http_enabled_modules;
 import static org.neo4j.server.configuration.ServerSettings.third_party_packages;
@@ -39,6 +40,7 @@ public class ServerSettingsMigrator implements SettingMigrator {
         migrateSettingNameChange(values, log, "dbms.unmanaged_extension_classes", third_party_packages);
         migrateSettingNameChange(values, log, "dbms.threads.worker_count", webserver_max_threads);
         migrateSettingNameChange(values, log, "dbms.http_enabled_modules", http_enabled_modules);
+        migrateSettingNameChange(values, log, "clients.allow_telemetry", allow_telemetry);
 
         migrateSettingRemoval(values, log, "dbms.rest.transaction.idle_timeout", "It no longer has any effect");
     }
