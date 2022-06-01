@@ -114,42 +114,6 @@ object RelationshipChain {
   }
 }
 
-object InvalidNodePattern {
-
-  def apply(id: Variable, labels: Seq[LabelName], properties: Option[Expression])(position: InputPosition) =
-    new InvalidNodePattern(id)(position)
-}
-
-class InvalidNodePattern(
-  val id: LogicalVariable
-)(
-  position: InputPosition
-) extends NodePattern(Some(id), None, None, None)(position) {
-
-  override def productPrefix: String = "InvalidNodePattern"
-
-  override def productArity: Int = 1
-
-  override def productIterator: Iterator[Any] = Iterator(id)
-
-  override def productElement(n: Int): Any = productIterator.toList(n)
-
-  override def toString: String = s"$productPrefix(${productIterator.mkString(",")})"
-
-  override def canEqual(other: Any): Boolean = other.isInstanceOf[InvalidNodePattern]
-
-  override def equals(other: Any): Boolean = other match {
-    case that: InvalidNodePattern =>
-      (that canEqual this) &&
-        id == that.id
-    case _ => false
-  }
-
-  override def hashCode(): Int = 31 * id.hashCode()
-
-  override def allVariables: Set[LogicalVariable] = Set.empty
-}
-
 case class NodePattern(
   variable: Option[LogicalVariable],
   labelExpression: Option[LabelExpression],

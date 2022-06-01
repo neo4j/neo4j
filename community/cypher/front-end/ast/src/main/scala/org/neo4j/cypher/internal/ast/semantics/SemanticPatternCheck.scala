@@ -22,7 +22,6 @@ import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.InvalidNodePattern
 import org.neo4j.cypher.internal.expressions.LabelExpression
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonDisjunction
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -241,10 +240,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         check(ctx, x.element) chain
           check(ctx, x.relationship) chain
           check(ctx, x.rightNode)
-
-      case x: InvalidNodePattern =>
-        checkNodeProperties(ctx, x.properties) chain
-          error(s"Parentheses are required to identify nodes in patterns, i.e. (${x.id.name})", x.position)
 
       case x: NodePattern =>
         checkNodeProperties(ctx, x.properties) chain

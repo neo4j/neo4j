@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.ir.helpers
 
 import org.neo4j.cypher.internal.expressions.EveryPath
-import org.neo4j.cypher.internal.expressions.InvalidNodePattern
 import org.neo4j.cypher.internal.expressions.LabelExpression.getRelTypes
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.NodePattern
@@ -76,8 +75,6 @@ object PatternConverters {
       val relationshipLength = chain.relationship.length.asPatternLength
 
       chain.element match {
-        case _: InvalidNodePattern => throw new IllegalArgumentException("Invalid node pattern")
-
         // (a)->[r]->(b)
         case leftNode: NodePattern =>
           val leftNodeName =
