@@ -23,6 +23,7 @@ import java.net.URI;
 
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction.Type;
@@ -186,6 +187,11 @@ public class TransactionHandle implements TransactionTerminationHandle
         {
             registry.forget( id );
         }
+    }
+
+    public LoginContext getLoginContext()
+    {
+        return loginContext;
     }
 
     boolean hasTransactionContext()

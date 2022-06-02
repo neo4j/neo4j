@@ -43,10 +43,11 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.server.http.cypher.format.api.InputEventStream;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 import org.neo4j.server.rest.Neo4jError;
-import org.neo4j.server.rest.dbms.AuthorizedRequestWrapper;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNullElse;
+
+import static org.neo4j.server.rest.dbms.AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest;
 import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
 
 public abstract class AbstractCypherResource
@@ -106,21 +107,21 @@ public abstract class AbstractCypherResource
 
     @POST
     @Path( "/{id}" )
-    public Response executeStatements( @PathParam( "id" ) long id, InputEventStream inputEventStream )
+    public Response executeStatements( @PathParam( "id" ) long id, InputEventStream inputEventStream, @Context HttpServletRequest request )
     {
         try ( var memoryTracker = createMemoryTracker() )
         {
-            return executeInExistingTransaction( id, inputEventStream, memoryTracker, false );
+            return executeInExistingTransaction( id, inputEventStream, memoryTracker, false, getLoginContextFromHttpServletRequest( request ) );
         }
     }
 
     @POST
     @Path( "/{id}/commit" )
-    public Response commitTransaction( @PathParam( "id" ) long id, InputEventStream inputEventStream )
+    public Response commitTransaction( @PathParam( "id" ) long id, InputEventStream inputEventStream, @Context HttpServletRequest request )
     {
         try ( var memoryTracker = createMemoryTracker() )
         {
-            return executeInExistingTransaction( id, inputEventStream, memoryTracker, true );
+            return executeInExistingTransaction( id, inputEventStream, memoryTracker, true, getLoginContextFromHttpServletRequest( request ) );
         }
     }
 
@@ -157,7 +158,7 @@ public abstract class AbstractCypherResource
 
     @DELETE
     @Path( "/{id}" )
-    public Response rollbackTransaction( @PathParam( "id" ) final long id )
+    public Response rollbackTransaction( @PathParam( "id" ) final long id, @Context HttpServletRequest request )
     {
         try ( var memoryTracker = createMemoryTracker() )
         {
@@ -177,7 +178,7 @@ public abstract class AbstractCypherResource
                         TransactionHandle transactionHandle;
                         try
                         {
-                            transactionHandle = transactionFacade.terminate( id );
+                            transactionHandle = transactionFacade.terminate( id, getLoginContextFromHttpServletRequest( request ) );
                         }
                         catch ( TransactionLifecycleException e )
                         {
@@ -205,14 +206,14 @@ public abstract class AbstractCypherResource
     private TransactionHandle createNewTransactionHandle( TransactionFacade transactionFacade, HttpServletRequest request, HttpHeaders headers,
                                                           MemoryTracker memoryTracker, boolean implicitTransaction )
     {
-        LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest( request );
+        LoginContext loginContext = getLoginContextFromHttpServletRequest( request );
         long customTransactionTimeout = getTransactionTimeout( headers, log );
         return transactionFacade
                 .newTransactionHandle( uriScheme, implicitTransaction, loginContext, loginContext.connectionInfo(), memoryTracker, customTransactionTimeout );
     }
 
-    private Response executeInExistingTransaction( long transactionId, InputEventStream inputEventStream, MemoryTracker memoryTracker,
-                                                   boolean finishWithCommit )
+    private Response executeInExistingTransaction( long transactionId, InputEventStream inputEventStream, MemoryTracker memoryTracker, boolean finishWithCommit,
+                                                   LoginContext requestingUserLoginContext )
     {
         InputEventStream inputStream = ensureNotNull( inputEventStream );
 
@@ -233,7 +234,7 @@ public abstract class AbstractCypherResource
                     TransactionHandle transactionHandle;
                     try
                     {
-                        transactionHandle = transactionFacade.findTransactionHandle( transactionId );
+                        transactionHandle = transactionFacade.findTransactionHandle( transactionId, requestingUserLoginContext );
                     }
                     catch ( TransactionLifecycleException e )
                     {

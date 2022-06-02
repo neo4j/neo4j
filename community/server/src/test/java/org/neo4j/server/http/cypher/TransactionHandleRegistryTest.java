@@ -19,12 +19,16 @@
  */
 package org.neo4j.server.http.cypher;
 
+import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.time.Clocks;
@@ -39,6 +43,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -278,5 +283,122 @@ class TransactionHandleRegistryTest
         assertThrows( InvalidTransactionId.class, () -> registry.terminate( 456 ) );
 
         verifyNoMoreInteractions( memoryPool );
+    }
+
+    @Test
+    void sameUserShouldBeAbleToAcquireTransaction() throws Exception
+    {
+        // Given
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        var memoryPool = mock( MemoryPool.class );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), Duration.ZERO, logProvider, memoryPool );
+        TransactionHandle handle = mock( TransactionHandle.class );
+        LoginContext loginContext = mockLoginContext( "Johannes" );
+        when( handle.getLoginContext() ).thenReturn( loginContext );
+
+        long id = registry.begin( handle );
+        registry.release( id, handle );
+
+        // When
+        TransactionHandle acquiredHandle = registry.acquire( id, loginContext );
+
+        // then
+        assertSame( handle, acquiredHandle );
+    }
+
+    @Test
+    void differentUserShouldNotBeAbleToAcquireTransaction() throws Exception
+    {
+        // Given
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        var memoryPool = mock( MemoryPool.class );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), Duration.ZERO, logProvider, memoryPool );
+        TransactionHandle handle = mock( TransactionHandle.class );
+        LoginContext owningUser = mockLoginContext( "Johannes" );
+        when( handle.getLoginContext() ).thenReturn( owningUser );
+
+        long id = registry.begin( handle );
+        registry.release( id, handle );
+
+        // When & Then
+        LoginContext naughtyUser = mockLoginContext( "Dr. Evil" );
+        assertThrows( InvalidTransactionId.class, () -> registry.acquire( id, naughtyUser ) );
+    }
+
+    @Test
+    void shouldRetrieveHandlerLoginContext() throws Exception
+    {
+        // Given
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        var memoryPool = mock( MemoryPool.class );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), Duration.ZERO, logProvider, memoryPool );
+        TransactionHandle handle = mock( TransactionHandle.class );
+        LoginContext owningUser = mockLoginContext( "Johannes" );
+        when( handle.getLoginContext() ).thenReturn( owningUser );
+
+        long id = registry.begin( handle );
+
+        // When
+        LoginContext actualLoginContext = registry.getLoginContextForTransaction( id );
+
+        // Then
+        assertSame( owningUser, actualLoginContext );
+    }
+
+    @Test
+    void differentUserShouldNotBeAbleToTerminateTransaction()
+    {
+        // Given
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        var memoryPool = mock( MemoryPool.class );
+        FakeClock clock = Clocks.fakeClock();
+        var timeoutLength = Duration.ofMillis( 123 );
+
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, timeoutLength, logProvider, memoryPool );
+        TransactionHandle handle = mock( TransactionHandle.class );
+        LoginContext loginContext = mockLoginContext( "Johannes" );
+        when( handle.getLoginContext() ).thenReturn( loginContext );
+
+        // Active Tx in Registry
+        long id = registry.begin( handle );
+
+        // When & Then
+        LoginContext otherUser = mockLoginContext( "Dr. Evil" );
+        assertThrows( InvalidTransactionId.class, () -> registry.terminate( id, otherUser ) );
+    }
+
+    @Test
+    void sameUserShouldBeAbleToTerminateTransaction() throws TransactionLifecycleException
+    {
+        // Given
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        var memoryPool = mock( MemoryPool.class );
+        FakeClock clock = Clocks.fakeClock();
+        var timeoutLength = Duration.ofMillis( 123 );
+
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, timeoutLength, logProvider, memoryPool );
+        TransactionHandle handle = mock( TransactionHandle.class );
+        LoginContext loginContext = mockLoginContext( "Johannes" );
+        when( handle.getLoginContext() ).thenReturn( loginContext );
+
+        // Active Tx in Registry
+        long id = registry.begin( handle );
+
+        // When
+        registry.terminate( id, loginContext );
+
+        // Then
+        verify( handle, times( 1 ) ).terminate();
+        verify( handle ).getLoginContext();
+        verifyNoMoreInteractions( handle );
+    }
+
+    private LoginContext mockLoginContext( String userName )
+    {
+        LoginContext loginContext = mock( LoginContext.class );
+        AuthSubject authSubject = mock( AuthSubject.class );
+        when( loginContext.subject() ).thenReturn( authSubject );
+        when( authSubject.username() ).thenReturn( userName );
+        return loginContext;
     }
 }

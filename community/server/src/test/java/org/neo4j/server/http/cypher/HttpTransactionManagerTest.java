@@ -76,7 +76,7 @@ class HttpTransactionManagerTest
                 new HttpTransactionManager( managementService, mock( MemoryPool.class ), jobScheduler, Clocks.systemClock(), Duration.ofMinutes( 1 ),
                                             logProvider );
 
-        assertNotNull( manager.getTransactionHandleRegistry() );
+        assertNotNull( manager.getTransactionRegistry() );
     }
 
     @Test

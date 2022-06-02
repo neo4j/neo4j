@@ -31,6 +31,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -78,6 +79,7 @@ class LegacyTransactionServiceTest
     {
         // Given
         var userPrincipalA = mock( Principal.class );
+        var request = mock( HttpServletRequest.class );
 
         when( userPrincipalA.getName() )
                 .thenReturn( user );
@@ -92,7 +94,7 @@ class LegacyTransactionServiceTest
 
         // When
         var transactionService = new LegacyTransactionService( request, databaseResolver, httpTransactionManager, uriInfo, mock( MemoryPool.class ), log );
-        transactionService.rollbackTransaction( 42 );
+        transactionService.rollbackTransaction( 42, request );
 
         // Verify
         verify( databaseResolver )
