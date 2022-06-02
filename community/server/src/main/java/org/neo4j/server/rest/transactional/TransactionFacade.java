@@ -75,14 +75,14 @@ public class TransactionFacade
                 loginContext, customTransactionTimeout, logProvider );
     }
 
-    public TransactionHandle findTransactionHandle( long txId ) throws TransactionLifecycleException
+    public TransactionHandle findTransactionHandle( long txId, LoginContext requestingUser ) throws TransactionLifecycleException
     {
-        return registry.acquire( txId );
+        return registry.acquire( txId, requestingUser );
     }
 
-    public TransactionHandle terminate( long txId ) throws TransactionLifecycleException
+    public TransactionHandle terminate( long txId, LoginContext requestingUser ) throws TransactionLifecycleException
     {
-        return registry.terminate( txId );
+        return registry.terminate( txId, requestingUser );
     }
 
     public StatementDeserializer deserializer( InputStream input )

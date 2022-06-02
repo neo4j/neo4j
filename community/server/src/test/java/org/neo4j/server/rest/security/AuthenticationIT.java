@@ -22,10 +22,12 @@ package org.neo4j.server.rest.security;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.IOException;
 import javax.ws.rs.core.HttpHeaders;
 
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.RESTRequestGenerator;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -37,6 +39,7 @@ import org.neo4j.test.server.HTTP.RawPayload;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
 public class AuthenticationIT extends CommunityServerTestBase
 {
@@ -184,6 +187,81 @@ public class AuthenticationIT extends CommunityServerTestBase
     }
 
     @Test
+    public void shouldNotAllowAnotherUserToAccessTransaction() throws Exception
+    {
+        // Given
+        startServerWithConfiguredUser();
+        setupBobAndAliceUsers();
+
+        // When Bob creates a transaction
+        HTTP.Response initiatingUserRequest =
+                HTTP.withBasicAuth( "bob", "secret" ).POST( server.baseUri().resolve( "db/data/transaction/" ).toString(), query( "CREATE (n)" ) );
+        Assertions.assertEquals( 201, initiatingUserRequest.status() );
+
+        // Then alice cannot access that transaction
+        HTTP.Response hijackingUserRequest =
+                HTTP.withBasicAuth( "alice", "secret" ).POST( initiatingUserRequest.location(), query( "CREATE (n)" ) );
+        Assertions.assertEquals( 404, hijackingUserRequest.status() );
+        assertThat( hijackingUserRequest.get( "errors" ).get( 0 ).get( "code" ).asText(),
+                    equalTo( Status.Transaction.TransactionNotFound.code().serialize() ) );
+
+        // And bob can still commit it
+        HTTP.Response initiatingUserCommitRequest =
+                HTTP.withBasicAuth( "bob", "secret" ).POST( initiatingUserRequest.location() + "/commit", query( "CREATE (n)" ) );
+        Assertions.assertEquals( 200, initiatingUserCommitRequest.status() );
+    }
+
+    @Test
+    public void shouldNotAllowAnotherUserToCommitTransaction() throws Exception
+    {
+        // Given
+        startServerWithConfiguredUser();
+        setupBobAndAliceUsers();
+
+        // When Bob creates a transaction
+        HTTP.Response initiatingUserRequest =
+                HTTP.withBasicAuth( "bob", "secret" ).POST( server.baseUri().resolve( "db/data/transaction/" ).toString(), query( "CREATE (n)" ) );
+        Assertions.assertEquals( 201, initiatingUserRequest.status() );
+
+        // Then alice cannot commit that transaction
+        HTTP.Response hijackingUserRequest =
+                HTTP.withBasicAuth( "alice", "secret" ).POST( initiatingUserRequest.location() + "/commit" );
+        Assertions.assertEquals( 404, hijackingUserRequest.status() );
+        assertThat( hijackingUserRequest.get( "errors" ).get( 0 ).get( "code" ).asText(),
+                    equalTo( Status.Transaction.TransactionNotFound.code().serialize() ) );
+
+        // And bob can still commit it
+        HTTP.Response initiatingUserCommitRequest =
+                HTTP.withBasicAuth( "bob", "secret" ).POST( initiatingUserRequest.location() + "/commit", query( "CREATE (n)" ) );
+        Assertions.assertEquals( 200, initiatingUserCommitRequest.status() );
+    }
+
+    @Test
+    public void shouldNotAllowAnotherUserToRollbackTransaction() throws Exception
+    {
+        // Given
+        startServerWithConfiguredUser();
+        setupBobAndAliceUsers();
+
+        // When Bob creates a transaction
+        HTTP.Response initiatingUserRequest =
+                HTTP.withBasicAuth( "bob", "secret" ).POST( server.baseUri().resolve( "db/data/transaction/" ).toString(), query( "CREATE (n)" ) );
+        Assertions.assertEquals( 201, initiatingUserRequest.status() );
+
+        // Then alice cannot rollback that transaction
+        HTTP.Response hijackingUserRequest =
+                HTTP.withBasicAuth( "alice", "secret" ).DELETE( initiatingUserRequest.location() );
+        Assertions.assertEquals( 404, hijackingUserRequest.status() );
+        assertThat( hijackingUserRequest.get( "errors" ).get( 0 ).get( "code" ).asText(),
+                    equalTo( Status.Transaction.TransactionNotFound.code().serialize() ) );
+
+        // And bob can still commit it
+        HTTP.Response initiatingUserCommitRequest =
+                HTTP.withBasicAuth( "bob", "secret" ).POST( initiatingUserRequest.location() + "/commit", query( "CREATE (n)" ) );
+        Assertions.assertEquals( 200, initiatingUserCommitRequest.status() );
+    }
+
+    @Test
     public void shouldAllowAllAccessIfAuthenticationIsDisabled() throws Exception
     {
         // Given
@@ -297,5 +375,23 @@ public class AuthenticationIT extends CommunityServerTestBase
                 RawPayload.quotedJson( "{'password':'secret'}" )
         );
         assertEquals( 200, post.status() );
+    }
+
+    private void setupBobAndAliceUsers()
+    {
+        HTTP.Response createBobRequest = HTTP.withBasicAuth( "neo4j", "secret" )
+                                             .POST( txCommitURL(), query("CALL dbms.security.createUser('bob','secret',false)" ) );
+        Assertions.assertEquals( 200, createBobRequest.status() );
+        HTTP.Response grantBobAdmin = HTTP.withBasicAuth( "neo4j", "secret" )
+                                             .POST( txCommitURL(), query("CALL dbms.security.addRoleToUser('admin', 'bob')" ) );
+        Assertions.assertEquals( 200, grantBobAdmin.status() );
+        HTTP.Response createAliceRequest = HTTP.withBasicAuth( "neo4j", "secret" )
+                                               .POST( txCommitURL(), query("CALL dbms.security.createUser('alice','secret',false)" ) );
+        Assertions.assertEquals( 200, createAliceRequest.status() );
+    }
+
+    private static HTTP.RawPayload query( String statement )
+    {
+        return rawPayload( "{\"statements\":[{\"statement\":\"" + statement + "\"}]}" );
     }
 }

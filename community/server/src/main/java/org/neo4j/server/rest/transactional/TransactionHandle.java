@@ -198,6 +198,11 @@ public class TransactionHandle implements TransactionTerminationHandle
         }
     }
 
+    public LoginContext getLoginContext()
+    {
+        return loginContext;
+    }
+
     void forceRollback()
     {
         context.resumeSinceTransactionsAreStillThreadBound();

@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
@@ -55,25 +56,36 @@ public class TransactionHandleRegistry implements TransactionRegistry
 
     private abstract static class TransactionMarker
     {
+        TransactionHandle transactionHandle;
+
+        TransactionMarker( TransactionHandle transactionHandle )
+        {
+            this.transactionHandle = transactionHandle;
+        }
+
         abstract ActiveTransaction getActiveTransaction();
 
         abstract SuspendedTransaction getSuspendedTransaction() throws InvalidConcurrentTransactionAccess;
 
         abstract boolean isSuspended();
+
+        LoginContext getLoginContext()
+        {
+            return transactionHandle.getLoginContext();
+        }
     }
 
     private static class ActiveTransaction extends TransactionMarker
     {
-        final TransactionTerminationHandle terminationHandle;
 
-        private ActiveTransaction( TransactionTerminationHandle terminationHandle )
+        private ActiveTransaction( TransactionHandle transactionHandle )
         {
-            this.terminationHandle = terminationHandle;
+            super( transactionHandle );
         }
 
         TransactionTerminationHandle getTerminationHandle()
         {
-            return terminationHandle;
+            return transactionHandle;
         }
 
         @Override
@@ -98,13 +110,12 @@ public class TransactionHandleRegistry implements TransactionRegistry
     private class SuspendedTransaction extends TransactionMarker
     {
         final ActiveTransaction activeMarker;
-        final TransactionHandle transactionHandle;
         final long lastActiveTimestamp;
 
         private SuspendedTransaction( ActiveTransaction activeMarker, TransactionHandle transactionHandle )
         {
+            super( transactionHandle );
             this.activeMarker = activeMarker;
-            this.transactionHandle = transactionHandle;
             this.lastActiveTimestamp = clock.millis();
         }
 
@@ -248,6 +259,17 @@ public class TransactionHandleRegistry implements TransactionRegistry
     public void rollbackAllSuspendedTransactions()
     {
         rollbackSuspended( Predicates.alwaysTrue() );
+    }
+
+    @Override
+    public LoginContext getLoginContextForTransaction( long id ) throws InvalidTransactionId
+    {
+        TransactionMarker marker = registry.get( id );
+        if ( marker == null )
+        {
+            throw new InvalidTransactionId();
+        }
+        return marker.getLoginContext();
     }
 
     public void rollbackSuspendedTransactionsIdleSince( final long oldestLastActiveTime )

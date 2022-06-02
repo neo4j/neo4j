@@ -50,6 +50,7 @@ import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
 import org.neo4j.server.web.HttpHeaderUtils;
 import org.neo4j.udc.UsageData;
 
+import static org.neo4j.server.rest.dbms.AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest;
 import static org.neo4j.udc.UsageDataKeys.Features.http_tx_endpoint;
 import static org.neo4j.udc.UsageDataKeys.features;
 
@@ -81,7 +82,7 @@ public class TransactionalService
                                                        @Context final HttpServletRequest request )
     {
         usage.get( features ).flag( http_tx_endpoint );
-        LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest( request );
+        LoginContext loginContext = getLoginContextFromHttpServletRequest( request );
         long customTransactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
         TransactionHandle transactionHandle =
                 facade.newTransactionHandle( uriScheme, false, loginContext, customTransactionTimeout );
@@ -101,7 +102,7 @@ public class TransactionalService
         final TransactionHandle transactionHandle;
         try
         {
-            transactionHandle = facade.findTransactionHandle( id );
+            transactionHandle = facade.findTransactionHandle( id, getLoginContextFromHttpServletRequest( request ) );
         }
         catch ( TransactionLifecycleException e )
         {
@@ -121,7 +122,7 @@ public class TransactionalService
         final TransactionHandle transactionHandle;
         try
         {
-            transactionHandle = facade.findTransactionHandle( id );
+            transactionHandle = facade.findTransactionHandle( id, getLoginContextFromHttpServletRequest( request ) );
         }
         catch ( TransactionLifecycleException e )
         {
@@ -138,7 +139,7 @@ public class TransactionalService
                                           @Context final HttpServletRequest request )
     {
         final TransactionHandle transactionHandle;
-        LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest( request );
+        LoginContext loginContext = getLoginContextFromHttpServletRequest( request );
         long customTransactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
         transactionHandle = facade.newTransactionHandle( uriScheme, true, loginContext, customTransactionTimeout );
         final StreamingOutput streamingResults =
@@ -149,12 +150,12 @@ public class TransactionalService
     @DELETE
     @Path( "/{id}" )
     @Consumes( {MediaType.APPLICATION_JSON} )
-    public Response rollbackTransaction( @PathParam( "id" ) final long id, @Context UriInfo uriInfo )
+    public Response rollbackTransaction( @PathParam( "id" ) final long id, @Context UriInfo uriInfo, @Context final HttpServletRequest request )
     {
         final TransactionHandle transactionHandle;
         try
         {
-            transactionHandle = facade.terminate( id );
+            transactionHandle = facade.terminate( id, getLoginContextFromHttpServletRequest( request ) );
         }
         catch ( TransactionLifecycleException e )
         {

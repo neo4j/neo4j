@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.server.rest.transactional.error.InvalidTransactionId;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
 
 /**
@@ -39,4 +41,26 @@ public interface TransactionRegistry
     TransactionHandle terminate( long id ) throws TransactionLifecycleException;
 
     void rollbackAllSuspendedTransactions();
+
+    default TransactionHandle acquire( long id, LoginContext requestingUser ) throws TransactionLifecycleException
+    {
+        assertSameUser( getLoginContextForTransaction( id ), requestingUser );
+        return acquire( id );
+    };
+
+    default TransactionHandle terminate( long id, LoginContext requestingUser ) throws TransactionLifecycleException
+    {
+        assertSameUser( getLoginContextForTransaction( id ), requestingUser );
+        return terminate( id );
+    }
+
+    default void assertSameUser( LoginContext owningUser, LoginContext requestingUser ) throws InvalidTransactionId
+    {
+        if ( !owningUser.subject().username().equals( requestingUser.subject().username() ) )
+        {
+            throw new InvalidTransactionId();
+        }
+    }
+
+    LoginContext getLoginContextForTransaction( long id ) throws InvalidTransactionId;
 }
