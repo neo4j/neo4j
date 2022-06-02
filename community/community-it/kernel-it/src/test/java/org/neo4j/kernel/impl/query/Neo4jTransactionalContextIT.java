@@ -53,10 +53,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.kernel.api.procs.FieldSignature;
-import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -74,18 +71,15 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.FacadeKernelTransactionFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
-import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.procedure.builtin.QueryId;
 import org.neo4j.procedure.builtin.TransactionId;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -804,7 +798,7 @@ class Neo4jTransactionalContextIT {
     }
 
     @Test
-    void contextWithNewTransactionListTransactions() throws ProcedureException, InvalidArgumentsException {
+    void contextWithNewTransactionListTransactions() throws InvalidArgumentsException {
         // Given
         var outerTx = graph.beginTransaction(IMPLICIT, LoginContext.AUTH_DISABLED);
         var queryText = "<query text>";
@@ -817,115 +811,17 @@ class Neo4jTransactionalContextIT {
         var innerCtx = ctx.contextWithNewTransaction();
         var innerTx = innerCtx.transaction();
 
-        var procsRegistry = databaseAPI.getDependencyResolver().resolveDependency(GlobalProcedures.class);
-        var listTransactions = procsRegistry.procedure(new QualifiedName(new String[] {"dbms"}, "listTransactions"));
-        var id = listTransactions.id();
-        var transactionIdIndex = listTransactions
-                .signature()
-                .outputSignature()
-                .indexOf(FieldSignature.outputField("transactionId", Neo4jTypes.NTString));
-        var currentQueryIndex = listTransactions
-                .signature()
-                .outputSignature()
-                .indexOf(FieldSignature.outputField("currentQuery", Neo4jTypes.NTString));
-        var currentQueryIdIndex = listTransactions
-                .signature()
-                .outputSignature()
-                .indexOf(FieldSignature.outputField("currentQueryId", Neo4jTypes.NTString));
-        var outerTransactionIdIndex = listTransactions
-                .signature()
-                .outputSignature()
-                .indexOf(FieldSignature.outputField("outerTransactionId", Neo4jTypes.NTString));
-        var procContext = new ProcedureCallContext(
-                id,
-                new String[] {"transactionId", "currentQuery", "currentQueryId", "outerTransactionId"},
-                false,
-                "",
-                false);
+        // show the transactions (discarding the SHOW TRANSACTIONS transaction)
+        var transactions =
+                innerTx.execute("SHOW TRANSACTIONS WHERE NOT currentQuery STARTS WITH 'SHOW TRANSACTIONS'").stream()
+                        .toList();
+
+        assertThat(transactions.size()).isEqualTo(1);
 
         // When
-        var procResult = Iterators.asList(
-                innerCtx.kernelTransaction().procedures().procedureCallDbms(id, new AnyValue[] {}, procContext));
-
-        var mapper = new DefaultValueMapper(innerTx);
-        var transactionIds = procResult.stream()
-                .map(array -> array[transactionIdIndex].map(mapper))
-                .toList();
-        var currentQueries = procResult.stream()
-                .map(array -> array[currentQueryIndex].map(mapper))
-                .toList();
-        var currentQueryIds = procResult.stream()
-                .map(array -> array[currentQueryIdIndex].map(mapper))
-                .toList();
-        var outerTransactionIds = procResult.stream()
-                .map(array -> array[outerTransactionIdIndex].map(mapper))
-                .toList();
-
-        // Then
-        var expectedOuterTxId = new TransactionId(
-                        outerTx.getDatabaseName(), outerTx.kernelTransaction().getUserTransactionId())
-                .toString();
-        var expectedInnerTxId = new TransactionId(
-                        innerTx.getDatabaseName(), innerTx.kernelTransaction().getUserTransactionId())
-                .toString();
-        var expectedQueryId = String.format("query-%s", ctx.executingQuery().id());
-
-        assertThat(transactionIds).contains(expectedOuterTxId, expectedInnerTxId);
-        assertThat(transactionIds).hasSize(2);
-        assertThat(currentQueries).contains(queryText, queryText);
-        assertThat(currentQueries).hasSize(2);
-        assertThat(currentQueryIds).contains(expectedQueryId, expectedQueryId);
-        assertThat(currentQueryIds).hasSize(2);
-        assertThat(outerTransactionIds).contains(expectedOuterTxId, "");
-        assertThat(outerTransactionIds).hasSize(2);
-    }
-
-    @Test
-    void contextWithNewTransactionListQueries() throws ProcedureException, InvalidArgumentsException {
-        // Given
-        var outerTx = graph.beginTransaction(IMPLICIT, LoginContext.AUTH_DISABLED);
-        var queryText = "<query text>";
-        var ctx = Neo4jTransactionalContextFactory.create(() -> graph, transactionFactory)
-                .newContext(outerTx, queryText, MapValue.EMPTY);
-
-        // We need to be done with parsing and provide an obfuscator to see the query text in the procedure
-        ctx.executingQuery().onObfuscatorReady(QueryObfuscator.PASSTHROUGH);
-
-        var innerCtx = ctx.contextWithNewTransaction();
-        var innerTx = innerCtx.transaction();
-
-        var procsRegistry = databaseAPI.getDependencyResolver().resolveDependency(GlobalProcedures.class);
-        var listQueries = procsRegistry.procedure(new QualifiedName(new String[] {"dbms"}, "listQueries"));
-        var procedureId = listQueries.id();
-        var transactionIdIndex = listQueries
-                .signature()
-                .outputSignature()
-                .indexOf(FieldSignature.outputField("transactionId", Neo4jTypes.NTString));
-        var queryIndex = listQueries
-                .signature()
-                .outputSignature()
-                .indexOf(FieldSignature.outputField("query", Neo4jTypes.NTString));
-        var queryIdIndex = listQueries
-                .signature()
-                .outputSignature()
-                .indexOf(FieldSignature.outputField("queryId", Neo4jTypes.NTString));
-        var procContext = new ProcedureCallContext(
-                procedureId, new String[] {"transactionId", "query", "queryId"}, false, "", false);
-
-        // When
-        var procResult = Iterators.asList(innerCtx.kernelTransaction()
-                .procedures()
-                .procedureCallDbms(procedureId, new AnyValue[] {}, procContext));
-
-        var mapper = new DefaultValueMapper(innerTx);
-        var transactionIds = procResult.stream()
-                .map(array -> array[transactionIdIndex].map(mapper))
-                .toList();
-        var queries =
-                procResult.stream().map(array -> array[queryIndex].map(mapper)).toList();
-        var queryIds = procResult.stream()
-                .map(array -> array[queryIdIndex].map(mapper))
-                .toList();
+        var transactionId = transactions.get(0).get("transactionId");
+        var currentQuery = transactions.get(0).get("currentQuery");
+        var currentQueryId = transactions.get(0).get("currentQueryId");
 
         // Then
         var expectedTransactionId = new TransactionId(
@@ -933,13 +829,13 @@ class Neo4jTransactionalContextIT {
                 .toString();
         var expectedQueryId = String.format("query-%s", ctx.executingQuery().id());
 
-        assertThat(transactionIds).isEqualTo(Collections.singletonList(expectedTransactionId));
-        assertThat(queries).isEqualTo(Collections.singletonList(queryText));
-        assertThat(queryIds).isEqualTo(Collections.singletonList(expectedQueryId));
+        assertThat(transactionId).isEqualTo(expectedTransactionId);
+        assertThat(currentQuery).isEqualTo(queryText);
+        assertThat(currentQueryId).isEqualTo(expectedQueryId);
     }
 
     @Test
-    void contextWithNewTransactionKillQuery() throws ProcedureException, InvalidArgumentsException {
+    void contextWithNewTransactionKillQuery() {
         // Given
         var outerTx = graph.beginTransaction(IMPLICIT, LoginContext.AUTH_DISABLED);
         var queryText = "<query text>";
@@ -952,16 +848,14 @@ class Neo4jTransactionalContextIT {
         var innerCtx = ctx.contextWithNewTransaction();
         var innerTx = innerCtx.transaction();
 
-        var procedureRegistry = databaseAPI.getDependencyResolver().resolveDependency(GlobalProcedures.class);
-        var listQueries = procedureRegistry.procedure(new QualifiedName(new String[] {"dbms"}, "killQuery"));
-        var procedureId = listQueries.id();
-        var procContext = new ProcedureCallContext(procedureId, new String[] {}, false, "", false);
-
         // When
-        TextValue argument = Values.stringValue(new QueryId(ctx.executingQuery().internalQueryId()).toString());
-        innerCtx.kernelTransaction()
-                .procedures()
-                .procedureCallDbms(procedureId, new AnyValue[] {argument}, procContext);
+        var userTransactionId = ctx.kernelTransaction().getUserTransactionId();
+
+        // we are forcing the TERMINATE TRANSACTION to execute to completion
+        // so that we can be ready to make assertions on the terminationReason
+        //noinspection ResultOfMethodCallIgnored
+        innerTx.execute("TERMINATE TRANSACTION 'neo4j-transaction-" + userTransactionId + "'").stream()
+                .toList();
 
         // Then
         assertTrue(innerTx.terminationReason().isPresent());

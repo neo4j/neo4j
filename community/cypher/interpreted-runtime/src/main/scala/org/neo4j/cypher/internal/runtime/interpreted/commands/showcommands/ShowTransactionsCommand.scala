@@ -123,7 +123,7 @@ case class ShowTransactionsCommand(
           if (querySnapshot.isPresent) {
             val snapshot = querySnapshot.get
             val currentQueryId = QueryId(snapshot.internalQueryId).toString
-            val currentQuery = snapshot.obfuscatedQueryText.orElse(null)
+            val currentQuery = snapshot.obfuscatedQueryText.orElse(EMPTY)
             (currentQueryId, currentQuery)
           } else (EMPTY, EMPTY)
         val connectionId = clientInfo.map[String](_.connectionId).orElse(EMPTY)
@@ -144,7 +144,7 @@ case class ShowTransactionsCommand(
           // The name of the user running the transaction
           "username" -> Values.stringValue(username),
           // The currently executing query
-          "currentQuery" -> Values.stringOrNoValue(currentQuery),
+          "currentQuery" -> Values.stringValue(currentQuery),
           // The start time of the transaction
           "startTime" -> Values.stringValue(startTime),
           // The status of the transaction (terminated, blocked, closing or running)
@@ -248,7 +248,7 @@ case class ShowTransactionsCommand(
             )
           val metaData = getMapValue(transaction.getMetaData)
           val protocol = clientInfo.map[String](_.protocol).orElse(EMPTY)
-          val requestUri = clientInfo.map[String](_.requestURI).orElse(EMPTY)
+          val requestUri = clientInfo.map[String](_.requestURI).orElse(null)
           val statusDetails = transaction.getStatusDetails
           val resourceInformation = getMapValue(
             querySnapshot.map[util.Map[String, AnyRef]](_.resourceInformation()).orElse(util.Collections.emptyMap())
@@ -281,7 +281,7 @@ case class ShowTransactionsCommand(
             // Protocol for the transaction
             "protocol" -> Values.stringValue(protocol),
             // Request URI for the transaction
-            "requestUri" -> Values.stringValue(requestUri),
+            "requestUri" -> Values.stringOrNoValue(requestUri),
             // The status of the currently executing query (parsing, planning, planned, running, waiting)
             "currentQueryStatus" -> Values.stringValue(queryStatus),
             // Any string a dedicated kernel API will write to track the transaction progress

@@ -1393,7 +1393,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     resultMap("indexes") should be(List())
     resultMap("protocol") should be("embedded")
     resultMap("metaData") should be(Map())
-    resultMap("requestUri") should be("")
+    resultMap("requestUri") should be(null)
     resultMap("currentQueryStatus") should be("running")
     resultMap("statusDetails") should be("")
     resultMap("resourceInformation") should be(Map())
