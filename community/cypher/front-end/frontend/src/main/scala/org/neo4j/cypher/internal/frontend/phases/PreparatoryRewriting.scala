@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.insertWithBetweenOptionalMa
 import org.neo4j.cypher.internal.rewriting.rewriters.mergeInPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
 import org.neo4j.cypher.internal.rewriting.rewriters.rewriteShowQuery
+import org.neo4j.cypher.internal.rewriting.rewriters.timestampRewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
 import org.neo4j.cypher.internal.util.inSequence
@@ -44,7 +45,8 @@ case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState
         expandCallWhere,
         expandShowWhere,
         rewriteShowQuery,
-        mergeInPredicates
+        mergeInPredicates,
+        timestampRewriter
       ),
       initialConditions = Set(LiteralsAreAvailable)
     )

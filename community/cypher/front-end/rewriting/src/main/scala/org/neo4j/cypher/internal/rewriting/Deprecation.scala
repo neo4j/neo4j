@@ -18,13 +18,7 @@ package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.FunctionInvocation
-import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonDisjunction
-import org.neo4j.cypher.internal.expressions.Namespace
-import org.neo4j.cypher.internal.expressions.Property
-import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -34,26 +28,9 @@ import org.neo4j.cypher.internal.util.Ref
 
 object Deprecations {
 
-  def propertyOf(propertyKey: String): Expression => Expression =
-    e => Property(e, PropertyKeyName(propertyKey)(e.position))(e.position)
-
-  def renameFunctionTo(newName: String): FunctionInvocation => FunctionInvocation =
-    f => f.copy(functionName = FunctionName(newName)(f.functionName.position))(f.position)
-
-  def renameFunctionTo(newNamespace: Namespace, newName: String): FunctionInvocation => FunctionInvocation =
-    f => f.copy(namespace = newNamespace, functionName = FunctionName(newName)(f.functionName.position))(f.position)
-
   case object syntacticallyDeprecatedFeaturesIn4_X extends SyntacticDeprecations {
 
     override val find: PartialFunction[Any, Deprecation] = {
-
-      // timestamp
-      case f @ FunctionInvocation(namespace, FunctionName(name), _, _)
-        if namespace.parts.isEmpty && name.equalsIgnoreCase("timestamp") =>
-        Deprecation(
-          Some(Ref(f) -> renameFunctionTo("datetime").andThen(propertyOf("epochMillis"))(f)),
-          None
-        )
 
       // legacy type separator -[:A|:B]->
       case rel @ RelationshipPattern(variable, Some(labelExpression), None, None, None, _)

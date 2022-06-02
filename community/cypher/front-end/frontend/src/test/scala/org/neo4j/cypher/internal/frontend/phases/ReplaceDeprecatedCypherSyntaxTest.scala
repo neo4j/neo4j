@@ -31,24 +31,6 @@ class ReplaceDeprecatedCypherSyntaxTest extends CypherFunSuite with AstConstruct
 
   override def astRewriteAndAnalyze: Boolean = false
 
-  test("should rewrite timestamp()") {
-    assertRewritten(
-      "RETURN timestamp() AS t",
-      "RETURN datetime().epochMillis AS t"
-    )
-  }
-
-  test("should also rewrite TiMeStAmP()") {
-    assertRewritten(
-      "RETURN TiMeStAmP() AS t",
-      "RETURN datetime().epochMillis AS t"
-    )
-  }
-
-  test("should not rewrite test.timestamp()") {
-    assertNotRewritten("RETURN test.timestamp() AS t")
-  }
-
   test("should rewrite legacy relationship type disjunction") {
     assertRewritten(
       "MATCH (a)-[:A|:B|:C]-() RETURN a",
