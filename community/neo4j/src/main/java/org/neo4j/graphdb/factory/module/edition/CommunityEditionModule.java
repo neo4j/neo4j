@@ -276,11 +276,6 @@ public class CommunityEditionModule extends StandaloneEditionModule
     {
         globalProcedures.register( new StandaloneDatabaseStateProcedure( databaseStateService,
                 databaseManager.databaseIdRepository(), globalModule.getGlobalConfig().get( BoltConnector.advertised_address ).toString() ) );
-
-        var routingProcedureInstaller =
-                createRoutingProcedureInstaller( globalModule, databaseManager,
-                                                 globalModule.getGlobalDependencies().resolveDependency( ClientRoutingDomainChecker.class ) );
-        routingProcedureInstaller.install( globalProcedures );
     }
 
     @Override
