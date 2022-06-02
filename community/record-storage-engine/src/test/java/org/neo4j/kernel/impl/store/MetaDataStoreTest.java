@@ -441,7 +441,7 @@ class MetaDataStoreTest {
             var access = MetaDataStore.getFieldAccess(
                     pageCache, metaDataStore.getStorageFile(), databaseLayout.getDatabaseName(), NULL_CONTEXT);
             var storeId = access.readStoreId();
-            assertThat(storeId.getFormatFamilyName())
+            assertThat(storeId.getFormatName())
                     .isEqualTo(recordFormats.getFormatFamily().name());
             assertThat(storeId.getMajorVersion()).isEqualTo(recordFormats.majorVersion());
             assertThat(storeId.getMinorVersion()).isEqualTo(recordFormats.minorVersion());

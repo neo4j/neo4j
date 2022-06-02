@@ -65,7 +65,7 @@ public class RecordStoreVersion implements StoreVersion {
     }
 
     @Override
-    public String formatFamilyName() {
+    public String formatName() {
         return format.getFormatFamily().name();
     }
 
@@ -86,6 +86,6 @@ public class RecordStoreVersion implements StoreVersion {
     @Override
     public String getStoreVersionUserString() {
         return StoreVersionUserStringProvider.formatVersion(
-                RecordStorageEngineFactory.NAME, formatFamilyName(), format.majorVersion(), format.minorVersion());
+                RecordStorageEngineFactory.NAME, formatName(), format.majorVersion(), format.minorVersion());
     }
 }

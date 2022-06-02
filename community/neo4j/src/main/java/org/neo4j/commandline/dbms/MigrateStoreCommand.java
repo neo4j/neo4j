@@ -92,8 +92,12 @@ import org.neo4j.token.TokenHolders;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-// TODO: let's wait with better description until the discussion with the PM is over
-@Command(name = "migrate-store", header = "Migrate database store", description = "Migrate database store")
+@Command(
+        name = "migrate-store",
+        header = "Migrate a database",
+        description = "Migrates a database from one format to another or between versions of the same format. "
+                + "It always migrates the database to the latest combination of major and minor "
+                + "version of the target format.")
 public class MigrateStoreCommand extends AbstractCommand {
     @Option(
             names = "--database",
@@ -103,22 +107,21 @@ public class MigrateStoreCommand extends AbstractCommand {
             converter = Converters.DatabaseNamePatternConverter.class)
     private DatabaseNamePattern database;
 
-    //    @Option( names = "--storage-engine", paramLabel = "<storage engine>", description = "Storage engine to migrate
-    // the store to" )
-    //    private String storageEngine;
-
     @Option(
-            names = "--format-family",
-            paramLabel = "<format family>",
-            description = "Format family to migrate the store to. "
-                    + "This option is supported only in combination with --storage-engine RECORD")
-    private String formatFamily;
+            names = "--to-format",
+            paramLabel = "<format name>",
+            description = "Name of the format to migrate the store to. "
+                    + "If this option is not specified, the tool will migrate the database store to the latest "
+                    + "version of the format it is currently on.")
+    private String formatToMigrateTo;
 
     @Option(
             names = "--pagecache",
             paramLabel = "<size>",
             defaultValue = "8m",
-            description = "The size of the page cache to use for the backup process.")
+            description = "The size of the page cache to use for the migration process. "
+                    + "The general rule is that values up to the size of the database proportionally increase "
+                    + "performance.")
     private String pagecacheMemory;
 
     @Option(
@@ -128,7 +131,7 @@ public class MigrateStoreCommand extends AbstractCommand {
     private Path additionalConfig;
 
     @Option(
-            names = "--forceBtreeIndexesToRange",
+            names = "--force-btree-indexes-to-range",
             hidden = true,
             description = "Special option for turning all btree indexes/constraints into range")
     private boolean forceBtreeToRange;
@@ -167,7 +170,7 @@ public class MigrateStoreCommand extends AbstractCommand {
                 resultLog.info("Starting migration for database '" + dbName + "'");
 
                 LifeSupport life = new LifeSupport();
-                String formatFamilyForDb = formatFamily;
+                String formatForDb = formatToMigrateTo;
 
                 try (JobScheduler jobScheduler = life.add(JobSchedulerFactory.createInitialisedScheduler());
                         PageCache pageCache = createPageCache(fs, config, jobScheduler, pageCacheTracer)) {
@@ -176,7 +179,7 @@ public class MigrateStoreCommand extends AbstractCommand {
                     checkDatabaseExistence(databaseLayout);
 
                     if (SYSTEM_DATABASE_NAME.equals(dbName)) {
-                        formatFamilyForDb = GraphDatabaseSettings.DatabaseRecordFormat.aligned.name();
+                        formatForDb = GraphDatabaseSettings.DatabaseRecordFormat.aligned.name();
                     }
 
                     try (Closeable ignored = LockChecker.checkDatabaseLock(databaseLayout)) {
@@ -220,7 +223,7 @@ public class MigrateStoreCommand extends AbstractCommand {
                                         databaseLayout,
                                         memoryTracker)));
 
-                        storeMigrator.migrateIfNeeded(formatFamilyForDb, forceBtreeToRange);
+                        storeMigrator.migrateIfNeeded(formatForDb, forceBtreeToRange);
                     } catch (FileLockException e) {
                         throw new CommandFailedException(
                                 "The database is in use. Stop database '" + dbName + "' and try again.", e);

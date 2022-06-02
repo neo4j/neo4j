@@ -132,7 +132,7 @@ class DatabaseStartupTest {
                     System.currentTimeMillis() + 1,
                     originalId.getRandom(),
                     originalId.getStorageEngineName(),
-                    originalId.getFormatFamilyName(),
+                    originalId.getFormatName(),
                     originalId.getMajorVersion(),
                     originalId.getMinorVersion()));
         }

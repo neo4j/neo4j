@@ -39,17 +39,19 @@ class MigrateStoreCommandTest {
         assertThat(baos.toString().trim())
                 .isEqualToIgnoringNewLines(
                         """
-                         Migrate database store
+                         Migrate a database
 
                          USAGE
 
                          migrate-store [--expand-commands] [--verbose] [--additional-config=<path>]
-                                       [--database=<database>] [--format-family=<format family>]
-                                       [--pagecache=<size>]
+                                       [--database=<database>] [--pagecache=<size>] [--to-format=<format
+                                       name>]
 
                          DESCRIPTION
 
-                         Migrate database store
+                         Migrates a database from one format to another or between versions of the same
+                         format. It always migrates the database to the latest combination of major and
+                         minor version of the target format.
 
                          OPTIONS
 
@@ -61,13 +63,16 @@ class MigrateStoreCommandTest {
                                                       contain * and ? for globbing.
                                                       Default: neo4j
                                --expand-commands    Allow command expansion in config value evaluation.
-                               --format-family=<format family>
-                                                    Format family to migrate the store to. This option
-                                                      is supported only in combination with
-                                                      --storage-engine RECORD
-                               --pagecache=<size>   The size of the page cache to use for the backup
-                                                      process.
+                               --pagecache=<size>   The size of the page cache to use for the migration
+                                                      process. The general rule is that values up to the
+                                                      size of the database proportionally increase
+                                                      performance.
                                                       Default: 8m
+                               --to-format=<format name>
+                                                    Name of the format to migrate the store to. If this
+                                                      option is not specified, the tool will migrate the
+                                                      database store to the latest version of the format
+                                                      it is currently on.
                                --verbose            Enable verbose output.""");
     }
 }

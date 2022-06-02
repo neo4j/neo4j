@@ -112,7 +112,7 @@ public class RecordFormatSelector {
         return Iterables.stream(allFormats())
                 .filter(format -> format.majorVersion() == storeVersionIdentifier.getMajorVersion()
                         && format.minorVersion() == storeVersionIdentifier.getMinorVersion()
-                        && format.getFormatFamily().name().equals(storeVersionIdentifier.getFormatFamilyName()))
+                        && format.getFormatFamily().name().equals(storeVersionIdentifier.getFormatName()))
                 .findAny();
     }
 

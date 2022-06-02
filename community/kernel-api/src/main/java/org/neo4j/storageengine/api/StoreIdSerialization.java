@@ -158,7 +158,7 @@ public class StoreIdSerialization {
 
     private static void serialize(StoreId storeId, Writer writer) throws IOException {
         byte[] storageEngine = storeId.getStorageEngineName().getBytes(StandardCharsets.UTF_8);
-        byte[] formatFamily = storeId.getFormatFamilyName().getBytes(StandardCharsets.UTF_8);
+        byte[] formatFamily = storeId.getFormatName().getBytes(StandardCharsets.UTF_8);
         Preconditions.requireBetween(storageEngine.length, 0, 256);
         Preconditions.requireBetween(formatFamily.length, 0, 256);
         // Unfortunately, there are some test formats using NO_GENERATION = -1

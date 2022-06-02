@@ -26,19 +26,19 @@ public interface StoreVersionCheck {
     boolean isCurrentStoreVersionFullySupported(CursorContext cursorContext);
 
     /**
-     * Figures out the migration target version and checks if migration to that version is possible.
+     * Figures out the migration target format version and checks if migration to that version is possible.
      * <p>
-     * The migration target version will be the latest store version (both latest major and minor) for the submitted format family
-     * if the submitted format family is not {@code null}.
-     * If the submitted format family is {@code null }, it will be the latest store version (both latest major and minor)
-     * for the store family the store is currently on.
+     * The migration target version will be the latest version (both latest major and minor) for the submitted format
+     * if the submitted format is not {@code null}.
+     * If the submitted format is {@code null}, it will be the latest version (both latest major and minor)
+     * for the store format the store is currently on.
      */
-    MigrationCheckResult getAndCheckMigrationTargetVersion(String formatFamily, CursorContext cursorContext);
+    MigrationCheckResult getAndCheckMigrationTargetVersion(String formatToMigrateTo, CursorContext cursorContext);
 
     /**
-     * Figures out the upgrade target version and checks if upgrade to that version is possible.
+     * Figures out the upgrade target format version and checks if upgrade to that version is possible.
      * <p>
-     * The upgrade target version is the latest minor format version for the combination of the format family
+     * The upgrade target format version is the latest minor format version for the combination of the format
      * and the major version of the store format the store is currently on.
      */
     UpgradeCheckResult getAndCheckUpgradeTargetVersion(CursorContext cursorContext);
@@ -75,9 +75,9 @@ public interface StoreVersionCheck {
         UNSUPPORTED_MIGRATION_PATH,
         /**
          * The target migration version has been determined, but it is no longer supported.
-         * Since the migration target version is determined as the latest major and minor version combination for the target format family,
-         * it means that the target format family is no longer supported by the current binaries as there is no supported format version for the family.
-         * The only possible step is migration to another format family.
+         * Since the migration target version is determined as the latest major and minor version combination for the target format,
+         * it means that the target format is no longer supported by the current binaries as there is no supported version for the format.
+         * The only possible step is migration to another format.
          */
         UNSUPPORTED_TARGET_VERSION,
     }
@@ -111,7 +111,7 @@ public interface StoreVersionCheck {
          * The target upgrade version has been determined, but it is no longer supported.
          * Since the upgrade target version is determined as the latest minor version of the format the store is currently on,
          * it means that the current major version of the store format is no longer supported by the current binaries.
-         * The only possible step is migration to another major version of the current format family or to another format family.
+         * The only possible step is migration to another major version of the current format or to another format.
          */
         UNSUPPORTED_TARGET_VERSION
     }

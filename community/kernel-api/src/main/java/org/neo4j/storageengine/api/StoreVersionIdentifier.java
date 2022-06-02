@@ -26,14 +26,13 @@ import java.util.Objects;
 public class StoreVersionIdentifier implements StoreVersionUserStringProvider {
 
     private final String storageEngineName;
-    private final String formatFamilyName;
+    private final String formatName;
     private final int majorVersion;
     private final int minorVersion;
 
-    public StoreVersionIdentifier(
-            String storageEngineName, String formatFamilyName, int majorVersion, int minorVersion) {
+    public StoreVersionIdentifier(String storageEngineName, String formatName, int majorVersion, int minorVersion) {
         this.storageEngineName = storageEngineName;
-        this.formatFamilyName = formatFamilyName;
+        this.formatName = formatName;
         this.majorVersion = majorVersion;
         this.minorVersion = minorVersion;
     }
@@ -42,8 +41,8 @@ public class StoreVersionIdentifier implements StoreVersionUserStringProvider {
         return storageEngineName;
     }
 
-    public String getFormatFamilyName() {
-        return formatFamilyName;
+    public String getFormatName() {
+        return formatName;
     }
 
     public int getMajorVersion() {
@@ -58,7 +57,7 @@ public class StoreVersionIdentifier implements StoreVersionUserStringProvider {
         return majorVersion == anotherVersionIdentifier.majorVersion
                 && minorVersion <= anotherVersionIdentifier.minorVersion
                 && storageEngineName.equals(anotherVersionIdentifier.storageEngineName)
-                && formatFamilyName.equals(anotherVersionIdentifier.formatFamilyName);
+                && formatName.equals(anotherVersionIdentifier.formatName);
     }
 
     /**
@@ -69,7 +68,7 @@ public class StoreVersionIdentifier implements StoreVersionUserStringProvider {
      */
     @Override
     public String getStoreVersionUserString() {
-        return formatVersion(storageEngineName, formatFamilyName, majorVersion, minorVersion);
+        return formatVersion(storageEngineName, formatName, majorVersion, minorVersion);
     }
 
     @Override
@@ -80,11 +79,11 @@ public class StoreVersionIdentifier implements StoreVersionUserStringProvider {
         return majorVersion == that.majorVersion
                 && minorVersion == that.minorVersion
                 && storageEngineName.equals(that.storageEngineName)
-                && formatFamilyName.equals(that.formatFamilyName);
+                && formatName.equals(that.formatName);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(storageEngineName, formatFamilyName, majorVersion, minorVersion);
+        return Objects.hash(storageEngineName, formatName, majorVersion, minorVersion);
     }
 }

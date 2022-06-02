@@ -434,7 +434,7 @@ class StoreMigratorTest {
                         dependencyResolver.resolveDependency(PageCache.class),
                         cursorContext);
 
-                assertEquals(expectedStoreFormat.getFormatFamily().name(), storeId.getFormatFamilyName());
+                assertEquals(expectedStoreFormat.getFormatFamily().name(), storeId.getFormatName());
                 assertEquals(expectedStoreFormat.majorVersion(), storeId.getMajorVersion());
                 assertEquals(expectedStoreFormat.minorVersion(), storeId.getMinorVersion());
             }

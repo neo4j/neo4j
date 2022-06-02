@@ -97,7 +97,7 @@ public record MigrationStatus(
         return String.format(
                 "%s|%s|%s|%s",
                 storeVersionIdentifier.getStorageEngineName(),
-                storeVersionIdentifier.getFormatFamilyName(),
+                storeVersionIdentifier.getFormatName(),
                 storeVersionIdentifier.getMajorVersion(),
                 storeVersionIdentifier.getMinorVersion());
     }

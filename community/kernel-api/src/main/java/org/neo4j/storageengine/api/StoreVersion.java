@@ -40,7 +40,7 @@ public interface StoreVersion extends StoreVersionUserStringProvider {
      */
     Optional<StoreVersion> successorStoreVersion();
 
-    String formatFamilyName();
+    String formatName();
 
     /**
      * Some formats we just keep track of to be able to migrate from them.

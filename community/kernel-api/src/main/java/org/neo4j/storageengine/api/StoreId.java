@@ -41,21 +41,20 @@ public class StoreId extends StoreVersionIdentifier {
             long creationTime,
             long random,
             String storageEngineName,
-            String formatFamilyName,
+            String formatName,
             int majorVersion,
             int minorVersion) {
-        super(storageEngineName, formatFamilyName, majorVersion, minorVersion);
+        super(storageEngineName, formatName, majorVersion, minorVersion);
         this.creationTime = creationTime;
         this.random = random;
     }
 
-    public static StoreId generateNew(
-            String storageEngineName, String formatFamilyName, int majorVersion, int minorVersion) {
+    public static StoreId generateNew(String storageEngineName, String formatName, int majorVersion, int minorVersion) {
         return new StoreId(
                 System.currentTimeMillis(),
                 new SecureRandom().nextLong(),
                 storageEngineName,
-                formatFamilyName,
+                formatName,
                 majorVersion,
                 minorVersion);
     }
@@ -118,18 +117,13 @@ public class StoreId extends StoreVersionIdentifier {
                 && getMajorVersion() == storeId.getMajorVersion()
                 && getMinorVersion() == storeId.getMinorVersion()
                 && getStorageEngineName().equals(storeId.getStorageEngineName())
-                && getFormatFamilyName().equals(storeId.getFormatFamilyName());
+                && getFormatName().equals(storeId.getFormatName());
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(
-                creationTime,
-                random,
-                getStorageEngineName(),
-                getFormatFamilyName(),
-                getMajorVersion(),
-                getMinorVersion());
+                creationTime, random, getStorageEngineName(), getFormatName(), getMajorVersion(), getMinorVersion());
     }
 
     @Override
@@ -137,8 +131,8 @@ public class StoreId extends StoreVersionIdentifier {
         return "StoreId{" + "creationTime="
                 + creationTime + ", random="
                 + random + ", storageEngineName='"
-                + getStorageEngineName() + '\'' + ", formatFamilyName='"
-                + getFormatFamilyName() + '\'' + ", majorVersion="
+                + getStorageEngineName() + '\'' + ", formatName='"
+                + getFormatName() + '\'' + ", majorVersion="
                 + getMajorVersion() + ", minorVersion="
                 + getMinorVersion() + '}';
     }

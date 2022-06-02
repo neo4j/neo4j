@@ -147,7 +147,7 @@ public class StoreMigrator {
         this.logTailSupplier = logTailSupplier;
     }
 
-    public void migrateIfNeeded(String formatFamily, boolean forceBtreeIndexesToRange)
+    public void migrateIfNeeded(String formatToMigrateTo, boolean forceBtreeIndexesToRange)
             throws UnableToMigrateException, IOException {
         checkStoreExists();
 
@@ -156,7 +156,7 @@ public class StoreMigrator {
 
             finishInterruptedMigration(migrationStructures);
 
-            var checkResult = doMigrationCheck(formatFamily, cursorContext);
+            var checkResult = doMigrationCheck(formatToMigrateTo, cursorContext);
 
             internalLog.info("'" + checkResult.versionToMigrateFrom().getStoreVersionUserString()
                     + "' has been identified as the current version of the store");
@@ -289,10 +289,10 @@ public class StoreMigrator {
         progressMonitor.completed();
     }
 
-    private CheckResult doMigrationCheck(String formatFamily, CursorContext cursorContext) {
+    private CheckResult doMigrationCheck(String formatToMigrateTo, CursorContext cursorContext) {
         StoreVersionCheck storeVersionCheck =
                 storageEngineFactory.versionCheck(fs, databaseLayout, config, pageCache, logService, contextFactory);
-        var checkResult = storeVersionCheck.getAndCheckMigrationTargetVersion(formatFamily, cursorContext);
+        var checkResult = storeVersionCheck.getAndCheckMigrationTargetVersion(formatToMigrateTo, cursorContext);
         return switch (checkResult.outcome()) {
             case MIGRATION_POSSIBLE -> new CheckResult(
                     false, checkResult.versionToMigrateFrom(), checkResult.versionToMigrateTo());
