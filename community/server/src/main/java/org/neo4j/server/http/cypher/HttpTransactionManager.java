@@ -45,7 +45,7 @@ import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
  */
 public class HttpTransactionManager
 {
-    private final TransactionHandleRegistry transactionRegistry;
+    private final TransactionRegistry transactionRegistry;
     private final DatabaseManagementService managementService;
     private final JobScheduler jobScheduler;
     private final TransactionManager transactionManager;
@@ -95,7 +95,7 @@ public class HttpTransactionManager
         return database;
     }
 
-    public TransactionHandleRegistry getTransactionHandleRegistry()
+    public TransactionRegistry getTransactionRegistry()
     {
         return transactionRegistry;
     }

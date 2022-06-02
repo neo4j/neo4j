@@ -178,6 +178,81 @@ public class AuthenticationIT extends CommunityWebContainerTestBase
     }
 
     @Test
+    void shouldNotAllowAnotherUserToAccessTransaction() throws Exception
+    {
+        // Given
+        startServerWithConfiguredUser();
+        setupBobAndAliceUsers();
+
+        // When Bob creates a transaction
+        HTTP.Response initiatingUserRequest =
+                HTTP.withBasicAuth( "bob", "secret" ).POST( testWebContainer.getBaseUri().resolve( txEndpoint() ).toString(), query( "CREATE (n)" ) );
+        assertEquals( 201, initiatingUserRequest.status() );
+
+        // Then alice cannot access that transaction
+        HTTP.Response hijackingUserRequest =
+                HTTP.withBasicAuth( "alice", "secret" ).POST( initiatingUserRequest.location(), query( "CREATE (n)" ) );
+        assertEquals( 404, hijackingUserRequest.status() );
+        assertThat( hijackingUserRequest.get( "errors" ).get( 0 ).get( "code" ).asText() )
+                .isEqualTo( Status.Transaction.TransactionNotFound.code().serialize() );
+
+        // And bob can still commit it
+        HTTP.Response initiatingUserCommitRequest =
+                HTTP.withBasicAuth( "bob", "secret" ).POST( initiatingUserRequest.location() + "/commit", query( "CREATE (n)" ) );
+        assertEquals( 200, initiatingUserCommitRequest.status() );
+    }
+
+    @Test
+    void shouldNotAllowAnotherUserToCommitTransaction() throws Exception
+    {
+        // Given
+        startServerWithConfiguredUser();
+        setupBobAndAliceUsers();
+
+        // When Bob creates a transaction
+        HTTP.Response initiatingUserRequest =
+                HTTP.withBasicAuth( "bob", "secret" ).POST( testWebContainer.getBaseUri().resolve( txEndpoint() ).toString(), query( "CREATE (n)" ) );
+        assertEquals( 201, initiatingUserRequest.status() );
+
+        // Then alice cannot commit that transaction
+        HTTP.Response hijackingUserRequest =
+                HTTP.withBasicAuth( "alice", "secret" ).POST( initiatingUserRequest.location() + "/commit" );
+        assertEquals( 404, hijackingUserRequest.status() );
+        assertThat( hijackingUserRequest.get( "errors" ).get( 0 ).get( "code" ).asText() )
+                .isEqualTo( Status.Transaction.TransactionNotFound.code().serialize() );
+
+        // And bob can still commit it
+        HTTP.Response initiatingUserCommitRequest =
+                HTTP.withBasicAuth( "bob", "secret" ).POST( initiatingUserRequest.location() + "/commit", query( "CREATE (n)" ) );
+        assertEquals( 200, initiatingUserCommitRequest.status() );
+    }
+
+    @Test
+    void shouldNotAllowAnotherUserToRollbackTransaction() throws Exception
+    {
+        // Given
+        startServerWithConfiguredUser();
+        setupBobAndAliceUsers();
+
+        // When Bob creates a transaction
+        HTTP.Response initiatingUserRequest =
+                HTTP.withBasicAuth( "bob", "secret" ).POST( testWebContainer.getBaseUri().resolve( txEndpoint() ).toString(), query( "CREATE (n)" ) );
+        assertEquals( 201, initiatingUserRequest.status() );
+
+        // Then alice cannot rollback that transaction
+        HTTP.Response hijackingUserRequest =
+                HTTP.withBasicAuth( "alice", "secret" ).DELETE( initiatingUserRequest.location() );
+        assertEquals( 404, hijackingUserRequest.status() );
+        assertThat( hijackingUserRequest.get( "errors" ).get( 0 ).get( "code" ).asText() )
+                .isEqualTo( Status.Transaction.TransactionNotFound.code().serialize() );
+
+        // And bob can still commit it
+        HTTP.Response initiatingUserCommitRequest =
+                HTTP.withBasicAuth( "bob", "secret" ).POST( initiatingUserRequest.location() + "/commit", query( "CREATE (n)" ) );
+        assertEquals( 200, initiatingUserCommitRequest.status() );
+    }
+
+    @Test
     void shouldAllowAllAccessIfAuthenticationIsDisabled() throws Exception
     {
         // Given
@@ -272,6 +347,21 @@ public class AuthenticationIT extends CommunityWebContainerTestBase
         HTTP.Response post = HTTP.withBasicAuth( "neo4j", "neo4j" ).POST( txCommitURL( "system" ),
                 query("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO 'secret'" ) );
         assertEquals( 200, post.status() );
+    }
+
+    private void setupBobAndAliceUsers()
+    {
+        HTTP.Response createBobRequest = HTTP.withBasicAuth( "neo4j", "secret" ).POST( txCommitURL( "system" ),
+                                                                                       query("CREATE USER bob SET PASSWORD 'secret' " +
+                                                                                             "SET PASSWORD CHANGE NOT REQUIRED" ) );
+        assertEquals( 200, createBobRequest.status() );
+        HTTP.Response createBobPermissions = HTTP.withBasicAuth( "neo4j", "secret" ).POST( txCommitURL( "system" ),
+                                                                                           query("GRANT ROLE admin to bob" ) );
+        assertEquals( 200, createBobPermissions.status() );
+        HTTP.Response createAliceRequest = HTTP.withBasicAuth( "neo4j", "secret" ).POST( txCommitURL( "system" ),
+                                                                                         query("CREATE USER alice SET PASSWORD 'secret' " +
+                                                                                               "SET PASSWORD CHANGE NOT REQUIRED" ) );
+        assertEquals( 200, createAliceRequest.status() );
     }
 
     private static JsonNode getResultRow( HTTP.Response response ) throws JsonParseException

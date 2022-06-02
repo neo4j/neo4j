@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.http.cypher;
 
+import org.neo4j.internal.kernel.api.security.LoginContext;
+
 /**
  * Stores transaction contexts for the server, including handling concurrency safe ways to acquire
  * transaction contexts back, as well as timing out and closing transaction contexts that have been
@@ -37,4 +39,28 @@ public interface TransactionRegistry
     TransactionHandle terminate( long id ) throws TransactionLifecycleException;
 
     void rollbackAllSuspendedTransactions();
+
+    void rollbackSuspendedTransactionsIdleSince( long oldestLastActiveTime );
+
+    default TransactionHandle acquire( long id, LoginContext requestingUser ) throws TransactionLifecycleException
+    {
+        assertSameUser( getLoginContextForTransaction( id ), requestingUser );
+        return acquire( id );
+    }
+
+    default TransactionHandle terminate( long id, LoginContext requestingUser ) throws TransactionLifecycleException
+    {
+        assertSameUser( getLoginContextForTransaction( id ), requestingUser );
+        return terminate( id );
+    }
+
+    default void assertSameUser( LoginContext owningUser, LoginContext requestingUser ) throws InvalidTransactionId
+    {
+        if ( !owningUser.subject().authenticatedUser().equals( requestingUser.subject().authenticatedUser() ) )
+        {
+            throw new InvalidTransactionId();
+        }
+    }
+
+    LoginContext getLoginContextForTransaction( long id ) throws InvalidTransactionId;
 }

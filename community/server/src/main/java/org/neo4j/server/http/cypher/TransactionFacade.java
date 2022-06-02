@@ -102,13 +102,13 @@ class TransactionFacade
                                       authManager, clock, isReadOnlyTransaction );
     }
 
-    TransactionHandle findTransactionHandle( long txId ) throws TransactionLifecycleException
+    TransactionHandle findTransactionHandle( long txId, LoginContext requestingUser ) throws TransactionLifecycleException
     {
-        return registry.acquire( txId );
+        return registry.acquire( txId, requestingUser );
     }
 
-    TransactionHandle terminate( long txId ) throws TransactionLifecycleException
+    TransactionHandle terminate( long txId, LoginContext loginContext ) throws TransactionLifecycleException
     {
-        return registry.terminate( txId );
+        return registry.terminate( txId, loginContext );
     }
 }

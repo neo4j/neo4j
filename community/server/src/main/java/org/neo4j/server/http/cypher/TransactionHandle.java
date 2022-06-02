@@ -34,13 +34,11 @@ import org.neo4j.bolt.runtime.statemachine.impl.BoltStateMachineContextImpl;
 import org.neo4j.bolt.runtime.statemachine.impl.BoltStateMachineSPIImpl;
 import org.neo4j.bolt.runtime.statemachine.impl.StatementProcessorProvider;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
-import org.neo4j.bolt.security.auth.BasicAuthenticationResult;
 import org.neo4j.bolt.transaction.CleanUpTransactionContext;
 import org.neo4j.bolt.transaction.InitializeContext;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.transaction.TransactionNotFoundException;
 import org.neo4j.bolt.transport.pipeline.ChannelProtector;
-import org.neo4j.bolt.v4.runtime.TransactionStateMachineSPIProviderV4;
 import org.neo4j.bolt.v41.messaging.RoutingContext;
 import org.neo4j.bolt.v43.BoltStateMachineV43;
 import org.neo4j.bolt.v44.runtime.TransactionStateMachineSPIProviderV44;
@@ -98,7 +96,7 @@ public class TransactionHandle implements TransactionTerminationHandle
     private final LogProvider userLogProvider;
     private final BoltGraphDatabaseManagementServiceSPI boltSPI;
     private String txManagerTxId;
-    LoginContext loginContext;
+    private LoginContext loginContext;
     private final ClientConnectionInfo clientConnectionInfo;
     MemoryTracker memoryTracker;
     AuthManager authManager;
@@ -229,6 +227,11 @@ public class TransactionHandle implements TransactionTerminationHandle
             registry.forget( id );
             transactionManager.cleanUp( new CleanUpTransactionContext( Long.toString( id ) ) );
         }
+    }
+
+    public LoginContext getLoginContext()
+    {
+        return loginContext;
     }
 
     boolean hasTransactionContext()
