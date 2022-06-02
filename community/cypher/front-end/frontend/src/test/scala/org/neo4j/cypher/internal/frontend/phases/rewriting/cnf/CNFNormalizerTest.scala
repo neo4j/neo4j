@@ -21,14 +21,22 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
+import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.Monitors
+import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
+import org.neo4j.cypher.internal.frontend.phases.Transformer
+import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer.phaseSteps
+import org.neo4j.cypher.internal.frontend.phases.transitiveClosure
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
+import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
 import org.neo4j.cypher.internal.rewriting.PredicateTestSupport
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.mockito.MockitoSugar
 
@@ -132,6 +140,34 @@ object TestContext extends MockitoSugar {
   def apply() = new TestContext(mock[Monitors])
 
   def apply(monitors: Monitors): TestContext = new TestContext(monitors)
+}
+
+object CNFNormalizerTest {
+
+  case object SemanticWrapper extends Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step {
+    private val transformer =
+      SemanticAnalysis.getTransformer(pushdownPropertyReads = false, Seq.empty)
+
+    override def preConditions: Set[Condition] = SemanticAnalysis.preConditions
+
+    override def postConditions: Set[Condition] = SemanticAnalysis.postConditions
+
+    override def invalidatedConditions: Set[Condition] = SemanticAnalysis.invalidatedConditions
+
+    override def transform(from: BaseState,
+                           context: BaseContext): BaseState = transformer.transform(from, context)
+
+    override def name: String = transformer.name
+  }
+
+  val orderedSteps: Seq[Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step] =
+    StepSequencer(ListStepAccumulator[Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step]())
+      .orderSteps(Set[Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step](transitiveClosure, SemanticWrapper) ++ phaseSteps, Set.empty)
+      .steps
+
+  def getTransformer: Transformer[BaseContext, BaseState, BaseState] = {
+    orderedSteps.reduceLeft[Transformer[BaseContext, BaseState, BaseState]]((t1, t2) => t1 andThen t2)
+  }
 }
 
 class TestContext(override val monitors: Monitors) extends BaseContext {

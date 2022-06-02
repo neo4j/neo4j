@@ -78,6 +78,16 @@ case object CNFNormalizer extends StatementRewriter {
       flattenBooleanOperators)
   }
 
+  val phaseSteps: Set[CnfPhase] = {
+    Set(
+      deMorganRewriter,
+      distributeLawsRewriter,
+      normalizeInequalities,
+      simplifyPredicates,
+      normalizeSargablePredicates,
+      flattenBooleanOperators)
+  }
+
   val PredicatesInCNF: Set[StepSequencer.Condition] = steps.flatMap(_.postConditions)
 }
 

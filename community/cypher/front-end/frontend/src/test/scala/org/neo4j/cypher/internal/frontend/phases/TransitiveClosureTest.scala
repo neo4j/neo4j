@@ -35,7 +35,7 @@ class TransitiveClosureTest extends CypherFunSuite with AstConstructionTestSuppo
   val cnfNormalizer: Transformer[BaseContext, BaseState, BaseState] =
     StepSequencer(ListStepAccumulator[Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step]())
       .orderSteps(
-        CNFNormalizer.steps ++ Set(SemanticWrapper),
+        CNFNormalizer.phaseSteps ++ Set(SemanticWrapper),
         Set.empty
       )
       .steps
