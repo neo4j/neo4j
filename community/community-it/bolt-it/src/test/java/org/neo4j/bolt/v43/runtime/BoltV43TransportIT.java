@@ -102,6 +102,19 @@ public class BoltV43TransportIT extends AbstractBoltITBase {
         });
     }
 
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("argumentsProvider")
+    public void shouldIgnoreRouteMessageWhenInFailedState(TransportConnection.Factory connectionFactory)
+            throws Exception {
+        init(connectionFactory);
+
+        connection.send(route(null, null, "DOESNT_EXIST!"));
+        assertThat(connection).receivesFailure();
+
+        connection.send(route());
+        assertThat(connection).receivesIgnored();
+    }
+
     private static void assertRoutingTableHasCorrectShape(Map<?, ?> routingTable) {
         assertAll(
                 () -> {
