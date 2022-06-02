@@ -26,10 +26,10 @@ import org.neo4j.bolt.runtime.statemachine.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.impl.AbstractBoltStateMachine;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
 import org.neo4j.bolt.v4.runtime.AutoCommitState;
-import org.neo4j.bolt.v4.runtime.FailedState;
 import org.neo4j.bolt.v4.runtime.InTransactionState;
 import org.neo4j.bolt.v4.runtime.ReadyState;
 import org.neo4j.bolt.v41.runtime.ConnectedState;
+import org.neo4j.bolt.v43.runtime.FailedState;
 import org.neo4j.bolt.v43.runtime.RouteMessageHandleStateDecorator;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.memory.HeapEstimator;
@@ -60,7 +60,7 @@ public class BoltStateMachineV43 extends AbstractBoltStateMachine
         var connected = new ConnectedState( connectionHints ); //v4.1
         var autoCommitState = new AutoCommitState(); // v4
         var inTransaction = new InTransactionState(); // v4
-        var failed = new FailedState(); // v4
+        var failed = new FailedState(); // v4.3
         var ready = RouteMessageHandleStateDecorator.decorate( new ReadyState(), failed ); // v4
         var interrupted = new InterruptedState(); // v3
 

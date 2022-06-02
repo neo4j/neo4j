@@ -64,6 +64,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 
 import static java.util.Collections.singletonMap;
@@ -71,6 +72,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
+import static org.neo4j.bolt.testing.MessageConditions.msgIgnored;
 import static org.neo4j.bolt.testing.MessageConditions.msgRecord;
 import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.bolt.testing.MessageConditions.serialize;
@@ -200,6 +202,24 @@ public class BoltV43TransportIT
                                         .isInstanceOf( Map.class )
                                         .satisfies( rt -> assertRoutingTableHasCorrectShape( (Map<?,?>) rt ) );
                             } ) ) );
+    }
+
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldIgnoreRouteMessageWhenInFailedState( Class<? extends TransportConnection> connectionClass ) throws Exception
+    {
+        init( connectionClass );
+
+        negotiateBoltV43();
+
+        connection.send( util.chunk( new RouteMessage(
+                MapValue.EMPTY, List.of(), "DOESNT_EXIST!" ) ) );
+
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure() ) );
+
+        connection.send( util.chunk( new RouteMessage( MapValue.EMPTY, List.of(), null ) ) );
+
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgIgnored() ) );
     }
 
     private void assertRoutingTableHasCorrectShape( Map<?,?> routingTable )
