@@ -22,12 +22,6 @@ package org.neo4j.internal.batchimport.staging;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-
-import java.util.EnumMap;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.neo4j.collection.Dependencies;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.internal.batchimport.Configuration;
@@ -56,11 +50,13 @@ import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
-
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.util.EnumMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -75,8 +71,7 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 
 @Neo4jLayoutExtension
-@ExtendWith( {RandomExtension.class, SuppressOutputExtension.class,DefaultFileSystemExtension.class, TestDirectorySupportExtension.class} )
-@ResourceLock( Resources.SYSTEM_OUT )
+@ExtendWith( {RandomExtension.class, DefaultFileSystemExtension.class, TestDirectorySupportExtension.class} )
 class HumanUnderstandableExecutionMonitorIT
 {
     private static final long NODE_COUNT = 1_000;
@@ -94,7 +89,8 @@ class HumanUnderstandableExecutionMonitorIT
     {
         // given
         CapturingMonitor progress = new CapturingMonitor();
-        HumanUnderstandableExecutionMonitor monitor = new HumanUnderstandableExecutionMonitor( progress );
+        PrintStream nullStream = new PrintStream( OutputStream.nullOutputStream() );
+        HumanUnderstandableExecutionMonitor monitor = new HumanUnderstandableExecutionMonitor( progress, nullStream, nullStream );
         IdType idType = IdType.INTEGER;
         Input input = new DataGeneratorInput( NODE_COUNT, RELATIONSHIP_COUNT, idType, random.seed(),
                 0, bareboneNodeHeader( idType, new Extractors( ';' ) ), bareboneRelationshipHeader( idType, new Extractors( ';' ) ),
@@ -124,7 +120,9 @@ class HumanUnderstandableExecutionMonitorIT
     void shouldStartFromNonFirstStage()
     {
         // given
-        HumanUnderstandableExecutionMonitor monitor = new HumanUnderstandableExecutionMonitor( HumanUnderstandableExecutionMonitor.NO_MONITOR );
+        PrintStream nullStream = new PrintStream( OutputStream.nullOutputStream() );
+        HumanUnderstandableExecutionMonitor monitor = new HumanUnderstandableExecutionMonitor( HumanUnderstandableExecutionMonitor.NO_MONITOR,
+               nullStream, nullStream );
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( Input.knownEstimates( 10, 10, 10, 10, 10, 10, 10 ) );
         BatchingNeoStores neoStores = mock( BatchingNeoStores.class );
