@@ -32,10 +32,10 @@ public class ExecutionMonitors {
     }
 
     public static ExecutionMonitor defaultVisible() {
-        return defaultVisible(System.out);
+        return defaultVisible(System.out, System.err);
     }
 
-    public static ExecutionMonitor defaultVisible(PrintStream out) {
-        return new HumanUnderstandableExecutionMonitor(NO_MONITOR, out);
+    public static ExecutionMonitor defaultVisible(PrintStream out, PrintStream err) {
+        return new HumanUnderstandableExecutionMonitor(NO_MONITOR, out, err);
     }
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import static java.io.OutputStream.nullOutputStream;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -34,6 +33,7 @@ import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_F
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.EnumMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -91,8 +91,9 @@ class HumanUnderstandableExecutionMonitorIT {
     void shouldReportProgressOfNodeImport() throws Exception {
         // given
         CapturingMonitor progress = new CapturingMonitor();
+        PrintStream nullStream = new PrintStream(OutputStream.nullOutputStream());
         HumanUnderstandableExecutionMonitor monitor =
-                new HumanUnderstandableExecutionMonitor(progress, new PrintStream(nullOutputStream()));
+                new HumanUnderstandableExecutionMonitor(progress, nullStream, nullStream);
         IdType idType = IdType.INTEGER;
         DataGeneratorInput.DataDistribution dataDistribution = DataGeneratorInput.data(NODE_COUNT, RELATIONSHIP_COUNT);
         Input input = new DataGeneratorInput(
@@ -137,8 +138,9 @@ class HumanUnderstandableExecutionMonitorIT {
     @Test
     void shouldStartFromNonFirstStage() {
         // given
+        PrintStream nullStream = new PrintStream(OutputStream.nullOutputStream());
         HumanUnderstandableExecutionMonitor monitor = new HumanUnderstandableExecutionMonitor(
-                HumanUnderstandableExecutionMonitor.NO_MONITOR, new PrintStream(nullOutputStream()));
+                HumanUnderstandableExecutionMonitor.NO_MONITOR, nullStream, nullStream);
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency(Input.knownEstimates(10, 10, 10, 10, 10, 10, 10));
         BatchingNeoStores neoStores = mock(BatchingNeoStores.class);

@@ -606,7 +606,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
         ExecutionMonitor executionMonitor = progressOutput != null
                 ? verboseProgressOutput
                         ? new SpectrumExecutionMonitor(progressOutput)
-                        : ExecutionMonitors.defaultVisible(progressOutput)
+                        : ExecutionMonitors.defaultVisible(progressOutput, System.err)
                 : ExecutionMonitor.INVISIBLE;
         return BatchImporterFactory.withHighestPriority()
                 .instantiate(

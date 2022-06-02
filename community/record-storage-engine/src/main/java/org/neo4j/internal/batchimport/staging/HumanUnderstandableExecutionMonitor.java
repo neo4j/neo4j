@@ -61,7 +61,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
 
     public static final Monitor NO_MONITOR = (stage, percent) -> {};
 
-    enum ImportStage {
+    public enum ImportStage {
         nodeImport("Node import"),
         relationshipImport("Relationship import"),
         linking("Relationship linking"),
@@ -95,6 +95,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
 
     private final Monitor monitor;
     private final PrintStream out;
+    private final PrintStream err;
     private DependencyResolver dependencyResolver;
     private boolean newInternalStage;
     private PageCacheArrayFactoryMonitor pageCacheArrayFactoryMonitor;
@@ -107,9 +108,10 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
     private long lastReportTime;
     private long stageStartTime;
 
-    HumanUnderstandableExecutionMonitor(Monitor monitor, PrintStream out) {
+    public HumanUnderstandableExecutionMonitor(Monitor monitor, PrintStream out, PrintStream err) {
         this.monitor = monitor;
         this.out = out;
+        this.err = err;
     }
 
     @Override
@@ -381,9 +383,9 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
     private void printPageCacheAllocationWarningIfUsed() {
         String allocation = pageCacheArrayFactoryMonitor.pageCacheAllocationOrNull();
         if (allocation != null) {
-            System.err.println();
-            System.err.println("WARNING:");
-            System.err.println(allocation);
+            err.println();
+            err.println("WARNING:");
+            err.println(allocation);
         }
     }
 
