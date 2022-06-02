@@ -77,7 +77,7 @@ public class FailedState implements BoltStateMachineState
         return "FAILED";
     }
 
-    private static boolean shouldIgnore( RequestMessage message )
+    protected boolean shouldIgnore( RequestMessage message )
     {
         return message instanceof RunMessage || message instanceof PullMessage || message instanceof DiscardMessage
                 || message instanceof CommitMessage || message instanceof RollbackMessage;
