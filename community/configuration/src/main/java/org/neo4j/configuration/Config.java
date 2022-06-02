@@ -91,6 +91,7 @@ public class Config implements Configuration {
             // temporary namespaces
             "cluster.",
             "fabric.",
+            "gds.",
             "apoc.");
 
     public static final class Builder {
