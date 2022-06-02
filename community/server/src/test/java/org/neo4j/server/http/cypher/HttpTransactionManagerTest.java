@@ -70,7 +70,7 @@ class HttpTransactionManagerTest
         HttpTransactionManager manager =
                 new HttpTransactionManager( managementService, jobScheduler, Clocks.systemClock(), Duration.ofMinutes( 1 ), logProvider );
 
-        assertNotNull( manager.getTransactionHandleRegistry() );
+        assertNotNull( manager.getTransactionRegistry() );
     }
 
     @Test

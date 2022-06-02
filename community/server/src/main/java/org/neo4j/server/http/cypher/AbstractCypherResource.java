@@ -41,11 +41,12 @@ import org.neo4j.logging.Log;
 import org.neo4j.server.http.cypher.format.api.InputEventStream;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 import org.neo4j.server.rest.Neo4jError;
-import org.neo4j.server.rest.dbms.AuthorizedRequestWrapper;
 import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNullElse;
+
+import static org.neo4j.server.rest.dbms.AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest;
 import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
 
 public abstract class AbstractCypherResource
@@ -90,16 +91,16 @@ public abstract class AbstractCypherResource
 
     @POST
     @Path( "/{id}" )
-    public Response executeStatements( @PathParam( "id" ) long id, InputEventStream inputEventStream )
+    public Response executeStatements( @PathParam( "id" ) long id, InputEventStream inputEventStream, @Context HttpServletRequest request )
     {
-        return executeInExistingTransaction( id, inputEventStream, false );
+        return executeInExistingTransaction( id, inputEventStream, false, getLoginContextFromHttpServletRequest( request ) );
     }
 
     @POST
     @Path( "/{id}/commit" )
-    public Response commitTransaction( @PathParam( "id" ) long id, InputEventStream inputEventStream )
+    public Response commitTransaction( @PathParam( "id" ) long id, InputEventStream inputEventStream, @Context HttpServletRequest request )
     {
-        return executeInExistingTransaction( id, inputEventStream, true );
+        return executeInExistingTransaction( id, inputEventStream, true, getLoginContextFromHttpServletRequest( request ) );
     }
 
     @POST
@@ -127,32 +128,35 @@ public abstract class AbstractCypherResource
 
     @DELETE
     @Path( "/{id}" )
-    public Response rollbackTransaction( @PathParam( "id" ) final long id )
+    public Response rollbackTransaction( @PathParam( "id" ) final long id, @Context HttpServletRequest request )
     {
-        Optional<GraphDatabaseAPI> graphDatabaseAPI = httpTransactionManager.getGraphDatabaseAPI( databaseName );
-        return graphDatabaseAPI.map( databaseAPI ->
-        {
-            if ( isDatabaseNotAvailable( databaseAPI ) )
-            {
-                return createNonAvailableDatabaseResponse( emptyMap() );
-            }
-            final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( databaseAPI );
-            TransactionHandle transactionHandle;
-            try
-            {
-                transactionHandle = transactionFacade.terminate( id );
-            }
-            catch ( TransactionLifecycleException e )
-            {
-                return invalidTransaction( e, emptyMap() );
-            }
+            Optional<GraphDatabaseAPI> graphDatabaseAPI = httpTransactionManager.getGraphDatabaseAPI( databaseName );
+            return graphDatabaseAPI.map(
+                    databaseAPI ->
+                    {
+                        if ( isDatabaseNotAvailable( databaseAPI ) )
+                        {
+                            return createNonAvailableDatabaseResponse( emptyMap() );
+                        }
 
-            RollbackInvocation invocation = new RollbackInvocation( log, transactionHandle );
-            OutputEventStreamImpl outputEventStream = new OutputEventStreamImpl( emptyMap(), null, uriScheme, invocation::execute );
-            return Response.ok().entity( outputEventStream ).build();
+                        final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( databaseAPI );
 
-        } ).orElse( createNonExistentDatabaseResponse( emptyMap() ) );
-    }
+                        TransactionHandle transactionHandle;
+                        try
+                        {
+                            transactionHandle = transactionFacade.terminate( id, getLoginContextFromHttpServletRequest( request ) );
+                        }
+                        catch ( TransactionLifecycleException e )
+                        {
+                            return invalidTransaction( e, emptyMap() );
+                        }
+
+                        RollbackInvocation invocation = new RollbackInvocation( log, transactionHandle );
+                        OutputEventStreamImpl outputEventStream =
+                                new OutputEventStreamImpl( emptyMap(), null, uriScheme, invocation::execute );
+                        return Response.ok().entity( outputEventStream ).build();
+                    } ).orElse( createNonExistentDatabaseResponse( emptyMap() ) );
+        }
 
     private boolean isDatabaseNotAvailable( GraphDatabaseAPI databaseAPI )
     {
@@ -162,38 +166,40 @@ public abstract class AbstractCypherResource
     private TransactionHandle createNewTransactionHandle( TransactionFacade transactionFacade, HttpServletRequest request, HttpHeaders headers,
             boolean implicitTransaction )
     {
-        LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest( request );
+        LoginContext loginContext = getLoginContextFromHttpServletRequest( request );
         long customTransactionTimeout = getTransactionTimeout( headers, log );
         ClientConnectionInfo connectionInfo = HttpConnectionInfoFactory.create( request );
         return transactionFacade.newTransactionHandle( uriScheme, implicitTransaction, loginContext, connectionInfo, customTransactionTimeout );
     }
 
-    private Response executeInExistingTransaction( long transactionId, InputEventStream inputEventStream, boolean finishWithCommit )
+    private Response executeInExistingTransaction( long transactionId, InputEventStream inputEventStream, boolean finishWithCommit,
+                                                   LoginContext requestingUserLoginContext )
     {
         InputEventStream inputStream = ensureNotNull( inputEventStream );
 
         Optional<GraphDatabaseAPI> graphDatabaseAPI = httpTransactionManager.getGraphDatabaseAPI( databaseName );
         return graphDatabaseAPI.map( databaseAPI ->
-        {
-            if ( isDatabaseNotAvailable( databaseAPI ) )
-            {
-                return createNonAvailableDatabaseResponse( inputStream.getParameters() );
-            }
-            final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( databaseAPI );
-            TransactionHandle transactionHandle;
-            try
-            {
-                transactionHandle = transactionFacade.findTransactionHandle( transactionId );
-            }
-            catch ( TransactionLifecycleException e )
-            {
-                return invalidTransaction( e, inputStream.getParameters() );
-            }
-            Invocation invocation = new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), inputStream, finishWithCommit );
-            OutputEventStreamImpl outputEventStream =
-                    new OutputEventStreamImpl( inputStream.getParameters(), transactionHandle, uriScheme, invocation::execute );
-            return Response.ok( outputEventStream ).build();
-        } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
+                                     {
+                                         if ( isDatabaseNotAvailable( databaseAPI ) )
+                                         {
+                                             return createNonAvailableDatabaseResponse( inputStream.getParameters() );
+                                         }
+                                         final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( databaseAPI );
+                                         TransactionHandle transactionHandle;
+                                         try
+                                         {
+                                             transactionHandle = transactionFacade.findTransactionHandle( transactionId, requestingUserLoginContext );
+                                         }
+                                         catch ( TransactionLifecycleException e )
+                                         {
+                                             return invalidTransaction( e, inputStream.getParameters() );
+                                         }
+                                         Invocation invocation = new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ),
+                                                                                 inputStream, finishWithCommit );
+                                         OutputEventStreamImpl outputEventStream =
+                                                 new OutputEventStreamImpl( inputStream.getParameters(), transactionHandle, uriScheme, invocation::execute );
+                                         return Response.ok( outputEventStream ).build();
+                                     } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
     }
 
     private Response invalidTransaction( TransactionLifecycleException e, Map<String,Object> parameters )
