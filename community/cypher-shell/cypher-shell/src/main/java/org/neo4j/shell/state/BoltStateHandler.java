@@ -40,6 +40,7 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.Transaction;
+import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.ClientException;
@@ -66,6 +67,9 @@ import org.neo4j.shell.log.Logger;
 public class BoltStateHandler implements TransactionHandler, Connector, DatabaseManager {
     private static final Logger log = Logger.create();
     private static final String USER_AGENT = "neo4j-cypher-shell/v" + Build.version();
+    private static final TransactionConfig TRANSACTION_CONFIG = TransactionConfig.builder()
+            .withMetadata(Map.of("type", "system", "app", "cypher-shell_v" + Build.version()))
+            .build();
     private final TriFunction<String, AuthToken, Config, Driver> driverProvider;
     private final boolean isInteractive;
     private final Map<String, Bookmark> bookmarks = new HashMap<>();
@@ -131,7 +135,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         if (isTransactionOpen()) {
             throw new CommandException("There is already an open transaction");
         }
-        tx = session.beginTransaction();
+        tx = session.beginTransaction(TRANSACTION_CONFIG);
     }
 
     @Override
@@ -315,7 +319,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     private ThrowingAction<CommandException> getPing() {
         return () -> {
             try {
-                Result run = session.run("CALL db.ping()");
+                Result run = session.run("CALL db.ping()", TRANSACTION_CONFIG);
                 ResultSummary summary = run.consume();
                 BoltStateHandler.this.protocolVersion = summary.server().protocolVersion();
                 updateActualDbName(summary);
@@ -323,7 +327,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
                 log.warn("Ping failed", e);
                 // In older versions there is no db.ping procedure, use legacy method.
                 if (procedureNotFound(e)) {
-                    Result run = session.run(isSystemDb() ? "CALL db.indexes()" : "RETURN 1");
+                    Result run = session.run(isSystemDb() ? "CALL db.indexes()" : "RETURN 1", TRANSACTION_CONFIG);
                     ResultSummary summary = run.consume();
                     BoltStateHandler.this.protocolVersion = summary.server().protocolVersion();
                     updateActualDbName(summary);
@@ -422,7 +426,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
             try {
                 String command = "ALTER CURRENT USER SET PASSWORD FROM $o TO $n";
                 Value parameters = Values.parameters("o", connectionConfig.password(), "n", newPassword);
-                Result run = session.run(command, parameters);
+                Result run = session.run(new Query(command, parameters), TRANSACTION_CONFIG);
                 run.consume();
             } catch (Neo4jException e) {
                 if (isPasswordChangeRequiredException(e)) {
@@ -430,7 +434,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
                     // In < 4.0 versions use legacy method.
                     String oldCommand = "CALL dbms.security.changePassword($n)";
                     Value oldParameters = Values.parameters("n", newPassword);
-                    Result run = session.run(oldCommand, oldParameters);
+                    Result run = session.run(new Query(oldCommand, oldParameters), TRANSACTION_CONFIG);
                     run.consume();
                 } else {
                     throw e;
@@ -463,7 +467,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         if (isTransactionOpen()) {
             statementResult = tx.run(new Query(cypher, queryParams));
         } else {
-            statementResult = session.run(new Query(cypher, queryParams));
+            statementResult = session.run(new Query(cypher, queryParams), TRANSACTION_CONFIG);
         }
 
         if (statementResult == null) {

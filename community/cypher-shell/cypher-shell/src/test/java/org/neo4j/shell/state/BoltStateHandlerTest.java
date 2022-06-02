@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -48,6 +49,7 @@ import static org.neo4j.shell.DatabaseManager.SYSTEM_DB_NAME;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,6 +65,7 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.Transaction;
+import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.ClientException;
@@ -75,6 +78,7 @@ import org.neo4j.driver.summary.ServerInfo;
 import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.Environment;
 import org.neo4j.shell.TriFunction;
+import org.neo4j.shell.build.Build;
 import org.neo4j.shell.cli.Encryption;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.printer.Printer;
@@ -87,6 +91,9 @@ class BoltStateHandlerTest {
     private final OfflineBoltStateHandler boltStateHandler = new OfflineBoltStateHandler(mockDriver);
     private final ConnectionConfig config =
             connectionConfig("bolt", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment());
+    private final TransactionConfig transactionConfig = TransactionConfig.builder()
+            .withMetadata(Map.of("type", "system", "app", "cypher-shell_v" + Build.version()))
+            .build();
 
     @BeforeEach
     void setup() {
@@ -159,7 +166,9 @@ class BoltStateHandlerTest {
 
         ClientException databaseNotFound = new ClientException("Neo.ClientError.Database.DatabaseNotFound", "blah");
 
-        when(sessionMock.run(any(Query.class))).thenThrow(databaseNotFound).thenReturn(resultMock);
+        when(sessionMock.run(any(Query.class), eq(transactionConfig)))
+                .thenThrow(databaseNotFound)
+                .thenReturn(resultMock);
 
         BoltStateHandler handler = new BoltStateHandler((s, authToken, config) -> driverMock, false);
         handler.connect(config);
@@ -247,7 +256,7 @@ class BoltStateHandlerTest {
     void whenInTransactionHandlerLetsTransactionDoTheWork() throws CommandException {
         Transaction transactionMock = mock(Transaction.class);
         Session sessionMock = mock(Session.class);
-        when(sessionMock.beginTransaction()).thenReturn(transactionMock);
+        when(sessionMock.beginTransaction(any())).thenReturn(transactionMock);
         Driver driverMock = stubResultSummaryInAnOpenSession(mock(Result.class), sessionMock, "neo4j-version");
 
         Result result = mock(Result.class);
@@ -303,7 +312,7 @@ class BoltStateHandlerTest {
 
         when(valueMock.toString()).thenReturn("999");
         when(recordMock.get(0)).thenReturn(valueMock);
-        when(sessionMock.run(any(Query.class))).thenReturn(resultMock);
+        when(sessionMock.run(any(Query.class), eq(transactionConfig))).thenReturn(resultMock);
 
         OfflineBoltStateHandler boltStateHandler = new OfflineBoltStateHandler(driverMock);
 
@@ -311,7 +320,7 @@ class BoltStateHandlerTest {
 
         BoltResult boltResult =
                 boltStateHandler.runCypher("RETURN 999", new HashMap<>()).get();
-        verify(sessionMock).run(any(Query.class));
+        verify(sessionMock).run(any(Query.class), eq(transactionConfig));
 
         assertEquals("999", boltResult.getRecords().get(0).get(0).toString());
     }
@@ -329,7 +338,7 @@ class BoltStateHandlerTest {
 
         when(valueMock.toString()).thenReturn("999");
         when(recordMock.get(0)).thenReturn(valueMock);
-        when(sessionMock.run(any(Query.class)))
+        when(sessionMock.run(any(Query.class), eq(transactionConfig)))
                 .thenThrow(new SessionExpiredException("leaderswitch"))
                 .thenReturn(resultMock);
 
@@ -340,7 +349,7 @@ class BoltStateHandlerTest {
                 boltStateHandler.runCypher("RETURN 999", new HashMap<>()).get();
 
         verify(driverMock, times(2)).session(any());
-        verify(sessionMock, times(2)).run(any(Query.class));
+        verify(sessionMock, times(2)).run(any(Query.class), eq(transactionConfig));
 
         assertEquals("999", boltResult.getRecords().get(0).get(0).toString());
     }
@@ -374,9 +383,9 @@ class BoltStateHandlerTest {
         boltStateHandler.reset();
 
         // then
-        verify(sessionMock, times(1)).run(Mockito.anyString());
+        verify(sessionMock, times(1)).run(Mockito.anyString(), eq(transactionConfig));
         verify(sessionMock, times(2)).isOpen();
-        verify(sessionMock, times(1)).beginTransaction();
+        verify(sessionMock, times(1)).beginTransaction(eq(transactionConfig));
         verifyNoMoreInteractions(sessionMock);
     }
 
@@ -456,8 +465,8 @@ class BoltStateHandlerTest {
         when(failing.consume())
                 .thenThrow(new ClientException(
                         "Neo.ClientError.Procedure.ProcedureNotFound", "No procedure CALL db.ping(()"));
-        when(sessionMock.run("CALL db.ping()")).thenReturn(failing);
-        when(sessionMock.run("RETURN 1")).thenReturn(other);
+        when(sessionMock.run(eq("CALL db.ping()"), eq(transactionConfig))).thenReturn(failing);
+        when(sessionMock.run(eq("RETURN 1"), eq(transactionConfig))).thenReturn(other);
         Driver driverMock = mock(Driver.class);
         when(driverMock.session(any())).thenReturn(sessionMock);
         OfflineBoltStateHandler boltStateHandler = new OfflineBoltStateHandler(driverMock);
@@ -466,7 +475,7 @@ class BoltStateHandlerTest {
         boltStateHandler.connect();
 
         // then
-        verify(sessionMock).run("RETURN 1");
+        verify(sessionMock).run(eq("RETURN 1"), eq(transactionConfig));
     }
 
     @Test
@@ -481,7 +490,11 @@ class BoltStateHandlerTest {
         Result resultMock = mock(Result.class);
         Driver driverMock =
                 stubResultSummaryInAnOpenSession(resultMock, sessionMock, "Neo4j/9.4.1-ALPHA", "my_default_db");
-        when(sessionMock.run("CALL dbms.security.changePassword($n)", Values.parameters("n", newPassword)))
+        when(sessionMock.run(
+                        eq(new Query(
+                                "ALTER CURRENT USER SET PASSWORD FROM $o TO $n",
+                                Values.parameters("o", config.password(), "n", newPassword))),
+                        eq(transactionConfig)))
                 .thenReturn(resultMock);
         when(sessionMock.lastBookmark()).thenReturn(bookmark);
         BoltStateHandler handler = new OfflineBoltStateHandler(driverMock);
@@ -518,11 +531,11 @@ class BoltStateHandlerTest {
         Session db1SessionMock = mock(Session.class);
         when(db1SessionMock.isOpen()).thenReturn(true);
         when(db1SessionMock.lastBookmark()).thenReturn(db1Bookmark);
-        when(db1SessionMock.run("CALL db.ping()")).thenReturn(resultMock);
+        when(db1SessionMock.run(eq("CALL db.ping()"), eq(transactionConfig))).thenReturn(resultMock);
         Session db2SessionMock = mock(Session.class);
         when(db2SessionMock.isOpen()).thenReturn(true);
         when(db2SessionMock.lastBookmark()).thenReturn(db2Bookmark);
-        when(db2SessionMock.run("CALL db.ping()")).thenReturn(resultMock);
+        when(db2SessionMock.run(eq("CALL db.ping()"), eq(transactionConfig))).thenReturn(resultMock);
 
         Driver driverMock =
                 stubResultSummaryInAnOpenSession(resultMock, db1SessionMock, "Neo4j/9.4.1-ALPHA", "database1");
@@ -604,7 +617,7 @@ class BoltStateHandlerTest {
         var mockSession = spy(FakeSession.class);
         var mockTx = mock(Transaction.class);
         doThrow(new ClientException("Failed to commit :(")).when(mockTx).commit();
-        when(mockSession.beginTransaction()).thenReturn(mockTx);
+        when(mockSession.beginTransaction(any())).thenReturn(mockTx);
         when(mockDriver.session(any())).thenReturn(mockSession);
 
         boltStateHandler.connect();
@@ -619,7 +632,7 @@ class BoltStateHandlerTest {
         var mockSession = spy(FakeSession.class);
         var mockTx = mock(Transaction.class);
         doThrow(new ClientException("Failed to rollback :(")).when(mockTx).rollback();
-        when(mockSession.beginTransaction()).thenReturn(mockTx);
+        when(mockSession.beginTransaction(any())).thenReturn(mockTx);
         when(mockDriver.session(any())).thenReturn(mockSession);
 
         boltStateHandler.connect();
@@ -650,11 +663,11 @@ class BoltStateHandlerTest {
         assertEquals(Optional.of("emil"), fakeDriver.sessionConfigs.get(0).impersonatedUser());
     }
 
-    private static Driver stubResultSummaryInAnOpenSession(Result resultMock, Session sessionMock, String version) {
+    private Driver stubResultSummaryInAnOpenSession(Result resultMock, Session sessionMock, String version) {
         return stubResultSummaryInAnOpenSession(resultMock, sessionMock, version, DEFAULT_DEFAULT_DB_NAME);
     }
 
-    private static Driver stubResultSummaryInAnOpenSession(
+    private Driver stubResultSummaryInAnOpenSession(
             Result resultMock, Session sessionMock, String protocolVersion, String databaseName) {
         Driver driverMock = mock(Driver.class);
         ResultSummary resultSummary = mock(ResultSummary.class);
@@ -668,7 +681,7 @@ class BoltStateHandlerTest {
         when(databaseInfo.name()).thenReturn(databaseName);
 
         when(sessionMock.isOpen()).thenReturn(true);
-        when(sessionMock.run("CALL db.ping()")).thenReturn(resultMock);
+        when(sessionMock.run(eq("CALL db.ping()"), eq(transactionConfig))).thenReturn(resultMock);
         when(sessionMock.run(anyString(), any(Value.class))).thenReturn(resultMock);
         when(driverMock.session(any())).thenReturn(sessionMock);
 

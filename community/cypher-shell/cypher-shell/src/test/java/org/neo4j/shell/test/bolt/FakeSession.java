@@ -78,7 +78,7 @@ public class FakeSession implements Session {
 
     @Override
     public Result run(Query statement, TransactionConfig config) {
-        return new FakeResult();
+        return FakeResult.parseStatement(statement.text());
     }
 
     @Override
