@@ -33,8 +33,6 @@ import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.identity.ServerId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.storageengine.StoreFileClosedException;
-import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class StandaloneDatabaseInfoService implements DatabaseInfoService {
     private static final String ROLE_LABEL = "standalone";
@@ -43,21 +41,22 @@ public class StandaloneDatabaseInfoService implements DatabaseInfoService {
     private final ReadOnlyDatabases readOnlyDatabases;
     private final ServerId serverId;
     private final SocketAddress address;
-    private final DatabaseContextProvider<?> databaseContextProvider;
     private final DatabaseStateService stateService;
+    private final DetailedDbInfoProvider detailedDbInfoProvider;
 
     public StandaloneDatabaseInfoService(
             ServerId serverId,
             SocketAddress address,
             DatabaseContextProvider<?> databaseContextProvider,
             DatabaseStateService stateService,
-            ReadOnlyDatabases readOnlyDatabases) {
+            ReadOnlyDatabases readOnlyDatabases,
+            DetailedDbInfoProvider detailedDbInfoProvider) {
         this.serverId = serverId;
         this.address = address;
-        this.databaseContextProvider = databaseContextProvider;
         this.stateService = stateService;
         this.idRepository = databaseContextProvider.databaseIdRepository();
         this.readOnlyDatabases = readOnlyDatabases;
+        this.detailedDbInfoProvider = detailedDbInfoProvider;
     }
 
     @Override
@@ -68,8 +67,12 @@ public class StandaloneDatabaseInfoService implements DatabaseInfoService {
     @Override
     public List<ExtendedDatabaseInfo> requestDetailedInfo(Set<String> databaseNames) {
         return createDatabaseInfoStream(databaseNames)
-                .map(databaseInfo ->
-                        databaseInfo.extendWith(getLastCommittedTransactionForDatabase(databaseInfo.namedDatabaseId())))
+                .map(databaseInfo -> {
+                    var db = databaseInfo.namedDatabaseId.databaseId();
+                    var lastCommittedTxId = detailedDbInfoProvider.lastCommittedTxId(db);
+                    var storeId = detailedDbInfoProvider.storeId(db);
+                    return databaseInfo.extendWith(new DetailedDatabaseInfo(lastCommittedTxId, storeId));
+                })
                 .collect(Collectors.toList());
     }
 
@@ -78,21 +81,6 @@ public class StandaloneDatabaseInfoService implements DatabaseInfoService {
                 .map(idRepository::getByName)
                 .flatMap(Optional::stream)
                 .map(this::createInfoForDatabase);
-    }
-
-    private long getLastCommittedTransactionForDatabase(NamedDatabaseId namedDatabaseId) {
-        return databaseContextProvider
-                .getDatabaseContext(namedDatabaseId)
-                .map(DatabaseContext::dependencies)
-                .map(dependencies -> dependencies.resolveDependency(TransactionIdStore.class))
-                .flatMap(transactionIdStore -> {
-                    try {
-                        return Optional.of(transactionIdStore.getLastCommittedTransactionId());
-                    } catch (StoreFileClosedException e) {
-                        return Optional.empty();
-                    }
-                })
-                .orElse(ExtendedDatabaseInfo.COMMITTED_TX_ID_NOT_AVAILABLE);
     }
 
     private DatabaseInfo createInfoForDatabase(NamedDatabaseId namedDatabaseId) {

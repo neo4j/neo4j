@@ -47,6 +47,7 @@ import org.neo4j.dbms.database.DefaultDatabaseContextFactory;
 import org.neo4j.dbms.database.DefaultDatabaseContextFactoryComponents;
 import org.neo4j.dbms.database.DefaultSystemGraphComponent;
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
+import org.neo4j.dbms.database.DetailedDbInfoProvider;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.dbms.database.StandaloneDatabaseInfoService;
 import org.neo4j.dbms.database.SystemGraphComponents;
@@ -197,13 +198,15 @@ public class CommunityEditionModule extends StandaloneEditionModule implements D
 
     @Override
     public DatabaseInfoService createDatabaseInfoService(DatabaseContextProvider<?> databaseContextProvider) {
+        DetailedDbInfoProvider detailedDbInfoProvider = new DetailedDbInfoProvider(databaseContextProvider);
         var address = globalModule.getGlobalConfig().get(BoltConnector.advertised_address);
         return new StandaloneDatabaseInfoService(
                 identityModule.serverId(),
                 address,
                 databaseContextProvider,
                 databaseStateService,
-                globalReadOnlyChecker);
+                globalReadOnlyChecker,
+                detailedDbInfoProvider);
     }
 
     @Override

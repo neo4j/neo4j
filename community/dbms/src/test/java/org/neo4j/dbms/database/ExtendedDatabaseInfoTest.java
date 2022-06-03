@@ -23,13 +23,14 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.neo4j.dbms.database.ExtendedDatabaseInfo.COMMITTED_TX_ID_NOT_AVAILABLE;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.storageengine.api.StoreId;
 
 class ExtendedDatabaseInfoTest {
     @Test
     void shouldReturnEmptyLastCommittedTxId() {
         // given
         var databaseInfo = new ExtendedDatabaseInfo(
-                null, null, null, null, null, null, null, null, COMMITTED_TX_ID_NOT_AVAILABLE, -1);
+                null, null, null, null, null, null, null, null, COMMITTED_TX_ID_NOT_AVAILABLE, -1, null);
 
         // when
         var result = databaseInfo.lastCommittedTxId();
@@ -42,7 +43,7 @@ class ExtendedDatabaseInfoTest {
     void shouldReturnEmptyTxCommitLag() {
         // given
         var databaseInfo = new ExtendedDatabaseInfo(
-                null, null, null, null, null, null, null, null, COMMITTED_TX_ID_NOT_AVAILABLE, -42);
+                null, null, null, null, null, null, null, null, COMMITTED_TX_ID_NOT_AVAILABLE, -42, null);
 
         // when
         var result = databaseInfo.txCommitLag();
@@ -52,24 +53,41 @@ class ExtendedDatabaseInfoTest {
     }
 
     @Test
-    void shouldReturnLastCommittedTxIdWithValue() {
+    void shouldReturnEmptyStoreId() {
         // given
-        var lastCommittedTxId = 5040;
         var databaseInfo =
-                new ExtendedDatabaseInfo(null, null, null, null, null, null, null, null, lastCommittedTxId, -42);
+                new ExtendedDatabaseInfo(null, null, null, null, null, null, null, null, 3, -42, StoreId.UNKNOWN);
 
         // when
-        var result = databaseInfo.lastCommittedTxId();
+        var result = databaseInfo.storeId();
 
         // then
-        assertThat(result).hasValue(lastCommittedTxId);
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void shouldReturnDetailedDbInfoWithValue() {
+        // given
+        var expectedLastCommittedTxId = 5040;
+        var expectedStoreId = new StoreId(1, 1, "engine", "format", 1, 1);
+        var databaseInfo = new ExtendedDatabaseInfo(
+                null, null, null, null, null, null, null, null, expectedLastCommittedTxId, -42, expectedStoreId);
+
+        // when
+        var actual_lastCommittedTxId = databaseInfo.lastCommittedTxId();
+        var actual_storeId = databaseInfo.storeId();
+
+        // then
+        assertThat(actual_lastCommittedTxId).hasValue(expectedLastCommittedTxId);
+        assertThat(actual_storeId).hasValue(expectedStoreId.getStoreVersionUserString());
     }
 
     @Test
     void shouldReturnTxCommitLagWithValue() {
         // given
         var txCommitLag = -1;
-        var databaseInfo = new ExtendedDatabaseInfo(null, null, null, null, null, null, null, null, 5040, txCommitLag);
+        var databaseInfo =
+                new ExtendedDatabaseInfo(null, null, null, null, null, null, null, null, 5040, txCommitLag, null);
 
         // when
         var result = databaseInfo.txCommitLag();
@@ -81,8 +99,10 @@ class ExtendedDatabaseInfoTest {
     @Test
     void shouldBeEqualIfConstructedWithDifferentTxCommitLagButNoCommittedTxIdAvailable() {
         // given
-        var databaseInfo1 = new ExtendedDatabaseInfo(null, null, null, null, null, null, null, null, -1, -7);
-        var databaseInfo2 = new ExtendedDatabaseInfo(null, null, null, null, null, null, null, null, -1, -50);
+        var databaseInfo1 =
+                new ExtendedDatabaseInfo(null, null, null, null, null, null, null, null, -1, -7, StoreId.UNKNOWN);
+        var databaseInfo2 =
+                new ExtendedDatabaseInfo(null, null, null, null, null, null, null, null, -1, -50, StoreId.UNKNOWN);
 
         // then
         assertThat(databaseInfo1).isEqualTo(databaseInfo2);

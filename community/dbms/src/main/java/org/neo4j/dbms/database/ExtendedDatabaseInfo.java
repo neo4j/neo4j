@@ -20,12 +20,14 @@
 package org.neo4j.dbms.database;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DatabaseAccess;
 import org.neo4j.dbms.identity.ServerId;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.storageengine.api.StoreId;
 
 /**
  * An extension of {@link DatabaseInfo} with the additional fields for the information returned by {@link DatabaseInfoService#requestDetailedInfo(Set)}.
@@ -36,9 +38,11 @@ public class ExtendedDatabaseInfo extends DatabaseInfo {
     private final long lastCommittedTxId;
     private final long txCommitLag;
     private final boolean committedTxIdNotAvailable;
+    private final StoreId storeId;
 
     /**
      * If the lastCommittedTxId is set to COMMITTED_TX_ID_NOT_AVAILABLE both lastCommittedTxId() and txCommitLag() will return empty optionals
+     * If StoreId is UNKNOWN, storeId() will return an empty optional.
      */
     public ExtendedDatabaseInfo(
             NamedDatabaseId namedDatabaseId,
@@ -50,11 +54,13 @@ public class ExtendedDatabaseInfo extends DatabaseInfo {
             String status,
             String error,
             long lastCommittedTxId,
-            long txCommitLag) {
+            long txCommitLag,
+            StoreId storeId) {
         super(namedDatabaseId, serverId, accessFromConfig, boltAddress, catchupAddress, role, status, error);
         this.committedTxIdNotAvailable = lastCommittedTxId == COMMITTED_TX_ID_NOT_AVAILABLE;
         this.lastCommittedTxId = committedTxIdNotAvailable ? 0 : lastCommittedTxId;
         this.txCommitLag = committedTxIdNotAvailable ? 0 : txCommitLag;
+        this.storeId = storeId;
     }
 
     /**
@@ -84,6 +90,14 @@ public class ExtendedDatabaseInfo extends DatabaseInfo {
         return committedTxIdNotAvailable ? OptionalLong.empty() : OptionalLong.of(txCommitLag);
     }
 
+    /**
+     * Returns empty optional if storeId is UNKNOWN.
+     * @return the string representation of the storeId for a certain db on a certain server
+     */
+    public Optional<String> storeId() {
+        return storeId.equals(StoreId.UNKNOWN) ? Optional.empty() : Optional.of(storeId.getStoreVersionUserString());
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -93,7 +107,8 @@ public class ExtendedDatabaseInfo extends DatabaseInfo {
             return false;
         }
         ExtendedDatabaseInfo that = (ExtendedDatabaseInfo) o;
-        return lastCommittedTxId == that.lastCommittedTxId
+        return storeId.equals(that.storeId)
+                && lastCommittedTxId == that.lastCommittedTxId
                 && txCommitLag == that.txCommitLag
                 && Objects.equals(namedDatabaseId, that.namedDatabaseId)
                 && Objects.equals(serverId, that.serverId)
@@ -117,7 +132,8 @@ public class ExtendedDatabaseInfo extends DatabaseInfo {
                 status,
                 error,
                 lastCommittedTxId,
-                txCommitLag);
+                txCommitLag,
+                storeId);
     }
 
     @Override
@@ -132,6 +148,7 @@ public class ExtendedDatabaseInfo extends DatabaseInfo {
                 + status + '\'' + ", error='"
                 + error + '\'' + ", lastCommittedTxId="
                 + lastCommittedTxId() + ", txCommitLag="
-                + txCommitLag() + '}';
+                + txCommitLag() + ", storeId="
+                + storeId() + '}';
     }
 }

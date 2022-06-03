@@ -59,11 +59,13 @@ public class DatabaseInfo {
         this.error = error;
     }
 
-    public ExtendedDatabaseInfo extendWith(long lastCommittedTxId) {
-        return this.extendWith(lastCommittedTxId, lastCommittedTxId);
+    public ExtendedDatabaseInfo extendWith(DetailedDatabaseInfo detailedDatabaseInfo) {
+        return this.extendWith(detailedDatabaseInfo, detailedDatabaseInfo.lastCommittedTxId());
     }
 
-    public ExtendedDatabaseInfo extendWith(long lastCommittedTxId, long maxCommittedTxId) {
+    public ExtendedDatabaseInfo extendWith(DetailedDatabaseInfo detailedDatabaseInfo, long maxCommittedTxId) {
+        var lastCommittedTxId = detailedDatabaseInfo.lastCommittedTxId();
+        var storeId = detailedDatabaseInfo.storeId();
         return new ExtendedDatabaseInfo(
                 namedDatabaseId,
                 serverId,
@@ -74,7 +76,8 @@ public class DatabaseInfo {
                 status,
                 error,
                 lastCommittedTxId,
-                lastCommittedTxId - maxCommittedTxId);
+                lastCommittedTxId - maxCommittedTxId,
+                storeId);
     }
 
     public NamedDatabaseId namedDatabaseId() {
