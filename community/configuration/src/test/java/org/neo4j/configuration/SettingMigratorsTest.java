@@ -347,17 +347,17 @@ class SettingMigratorsTest {
     @Test
     void directoriesSettingsMigration() throws IOException {
         Path confFile = testDirectory.createFile("test.conf");
-        var a = testDirectory.directory("a");
-        var b = testDirectory.directory("b");
-        var c = testDirectory.directory("c");
-        var d = testDirectory.directory("d");
-        var e = testDirectory.directory("e");
-        var f = testDirectory.directory("f");
-        var g = testDirectory.directory("g");
-        var h = testDirectory.directory("h");
-        var i = testDirectory.directory("i");
-        var j = testDirectory.directory("j");
-        var k = testDirectory.directory("k");
+        var a = testDirectory.directory("a").toAbsolutePath();
+        var b = testDirectory.directory("b").toAbsolutePath();
+        var c = testDirectory.directory("c").toAbsolutePath();
+        var d = testDirectory.directory("d").toAbsolutePath();
+        var e = testDirectory.directory("e").toAbsolutePath();
+        var f = testDirectory.directory("f").toAbsolutePath();
+        var g = testDirectory.directory("g").toAbsolutePath();
+        var h = testDirectory.directory("h").toAbsolutePath();
+        var i = testDirectory.directory("i").toAbsolutePath();
+        var j = testDirectory.directory("j").toAbsolutePath();
+        var k = testDirectory.directory("k").toAbsolutePath();
 
         Files.write(
                 confFile,
@@ -743,12 +743,12 @@ class SettingMigratorsTest {
                         "dbms.jvm.additional=-XX:+TrustFinalNonStaticFields"));
 
         Config config = Config.newBuilder().fromFile(confFile).build();
-        assertEquals(
-                """
+        assertThat(config.get(additional_jvm))
+                .isEqualToIgnoringNewLines(
+                        """
                 -XX:+UseG1GC
                 -XX:-OmitStackTraceInFastThrow
-                -XX:+TrustFinalNonStaticFields""",
-                config.get(additional_jvm));
+                -XX:+TrustFinalNonStaticFields""");
     }
 
     @Test
