@@ -34,6 +34,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.cert.CRLException;
 import java.security.cert.CertStore;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CollectionCertStoreParameters;
 import java.security.cert.PKIXBuilderParameters;
@@ -303,13 +304,13 @@ public class SslPolicyLoader {
         int i = 0;
         for (Path trustedCertFile : trustedCertFiles) {
             try (InputStream input = fileSystem.openAsInputStream(trustedCertFile)) {
-                while (input.available() > 0) {
-                    try {
-                        X509Certificate cert = (X509Certificate) CERTIFICATE_FACTORY.generateCertificate(input);
+                try {
+                    for (Certificate certificate : CERTIFICATE_FACTORY.generateCertificates(input)) {
+                        X509Certificate cert = (X509Certificate) certificate;
                         trustStore.setCertificateEntry(Integer.toString(i++), cert);
-                    } catch (Exception e) {
-                        throw new CertificateException("Error loading certificate file: " + trustedCertFile, e);
                     }
+                } catch (Exception e) {
+                    throw new CertificateException("Error loading certificate file: " + trustedCertFile, e);
                 }
             }
         }
