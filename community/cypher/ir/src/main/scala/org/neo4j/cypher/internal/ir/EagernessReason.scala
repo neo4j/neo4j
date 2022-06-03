@@ -31,4 +31,6 @@ object EagernessReason {
   case class OverlappingDeletedLabels(labels: Seq[String]) extends Reason
 
   case class DeleteOverlap(identifiers: Seq[String]) extends Reason
+
+  case class ReadDeleteConflict(identifier: String) extends Reason
 }

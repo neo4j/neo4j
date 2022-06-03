@@ -193,7 +193,7 @@ class LabelExpressionEvaluatorTest extends CypherFunSuite with AstConstructionTe
     val n = Variable("n")(InputPosition.NONE)
     val label = LabelName("a")(InputPosition.NONE)
     val hasLabels = HasLabels(n, Seq(label))(InputPosition.NONE)
-    val labelExpression = buildExpression(10_000, hasLabels)
+    val labelExpression = buildExpression(10000, hasLabels)
 
     LabelExpressionEvaluator.labelExpressionEvaluator(
       labelExpression,
