@@ -43,6 +43,7 @@ import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Point;
 
@@ -77,14 +78,14 @@ public final class Values {
     public static final DoubleValue E = Values.doubleValue(Math.E);
     public static final DoubleValue PI = Values.doubleValue(Math.PI);
     public static final DoubleValue NaN = Values.doubleValue(Double.NaN);
-    public static final ArrayValue EMPTY_SHORT_ARRAY = Values.shortArray(new short[0]);
-    public static final ArrayValue EMPTY_BOOLEAN_ARRAY = Values.booleanArray(new boolean[0]);
-    public static final ArrayValue EMPTY_BYTE_ARRAY = Values.byteArray(new byte[0]);
-    public static final ArrayValue EMPTY_CHAR_ARRAY = Values.charArray(new char[0]);
-    public static final ArrayValue EMPTY_INT_ARRAY = Values.intArray(new int[0]);
-    public static final ArrayValue EMPTY_LONG_ARRAY = Values.longArray(new long[0]);
-    public static final ArrayValue EMPTY_FLOAT_ARRAY = Values.floatArray(new float[0]);
-    public static final ArrayValue EMPTY_DOUBLE_ARRAY = Values.doubleArray(new double[0]);
+    public static final ArrayValue EMPTY_SHORT_ARRAY = Values.shortArray(ArrayUtils.EMPTY_SHORT_ARRAY);
+    public static final ArrayValue EMPTY_BOOLEAN_ARRAY = Values.booleanArray(ArrayUtils.EMPTY_BOOLEAN_ARRAY);
+    public static final ArrayValue EMPTY_BYTE_ARRAY = Values.byteArray(ArrayUtils.EMPTY_BYTE_ARRAY);
+    public static final ArrayValue EMPTY_CHAR_ARRAY = Values.charArray(ArrayUtils.EMPTY_CHAR_ARRAY);
+    public static final ArrayValue EMPTY_INT_ARRAY = Values.intArray(ArrayUtils.EMPTY_INT_ARRAY);
+    public static final ArrayValue EMPTY_LONG_ARRAY = Values.longArray(ArrayUtils.EMPTY_LONG_ARRAY);
+    public static final ArrayValue EMPTY_FLOAT_ARRAY = Values.floatArray(ArrayUtils.EMPTY_FLOAT_ARRAY);
+    public static final ArrayValue EMPTY_DOUBLE_ARRAY = Values.doubleArray(ArrayUtils.EMPTY_DOUBLE_ARRAY);
     public static final TextArray EMPTY_TEXT_ARRAY = Values.stringArray();
 
     private Values() {}

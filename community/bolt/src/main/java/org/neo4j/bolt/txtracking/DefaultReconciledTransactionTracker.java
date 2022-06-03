@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
@@ -37,7 +38,7 @@ import org.neo4j.util.concurrent.OutOfOrderSequence;
  */
 public class DefaultReconciledTransactionTracker implements ReconciledTransactionTracker {
     private static final int INITIAL_ARRAY_SIZE = 200;
-    private static final long[] NO_METADATA = new long[0];
+    private static final long[] NO_METADATA = ArrayUtils.EMPTY_LONG_ARRAY;
 
     /**
      * Lock protects {@link #getLastReconciledTransactionId()} and {@link #offerReconciledTransactionId(long)}
@@ -51,7 +52,7 @@ public class DefaultReconciledTransactionTracker implements ReconciledTransactio
 
     private long startingNumber;
     private OutOfOrderSequence sequence;
-    private Collection<Long> outstanding = new ArrayList<>();
+    private final Collection<Long> outstanding = new ArrayList<>();
     private long fixedId = NO_RECONCILED_TRANSACTION_ID;
 
     public DefaultReconciledTransactionTracker(LogService logService) {

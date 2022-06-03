@@ -19,14 +19,13 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.OptionalLong;
 import java.util.function.Function;
-import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.counts.CountsAccessor;
@@ -146,15 +145,14 @@ public class RecordStorageReader implements StorageReader {
     @Override
     public Collection<IndexDescriptor> valueIndexesGetRelated(
             long[] labels, int[] propertyKeyIds, EntityType entityType) {
-        return schemaCache.getValueIndexesRelatedTo(
-                labels, PrimitiveLongCollections.EMPTY_LONG_ARRAY, propertyKeyIds, true, entityType);
+        return schemaCache.getValueIndexesRelatedTo(labels, EMPTY_LONG_ARRAY, propertyKeyIds, true, entityType);
     }
 
     @Override
     public Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
             long[] labels, int propertyKeyId, EntityType entityType) {
         return schemaCache.getUniquenessConstraintsRelatedTo(
-                PrimitiveLongCollections.EMPTY_LONG_ARRAY, labels, new int[] {propertyKeyId}, false, entityType);
+                EMPTY_LONG_ARRAY, labels, new int[] {propertyKeyId}, false, entityType);
     }
 
     @Override

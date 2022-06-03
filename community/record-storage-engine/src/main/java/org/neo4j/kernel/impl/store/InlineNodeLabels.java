@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import static java.lang.Long.highestOneBit;
 import static java.lang.String.format;
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.impl.store.LabelIdArray.concatAndSort;
 import static org.neo4j.kernel.impl.store.LabelIdArray.filter;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsBody;

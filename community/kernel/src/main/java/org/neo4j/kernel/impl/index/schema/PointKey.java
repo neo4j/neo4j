@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.HIGH;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.LOW;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
@@ -33,7 +34,7 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 class PointKey extends NativeIndexKey<PointKey> {
-    private static final long[] NO_COORDINATE = new long[0];
+    private static final long[] NO_COORDINATE = EMPTY_LONG_ARRAY;
 
     private final IndexSpecificSpaceFillingCurveSettings settings;
 

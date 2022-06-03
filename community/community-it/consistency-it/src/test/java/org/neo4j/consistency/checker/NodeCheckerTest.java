@@ -19,11 +19,11 @@
  */
 package org.neo4j.consistency.checker;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.helpers.collection.Iterables.first;
 import static org.neo4j.internal.helpers.collection.Iterables.last;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;

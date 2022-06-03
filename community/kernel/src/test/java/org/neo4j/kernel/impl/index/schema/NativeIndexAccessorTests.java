@@ -20,12 +20,12 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import static java.lang.String.format;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.function.Predicates.in;
 import static org.neo4j.internal.helpers.collection.Iterables.asUniqueSet;
 import static org.neo4j.internal.helpers.collection.Iterators.filter;
@@ -53,7 +53,6 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -77,8 +76,6 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
     }
 
     abstract ValueCreatorUtil<KEY> createValueCreatorUtil();
-
-    abstract IndexCapability indexCapability();
 
     // UPDATER
 

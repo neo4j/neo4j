@@ -42,7 +42,6 @@ import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
@@ -68,7 +67,6 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey> {
             .withIndexProvider(PointIndexProvider.DESCRIPTOR)
             .withName("index")
             .materialise(0);
-    private static final IndexCapability INDEX_CAPABILITY = PointIndexProvider.CAPABILITY;
 
     private static final PointLayout LAYOUT = new PointLayout(SPACE_FILLING_CURVE_SETTINGS);
 
@@ -83,11 +81,6 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey> {
     @Override
     ValueCreatorUtil<PointKey> createValueCreatorUtil() {
         return new ValueCreatorUtil<>(INDEX_DESCRIPTOR, SUPPORTED_TYPES, FRACTION_DUPLICATE_NON_UNIQUE);
-    }
-
-    @Override
-    IndexCapability indexCapability() {
-        return INDEX_CAPABILITY;
     }
 
     @Override

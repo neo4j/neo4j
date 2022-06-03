@@ -20,9 +20,9 @@
 package org.neo4j.consistency.checker;
 
 import static java.lang.System.currentTimeMillis;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
@@ -1329,24 +1329,5 @@ public class DetectRandomSabotageIT {
                 throws Exception;
     }
 
-    private static class Sabotage {
-        private final String description;
-        private final String record;
-
-        Sabotage(String description, String record) {
-            this.description = description;
-            this.record = record;
-        }
-
-        String description() {
-            return description;
-        }
-
-        /**
-         * For grepping on in the inconsistency report
-         */
-        String record() {
-            return record;
-        }
-    }
+    private record Sabotage(String description, String record) {}
 }

@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import static java.lang.Math.toIntExact;
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
 import org.eclipse.collections.api.list.primitive.LongList;

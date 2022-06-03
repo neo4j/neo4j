@@ -22,7 +22,8 @@ package org.neo4j.csv.reader;
 import static java.lang.Character.isWhitespace;
 import static java.lang.reflect.Modifier.isStatic;
 import static java.time.ZoneOffset.UTC;
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToByte;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
@@ -850,8 +851,6 @@ public class Extractors {
     }
 
     private static class IntArrayExtractor extends ArrayExtractor<int[]> {
-        private static final int[] EMPTY = new int[0];
-
         IntArrayExtractor(char arrayDelimiter) {
             super(arrayDelimiter, Integer.TYPE.getSimpleName());
         }
@@ -859,7 +858,7 @@ public class Extractors {
         @Override
         protected void extract0(char[] data, int offset, int length, CSVHeaderInformation optionalData) {
             int numberOfValues = numberOfValues(data, offset, length);
-            value = numberOfValues > 0 ? new int[numberOfValues] : EMPTY;
+            value = numberOfValues > 0 ? new int[numberOfValues] : EMPTY_INT_ARRAY;
             for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
                 int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
                 value[arrayIndex] = safeCastLongToInt(extractLong(data, offset + charIndex, numberOfChars));

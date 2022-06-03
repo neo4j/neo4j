@@ -150,7 +150,6 @@ import org.neo4j.values.storable.Values;
  * Keep that in mind: e.g. nodeCursor, propertyCursor and relationshipCursor
  */
 public class Operations implements Write, SchemaWrite {
-    private static final int[] EMPTY_INT_ARRAY = new int[0];
 
     private final KernelTransactionImplementation ktx;
     private final AllStoreHolder allStoreHolder;
@@ -435,7 +434,7 @@ public class Operations implements Write, SchemaWrite {
 
     private int[] doLoadSortedPropertyKeyList() {
         if (!propertyCursor.next()) {
-            return EMPTY_INT_ARRAY;
+            return ArrayUtils.EMPTY_INT_ARRAY;
         }
 
         int[] propertyKeyIds = new int[4]; // just some arbitrary starting point, it grows on demand
@@ -808,8 +807,9 @@ public class Operations implements Write, SchemaWrite {
             }
         }
         int[] afterPropertyKeyIds = afterPropertyKeyIdsSet.toSortedArray();
-        int[] changedPropertyKeyIds =
-                changedPropertyKeyIdsSet != null ? changedPropertyKeyIdsSet.toSortedArray() : EMPTY_INT_ARRAY;
+        int[] changedPropertyKeyIds = changedPropertyKeyIdsSet != null
+                ? changedPropertyKeyIdsSet.toSortedArray()
+                : ArrayUtils.EMPTY_INT_ARRAY;
 
         // Check uniqueness constraints for the added labels and _actually_ changed properties
         // TODO Due to previous assumptions around very specific use cases for the schema "get related" lookups and its

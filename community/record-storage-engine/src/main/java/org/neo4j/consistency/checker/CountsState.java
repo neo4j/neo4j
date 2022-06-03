@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.checker;
 
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.nodeKey;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.relationshipKey;
 import static org.neo4j.internal.recordstorage.RelationshipCounter.labelsCountsLength;

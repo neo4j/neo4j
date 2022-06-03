@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.api.index;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.eclipse.collections.impl.utility.ArrayIterate.contains;
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;

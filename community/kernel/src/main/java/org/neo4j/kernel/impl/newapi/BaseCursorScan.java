@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import static java.lang.Math.min;
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.neo4j.util.Preconditions.requirePositive;
 
 import java.util.concurrent.atomic.AtomicInteger;

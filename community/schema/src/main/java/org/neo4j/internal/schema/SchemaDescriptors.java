@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.schema;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
@@ -55,7 +56,7 @@ public class SchemaDescriptors {
     }
 
     public static AnyTokenSchemaDescriptor forAnyEntityTokens(EntityType entityType) {
-        return new SchemaDescriptorImplementation(entityType, ENTITY_TOKENS, new int[0], new int[0]);
+        return new SchemaDescriptorImplementation(entityType, ENTITY_TOKENS, EMPTY_INT_ARRAY, EMPTY_INT_ARRAY);
     }
 
     /**

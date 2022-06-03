@@ -37,10 +37,6 @@ public class SchemaIndexUsage extends IndexUsage {
         this.propertyKeyIds = propertyKeyIds;
     }
 
-    public SchemaIndexUsage(String identifier, int labelId, String label, String... propertyKeys) {
-        this(identifier, labelId, label, new int[0], propertyKeys);
-    }
-
     public int getLabelId() {
         return labelId;
     }

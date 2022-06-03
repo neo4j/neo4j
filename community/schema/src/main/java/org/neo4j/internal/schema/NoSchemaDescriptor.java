@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.schema;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.lock.ResourceType;
@@ -88,12 +91,12 @@ class NoSchemaDescriptor implements SchemaDescriptor {
 
     @Override
     public int[] getPropertyIds() {
-        return new int[0];
+        return EMPTY_INT_ARRAY;
     }
 
     @Override
     public int[] getEntityTokenIds() {
-        return new int[0];
+        return EMPTY_INT_ARRAY;
     }
 
     @Override
@@ -113,6 +116,6 @@ class NoSchemaDescriptor implements SchemaDescriptor {
 
     @Override
     public long[] lockingKeys() {
-        return new long[0];
+        return EMPTY_LONG_ARRAY;
     }
 }

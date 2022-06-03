@@ -38,7 +38,6 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexType;
@@ -60,7 +59,6 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey> {
             .materialise(0);
     private static final ValueType[] SUPPORTED_TYPES = ValueType.values();
     private static final RangeLayout LAYOUT = new RangeLayout(1);
-    private static final IndexCapability INDEX_CAPABILITY = RangeIndexProvider.CAPABILITY;
 
     @Override
     NativeIndexAccessor<RangeKey> createAccessor(PageCache pageCache) {
@@ -71,11 +69,6 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey> {
                 .build();
         return new RangeIndexAccessor(
                 context, indexFiles, layout, cleanup, INDEX_DESCRIPTOR, tokenNameLookup, Sets.immutable.empty());
-    }
-
-    @Override
-    IndexCapability indexCapability() {
-        return INDEX_CAPABILITY;
     }
 
     @Override

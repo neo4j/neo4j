@@ -19,6 +19,8 @@
  */
 package org.neo4j.storageengine.api;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
+
 import org.neo4j.graphdb.Direction;
 
 /**
@@ -121,7 +123,7 @@ public interface Degrees {
      * {@link Degrees} instance with all zero degrees.
      */
     Degrees EMPTY = new Degrees() {
-        private final int[] noTypes = new int[0];
+        private final int[] noTypes = EMPTY_INT_ARRAY;
 
         @Override
         public int[] types() {

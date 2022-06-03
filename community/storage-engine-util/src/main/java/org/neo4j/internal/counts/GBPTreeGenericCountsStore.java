@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.counts;
 
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.internal.counts.CountsChanges.ABSENT;
@@ -42,7 +42,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
-import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
@@ -234,7 +233,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
             try (CountUpdater updater = directUpdater(false, cursorContext)) {
                 rebuilder.rebuild(updater, cursorContext, memoryTracker);
             } finally {
-                idSequence.set(rebuilder.lastCommittedTxId(), ArrayUtils.EMPTY_LONG_ARRAY);
+                idSequence.set(rebuilder.lastCommittedTxId(), EMPTY_LONG_ARRAY);
             }
         }
         started = true;

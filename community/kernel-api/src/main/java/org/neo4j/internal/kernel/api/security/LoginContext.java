@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 
 import java.util.Objects;
@@ -83,7 +84,7 @@ public abstract class LoginContext {
     public static final LoginContext AUTH_DISABLED = fullAccess(EMBEDDED_CONNECTION);
 
     public interface IdLookup {
-        int[] NO_SUCH_PROCEDURE = new int[0];
+        int[] NO_SUCH_PROCEDURE = EMPTY_INT_ARRAY;
 
         int getPropertyKeyId(String name);
 

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import static java.util.Collections.singletonList;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,7 +37,6 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForRelType;

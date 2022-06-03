@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;

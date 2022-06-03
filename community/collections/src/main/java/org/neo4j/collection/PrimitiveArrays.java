@@ -19,7 +19,7 @@
  */
 package org.neo4j.collection;
 
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 
 import java.util.Arrays;
 

@@ -20,7 +20,7 @@
 package org.neo4j.storageengine.api;
 
 import static java.lang.String.format;
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
 import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.Changed;
 import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.NoValue;

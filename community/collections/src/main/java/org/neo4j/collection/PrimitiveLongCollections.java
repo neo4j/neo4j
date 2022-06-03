@@ -40,8 +40,6 @@ import org.neo4j.internal.helpers.collection.Iterators;
  * Basic and common primitive int collection utils and manipulations.
  */
 public final class PrimitiveLongCollections {
-    public static final long[] EMPTY_LONG_ARRAY = new long[0];
-
     private PrimitiveLongCollections() {
         // nop
     }
@@ -160,12 +158,6 @@ public final class PrimitiveLongCollections {
             count++;
         }
         return count;
-    }
-
-    public static long[] closingAsArray(PrimitiveLongResourceIterator iterator) {
-        try (iterator) {
-            return asArray(iterator);
-        }
     }
 
     public static long[] asArray(LongIterator iterator) {
