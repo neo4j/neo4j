@@ -51,7 +51,6 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
      * purely for communicating between the two to make the code hard to read.
      */
     private class SingleTransactionApplier extends TransactionApplier.Adapter {
-        private final long txId;
         private final Subject subject;
         private final IndexUpdatesExtractor indexUpdatesExtractor = new IndexUpdatesExtractor();
         private List<IndexDescriptor> createdIndexes;
@@ -59,7 +58,6 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
         private final BatchContext batchContext;
 
         SingleTransactionApplier(CommandsToApply commands, BatchContext batchContext) {
-            this.txId = commands.transactionId();
             this.subject = commands.subject();
             this.indexActivator = batchContext.getIndexActivator();
             this.batchContext = batchContext;
@@ -72,10 +70,7 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
                 // we'll feed them to the index updates work sync at the end of the batch
                 batchContext
                         .indexUpdates()
-                        .feed(
-                                indexUpdatesExtractor.getNodeCommands(),
-                                indexUpdatesExtractor.getRelationshipCommands(),
-                                txId);
+                        .feed(indexUpdatesExtractor.getNodeCommands(), indexUpdatesExtractor.getRelationshipCommands());
                 indexUpdatesExtractor.close();
             }
 

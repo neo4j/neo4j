@@ -175,10 +175,8 @@ class TokenIndexUpdater implements IndexUpdater {
             for (int i = 0; i < pendingUpdatesCursor; i++) {
                 LogicalTokenUpdates update = pendingUpdates[i];
                 long entityId = update.entityId();
-                nextTokenId =
-                        extractChange(update.additions(), currentTokenId, entityId, nextTokenId, true, update.txId());
-                nextTokenId =
-                        extractChange(update.removals(), currentTokenId, entityId, nextTokenId, false, update.txId());
+                nextTokenId = extractChange(update.additions(), currentTokenId, entityId, nextTokenId, true);
+                nextTokenId = extractChange(update.removals(), currentTokenId, entityId, nextTokenId, false);
             }
             currentTokenId = nextTokenId;
         }
@@ -186,8 +184,7 @@ class TokenIndexUpdater implements IndexUpdater {
         pendingUpdatesCursor = 0;
     }
 
-    private long extractChange(
-            long[] tokens, long currentTokenId, long entityId, long nextTokenId, boolean addition, long txId) {
+    private long extractChange(long[] tokens, long currentTokenId, long entityId, long nextTokenId, boolean addition) {
         long foundNextTokenId = nextTokenId;
         for (int li = 0; li < tokens.length; li++) {
             long tokenId = tokens[li];
@@ -197,7 +194,7 @@ class TokenIndexUpdater implements IndexUpdater {
 
             // Have this check here so that we can pick up the next tokenId in our change set
             if (tokenId == currentTokenId) {
-                change(currentTokenId, entityId, addition, txId);
+                change(currentTokenId, entityId, addition);
 
                 // We can do a little shorter check for next tokenId here straight away,
                 // we just check the next if it's less than what we currently think is next tokenId
@@ -220,7 +217,7 @@ class TokenIndexUpdater implements IndexUpdater {
         return foundNextTokenId;
     }
 
-    private void change(long currentTokenId, long entityId, boolean add, long txId) {
+    private void change(long currentTokenId, long entityId, boolean add) {
         int tokenId = toIntExact(currentTokenId);
         long idRange = rangeOf(entityId);
         if (tokenId != key.tokenId || idRange != key.idRange || addition != add) {

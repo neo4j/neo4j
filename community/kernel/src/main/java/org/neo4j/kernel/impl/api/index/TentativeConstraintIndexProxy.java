@@ -34,7 +34,6 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationExcep
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.kernel.impl.index.schema.DeferredConflictCheckingIndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
@@ -53,7 +52,7 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
  * of the schema and has furthermore made it through some additional checks on this instance since transaction T
  * hasn't yet fully committed. Transaction data gets applied to the neo store first and the index second, so at
  * the point where the applying transaction sees that it violates the constraint it has already modified the store and
- * cannot back out. However the constraint transaction T can. So a violated constraint while
+ * cannot back out. However, the constraint transaction T can. So a violated constraint while
  * in tentative mode does not fail the transaction violating the constraint, but keeps the failure around and will
  * eventually fail T instead.
  */
@@ -61,7 +60,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy 
     private final FlippableIndexProxy flipper;
     private final OnlineIndexProxy target;
     private final Collection<IndexEntryConflictException> failures = new CopyOnWriteArrayList<>();
-    private TokenNameLookup tokenNameLookup;
+    private final TokenNameLookup tokenNameLookup;
 
     TentativeConstraintIndexProxy(
             FlippableIndexProxy flipper, OnlineIndexProxy target, TokenNameLookup tokenNameLookup) {
@@ -72,38 +71,33 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy 
 
     @Override
     public IndexUpdater newUpdater(IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
-        switch (mode) {
-            case ONLINE:
-                return new DelegatingIndexUpdater(new DeferredConflictCheckingIndexUpdater(
-                        target.accessor.newUpdater(mode, cursorContext, parallel),
-                        target::newValueReader,
-                        target.getDescriptor(),
-                        cursorContext)) {
-                    @Override
-                    public void process(IndexEntryUpdate<?> update) {
-                        try {
-                            delegate.process(update);
-                        } catch (IndexEntryConflictException conflict) {
-                            failures.add(conflict);
-                        }
+        return switch (mode) {
+            case ONLINE -> new DeferredConflictCheckingIndexUpdater(
+                    target.accessor.newUpdater(mode, cursorContext, parallel),
+                    target::newValueReader,
+                    target.getDescriptor(),
+                    cursorContext) {
+                @Override
+                public void process(IndexEntryUpdate<?> update) {
+                    try {
+                        super.process(update);
+                    } catch (IndexEntryConflictException conflict) {
+                        failures.add(conflict);
                     }
+                }
 
-                    @Override
-                    public void close() {
-                        try {
-                            delegate.close();
-                        } catch (IndexEntryConflictException conflict) {
-                            failures.add(conflict);
-                        }
+                @Override
+                public void close() {
+                    try {
+                        super.close();
+                    } catch (IndexEntryConflictException conflict) {
+                        failures.add(conflict);
                     }
-                };
-
-            case RECOVERY:
-                return newUpdater(mode, cursorContext, parallel);
-
-            default:
-                throw new IllegalArgumentException("Unsupported update mode: " + mode);
-        }
+                }
+            };
+            case RECOVERY -> newUpdater(mode, cursorContext, parallel);
+            default -> throw new IllegalArgumentException("Unsupported update mode: " + mode);
+        };
     }
 
     @Override

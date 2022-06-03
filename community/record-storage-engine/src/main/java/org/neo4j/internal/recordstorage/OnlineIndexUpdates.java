@@ -30,6 +30,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
+import org.neo4j.internal.recordstorage.EntityCommandGrouper.Cursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaCache;
@@ -54,7 +55,7 @@ import org.neo4j.util.VisibleForTesting;
  * properties matching existing and online indexes; in that case the properties for that node needs to be read
  * from store since the commands in that transaction cannot itself provide enough information.
  *
- * One instance can be {@link IndexUpdates#feed(EntityCommandGrouper.Cursor,EntityCommandGrouper.Cursor, long) fed} data about
+ * One instance can be {@link IndexUpdates#feed(Cursor, Cursor) fed} data about
  * multiple transactions, to be {@link #iterator() accessed} later.
  */
 public class OnlineIndexUpdates implements IndexUpdates {
@@ -94,17 +95,15 @@ public class OnlineIndexUpdates implements IndexUpdates {
     @Override
     public void feed(
             EntityCommandGrouper<NodeCommand>.Cursor nodeCommands,
-            EntityCommandGrouper<RelationshipCommand>.Cursor relationshipCommands,
-            long txId) {
+            EntityCommandGrouper<RelationshipCommand>.Cursor relationshipCommands) {
         while (nodeCommands.nextEntity()) {
-            gatherUpdatesFor(nodeCommands.currentEntityId(), nodeCommands.currentEntityCommand(), nodeCommands, txId);
+            gatherUpdatesFor(nodeCommands.currentEntityId(), nodeCommands.currentEntityCommand(), nodeCommands);
         }
         while (relationshipCommands.nextEntity()) {
             gatherUpdatesFor(
                     relationshipCommands.currentEntityId(),
                     relationshipCommands.currentEntityCommand(),
-                    relationshipCommands,
-                    txId);
+                    relationshipCommands);
         }
     }
 
@@ -114,24 +113,20 @@ public class OnlineIndexUpdates implements IndexUpdates {
     }
 
     private void gatherUpdatesFor(
-            long nodeId,
-            NodeCommand nodeCommand,
-            EntityCommandGrouper<NodeCommand>.Cursor propertyCommands,
-            long txId) {
+            long nodeId, NodeCommand nodeCommand, EntityCommandGrouper<NodeCommand>.Cursor propertyCommands) {
         EntityUpdates nodeUpdates = gatherUpdatesFromCommandsForNode(nodeId, nodeCommand, propertyCommands);
         eagerlyGatherValueIndexUpdates(nodeUpdates, EntityType.NODE);
-        eagerlyGatherTokenIndexUpdates(nodeUpdates, EntityType.NODE, txId);
+        eagerlyGatherTokenIndexUpdates(nodeUpdates, EntityType.NODE);
     }
 
     private void gatherUpdatesFor(
             long relationshipId,
             RelationshipCommand relationshipCommand,
-            EntityCommandGrouper<RelationshipCommand>.Cursor propertyCommands,
-            long txId) {
+            EntityCommandGrouper<RelationshipCommand>.Cursor propertyCommands) {
         EntityUpdates relationshipUpdates =
                 gatherUpdatesFromCommandsForRelationship(relationshipId, relationshipCommand, propertyCommands);
         eagerlyGatherValueIndexUpdates(relationshipUpdates, EntityType.RELATIONSHIP);
-        eagerlyGatherTokenIndexUpdates(relationshipUpdates, EntityType.RELATIONSHIP, txId);
+        eagerlyGatherTokenIndexUpdates(relationshipUpdates, EntityType.RELATIONSHIP);
     }
 
     private void eagerlyGatherValueIndexUpdates(EntityUpdates entityUpdates, EntityType entityType) {
@@ -188,10 +183,10 @@ public class OnlineIndexUpdates implements IndexUpdates {
         return nodePropertyUpdates.build();
     }
 
-    private void eagerlyGatherTokenIndexUpdates(EntityUpdates entityUpdates, EntityType entityType, long txId) {
+    private void eagerlyGatherTokenIndexUpdates(EntityUpdates entityUpdates, EntityType entityType) {
         IndexDescriptor relatedToken =
                 schemaCache.indexForSchemaAndType(SchemaDescriptors.forAnyEntityTokens(entityType), IndexType.LOOKUP);
-        entityUpdates.tokenUpdateForIndexKey(relatedToken, txId).ifPresent(updates::add);
+        entityUpdates.tokenUpdateForIndexKey(relatedToken).ifPresent(updates::add);
     }
 
     private static boolean providesCompleteListOfProperties(Command entityCommand) {

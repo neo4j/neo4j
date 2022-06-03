@@ -1755,8 +1755,7 @@ class TransactionRecordStateTest {
                 NULL_CONTEXT,
                 INSTANCE,
                 storeCursors);
-        onlineIndexUpdates.feed(
-                extractor.getNodeCommands(), extractor.getRelationshipCommands(), transaction.transactionId());
+        onlineIndexUpdates.feed(extractor.getNodeCommands(), extractor.getRelationshipCommands());
         updates.add(onlineIndexUpdates);
         reader.close();
         return updates;

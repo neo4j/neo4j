@@ -204,7 +204,7 @@ class OnlineIndexUpdatesTest {
                 .materialise(0);
         createIndexes(indexDescriptor);
 
-        onlineIndexUpdates.feed(nodeGroup(nodeCommand, propertyCommand), relationshipGroup(null), -1);
+        onlineIndexUpdates.feed(nodeGroup(nodeCommand, propertyCommand), relationshipGroup(null));
         assertTrue(onlineIndexUpdates.hasUpdates());
         Iterator<IndexEntryUpdate<IndexDescriptor>> iterator = onlineIndexUpdates.iterator();
         assertEquals(iterator.next(), IndexEntryUpdate.remove(nodeId, indexDescriptor, propertyValue, null, null));
@@ -243,7 +243,7 @@ class OnlineIndexUpdatesTest {
                 .materialise(0);
         createIndexes(indexDescriptor);
 
-        onlineIndexUpdates.feed(nodeGroup(null), relationshipGroup(relationshipCommand, propertyCommand), -1);
+        onlineIndexUpdates.feed(nodeGroup(null), relationshipGroup(relationshipCommand, propertyCommand));
         assertTrue(onlineIndexUpdates.hasUpdates());
         Iterator<IndexEntryUpdate<IndexDescriptor>> iterator = onlineIndexUpdates.iterator();
         assertEquals(iterator.next(), IndexEntryUpdate.remove(relId, indexDescriptor, propertyValue, null, null));
@@ -304,8 +304,7 @@ class OnlineIndexUpdatesTest {
 
         onlineIndexUpdates.feed(
                 nodeGroup(nodeCommand, nodePropertyCommand),
-                relationshipGroup(relationshipCommand, relationshipPropertyCommand),
-                -1);
+                relationshipGroup(relationshipCommand, relationshipPropertyCommand));
         assertTrue(onlineIndexUpdates.hasUpdates());
         assertThat(onlineIndexUpdates)
                 .contains(
@@ -362,7 +361,7 @@ class OnlineIndexUpdatesTest {
         createIndexes(indexDescriptor0, indexDescriptor1, indexDescriptor);
 
         onlineIndexUpdates.feed(
-                nodeGroup(null), relationshipGroup(relationshipCommand, propertyCommand, propertyCommand2), -1);
+                nodeGroup(null), relationshipGroup(relationshipCommand, propertyCommand, propertyCommand2));
         assertTrue(onlineIndexUpdates.hasUpdates());
         assertThat(onlineIndexUpdates)
                 .contains(

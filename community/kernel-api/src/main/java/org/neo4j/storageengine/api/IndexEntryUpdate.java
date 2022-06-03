@@ -19,8 +19,6 @@
  */
 package org.neo4j.storageengine.api;
 
-import static org.neo4j.storageengine.api.TokenIndexEntryUpdate.NO_TX_ID;
-
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.values.storable.Value;
@@ -145,17 +143,7 @@ public abstract class IndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplie
 
     public static <INDEX_KEY extends SchemaDescriptorSupplier> TokenIndexEntryUpdate<INDEX_KEY> change(
             long entityId, INDEX_KEY indexKey, long[] before, long[] after) {
-        return change(entityId, indexKey, before, after, NO_TX_ID);
-    }
-
-    public static <INDEX_KEY extends SchemaDescriptorSupplier> TokenIndexEntryUpdate<INDEX_KEY> change(
-            long entityId, INDEX_KEY indexKey, long[] before, long[] after, boolean logical) {
-        return change(entityId, indexKey, before, after, NO_TX_ID, logical);
-    }
-
-    public static <INDEX_KEY extends SchemaDescriptorSupplier> TokenIndexEntryUpdate<INDEX_KEY> change(
-            long entityId, INDEX_KEY indexKey, long[] before, long[] after, long txId) {
-        return change(entityId, indexKey, before, after, txId, false);
+        return change(entityId, indexKey, before, after, false);
     }
 
     /**
@@ -164,7 +152,7 @@ public abstract class IndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplie
      *     change and {@code after} means tokens after the change.
      */
     public static <INDEX_KEY extends SchemaDescriptorSupplier> TokenIndexEntryUpdate<INDEX_KEY> change(
-            long entityId, INDEX_KEY indexKey, long[] before, long[] after, long txId, boolean logical) {
-        return new TokenIndexEntryUpdate<>(entityId, indexKey, before, after, txId, logical);
+            long entityId, INDEX_KEY indexKey, long[] before, long[] after, boolean logical) {
+        return new TokenIndexEntryUpdate<>(entityId, indexKey, before, after, logical);
     }
 }

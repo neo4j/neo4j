@@ -39,7 +39,7 @@ class PhysicalToLogicalTokenChanges {
 
         if (update.isLogical()) {
             // These changes are already logical
-            return new LogicalTokenUpdates(update.txId(), update.getEntityId(), update.beforeValues(), update.values());
+            return new LogicalTokenUpdates(update.getEntityId(), update.beforeValues(), update.values());
         }
 
         int rc = 0;
@@ -74,7 +74,7 @@ class PhysicalToLogicalTokenChanges {
 
         terminateWithMinusOneIfNeeded(removals, rc);
         terminateWithMinusOneIfNeeded(additions, ac);
-        return new LogicalTokenUpdates(update.txId(), update.getEntityId(), removals, additions);
+        return new LogicalTokenUpdates(update.getEntityId(), removals, additions);
     }
 
     private static boolean smaller(long id, long otherId) {
@@ -87,7 +87,7 @@ class PhysicalToLogicalTokenChanges {
         }
     }
 
-    record LogicalTokenUpdates(long txId, long entityId, long[] removals, long[] additions)
+    record LogicalTokenUpdates(long entityId, long[] removals, long[] additions)
             implements Comparable<LogicalTokenUpdates> {
         @Override
         public int compareTo(LogicalTokenUpdates o) {
