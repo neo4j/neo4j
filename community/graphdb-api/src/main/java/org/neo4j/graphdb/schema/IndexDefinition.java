@@ -74,7 +74,7 @@ public interface IndexDefinition {
     void drop();
 
     /**
-     * @return {@code true} if this index is created as a side effect of the creation of a uniqueness constraint.
+     * @return {@code true} if this index is used to power a uniqueness constraint.
      */
     boolean isConstraintIndex();
 
