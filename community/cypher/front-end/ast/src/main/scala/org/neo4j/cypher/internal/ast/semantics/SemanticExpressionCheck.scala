@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
+import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.DecimalIntegerLiteral
@@ -78,6 +79,7 @@ import org.neo4j.cypher.internal.expressions.Multiply
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
+import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.Null
@@ -680,6 +682,58 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
                   expectType(CTBoolean.covariant, whereExpression)
               }
           }
+
+      // COUNT
+      case x @ CountExpression(pattern, maybeCountWhere) =>
+        def checkNodePatterns(state: SemanticState): SemanticCheckResult = {
+          pattern match {
+            case p @ NodePattern(_, maybeLabel, maybeProperties, maybeNodeWhere) =>
+              var errors = Seq.empty[SemanticError]
+              if (
+                maybeLabel.nonEmpty || maybeProperties.nonEmpty || maybeNodeWhere.nonEmpty || maybeCountWhere.nonEmpty
+              ) {
+                errors = errors.appended(
+                  SemanticError(
+                    "a single node pattern cannot have a label expression, properties or a WHERE clause inside a COUNT",
+                    x.position
+                  )
+                )
+              }
+              p.variable match {
+                case Some(variable) =>
+                  val varName = variable.name
+                  if (state.symbol(varName).isEmpty) {
+                    errors = errors.appended(
+                      SemanticError(
+                        s"a single node pattern inside COUNT must refer to an already bound variable",
+                        x.position
+                      )
+                    )
+                  }
+                case None =>
+                  errors = errors.appended(
+                    SemanticError(
+                      s"a single node pattern inside COUNT must refer to an already bound variable",
+                      x.position
+                    )
+                  )
+              }
+
+              SemanticCheckResult(state, errors)
+            case _ =>
+              SemanticCheckResult(state, Seq.empty)
+          }
+        }
+
+        SemanticState.recordCurrentScope(x) chain checkNodePatterns _ chain
+          withScopedState { // saves us from leaking to the outside
+            SemanticPatternCheck.checkPatternElement(Pattern.SemanticContext.Match, x.pattern) chain
+              when(maybeCountWhere.isDefined) {
+                val whereExpression = maybeCountWhere.get
+                check(ctx, whereExpression, x +: parents) chain
+                  expectType(CTBoolean.covariant, whereExpression)
+              }
+          } chain expectType(CTInteger, x)
 
       case x: Expression => semanticCheckFallback(ctx, x)
     }

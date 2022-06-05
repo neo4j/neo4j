@@ -182,6 +182,11 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
       "MATCH (n) WHERE EXISTS { MATCH (n)-[r]->(p) } WITH n as m, 1 as n RETURN m, n",
       "MATCH (`  n@0`) WHERE EXISTS { MATCH (`  n@0`)-[r]->(p) } WITH `  n@0` as m, 1 as `  n@1` RETURN m, `  n@1`",
       List(varFor("  n@0"), varFor("  n@1"))
+    ),
+    TestCase(
+      "MATCH (n) WHERE COUNT { (n)-[r]->(p) } > 1 WITH n as m, 1 as n RETURN m, n",
+      "MATCH (`  n@0`) WHERE COUNT { (`  n@0`)-[r]->(p) } > 1 WITH `  n@0` as m, 1 as `  n@1` RETURN m, `  n@1`",
+      List(varFor("  n@0"), varFor("  n@1"))
     )
   )
 

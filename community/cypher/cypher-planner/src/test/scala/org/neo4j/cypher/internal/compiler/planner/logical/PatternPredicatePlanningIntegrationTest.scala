@@ -32,14 +32,18 @@ import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.NilPathStep
+import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.ReduceExpression
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -209,6 +213,175 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       new LogicalPlanBuilder()
         .produceResults("a")
         .antiSemiApply()
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should build plans with SemiApply for a single pattern predicate with 0 < COUNT") {
+    val logicalPlan = planFor("MATCH (a) WHERE 0<COUNT{(a)-[:X]->()} RETURN a", stripProduceResults = false)._1
+    logicalPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("a")
+        .semiApply()
+        .|.expandAll("(a)-[anon_3:X]->(anon_4)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should build plans with AntiSemiApply for a single pattern predicate with 0=COUNT") {
+    val logicalPlan = planFor("MATCH (a) WHERE 0=COUNT{(a)-[:X]->()} RETURN a", stripProduceResults = false)._1
+    logicalPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("a")
+        .antiSemiApply()
+        .|.expandAll("(a)-[anon_3:X]->(anon_4)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should build plans with RollUpApply for a pattern predicate with 0=COUNT with WHERE inside") {
+    val logicalPlan =
+      planFor("MATCH (a) WHERE 0=COUNT{(a)-[:X]->() WHERE a.prop = 'c'} RETURN a", stripProduceResults = false)._1
+    logicalPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("a")
+        .filter("0 = size(anon_1)")
+        .rollUpApply("anon_1", "anon_0")
+        .|.projection(Map("anon_0" -> PathExpression(
+          NodePathStep(
+            Variable("a")(pos),
+            SingleRelationshipPathStep(
+              Variable("anon_3")(pos),
+              OUTGOING,
+              Some(Variable("anon_4")(pos)),
+              NilPathStep()(pos)
+            )(pos)
+          )(pos)
+        )(pos)))
+        .|.expandAll("(a)-[anon_3:X]->(anon_4)")
+        .|.filter("a.prop = 'c'")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should build plans with RollUpApply for a pattern predicate with 0<COUNT with WHERE inside") {
+    val logicalPlan =
+      planFor("MATCH (a) WHERE 0<COUNT{(a)-[:X]->(b) WHERE b.prop = 'c'} RETURN a", stripProduceResults = false)._1
+    logicalPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("a")
+        .filter("0 < size(anon_1)")
+        .rollUpApply("anon_1", "anon_0")
+        .|.projection(Map("anon_0" -> PathExpression(
+          NodePathStep(
+            Variable("a")(pos),
+            SingleRelationshipPathStep(Variable("anon_3")(pos), OUTGOING, Some(Variable("b")(pos)), NilPathStep()(pos))(
+              pos
+            )
+          )(pos)
+        )(pos)))
+        .|.filter("b.prop = 'c'")
+        .|.expandAll("(a)-[anon_3:X]->(b)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should build plans with SemiApply for a single pattern predicate with COUNT > 0 with Label on other node") {
+    val logicalPlan = planFor("MATCH (a) WHERE COUNT{(a)-[:X]->(:Foo)}>0 RETURN a", stripProduceResults = false)._1
+    logicalPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("a")
+        .semiApply()
+        .|.filter("anon_4:Foo")
+        .|.expandAll("(a)-[anon_3:X]->(anon_4)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test(
+    "should build plans with AntiSemiApply for a single pattern predicate with COUNT = 0 with Label on other node"
+  ) {
+    val logicalPlan = planFor("MATCH (a) WHERE COUNT{(a)-[:X]->(:Foo)}=0 RETURN a", stripProduceResults = false)._1
+    logicalPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("a")
+        .antiSemiApply()
+        .|.filter("anon_4:Foo")
+        .|.expandAll("(a)-[anon_3:X]->(anon_4)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should build plans with SemiApply for a single pattern in a pattern comprehension, with 0 < size(pt)") {
+    val logicalPlan =
+      planFor("MATCH (a) WHERE 0 < size([pt = (a)-[:X]->() | pt]) RETURN a", stripProduceResults = false)._1
+    logicalPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("a")
+        .semiApply()
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should build plans with AntiSemiApply for a single negated pattern in a pattern comprehension, 0 < size(pt)") {
+    val logicalPlan =
+      planFor("MATCH (a) WHERE 0=size([pt = (a)-[:X]->() | pt]) RETURN a", stripProduceResults = false)._1
+    logicalPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("a")
+        .antiSemiApply()
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test(
+    "should build plans with SemiApply for a single pattern in a pattern comprehension, size(pt) > 0, with Label on other node"
+  ) {
+    val logicalPlan =
+      planFor("MATCH (a) WHERE size([pt = (a)-[:X]->(:Foo) | pt]) > 0 RETURN a", stripProduceResults = false)._1
+    logicalPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("a")
+        .semiApply()
+        .|.filter("anon_3:Foo")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test(
+    "should build plans with AntiSemiApply for a single negated pattern in a pattern comprehension, size(pt) = 0, with Label on other node"
+  ) {
+    val logicalPlan =
+      planFor("MATCH (a) WHERE size([pt = (a)-[:X]->(:Foo) | pt]) = 0 RETURN a", stripProduceResults = false)._1
+    logicalPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("a")
+        .antiSemiApply()
+        .|.filter("anon_3:Foo")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .allNodeScan("a")

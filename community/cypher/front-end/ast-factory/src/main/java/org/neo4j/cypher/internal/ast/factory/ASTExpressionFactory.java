@@ -185,6 +185,8 @@ public interface ASTExpressionFactory<
 
     EXPRESSION existsSubQuery(POS p, List<PATTERN> patterns, EXPRESSION where);
 
+    EXPRESSION countSubQuery(POS p, PATTERN pattern, EXPRESSION where);
+
     EXPRESSION mapProjection(POS p, VARIABLE v, List<MAP_PROJECTION_ITEM> items);
 
     MAP_PROJECTION_ITEM mapProjectionLiteralEntry(StringPos<POS> property, EXPRESSION value);

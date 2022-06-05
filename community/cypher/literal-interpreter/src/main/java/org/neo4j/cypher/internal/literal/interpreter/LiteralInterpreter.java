@@ -1358,6 +1358,11 @@ public class LiteralInterpreter
     }
 
     @Override
+    public Object countSubQuery(NULL p, NULL aNull, Object where) {
+        throw new UnsupportedOperationException("countSubQuery is not a literal");
+    }
+
+    @Override
     public Object mapProjection(NULL p, Object v, List<NULL> nulls) {
         throw new UnsupportedOperationException("mapProjection is not a literal");
     }

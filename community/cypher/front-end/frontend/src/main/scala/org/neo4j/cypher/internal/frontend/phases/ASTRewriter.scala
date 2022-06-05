@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.normalizeNotEquals
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizePatternComprehensionPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.parameterValueTypeReplacement
 import org.neo4j.cypher.internal.rewriting.rewriters.replaceLiteralDynamicPropertyLookups
+import org.neo4j.cypher.internal.rewriting.rewriters.rewriteCountExpression
 import org.neo4j.cypher.internal.rewriting.rewriters.rewriteOrderById
 import org.neo4j.cypher.internal.rewriting.rewriters.simplifyIterablePredicates
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -78,7 +79,8 @@ object ASTRewriter {
         inlineNamedPathsInPatternComprehensions,
         parameterValueTypeReplacement,
         rewriteOrderById,
-        LabelExpressionPredicateNormalizer
+        LabelExpressionPredicateNormalizer,
+        rewriteCountExpression
       ),
       initialConditions = Set(ProjectionClausesHaveSemanticInfo, PatternExpressionsHaveSemanticInfo)
     )
@@ -96,7 +98,7 @@ object ASTRewriter {
       RewriterStep.validatingRewriter(rewriter, step)
     }
 
-    val combined = inSequence(rewriters.toSeq: _*)
+    val combined = inSequence(rewriters: _*)
 
     statement.endoRewrite(combined)
   }

@@ -75,6 +75,11 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       check(ctx, pattern.element) chain
       ensureNoDuplicateRelationships(pattern)
 
+  def checkPatternElement(ctx: SemanticContext, patternElement: PatternElement): SemanticCheck =
+    declareVariables(ctx, patternElement) chain
+      checkElementPredicates(ctx, patternElement) chain
+      ensureNoDuplicateRelationships(patternElement)
+
   def checkElementPredicates(ctx: SemanticContext)(part: PatternPart): SemanticCheck =
     checkElementPredicates(ctx, part.element)
 

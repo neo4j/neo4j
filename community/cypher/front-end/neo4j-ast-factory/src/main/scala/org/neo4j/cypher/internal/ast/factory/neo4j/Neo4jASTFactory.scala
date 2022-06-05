@@ -319,6 +319,7 @@ import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
+import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Divide
@@ -1012,6 +1013,14 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     val patternParts = patterns.asScala.toList
     val patternPos = patternParts.head.position
     ExistsSubClause(Pattern(patternParts)(patternPos), Option(where))(p, Set.empty)
+  }
+
+  override def countSubQuery(
+    p: InputPosition,
+    pattern: PatternPart,
+    where: Expression
+  ): Expression = {
+    CountExpression(pattern.element, Option(where))(p, Set.empty)
   }
 
   override def mapProjection(p: InputPosition, v: Variable, items: util.List[MapProjectionElement]): Expression =

@@ -32,7 +32,7 @@ case object NoNodePatternPredicatesInPatternComprehension extends StepSequencer.
 
 object normalizePatternComprehensionPredicates extends Rewriter with StepSequencer.Step with ASTRewriterFactory {
 
-  override def preConditions: Set[StepSequencer.Condition] = Set.empty
+  override def preConditions: Set[StepSequencer.Condition] = Set(NoCountExpression)
 
   override def postConditions: Set[StepSequencer.Condition] = Set(NoNodePatternPredicatesInPatternComprehension)
 

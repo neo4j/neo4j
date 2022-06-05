@@ -559,6 +559,12 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def withAll(where: Option[Where] = None): With =
     With(distinct = false, returnAllItems, None, None, None, where = where)(pos)
 
+  def set_(items: Seq[SetItem]): SetClause =
+    SetClause(items)(pos)
+
+  def setPropertyItem(map: String, propertyName: String, expr: Expression): SetPropertyItem =
+    SetPropertyItem(Property(Variable(map)(pos), PropertyKeyName(propertyName)(pos))(pos), expr)(pos)
+
   def return_(items: ReturnItem*): Return =
     Return(ReturnItems(includeExisting = false, items)(pos))(pos)
 

@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions.Exists
@@ -66,6 +67,23 @@ case class normalizeExistsPatternExpressions(semanticState: SemanticState) exten
       Not(Exists(p)(p.position))(p.position)
     case Equals(SignedDecimalIntegerLiteral("0"), Size(p: PatternExpression)) =>
       Not(Exists(p)(p.position))(p.position)
+    // MATCH (n) WHERE size([pt = (n)-[:MaybeLabel]->(m) | pt]) (>|=) 0 is rewritten to EXISTS/NOT EXISTS
+    case GreaterThan(Size(p @ PatternComprehension(maybePt, pattern, None, _)), SignedDecimalIntegerLiteral("0"))
+      if p.introducedVariables == maybePt.toSet =>
+      Exists(PatternExpression(pattern)(p.outerScope, p.variableToCollectName, p.collectionName))(p.position)
+    case LessThan(SignedDecimalIntegerLiteral("0"), Size(p @ PatternComprehension(maybePt, pattern, None, _)))
+      if p.introducedVariables == maybePt.toSet =>
+      Exists(PatternExpression(pattern)(p.outerScope, p.variableToCollectName, p.collectionName))(p.position)
+    case Equals(Size(p @ PatternComprehension(maybePt, pattern, None, _)), SignedDecimalIntegerLiteral("0"))
+      if p.introducedVariables == maybePt.toSet =>
+      Not(Exists(PatternExpression(pattern)(p.outerScope, p.variableToCollectName, p.collectionName))(p.position))(
+        p.position
+      )
+    case Equals(SignedDecimalIntegerLiteral("0"), Size(p @ PatternComprehension(maybePt, pattern, None, _)))
+      if p.introducedVariables == maybePt.toSet =>
+      Not(Exists(PatternExpression(pattern)(p.outerScope, p.variableToCollectName, p.collectionName))(p.position))(
+        p.position
+      )
   })
 
   override def apply(v: AnyRef): AnyRef = instance(v)
@@ -74,6 +92,7 @@ case class normalizeExistsPatternExpressions(semanticState: SemanticState) exten
 object normalizeExistsPatternExpressions extends StepSequencer.Step with ASTRewriterFactory {
 
   override def preConditions: Set[Condition] = Set(
+    NoCountExpression,
     PatternExpressionsHaveSemanticInfo // Looks up type of pattern expressions
   )
 

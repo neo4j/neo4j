@@ -297,6 +297,7 @@ import org.neo4j.cypher.internal.expressions.BooleanLiteral
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
+import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Divide
@@ -794,6 +795,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     outerScope <- zeroOrMore(_variable)
   } yield ExistsSubClause(pattern, where)(pos, outerScope.toSet)
 
+  def _countSubClause: Gen[CountExpression] = for {
+    element <- _patternElement
+    where <- option(_expression)
+    outerScope <- zeroOrMore(_variable)
+  } yield CountExpression(element, where)(pos, outerScope.toSet)
+
   def _patternComprehension: Gen[PatternComprehension] = for {
     namedPath <- option(_variable)
     pattern <- _relationshipsPattern
@@ -841,6 +848,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
         lzy(_listComprehension),
         lzy(_containerIndex),
         lzy(_existsSubClause),
+        lzy(_countSubClause),
         lzy(_patternComprehension)
       )
     )

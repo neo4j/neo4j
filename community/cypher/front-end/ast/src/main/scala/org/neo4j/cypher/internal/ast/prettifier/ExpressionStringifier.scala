@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.expressions.ChainableBinaryOperatorExpression
 import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
+import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.Divide
@@ -330,6 +331,11 @@ private class DefaultExpressionStringifier(
         val p = patterns.apply(pat)
         val w = where.map(wh => s" WHERE ${inner(ast)(wh)}").getOrElse("")
         s"EXISTS { MATCH $p$w }"
+
+      case CountExpression(relChain, where) =>
+        val p = patterns.apply(relChain)
+        val w = where.map(wh => s" WHERE ${inner(ast)(wh)}").getOrElse("")
+        s"COUNT { $p$w }"
 
       case UnaryAdd(r) =>
         val i = inner(ast)(r)

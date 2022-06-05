@@ -361,7 +361,7 @@ TOKEN [IGNORE_CASE] :
     | < CONSTRAINTS: "CONSTRAINTS" >
     | < CONTAINS: "CONTAINS" >
     | < COPY: "COPY" >
-    | < COUNT: "count" >
+    | < COUNT: "COUNT" >
     | < CREATE: "CREATE" >
     | < CSV: "CSV" >
     | < CURRENT: "CURRENT" >
@@ -2235,10 +2235,7 @@ EXPRESSION Properties() :
 
 REL_PATTERN RelationshipPattern() :
 {
-    if (token.next == null) {
-      token.next = token_source.getNextToken();
-    }
-    Token firstToken = token.next;
+    Token firstToken = token;
     Token t;
     boolean left = false;
     boolean right = false;
@@ -2260,7 +2257,7 @@ REL_PATTERN RelationshipPattern() :
     )?
     ArrowLine() ( RightArrow() { right = true; } )?
     {
-        return astFactory.relationshipPattern( pos( firstToken ), left, right, v, labelExpression, pathLength, properties, predicate );
+        return astFactory.relationshipPattern( pos( firstToken.next ), left, right, v, labelExpression, pathLength, properties, predicate );
     }
 }
 
@@ -2691,6 +2688,7 @@ EXPRESSION Expression1() :
         | LOOKAHEAD( 3 ) t=<COUNT> <LPAREN> <TIMES> <RPAREN> { e = astFactory.newCountStar( pos( t ) ); }
         | LOOKAHEAD( 3 ) e=MapLiteral()
         | LOOKAHEAD( 3 ) e=ExistsSubQuery() // `exists { match` should not be a map-projection
+        | LOOKAHEAD( 3 ) e=CountSubQuery()
         | LOOKAHEAD( 2 ) e=MapProjection()
         | LOOKAHEAD( 3 ) e=ListComprehension() // before literal because it takes precedence
         | LOOKAHEAD( PatternComprehensionPrefix() ) e=PatternComprehension() // Only after matching up to "WHERE" or "|" can we be sure it is a PatternComprehension and not a ListLiteral.
@@ -2930,6 +2928,19 @@ EXPRESSION ExistsSubQuery() :
     t=<EXISTS> <LCURLY> ( LOOKAHEAD( 2 ) <MATCH> )? patterns=PatternList() ( <WHERE> where=Expression() )? <RCURLY>
     {
         return astFactory.existsSubQuery( pos( t ), patterns, where );
+    }
+}
+
+EXPRESSION CountSubQuery() :
+{
+    Token t;
+    PATTERN pattern;
+    EXPRESSION where = null;
+}
+{
+    t=<COUNT> <LCURLY> pattern=EveryPathPattern()( <WHERE> where=Expression() )? <RCURLY>
+    {
+        return astFactory.countSubQuery( pos( t ), pattern, where );
     }
 }
 

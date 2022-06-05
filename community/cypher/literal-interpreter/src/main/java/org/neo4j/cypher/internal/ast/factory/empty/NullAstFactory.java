@@ -411,6 +411,11 @@ public class NullAstFactory
     }
 
     @Override
+    public NULL countSubQuery(NULL p, NULL aNull, NULL where) {
+        return null;
+    }
+
+    @Override
     public NULL mapProjection(NULL p, NULL v, List<NULL> nulls) {
         return null;
     }

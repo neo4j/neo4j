@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
@@ -136,6 +137,37 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     val where = equals(prop(varFor("r1"), "prop"), prop(varFor("r2"), "prop"))
 
     val expr = ExistsSubClause(pattern, Some(where))(pos, Set.empty)
+
+    val outerVariables: Set[LogicalVariable] = Set(varFor("n"), varFor("r1"), varFor("p1"))
+    expr.withOuterScope(outerVariables).dependencies should equal(Set(varFor("n"), varFor("r1")))
+  }
+
+  test("should compute dependencies for count subclause with node predicate") {
+    // COUNT { (n)-[r]->(p) WHERE n.prop = p.prop }
+    val pattern = RelationshipChain(
+      NodePattern(Some(varFor("n")), None, None, None) _,
+      RelationshipPattern(Some(varFor("r")), None, None, None, None, SemanticDirection.OUTGOING) _,
+      NodePattern(Some(varFor("p")), None, None, None) _
+    ) _
+
+    val where = equals(prop(varFor("n"), "prop"), prop(varFor("p"), "prop"))
+
+    val expr = CountExpression(pattern, Some(where))(pos, Set.empty)
+
+    expr.withOuterScope(Set(varFor("n"))).dependencies should equal(Set(varFor("n")))
+  }
+
+  test("should compute dependencies for count subclause with relationship predicate") {
+    // WHERE COUNT { (n)-[r2]->(p2) WHERE r1.prop = r2.prop }
+    val pattern = RelationshipChain(
+      NodePattern(Some(varFor("n")), None, None, None) _,
+      RelationshipPattern(Some(varFor("r2")), None, None, None, None, SemanticDirection.OUTGOING) _,
+      NodePattern(Some(varFor("p2")), None, None, None) _
+    ) _
+
+    val where = equals(prop(varFor("r1"), "prop"), prop(varFor("r2"), "prop"))
+
+    val expr = CountExpression(pattern, Some(where))(pos, Set.empty)
 
     val outerVariables: Set[LogicalVariable] = Set(varFor("n"), varFor("r1"), varFor("p1"))
     expr.withOuterScope(outerVariables).dependencies should equal(Set(varFor("n"), varFor("r1")))
