@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.http.cypher;
 
+import org.neo4j.internal.kernel.api.security.LoginContext;
+
 public class DisabledTransactionRegistry implements TransactionRegistry {
     public static final TransactionRegistry INSTANCE = new DisabledTransactionRegistry();
 
@@ -49,4 +51,12 @@ public class DisabledTransactionRegistry implements TransactionRegistry {
 
     @Override
     public void rollbackAllSuspendedTransactions() {}
+
+    @Override
+    public void rollbackSuspendedTransactionsIdleSince(long oldestLastActiveTime) {}
+
+    @Override
+    public LoginContext getLoginContextForTransaction(long id) {
+        return null;
+    }
 }

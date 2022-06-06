@@ -43,7 +43,7 @@ import org.neo4j.scheduler.JobScheduler;
  * An entry point for managing transaction in HTTP API.
  */
 public class HttpTransactionManager {
-    private final TransactionHandleRegistry transactionRegistry;
+    private final TransactionRegistry transactionRegistry;
     private final DatabaseManagementService managementService;
     private final JobScheduler jobScheduler;
     private final TransactionManager transactionManager;
@@ -93,7 +93,7 @@ public class HttpTransactionManager {
         return database;
     }
 
-    public TransactionHandleRegistry getTransactionHandleRegistry() {
+    public TransactionRegistry getTransactionRegistry() {
         return transactionRegistry;
     }
 

@@ -103,7 +103,7 @@ class HttpTransactionManagerTest {
                 authManager,
                 true);
 
-        assertNotNull(manager.getTransactionHandleRegistry());
+        assertNotNull(manager.getTransactionRegistry());
     }
 
     @Test

@@ -139,11 +139,12 @@ class TransactionFacade {
                 isReadOnlyTransaction);
     }
 
-    TransactionHandle findTransactionHandle(long txId) throws TransactionLifecycleException {
-        return registry.acquire(txId);
+    TransactionHandle findTransactionHandle(long txId, LoginContext requestingUser)
+            throws TransactionLifecycleException {
+        return registry.acquire(txId, requestingUser);
     }
 
-    TransactionHandle terminate(long txId) throws TransactionLifecycleException {
-        return registry.terminate(txId);
+    TransactionHandle terminate(long txId, LoginContext loginContext) throws TransactionLifecycleException {
+        return registry.terminate(txId, loginContext);
     }
 }

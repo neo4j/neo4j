@@ -93,7 +93,7 @@ public class TransactionHandle implements TransactionTerminationHandle {
     private final InternalLogProvider userLogProvider;
     private final BoltGraphDatabaseManagementServiceSPI boltSPI;
     private String txManagerTxId;
-    LoginContext loginContext;
+    private LoginContext loginContext;
     private final ClientConnectionInfo clientConnectionInfo;
     MemoryTracker memoryTracker;
     AuthManager authManager;
@@ -199,6 +199,10 @@ public class TransactionHandle implements TransactionTerminationHandle {
             registry.forget(id);
             transactionManager.cleanUp(new CleanUpTransactionContext(Long.toString(id)));
         }
+    }
+
+    public LoginContext getLoginContext() {
+        return loginContext;
     }
 
     boolean hasTransactionContext() {

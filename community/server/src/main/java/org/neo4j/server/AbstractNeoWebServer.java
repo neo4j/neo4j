@@ -377,7 +377,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
 
     @Override
     public TransactionRegistry getTransactionRegistry() {
-        return httpTransactionManager.getTransactionHandleRegistry();
+        return httpTransactionManager.getTransactionRegistry();
     }
 
     @Override

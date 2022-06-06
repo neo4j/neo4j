@@ -21,6 +21,7 @@ package org.neo4j.server.http.cypher;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNullElse;
+import static org.neo4j.server.rest.dbms.AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest;
 import static org.neo4j.server.web.HttpHeaderUtils.getAccessMode;
 import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
 
@@ -47,7 +48,6 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.server.http.cypher.format.api.InputEventStream;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 import org.neo4j.server.rest.Neo4jError;
-import org.neo4j.server.rest.dbms.AuthorizedRequestWrapper;
 import org.neo4j.time.SystemNanoClock;
 
 public abstract class AbstractCypherResource {
@@ -127,17 +127,21 @@ public abstract class AbstractCypherResource {
 
     @POST
     @Path("/{id}")
-    public Response executeStatements(@PathParam("id") long id, InputEventStream inputEventStream) {
+    public Response executeStatements(
+            @PathParam("id") long id, InputEventStream inputEventStream, @Context HttpServletRequest request) {
         try (var memoryTracker = createMemoryTracker()) {
-            return executeInExistingTransaction(id, inputEventStream, memoryTracker, false);
+            return executeInExistingTransaction(
+                    id, inputEventStream, memoryTracker, false, getLoginContextFromHttpServletRequest(request));
         }
     }
 
     @POST
     @Path("/{id}/commit")
-    public Response commitTransaction(@PathParam("id") long id, InputEventStream inputEventStream) {
+    public Response commitTransaction(
+            @PathParam("id") long id, InputEventStream inputEventStream, @Context HttpServletRequest request) {
         try (var memoryTracker = createMemoryTracker()) {
-            return executeInExistingTransaction(id, inputEventStream, memoryTracker, true);
+            return executeInExistingTransaction(
+                    id, inputEventStream, memoryTracker, true, getLoginContextFromHttpServletRequest(request));
         }
     }
 
@@ -185,7 +189,7 @@ public abstract class AbstractCypherResource {
 
     @DELETE
     @Path("/{id}")
-    public Response rollbackTransaction(@PathParam("id") final long id) {
+    public Response rollbackTransaction(@PathParam("id") final long id, @Context HttpServletRequest request) {
         try (var memoryTracker = createMemoryTracker()) {
             Optional<GraphDatabaseAPI> graphDatabaseAPI = httpTransactionManager.getGraphDatabaseAPI(databaseName);
             return graphDatabaseAPI
@@ -201,7 +205,8 @@ public abstract class AbstractCypherResource {
 
                         TransactionHandle transactionHandle;
                         try {
-                            transactionHandle = transactionFacade.terminate(id);
+                            transactionHandle =
+                                    transactionFacade.terminate(id, getLoginContextFromHttpServletRequest(request));
                         } catch (TransactionLifecycleException e) {
                             return invalidTransaction(e, emptyMap());
                         }
@@ -236,7 +241,7 @@ public abstract class AbstractCypherResource {
             HttpHeaders headers,
             MemoryTracker memoryTracker,
             boolean implicitTransaction) {
-        LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest(request);
+        LoginContext loginContext = getLoginContextFromHttpServletRequest(request);
         long customTransactionTimeout = getTransactionTimeout(headers, log);
         var isReadOnlyTransaction = getAccessMode(headers);
 
@@ -266,7 +271,8 @@ public abstract class AbstractCypherResource {
             long transactionId,
             InputEventStream inputEventStream,
             MemoryTracker memoryTracker,
-            boolean finishWithCommit) {
+            boolean finishWithCommit,
+            LoginContext requestingUserLoginContext) {
         InputEventStream inputStream = ensureNotNull(inputEventStream);
 
         try {
@@ -284,7 +290,8 @@ public abstract class AbstractCypherResource {
 
                         TransactionHandle transactionHandle;
                         try {
-                            transactionHandle = transactionFacade.findTransactionHandle(transactionId);
+                            transactionHandle =
+                                    transactionFacade.findTransactionHandle(transactionId, requestingUserLoginContext);
                         } catch (TransactionLifecycleException e) {
                             return invalidTransaction(e, inputStream.getParameters());
                         }
