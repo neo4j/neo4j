@@ -44,14 +44,14 @@ object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
         context.costComparisonListener.report(
           projector,
           input,
-          (plan: X, monitor) => score(projector, plan, heuristic, context, monitor),
+          (plan: X) => score(projector, plan, heuristic, context),
           context,
           resolved,
           resolvedPerPlan,
           heuristic
         )
 
-        input.minByOption(score(projector, _, heuristic, context, CostModelMonitor.DEFAULT))
+        input.minByOption(score(projector, _, heuristic, context))
       }
     }
 
@@ -59,8 +59,7 @@ object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
     projector: X => LogicalPlan,
     input: X,
     heuristic: SelectorHeuristic,
-    context: LogicalPlanningContext,
-    costModelMonitor: CostModelMonitor
+    context: LogicalPlanningContext
   ) = {
     val costs = context.cost
     val plan = projector(input)
@@ -70,7 +69,7 @@ object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
       context.semanticTable,
       context.planningAttributes.cardinalities,
       context.planningAttributes.providedOrders,
-      costModelMonitor
+      CostModelMonitor.DEFAULT
     ).gummyBears
     val hints = context.planningAttributes.solveds.get(plan.id).numHints
     val tieBreaker = heuristic.tieBreaker(plan)

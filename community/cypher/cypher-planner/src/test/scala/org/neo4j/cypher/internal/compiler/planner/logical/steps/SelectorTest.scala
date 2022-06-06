@@ -126,7 +126,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
         override def report[X, Score: Ordering](
           projector: X => LogicalPlan,
           input: Iterable[X],
-          inputOrdering: (X, CostModelMonitor) => Score,
+          inputOrdering: X => Score,
           context: LogicalPlanningContext,
           resolved: => String,
           resolvedPerPlan: LogicalPlan => String,

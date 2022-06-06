@@ -38,7 +38,7 @@ trait CostComparisonListener {
   def report[X, Score: Ordering](
     projector: X => LogicalPlan,
     input: Iterable[X],
-    inputOrdering: (X, CostModelMonitor) => Score,
+    inputOrdering: X => Score,
     context: LogicalPlanningContext,
     resolved: => String,
     resolvedPerPlan: LogicalPlan => String = _ => "",
@@ -51,7 +51,7 @@ object devNullListener extends CostComparisonListener {
   override def report[X, Score: Ordering](
     projector: X => LogicalPlan,
     input: Iterable[X],
-    inputOrdering: (X, CostModelMonitor) => Score,
+    inputOrdering: X => Score,
     context: LogicalPlanningContext,
     resolved: => String,
     resolvedPerPlan: LogicalPlan => String = _ => "",
@@ -82,7 +82,7 @@ object SystemOutCostLogger extends CostComparisonListener {
   def report[X, Score: Ordering](
     projector: X => LogicalPlan,
     input: Iterable[X],
-    calculateScore: (X, CostModelMonitor) => Score,
+    calculateScore: X => Score,
     context: LogicalPlanningContext,
     resolved: => String,
     resolvedPerPlan: LogicalPlan => String = _ => "",
@@ -130,13 +130,22 @@ object SystemOutCostLogger extends CostComparisonListener {
         .to(LazyList) // working lazily as much as possible to traverse input as few times as necessary
         .distinct // lazy via View.DistinctBy
         .map(x =>
-          x -> calculateScore(x, monitor)
+          x -> calculateScore(x)
         ) // calculate the score for each value, only once, populating `planCost` and `planEffectiveCardinality`
         .sortBy(_._2) // sort by score, actually a strict operation under the hood so `calculateScore` actually gets called at this point
         .map(_._1) // ditch the score
         .map(projector) // get the LogicalPlan
         .zipWithIndex
         .foreach { case (plan, index) =>
+          // Update cost and effective cardinality for each subplan
+          context.cost.costFor(
+            plan,
+            context.input,
+            context.semanticTable,
+            context.planningAttributes.cardinalities,
+            context.planningAttributes.providedOrders,
+            monitor
+          )
           val winner = if (index == 0) green(" [winner]") else ""
           val resolvedStr = cyan(s" ${resolvedPerPlan(plan)}")
           val header = blue(s"$index: Plan #${plan.debugId}") + winner + resolvedStr
