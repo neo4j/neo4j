@@ -122,6 +122,8 @@ import org.neo4j.util.VisibleForTesting;
  * </p>
  */
 public class MuninnPageCache implements PageCache {
+    // this implementation requires at least 3 longs reserved in order to map multiversioned pages
+    public static final int MINIMUM_RESERVED_BYTES = Long.BYTES * 3;
     public static final byte ZERO_BYTE = (byte) (flag(MuninnPageCache.class, "brandedZeroByte", false) ? 0x0f : 0);
 
     // The amount of memory we need for every page, both its buffer and its meta-data.
@@ -161,9 +163,6 @@ public class MuninnPageCache implements PageCache {
     // Used when trying to figure out number of available pages in a page cache. Could be returned from
     // tryGetNumberOfAvailablePages.
     private static final int UNKNOWN_PAGES_TO_EVICT = -1;
-
-    // this implementation requires at least 3 longs reserved in order to map multiversioned pages
-    private static final int MINIMUM_RESERVED_BYTES = Long.BYTES * 3;
 
     private final int pageCacheId;
     private final PageSwapperFactory swapperFactory;
