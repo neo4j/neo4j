@@ -22,16 +22,13 @@ package org.neo4j.shell.commands;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.shell.ConnectionConfig.connectionConfig;
-import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
+import static org.neo4j.shell.test.Util.testConnectionConfig;
 import static org.neo4j.shell.util.Versions.majorVersion;
 import static org.neo4j.shell.util.Versions.minorVersion;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.shell.CypherShell;
-import org.neo4j.shell.Environment;
 import org.neo4j.shell.StringLinePrinter;
-import org.neo4j.shell.cli.Encryption;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.prettyprint.PrettyConfig;
@@ -44,8 +41,7 @@ class CypherShellProtocolIntegrationTest {
     void shouldConnectWithBoltProtocol() throws Exception {
         CypherShell shell = shell();
         try {
-            shell.connect(connectionConfig(
-                    "bolt", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment()));
+            shell.connect(testConnectionConfig("bolt://localhost:7687").withUsernameAndPassword("neo4j", "neo"));
             assertTrue(shell.isConnected());
         } finally {
             shell.disconnect();
@@ -57,8 +53,7 @@ class CypherShellProtocolIntegrationTest {
         CypherShell shell = shell();
         try {
             // This should work even on older databases without the neo4j protocol, by falling back to bolt
-            shell.connect(connectionConfig(
-                    "neo4j", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment()));
+            shell.connect(testConnectionConfig("neo4j://localhost:7687").withUsernameAndPassword("neo4j", "neo"));
             assertTrue(shell.isConnected());
         } finally {
             shell.disconnect();
@@ -71,15 +66,7 @@ class CypherShellProtocolIntegrationTest {
         try {
             // Given 3.X series where X > 1, where SSC are the default. Hard to test in 4.0 sadly.
             onlyIn3_2to3_6(shell);
-            shell.connect(connectionConfig(
-                    "bolt+ssc",
-                    "localhost",
-                    7687,
-                    "neo4j",
-                    "neo",
-                    Encryption.DEFAULT,
-                    ABSENT_DB_NAME,
-                    new Environment()));
+            shell.connect(testConnectionConfig("bolt+ssc://localhost:7687").withUsernameAndPassword("neo4j", "neo"));
             assertTrue(shell.isConnected());
         } finally {
             shell.disconnect();
@@ -93,15 +80,7 @@ class CypherShellProtocolIntegrationTest {
             // Given 3.X series where X > 1, where SSC are the default. Hard to test in 4.0 sadly.
             onlyIn3_2to3_6(shell);
             // This should work by falling back to bolt+ssc
-            shell.connect(connectionConfig(
-                    "neo4j+ssc",
-                    "localhost",
-                    7687,
-                    "neo4j",
-                    "neo",
-                    Encryption.DEFAULT,
-                    ABSENT_DB_NAME,
-                    new Environment()));
+            shell.connect(testConnectionConfig("neo4j+ssc://localhost:7687").withUsernameAndPassword("neo4j", "neo"));
             assertTrue(shell.isConnected());
         } finally {
             shell.disconnect();
@@ -119,8 +98,7 @@ class CypherShellProtocolIntegrationTest {
 
     private static void onlyIn3_2to3_6(CypherShell shell) throws Exception {
         // Default connection settings
-        shell.connect(connectionConfig(
-                "bolt", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment()));
+        shell.connect(testConnectionConfig("bolt://localhost:7687").withUsernameAndPassword("neo4j", "neo"));
         assumeTrue(majorVersion(shell.getServerVersion()) == 3);
         assumeTrue(minorVersion(shell.getServerVersion()) > 1);
         shell.disconnect();

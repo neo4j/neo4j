@@ -31,10 +31,10 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.neo4j.shell.ConnectionConfig.connectionConfig;
 import static org.neo4j.shell.DatabaseManager.DEFAULT_DEFAULT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.SYSTEM_DB_NAME;
 import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilder;
+import static org.neo4j.shell.test.Util.testConnectionConfig;
 import static org.neo4j.shell.util.Versions.majorVersion;
 
 import java.io.IOException;
@@ -50,7 +50,6 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
-import org.neo4j.shell.cli.Encryption;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.parameter.ParameterService;
@@ -958,6 +957,41 @@ class MainIntegrationTest {
                         endsWithInteractiveExit);
     }
 
+    @Test
+    void connectWithCredentialsInAddress() throws Exception {
+        assumeAtLeastVersion("4.3");
+        testWithUser("the_undertaker", "wwf", false)
+                .args("-a neo4j://the_undertaker:wwf@localhost:7687 --format plain")
+                .userInputLines("SHOW CURRENT USER YIELD user;", ":exit")
+                .run()
+                .assertSuccess()
+                .assertThatOutput(
+                        containsString(
+                                """
+                                user
+                                "the_undertaker"
+                                """),
+                        endsWithInteractiveExit);
+    }
+
+    @Test
+    void connectWithEnvironmentalAddress() throws Exception {
+        assumeAtLeastVersion("4.3");
+        testWithUser("hulk_hogan", "wwf2", false)
+                .args("--format plain")
+                .addEnvVariable("NEO4J_ADDRESS", "neo4j://hulk_hogan:wwf2@localhost:7687")
+                .userInputLines("SHOW CURRENT USER YIELD user;", ":exit")
+                .run()
+                .assertSuccess()
+                .assertThatOutput(
+                        containsString(
+                                """
+                                user
+                                "hulk_hogan"
+                                """),
+                        endsWithInteractiveExit);
+    }
+
     private static CypherStatement cypher(String cypher) {
         return CypherStatement.complete(cypher);
     }
@@ -1000,8 +1034,8 @@ class MainIntegrationTest {
             var printer = new PrettyPrinter(new PrettyConfig(Format.PLAIN, false, 100));
             var parameters = ParameterService.create(boltHandler);
             shell = new CypherShell(new StringLinePrinter(), boltHandler, printer, parameters);
-            shell.connect(connectionConfig(
-                    "neo4j", "localhost", 7687, USER, PASSWORD, Encryption.DEFAULT, database, new Environment()));
+            shell.connect(testConnectionConfig("neo4j://localhost:7687")
+                    .withUsernameAndPasswordAndDatabase(USER, PASSWORD, database));
             return systemDbConsumer.apply(shell);
         } catch (Exception e) {
             throw new RuntimeException("Failed to execute statements during test setup: " + e.getMessage(), e);

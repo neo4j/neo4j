@@ -31,21 +31,6 @@ class CliArgsTest {
     private final CliArgs cliArgs = new CliArgs();
 
     @Test
-    void setHost() {
-        cliArgs.setHost("foo", "bar");
-        assertEquals("foo", cliArgs.getHost());
-
-        cliArgs.setHost(null, "bar");
-        assertEquals("bar", cliArgs.getHost());
-    }
-
-    @Test
-    void setPort() {
-        cliArgs.setPort(999);
-        assertEquals(999, cliArgs.getPort());
-    }
-
-    @Test
     void setUsername() {
         cliArgs.setUsername("foo", "bar");
         assertEquals("foo", cliArgs.getUsername());

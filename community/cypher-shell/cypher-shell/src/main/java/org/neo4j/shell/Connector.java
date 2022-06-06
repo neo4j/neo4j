@@ -67,7 +67,7 @@ public interface Connector {
 
     String username();
 
-    String driverUrl();
+    ConnectionConfig connectionConfig();
 
     Optional<String> impersonatedUser();
 }

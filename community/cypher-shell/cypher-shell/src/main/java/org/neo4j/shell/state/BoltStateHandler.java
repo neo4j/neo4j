@@ -21,6 +21,7 @@ package org.neo4j.shell.state;
 
 import static org.neo4j.shell.util.Versions.isPasswordChangeRequiredException;
 
+import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -70,7 +71,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     private static final TransactionConfig TRANSACTION_CONFIG = TransactionConfig.builder()
             .withMetadata(Map.of("type", "system", "app", "cypher-shell_v" + Build.version()))
             .build();
-    private final TriFunction<String, AuthToken, Config, Driver> driverProvider;
+    private final TriFunction<URI, AuthToken, Config, Driver> driverProvider;
     private final boolean isInteractive;
     private final Map<String, Bookmark> bookmarks = new HashMap<>();
     protected Driver driver;
@@ -85,7 +86,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         this(GraphDatabase::driver, isInteractive);
     }
 
-    BoltStateHandler(TriFunction<String, AuthToken, Config, Driver> driverProvider, boolean isInteractive) {
+    BoltStateHandler(TriFunction<URI, AuthToken, Config, Driver> driverProvider, boolean isInteractive) {
         this.driverProvider = driverProvider;
         activeDatabaseNameAsSetByUser = ABSENT_DB_NAME;
         this.isInteractive = isInteractive;
@@ -247,9 +248,8 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
                 driver = getDriver(connectionConfig, authToken);
                 reconnectAndPing(activeDatabaseNameAsSetByUser, previousDatabaseName);
             } catch (ServiceUnavailableException | SessionExpiredException e) {
-                String scheme = connectionConfig.scheme();
                 String fallbackScheme =
-                        switch (scheme) {
+                        switch (connectionConfig.uri().getScheme()) {
                             case Scheme.NEO4J_URI_SCHEME -> Scheme.BOLT_URI_SCHEME;
                             case Scheme.NEO4J_LOW_TRUST_URI_SCHEME -> Scheme.BOLT_LOW_TRUST_URI_SCHEME;
                             case Scheme.NEO4J_HIGH_TRUST_URI_SCHEME -> Scheme.BOLT_HIGH_TRUST_URI_SCHEME;
@@ -373,8 +373,8 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     }
 
     @Override
-    public String driverUrl() {
-        return connectionConfig != null ? connectionConfig.driverUrl() : "";
+    public ConnectionConfig connectionConfig() {
+        return connectionConfig;
     }
 
     @Override
@@ -532,7 +532,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
             default -> {}
                 // Do nothing
         }
-        return driverProvider.apply(connectionConfig.driverUrl(), authToken, configBuilder.build());
+        return driverProvider.apply(connectionConfig.uri(), authToken, configBuilder.build());
     }
 
     private boolean isSystemDb() {

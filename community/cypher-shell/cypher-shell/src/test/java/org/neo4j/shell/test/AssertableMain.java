@@ -30,7 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.shell.Main.EXIT_FAILURE;
 import static org.neo4j.shell.Main.EXIT_SUCCESS;
-import static org.neo4j.shell.cli.CliArgHelper.parseAndThrow;
 import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilder;
 
 import java.io.ByteArrayInputStream;
@@ -41,15 +40,19 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.neo4j.shell.CypherShell;
+import org.neo4j.shell.Environment;
 import org.neo4j.shell.Main;
 import org.neo4j.shell.ShellRunner;
+import org.neo4j.shell.cli.CliArgHelper;
 import org.neo4j.shell.cli.CliArgs;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.parameter.ParameterService;
@@ -148,6 +151,8 @@ public class AssertableMain {
         public final ByteArrayOutputStream err = new ByteArrayOutputStream();
         public File historyFile;
         public ParameterService parameters;
+        private final Map<String, String> envMap = new HashMap<>();
+        private final Environment environment = new Environment(envMap);
 
         public AssertableMainBuilder shell(CypherShell shell) {
             this.shell = shell;
@@ -194,6 +199,11 @@ public class AssertableMain {
             return this;
         }
 
+        public AssertableMainBuilder addEnvVariable(String key, String value) {
+            envMap.put(key, value);
+            return this;
+        }
+
         public AssertableMain run() throws ArgumentParserException, IOException {
             var outPrintStream = new PrintStream(out);
             var errPrintStream = new PrintStream(err);
@@ -213,7 +223,7 @@ public class AssertableMain {
         }
 
         protected CliArgs parseArgs() throws ArgumentParserException, IOException {
-            var parsedArgs = parseAndThrow(args.toArray(String[]::new));
+            var parsedArgs = new CliArgHelper(environment).parseAndThrow(args.toArray(String[]::new));
             var history = historyFile != null
                     ? historyFile
                     : Files.createTempFile("temp-history", null).toFile();

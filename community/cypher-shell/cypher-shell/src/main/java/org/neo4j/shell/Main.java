@@ -108,7 +108,7 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        CliArgs cliArgs = CliArgHelper.parse(args);
+        CliArgs cliArgs = new CliArgHelper(new Environment()).parse(args);
 
         // if null, then command line parsing went wrong
         // CliArgs has already printed errors.
@@ -161,9 +161,9 @@ public class Main {
                 // Can only prompt for password if input has not been redirected
                 connectMaybeInteractively(connectionConfig);
 
-                if (!shell.driverUrl().equals(connectionConfig.driverUrl())) {
-                    var fallbackWarning = "Failed to connect to " + connectionConfig.driverUrl() + ", fallback to "
-                            + shell.driverUrl();
+                if (!shell.connectionConfig().uri().equals(connectionConfig.uri())) {
+                    var fallbackWarning = "Failed to connect to " + connectionConfig.uri() + ", fallback to "
+                            + shell.connectionConfig().uri();
                     printer.printIfVerbose(AnsiFormattedText.s()
                             .colorOrange()
                             .append(fallbackWarning)

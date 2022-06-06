@@ -34,22 +34,36 @@ import static org.neo4j.shell.test.Util.asArray;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.shell.Environment;
 import org.neo4j.shell.parameter.ParameterService.RawParameter;
 import org.neo4j.shell.test.LocaleDependentTestBase;
 
 class CliArgHelperTest extends LocaleDependentTestBase {
-    private static CliArgs parse(String... args) {
-        var parsed = CliArgHelper.parse(args);
+    private CliArgHelper parser;
+    private Map<String, String> env;
+
+    private CliArgs parse(String... args) {
+        var parsed = parser.parse(args);
         if (parsed == null) {
             fail("Failed to parse arguments: " + Arrays.toString(args));
         }
         return parsed;
+    }
+
+    @BeforeEach
+    void setup() {
+        env = new HashMap<>();
+        parser = new CliArgHelper(new Environment(env));
     }
 
     @Test
@@ -67,9 +81,9 @@ class CliArgHelperTest extends LocaleDependentTestBase {
     @Test
     void testNumSampleRows() {
         assertEquals(200, parse("--sample-rows 200".split(" ")).getNumSampleRows(), "sample-rows 200");
-        assertNull(CliArgHelper.parse("--sample-rows 0".split(" ")), "invalid sample-rows");
-        assertNull(CliArgHelper.parse("--sample-rows -1".split(" ")), "invalid sample-rows");
-        assertNull(CliArgHelper.parse("--sample-rows foo".split(" ")), "invalid sample-rows");
+        assertNull(parser.parse("--sample-rows 0".split(" ")), "invalid sample-rows");
+        assertNull(parser.parse("--sample-rows -1".split(" ")), "invalid sample-rows");
+        assertNull(parser.parse("--sample-rows foo".split(" ")), "invalid sample-rows");
     }
 
     @Test
@@ -77,14 +91,14 @@ class CliArgHelperTest extends LocaleDependentTestBase {
         assertTrue(parse("--wrap true".split(" ")).getWrap(), "wrap true");
         assertFalse(parse("--wrap false".split(" ")).getWrap(), "wrap false");
         assertTrue(parse().getWrap(), "default wrap");
-        assertNull(CliArgHelper.parse("--wrap foo".split(" ")), "invalid wrap");
+        assertNull(parser.parse("--wrap foo".split(" ")), "invalid wrap");
     }
 
     @Test
     void testDefaultScheme() {
-        CliArgs arguments = CliArgHelper.parse();
+        CliArgs arguments = parser.parse();
         assertNotNull(arguments);
-        assertEquals("neo4j", arguments.getScheme());
+        assertEquals("neo4j", arguments.getUri().getScheme());
     }
 
     @Test
@@ -141,50 +155,81 @@ class CliArgHelperTest extends LocaleDependentTestBase {
     @Test
     void parsePassword() {
         assertEquals("foo", parse("--password", "foo").getPassword());
+        assertEquals("", parse().getPassword());
+    }
+
+    @Test
+    void parsePasswordWithFallback() {
+        env.put("NEO4J_PASSWORD", "foo");
+        assertEquals("foo", parse().getPassword());
+        assertEquals("notfoo", parse("--password", "notfoo").getPassword());
     }
 
     @Test
     void parseUserName() {
         assertEquals("foo", parse("--username", "foo").getUsername());
+        assertEquals("", parse().getUsername());
+    }
+
+    @Test
+    void parseUserWithFallback() {
+        env.put("NEO4J_USERNAME", "foo");
+        assertEquals("foo", parse().getUsername());
+        assertEquals("notfoo", parse("--username", "notfoo").getUsername());
     }
 
     @Test
     void parseFullAddress() {
-        CliArgs cliArgs = CliArgHelper.parse("--address", "bolt+routing://alice:foo@bar:69");
-        assertNotNull(cliArgs);
+        CliArgs cliArgs = parse("--address", "bolt+routing://alice:foo@bar:69");
         assertEquals("alice", cliArgs.getUsername());
         assertEquals("foo", cliArgs.getPassword());
-        assertEquals("bolt+routing", cliArgs.getScheme());
-        assertEquals("bar", cliArgs.getHost());
-        assertEquals(69, cliArgs.getPort());
+        assertEquals("bolt+routing", cliArgs.getUri().getScheme());
+        assertEquals("bar", cliArgs.getUri().getHost());
+        assertEquals(69, cliArgs.getUri().getPort());
+    }
+
+    @Test
+    void parseFullAddressWithFallback() {
+        env.put("NEO4J_ADDRESS", "bolt+routing://alice:foo@bar:69");
+        assertEquals(URI.create("bolt+routing://alice:foo@bar:69"), parse().getUri());
+        assertEquals(
+                URI.create("bolt://bob:log@mjau:123"),
+                parse("--address", "bolt://bob:log@mjau:123").getUri());
     }
 
     @Test
     void defaultAddress() {
-        CliArgs cliArgs = CliArgHelper.parse();
-        assertNotNull(cliArgs);
-        assertEquals(CliArgs.DEFAULT_SCHEME, cliArgs.getScheme());
-        assertEquals(CliArgs.DEFAULT_HOST, cliArgs.getHost());
-        assertEquals(CliArgs.DEFAULT_PORT, cliArgs.getPort());
+        assertEquals(URI.create("neo4j://localhost:7687"), parse().getUri());
+    }
+
+    @Test
+    void parseDatabase() {
+        assertEquals("db2", parse("--database", "db2").getDatabase());
+        assertEquals("db1", parse("-d", "db1").getDatabase());
+        assertEquals("", parse().getDatabase());
+    }
+
+    @Test
+    void parseDatabaseWithFallback() {
+        env.put("NEO4J_DATABASE", "secrets");
+        assertEquals("secrets", parse().getDatabase());
+        assertEquals("other", parse("--database", "other").getDatabase());
     }
 
     @Test
     void parseWithoutProtocol() {
-        CliArgs cliArgs = CliArgHelper.parse("--address", "localhost:10000");
-        assertNotNull(cliArgs);
-        assertNotNull(cliArgs);
-        assertEquals("neo4j", cliArgs.getScheme());
-        assertEquals("localhost", cliArgs.getHost());
-        assertEquals(10000, cliArgs.getPort());
+        assertEquals(
+                URI.create("neo4j://localhost:10000"),
+                parse("--address", "localhost:10000").getUri());
     }
 
     @Test
     void parseAddressWithRoutingContext() {
-        CliArgs cliArgs = CliArgHelper.parse("--address", "neo4j://localhost:7697?policy=one");
+        CliArgs cliArgs = parser.parse("--address", "neo4j://localhost:7697?policy=one");
         assertNotNull(cliArgs);
-        assertEquals("neo4j", cliArgs.getScheme());
-        assertEquals("localhost", cliArgs.getHost());
-        assertEquals(7697, cliArgs.getPort());
+        assertEquals("neo4j", cliArgs.getUri().getScheme());
+        assertEquals("localhost", cliArgs.getUri().getHost());
+        assertEquals(7697, cliArgs.getUri().getPort());
     }
 
     @Test
@@ -192,7 +237,7 @@ class CliArgHelperTest extends LocaleDependentTestBase {
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         System.setErr(new PrintStream(bout));
 
-        CliArgs cliargs = CliArgHelper.parse("-notreally");
+        CliArgs cliargs = parser.parse("-notreally");
 
         assertNull(cliargs);
 
@@ -205,13 +250,13 @@ class CliArgHelperTest extends LocaleDependentTestBase {
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         System.setErr(new PrintStream(bout));
 
-        CliArgs cliargs = CliArgHelper.parse("--address", "host port");
+        CliArgs cliargs = parser.parse("--address", "host port");
 
         assertNull(cliargs, "should have failed");
 
         assertTrue(bout.toString().contains("cypher-shell [-h]"), "expected usage: " + bout);
         assertTrue(bout.toString().contains("cypher-shell: error: Failed to parse address"), "expected error: " + bout);
-        assertTrue(bout.toString().contains("\n  Address should be of the form:"), "expected error detail: " + bout);
+        assertTrue(bout.toString().contains("\nAddress should be of the form:"), "expected error detail: " + bout);
     }
 
     @Test
@@ -227,8 +272,8 @@ class CliArgHelperTest extends LocaleDependentTestBase {
 
     @Test
     void shouldNotAcceptInvalidEncryption() {
-        var exception = assertThrows(
-                ArgumentParserException.class, () -> CliArgHelper.parseAndThrow("--encryption", "bugaluga"));
+        var exception =
+                assertThrows(ArgumentParserException.class, () -> parser.parseAndThrow("--encryption", "bugaluga"));
         assertThat(
                 exception.getMessage(),
                 containsString("argument --encryption: invalid choice: 'bugaluga' (choose from {true,false,default})"));
@@ -236,14 +281,14 @@ class CliArgHelperTest extends LocaleDependentTestBase {
 
     @Test
     void shouldParseSingleStringArg() {
-        CliArgs cliArgs = CliArgHelper.parse("-P", "foo=>'nanana'");
+        CliArgs cliArgs = parser.parse("-P", "foo=>'nanana'");
         assertNotNull(cliArgs);
         assertEquals(List.of(new RawParameter("foo", "'nanana'")), cliArgs.getParameters());
     }
 
     @Test
     void shouldParseTwoArgs() {
-        CliArgs cliArgs = CliArgHelper.parse("-P", "foo=>'nanana'", "-P", "bar=>35");
+        CliArgs cliArgs = parser.parse("-P", "foo=>'nanana'", "-P", "bar=>35");
         assertNotNull(cliArgs);
         var expected = List.of(new RawParameter("foo", "'nanana'"), new RawParameter("bar", "35"));
         assertThat(cliArgs.getParameters(), is(expected));
@@ -251,35 +296,35 @@ class CliArgHelperTest extends LocaleDependentTestBase {
 
     @Test
     void shouldFailForInvalidSyntaxForArg() {
-        var exception = assertThrows(
-                IllegalArgumentException.class, () -> CliArgHelper.parseAndThrow("-P", "foo: => 'nanana'"));
+        var exception =
+                assertThrows(IllegalArgumentException.class, () -> parser.parseAndThrow("-P", "foo: => 'nanana'"));
         assertThat(exception.getMessage(), containsString("Incorrect usage"));
         assertThat(exception.getMessage(), containsString("usage: --param  'name => value'"));
     }
 
     @Test
     void testDefaultInputFileName() {
-        CliArgs arguments = CliArgHelper.parse();
+        CliArgs arguments = parser.parse();
         assertNotNull(arguments);
         assertNull(arguments.getInputFilename());
     }
 
     @Test
     void testSetInputFileName() {
-        CliArgs arguments = CliArgHelper.parse("--file", "foo");
+        CliArgs arguments = parser.parse("--file", "foo");
         assertNotNull(arguments);
         assertEquals("foo", arguments.getInputFilename());
     }
 
     @Test
     void helpfulIfUsingWrongFile() {
-        var exception = assertThrows(ArgumentParserException.class, () -> CliArgHelper.parseAndThrow("-file", "foo"));
+        var exception = assertThrows(ArgumentParserException.class, () -> parser.parseAndThrow("-file", "foo"));
         assertThat(exception.getMessage(), containsString("Unrecognized argument '-file', did you mean --file?"));
     }
 
     @Test
     void impersonation() {
-        CliArgs arguments = CliArgHelper.parse("--impersonate", "some-user");
+        CliArgs arguments = parser.parse("--impersonate", "some-user");
         assertNotNull(arguments);
         assertEquals(Optional.of("some-user"), arguments.connectionConfig().impersonatedUser());
     }

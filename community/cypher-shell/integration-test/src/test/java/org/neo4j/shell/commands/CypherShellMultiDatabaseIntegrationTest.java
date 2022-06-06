@@ -25,10 +25,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.neo4j.shell.ConnectionConfig.connectionConfig;
 import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.DEFAULT_DEFAULT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.SYSTEM_DB_NAME;
+import static org.neo4j.shell.test.Util.testConnectionConfig;
 import static org.neo4j.shell.util.Versions.majorVersion;
 
 import java.util.List;
@@ -37,9 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.shell.CypherShell;
-import org.neo4j.shell.Environment;
 import org.neo4j.shell.StringLinePrinter;
-import org.neo4j.shell.cli.Encryption;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.parameter.ParameterService;
@@ -66,8 +64,7 @@ class CypherShellMultiDatabaseIntegrationTest {
         beginCommand = new Begin(shell);
         rollbackCommand = new Rollback(shell);
 
-        shell.connect(connectionConfig(
-                "bolt", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment()));
+        shell.connect(testConnectionConfig("bolt://localhost:7687").withUsernameAndPassword("neo4j", "neo"));
 
         // Multiple databases are only available from 4.0
         assumeTrue(majorVersion(shell.getServerVersion()) >= 4);
@@ -151,8 +148,7 @@ class CypherShellMultiDatabaseIntegrationTest {
         var printer = new PrettyPrinter(new PrettyConfig(Format.PLAIN, true, 1000));
         shell = new CypherShell(linePrinter, boltHandler, printer, parameters);
         useCommand = new Use(shell);
-        shell.connect(connectionConfig(
-                "bolt", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment()));
+        shell.connect(testConnectionConfig("bolt://localhost:7687").withUsernameAndPassword("neo4j", "neo"));
 
         useCommand.execute(List.of(SYSTEM_DB_NAME));
 

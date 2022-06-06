@@ -19,11 +19,26 @@
  */
 package org.neo4j.shell.test;
 
+import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
+
+import java.net.URI;
+import java.util.Optional;
+import org.neo4j.shell.ConnectionConfig;
+import org.neo4j.shell.cli.Encryption;
+
 public final class Util {
     private Util() {}
 
     public static String[] asArray(String... arguments) {
         return arguments;
+    }
+
+    public static ConnectionConfig testConnectionConfig(String uri) {
+        return testConnectionConfig(uri, Encryption.DEFAULT);
+    }
+
+    public static ConnectionConfig testConnectionConfig(String uri, Encryption encryption) {
+        return new ConnectionConfig(URI.create(uri), "user", "pass", encryption, ABSENT_DB_NAME, Optional.empty());
     }
 
     public static class NotImplementedYetException extends RuntimeException {

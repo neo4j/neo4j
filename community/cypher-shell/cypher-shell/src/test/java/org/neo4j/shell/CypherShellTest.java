@@ -30,8 +30,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.shell.ConnectionConfig.connectionConfig;
-import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
+import static org.neo4j.shell.test.Util.testConnectionConfig;
 
 import java.util.List;
 import java.util.Optional;
@@ -39,7 +38,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
-import org.neo4j.shell.cli.Encryption;
 import org.neo4j.shell.commands.CommandHelper;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.parameter.ParameterService;
@@ -78,8 +76,7 @@ class CypherShellTest {
 
     @Test
     void verifyDelegationOfConnectionMethods() throws CommandException {
-        ConnectionConfig cc =
-                connectionConfig("bolt", "", 1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment());
+        ConnectionConfig cc = testConnectionConfig("bolt://localhost:1");
         CypherShell shell =
                 new CypherShell(printer, mockedBoltStateHandler, mockedPrettyPrinter, mockedParameterService);
 

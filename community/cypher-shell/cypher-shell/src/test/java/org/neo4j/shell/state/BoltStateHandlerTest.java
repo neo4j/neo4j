@@ -20,6 +20,7 @@
 package org.neo4j.shell.state;
 
 import static java.util.Collections.singletonList;
+import static java.util.Optional.empty;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -42,11 +43,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.shell.ConnectionConfig.connectionConfig;
 import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.DEFAULT_DEFAULT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.SYSTEM_DB_NAME;
+import static org.neo4j.shell.test.Util.testConnectionConfig;
 
+import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -76,7 +78,6 @@ import org.neo4j.driver.summary.DatabaseInfo;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.ServerInfo;
 import org.neo4j.shell.ConnectionConfig;
-import org.neo4j.shell.Environment;
 import org.neo4j.shell.TriFunction;
 import org.neo4j.shell.build.Build;
 import org.neo4j.shell.cli.Encryption;
@@ -89,8 +90,7 @@ class BoltStateHandlerTest {
     private final Printer printer = mock(Printer.class);
     private final Driver mockDriver = mock(Driver.class);
     private final OfflineBoltStateHandler boltStateHandler = new OfflineBoltStateHandler(mockDriver);
-    private final ConnectionConfig config =
-            connectionConfig("bolt", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment());
+    private final ConnectionConfig config = testConnectionConfig("bolt://localhost");
     private final TransactionConfig transactionConfig = TransactionConfig.builder()
             .withMetadata(Map.of("type", "system", "app", "cypher-shell_v" + Build.version()))
             .build();
@@ -110,7 +110,7 @@ class BoltStateHandlerTest {
     void protocolVersionIsEmptyIfDriverReturnsNull() throws CommandException {
         RecordingDriverProvider provider = new RecordingDriverProvider() {
             @Override
-            public Driver apply(String uri, AuthToken authToken, Config config) {
+            public Driver apply(URI uri, AuthToken authToken, Config config) {
                 super.apply(uri, authToken, config);
                 return new FakeDriver();
             }
@@ -420,8 +420,7 @@ class BoltStateHandlerTest {
     void turnOnEncryptionIfRequested() throws CommandException {
         RecordingDriverProvider provider = new RecordingDriverProvider();
         BoltStateHandler handler = new BoltStateHandler(provider, false);
-        ConnectionConfig config =
-                connectionConfig("bolt", "", -1, "", "", Encryption.TRUE, ABSENT_DB_NAME, new Environment());
+        ConnectionConfig config = testConnectionConfig("bolt://localhost", Encryption.TRUE);
         handler.connect(config);
         assertTrue(provider.config.encrypted());
     }
@@ -482,7 +481,7 @@ class BoltStateHandlerTest {
     void shouldChangePasswordAndKeepSystemDbBookmark() throws CommandException {
         // Given
         ConnectionConfig config =
-                connectionConfig("bolt", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment());
+                testConnectionConfig("bolt://localhost").withUsernameAndPasswordAndDatabase("", "", ABSENT_DB_NAME);
         Bookmark bookmark = InternalBookmark.parse("myBookmark");
         var newPassword = "newPW";
 
@@ -506,8 +505,7 @@ class BoltStateHandlerTest {
         assertNull(handler.session);
 
         // When connecting to system db again
-        handler.connect(
-                connectionConfig("bolt", "", -1, "", "", Encryption.DEFAULT, SYSTEM_DB_NAME, new Environment()));
+        handler.connect(config.withUsernameAndPasswordAndDatabase("", "", SYSTEM_DB_NAME));
 
         // Then use bookmark for system DB
         verify(driverMock)
@@ -521,8 +519,8 @@ class BoltStateHandlerTest {
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
     void shouldKeepOneBookmarkPerDatabase() throws CommandException {
-        ConnectionConfig config =
-                connectionConfig("bolt", "", -1, "", "", Encryption.DEFAULT, "database1", new Environment());
+        ConnectionConfig config = testConnectionConfig("bolt://localhost")
+                .withUsernameAndPasswordAndDatabase("user", "pass", "database1");
         Bookmark db1Bookmark = InternalBookmark.parse("db1");
         Bookmark db2Bookmark = InternalBookmark.parse("db2");
 
@@ -600,7 +598,7 @@ class BoltStateHandlerTest {
     void provideUserAgentstring() throws CommandException {
         RecordingDriverProvider provider = new RecordingDriverProvider() {
             @Override
-            public Driver apply(String uri, AuthToken authToken, Config config) {
+            public Driver apply(URI uri, AuthToken authToken, Config config) {
                 super.apply(uri, authToken, config);
                 return new FakeDriver();
             }
@@ -649,7 +647,7 @@ class BoltStateHandlerTest {
         handler.connect(config);
 
         assertEquals(1, fakeDriver.sessionConfigs.size());
-        assertEquals(Optional.empty(), fakeDriver.sessionConfigs.get(0).impersonatedUser());
+        assertEquals(empty(), fakeDriver.sessionConfigs.get(0).impersonatedUser());
     }
 
     @Test
@@ -692,9 +690,9 @@ class BoltStateHandlerTest {
         final String[] uriScheme = new String[1];
         RecordingDriverProvider provider = new RecordingDriverProvider() {
             @Override
-            public Driver apply(String uri, AuthToken authToken, Config config) {
-                uriScheme[0] = uri.substring(0, uri.indexOf(':'));
-                if (uriScheme[0].equals(initialScheme)) {
+            public Driver apply(URI uri, AuthToken authToken, Config config) {
+                uriScheme[0] = uri.getScheme();
+                if (uri.getScheme().equals(initialScheme)) {
                     failer.run();
                 }
                 super.apply(uri, authToken, config);
@@ -702,8 +700,7 @@ class BoltStateHandlerTest {
             }
         };
         BoltStateHandler handler = new BoltStateHandler(provider, false);
-        ConnectionConfig config =
-                connectionConfig(initialScheme, "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment());
+        ConnectionConfig config = testConnectionConfig(initialScheme + "://localhost");
         handler.connect(config);
 
         assertEquals(fallbackScheme, uriScheme[0]);
@@ -719,15 +716,15 @@ class BoltStateHandlerTest {
         }
 
         public void connect() throws CommandException {
-            connect(connectionConfig("bolt", "", 1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment()));
+            connect(testConnectionConfig("bolt://localhost"));
         }
     }
 
-    private static class RecordingDriverProvider implements TriFunction<String, AuthToken, Config, Driver> {
+    private static class RecordingDriverProvider implements TriFunction<URI, AuthToken, Config, Driver> {
         Config config;
 
         @Override
-        public Driver apply(String uri, AuthToken authToken, Config config) {
+        public Driver apply(URI uri, AuthToken authToken, Config config) {
             this.config = config;
             return new FakeDriver();
         }

@@ -19,21 +19,17 @@
  */
 package org.neo4j.shell.commands;
 
-import static org.neo4j.shell.ConnectionConfig.connectionConfig;
-import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
+import static org.neo4j.shell.test.Util.testConnectionConfig;
 import static org.neo4j.shell.util.Versions.version;
 
 import org.neo4j.shell.CypherShell;
-import org.neo4j.shell.Environment;
-import org.neo4j.shell.cli.Encryption;
 import org.neo4j.shell.exception.CommandException;
 
 abstract class CypherShellIntegrationTest {
     CypherShell shell;
 
     void connect(String password) throws CommandException {
-        shell.connect(connectionConfig(
-                "bolt", "localhost", 7687, "neo4j", password, Encryption.DEFAULT, ABSENT_DB_NAME, new Environment()));
+        shell.connect(testConnectionConfig("bolt://localhost:7687").withUsernameAndPassword("neo4j", password));
     }
 
     boolean runningAtLeast(String version) {

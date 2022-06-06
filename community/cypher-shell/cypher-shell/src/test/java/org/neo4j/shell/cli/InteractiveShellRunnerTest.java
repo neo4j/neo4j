@@ -44,6 +44,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.shell.Main.EXIT_SUCCESS;
 import static org.neo4j.shell.cli.InteractiveShellRunner.DATABASE_UNAVAILABLE_ERROR_PROMPT_TEXT;
 import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilder;
+import static org.neo4j.shell.test.Util.testConnectionConfig;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -111,7 +112,8 @@ class InteractiveShellRunnerTest {
         when(connector.isConnected()).thenReturn(true);
         when(connector.username()).thenReturn("myusername");
         when(connector.getProtocolVersion()).thenReturn("");
-        when(connector.driverUrl()).thenReturn("neo4j://localhost:7687");
+        final var connectionConfig = testConnectionConfig("neo4j://localhost:7687");
+        when(connector.connectionConfig()).thenReturn(connectionConfig);
         userMessagesHandler = new UserMessagesHandler(connector);
         out = new ByteArrayOutputStream();
         when(databaseManager.getActualDatabaseAsReportedByServer()).thenReturn("mydb");

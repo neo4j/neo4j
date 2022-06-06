@@ -33,6 +33,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.shell.Main.EXIT_SUCCESS;
+import static org.neo4j.shell.test.Util.testConnectionConfig;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -59,8 +60,9 @@ class MainTest {
 
     @BeforeEach
     void setup() throws IOException {
+        final var connectionConfig = testConnectionConfig("neo4j://localhost:7687");
         mockShell = mock(CypherShell.class);
-        when(mockShell.driverUrl()).thenReturn("neo4j://localhost:7687");
+        when(mockShell.connectionConfig()).thenReturn(connectionConfig);
         mockRunnerFactory = mock(ShellRunner.Factory.class);
         parameters = ParameterService.create(mockShell);
         var runnerMock = mock(ShellRunner.class);

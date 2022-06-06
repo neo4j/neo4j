@@ -20,12 +20,17 @@
 package org.neo4j.shell.commands;
 
 import static java.lang.String.format;
+import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
+import static org.neo4j.shell.cli.CliArgHelper.DATABASE_ENV_VAR;
 
 import java.util.List;
+import java.util.Optional;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import net.sourceforge.argparse4j.inf.Namespace;
 import org.neo4j.shell.CypherShell;
+import org.neo4j.shell.Environment;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.exception.NoMoreInputException;
@@ -39,11 +44,13 @@ public class Connect implements Command {
     private final CypherShell shell;
     private final CypherShellTerminal terminal;
     private final ArgumentParser argumentParser;
+    private final Environment environment;
 
-    public Connect(CypherShell shell, CypherShellTerminal terminal) {
+    public Connect(CypherShell shell, CypherShellTerminal terminal, Environment environment) {
         this.shell = shell;
         this.terminal = terminal;
         this.argumentParser = setupParser();
+        this.environment = environment;
     }
 
     @Override
@@ -73,7 +80,7 @@ public class Connect implements Command {
                 password = promptForText("password", '*');
             }
 
-            shell.connect(user, password, args.getString("database"));
+            shell.connect(user, password, database(args));
         } catch (ArgumentParserException e) {
             throw new CommandException(format(
                     "Invalid input string: '%s', usage: ':connect %s'",
@@ -83,7 +90,7 @@ public class Connect implements Command {
 
     private ArgumentParser setupParser() {
         var parser = ArgumentParsers.newFor(metadata().name()).build();
-        parser.addArgument("-d", "--database").setDefault("");
+        parser.addArgument("-d", "--database");
         parser.addArgument("-u", "--username");
         parser.addArgument("-p", "--password");
         return parser;
@@ -107,6 +114,12 @@ public class Connect implements Command {
         }
     }
 
+    private String database(Namespace ns) {
+        return Optional.ofNullable(ns.getString("database"))
+                .or(() -> Optional.ofNullable(environment.getVariable(DATABASE_ENV_VAR)))
+                .orElse(ABSENT_DB_NAME);
+    }
+
     public static class Factory implements Command.Factory {
         @Override
         public Metadata metadata() {
@@ -118,7 +131,7 @@ public class Connect implements Command {
 
         @Override
         public Command executor(Arguments args) {
-            return new Connect(args.cypherShell(), args.terminal());
+            return new Connect(args.cypherShell(), args.terminal(), new Environment());
         }
     }
 }

@@ -21,11 +21,14 @@ package org.neo4j.shell.cli;
 
 import static java.lang.String.format;
 import static java.util.Arrays.stream;
+import static java.util.Optional.ofNullable;
+import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
+import static org.neo4j.shell.cli.CliArgs.DEFAULT_HOST;
+import static org.neo4j.shell.cli.CliArgs.DEFAULT_PORT;
 import static org.neo4j.shell.cli.CliArgs.DEFAULT_SCHEME;
 import static org.neo4j.shell.cli.FailBehavior.FAIL_AT_END;
 import static org.neo4j.shell.cli.FailBehavior.FAIL_FAST;
 
-import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -45,7 +48,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.ArgumentType;
 import net.sourceforge.argparse4j.inf.MutuallyExclusiveGroup;
 import net.sourceforge.argparse4j.inf.Namespace;
-import org.neo4j.shell.ConnectionConfig;
+import org.neo4j.shell.Environment;
 import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parameter.ParameterService.RawParameter;
@@ -55,12 +58,23 @@ import org.neo4j.shell.parameter.ParameterService.RawParameter;
  */
 public class CliArgHelper {
     private static final Logger log = Logger.create();
+    public static final String USERNAME_ENV_VAR = "NEO4J_USERNAME";
+    public static final String PASSWORD_ENV_VAR = "NEO4J_PASSWORD";
+    public static final String DATABASE_ENV_VAR = "NEO4J_DATABASE";
+    public static final String ADDRESS_ENV_VAR = "NEO4J_ADDRESS";
+    private static final String DEFAULT_ADDRESS = format("%s://%s:%d", DEFAULT_SCHEME, DEFAULT_HOST, DEFAULT_PORT);
+
+    private final Environment environment;
+
+    public CliArgHelper(Environment environment) {
+        this.environment = environment;
+    }
 
     /**
      * @param args to parse
      * @return null in case of error, commandline arguments otherwise
      */
-    public static CliArgs parse(String... args) {
+    public CliArgs parse(String... args) {
         try {
             return parseAndThrow(args);
         } catch (ArgumentParserException e) {
@@ -76,11 +90,13 @@ public class CliArgHelper {
     }
 
     /**
+     * Parse command line arguments, including environmental variable fallbacks.
+     *
      * @param args to parse
      * @return commandline arguments
      * @throws ArgumentParserException if an argument can't be parsed.
      */
-    public static CliArgs parseAndThrow(String... args) throws ArgumentParserException {
+    public CliArgs parseAndThrow(String... args) throws ArgumentParserException {
         final CliArgs cliArgs = new CliArgs();
         final ArgumentParser parser = setupParser();
         preValidateArguments(parser, args);
@@ -88,41 +104,41 @@ public class CliArgHelper {
         return getCliArgs(cliArgs, parser, ns);
     }
 
-    private static CliArgs getCliArgs(CliArgs cliArgs, ArgumentParser parser, Namespace ns) {
-        // Parse address string, returns null on error
-        final URI uri = parseURI(parser, ns.getString("address"));
-
-        if (uri == null) {
-            return null;
-        }
+    private CliArgs getCliArgs(CliArgs cliArgs, ArgumentParser parser, Namespace ns) throws ArgumentParserException {
+        final var address = ofNullable(ns.getString("address"))
+                .or(() -> ofNullable(environment.getVariable(ADDRESS_ENV_VAR)))
+                .orElse(DEFAULT_ADDRESS);
+        final URI uri = parseURI(parser, address);
 
         // ---------------------
         // Connection arguments
-        cliArgs.setScheme(uri.getScheme(), "bolt");
-        cliArgs.setHost(uri.getHost(), "localhost");
+        cliArgs.setUri(uri);
 
-        int port = uri.getPort();
-        cliArgs.setPort(port == -1 ? 7687 : port);
         // Also parse username and password from address if available
         parseUserInfo(uri, cliArgs);
 
-        // Only overwrite user/pass from address string if the arguments were specified
-        String user = ns.getString("username");
-        if (!user.isEmpty()) {
-            cliArgs.setUsername(user, cliArgs.getUsername());
-        }
+        // Only overwrite user from address string if the argument were specified
+        ofNullable(ns.getString("username"))
+                .or(() -> ofNullable(environment.getVariable(USERNAME_ENV_VAR)))
+                .ifPresent(user -> cliArgs.setUsername(user, cliArgs.getUsername()));
+
+        // Only overwrite password from address string if the argument were specified
+        ofNullable(ns.getString("password"))
+                .or(() -> ofNullable(environment.getVariable(PASSWORD_ENV_VAR)))
+                .ifPresent(pass -> cliArgs.setPassword(pass, cliArgs.getPassword()));
 
         String impersonatedUser = ns.getString("impersonate");
         if (impersonatedUser != null) {
             cliArgs.setImpersonatedUser(impersonatedUser);
         }
 
-        String pass = ns.getString("password");
-        if (!pass.isEmpty()) {
-            cliArgs.setPassword(pass, cliArgs.getPassword());
-        }
         cliArgs.setEncryption(Encryption.parse(ns.get("encryption")));
-        cliArgs.setDatabase(ns.getString("database"));
+
+        final var database = ofNullable(ns.getString("database"))
+                .or(() -> ofNullable(environment.getVariable(DATABASE_ENV_VAR)))
+                .orElse(ABSENT_DB_NAME);
+        cliArgs.setDatabase(database);
+
         cliArgs.setInputFilename(ns.getString("file"));
 
         // ----------------
@@ -173,27 +189,39 @@ public class CliArgHelper {
         cliArgs.setPassword(password, "");
     }
 
-    static URI parseURI(ArgumentParser parser, String address) {
+    static URI parseURI(ArgumentParser parser, String address) throws ArgumentParserException {
         try {
-            String[] schemeSplit = address.split("://");
-            if (schemeSplit.length == 1) {
+            if (!address.contains("://")) {
                 // URI can't parse addresses without scheme, prepend fake "bolt://" to reuse the parsing facility
                 address = DEFAULT_SCHEME + "://" + address;
             }
-            return new URI(address);
+
+            var uri = new URI(address);
+            if (uri.getPort() == -1) {
+                uri = new URI(
+                        uri.getScheme(),
+                        uri.getUserInfo(),
+                        uri.getHost(),
+                        DEFAULT_PORT,
+                        uri.getPath(),
+                        uri.getQuery(),
+                        uri.getFragment());
+            }
+            return uri;
         } catch (URISyntaxException e) {
             log.error(e);
-            PrintWriter printWriter = new PrintWriter(System.err);
-            parser.printUsage(printWriter);
-            printWriter.println("cypher-shell: error: Failed to parse address: '" + address + "'");
-            printWriter.println("\n  Address should be of the form: [scheme://][username:password@][host][:port]");
-            printWriter.flush();
-            return null;
+            var message =
+                    """
+                    cypher-shell: error: Failed to parse address: '%s'
+                    Address should be of the form: [scheme://][username:password@][host][:port]"""
+                            .formatted(address);
+            throw new ArgumentParserException(message, e, parser);
         }
     }
 
     private static ArgumentParser setupParser() {
         ArgumentParser parser = ArgumentParsers.newFor("cypher-shell")
+                .defaultFormatWidth(100)
                 .build()
                 .defaultHelp(true)
                 .description(format("A command line shell where you can execute Cypher against an instance of Neo4j. "
@@ -206,20 +234,15 @@ public class CliArgHelper {
         ArgumentGroup connGroup = parser.addArgumentGroup("connection arguments");
         connGroup
                 .addArgument("-a", "--address")
-                .help("address and port to connect to")
-                .setDefault(String.format(
-                        "%s://%s:%d", CliArgs.DEFAULT_SCHEME, CliArgs.DEFAULT_HOST, CliArgs.DEFAULT_PORT));
+                .help("address and port to connect to, defaults to " + DEFAULT_ADDRESS
+                        + ". Can also be specified using environment variable " + ADDRESS_ENV_VAR);
         connGroup
                 .addArgument("-u", "--username")
-                .setDefault("")
-                .help("username to connect as. Can also be specified using environment variable "
-                        + ConnectionConfig.USERNAME_ENV_VAR);
+                .help("username to connect as. Can also be specified using environment variable " + USERNAME_ENV_VAR);
         connGroup.addArgument("--impersonate").help("user to impersonate.");
         connGroup
                 .addArgument("-p", "--password")
-                .setDefault("")
-                .help("password to connect with. Can also be specified using environment variable "
-                        + ConnectionConfig.PASSWORD_ENV_VAR);
+                .help("password to connect with. Can also be specified using environment variable " + PASSWORD_ENV_VAR);
         connGroup
                 .addArgument("--encryption")
                 .help("whether the connection to Neo4j should be encrypted. This must be consistent with Neo4j's "
@@ -234,9 +257,7 @@ public class CliArgHelper {
                 .setDefault(Encryption.DEFAULT.name().toLowerCase());
         connGroup
                 .addArgument("-d", "--database")
-                .help("database to connect to. Can also be specified using environment variable "
-                        + ConnectionConfig.DATABASE_ENV_VAR)
-                .setDefault("");
+                .help("database to connect to. Can also be specified using environment variable " + DATABASE_ENV_VAR);
 
         MutuallyExclusiveGroup failGroup = parser.addMutuallyExclusiveGroup();
         failGroup

@@ -32,7 +32,7 @@ public class Environment {
         this.env = env;
     }
 
-    String getVariable(String name) {
+    public String getVariable(String name) {
         return env.get(name);
     }
 }

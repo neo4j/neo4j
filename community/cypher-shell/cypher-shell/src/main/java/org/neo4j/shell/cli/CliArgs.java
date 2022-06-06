@@ -22,10 +22,10 @@ package org.neo4j.shell.cli;
 import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 
 import java.io.File;
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import org.neo4j.shell.ConnectionConfig;
-import org.neo4j.shell.Environment;
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parameter.ParameterService.RawParameter;
@@ -37,9 +37,7 @@ public class CliArgs {
     static final int DEFAULT_PORT = 7687;
     static final int DEFAULT_NUM_SAMPLE_ROWS = 1000;
 
-    private String scheme = DEFAULT_SCHEME;
-    private String host = DEFAULT_HOST;
-    private int port = DEFAULT_PORT;
+    private URI uri;
     private String username = "";
     private Optional<String> impersonatedUser = Optional.empty();
     private String password = "";
@@ -60,20 +58,6 @@ public class CliArgs {
     private Logger.Level logLevel = Logger.Level.OFF;
 
     /**
-     * Set the scheme to the primary value, or if null, the fallback value.
-     */
-    public void setScheme(String primary, String fallback) {
-        scheme = primary == null ? fallback : primary;
-    }
-
-    /**
-     * Set the host to the primary value, or if null, the fallback value.
-     */
-    void setHost(String primary, String fallback) {
-        host = primary == null ? fallback : primary;
-    }
-
-    /**
      * Set the username to the primary value, or if null, the fallback value.
      */
     public void setUsername(String primary, String fallback) {
@@ -89,25 +73,6 @@ public class CliArgs {
      */
     public void setPassword(String primary, String fallback) {
         password = primary == null ? fallback : primary;
-    }
-
-    public String getScheme() {
-        return scheme;
-    }
-
-    public String getHost() {
-        return host;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    /**
-     * Set the port to the value.
-     */
-    public void setPort(int port) {
-        this.port = port;
     }
 
     public String getUsername() {
@@ -250,16 +215,8 @@ public class CliArgs {
     }
 
     public ConnectionConfig connectionConfig() {
-        return ConnectionConfig.connectionConfig(
-                getScheme(),
-                getHost(),
-                getPort(),
-                getUsername(),
-                getPassword(),
-                getEncryption(),
-                getDatabase(),
-                new Environment(),
-                impersonatedUser);
+        return new ConnectionConfig(
+                getUri(), getUsername(), getPassword(), getEncryption(), getDatabase(), impersonatedUser);
     }
 
     public File getHistoryFile() {
@@ -276,5 +233,13 @@ public class CliArgs {
 
     public Logger.Level logLevel() {
         return logLevel;
+    }
+
+    public URI getUri() {
+        return uri;
+    }
+
+    public void setUri(URI uri) {
+        this.uri = uri;
     }
 }

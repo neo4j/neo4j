@@ -159,8 +159,8 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     }
 
     @Override
-    public String driverUrl() {
-        return boltStateHandler.driverUrl();
+    public ConnectionConfig connectionConfig() {
+        return boltStateHandler.connectionConfig();
     }
 
     @Override

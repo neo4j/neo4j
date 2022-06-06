@@ -33,7 +33,7 @@ public record UserMessagesHandler(Connector connector) {
                     " using Bolt protocol version " + version(protocolVersion).majorMinorString());
         }
 
-        message.append(" at ").bold(connector.driverUrl());
+        message.append(" at ").bold(connector.connectionConfig().uri().toString());
 
         if (!connector.username().isEmpty()) {
             message.append(" as user ").bold(connector.username());
