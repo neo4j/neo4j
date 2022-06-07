@@ -720,15 +720,12 @@ class OrLeafPlanningIntegrationTest
     plan should (equal(
       cfg.planBuilder()
         .produceResults("r")
-        .orderedDistinct(Seq("r"), "r AS r", "a AS a", "b AS b")
-        .orderedUnion(Seq(Ascending("r")))
-        .|.relationshipTypeScan("(a)-[r:REL2]-(b)", indexOrder = IndexOrderAscending)
-        .relationshipTypeScan("(a)-[r:REL1]-(b)", indexOrder = IndexOrderAscending)
+        .unionRelationshipTypesScan("(a)-[r:REL1|REL2]-(b)", indexOrder = IndexOrderAscending)
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("r")
-        .unionRelationshipTypesScan("(a)-[r:REL1|REL2]-(b)", indexOrder = IndexOrderAscending)
+        .unionRelationshipTypesScan("(a)-[r:REL2|REL1]-(b)", indexOrder = IndexOrderAscending)
         .build()
     ))
   }
@@ -746,15 +743,12 @@ class OrLeafPlanningIntegrationTest
     plan() should (equal(
       cfg.planBuilder()
         .produceResults("r")
-        .orderedDistinct(Seq("r"), "r AS r", "a AS a", "b AS b")
-        .orderedUnion(Seq(Ascending("r")))
-        .|.relationshipTypeScan("(a)-[r:REL2]-(b)", indexOrder = IndexOrderAscending)
-        .relationshipTypeScan("(a)-[r:REL1]-(b)", indexOrder = IndexOrderAscending)
+        .unionRelationshipTypesScan("(a)-[r:REL1|REL2]-(b)", indexOrder = IndexOrderAscending)
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("r")
-        .unionRelationshipTypesScan("(a)-[r:REL1|REL2]-(b)", indexOrder = IndexOrderAscending)
+        .unionRelationshipTypesScan("(a)-[r:REL2|REL1]-(b)", indexOrder = IndexOrderAscending)
         .build()
     ))
     plan() should not equal plan(withHint = false)

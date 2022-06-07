@@ -89,11 +89,11 @@ public abstract class UnionTokenIndexCursor<CURSOR extends Cursor> {
         for (int i = 0; i < cursors.length; i++) {
             final var cursor = cursors[i];
             if (cursor != null && cursor.next()) {
-                long nodeReference = reference(cursor);
-                if (compare(currentReference, nodeReference)) {
-                    currentReference = nodeReference;
+                long otherReference = reference(cursor);
+                if (compare(currentReference, otherReference)) {
+                    currentReference = otherReference;
                     currentCursorIndex = i;
-                } else if (nodeReference == currentReference) {
+                } else if (otherReference == currentReference) {
                     if (!cursor.next()) {
                         cursors[i] = null;
                     }
