@@ -308,6 +308,13 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Integer> cypher_worker_count =
             newBuilder("internal.cypher.number_of_workers", INT, 0).build();
 
+    @Internal
+    @Description(
+            "Maximum number of cached thread execution contexts used by Cypher workers for the parallel runtime. If set to 0, a default value based on"
+                    + " `internal.cypher.number_of_workers` will be chosen. If not 0, it has to be greater than `internal.cypher.number_of_workers`.")
+    public static final Setting<Integer> cypher_max_cached_worker_resources_count =
+            newBuilder("internal.cypher.max_number_of_cached_worker_resources", INT, 0).build();
+
     public enum CypherWorkerManagement {
         DEFAULT,
         FIXED_THREADS,
