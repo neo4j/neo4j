@@ -47,14 +47,17 @@ class FabricFragmenterTest
   "USE handling: " - {
 
     "disallow USE inside fragment" in {
-      the[SyntaxException].thrownBy(
-        fragment(
-          """WITH 1 AS x
-            |USE i
-            |RETURN x
-            |""".stripMargin
+      the[SyntaxException]
+        .thrownBy(
+          fragment(
+            """WITH 1 AS x
+              |USE i
+              |RETURN x
+              |""".stripMargin
+          )
         )
-      ).getMessage.should(include("USE can only appear at the beginning of a (sub-)query"))
+        .getMessage
+        .should(include("USE can only appear at the beginning of a (sub-)query"))
 
     }
 
@@ -70,8 +73,113 @@ class FabricFragmenterTest
       )
 
       frag.as[Fragment.Leaf].use.shouldEqual(defaultUse)
-      frag.as[Fragment.Leaf].input.as[Fragment.Apply].inner.as[Fragment.Leaf].use.shouldEqual(Declared(use("g")))
-      frag.as[Fragment.Leaf].input.as[Fragment.Apply].input.as[Fragment.Leaf].use.shouldEqual(defaultUse)
+      frag
+        .as[Fragment.Leaf]
+        .input
+        .as[Fragment.Apply]
+        .inner
+        .as[Fragment.Leaf]
+        .use
+        .shouldEqual(Declared(use("g")))
+      frag
+        .as[Fragment.Leaf]
+        .input
+        .as[Fragment.Apply]
+        .input
+        .as[Fragment.Leaf]
+        .use
+        .shouldEqual(defaultUse)
+    }
+
+    "declared without imported variable with a nested subquery" in {
+      val frag = fragment(
+        """UNWIND mega.graphIds() as g
+          |CALL {
+          |  USE x
+          |  CALL {
+          |    MATCH (n) RETURN n
+          |  }
+          |  RETURN n
+          |}
+          |RETURN n
+          |""".stripMargin
+      )
+
+      frag.as[Fragment.Leaf].use.shouldEqual(defaultUse)
+      frag
+        .as[Fragment.Leaf]
+        .input
+        .as[Fragment.Apply]
+        .input
+        .as[Fragment.Leaf]
+        .use
+        .shouldEqual(defaultUse)
+      frag
+        .as[Fragment.Leaf]
+        .input
+        .as[Fragment.Apply]
+        .inner
+        .as[Fragment.Leaf]
+        .use
+        .shouldEqual(Declared(use("x")))
+      frag
+        .as[Fragment.Leaf]
+        .input
+        .as[Fragment.Apply]
+        .inner
+        .as[Fragment.Leaf]
+        .input
+        .as[Fragment.Apply]
+        .inner
+        .as[Fragment.Leaf]
+        .use
+        .shouldEqual(Inherited(Declared(use("x")))(pos))
+    }
+
+    "declared with imported variable with a nested subquery" in {
+      val frag = fragment(
+        """UNWIND mega.graphIds() as g
+          |CALL {
+          |  WITH g
+          |  USE x
+          |  CALL {
+          |    MATCH (n) RETURN n
+          |  }
+          |  RETURN n
+          |}
+          |RETURN n
+          |""".stripMargin
+      )
+
+      frag.as[Fragment.Leaf].use.shouldEqual(defaultUse)
+      frag
+        .as[Fragment.Leaf]
+        .input
+        .as[Fragment.Apply]
+        .input
+        .as[Fragment.Leaf]
+        .use
+        .shouldEqual(defaultUse)
+      frag
+        .as[Fragment.Leaf]
+        .input
+        .as[Fragment.Apply]
+        .inner
+        .as[Fragment.Leaf]
+        .use
+        .shouldEqual(Declared(use("x")))
+      frag
+        .as[Fragment.Leaf]
+        .input
+        .as[Fragment.Apply]
+        .inner
+        .as[Fragment.Leaf]
+        .input
+        .as[Fragment.Apply]
+        .inner
+        .as[Fragment.Leaf]
+        .use
+        .shouldEqual(Inherited(Declared(use("x")))(pos))
     }
 
     "inherited from default in subquery" in {
@@ -85,10 +193,26 @@ class FabricFragmenterTest
       )
 
       frag.as[Fragment.Leaf].use.shouldEqual(defaultUse)
-      frag.as[Fragment.Leaf].input.as[Fragment.Apply].inner.as[Fragment.Leaf].use.shouldEqual(Inherited(defaultUse)(
-        pos
-      ))
-      frag.as[Fragment.Leaf].input.as[Fragment.Apply].input.as[Fragment.Leaf].use.shouldEqual(defaultUse)
+      frag
+        .as[Fragment.Leaf]
+        .input
+        .as[Fragment.Apply]
+        .inner
+        .as[Fragment.Leaf]
+        .use
+        .shouldEqual(
+          Inherited(defaultUse)(
+            pos
+          )
+        )
+      frag
+        .as[Fragment.Leaf]
+        .input
+        .as[Fragment.Apply]
+        .input
+        .as[Fragment.Leaf]
+        .use
+        .shouldEqual(defaultUse)
     }
 
     "inherited from declared in subquery" in {
@@ -103,24 +227,43 @@ class FabricFragmenterTest
       )
 
       frag.as[Fragment.Leaf].use.shouldEqual(Declared(use("g")))
-      frag.as[Fragment.Leaf].input.as[Fragment.Apply].inner.as[Fragment.Leaf].use.shouldEqual(Inherited(
-        Declared(use("g"))
-      )(pos))
-      frag.as[Fragment.Leaf].input.as[Fragment.Apply].input.as[Fragment.Leaf].use.shouldEqual(Declared(use("g")))
+      frag
+        .as[Fragment.Leaf]
+        .input
+        .as[Fragment.Apply]
+        .inner
+        .as[Fragment.Leaf]
+        .use
+        .shouldEqual(
+          Inherited(
+            Declared(use("g"))
+          )(pos)
+        )
+      frag
+        .as[Fragment.Leaf]
+        .input
+        .as[Fragment.Apply]
+        .input
+        .as[Fragment.Leaf]
+        .use
+        .shouldEqual(Declared(use("g")))
     }
 
     "disallow USE at start of non-initial fragment" in {
-      the[SyntaxException].thrownBy(
-        fragment(
-          """WITH 1 AS x
-            |CALL {
-            |  RETURN 2 AS y
-            |}
-            |USE i
-            |RETURN x
-            |""".stripMargin
+      the[SyntaxException]
+        .thrownBy(
+          fragment(
+            """WITH 1 AS x
+              |CALL {
+              |  RETURN 2 AS y
+              |}
+              |USE i
+              |RETURN x
+              |""".stripMargin
+          )
         )
-      ).getMessage.should(include("USE can only appear at the beginning of a (sub-)query"))
+        .getMessage
+        .should(include("USE can only appear at the beginning of a (sub-)query"))
     }
 
     "allow USE to reference outer variable" in {
@@ -134,8 +277,9 @@ class FabricFragmenterTest
           |""".stripMargin
       )
 
-      inside(frag) { case Leaf(Apply(_, inner: Leaf, _), _, _) =>
-        inner.use.shouldEqual(Declared(use(function("g", varFor("x")))))
+      inside(frag) {
+        case Leaf(Apply(_, inner: Leaf, _), _, _) =>
+          inner.use.shouldEqual(Declared(use(function("g", varFor("x")))))
       }
     }
 
@@ -151,40 +295,47 @@ class FabricFragmenterTest
           |""".stripMargin
       )
 
-      inside(frag) { case Leaf(Apply(_, inner: Leaf, _), _, _) =>
-        inner.use.shouldEqual(Declared(use(function("g", varFor("x")))))
+      inside(frag) {
+        case Leaf(Apply(_, inner: Leaf, _), _, _) =>
+          inner.use.shouldEqual(Declared(use(function("g", varFor("x")))))
       }
     }
 
     "disallow USE to reference missing variable" in {
 
-      the[SyntaxException].thrownBy(
-        fragment(
-          """WITH 1 AS x
-            |CALL {
-            |  USE g(z)
-            |  RETURN 2 AS y
-            |}
-            |RETURN x
-            |""".stripMargin
+      the[SyntaxException]
+        .thrownBy(
+          fragment(
+            """WITH 1 AS x
+              |CALL {
+              |  USE g(z)
+              |  RETURN 2 AS y
+              |}
+              |RETURN x
+              |""".stripMargin
+          )
         )
-      ).getMessage.should(include("Variable `z` not defined"))
+        .getMessage
+        .should(include("Variable `z` not defined"))
     }
 
     "disallow USE to reference outer variable after WITH" in {
 
-      the[SyntaxException].thrownBy(
-        fragment(
-          """WITH 1 AS x, 2 AS y
-            |CALL {
-            |  WITH x
-            |  USE g(y)
-            |  RETURN 2 AS z
-            |}
-            |RETURN z
-            |""".stripMargin
+      the[SyntaxException]
+        .thrownBy(
+          fragment(
+            """WITH 1 AS x, 2 AS y
+              |CALL {
+              |  WITH x
+              |  USE g(y)
+              |  RETURN 2 AS z
+              |}
+              |RETURN z
+              |""".stripMargin
+          )
         )
-      ).getMessage.should(include("Variable `y` not defined"))
+        .getMessage
+        .should(include("Variable `y` not defined"))
     }
   }
 
@@ -391,7 +542,12 @@ class FabricFragmenterTest
           |""".stripMargin
       )
 
-      frag.as[Fragment.Segment].input.as[Fragment.Segment].input.outputColumns
+      frag
+        .as[Fragment.Segment]
+        .input
+        .as[Fragment.Segment]
+        .input
+        .outputColumns
         .shouldEqual(Seq("x"))
     }
 
@@ -461,7 +617,14 @@ class FabricFragmenterTest
         init(defaultUse)
           .leaf(
             Seq(
-              resolved(call(Seq("my", "ns"), "myProcedure", Some(Seq()), Some(Seq(varFor("a"), varFor("b"))))),
+              resolved(
+                call(
+                  Seq("my", "ns"),
+                  "myProcedure",
+                  Some(Seq()),
+                  Some(Seq(varFor("a"), varFor("b")))
+                )
+              ),
               returnVars("a", "b")
             ),
             Seq("a", "b")
@@ -477,7 +640,14 @@ class FabricFragmenterTest
         init(defaultUse)
           .leaf(
             Seq(
-              resolved(call(Seq("my", "ns"), "myProcedure", Some(Seq()), Some(Seq(varFor("a"), varFor("b"))))),
+              resolved(
+                call(
+                  Seq("my", "ns"),
+                  "myProcedure",
+                  Some(Seq()),
+                  Some(Seq(varFor("a"), varFor("b")))
+                )
+              ),
               returnVars("a", "b")
             ),
             Seq("a", "b")
@@ -493,12 +663,14 @@ class FabricFragmenterTest
         init(defaultUse)
           .leaf(
             Seq(
-              resolved(call(
-                Seq("my", "ns"),
-                "myProcedure2",
-                Some(Seq(coerceTo(literal(1), ct.any))),
-                Some(Seq(varFor("a"), varFor("b")))
-              )),
+              resolved(
+                call(
+                  Seq("my", "ns"),
+                  "myProcedure2",
+                  Some(Seq(coerceTo(literal(1), ct.any))),
+                  Some(Seq(varFor("a"), varFor("b")))
+                )
+              ),
               returnVars("a", "b")
             ),
             Seq("a", "b")
@@ -529,7 +701,10 @@ class FabricFragmenterTest
           |""".stripMargin
       ).shouldEqual(
         init(defaultUse)
-          .leaf(Seq(call(Seq(), "unknownProcedure", Some(Seq()), Some(Seq(varFor("x"), varFor("y"))))), Seq("x", "y"))
+          .leaf(
+            Seq(call(Seq(), "unknownProcedure", Some(Seq()), Some(Seq(varFor("x"), varFor("y"))))),
+            Seq("x", "y")
+          )
       )
     }
 
@@ -550,7 +725,11 @@ class FabricFragmenterTest
       ).shouldEqual(
         init(defaultUse)
           .leaf(
-            Seq(return_(resolved(function(Seq("my", "ns"), "const0", coerceTo(literal(1), ct.any))).as("x"))),
+            Seq(
+              return_(
+                resolved(function(Seq("my", "ns"), "const0", coerceTo(literal(1), ct.any))).as("x")
+              )
+            ),
             Seq("x")
           )
       )

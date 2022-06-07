@@ -22,6 +22,7 @@ package org.neo4j.fabric.planning
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.UseGraph
+import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.fabric.planning.Fragment.Apply
@@ -38,7 +39,9 @@ class FabricFragmenter(
 ) {
 
   private val defaultUse: Use = makeDefaultUse(defaultGraphName, InputPosition.NONE)
-  private val systemUse: Use = makeDefaultUse(GraphDatabaseSettings.SYSTEM_DATABASE_NAME, InputPosition.NONE)
+
+  private val systemUse: Use =
+    makeDefaultUse(GraphDatabaseSettings.SYSTEM_DATABASE_NAME, InputPosition.NONE)
   private val start = Init(defaultUse)
 
   def fragment: Fragment = queryStatement match {
@@ -56,7 +59,9 @@ class FabricFragmenter(
   ): Fragment = part match {
     case sq: ast.SingleQuery => fragmentSingle(input, sq)
     case uq: ast.Union =>
-      Union(input, isDistinct(uq), fragmentPart(input, uq.part), fragmentSingle(input, uq.query))(uq.position)
+      Union(input, isDistinct(uq), fragmentPart(input, uq.part), fragmentSingle(input, uq.query))(
+        uq.position
+      )
   }
 
   private def fragmentSingle(
@@ -64,31 +69,34 @@ class FabricFragmenter(
     sq: ast.SingleQuery
   ): Fragment.Chain = {
     val parts = partitioned(sq.clauses)
-    parts.foldLeft(input) { case (previous, part) =>
-      val input = previous match {
-        case init: Init =>
-          // Previous is Init which means that we are at the start of a chain
-          // Inherit or declare new Use
-          val use = leadingUse(sq).map(Use.Declared).getOrElse(init.use)
-          Init(use, previous.argumentColumns, sq.importColumns)
+    parts.foldLeft(input) {
+      case (previous, part) =>
+        val input = previous match {
+          case init: Init =>
+            // Previous is Init which means that we are at the start of a chain
+            // Inherit or declare new Use
+            val use = leadingUse(sq).map(Use.Declared).getOrElse(init.use)
+            Init(use, previous.argumentColumns, sq.importColumns)
 
-        case other => other
-      }
+          case other => other
+        }
 
-      part match {
-        case Right(clauses) =>
-          // Section of normal clauses
-          Leaf(input, clauses, produced(clauses))(clauses.headOption.map(_.position).getOrElse(sq.position))
+        part match {
+          case Right(clauses) =>
+            // Section of normal clauses
+            Leaf(input, clauses, produced(clauses))(
+              clauses.headOption.map(_.position).getOrElse(sq.position)
+            )
 
-        case Left(subquery) =>
-          // Subquery: Recurse and start the child chain with Init
-          val use = Use.Inherited(input.use)(subquery.part.position)
-          Apply(
-            input,
-            fragmentPart(Init(use, input.outputColumns, Seq.empty), subquery.part),
-            subquery.inTransactionsParameters
-          )(subquery.position)
-      }
+          case Left(subquery) =>
+            // Subquery: Recurse and start the child chain with Init
+            val use = Use.Inherited(input.use)(subquery.part.position)
+            Apply(
+              input,
+              fragmentPart(Init(use, input.outputColumns, Seq.empty), subquery.part),
+              subquery.inTransactionsParameters
+            )(subquery.position)
+        }
     }
   }
 
@@ -105,9 +113,14 @@ class FabricFragmenter(
       case _                     => (None, clauses)
     }
 
-    rest.filter(_.isInstanceOf[ast.UseGraph])
+    rest
+      .filter(_.isInstanceOf[ast.UseGraph])
       .map(clause =>
-        Errors.syntax("USE can only appear at the beginning of a (sub-)query", queryString, clause.position)
+        Errors.syntax(
+          "USE can only appear at the beginning of a (sub-)query",
+          queryString,
+          clause.position
+        )
       )
 
     use
@@ -121,7 +134,7 @@ class FabricFragmenter(
 
   private def produced(clause: ast.Clause): Seq[String] = clause match {
     case r: ast.Return => r.returnColumns.map(_.name)
-    case c             => semantics.scope(c).get.symbolNames.toSeq
+    case c             => semantics.scope(c).getOrElse(Scope.empty).symbolNames.toSeq
   }
 
   /**
@@ -143,7 +156,8 @@ class FabricFragmenter(
   private def partition[E, H, M](es: Seq[E])(pred: E => Either[H, M]): Seq[Either[H, Seq[M]]] = {
     es.map(pred).foldLeft(Seq[Either[H, Seq[M]]]()) {
       case (seq, Left(hit)) => seq :+ Left(hit)
-      case (seq, Right(miss)) => seq.lastOption match {
+      case (seq, Right(miss)) =>
+        seq.lastOption match {
           case None            => seq :+ Right(Seq(miss))
           case Some(Left(_))   => seq :+ Right(Seq(miss))
           case Some(Right(ms)) => seq.init :+ Right(ms :+ miss)
