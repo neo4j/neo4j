@@ -24,22 +24,17 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.internal.schema.IndexType.RANGE;
+import static org.neo4j.storemigration.StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.neo4j.cli.ExecutionContext;
-import org.neo4j.commandline.dbms.MigrateStoreCommand;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storemigration.InitialIndexStateMonitor;
@@ -47,7 +42,6 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.Unzip;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import picocli.CommandLine;
 
 @Neo4jLayoutExtension
 public class SystemDbCommunityMigrationIT {
