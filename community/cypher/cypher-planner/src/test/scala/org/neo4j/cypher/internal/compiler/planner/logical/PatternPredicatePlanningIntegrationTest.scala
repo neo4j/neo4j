@@ -30,6 +30,8 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExtractScope
 import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.GetDegree
+import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThan
 import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NilPathStep
@@ -41,6 +43,7 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.ReduceExpression
 import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
@@ -104,6 +107,19 @@ import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     with LogicalPlanningTestSupport2
     with LogicalPlanningIntegrationTestSupport {
+
+  private val planner = plannerBuilder()
+    .setAllNodesCardinality(100)
+    .setLabelCardinality("B", 10)
+    .setLabelCardinality("Foo", 10)
+    .setAllRelationshipsCardinality(100)
+    .setRelationshipCardinality("()-[:REL]-()", 10)
+    .setRelationshipCardinality("()-[:X]-()", 10)
+    .setRelationshipCardinality("()-[:X]-(:Foo)", 10)
+    .setRelationshipCardinality("()-[:Y]-()", 10)
+    .setRelationshipCardinality("()-[]->(:B)", 10)
+    .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
+    .build()
 
   test("should consider variables introduced by outer list comprehensions when planning pattern predicates") {
     val plan = (new given {
@@ -1424,6 +1440,41 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     plan.folder.treeExists({
       case _: RollUpApply => true
     }) should be(false)
+  }
+
+  test("should solve pattern comprehension in size function with GetDegree") {
+    val q =
+      """
+        |MATCH (a)
+        |RETURN size([p=(a)-[:FOO]->() | p]) AS size
+      """.stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection(Map("size" -> GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.OUTGOING)(pos)))
+      .allNodeScan("a")
+      .build())
+  }
+
+  test("should solve pattern expression in exists with GetDegree") {
+    val q =
+      """
+        |MATCH (a)
+        |RETURN exists((a)-[:FOO]->()) AS exists
+      """.stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection(Map("exists" -> HasDegreeGreaterThan(
+        varFor("a"),
+        Some(RelTypeName("FOO")(pos)),
+        SemanticDirection.OUTGOING,
+        literalInt(0)
+      )(pos)))
+      .allNodeScan("a")
+      .build())
   }
 
   private def containsArgumentOnly(queryGraph: QueryGraph): Boolean =
