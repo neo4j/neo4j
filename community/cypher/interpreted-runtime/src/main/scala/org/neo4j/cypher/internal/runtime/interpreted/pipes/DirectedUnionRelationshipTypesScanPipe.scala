@@ -100,10 +100,15 @@ object DirectedUnionRelationshipTypesScanPipe {
       }
 
       new BaseRelationshipCursorIterator {
-        private val scanCursor = query.scanCursor()
-        query.resources.trace(scanCursor)
 
-        override protected def fetchNext(): Long = if (cursor.next() && internalNext()) cursor.reference() else -1L
+        override protected def fetchNext(): Long = {
+          while (cursor.next()) {
+            if (cursor.readFromStore()) {
+              return cursor.reference()
+            }
+          }
+          -1L
+        }
 
         override def close(): Unit = IOUtils.closeAll(cursors: _*)
 
@@ -111,14 +116,9 @@ object DirectedUnionRelationshipTypesScanPipe {
          * Store the current state in case the underlying cursor is closed when calling next.
          */
         override protected def storeState(): Unit = {
-          relTypeId = scanCursor.`type`()
-          source = scanCursor.sourceNodeReference()
-          target = scanCursor.targetNodeReference()
-        }
-
-        private def internalNext(): Boolean = {
-          query.singleRelationship(cursor.reference(), scanCursor)
-          scanCursor.next()
+          relTypeId = cursor.`type`()
+          source = cursor.sourceNodeReference()
+          target = cursor.targetNodeReference()
         }
       }
     }
