@@ -171,7 +171,11 @@ case class PatternRelationshipMultiplierCalculator(stats: GraphStatistics, combi
         val cardinalityForOneLabelCombination = (lhsLabel, typ, rhsLabel) match {
           // If the rel-type or either label are unknown to the schema, we know no matches will be had
           case (SpecifiedButUnknown(), _, _) | (_, SpecifiedButUnknown(), _) | (_, _, SpecifiedButUnknown()) =>
-            MinimumGraphStatistics.MIN_PATTERN_STEP_CARDINALITY
+            val cardinality = MinimumGraphStatistics.MIN_PATTERN_STEP_CARDINALITY
+            if (dir == SemanticDirection.BOTH)
+              cardinality + cardinality
+            else
+              cardinality
 
           case _ if dir == SemanticDirection.OUTGOING =>
             stats.patternStepCardinality(lhsLabel.id, typ.id, rhsLabel.id)
