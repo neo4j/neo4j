@@ -49,7 +49,7 @@ class TextIndexPopulationStressTest extends IndexPopulationStressTest {
                             .build();
                     return new TextIndexProvider(
                             context.fileSystem,
-                            directoryFactory(false),
+                            directoryFactory(context.fileSystem),
                             test.directory(),
                             new Monitors(),
                             defaults(),

@@ -130,7 +130,6 @@ class KernelRecoveryTest {
     private GraphDatabaseService newDB(FileSystemAbstraction fs, String name) {
         managementService = new TestDatabaseManagementServiceBuilder(testDirectory.directory(name))
                 .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
-                .impermanent()
                 .build();
         return managementService.database(DEFAULT_DATABASE_NAME);
     }

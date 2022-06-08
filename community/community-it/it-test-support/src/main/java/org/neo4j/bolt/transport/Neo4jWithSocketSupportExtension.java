@@ -49,7 +49,7 @@ public class Neo4jWithSocketSupportExtension extends StatefulFieldExtension<Neo4
     @Override
     protected Neo4jWithSocket createField(ExtensionContext context) {
         var testDirectory = getTestDirectory(context);
-        return new Neo4jWithSocket(new TestDatabaseManagementServiceBuilder(), () -> testDirectory, settings -> {});
+        return new Neo4jWithSocket(new TestDatabaseManagementServiceBuilder(), testDirectory, settings -> {});
     }
 
     public static TestDirectory getTestDirectory(ExtensionContext context) {

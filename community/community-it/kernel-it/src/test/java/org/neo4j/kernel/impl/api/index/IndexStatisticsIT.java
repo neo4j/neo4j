@@ -185,7 +185,6 @@ class IndexStatisticsIT {
         managementService = new TestDatabaseManagementServiceBuilder()
                 .setInternalLogProvider(logProvider)
                 .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
-                .impermanent()
                 .setConfig(index_background_sampling_enabled, false)
                 .build();
         db = managementService.database(DEFAULT_DATABASE_NAME);

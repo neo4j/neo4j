@@ -481,4 +481,9 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction {
     public int getFileDescriptor(StoreChannel channel) {
         return INVALID_FILE_DESCRIPTOR;
     }
+
+    @Override
+    public boolean isPersistent() {
+        return false;
+    }
 }

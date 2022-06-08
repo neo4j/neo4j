@@ -229,6 +229,11 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction {
     }
 
     @Override
+    public boolean isPersistent() {
+        return delegate.isPersistent();
+    }
+
+    @Override
     public void close() throws IOException {
         adversary.injectFailure(IOException.class, SecurityException.class);
         delegate.close();

@@ -71,7 +71,7 @@ class TestRecoveryScenarios {
 
     @BeforeEach
     void before() {
-        managementService = databaseFactory(fs).impermanent().build();
+        managementService = databaseFactory(fs).build();
         db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
     }
 
@@ -286,7 +286,7 @@ class TestRecoveryScenarios {
             fs = uncleanFs;
         }
 
-        managementService = databaseFactory(uncleanFs).impermanent().build();
+        managementService = databaseFactory(uncleanFs).build();
         db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
     }
 }

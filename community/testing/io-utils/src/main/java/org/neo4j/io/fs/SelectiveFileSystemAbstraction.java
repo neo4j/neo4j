@@ -183,6 +183,11 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction {
         return defaultFileSystem.getFileDescriptor(channel);
     }
 
+    @Override
+    public boolean isPersistent() {
+        return defaultFileSystem.isPersistent();
+    }
+
     private FileSystemAbstraction chooseFileSystem(Path file) {
         return file.equals(specialFile) ? specialFileSystem : defaultFileSystem;
     }

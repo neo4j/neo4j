@@ -60,7 +60,7 @@ class CountsStoreRecoveryTest {
 
     @BeforeEach
     void before() {
-        managementService = databaseFactory(fs).impermanent().build();
+        managementService = databaseFactory(fs).build();
         db = managementService.database(DEFAULT_DATABASE_NAME);
     }
 
@@ -114,7 +114,7 @@ class CountsStoreRecoveryTest {
             fs = uncleanFs;
         }
 
-        managementService = databaseFactory(uncleanFs).impermanent().build();
+        managementService = databaseFactory(uncleanFs).build();
         db = managementService.database(DEFAULT_DATABASE_NAME);
     }
 

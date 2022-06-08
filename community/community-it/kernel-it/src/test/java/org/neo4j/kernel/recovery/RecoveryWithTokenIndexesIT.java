@@ -150,7 +150,6 @@ class RecoveryWithTokenIndexesIT {
     private GraphDatabaseService startDatabase(EphemeralFileSystemAbstraction fs) {
         managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
                 .setFileSystem(fs)
-                .impermanent()
                 .setConfig(config)
                 .build();
         return managementService.database(DEFAULT_DATABASE_NAME);

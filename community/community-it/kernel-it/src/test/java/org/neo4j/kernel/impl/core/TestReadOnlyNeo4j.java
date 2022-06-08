@@ -141,7 +141,6 @@ class TestReadOnlyNeo4j {
     private void createIndex() {
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
                 .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
-                .impermanent()
                 .build();
         GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
         try (Transaction tx = db.beginTx()) {
@@ -166,7 +165,6 @@ class TestReadOnlyNeo4j {
         RelationshipType type = withName("KNOWS");
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
                 .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
-                .impermanent()
                 .build();
         GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
         try (Transaction tx = db.beginTx()) {
@@ -187,7 +185,6 @@ class TestReadOnlyNeo4j {
     private DatabaseManagementService dbmsReadOnly(InternalLogProvider logProvider) {
         return new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
                 .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
-                .impermanent()
                 .setConfig(GraphDatabaseSettings.read_only_database_default, true)
                 .setInternalLogProvider(logProvider)
                 .build();
@@ -196,7 +193,6 @@ class TestReadOnlyNeo4j {
     private DatabaseManagementService dbmsReadOnly() {
         return new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
                 .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
-                .impermanent()
                 .setConfig(GraphDatabaseSettings.read_only_database_default, true)
                 .build();
     }
@@ -204,7 +200,6 @@ class TestReadOnlyNeo4j {
     private DatabaseManagementService dbms() {
         return new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
                 .setFileSystem(fs)
-                .impermanent()
                 .build();
     }
 }

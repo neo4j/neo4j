@@ -205,7 +205,6 @@ public class SchemaIndexAcceptanceTest {
     private GraphDatabaseService newDb(EphemeralFileSystemAbstraction fileSystemAbstraction) {
         managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
                 .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fileSystemAbstraction))
-                .impermanent()
                 .build();
         return managementService.database(DEFAULT_DATABASE_NAME);
     }

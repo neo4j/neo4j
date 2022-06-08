@@ -141,9 +141,8 @@ class SchemaRecoveryIT {
             managementService.shutdown();
         }
 
-        managementService = configure(new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
-                        .setFileSystem(fs)
-                        .impermanent())
+        managementService = configure(
+                        new TestDatabaseManagementServiceBuilder(testDirectory.homePath()).setFileSystem(fs))
                 .build();
         db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
     }

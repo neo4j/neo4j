@@ -159,7 +159,6 @@ class TestLogPruning {
         fs = new EphemeralFileSystemAbstraction();
         managementService = new TestDatabaseManagementServiceBuilder()
                 .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
-                .impermanent()
                 .setConfig(keep_logical_logs, logPruning)
                 .build();
         this.db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);

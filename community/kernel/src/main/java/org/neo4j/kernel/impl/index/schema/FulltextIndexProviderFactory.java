@@ -24,7 +24,6 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByPr
 
 import java.nio.file.Path;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -70,8 +69,7 @@ public class FulltextIndexProviderFactory extends AbstractIndexProviderFactory<F
             JobScheduler scheduler,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer) {
-        boolean ephemeral = config.get(GraphDatabaseInternalSettings.ephemeral_lucene);
-        DirectoryFactory directoryFactory = directoryFactory(ephemeral);
+        DirectoryFactory directoryFactory = directoryFactory(fs);
         IndexDirectoryStructure.Factory directoryStructureFactory =
                 subProviderDirectoryStructure(databaseLayout.databaseDirectory());
         return new FulltextIndexProvider(

@@ -398,7 +398,6 @@ class DatabaseRecoveryIT {
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         managementService = new TestDatabaseManagementServiceBuilder(directory.homePath())
                 .setFileSystem(fs)
-                .impermanent()
                 .build();
         GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
         produceRandomGraphUpdates(db, 100, false);
@@ -441,7 +440,6 @@ class DatabaseRecoveryIT {
                     .setFileSystem(crashedFs)
                     .setExternalDependencies(dependencies)
                     .setMonitors(monitors)
-                    .impermanent()
                     .build();
 
             managementService.shutdown();
@@ -853,7 +851,6 @@ class DatabaseRecoveryIT {
         managementService = new TestDatabaseManagementServiceBuilder(homeDir)
                 .setFileSystem(fs)
                 .addExtension(new IndexExtensionFactory(indexProvider))
-                .impermanent()
                 .noOpSystemGraphInitializer()
                 .build();
 

@@ -121,7 +121,7 @@ class DenseNodeConcurrencyIT {
 
     @ExtensionCallback
     void configure(TestDatabaseManagementServiceBuilder builder) {
-        builder.setFileSystem(new UncloseableDelegatingFileSystemAbstraction(builder.getFileSystem()));
+        builder.setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs));
     }
 
     @BeforeEach

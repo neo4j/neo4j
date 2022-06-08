@@ -66,7 +66,6 @@ class LabelRecoveryTest {
         // GIVEN
         managementService = new TestDatabaseManagementServiceBuilder()
                 .setFileSystem(filesystem)
-                .impermanent()
                 .build();
         database = managementService.database(DEFAULT_DATABASE_NAME);
         Node node;
@@ -98,7 +97,6 @@ class LabelRecoveryTest {
         managementService.shutdown();
         managementService = new TestDatabaseManagementServiceBuilder()
                 .setFileSystem(snapshot)
-                .impermanent()
                 .build();
         database = managementService.database(DEFAULT_DATABASE_NAME);
 

@@ -20,6 +20,7 @@
 package org.neo4j.test;
 
 import static java.lang.Boolean.FALSE;
+import static org.neo4j.util.Preconditions.checkState;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -39,6 +40,8 @@ import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -69,7 +72,6 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     protected FileSystemAbstraction fileSystem;
     protected InternalLogProvider internalLogProvider;
     protected SystemNanoClock clock;
-    protected boolean impermanent;
     protected Config fromConfig;
     protected boolean noOpSystemGraphInitializer;
     private boolean lazyProcedures = true;
@@ -100,6 +102,15 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     }
 
     protected DatabaseManagementService build0() {
+        fileSystem = fileSystem != null ? fileSystem : new DefaultFileSystemAbstraction();
+        if (homeDirectory == null) {
+            if (fileSystem.isPersistent()) {
+                throw new RuntimeException("You have to specify a home directory or use an impermanent filesystem.");
+            } else {
+                homeDirectory = EPHEMERAL_PATH;
+            }
+        }
+
         Config cfg = config.set(GraphDatabaseSettings.neo4j_home, homeDirectory.toAbsolutePath())
                 .fromConfig(fromConfig)
                 .build();
@@ -128,20 +139,9 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     protected DatabaseManagementService newDatabaseManagementService(Config config, ExternalDependencies dependencies) {
         var factory = fabricInEmbeddedTestTransactionsEnabled()
                 ? new TestFabricDatabaseManagementServiceFactory(
-                        getDbmsInfo(config),
-                        getEditionFactory(config),
-                        impermanent,
-                        fileSystem,
-                        clock,
-                        internalLogProvider,
-                        config)
+                        getDbmsInfo(config), getEditionFactory(config), fileSystem, clock, internalLogProvider, config)
                 : new TestDatabaseManagementServiceFactory(
-                        getDbmsInfo(config),
-                        getEditionFactory(config),
-                        impermanent,
-                        fileSystem,
-                        clock,
-                        internalLogProvider);
+                        getDbmsInfo(config), getEditionFactory(config), fileSystem, clock, internalLogProvider);
 
         return factory.build(augmentConfig(config), GraphDatabaseDependencies.newDependencies(dependencies));
     }
@@ -169,10 +169,6 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
                 .setDefault(GraphDatabaseInternalSettings.additional_lock_verification, true)
                 .setDefault(GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks, true);
         return builder.build();
-    }
-
-    public FileSystemAbstraction getFileSystem() {
-        return fileSystem;
     }
 
     public Path getHomeDirectory() {
@@ -222,11 +218,17 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         return this;
     }
 
+    /**
+     * Mark this {@link DatabaseManagementService} as impermanent.
+     *
+     * This will create a new file system. If you want an impermanent database and access to
+     * the underlying file system, use {@link #setFileSystem(FileSystemAbstraction)} instead.
+     *
+     * @return the builder.
+     */
     public TestDatabaseManagementServiceBuilder impermanent() {
-        impermanent = true;
-        if (homeDirectory == null) {
-            homeDirectory = EPHEMERAL_PATH;
-        }
+        checkState(fileSystem == null, "Filesystem is already assigned, can't update it.");
+        fileSystem = new EphemeralFileSystemAbstraction();
         return this;
     }
 

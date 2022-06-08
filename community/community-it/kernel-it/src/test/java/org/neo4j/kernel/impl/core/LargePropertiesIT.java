@@ -48,7 +48,6 @@ class LargePropertiesIT {
 
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                 .setFileSystem(fs)
-                .impermanent()
                 .setConfig(GraphDatabaseInternalSettings.string_block_size, 1024)
                 .setConfig(GraphDatabaseInternalSettings.array_block_size, 2048)
                 .build();

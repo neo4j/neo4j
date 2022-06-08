@@ -49,7 +49,6 @@ class TestTxEntries {
         Path storeDir = testDirectory.homePath();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(storeDir)
                 .setFileSystem(fs)
-                .impermanent()
                 .build();
         final GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
         createSomeTransactions(db);
@@ -58,7 +57,6 @@ class TestTxEntries {
 
         managementService = new TestDatabaseManagementServiceBuilder(storeDir)
                 .setFileSystem(snapshot)
-                .impermanent()
                 .build();
         managementService.shutdown();
     }

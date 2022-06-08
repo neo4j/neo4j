@@ -98,6 +98,11 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction {
     }
 
     @Override
+    public boolean isPersistent() {
+        return delegate.isPersistent();
+    }
+
+    @Override
     public void renameFile(Path from, Path to, CopyOption... copyOptions) throws IOException {
         delegate.renameFile(from, to, copyOptions);
     }

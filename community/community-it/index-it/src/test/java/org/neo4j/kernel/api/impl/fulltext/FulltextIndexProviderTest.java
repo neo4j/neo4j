@@ -135,6 +135,9 @@ class FulltextIndexProviderTest {
     @Inject
     KernelImpl kernel;
 
+    @Inject
+    FileSystemAbstraction fileSystem;
+
     private Node node1;
     private Node node2;
     private int labelIdHej;
@@ -516,14 +519,13 @@ class FulltextIndexProviderTest {
         controller.restartDbms(builder -> {
             var cacheTracer = NULL;
             CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
-            FileSystemAbstraction fs = builder.getFileSystem();
             RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.of(
                     Config.defaults(GraphDatabaseSettings.neo4j_home, builder.getHomeDirectory()));
             DefaultIdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory(
-                    fs, RecoveryCleanupWorkCollector.ignore(), cacheTracer, databaseLayout.getDatabaseName());
+                    fileSystem, RecoveryCleanupWorkCollector.ignore(), cacheTracer, databaseLayout.getDatabaseName());
             try (JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
-                    PageCache pageCache =
-                            StandalonePageCacheFactory.createPageCache(fs, scheduler, cacheTracer, config(100))) {
+                    PageCache pageCache = StandalonePageCacheFactory.createPageCache(
+                            fileSystem, scheduler, cacheTracer, config(100))) {
 
                 StoreFactory factory = new StoreFactory(
                         databaseLayout,
@@ -531,7 +533,7 @@ class FulltextIndexProviderTest {
                         idGenFactory,
                         pageCache,
                         cacheTracer,
-                        fs,
+                        fileSystem,
                         NullLogProvider.getInstance(),
                         contextFactory,
                         writable(),

@@ -164,6 +164,7 @@ public final class SettingMigrators {
                 "unsupported.cypher.parser",
                 "unsupported.dbms.block_remote_alias",
                 "unsupported.dbms.memory.pagecache.warmup.legacy_profile_loader",
+                "unsupported.dbms.lucene.ephemeral",
                 "unsupported.dbms.recovery.ignore_store_id_validation",
                 "unsupported.dbms.tokenscan.log.enabled",
                 "unsupported.dbms.tokenscan.log.prune_threshold",
@@ -464,7 +465,6 @@ public final class SettingMigrators {
                 new Mapping("unsupported.dbms.loopback_delete", "internal.dbms.loopback_delete"),
                 new Mapping("unsupported.dbms.loopback_enabled", "internal.dbms.loopback_enabled"),
                 new Mapping("unsupported.dbms.loopback_file", "internal.dbms.loopback_file"),
-                new Mapping("unsupported.dbms.lucene.ephemeral", "internal.dbms.lucene.ephemeral"),
                 new Mapping("unsupported.dbms.lucene.max_partition_size", "internal.dbms.lucene.max_partition_size"),
                 new Mapping(
                         "unsupported.dbms.max_http_request_header_size", "internal.dbms.max_http_request_header_size"),

@@ -61,7 +61,6 @@ class SchemaImplTest {
     void createDb() {
         managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
                 .setFileSystem(fs)
-                .impermanent()
                 .build();
         db = managementService.database(DEFAULT_DATABASE_NAME);
     }

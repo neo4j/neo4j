@@ -215,7 +215,6 @@ class LabelsAcceptanceTest {
                     .setFileSystem(fileSystem)
                     .noOpSystemGraphInitializer()
                     .setExternalDependencies(dependencies)
-                    .impermanent()
                     .build();
 
             GraphDatabaseService graphDatabase = managementService.database(DEFAULT_DATABASE_NAME);

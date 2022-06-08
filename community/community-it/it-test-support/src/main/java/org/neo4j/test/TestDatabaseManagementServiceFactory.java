@@ -19,18 +19,16 @@
  */
 package org.neo4j.test;
 
-import static java.lang.Boolean.TRUE;
+import static java.util.Objects.requireNonNull;
 
 import java.time.Duration;
 import java.util.function.Function;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
-import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -44,21 +42,18 @@ import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.time.SystemNanoClock;
 
 public class TestDatabaseManagementServiceFactory extends DatabaseManagementServiceFactory {
-    private final boolean impermanent;
-    private FileSystemAbstraction fileSystem;
+    private final FileSystemAbstraction fileSystem;
     private InternalLogProvider internalLogProvider;
     private final SystemNanoClock clock;
 
     public TestDatabaseManagementServiceFactory(
             DbmsInfo dbmsInfo,
             Function<GlobalModule, AbstractEditionModule> editionFactory,
-            boolean impermanent,
             FileSystemAbstraction fileSystem,
             SystemNanoClock clock,
             InternalLogProvider internalLogProvider) {
         super(dbmsInfo, editionFactory);
-        this.impermanent = impermanent;
-        this.fileSystem = fileSystem;
+        this.fileSystem = requireNonNull(fileSystem);
         this.clock = clock;
         this.internalLogProvider = internalLogProvider;
     }
@@ -66,10 +61,9 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
     @Override
     protected GlobalModule createGlobalModule(Config config, ExternalDependencies dependencies) {
         config.setIfNotSet(GraphDatabaseSettings.shutdown_transaction_end_timeout, Duration.ZERO);
-        if (impermanent) {
-            config.set(GraphDatabaseInternalSettings.ephemeral_lucene, TRUE);
+
+        if (!fileSystem.isPersistent()) {
             config.setIfNotSet(GraphDatabaseSettings.keep_logical_logs, "1 files");
-            return new ImpermanentTestDatabaseGlobalModule(config, dependencies, this.dbmsInfo);
         }
 
         return new TestDatabaseGlobalModule(config, this.dbmsInfo, dependencies);
@@ -82,21 +76,13 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
 
         @Override
         protected FileSystemAbstraction createFileSystemAbstraction() {
-            if (fileSystem != null) {
-                return fileSystem;
-            } else {
-                return createNewFileSystem();
-            }
-        }
-
-        protected FileSystemAbstraction createNewFileSystem() {
-            return super.createFileSystemAbstraction();
+            return fileSystem;
         }
 
         @Override
         protected LogService createLogService(InternalLogProvider userLogProvider) {
             if (internalLogProvider == null) {
-                if (!impermanent) {
+                if (fileSystem.isPersistent()) {
                     return super.createLogService(userLogProvider);
                 }
                 internalLogProvider = NullLogProvider.getInstance();
@@ -108,20 +94,12 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
         protected SystemNanoClock createClock() {
             return clock != null ? clock : super.createClock();
         }
-    }
-
-    private class ImpermanentTestDatabaseGlobalModule extends TestDatabaseGlobalModule {
-        ImpermanentTestDatabaseGlobalModule(Config config, ExternalDependencies dependencies, DbmsInfo dbmsInfo) {
-            super(config, dbmsInfo, dependencies);
-        }
-
-        @Override
-        protected FileSystemAbstraction createNewFileSystem() {
-            return new EphemeralFileSystemAbstraction();
-        }
 
         @Override
         protected FileLockerService createFileLockerService() {
+            if (fileSystem.isPersistent()) {
+                return super.createFileLockerService();
+            }
             return new ImpermanentLockerService();
         }
     }

@@ -113,8 +113,7 @@ class CountsComputerTest {
     @BeforeEach
     void setup() {
         dbBuilder = new TestDatabaseManagementServiceBuilder(databaseLayout)
-                .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fileSystem))
-                .impermanent();
+                .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fileSystem));
     }
 
     @Test

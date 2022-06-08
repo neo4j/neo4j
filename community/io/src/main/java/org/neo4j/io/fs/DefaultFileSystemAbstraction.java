@@ -204,6 +204,11 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
     }
 
     @Override
+    public boolean isPersistent() {
+        return true;
+    }
+
+    @Override
     public void close() throws IOException {
         // nothing
     }

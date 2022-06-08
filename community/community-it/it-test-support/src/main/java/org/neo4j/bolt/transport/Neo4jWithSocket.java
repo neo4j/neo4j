@@ -28,7 +28,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.TestInfo;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -50,7 +49,6 @@ import org.neo4j.test.utils.TestDirectory;
 public class Neo4jWithSocket {
     static final String NEO4J_WITH_SOCKET = "org.neo4j.bolt.transport.Neo4jWithSocket";
 
-    private final Supplier<FileSystemAbstraction> fileSystemProvider;
     private Consumer<Map<Setting<?>, Object>> configure;
     private final TestDirectory testDirectory;
     private TestDatabaseManagementServiceBuilder graphDatabaseFactory;
@@ -61,16 +59,15 @@ public class Neo4jWithSocket {
 
     public Neo4jWithSocket(
             TestDatabaseManagementServiceBuilder graphDatabaseFactory,
-            Supplier<TestDirectory> testDirectorySupplier,
+            TestDirectory testDirectory,
             Consumer<Map<Setting<?>, Object>> configure) {
-        this.testDirectory = testDirectorySupplier.get();
+        this.testDirectory = testDirectory;
         this.graphDatabaseFactory = graphDatabaseFactory;
-        this.fileSystemProvider = testDirectory::getFileSystem;
         this.configure = configure;
     }
 
     public FileSystemAbstraction getFileSystem() {
-        return this.graphDatabaseFactory.getFileSystem();
+        return testDirectory.getFileSystem();
     }
 
     public DatabaseManagementService getManagementService() {
@@ -123,10 +120,9 @@ public class Neo4jWithSocket {
 
         installSelfSignedCertificateIfEncryptionEnabled(settings);
 
-        graphDatabaseFactory.setFileSystem(fileSystemProvider.get());
         managementService = graphDatabaseFactory
+                .setFileSystem(testDirectory.getFileSystem())
                 .setDatabaseRootDirectory(storeDir)
-                .impermanent()
                 .setConfig(settings)
                 .build();
         gdb = managementService.database(DEFAULT_DATABASE_NAME);
@@ -139,7 +135,7 @@ public class Neo4jWithSocket {
         if (encryptionLevel != DISABLED) {
             // Install self-signed certs if ssl is enabled
             var certificates = workingDirectory.resolve("certificates");
-            SelfSignedCertificateFactory.create(fileSystemProvider.get(), certificates);
+            SelfSignedCertificateFactory.create(getFileSystem(), certificates);
 
             settings.put(SslPolicyConfig.forScope(SslPolicyScope.BOLT).enabled, Boolean.TRUE);
             settings.put(SslPolicyConfig.forScope(SslPolicyScope.BOLT).base_directory, certificates);
@@ -148,7 +144,7 @@ public class Neo4jWithSocket {
         SslPolicyConfig clusterConfig = SslPolicyConfig.forScope(SslPolicyScope.CLUSTER);
         if (settings.containsKey(clusterConfig.enabled)) {
             var clusterCertificates = workingDirectory.resolve("cluster-cert");
-            SelfSignedCertificateFactory.create(fileSystemProvider.get(), clusterCertificates);
+            SelfSignedCertificateFactory.create(getFileSystem(), clusterCertificates);
 
             settings.put(SslPolicyConfig.forScope(SslPolicyScope.CLUSTER).enabled, Boolean.TRUE);
             settings.put(SslPolicyConfig.forScope(SslPolicyScope.CLUSTER).base_directory, clusterCertificates);

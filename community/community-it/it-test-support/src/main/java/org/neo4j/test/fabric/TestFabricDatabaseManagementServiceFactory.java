@@ -45,12 +45,11 @@ public class TestFabricDatabaseManagementServiceFactory extends TestDatabaseMana
     public TestFabricDatabaseManagementServiceFactory(
             DbmsInfo dbmsInfo,
             Function<GlobalModule, AbstractEditionModule> editionFactory,
-            boolean impermanent,
             FileSystemAbstraction fileSystem,
             SystemNanoClock clock,
             InternalLogProvider internalLogProvider,
             Config config) {
-        super(dbmsInfo, editionFactory, impermanent, fileSystem, clock, internalLogProvider);
+        super(dbmsInfo, editionFactory, fileSystem, clock, internalLogProvider);
 
         this.config = config;
     }

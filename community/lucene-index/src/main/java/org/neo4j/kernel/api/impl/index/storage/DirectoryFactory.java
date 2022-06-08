@@ -31,11 +31,12 @@ import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.util.FeatureToggles;
 
 public interface DirectoryFactory extends AutoCloseable {
-    static DirectoryFactory directoryFactory(boolean ephemeral) {
-        return ephemeral ? new DirectoryFactory.InMemoryDirectoryFactory() : DirectoryFactory.PERSISTENT;
+    static DirectoryFactory directoryFactory(FileSystemAbstraction fs) {
+        return fs.isPersistent() ? DirectoryFactory.PERSISTENT : new DirectoryFactory.InMemoryDirectoryFactory();
     }
 
     Directory open(Path dir) throws IOException;

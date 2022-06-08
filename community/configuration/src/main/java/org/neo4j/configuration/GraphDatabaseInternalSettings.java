@@ -77,12 +77,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
 
     @Internal
     @Description(
-            "Configure lucene to be in memory only, for test environment. This is set in code and should never be configured explicitly.")
-    public static final Setting<Boolean> ephemeral_lucene =
-            newBuilder("internal.dbms.lucene.ephemeral", BOOL, false).build();
-
-    @Internal
-    @Description(
             "Configure lucene partition size. This is mainly used to test partitioning behaviour without having to create "
                     + "Integer.MAX_VALUE indexed entities.")
     public static final Setting<Integer> lucene_max_partition_size =

@@ -176,7 +176,7 @@ class IndexRestartIT {
             managementService.shutdown();
         }
 
-        managementService = factory.impermanent().noOpSystemGraphInitializer().build();
+        managementService = factory.noOpSystemGraphInitializer().build();
         db = managementService.database(DEFAULT_DATABASE_NAME);
     }
 

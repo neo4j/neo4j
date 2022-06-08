@@ -399,4 +399,9 @@ public interface FileSystemAbstraction extends Closeable {
      * @return {@link #INVALID_FILE_DESCRIPTOR} when the file description can't be retrieved from the provided channel.
      */
     int getFileDescriptor(StoreChannel channel);
+
+    /**
+     * @return {@code true} if the underlying filesystem is persistent, {@code false} otherwise.
+     */
+    boolean isPersistent();
 }

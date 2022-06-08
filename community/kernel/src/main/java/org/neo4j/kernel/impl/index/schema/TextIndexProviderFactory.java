@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.ephemeral_lucene;
 import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.directoryFactory;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
@@ -70,11 +69,6 @@ public class TextIndexProviderFactory extends AbstractIndexProviderFactory<TextI
             PageCacheTracer pageCacheTracer) {
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider(databaseLayout.databaseDirectory());
         return new TextIndexProvider(
-                fs,
-                directoryFactory(config.get(ephemeral_lucene)),
-                directoryStructure,
-                monitors,
-                config,
-                readOnlyDatabaseChecker);
+                fs, directoryFactory(fs), directoryStructure, monitors, config, readOnlyDatabaseChecker);
     }
 }
