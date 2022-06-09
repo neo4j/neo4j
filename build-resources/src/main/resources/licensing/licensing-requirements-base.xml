@@ -36,6 +36,7 @@
   <liked-license>Eclipse Public License v2.0</liked-license>
   <liked-license>GNU Lesser General Public License, Version 2.1</liked-license>
   <liked-license>MIT License</liked-license>
+  <liked-license>MIT No Attribution License</liked-license>
   <liked-license>Mozilla Public License, Version 2.0</liked-license>
   <liked-license>SIL OFL 1.1</liked-license>
   <liked-license>ISC</liked-license>
@@ -144,6 +145,9 @@
       <aka>(GPL-2.0 OR MIT)</aka>
       <aka>(MIT or Apache-2.0)</aka>
       <aka>(BSD-2-Clause OR MIT OR Apache-2.0)</aka>
+    </license>
+    <license name="MIT No Attribution License">
+      <aka>MIT-0</aka>
     </license>
     <license name="Mozilla Public License, Version 2.0">
       <aka>Mozilla Public License, v. 2.0</aka>
