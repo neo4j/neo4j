@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.terminal;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -32,6 +33,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 import org.jline.terminal.Attributes;
 import org.jline.terminal.impl.ExecPty;
 import org.junit.jupiter.api.Test;
@@ -72,7 +74,8 @@ class TtyPromptTest {
         final var attributes = new Attributes();
         attributes.setLocalFlag(Attributes.LocalFlag.ECHONL, true);
         when(mockPty.getAttr()).thenReturn(attributes);
-        final var prompt = new TtyPrompt(mockPty, new ByteArrayInputStream("\n".getBytes(UTF_8)), out);
+        final var prompt =
+                new TtyPrompt(mockPty, new ByteArrayInputStream("\n".getBytes(UTF_8)), out, Charset.defaultCharset());
         prompt.readLine(">");
 
         verify(mockPty, times(0)).setAttr(any());
@@ -85,7 +88,8 @@ class TtyPromptTest {
         final var attributes = new Attributes();
         attributes.setLocalFlag(Attributes.LocalFlag.ECHONL, true);
         when(mockPty.getAttr()).thenReturn(attributes);
-        final var prompt = new TtyPrompt(mockPty, new ByteArrayInputStream("\n".getBytes(UTF_8)), out);
+        final var prompt =
+                new TtyPrompt(mockPty, new ByteArrayInputStream("\n".getBytes(UTF_8)), out, Charset.defaultCharset());
         prompt.readPassword(">");
 
         ArgumentCaptor<Attributes> attrCaptor = ArgumentCaptor.forClass(Attributes.class);
@@ -99,15 +103,46 @@ class TtyPromptTest {
         assertEqualAttributes(attrs.get(1), attributes);
     }
 
+    @Test
+    void respectsSetFlagIUTF8() throws IOException {
+        final var input = "åäö\n";
+        final var output = new ByteArrayOutputStream();
+
+        final var mockPty = mock(ExecPty.class);
+        final var attributes = new Attributes();
+        attributes.setInputFlag(Attributes.InputFlag.IUTF8, true);
+        when(mockPty.getAttr()).thenReturn(attributes);
+        final var prompt = new TtyPrompt(mockPty, new ByteArrayInputStream(input.getBytes(UTF_8)), output, ISO_8859_1);
+
+        assertThat(prompt.readLine("> "), is("åäö"));
+    }
+
+    @Test
+    void respectsUnsetFlagIUTF8() throws IOException {
+        final var input = "åäö\n";
+        final var output = new ByteArrayOutputStream();
+
+        final var mockPty = mock(ExecPty.class);
+        final var attributes = new Attributes();
+        attributes.setInputFlag(Attributes.InputFlag.IUTF8, false);
+        when(mockPty.getAttr()).thenReturn(attributes);
+        final var prompt =
+                new TtyPrompt(mockPty, new ByteArrayInputStream(input.getBytes(ISO_8859_1)), output, ISO_8859_1);
+
+        assertThat(prompt.readLine("> "), is("åäö"));
+    }
+
     private void assertRead(String input, String expected) throws IOException {
         final var out = new ByteArrayOutputStream();
-        assertThat(newTtyPrompt(input, out).readLine("Read me: "), is(expected));
-        assertThat(out.toString(UTF_8), is("Read me: "));
+        final var charset = Charset.defaultCharset();
+        assertThat(newTtyPrompt(input, out, charset).readLine("Read me: "), is(expected));
+        assertThat(out.toString(charset), is("Read me: "));
     }
 
     private void assertReadPassword(String input, String expected) throws IOException {
         final var out = new ByteArrayOutputStream();
-        assertThat(newTtyPrompt(input, out).readPassword("Read me: "), is(expected));
+        final var charset = Charset.defaultCharset();
+        assertThat(newTtyPrompt(input, out, charset).readPassword("Read me: "), is(expected));
 
         if (input.contains("\n") || input.contains("\r")) {
             assertThat(out.toString(), is("Read me: " + System.lineSeparator()));
@@ -116,11 +151,11 @@ class TtyPromptTest {
         }
     }
 
-    private TtyPrompt newTtyPrompt(String input, OutputStream out) throws IOException {
+    private TtyPrompt newTtyPrompt(String input, OutputStream out, Charset charset) throws IOException {
         final var mockPty = mock(ExecPty.class);
         final var attributes = new Attributes();
         when(mockPty.getAttr()).thenReturn(attributes);
-        return new TtyPrompt(mockPty, new ByteArrayInputStream(input.getBytes(UTF_8)), out);
+        return new TtyPrompt(mockPty, new ByteArrayInputStream(input.getBytes(charset)), out, charset);
     }
 
     private void assertEqualAttributes(Attributes attributes, Attributes expected) {

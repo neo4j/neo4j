@@ -19,6 +19,9 @@
  */
 package org.neo4j.shell.terminal;
 
+import static java.nio.charset.Charset.defaultCharset;
+import static org.jline.terminal.Attributes.InputFlag.IUTF8;
+
 import java.io.ByteArrayOutputStream;
 import java.io.Console;
 import java.io.FileInputStream;
@@ -37,6 +40,7 @@ import org.neo4j.util.VisibleForTesting;
  * Simple prompt for basic user input.
  *
  * This is a workaround, I couldn't get jline to mask input when standard out is redirected.
+ * See https://github.com/jline/jline3/issues/787.
  */
 public interface SimplePrompt extends AutoCloseable {
     /** Reads line from user, returns null if end of stream is reached. */
@@ -58,7 +62,7 @@ public interface SimplePrompt extends AutoCloseable {
             // Ignore
         }
 
-        return new WeakPrompt(System.in, new PrintWriter(OutputStream.nullOutputStream()), Charset.defaultCharset());
+        return new WeakPrompt(System.in, new PrintWriter(OutputStream.nullOutputStream()), defaultCharset());
     }
 }
 
@@ -70,12 +74,12 @@ class ConsolePrompt implements SimplePrompt {
     }
 
     @Override
-    public String readLine(String prompt) throws IOException {
+    public String readLine(String prompt) {
         return console.readLine(prompt);
     }
 
     @Override
-    public String readPassword(String prompt) throws IOException {
+    public String readPassword(String prompt) {
         final var read = console.readPassword(prompt);
         return read != null ? new String(read) : null;
     }
@@ -93,18 +97,28 @@ class TtyPrompt extends StreamPrompt {
     private final ExecPty pty;
     private final Attributes originalAttributes;
     private final Thread shutdownThread;
+    private final Charset charset;
 
     TtyPrompt(ExecPty pty) throws IOException {
-        this(pty, new FileInputStream(pty.getName()), new FileOutputStream(pty.getName()));
+        this(pty, new FileInputStream(pty.getName()), new FileOutputStream(pty.getName()), defaultCharset());
     }
 
     @VisibleForTesting
-    TtyPrompt(ExecPty pty, InputStream in, OutputStream out) throws IOException {
-        super(in, new PrintWriter(out));
+    TtyPrompt(ExecPty pty, InputStream in, OutputStream out, Charset defaultCharset) throws IOException {
+        this(pty, in, out, pty.getAttr(), getCharset(pty.getAttr(), defaultCharset));
+    }
+
+    private TtyPrompt(ExecPty pty, InputStream in, OutputStream out, Attributes originalAttributes, Charset charset) {
+        super(in, new PrintWriter(out, false, charset));
         this.pty = pty;
-        this.originalAttributes = new Attributes(pty.getAttr());
+        this.originalAttributes = originalAttributes;
+        this.charset = charset;
         this.shutdownThread = new Thread(this::tryRestoringTerminal);
         Runtime.getRuntime().addShutdownHook(shutdownThread);
+    }
+
+    private static Charset getCharset(Attributes attributes, Charset defaultCharset) {
+        return attributes.getInputFlag(IUTF8) ? StandardCharsets.UTF_8 : defaultCharset;
     }
 
     @Override
@@ -129,15 +143,7 @@ class TtyPrompt extends StreamPrompt {
 
     @Override
     protected Charset charset() {
-        try {
-            if (pty.getAttr().getInputFlag(Attributes.InputFlag.IUTF8)) {
-                return StandardCharsets.UTF_8;
-            }
-        } catch (Exception e) {
-            // Ignore
-        }
-
-        return Charset.defaultCharset();
+        return charset;
     }
 
     @Override
