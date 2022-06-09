@@ -27,12 +27,11 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.DelegatingPageSwapper;
 import org.neo4j.io.pagecache.IOController;
@@ -75,24 +74,17 @@ class MuninnPageCursorTest {
         life.shutdown();
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void shouldUnlockLatchOnPageFaultingWhenConcurrentlyCursorClosed(boolean alsoThrowOnPageFaultRead)
-            throws IOException {
+    @Test
+    void shouldUnlockLatchOnPageFaultingWhenConcurrentlyCursorClosed() throws IOException {
         // given
         Path file = directory.file("dude");
         createSomeData(file);
 
         // when
-        AtomicReference<PageCursor> cursorHolder = new AtomicReference<>();
+        var enableException = new AtomicBoolean(false);
         Runnable onReadAction = () -> {
-            PageCursor cursor = cursorHolder.get();
-            if (cursor != null) {
-                cursor.close();
-                if (alsoThrowOnPageFaultRead) {
-                    // Alternatively also throw here to cause the problem happening in a slightly different place.
-                    throw new RuntimeException();
-                }
+            if (enableException.get()) {
+                throw new RuntimeException();
             }
         };
         try (PageCache pageCache = startPageCache(customSwapper(defaultPageSwapperFactory(), onReadAction));
@@ -102,9 +94,10 @@ class MuninnPageCursorTest {
                         DEFAULT_DATABASE_NAME,
                         Sets.immutable.of(StandardOpenOption.CREATE))) {
             try (PageCursor cursor = pagedFile.io(0, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
-                cursorHolder.set(cursor); // enabling the failing behaviour
+                enableException.set(true);
                 assertThatThrownBy(cursor::next).isInstanceOf(RuntimeException.class);
-                cursorHolder.set(null); // disabling this failing behaviour
+            } finally {
+                enableException.set(false);
             }
 
             // then hopefully the latch is not jammed. Assert that we can read normally from this new cursor.

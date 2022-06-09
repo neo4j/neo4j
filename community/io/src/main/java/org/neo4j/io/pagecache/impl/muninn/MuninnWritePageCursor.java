@@ -35,8 +35,9 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
             ? LongLongMaps.mutable.empty().asSynchronized()
             : null;
 
-    MuninnWritePageCursor(long victimPage, CursorContext cursorContext) {
-        super(victimPage, cursorContext);
+    MuninnWritePageCursor(
+            MuninnPagedFile pagedFile, int pf_flags, long victimPage, CursorContext cursorContext, long pageId) {
+        super(pagedFile, pf_flags, victimPage, cursorContext, pageId);
     }
 
     @Override
@@ -81,7 +82,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
     @Override
     public boolean next() throws IOException {
         unpinCurrentPage();
-        long lastPageId = assertPagedFileStillMappedAndGetIdOfLastPage();
+        long lastPageId = assertCursorOpenFileMappedAndGetIdOfLastPage();
         if (nextPageId < 0) {
             storeCurrentPageId(UNBOUND_PAGE_ID);
             return false;
@@ -145,7 +146,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
         // to get flushed. It is okay for this method to throw, because we are
         // after the reset() call, which means that if we throw, the cursor will
         // be closed and the page lock will be released.
-        assertPagedFileStillMappedAndGetIdOfLastPage();
+        assertCursorOpenFileMappedAndGetIdOfLastPage();
         if (updateUsage) {
             PageList.incrementUsage(pageRef);
         }

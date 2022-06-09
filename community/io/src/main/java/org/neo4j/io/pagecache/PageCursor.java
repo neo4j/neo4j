@@ -237,14 +237,6 @@ public abstract class PageCursor implements AutoCloseable {
     public abstract Path getRawCurrentFile();
 
     /**
-     * Rewinds the cursor to its initial condition, as if freshly returned from
-     * an equivalent io() call. In other words, the next call to next() will
-     * move the cursor to the starting page that was specified in the io() that
-     * produced the cursor.
-     */
-    public abstract void rewind();
-
-    /**
      * Moves the cursor to the next page, if any, and returns true when it is
      * ready to be processed. Returns false if there are no more pages to be
      * processed. For instance, if the cursor was requested with PF_NO_GROW

@@ -140,7 +140,7 @@ class TreeStatePairTest {
             @Override
             void write(PageCursor cursor) {
                 TreeState.write(cursor, 1, 2, 3, 4, 5, 6, 7, 8, 9, true);
-                cursor.rewind();
+                cursor.setOffset(0);
                 // flip some of the bits as to break the checksum
                 long someOfTheBits = cursor.getLong(cursor.getOffset());
                 cursor.putLong(cursor.getOffset(), ~someOfTheBits);

@@ -55,7 +55,7 @@ class TreeStateTest {
         long pageId = cursor.getCurrentPageId();
         TreeState expected = new TreeState(pageId, 1, 2, 3, 4, 5, 6, 7, 8, 9, true, true);
         write(cursor, expected);
-        cursor.rewind();
+        cursor.setOffset(0);
 
         // WHEN
         TreeState read = TreeState.read(cursor);
@@ -70,9 +70,9 @@ class TreeStateTest {
         long pageId = cursor.getCurrentPageId();
         TreeState expected = new TreeState(pageId, 1, 2, 3, 4, 5, 6, 7, 8, 9, true, true);
         write(cursor, expected);
-        cursor.rewind();
+        cursor.setOffset(0);
         assertTrue(TreeState.read(cursor).isValid());
-        cursor.rewind();
+        cursor.setOffset(0);
         breakChecksum(cursor);
 
         // WHEN

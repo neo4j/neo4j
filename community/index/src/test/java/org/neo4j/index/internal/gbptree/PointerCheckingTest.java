@@ -52,9 +52,9 @@ class PointerCheckingTest {
     void checkChildShouldThrowOnWriteFailure() {
         // GIVEN
         write(cursor, 123, 0, firstGeneration);
-        cursor.rewind();
+        cursor.setOffset(0);
         write(cursor, 456, firstGeneration, secondGeneration);
-        cursor.rewind();
+        cursor.setOffset(0);
 
         // WHEN
         // This write will see first and second written pointers and think they belong to CRASHed generation
@@ -66,7 +66,7 @@ class PointerCheckingTest {
     void checkChildShouldPassOnReadSuccess() {
         // GIVEN
         PointerChecking.checkPointer(write(cursor, 123, 0, firstGeneration), false);
-        cursor.rewind();
+        cursor.setOffset(0);
 
         // WHEN
         long result = read(cursor, 0, firstGeneration, NO_GENERATION_TARGET);
@@ -88,7 +88,7 @@ class PointerCheckingTest {
     void checkSiblingShouldPassOnReadSuccessForNoNodePointer() {
         // GIVEN
         write(cursor, TreeNode.NO_NODE_FLAG, firstGeneration, secondGeneration);
-        cursor.rewind();
+        cursor.setOffset(0);
 
         // WHEN
         long result = read(cursor, firstGeneration, secondGeneration, NO_GENERATION_TARGET);
@@ -102,7 +102,7 @@ class PointerCheckingTest {
         // GIVEN
         long pointer = 101;
         write(cursor, pointer, firstGeneration, secondGeneration);
-        cursor.rewind();
+        cursor.setOffset(0);
 
         // WHEN
         long result = read(cursor, firstGeneration, secondGeneration, NO_GENERATION_TARGET);
@@ -128,7 +128,7 @@ class PointerCheckingTest {
         cursor.putInt((int) pointer);
         put6BLong(cursor, generation);
         cursor.putShort(GenerationSafePointer.checksumOf(generation, pointer));
-        cursor.rewind();
+        cursor.setOffset(0);
 
         // WHEN
         long result = read(cursor, firstGeneration, pointer, NO_GENERATION_TARGET);

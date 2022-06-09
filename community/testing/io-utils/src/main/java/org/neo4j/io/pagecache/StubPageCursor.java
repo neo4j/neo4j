@@ -85,11 +85,6 @@ public class StubPageCursor extends PageCursor {
     }
 
     @Override
-    public void rewind() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public boolean next() {
         return true;
     }

@@ -632,23 +632,6 @@ public class CompositePageCursorTest {
     }
 
     @Test
-    void rewindCompositeCursor() {
-        first.setOffset(1);
-        second.setOffset(2);
-        PageCursor pageCursor = CompositePageCursor.compose(first, PAYLOAD_SIZE, second, PAYLOAD_SIZE);
-
-        pageCursor.getLong();
-        pageCursor.getLong();
-        pageCursor.getLong();
-
-        pageCursor.rewind();
-
-        assertEquals(0, pageCursor.getOffset());
-        assertEquals(1, first.getOffset());
-        assertEquals(2, second.getOffset());
-    }
-
-    @Test
     public void markCompositeCursor() {
         // GIVEN
         first.setOffset(1);

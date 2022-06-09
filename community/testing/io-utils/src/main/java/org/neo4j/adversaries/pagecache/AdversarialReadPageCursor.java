@@ -300,11 +300,6 @@ class AdversarialReadPageCursor extends DelegatingPageCursor {
     }
 
     @Override
-    public void rewind() {
-        delegate.rewind();
-    }
-
-    @Override
     public boolean next() throws IOException {
         prepareNext();
         return delegate.next();

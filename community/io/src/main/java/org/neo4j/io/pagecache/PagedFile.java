@@ -114,8 +114,6 @@ public interface PagedFile extends AutoCloseable {
      * After the {@code next} call, if it returns {@code true}, the cursor will be bound to a page, and the get and put
      * methods will access that page.
      * <p>
-     * After a call to {@link PageCursor#rewind()}, the cursor will return to its initial state.
-     * <p>
      * The {@code pf_flags} argument expresses the intent of the IO operation. It is a bitmap that combines various
      * {@code PF_*} constants. You must always specify your desired locking behaviour, with either
      * {@link org.neo4j.io.pagecache.PagedFile#PF_SHARED_WRITE_LOCK} or

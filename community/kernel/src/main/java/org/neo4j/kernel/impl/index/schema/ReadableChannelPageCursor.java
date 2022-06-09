@@ -206,11 +206,6 @@ class ReadableChannelPageCursor extends PageCursor {
     }
 
     @Override
-    public void rewind() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public boolean next() throws IOException {
         throw new UnsupportedOperationException();
     }

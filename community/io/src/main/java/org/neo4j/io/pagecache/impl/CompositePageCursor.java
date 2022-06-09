@@ -366,13 +366,6 @@ public final class CompositePageCursor extends PageCursor {
     }
 
     @Override
-    public void rewind() {
-        first.setOffset(firstBaseOffset);
-        second.setOffset(secondBaseOffset);
-        offset = 0;
-    }
-
-    @Override
     public boolean next() {
         throw unsupportedNext();
     }
@@ -396,7 +389,9 @@ public final class CompositePageCursor extends PageCursor {
     @Override
     public boolean shouldRetry() throws IOException {
         if (first.shouldRetry() || second.shouldRetry()) {
-            rewind();
+            first.setOffset(firstBaseOffset);
+            second.setOffset(secondBaseOffset);
+            offset = 0;
             checkAndClearBoundsFlag();
             return true;
         }

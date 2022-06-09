@@ -24,6 +24,7 @@ import static java.lang.System.currentTimeMillis;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static java.time.Duration.ofMillis;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -724,33 +725,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    void rewindMustStartScanningOverFromTheBeginning() {
-        assertTimeoutPreemptively(ofMillis(SEMI_LONG_TIMEOUT_MILLIS), () -> {
-            configureStandardPageCache();
-
-            int numberOfRewindsToTest = 10;
-            generateFileWithRecords(
-                    file("a"), recordCount, recordSize, recordsPerFilePage, reservedBytes, filePageSize);
-            int actualPageCounter = 0;
-            int filePageCount = recordCount / recordsPerFilePage;
-            int expectedPageCounterResult = numberOfRewindsToTest * filePageCount;
-
-            try (PagedFile pagedFile = map(file("a"), filePageSize);
-                    PageCursor cursor = pagedFile.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
-                for (int i = 0; i < numberOfRewindsToTest; i++) {
-                    while (cursor.next()) {
-                        verifyRecordsMatchExpected(cursor);
-                        actualPageCounter++;
-                    }
-                    cursor.rewind();
-                }
-            }
-
-            assertThat(actualPageCounter).isEqualTo(expectedPageCounterResult);
-        });
-    }
-
-    @Test
     void mustCloseFileChannelWhenTheLastHandleIsUnmapped() {
         assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
             assumeTrue(
@@ -1094,7 +1068,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    void currentPageIdIsUnboundBeforeFirstNextAndAfterRewind() {
+    void currentPageIdIsUnboundBeforeFirstNext() {
         assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
             configureStandardPageCache();
 
@@ -1103,8 +1077,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 assertThat(cursor.getCurrentPageId()).isEqualTo(PageCursor.UNBOUND_PAGE_ID);
                 assertTrue(cursor.next());
                 assertThat(cursor.getCurrentPageId()).isEqualTo(0L);
-                cursor.rewind();
-                assertThat(cursor.getCurrentPageId()).isEqualTo(PageCursor.UNBOUND_PAGE_ID);
             }
         });
     }
@@ -1133,8 +1105,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 assertThat(cursor.getCurrentFile()).isNull();
                 assertTrue(cursor.next());
                 assertThat(cursor.getCurrentFile()).isEqualTo(file("a"));
-                cursor.rewind();
-                assertThat(cursor.getCurrentFile()).isNull();
             }
         });
     }
@@ -3569,9 +3539,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                         while (cursor.next()) {
                             // Profound and interesting I/O.
                         }
-                        // Use rewind if we get to the end, because it is non-
+                        // Rewind to the start of the file if we get to the end, because it is non-
                         // deterministic which pages get evicted and when.
-                        cursor.rewind();
+                        cursor.next(0);
                     }
                 } finally {
                     restrictWrites.set(false);
@@ -4519,6 +4489,34 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             while (buffer.hasRemaining()) {
                 buffer.put(zero);
             }
+        }
+    }
+
+    @Test
+    void nextOnClosedWriteCursorMustThrow() throws Exception {
+        configureStandardPageCache();
+        try (var pf = map(file("a"), filePageSize);
+                var cursor = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+            assertTrue(cursor.next());
+            cursor.putByte((byte) 6);
+            cursor.close();
+            assertThatThrownBy(cursor::next).isInstanceOf(IllegalStateException.class);
+        }
+        // verify that we cen read that 6
+        try (var pf = map(file("a"), filePageSize);
+                var cursor = pf.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+            assertTrue(cursor.next());
+            assertThat(cursor.getByte()).isEqualTo((byte) 6);
+        }
+    }
+
+    @Test
+    void nextOnClosedReadCursorMustThrow() throws Exception {
+        configureStandardPageCache();
+        try (var pf = map(file("a"), filePageSize);
+                var cursor = pf.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+            cursor.close();
+            assertThatThrownBy(cursor::next).isInstanceOf(IllegalStateException.class);
         }
     }
 

@@ -36,7 +36,7 @@ import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
  * Wraps a byte array and present it as a PageCursor.
  * <p>
  * All the accessor methods (getXXX, putXXX) are implemented and delegates calls to its internal {@link ByteBuffer}.
- * {@link #setOffset(int)}, {@link #getOffset()} and {@link #rewind()} positions the internal {@link ByteBuffer}.
+ * {@link #setOffset(int)} and {@link #getOffset()} positions the internal {@link ByteBuffer}.
  * {@link #shouldRetry()} always returns {@code false}.
  */
 public class ByteArrayPageCursor extends PageCursor {
@@ -230,11 +230,6 @@ public class ByteArrayPageCursor extends PageCursor {
     @Override
     public Path getRawCurrentFile() {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void rewind() {
-        setOffset(0);
     }
 
     @Override

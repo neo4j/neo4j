@@ -35,14 +35,10 @@ final class CursorFactory {
     }
 
     MuninnReadPageCursor takeReadCursor(long pageId, int pf_flags, CursorContext cursorContext) {
-        MuninnReadPageCursor cursor = new MuninnReadPageCursor(victimPage, cursorContext);
-        cursor.initialise(pagedFile, pageId, pf_flags);
-        return cursor;
+        return new MuninnReadPageCursor(pagedFile, pf_flags, victimPage, cursorContext, pageId);
     }
 
     MuninnWritePageCursor takeWriteCursor(long pageId, int pf_flags, CursorContext cursorContext) {
-        MuninnWritePageCursor cursor = new MuninnWritePageCursor(victimPage, cursorContext);
-        cursor.initialise(pagedFile, pageId, pf_flags);
-        return cursor;
+        return new MuninnWritePageCursor(pagedFile, pf_flags, victimPage, cursorContext, pageId);
     }
 }

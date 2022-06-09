@@ -67,48 +67,51 @@ public abstract class MuninnPageCursor extends PageCursor {
     protected static final int POINTER_OFFSET = Long.BYTES;
     public static final int CHECKSUM_OFFSET = Long.BYTES * 2;
 
-    private final long victimPage;
     protected final PageCursorTracer tracer;
-    protected MuninnPagedFile pagedFile;
-    protected PageSwapper swapper;
-    protected int swapperId;
-    protected long pinnedPageRef;
-    protected long pageId;
-    protected int pf_flags;
-    protected boolean eagerFlush;
-    protected boolean noFault;
-    protected boolean noGrow;
-    protected boolean updateUsage;
+    protected final VersionContext versionContext;
+    protected final CursorContext cursorContext;
+
+    protected final MuninnPagedFile pagedFile;
+    protected final PageSwapper swapper;
+    private final VersionStorage versionStorage;
+    private final long victimPage;
+    protected final int swapperId;
+    private final int filePageSize;
+    private final int pageReservedBytes;
+    private final int filePayloadSize;
+    private final int pf_flags;
+    protected final boolean eagerFlush;
+    private final boolean noFault;
+    protected final boolean noGrow;
+    protected final boolean updateUsage;
+    protected final boolean multiVersioned;
+    private final boolean littleEndian;
 
     @SuppressWarnings("unused") // accessed via VarHandle.
     private long currentPageId;
 
-    private static final VarHandle CURRENT_PAGE_ID;
+    protected long pinnedPageRef;
     protected long nextPageId;
-    protected MuninnPageCursor linkedCursor;
-    protected JobHandle<?> preFetcher;
     protected long pointer;
-    private int pageSize;
-    private int filePageSize;
-    private int filePayloadSize;
-    private boolean littleEndian;
-    protected final VersionContext versionContext;
-    protected final CursorContext cursorContext;
-    private int offset;
-    private int mark;
-    private boolean markOutOfBounds;
-    private boolean outOfBounds;
-    private int pageReservedBytes;
-    private VersionStorage versionStorage;
-    protected boolean multiVersioned;
     protected long version;
     protected long chainPreviousPointer;
-
+    private int pageSize;
     private int payloadSize;
+    private int offset;
+    private int mark;
+    private boolean outOfBounds;
+    private boolean markOutOfBounds;
+    protected boolean closed;
+
+    protected MuninnPageCursor linkedCursor;
+    protected JobHandle<?> preFetcher;
+
     // This is a String with the exception message if usePreciseCursorErrorStackTraces is false, otherwise it is a
     // CursorExceptionWithPreciseStackTrace with the message and stack trace pointing more or less directly at the
     // offending code.
     private Object cursorException;
+
+    private static final VarHandle CURRENT_PAGE_ID;
 
     static {
         try {
@@ -119,39 +122,44 @@ public abstract class MuninnPageCursor extends PageCursor {
         }
     }
 
-    MuninnPageCursor(long victimPage, CursorContext cursorContext) {
-        this.victimPage = victimPage;
-        this.pointer = victimPage;
-        this.tracer = cursorContext.getCursorTracer();
-        this.versionContext = cursorContext.getVersionContext();
-        this.cursorContext = cursorContext;
-    }
-
-    final void initialise(MuninnPagedFile pagedFile, long pageId, int pf_flags) {
+    MuninnPageCursor(
+            MuninnPagedFile pagedFile, int pf_flags, long victimPage, CursorContext cursorContext, long pageId) {
+        this.pagedFile = pagedFile;
         this.swapper = pagedFile.swapper;
         this.swapperId = pagedFile.swapperId;
         this.filePageSize = pagedFile.filePageSize;
         this.pageReservedBytes = pagedFile.pageReservedBytes();
         this.versionStorage = pagedFile.versionStorage;
         this.multiVersioned = pagedFile.multiVersioned;
-        this.pagedFile = pagedFile;
-        this.pageId = pageId;
+        this.littleEndian = pagedFile.littleEndian;
+        this.filePayloadSize = filePageSize - pageReservedBytes;
         this.pf_flags = pf_flags;
         this.eagerFlush = isFlagRaised(pf_flags, PF_EAGER_FLUSH);
         this.updateUsage = !isFlagRaised(pf_flags, PF_TRANSIENT);
         this.noFault = isFlagRaised(pf_flags, PF_NO_FAULT);
         this.noGrow = noFault || isFlagRaised(pf_flags, PagedFile.PF_NO_GROW);
-        this.offset = pageReservedBytes;
-        this.filePayloadSize = filePageSize - pageReservedBytes;
-        this.littleEndian = pagedFile.littleEndian;
-        this.tracer.openCursor();
+        this.victimPage = victimPage;
+        this.tracer = cursorContext.getCursorTracer();
+        this.versionContext = cursorContext.getVersionContext();
+        this.cursorContext = cursorContext;
+
+        openCursor(pageId);
+    }
+
+    private void openCursor(long pageId) {
+        nextPageId = pageId;
+        offset = pageReservedBytes;
+        pointer = victimPage;
+        tracer.openCursor();
+        storeCurrentPageId(UNBOUND_PAGE_ID);
+        closed = false;
     }
 
     private static boolean isFlagRaised(int flagSet, int flag) {
         return (flagSet & flag) == flag;
     }
 
-    long loadPlainCurrentPageId() {
+    protected long loadPlainCurrentPageId() {
         return currentPageId;
     }
 
@@ -159,14 +167,8 @@ public abstract class MuninnPageCursor extends PageCursor {
         return (long) CURRENT_PAGE_ID.getVolatile(this);
     }
 
-    void storeCurrentPageId(long pageId) {
+    protected void storeCurrentPageId(long pageId) {
         CURRENT_PAGE_ID.setRelease(this, pageId);
-    }
-
-    @Override
-    public final void rewind() {
-        nextPageId = pageId;
-        storeCurrentPageId(UNBOUND_PAGE_ID);
     }
 
     public final void init(PinEvent pinEvent, long pageRef) {
@@ -202,10 +204,6 @@ public abstract class MuninnPageCursor extends PageCursor {
         this.pointer = pagePointer;
         pinEvent.setCachePageId(pagedFile.toId(pageRef));
         pinEvent.snapshotsLoaded(oldSnapshotsLoaded);
-    }
-
-    protected long getPageVersion() {
-        return getLongAt(pointer, littleEndian);
     }
 
     protected long getPageChecksum() {
@@ -252,18 +250,16 @@ public abstract class MuninnPageCursor extends PageCursor {
 
     @Override
     public final void close() {
-        if (pagedFile == null) {
-            return; // already closed
+        if (closed) {
+            return;
         }
         closeLinks(this);
     }
 
     private void closeLinks(MuninnPageCursor cursor) {
-        while (cursor != null && cursor.pagedFile != null) {
+        while (cursor != null && !cursor.closed) {
             cursor.unpinCurrentPage();
-            // We null out the pagedFile field to allow it and its (potentially big) translation table to be garbage
-            // collected when the file is unmapped, since the cursors can stick around in thread local caches, etc.
-            cursor.pagedFile = null;
+            cursor.closed = true;
             // Signal to any pre-fetchers that the cursor is closed.
             cursor.storeCurrentPageId(UNBOUND_PAGE_ID);
             if (preFetcher != null) {
@@ -275,25 +271,17 @@ public abstract class MuninnPageCursor extends PageCursor {
         }
     }
 
-    private void closeLinkedCursorIfAny() {
-        if (linkedCursor != null) {
-            closeLinks(linkedCursor);
-        }
-    }
-
     @Override
     public PageCursor openLinkedCursor(long pageId) {
-        closeLinkedCursorIfAny();
-        MuninnPagedFile pf = pagedFile;
-        if (pf == null) {
+        if (closed) {
             // This cursor has been closed
             throw new IllegalStateException("Cannot open linked cursor on closed page cursor");
         }
         if (linkedCursor != null) {
-            linkedCursor.initialise(pf, pageId, pf_flags);
-            linkedCursor.rewind();
+            closeLinks(linkedCursor);
+            linkedCursor.openCursor(pageId);
         } else {
-            linkedCursor = (MuninnPageCursor) pf.io(pageId, pf_flags, cursorContext);
+            linkedCursor = (MuninnPageCursor) pagedFile.io(pageId, pf_flags, cursorContext);
         }
         return linkedCursor;
     }
@@ -301,14 +289,14 @@ public abstract class MuninnPageCursor extends PageCursor {
     /**
      * Must be called by {@link #unpinCurrentPage()}.
      */
-    void clearPageCursorState() {
+    protected void clearPageCursorState() {
         // We don't need to clear the pointer field, because setting the page size to 0 will make all future accesses
         // go out of bounds, which in turn imply that they will always end up accessing the victim page anyway.
         clearPageReference();
         cursorException = null;
     }
 
-    void clearPageReference() {
+    protected void clearPageReference() {
         // Make all future bounds checks fail, and send future accesses to the victim page.
         pageSize = 0;
         payloadSize = 0;
@@ -325,7 +313,7 @@ public abstract class MuninnPageCursor extends PageCursor {
 
     @Override
     public Path getRawCurrentFile() {
-        return pagedFile == null ? null : pagedFile.path();
+        return closed ? null : pagedFile.path();
     }
 
     @Override
@@ -446,7 +434,7 @@ public abstract class MuninnPageCursor extends PageCursor {
                 // here, so the unmapping would have already happened. We do this
                 // check before page.fault(), because that would otherwise reopen
                 // the file channel.
-                assertPagedFileStillMappedAndGetIdOfLastPage();
+                assertCursorOpenFileMappedAndGetIdOfLastPage();
                 pagedFile.initBuffer(pageRef);
                 PageList.fault(pageRef, swapper, pagedFile.swapperId, filePageId, faultEvent);
             } catch (Throwable throwable) {
@@ -478,7 +466,10 @@ public abstract class MuninnPageCursor extends PageCursor {
         faultEvent.setException(throwable);
     }
 
-    long assertPagedFileStillMappedAndGetIdOfLastPage() throws FileIsNotMappedException {
+    protected long assertCursorOpenFileMappedAndGetIdOfLastPage() throws FileIsNotMappedException {
+        if (closed) {
+            throw new IllegalStateException("This cursor is closed");
+        }
         return pagedFile.getLastPageId();
     }
 

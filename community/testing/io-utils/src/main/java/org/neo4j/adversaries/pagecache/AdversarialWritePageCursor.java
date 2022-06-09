@@ -190,11 +190,6 @@ class AdversarialWritePageCursor extends DelegatingPageCursor {
     }
 
     @Override
-    public void rewind() {
-        delegate.rewind();
-    }
-
-    @Override
     public boolean next() throws IOException {
         adversary.injectFailure(
                 NoSuchFileException.class, IOException.class, SecurityException.class, IllegalStateException.class);

@@ -291,11 +291,6 @@ class PageAwareByteArrayCursor extends PageCursor {
     }
 
     @Override
-    public void rewind() {
-        current.rewind();
-    }
-
-    @Override
     public void close() {
         closeCount++;
         if (linkedCursor != null) {

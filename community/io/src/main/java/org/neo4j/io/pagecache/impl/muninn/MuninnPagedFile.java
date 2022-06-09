@@ -30,6 +30,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Path;
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCursor;
@@ -240,7 +241,6 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
             throw wrongLocksArgument(lockFlags);
         }
 
-        cursor.rewind();
         if ((pf_flags & PF_READ_AHEAD) == PF_READ_AHEAD && (pf_flags & PF_NO_FAULT) != PF_NO_FAULT) {
             pageCache.startPreFetching(cursor, cursorFactory);
         }
@@ -346,11 +346,14 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     public void flushAndForce(FileFlushEvent flushEvent) throws IOException {
         try (var buffer = bufferFactory.createBuffer()) {
             flushAndForceInternal(flushEvent, false, ioController, buffer);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new UnderlyingStorageException(e);
         }
         pageCache.clearEvictorException();
     }
 
-    void flushAndForceForClose() throws IOException {
+    void flushAndForceForClose() throws IOException, InterruptedException {
         if (deleteOnClose) {
             // No need to spend time flushing data to a file we're going to delete anyway.
             // However, we still have to mark the dirtied pages as clean since evicting would otherwise try to flush
@@ -406,7 +409,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
 
     void flushAndForceInternal(
             FileFlushEvent flushEvent, boolean forClosing, IOController limiter, NativeIOBuffer ioBuffer)
-            throws IOException {
+            throws IOException, InterruptedException {
         try {
             doFlushAndForceInternal(flushEvent, forClosing, limiter, ioBuffer);
         } catch (ClosedChannelException e) {
@@ -425,7 +428,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
 
     private void doFlushAndForceInternal(
             FileFlushEvent flushes, boolean forClosing, IOController limiter, NativeIOBuffer ioBuffer)
-            throws IOException {
+            throws IOException, InterruptedException {
         // TODO it'd be awesome if, on Linux, we'd call sync_file_range(2) instead of fsync
         long[] pages = new long[translationTableChunkSize];
         long[] flushStamps = forClosing ? null : new long[translationTableChunkSize];
@@ -468,6 +471,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
 
                 // We might race with eviction, but we also mustn't miss a dirty page, so we loop until we succeed
                 // in getting a lock on all available pages.
+                int retryCounter = 42;
                 for (; ; ) {
                     int pageId = (int) TRANSLATION_TABLE_ARRAY.getVolatile(chunk, chunkIndex);
                     if (pageId != UNMAPPED_TTE) {
@@ -480,6 +484,13 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
 
                         long flushStamp = 0;
                         if (!(forClosing ? tryExclusiveLock(pageRef) : ((flushStamp = tryFlushLock(pageRef)) != 0))) {
+                            if (Thread.currentThread().isInterrupted()) {
+                                // interrupt was requested, do several more attempts to grab page and then
+                                // let it flush whatever is grabbed already
+                                if (retryCounter-- < 0) {
+                                    break chunkLoop;
+                                }
+                            }
                             continue; // retry lock
                         }
                         if (isBoundTo(pageRef, swapperId, filePageId) && (isModified(pageRef) || fillingDirtyBuffer)) {
@@ -581,7 +592,11 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
             chunkEvent.chunkFlushed(notModifiedPages, flushPerChunk, buffersPerChunk, mergesPerChunk);
         }
 
+        var interrupted = Thread.interrupted();
         swapper.force();
+        if (interrupted) {
+            throw new InterruptedException("Flush and force was interrupted");
+        }
     }
 
     private void vectoredFlush(

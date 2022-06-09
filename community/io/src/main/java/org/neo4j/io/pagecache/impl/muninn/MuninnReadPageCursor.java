@@ -27,8 +27,9 @@ import org.neo4j.io.pagecache.tracing.PinEvent;
 final class MuninnReadPageCursor extends MuninnPageCursor {
     private long lockStamp;
 
-    MuninnReadPageCursor(long victimPage, CursorContext cursorContext) {
-        super(victimPage, cursorContext);
+    MuninnReadPageCursor(
+            MuninnPagedFile pagedFile, int pf_flags, long victimPage, CursorContext cursorContext, long pageId) {
+        super(pagedFile, pf_flags, victimPage, cursorContext, pageId);
     }
 
     @Override
@@ -43,7 +44,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
     @Override
     public boolean next() throws IOException {
         unpinCurrentPage();
-        long lastPageId = assertPagedFileStillMappedAndGetIdOfLastPage();
+        long lastPageId = assertCursorOpenFileMappedAndGetIdOfLastPage();
         if (nextPageId > lastPageId || nextPageId < 0) {
             storeCurrentPageId(UNBOUND_PAGE_ID);
             return false;
@@ -86,7 +87,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
         do {
             long pageRef = cursor.pinnedPageRef;
             if (pageRef != 0 && isInvalidVersion(cursor, pageRef)) {
-                assertPagedFileStillMappedAndGetIdOfLastPage();
+                assertCursorOpenFileMappedAndGetIdOfLastPage();
                 startRetryLinkedChain();
                 return true;
             }
@@ -122,7 +123,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
         // read lock, so we need to check with page.pin that this is still
         // the page we're actually interested in:
         var filePageId = loadPlainCurrentPageId();
-        if (!PageList.isBoundTo(pageRef, pagedFile.swapperId, filePageId) || multiVersioned) {
+        if (!PageList.isBoundTo(pageRef, swapperId, filePageId) || multiVersioned) {
             // This is no longer the page we're interested in, so we have
             // to redo the pinning.
             // This might in turn lead to a new optimistic lock on a
