@@ -747,27 +747,37 @@ abstract class StaticGraphRuntimeTestSuite[CONTEXT <: RuntimeContext](
 ) extends BaseRuntimeTestSuite[CONTEXT](edition, runtime, workloadMode)
     with BeforeAndAfterAll {
 
+  def shouldSetup: Boolean
+
   override protected def beforeEach(): Unit = {
-    DebugLog.beginTime()
-    createRuntimeTestSupport()
+    if (shouldSetup) {
+      DebugLog.beginTime()
+      createRuntimeTestSupport()
+    }
     super.beforeEach()
   }
 
   override protected def afterEach(): Unit = {
-    runtimeTestSupport.stopTx()
-    DebugLog.log("")
+    if (shouldSetup) {
+      runtimeTestSupport.stopTx()
+      DebugLog.log("")
+    }
     super.afterEach()
   }
 
   override protected def beforeAll(): Unit = {
-    restartDB()
-    createRuntimeTestSupport()
-    createGraph()
+    if (shouldSetup) {
+      restartDB()
+      createRuntimeTestSupport()
+      createGraph()
+    }
     super.beforeAll()
   }
 
   override protected def afterAll(): Unit = {
-    shutdownDatabase()
+    if (shouldSetup) {
+      shutdownDatabase()
+    }
     super.afterAll()
   }
 
