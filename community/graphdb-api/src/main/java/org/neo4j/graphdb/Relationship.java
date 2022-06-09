@@ -165,6 +165,7 @@ public interface Relationship extends Entity {
      *
      * @return the id of the start node of this relationship.
      */
+    @Deprecated(since = "5.0", forRemoval = true)
     default long getStartNodeId() {
         return getStartNode().getId();
     }
@@ -179,6 +180,7 @@ public interface Relationship extends Entity {
      *
      * @return the id of the end node of this relationship.
      */
+    @Deprecated(since = "5.0", forRemoval = true)
     default long getEndNodeId() {
         return getEndNode().getId();
     }

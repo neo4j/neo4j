@@ -170,9 +170,7 @@ public interface Status {
                 "Unable to start new transaction since the maximum number of concurrently executing transactions is "
                         + "reached (db.transaction.concurrent.maximum). "
                         + "You can retry at a later time or consider increasing allowed maximum of concurrent transactions."),
-        Interrupted(TransientError, "Interrupted while waiting."),
-        @Deprecated // Non-specific Status for migrating legacy exceptions.
-        TransientTransactionFailure(TransientError, "Unable to complete transaction.");
+        Interrupted(TransientError, "Interrupted while waiting.");
 
         private final Code code;
 
