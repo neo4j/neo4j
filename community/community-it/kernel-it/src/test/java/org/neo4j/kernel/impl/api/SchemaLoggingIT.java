@@ -66,7 +66,7 @@ class SchemaLoggingIT {
         // then
         IndexProvider defaultProvider = indexProviderMap.getDefaultProvider();
         IndexProviderDescriptor providerDescriptor = defaultProvider.getProviderDescriptor();
-        String indexDescription = "Index( id=" + indexId + ", name='" + indexName + "', type='GENERAL RANGE', "
+        String indexDescription = "Index( id=" + indexId + ", name='" + indexName + "', type='RANGE', "
                 + "schema=(:User {name}), indexProvider='" + providerDescriptor.name() + "' )";
 
         assertThat(logProvider)

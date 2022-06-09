@@ -225,7 +225,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
                 "Index(",
                 "id=",
                 "name='name'",
-                "type='GENERAL RANGE'",
+                "type='RANGE'",
                 "schema=(:MY_LABEL {my_property_key})",
                 "indexProvider='range-1.0'");
     }
@@ -248,7 +248,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
                 "Index(",
                 "id=",
                 "name='name'",
-                "type='TOKEN LOOKUP'",
+                "type='LOOKUP'",
                 "schema=(:<any-labels>)",
                 "indexProvider='token-lookup-1.0'");
     }
@@ -509,9 +509,8 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
             ConstraintViolationException e = assertThrows(ConstraintViolationException.class, index::drop);
             assertThat(e)
                     .hasMessageContaining("Unable to drop index: Index does not exist: Index( id=")
-                    .hasMessageContaining(
-                            "name='index_1efc11af', type='GENERAL RANGE', schema=(:MY_LABEL {my_property_key}),"
-                                    + " indexProvider='range-1.0' )");
+                    .hasMessageContaining("name='index_1efc11af', type='RANGE', schema=(:MY_LABEL {my_property_key}),"
+                            + " indexProvider='range-1.0' )");
             tx.commit();
         }
 

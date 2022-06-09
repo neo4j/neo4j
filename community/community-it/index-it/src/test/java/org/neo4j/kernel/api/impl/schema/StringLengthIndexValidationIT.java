@@ -147,7 +147,7 @@ public abstract class StringLengthIndexValidationIT {
             assertThat(e.getMessage())
                     .contains(String.format(
                             "Property value is too large to index, please see index documentation for limitations. "
-                                    + "Index: Index( id=%d, name='coolName', type='GENERAL %s', schema=(:LABEL_ONE {largeString}), indexProvider='%s' ), entity id: %d",
+                                    + "Index: Index( id=%d, name='coolName', type='%s', schema=(:LABEL_ONE {largeString}), indexProvider='%s' ), entity id: %d",
                             indexId, getIndexType(), getIndexProviderString(), nodeId));
         }
     }
@@ -232,7 +232,7 @@ public abstract class StringLengthIndexValidationIT {
                 .contains(
                         String.format(
                                 "Index IndexDefinition[label:LABEL_ONE on:largeString] "
-                                        + "(Index( id=%d, name='coolName', type='GENERAL %s', schema=(:LABEL_ONE {largeString}), indexProvider='%s' )) "
+                                        + "(Index( id=%d, name='coolName', type='%s', schema=(:LABEL_ONE {largeString}), indexProvider='%s' )) "
                                         + "entered a FAILED state.",
                                 indexId, getIndexType(), getIndexProviderString()),
                         expectedPopulationFailureCauseMessage(indexId, entityId));

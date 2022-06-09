@@ -52,7 +52,7 @@ public class RangeIndexStringLengthIndexValidationIT extends StringLengthIndexVa
     protected String expectedPopulationFailureCauseMessage(long indexId, long entityId) {
         return String.format(
                 "Property value is too large to index, please see index documentation for limitations. "
-                        + "Index: Index( id=%d, name='coolName', type='GENERAL RANGE', "
+                        + "Index: Index( id=%d, name='coolName', type='RANGE', "
                         + "schema=(:LABEL_ONE {largeString}), indexProvider='range-1.0' ), entity id: %d",
                 indexId, entityId);
     }

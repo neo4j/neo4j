@@ -929,7 +929,7 @@ class IndexingServiceTest {
                 .forClass(IndexPopulationJob.class)
                 .forLevel(ERROR)
                 .assertExceptionForLogMessage(
-                        "Failed to populate index: [Index( id=0, name='index', type='GENERAL RANGE', schema=(:TheLabel {propertyKey}), "
+                        "Failed to populate index: [Index( id=0, name='index', type='RANGE', schema=(:TheLabel {propertyKey}), "
                                 + "indexProvider='quantum-dex-25.0' )]")
                 .hasRootCause(exception);
         assertThat(internalLogProvider)
@@ -937,7 +937,7 @@ class IndexingServiceTest {
                 .forLevel(INFO)
                 .doesNotContainMessageWithArguments(
                         "Index population completed. Index is now online: [%s]",
-                        "Index( id=0, name='index', type='GENERAL RANGE', schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )");
+                        "Index( id=0, name='index', type='RANGE', schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )");
     }
 
     @Test
@@ -968,16 +968,15 @@ class IndexingServiceTest {
         assertThat(internalLogProvider)
                 .forClass(IndexPopulationJob.class)
                 .forLevel(ERROR)
-                .assertExceptionForLogMessage(
-                        "Failed to populate index: [Index( id=0, name='index', type='GENERAL RANGE', "
-                                + "schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )]")
+                .assertExceptionForLogMessage("Failed to populate index: [Index( id=0, name='index', type='RANGE', "
+                        + "schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )]")
                 .hasRootCause(exception);
         assertThat(internalLogProvider)
                 .forClass(IndexPopulationJob.class)
                 .forLevel(INFO)
                 .doesNotContainMessageWithArguments(
                         "Index population completed. Index is now online: [%s]",
-                        "Index( id=0, name='index', type='GENERAL RANGE', schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )");
+                        "Index( id=0, name='index', type='RANGE', schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )");
     }
 
     @Test

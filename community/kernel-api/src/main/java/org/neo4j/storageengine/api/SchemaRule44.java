@@ -52,14 +52,7 @@ public interface SchemaRule44 {
         @Override
         public String userDescription(TokenNameLookup tokenNameLookup) {
             return SchemaUserDescription.forIndex(
-                    tokenNameLookup,
-                    id,
-                    name,
-                    unique,
-                    indexType.name(),
-                    schema,
-                    providerDescriptor,
-                    owningConstraintId);
+                    tokenNameLookup, id, name, indexType.name(), schema, providerDescriptor, owningConstraintId);
         }
 
         @Override

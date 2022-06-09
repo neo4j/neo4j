@@ -87,7 +87,7 @@ class FailedIndexProxyTest {
         assertThat(logProvider)
                 .forClass(FailedIndexProxy.class)
                 .forLevel(INFO)
-                .containsMessages("FailedIndexProxy#drop index on Index( id=1, name='foo', type='GENERAL RANGE', "
+                .containsMessages("FailedIndexProxy#drop index on Index( id=1, name='foo', type='RANGE', "
                         + "schema=(:Label0 {property0}), indexProvider='Undecided-0' ) dropped due to:\nit broke");
     }
 }

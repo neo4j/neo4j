@@ -112,7 +112,7 @@ class SchemaStoreMapificationTest {
 
     @Test
     void labelIndexDeterministicUnmapification() throws Exception {
-        // Index( 1, 'labelIndex', GENERAL RANGE, :label[1](property[2], property[3]), range-1.0 )
+        // Index( 1, 'labelIndex', RANGE, :label[1](property[2], property[3]), range-1.0 )
         Map<String, Value> mapified = Map.of(
                 "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"),
                 "__org.neo4j.SchemaRule.name", Values.stringValue("labelIndex"),
@@ -129,7 +129,7 @@ class SchemaStoreMapificationTest {
 
     @Test
     void labelUniqueIndexDeterministicUnmapification() throws Exception {
-        // Index( 1, 'labelUniqueIndex', UNIQUE RANGE, :label[1](property[2], property[3]), range-1.0 )
+        // Index( 1, 'labelUniqueIndex', RANGE, :label[1](property[2], property[3]), range-1.0 )
         Map<String, Value> mapified = Map.of(
                 "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"),
                 "__org.neo4j.SchemaRule.name", Values.stringValue("labelUniqueIndex"),
@@ -146,7 +146,7 @@ class SchemaStoreMapificationTest {
 
     @Test
     void relTypeIndexDeterministicUnmapification() throws Exception {
-        // Index( 1, 'relTypeIndex', GENERAL RANGE, -[:relType[1](property[2], property[3])]-, range-1.0 )
+        // Index( 1, 'relTypeIndex', RANGE, -[:relType[1](property[2], property[3])]-, range-1.0 )
         Map<String, Value> mapified = Map.of(
                 "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"),
                 "__org.neo4j.SchemaRule.name", Values.stringValue("relTypeIndex"),
@@ -163,7 +163,7 @@ class SchemaStoreMapificationTest {
 
     @Test
     void relTypeUniqueIndexDeterministicUnmapification() throws Exception {
-        // Index( 1, 'relTypeUniqueIndex', UNIQUE RANGE, -[:relType[1](property[2], property[3])]-, range-1.0 )
+        // Index( 1, 'relTypeUniqueIndex', RANGE, -[:relType[1](property[2], property[3])]-, range-1.0 )
         Map<String, Value> mapified = Map.of(
                 "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"),
                 "__org.neo4j.SchemaRule.name", Values.stringValue("relTypeUniqueIndex"),
@@ -180,7 +180,7 @@ class SchemaStoreMapificationTest {
 
     @Test
     void nodeFtsIndexDeterministicUnmapification() throws Exception {
-        // Index( 1, 'nodeFtsIndex', GENERAL FULLTEXT, :label[1],label[2](property[1], property[2]), fulltext-1.0 )
+        // Index( 1, 'nodeFtsIndex', FULLTEXT, :label[1],label[2](property[1], property[2]), fulltext-1.0 )
         Map<String, Value> mapified = Map.of(
                 "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"),
                 "__org.neo4j.SchemaRule.name", Values.stringValue("nodeFtsIndex"),
@@ -197,7 +197,7 @@ class SchemaStoreMapificationTest {
 
     @Test
     void relFtsIndexDeterministicUnmapification() throws Exception {
-        // Index( 1, 'relFtsIndex', GENERAL FULLTEXT, -[:relType[1],relType[2](property[1], property[2])]-, fulltext-1.0
+        // Index( 1, 'relFtsIndex', FULLTEXT, -[:relType[1],relType[2](property[1], property[2])]-, fulltext-1.0
         // )
         Map<String, Value> mapified = Map.of(
                 "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"),

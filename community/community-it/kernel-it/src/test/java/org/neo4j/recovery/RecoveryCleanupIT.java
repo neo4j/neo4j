@@ -124,25 +124,25 @@ class RecoveryCleanupIT {
                 .containsMessageWithAll(
                         "Schema index cleanup job registered",
                         "descriptor",
-                        "type='TOKEN LOOKUP'",
+                        "type='LOOKUP'",
                         "schema=(:<any-labels>)",
                         "indexFile=")
                 .containsMessageWithAll(
                         "Schema index cleanup job started",
                         "descriptor",
-                        "type='TOKEN LOOKUP'",
+                        "type='LOOKUP'",
                         "schema=(:<any-labels>)",
                         "indexFile=")
                 .containsMessageWithAll(
                         "Schema index cleanup job closed",
                         "descriptor",
-                        "type='TOKEN LOOKUP'",
+                        "type='LOOKUP'",
                         "schema=(:<any-labels>)",
                         "indexFile=")
                 .containsMessageWithAll(
                         "Schema index cleanup job finished",
                         "descriptor",
-                        "type='TOKEN LOOKUP'",
+                        "type='LOOKUP'",
                         "schema=(:<any-labels>)",
                         "indexFile=",
                         "Number of pages visited",
@@ -171,16 +171,14 @@ class RecoveryCleanupIT {
     }
 
     private static String[] indexRecoveryLogMatcher(String logMessage, String providerString) {
-        return new String[] {
-            logMessage, "descriptor", "type='GENERAL RANGE'", "indexFile=", File.separator + providerString
-        };
+        return new String[] {logMessage, "descriptor", "type='RANGE'", "indexFile=", File.separator + providerString};
     }
 
     private static String[] indexRecoveryFinishedLogMatcher(String providerString) {
         return new String[] {
             "Schema index cleanup job finished",
             "descriptor",
-            "type='GENERAL RANGE'",
+            "type='RANGE'",
             "indexFile=",
             File.separator + providerString,
             "Number of pages visited",

@@ -253,7 +253,7 @@ class IndexIT extends KernelIntegrationTest {
                         "Index(",
                         "id=",
                         "name='my index'",
-                        "type='GENERAL RANGE'",
+                        "type='RANGE'",
                         "schema=(:Label {prop})",
                         "indexProvider='range-1.0'");
         commit();

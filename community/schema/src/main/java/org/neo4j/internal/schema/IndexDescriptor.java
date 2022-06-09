@@ -171,14 +171,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     @Override
     public String userDescription(TokenNameLookup tokenNameLookup) {
         return SchemaUserDescription.forIndex(
-                tokenNameLookup,
-                id,
-                name,
-                isUnique,
-                indexType.name(),
-                schema(),
-                getIndexProvider(),
-                owningConstraintId);
+                tokenNameLookup, id, name, indexType.name(), schema(), getIndexProvider(), owningConstraintId);
     }
 
     @Override

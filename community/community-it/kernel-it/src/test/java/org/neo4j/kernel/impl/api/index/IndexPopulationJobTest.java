@@ -512,7 +512,7 @@ class IndexPopulationJobTest {
             var populationLog = assertThat(logProvider).forClass(IndexPopulationJob.class);
             populationLog
                     .forLevel(INFO)
-                    .containsMessages("Index population started: [%s]", "type='GENERAL RANGE', schema=(:FIRST {name})");
+                    .containsMessages("Index population started: [%s]", "type='RANGE', schema=(:FIRST {name})");
             populationLog.forLevel(DEBUG).containsMessages("TIME/PHASE Final: SCAN[");
         } finally {
             populator.close(true, CursorContext.NULL_CONTEXT);
@@ -539,7 +539,7 @@ class IndexPopulationJobTest {
             populationLog
                     .forLevel(INFO)
                     .containsMessageWithArgumentsContaining(
-                            "Index population started: [%s]", "type='UNIQUE RANGE', schema=(:FIRST {name})");
+                            "Index population started: [%s]", "type='RANGE', schema=(:FIRST {name})");
             populationLog.forLevel(DEBUG).containsMessages("TIME/PHASE Final: SCAN[");
         } finally {
             populator.close(true, CursorContext.NULL_CONTEXT);
@@ -567,7 +567,7 @@ class IndexPopulationJobTest {
                 .forClass(IndexPopulationJob.class)
                 .forLevel(ERROR)
                 .containsMessageWithException("Failed to populate index: [Index(", failure)
-                .containsMessageWithException("type='GENERAL RANGE', schema=(:FIRST {name})", failure);
+                .containsMessageWithException("type='RANGE', schema=(:FIRST {name})", failure);
     }
 
     @Test
