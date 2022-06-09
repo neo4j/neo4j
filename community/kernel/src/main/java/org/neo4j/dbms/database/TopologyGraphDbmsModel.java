@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseSettings.Mode;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -66,6 +67,19 @@ public interface TopologyGraphDbmsModel {
                     .findFirst()
                     .orElseThrow(() -> new IllegalArgumentException("Invalid hosted on mode: " + code));
         }
+
+        public static HostedOnMode lookup(InstanceModeConstraint modeConstraint) {
+            switch (modeConstraint) {
+                case PRIMARY -> {
+                    return HostedOnMode.raft;
+                }
+                case SECONDARY -> {
+                    return HostedOnMode.replica;
+                }
+                default -> throw new IllegalStateException(
+                        "Must specify a mode constraint currently, it cannot be 'None'");
+            }
+        }
     }
 
     enum DatabaseStatus {
@@ -105,7 +119,39 @@ public interface TopologyGraphDbmsModel {
     enum InstanceModeConstraint {
         PRIMARY,
         SECONDARY,
-        NONE
+        NONE;
+
+        public static InstanceModeConstraint lookupFromMode(Mode mode) {
+            switch (mode) {
+                case CORE -> {
+                    return InstanceModeConstraint.PRIMARY;
+                }
+                case READ_REPLICA -> {
+                    return InstanceModeConstraint.SECONDARY;
+                }
+                case SINGLE -> {
+                    // Mode constraints are not used in single mode, so just defaulting to none.
+                    return InstanceModeConstraint.NONE;
+                }
+                default -> throw new IllegalArgumentException("Can't find instance constraint for " + mode.name());
+            }
+        }
+
+        /**
+         * Does this mode constraint allow a database in the specified mode.
+         */
+        // TODO: At some point adapt this to match a server with compatible constraints, i.e. include None, not just
+        // primary and secondary
+        public boolean allowsMode(HostedOnMode mode) {
+            if (mode == HostedOnMode.raft) {
+                return this == PRIMARY;
+            } else if (mode == HostedOnMode.replica) {
+                return this == SECONDARY;
+            } else {
+                // TODO:
+                throw new IllegalStateException("Implement me");
+            }
+        }
     }
 
     Label DATABASE_LABEL = Label.label("Database");
