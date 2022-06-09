@@ -105,7 +105,8 @@ case object QueryPlanner
       cancellationChecker = context.cancellationChecker,
       planningTextIndexesEnabled = context.config.planningTextIndexesEnabled,
       planningRangeIndexesEnabled = context.config.planningRangeIndexesEnabled,
-      planningPointIndexesEnabled = context.config.planningPointIndexesEnabled
+      planningPointIndexesEnabled = context.config.planningPointIndexesEnabled,
+      predicatesAsUnionMaxSize = context.config.predicatesAsUnionMaxSize
     )
   }
 

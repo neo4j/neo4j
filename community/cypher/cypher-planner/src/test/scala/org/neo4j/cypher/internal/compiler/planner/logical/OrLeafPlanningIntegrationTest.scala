@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
@@ -1391,6 +1392,45 @@ class OrLeafPlanningIntegrationTest
     atLeast(1, plan.leaves) should matchPattern {
       case _: NodeIndexSeek =>
     }
+  }
+
+  test("should not plan a distinct union if the number of predicates on a single variable in a WHERE sub-clause is greater than `predicates_as_union_max_size`") {
+    val cfg = plannerConfig()
+      .withSetting(GraphDatabaseInternalSettings.predicates_as_union_max_size, java.lang.Integer.valueOf(1))
+      .build()
+
+    val plan = cfg.plan(
+      """MATCH (n)
+        |WHERE (n:L OR n:P)
+        |RETURN n""".stripMargin
+    )
+
+    val expectedPlan =
+      cfg.planBuilder()
+        .produceResults("n")
+        .filterExpression(hasAnyLabel("n", "L", "P"))
+        .allNodeScan("n")
+        .build()
+
+    plan shouldEqual expectedPlan
+  }
+
+  test("should not plan a distinct union if the size of the relationship type disjunction is greater than `predicates_as_union_max_size`") {
+    val cfg = plannerConfig()
+      .withSetting(GraphDatabaseInternalSettings.predicates_as_union_max_size, java.lang.Integer.valueOf(1))
+      .build()
+
+    val plan = cfg.plan(
+      """MATCH (a)-[r:REL1|REL2]-(b)
+        |RETURN r""".stripMargin
+    )
+
+    plan shouldEqual
+      cfg.planBuilder()
+        .produceResults("r")
+        .expandAll("(a)-[r:REL1|REL2]-(b)")
+        .allNodeScan("a")
+        .build()
   }
 
   private def runWithTimeout[T](timeout: Long)(f: => T): T = {

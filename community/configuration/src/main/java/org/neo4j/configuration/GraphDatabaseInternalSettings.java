@@ -19,6 +19,16 @@
  */
 package org.neo4j.configuration;
 
+import inet.ipaddr.IPAddressString;
+
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
+import java.util.Set;
+
+import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.graphdb.config.Setting;
+
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofHours;
 import static java.time.Duration.ofMillis;
@@ -43,14 +53,6 @@ import static org.neo4j.configuration.SettingValueParsers.setOf;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.pagecache.PageCache.RESERVED_BYTES;
-
-import inet.ipaddr.IPAddressString;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.List;
-import java.util.Set;
-import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.graphdb.config.Setting;
 
 @ServiceProvider
 public class GraphDatabaseInternalSettings implements SettingsDeclaration {
@@ -1031,4 +1033,14 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .addConstraint(min(0))
             .dynamic()
             .build();
+
+    @Internal
+    @Description( "Maximum size after which the planner will not attempt to plan the disjunction of predicates on a single variable as a distinct union." +
+                  "For example, given the following pattern: `()-[e:FOO|BAR|BAZ]->()`, the planner will attempt to plan a union of `e:Foo`, `e:Bar`, and `e:Baz`" +
+                  "unless `internal.cypher.predicates_as_union_max_size` is less than 3." )
+    public static final Setting<Integer> predicates_as_union_max_size =
+            newBuilder( "internal.cypher.predicates_as_union_max_size", INT, 255 )
+                    .addConstraint( min( 0 ) )
+                    .build();
+
 }

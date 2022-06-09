@@ -143,4 +143,5 @@ class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val p
   def planningTextIndexesEnabled: Boolean = config.planningTextIndexesEnabled
   def planningRangeIndexesEnabled: Boolean = config.planningRangeIndexesEnabled
   def planningPointIndexesEnabled: Boolean = config.planningPointIndexesEnabled
+  def predicatesAsUnionMaxSize: Int = config.predicatesAsUnionMaxSize
 }

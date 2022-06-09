@@ -68,6 +68,8 @@ class CypherConfiguration private (val config: Config) {
   val useErrorsOverWarnings: Boolean = config.get(GraphDatabaseSettings.cypher_hints_error)
   val idpMaxTableSize: Int = config.get(GraphDatabaseInternalSettings.cypher_idp_solver_table_threshold).toInt
   val idpIterationDuration: Long = config.get(GraphDatabaseInternalSettings.cypher_idp_solver_duration_threshold).toLong
+  val predicatesAsUnionMaxSize: Int = config.get(GraphDatabaseInternalSettings.predicates_as_union_max_size)
+
 
   val errorIfShortestPathFallbackUsedAtRuntime: Boolean =
     config.get(GraphDatabaseSettings.forbid_exhaustive_shortestpath)
