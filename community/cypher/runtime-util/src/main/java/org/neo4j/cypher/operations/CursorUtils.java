@@ -238,7 +238,7 @@ public final class CursorUtils {
             return false;
         }
 
-        return nodeCursor.labels().numberOfTokens() > 0;
+        return nodeCursor.hasLabel();
     }
 
     /**
@@ -248,7 +248,7 @@ public final class CursorUtils {
      * @return {@code true} if the node has the label, otherwise {@code false}
      */
     public static boolean nodeHasALabel(NodeCursor nodeCursor) {
-        return nodeCursor.labels().numberOfTokens() > 0;
+        return nodeCursor.hasLabel();
     }
 
     /**
