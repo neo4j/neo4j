@@ -39,6 +39,8 @@ public interface NodeCursor extends EntityCursor {
 
     boolean hasLabel(int label);
 
+    boolean hasLabel();
+
     void relationships(RelationshipTraversalCursor relationships, RelationshipSelection selection);
 
     boolean supportsFastRelationshipsTo();

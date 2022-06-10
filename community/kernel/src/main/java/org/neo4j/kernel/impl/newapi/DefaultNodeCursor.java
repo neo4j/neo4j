@@ -190,6 +190,29 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
     }
 
     @Override
+    public boolean hasLabel() {
+        if (hasChanges()) {
+            TransactionState txState = read.txState();
+            LongDiffSets diffSets = txState.nodeStateLabelDiffSets(nodeReference());
+            if (diffSets.getAdded().notEmpty()) {
+                return true;
+            }
+
+            // If we remove labels in the transaction we need to do a full check so that we don't remove all of the
+            // nodes
+            if (diffSets.getRemoved().notEmpty()) {
+                return labels().numberOfTokens() > 0;
+            }
+        }
+
+        if (tracer != null) {
+            tracer.onHasLabel();
+        }
+
+        return storeCursor.hasLabel();
+    }
+
+    @Override
     public void relationships(RelationshipTraversalCursor cursor, RelationshipSelection selection) {
         ((DefaultRelationshipTraversalCursor) cursor).init(this, selection, read);
     }

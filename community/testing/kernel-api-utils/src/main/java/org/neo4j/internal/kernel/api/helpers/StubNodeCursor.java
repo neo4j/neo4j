@@ -112,6 +112,11 @@ public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
     }
 
     @Override
+    public boolean hasLabel() {
+        return labels().numberOfTokens() > 0;
+    }
+
+    @Override
     public boolean supportsFastRelationshipsTo() {
         return supportsFastRelationshipsTo;
     }

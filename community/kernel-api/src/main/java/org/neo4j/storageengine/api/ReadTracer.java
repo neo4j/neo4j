@@ -51,5 +51,10 @@ public interface ReadTracer {
      */
     void onHasLabel(int label);
 
+    /**
+     * Called when checking for existence of any label.
+     */
+    void onHasLabel();
+
     void dbHit();
 }

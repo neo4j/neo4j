@@ -34,6 +34,11 @@ public interface StorageNodeCursor extends StorageEntityScanCursor<AllNodeScan> 
     boolean hasLabel(int label);
 
     /**
+     * @return {@code true} if the node this cursor is placed at has at least one label, otherwise {@code false}.
+     */
+    boolean hasLabel();
+
+    /**
      * @return reference for reading all relationships of the node this cursor currently is placed at.
      */
     long relationshipsReference();

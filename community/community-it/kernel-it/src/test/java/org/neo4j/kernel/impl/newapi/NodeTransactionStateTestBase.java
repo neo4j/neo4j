@@ -33,6 +33,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.stream.IntStream;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.EntityType;
@@ -154,6 +155,105 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
 
         try (org.neo4j.graphdb.Transaction tx = graphDb.beginTx()) {
             assertThat(tx.getNodeById(nodeId).getLabels()).contains(label(toRetainName), label(toAddName));
+        }
+    }
+
+    @Test
+    void hasAnyLabelShouldSeeNewlyCreatedLabel() throws Exception {
+        long nodeId;
+        final String labelName = "Town";
+
+        try (KernelTransaction tx = beginTransaction()) {
+            nodeId = tx.dataWrite().nodeCreate();
+            int labelId = tx.token().labelGetOrCreateForName(labelName);
+
+            try (NodeCursor node = tx.cursors().allocateNodeCursor(tx.cursorContext())) {
+                tx.dataRead().singleNode(nodeId, node);
+                assertTrue(node.next(), "should access node");
+                assertFalse(node.hasLabel());
+            }
+
+            // add a label
+            tx.dataWrite().nodeAddLabel(nodeId, labelId);
+            try (NodeCursor node = tx.cursors().allocateNodeCursor(tx.cursorContext())) {
+                tx.dataRead().singleNode(nodeId, node);
+                assertTrue(node.next(), "should access node");
+                assertTrue(node.hasLabel());
+            }
+
+            tx.commit();
+        }
+
+        try (org.neo4j.graphdb.Transaction tx = graphDb.beginTx()) {
+            assertThat(tx.getNodeById(nodeId).getLabels()).isEqualTo(Iterables.iterable(label(labelName)));
+        }
+    }
+
+    @Test
+    void hasAnyLabelShouldNotSeeNewlyCreatedLabelAndThenDeleted() throws Exception {
+        long nodeId;
+        final String labelName = "Town";
+
+        try (KernelTransaction tx = beginTransaction()) {
+            nodeId = tx.dataWrite().nodeCreate();
+            int labelId = tx.token().labelGetOrCreateForName(labelName);
+
+            try (NodeCursor node = tx.cursors().allocateNodeCursor(tx.cursorContext())) {
+                tx.dataRead().singleNode(nodeId, node);
+                assertTrue(node.next(), "should access node");
+                assertFalse(node.hasLabel());
+            }
+
+            // add a label
+            tx.dataWrite().nodeAddLabel(nodeId, labelId);
+            // remove label
+            tx.dataWrite().nodeRemoveLabel(nodeId, labelId);
+            try (NodeCursor node = tx.cursors().allocateNodeCursor(tx.cursorContext())) {
+                tx.dataRead().singleNode(nodeId, node);
+                assertTrue(node.next(), "should access node");
+                assertFalse(node.hasLabel());
+            }
+
+            tx.commit();
+        }
+    }
+
+    @Test
+    void hasAnyLabelShouldHandleIfAllLabelsAreDeleted() throws Exception {
+        long nodeId;
+        int numberOfLabels = 100;
+        String[] names = IntStream.range(0, numberOfLabels)
+                .mapToObj(value -> "L" + value)
+                .toArray(String[]::new);
+        int[] labelIds = new int[numberOfLabels];
+
+        try (KernelTransaction tx = beginTransaction()) {
+            nodeId = tx.dataWrite().nodeCreate();
+            tx.token().labelGetOrCreateForNames(names, labelIds);
+
+            try (NodeCursor node = tx.cursors().allocateNodeCursor(tx.cursorContext())) {
+                tx.dataRead().singleNode(nodeId, node);
+                assertTrue(node.next(), "should access node");
+                assertFalse(node.hasLabel());
+            }
+
+            // add labels
+            for (int labelId : labelIds) {
+                tx.dataWrite().nodeAddLabel(nodeId, labelId);
+            }
+            tx.commit();
+        }
+
+        try (KernelTransaction tx = beginTransaction()) {
+            for (int i = 0; i < numberOfLabels; i++) {
+                tx.dataWrite().nodeRemoveLabel(nodeId, labelIds[i]);
+                try (NodeCursor node = tx.cursors().allocateNodeCursor(tx.cursorContext())) {
+                    tx.dataRead().singleNode(nodeId, node);
+                    assertTrue(node.next(), "should access node");
+                    assertThat(node.hasLabel()).isEqualTo(i < numberOfLabels - 1);
+                }
+            }
+            tx.commit();
         }
     }
 

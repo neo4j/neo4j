@@ -143,6 +143,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
             assertEquals(1, labels.numberOfTokens(), "number of labels");
             int fooLabel = labels.token(0);
             assertTrue(nodes.hasLabel(fooLabel));
+            assertTrue(nodes.hasLabel());
             assertFalse(nodes.next(), "should only access a single node");
 
             // when
@@ -155,6 +156,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
             int barLabel = labels.token(0);
             assertFalse(nodes.hasLabel(fooLabel));
             assertTrue(nodes.hasLabel(barLabel));
+            assertTrue(nodes.hasLabel());
             assertFalse(nodes.next(), "should only access a single node");
 
             // when
@@ -168,6 +170,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
             assertFalse(nodes.hasLabel(fooLabel));
             assertFalse(nodes.hasLabel(barLabel));
             assertTrue(nodes.hasLabel(bazLabel));
+            assertTrue(nodes.hasLabel());
             assertFalse(nodes.next(), "should only access a single node");
 
             assertNotEquals(fooLabel, barLabel, "distinct labels");
@@ -190,6 +193,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
             assertFalse(nodes.hasLabel(fooLabel));
             assertTrue(nodes.hasLabel(barLabel));
             assertTrue(nodes.hasLabel(bazLabel));
+            assertTrue(nodes.hasLabel());
 
             assertFalse(nodes.next(), "should only access a single node");
 
@@ -203,6 +207,8 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
             assertFalse(nodes.hasLabel(fooLabel));
             assertFalse(nodes.hasLabel(barLabel));
             assertFalse(nodes.hasLabel(bazLabel));
+            assertFalse(nodes.hasLabel());
+
             assertFalse(nodes.next(), "should only access a single node");
         }
     }

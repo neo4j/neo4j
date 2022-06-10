@@ -83,4 +83,10 @@ public interface KernelReadTracer extends ReadTracer {
      */
     @Override
     void onHasLabel(int label);
+
+    /**
+     * Called just before {@link NodeCursor#hasLabel()} returns.
+     */
+    @Override
+    void onHasLabel();
 }

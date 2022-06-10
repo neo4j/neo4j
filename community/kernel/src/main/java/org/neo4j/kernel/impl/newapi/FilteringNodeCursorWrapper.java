@@ -129,6 +129,11 @@ public class FilteringNodeCursorWrapper implements NodeCursor {
     }
 
     @Override
+    public boolean hasLabel() {
+        return delegate.hasLabel();
+    }
+
+    @Override
     public boolean supportsFastRelationshipsTo() {
         return delegate.supportsFastRelationshipsTo();
     }

@@ -77,6 +77,11 @@ public class TestKernelReadTracer implements KernelReadTracer {
     }
 
     @Override
+    public void onHasLabel() {
+        traceEvents.add(hasLabelEvent());
+    }
+
+    @Override
     public void dbHit() {
         throw new UnsupportedOperationException();
     }
@@ -167,5 +172,9 @@ public class TestKernelReadTracer implements KernelReadTracer {
 
     static TraceEvent hasLabelEvent(int label) {
         return new TraceEvent(TraceEventKind.HasLabel, label);
+    }
+
+    static TraceEvent hasLabelEvent() {
+        return new TraceEvent(TraceEventKind.HasLabel);
     }
 }

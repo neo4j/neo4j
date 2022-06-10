@@ -121,8 +121,34 @@ class RecordNodeCursorIT {
         }
     }
 
+    @RepeatedTest(10)
+    void shouldProperlyReturnHasAnyLabel() {
+        // given/when
+        MutableLongSet labels = LongSets.mutable.empty();
+        long nodeId = createNodeWithRandomLabels(labels, 5);
+
+        // then
+        try (RecordNodeCursor nodeCursor = new RecordNodeCursor(
+                nodeStore,
+                neoStores.getRelationshipStore(),
+                neoStores.getRelationshipGroupStore(),
+                null,
+                NULL_CONTEXT,
+                storeCursors)) {
+            nodeCursor.single(nodeId);
+            assertThat(nodeCursor.next()).isTrue();
+            boolean fromCursor = nodeCursor.hasLabel();
+            boolean fromSet = !labels.isEmpty();
+            assertThat(fromCursor).isEqualTo(fromSet);
+        }
+    }
+
     private long createNodeWithRandomLabels(MutableLongSet labelsSet) {
-        long[] labels = randomLabels(labelsSet);
+        return createNodeWithRandomLabels(labelsSet, 100);
+    }
+
+    private long createNodeWithRandomLabels(MutableLongSet labelsSet, int numberOfLabelsBound) {
+        long[] labels = randomLabels(labelsSet, numberOfLabelsBound);
         NodeRecord nodeRecord = nodeStore.newRecord();
         nodeRecord.setId(nodeStore.nextId(NULL_CONTEXT));
         nodeRecord.initialize(
@@ -140,8 +166,8 @@ class RecordNodeCursorIT {
         return nodeRecord.getId();
     }
 
-    private long[] randomLabels(MutableLongSet labelsSet) {
-        int count = random.nextInt(0, 100);
+    private long[] randomLabels(MutableLongSet labelsSet, int numberOfLabelsBound) {
+        int count = random.nextInt(0, numberOfLabelsBound);
         int highId = random.nextBoolean() ? HIGH_LABEL_ID : count * 3;
         for (int i = 0; i < count; i++) {
             if (!labelsSet.add(random.nextInt(highId))) {
