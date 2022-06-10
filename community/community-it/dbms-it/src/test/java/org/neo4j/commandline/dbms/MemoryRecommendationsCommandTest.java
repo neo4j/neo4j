@@ -126,7 +126,10 @@ class MemoryRecommendationsCommandTest
                 "                            the system running the command.%n" +
                 "      --docker            The recommended memory settings are produced in the%n" +
                 "                            form of environment variables that can be directly%n" +
-                "                            passed to Neo4j docker container."
+                "                            passed to Neo4j docker container. The recommended%n" +
+                "                            use is to save the generated environment variables%n" +
+                "                            to a file and pass the file to a docker container%n" +
+                "                            using '--env-file' docker option."
         ) );
     }
 
@@ -254,11 +257,11 @@ class MemoryRecommendationsCommandTest
 
         command.execute();
 
-        verify( output ).println( "EXPORT NEO4J_dbms_memory_heap_initial__size='" + heap + "'" );
-        verify( output ).println( "EXPORT NEO4J_dbms_memory_heap_max__size='" + heap + "'" );
-        verify( output ).println( "EXPORT NEO4J_dbms_memory_pagecache_size='" + pagecache + "'" );
-        verify( output ).println( "EXPORT NEO4J_dbms_memory_off__heap_max__size='" + offHeap + "'" );
-        verify( output ).println( "EXPORT NEO4J_dbms_jvm_additional='" + "-XX:+ExitOnOutOfMemoryError" + "'" );
+        verify( output ).println( "NEO4J_dbms_memory_heap_initial__size='" + heap + "'" );
+        verify( output ).println( "NEO4J_dbms_memory_heap_max__size='" + heap + "'" );
+        verify( output ).println( "NEO4J_dbms_memory_pagecache_size='" + pagecache + "'" );
+        verify( output ).println( "NEO4J_dbms_memory_off__heap_max__size='" + offHeap + "'" );
+        verify( output ).println( "NEO4J_dbms_jvm_additional='" + "-XX:+ExitOnOutOfMemoryError" + "'" );
     }
 
     @Test
