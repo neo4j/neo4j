@@ -1878,7 +1878,10 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       "pointDistanceNodeIndexSeekExpr",
       "pointDistanceRelationshipIndexSeekExpr",
       "pointBoundingBoxNodeIndexSeekExpr",
-      "pointBoundingBoxRelationshipIndexSeekExpr"
+      "pointBoundingBoxRelationshipIndexSeekExpr",
+      "shortestPathExpr",
+      "undirectedRelationshipByIdSeekExpr",
+      "directedRelationshipByIdSeekExpr"
     )
     withClue("tests missing for these operators:") {
       val methods = classOf[AbstractLogicalPlanBuilder[_, _]].getDeclaredMethods.filter { m =>

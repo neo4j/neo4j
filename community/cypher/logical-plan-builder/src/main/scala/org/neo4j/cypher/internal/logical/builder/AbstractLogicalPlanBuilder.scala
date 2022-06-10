@@ -446,6 +446,26 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     predicates: Seq[String] = Seq.empty,
     withFallback: Boolean = false,
     disallowSameNode: Boolean = true
+  ): IMPL =
+    shortestPathSolver(pattern, pathName, all, predicates.map(parseExpression), withFallback, disallowSameNode)
+
+  def shortestPathExpr(
+    pattern: String,
+    pathName: Option[String] = None,
+    all: Boolean = false,
+    predicates: Seq[Expression] = Seq.empty,
+    withFallback: Boolean = false,
+    disallowSameNode: Boolean = true
+  ): IMPL =
+    shortestPathSolver(pattern, pathName, all, predicates, withFallback, disallowSameNode)
+
+  private def shortestPathSolver(
+    pattern: String,
+    pathName: Option[String],
+    all: Boolean,
+    predicates: Seq[Expression],
+    withFallback: Boolean,
+    disallowSameNode: Boolean
   ): IMPL = {
     val p = patternParser.parse(pattern)
     newRelationship(varFor(p.relName))
@@ -484,7 +504,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
           )(pos),
           !all
         )(pos)),
-        predicates.map(parseExpression),
+        predicates,
         withFallback,
         disallowSameNode
       )(_)
@@ -698,6 +718,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
+  def deleteNode(node: Expression): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => DeleteNode(lp, node)(_)))
+    self
+  }
+
   def detachDeleteNode(node: String): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => DetachDeleteNode(lp, parseExpression(node))(_)))
     self
@@ -705,6 +730,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def deleteRelationship(rel: String): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => DeleteRelationship(lp, parseExpression(rel))(_)))
+    self
+  }
+
+  def deleteRelationship(rel: Expression): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => DeleteRelationship(lp, rel)(_)))
     self
   }
 
@@ -720,6 +750,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def deleteExpression(expression: String): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => DeleteExpression(lp, parseExpression(expression))(_)))
+    self
+  }
+
+  def deleteExpression(expression: Expression): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => DeleteExpression(lp, expression)(_)))
     self
   }
 
@@ -858,6 +893,21 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(LeafOperator(NodeByIdSeek(n, input, args)(_)))
   }
 
+  private def directedRelationshipByIdSeekSolver(
+    relationship: String,
+    from: String,
+    to: String,
+    args: Set[String],
+    expr: Seq[Expression]
+  ): IMPL = {
+    newRelationship(varFor(relationship))
+    newNode(varFor(from))
+    newNode(varFor(to))
+    val input = ManySeekableArgs(ListLiteral(expr)(pos))
+
+    appendAtCurrentIndent(LeafOperator(DirectedRelationshipByIdSeek(relationship, input, from, to, args)(_)))
+  }
+
   def directedRelationshipByIdSeek(
     relationship: String,
     from: String,
@@ -865,17 +915,38 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     args: Set[String],
     ids: AnyVal*
   ): IMPL = {
-    newRelationship(varFor(relationship))
-    newNode(varFor(from))
-    newNode(varFor(to))
-    val idExpressions = ids.map {
+    val idExpressions: Seq[Expression] = ids.map {
       case x @ (_: Long | _: Int)     => SignedDecimalIntegerLiteral(x.toString)(pos)
       case x @ (_: Float | _: Double) => DecimalDoubleLiteral(x.toString)(pos)
       case x                          => throw new IllegalArgumentException(s"$x is not a supported value for ID")
     }
-    val input = ManySeekableArgs(ListLiteral(idExpressions)(pos))
 
-    appendAtCurrentIndent(LeafOperator(DirectedRelationshipByIdSeek(relationship, input, from, to, args)(_)))
+    directedRelationshipByIdSeekSolver(relationship, from, to, args, idExpressions)
+  }
+
+  def directedRelationshipByIdSeekExpr(
+    relationship: String,
+    from: String,
+    to: String,
+    args: Set[String],
+    expr: Expression*
+  ): IMPL = {
+    directedRelationshipByIdSeekSolver(relationship, from, to, args, expr)
+  }
+
+  private def undirectedRelationshipByIdSeekSolver(
+    relationship: String,
+    from: String,
+    to: String,
+    args: Set[String],
+    expr: Seq[Expression]
+  ): IMPL = {
+    newRelationship(varFor(relationship))
+    newNode(varFor(from))
+    newNode(varFor(to))
+    val input = ManySeekableArgs(ListLiteral(expr)(pos))
+
+    appendAtCurrentIndent(LeafOperator(UndirectedRelationshipByIdSeek(relationship, input, from, to, args)(_)))
   }
 
   def undirectedRelationshipByIdSeek(
@@ -893,9 +964,18 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       case x @ (_: Float | _: Double) => DecimalDoubleLiteral(x.toString)(pos)
       case x                          => throw new IllegalArgumentException(s"$x is not a supported value for ID")
     }
-    val input = ManySeekableArgs(ListLiteral(idExpressions)(pos))
 
-    appendAtCurrentIndent(LeafOperator(UndirectedRelationshipByIdSeek(relationship, input, from, to, args)(_)))
+    undirectedRelationshipByIdSeekSolver(relationship, from, to, args, idExpressions)
+  }
+
+  def undirectedRelationshipByIdSeekExpr(
+    relationship: String,
+    from: String,
+    to: String,
+    args: Set[String],
+    expr: Expression*
+  ): IMPL = {
+    undirectedRelationshipByIdSeekSolver(relationship, from, to, args, expr)
   }
 
   def relationshipTypeScan(pattern: String, args: String*): IMPL = {
