@@ -41,13 +41,11 @@ import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
-import org.neo4j.cypher.internal.compiler.phases.Compatibility4_4
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
-import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_ALL
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_WITH_LABEL
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
@@ -105,8 +103,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       log,
       caches,
       CypherPlannerOption.default,
-      CypherUpdateStrategy.default,
-      compatibilityMode = Compatibility4_4
+      CypherUpdateStrategy.default
     )
 
     CypherCurrentCompiler(
@@ -455,11 +452,10 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   test("should clear all compiler library caches") {
     val compilerLibrary = createCompilerLibrary()
-    val compilers = CypherVersion.values.map { version =>
+    val compilers = CypherRuntimeOption.values.map { runtime =>
       compilerLibrary.selectCompiler(
-        version,
         CypherPlannerOption.default,
-        CypherRuntimeOption.default,
+        CommunityRuntimeFactory.getRuntime(runtime, disallowFallback = false).correspondingRuntimeOption.get,
         CypherUpdateStrategy.default
       )
     }

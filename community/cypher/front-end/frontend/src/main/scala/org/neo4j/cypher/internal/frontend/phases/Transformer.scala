@@ -46,14 +46,6 @@ trait Transformer[-C <: BaseContext, -FROM, +TO] {
 
 object Transformer {
 
-  def identity[C <: BaseContext, FROM]: Transformer[C, FROM, FROM] = new Transformer[C, FROM, FROM] {
-    override def transform(from: FROM, context: C): FROM = from
-
-    override def name: String = "identity"
-
-    override def postConditions: Set[StepSequencer.Condition] = Set.empty
-  }
-
   /**
    * Transformer that can be inserted when debugging, to help detect
    * what part of the compilation introduces an ast issue.

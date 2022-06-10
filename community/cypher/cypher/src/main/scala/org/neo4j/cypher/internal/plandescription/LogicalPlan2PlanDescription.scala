@@ -232,14 +232,12 @@ import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
-import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.Planner
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerImpl
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
-import org.neo4j.cypher.internal.plandescription.Arguments.Version
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInterpolator
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringMaker
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
@@ -259,7 +257,6 @@ object LogicalPlan2PlanDescription {
   def create(
     input: LogicalPlan,
     plannerName: PlannerName,
-    cypherVersion: CypherVersion,
     readOnly: Boolean,
     effectiveCardinalities: EffectiveCardinalities,
     withRawCardinalities: Boolean,
@@ -274,8 +271,7 @@ object LogicalPlan2PlanDescription {
       runtimeOperatorMetadata
     )
       .create(input)
-      .addArgument(Version("CYPHER " + cypherVersion.name))
-      .addArgument(RuntimeVersion("4.4"))
+      .addArgument(RuntimeVersion("5.0"))
       .addArgument(Planner(plannerName.toTextOutput))
       .addArgument(PlannerImpl(plannerName.name))
       .addArgument(PlannerVersion(plannerName.version))

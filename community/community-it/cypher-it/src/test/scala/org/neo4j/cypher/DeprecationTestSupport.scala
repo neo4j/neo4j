@@ -31,152 +31,27 @@ trait DeprecationTestSupport extends Suite with Matchers {
 
   protected val dbms: FeatureDatabaseManagementService
 
-  private val lastMajorCypherVersion = List("CYPHER 3.5")
-  private val supportedCypherVersions_4_X = List("CYPHER 4.3", "CYPHER 4.4")
-  private val supportedCypherVersions = lastMajorCypherVersion ++ supportedCypherVersions_4_X
-
-  def assertNotificationInSupportedVersions(
-    query: String,
-    notificationCode: NotificationCode,
-    details: NotificationDetail*
-  ): Unit = {
-    assertNotificationInSupportedVersions(Seq(query), notificationCode, details: _*)
-  }
-
-  def assertNotificationInSupportedVersions(
-    queries: Seq[String],
-    notificationCode: NotificationCode,
-    details: NotificationDetail*
-  ): Unit = {
-    assertNotification(
-      supportedCypherVersions,
-      queries,
-      shouldContainNotification = true,
-      notificationCode,
-      details: _*
-    )
-  }
-
-  def assertNoNotificationInSupportedVersions(
-    query: String,
-    notificationCode: NotificationCode,
-    details: NotificationDetail*
-  ): Unit = {
-    assertNoNotificationInSupportedVersions(Seq(query), notificationCode, details: _*)
-  }
-
-  def assertNoNotificationInSupportedVersions(
-    queries: Seq[String],
-    notificationCode: NotificationCode,
-    details: NotificationDetail*
-  ): Unit = {
-    assertNotification(
-      supportedCypherVersions,
-      queries,
-      shouldContainNotification = false,
-      notificationCode,
-      details: _*
-    )
-  }
-
-  def assertNotificationInSupportedVersions_4_X(
-    query: String,
-    notificationCode: NotificationCode,
-    details: NotificationDetail*
-  ): Unit = {
-    assertNotificationInSupportedVersions_4_X(Seq(query), notificationCode, details: _*)
-  }
-
-  def assertNotificationInSupportedVersions_4_X(
-    queries: Seq[String],
-    notificationCode: NotificationCode,
-    details: NotificationDetail*
-  ): Unit = {
-    assertNotification(
-      supportedCypherVersions_4_X,
-      queries,
-      shouldContainNotification = true,
-      notificationCode,
-      details: _*
-    )
-  }
-
-  def assertNoNotificationInSupportedVersions_4_X(
-    query: String,
-    notificationCode: NotificationCode,
-    details: NotificationDetail*
-  ): Unit = {
-    assertNotification(
-      supportedCypherVersions_4_X,
-      Seq(query),
-      shouldContainNotification = false,
-      notificationCode,
-      details: _*
-    )
-  }
-
-  def assertNotificationInLastMajorVersion(
-    query: String,
-    notificationCode: NotificationCode,
-    details: NotificationDetail*
-  ): Unit = {
-    assertNotificationInLastMajorVersion(Seq(query), notificationCode, details: _*)
-  }
-
-  def assertNotificationInLastMajorVersion(
-    queries: Seq[String],
-    notificationCode: NotificationCode,
-    details: NotificationDetail*
-  ): Unit = {
-    assertNotification(lastMajorCypherVersion, queries, shouldContainNotification = true, notificationCode, details: _*)
-  }
-
-  def assertNoNotificationInLastMajorVersion(
-    query: String,
-    notificationCode: NotificationCode,
-    details: NotificationDetail*
-  ): Unit = {
-    assertNoNotificationInLastMajorVersion(Seq(query), notificationCode, details: _*)
-  }
-
-  def assertNoNotificationInLastMajorVersion(
-    queries: Seq[String],
-    notificationCode: NotificationCode,
-    details: NotificationDetail*
-  ): Unit = {
-    assertNotification(
-      lastMajorCypherVersion,
-      queries,
-      shouldContainNotification = false,
-      notificationCode,
-      details: _*
-    )
-  }
-
-  private def assertNotification(
-    versions: List[String],
+  def assertNotification(
     queries: Seq[String],
     shouldContainNotification: Boolean,
     notificationCode: NotificationCode,
     details: NotificationDetail*
   ): Unit = {
     queries.foreach(query => {
-      versions.foreach(version => {
-        withClue(s"Failed for query '$query' in version $version \n") {
-          val transaction = dbms.begin()
-          try {
-            val result = transaction.execute(s"$version EXPLAIN $query")
-            val notifications: Iterable[Notification] = result.getNotifications()
-            val hasNotification =
-              notifications.exists(notification => matchesCode(notification, notificationCode, details: _*))
-            withClue(notifications) {
-              hasNotification should be(shouldContainNotification)
-            }
-          } finally {
-            transaction.rollback()
+      withClue(s"Failed for query '$query' \n") {
+        val transaction = dbms.begin()
+        try {
+          val result = transaction.execute(s"EXPLAIN $query")
+          val notifications: Iterable[Notification] = result.getNotifications()
+          val hasNotification =
+            notifications.exists(notification => matchesCode(notification, notificationCode, details: _*))
+          withClue(notifications) {
+            hasNotification should be(shouldContainNotification)
           }
+        } finally {
+          transaction.rollback()
         }
-      })
+      }
     })
   }
 
@@ -185,28 +60,25 @@ trait DeprecationTestSupport extends Suite with Matchers {
     notification.getTitle == "This feature is deprecated and will be removed in future versions."
 
   def assertNoDeprecations(
-    queries: Seq[String],
-    versions: List[String] = supportedCypherVersions
+    queries: Seq[String]
   ): Unit = {
     queries.foreach(query =>
-      versions.foreach(version => {
-        withClue(s"Failed for query '$query' in version $version \n") {
-          val transaction = dbms.begin()
-          try {
-            val result = transaction.execute(s"$version EXPLAIN $query")
-            val deprecations = result.getNotifications().filter(isDeprecation)
-            withClue(
-              s"""Expected no notifications to be found but was:
-                 |${deprecations.map(_.getDescription).mkString("'", "', '", "'")}
-                 |""".stripMargin
-            ) {
-              deprecations shouldBe empty
-            }
-          } finally {
-            transaction.rollback()
+      withClue(s"Failed for query '$query'\n") {
+        val transaction = dbms.begin()
+        try {
+          val result = transaction.execute(s"EXPLAIN $query")
+          val deprecations = result.getNotifications().filter(isDeprecation)
+          withClue(
+            s"""Expected no notifications to be found but was:
+               |${deprecations.map(_.getDescription).mkString("'", "', '", "'")}
+               |""".stripMargin
+          ) {
+            deprecations shouldBe empty
           }
+        } finally {
+          transaction.rollback()
         }
-      })
+      }
     )
   }
 

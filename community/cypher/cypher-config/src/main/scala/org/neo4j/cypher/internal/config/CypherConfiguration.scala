@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
 import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
-import org.neo4j.cypher.internal.options.CypherVersion
 
 import java.io.File
 
@@ -60,7 +59,6 @@ object CypherConfiguration {
 class CypherConfiguration private (val config: Config) {
 
   // static configurations
-  val version: CypherVersion = CypherVersion.fromConfig(config)
   val planner: CypherPlannerOption = CypherPlannerOption.fromConfig(config)
   val runtime: CypherRuntimeOption = CypherRuntimeOption.fromConfig(config)
   val queryCacheSize: Int = config.get(GraphDatabaseSettings.query_cache_size).toInt

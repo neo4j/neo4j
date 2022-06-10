@@ -20,9 +20,7 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.EAGER_LOAD_CSV;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.INDEX_HINT_UNFULFILLABLE;
@@ -38,7 +36,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
-import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.impl.notification.NotificationDetail;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -57,15 +54,6 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     }
 
     @Test
-    void shouldGetErrorWhenUsingCreateUniqueWhenCypherVersionIs3_5() {
-        // when
-        QueryExecutionException exception = assertThrows(
-                QueryExecutionException.class,
-                () -> db.executeTransactionally("CYPHER 3.5 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()"));
-        assertThat(exception.getStatusCode(), containsString("SyntaxError"));
-    }
-
-    @Test
     void shouldNotNotifyForCostUnsupportedUpdateQueryIfPlannerNotExplicitlyRequested() {
         shouldNotNotifyInStream("EXPLAIN MATCH (n:Movie) SET n.title = 'The Movie'");
     }
@@ -79,8 +67,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
 
     @Test
     void shouldWarnOnPotentiallyCachedQueries() {
-        assertNotificationsInSupportedVersions(
-                "explain match (a)-->(b), (c)-->(d) return *", containsItem(cartesianProductWarning));
+        assertNotifications("explain match (a)-->(b), (c)-->(d) return *", containsItem(cartesianProductWarning));
 
         // no warning without explain
         shouldNotNotifyInStream("match (a)-->(b), (c)-->(d) return *");
@@ -161,7 +148,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
 
     @Test
     void shouldNotNotifyOnEagerBeforeLoadCSVCreate() {
-        assertNotificationsInSupportedVersions(
+        assertNotifications(
                 "EXPLAIN MATCH (a), (b) CREATE (c) WITH c LOAD CSV FROM 'file:///ignore/ignore.csv' AS line RETURN *",
                 containsNoItem(eagerOperatorWarning));
     }
@@ -182,8 +169,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
 
     @Test
     void shouldNotNotifyOnEagerWithoutLoadCSV() {
-        assertNotificationsInSupportedVersions(
-                "EXPLAIN MATCH (a), (b) CREATE (c) RETURN *", containsNoItem(eagerOperatorWarning));
+        assertNotifications("EXPLAIN MATCH (a), (b) CREATE (c) RETURN *", containsNoItem(eagerOperatorWarning));
     }
 
     @Test
@@ -194,7 +180,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
                 tx.commit();
             }
         }
-        assertNotificationsInSupportedVersions(
+        assertNotifications(
                 "EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (a:A) RETURN *",
                 containsNoItem(largeLabelCSVWarning));
     }
@@ -207,7 +193,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
                 tx.commit();
             }
         }
-        assertNotificationsInSupportedVersions(
+        assertNotifications(
                 "EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MERGE (a:A) RETURN *",
                 containsNoItem(largeLabelCSVWarning));
     }
@@ -226,7 +212,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     void shouldWarnOnUnboundedShortestPath() {
         shouldNotifyInStream(
                 "EXPLAIN MATCH p = shortestPath((n)-[*]->(m)) RETURN m",
-                new InputPosition(41, 1, 42),
+                new InputPosition(31, 1, 32),
                 UNBOUNDED_SHORTEST_PATH);
     }
 
@@ -260,7 +246,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     void shouldNotifyOnDynamicPropertyLookupWithPredicateHavingNoIndex() {
         db.executeTransactionally("CREATE INDEX FOR (n:Person) ON (n.name)");
         db.executeTransactionally("Call db.awaitIndexes()");
-        assertNotificationsInSupportedVersions(
+        assertNotifications(
                 "EXPLAIN MATCH (n:Person) WHERE n.foo = 'Tobias' AND n['key-' + n.name] = 'value' RETURN n",
                 containsItem(dynamicPropertyWarning));
     }
@@ -296,7 +282,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         db.executeTransactionally("CREATE INDEX FOR (n:Person) ON (n.name)");
         db.executeTransactionally("Call db.awaitIndexes()");
         for (String query : queries) {
-            assertNotificationsInSupportedVersions(query, containsItem(dynamicPropertyWarning));
+            assertNotifications(query, containsItem(dynamicPropertyWarning));
         }
     }
 
@@ -311,7 +297,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     void shouldWarnOnUnfulfillableIndexSeekUsingDynamicPropertyAndMultipleLabels() {
         db.executeTransactionally("CREATE INDEX FOR (n:Person) ON (n.name)");
         db.executeTransactionally("Call db.awaitIndexes()");
-        assertNotificationsInSupportedVersions(
+        assertNotifications(
                 "EXPLAIN MATCH (n:Person:Foo) WHERE n['key-' + n.name] = 'value' RETURN n",
                 containsItem(dynamicPropertyWarning));
     }
@@ -321,7 +307,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         db.executeTransactionally("CREATE INDEX FOR (n:Person) ON (n.name)");
         db.executeTransactionally("CREATE INDEX FOR (n:Jedi) ON (n.weapon)");
         db.executeTransactionally("Call db.awaitIndexes()");
-        assertNotificationsInSupportedVersions(
+        assertNotifications(
                 "EXPLAIN MATCH (n:Person:Jedi) WHERE n['key-' + n.name] = 'value' RETURN n",
                 containsItem(dynamicPropertyWarning));
     }
@@ -329,10 +315,9 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     @Test
     void shouldWarnOnCartesianProduct() {
 
-        assertNotificationsInSupportedVersions(
-                "explain match (a)-->(b), (c)-->(d) return *", containsItem(cartesianProductWarning));
+        assertNotifications("explain match (a)-->(b), (c)-->(d) return *", containsItem(cartesianProductWarning));
 
-        assertNotificationsInSupportedVersions(
+        assertNotifications(
                 "explain cypher runtime=interpreted match (a)-->(b), (c)-->(d) return *",
                 containsItem(cartesianProductWarning));
     }
@@ -344,8 +329,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
 
     @Test
     void shouldWarnOnMissingLabel() {
-        assertNotificationsInSupportedVersions(
-                "EXPLAIN MATCH (a:NO_SUCH_THING) RETURN a", containsItem(unknownLabelWarning));
+        assertNotifications("EXPLAIN MATCH (a:NO_SUCH_THING) RETURN a", containsItem(unknownLabelWarning));
     }
 
     @Test
@@ -355,32 +339,30 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
             tx.commit();
         }
 
-        assertNotificationsInSupportedVersions("EXPLAIN MATCH (n:Preson) RETURN *", containsItem(unknownLabelWarning));
+        assertNotifications("EXPLAIN MATCH (n:Preson) RETURN *", containsItem(unknownLabelWarning));
         shouldNotNotifyInStream("EXPLAIN MATCH (n:Person) RETURN *");
     }
 
     @Test
     void shouldWarnOnMissingLabelWithCommentInBeginning() {
-        assertNotificationsInSupportedVersions(
-                "EXPLAIN//TESTING \nMATCH (n:X) return n Limit 1", containsItem(unknownLabelWarning));
+        assertNotifications("EXPLAIN//TESTING \nMATCH (n:X) return n Limit 1", containsItem(unknownLabelWarning));
     }
 
     @Test
     void shouldWarnOnMissingLabelWithCommentInBeginningTwoLines() {
-        assertNotificationsInSupportedVersions(
+        assertNotifications(
                 "//TESTING \n //TESTING \n EXPLAIN MATCH (n)\n MATCH (b:X) return n,b Limit 1",
                 containsItem(unknownLabelWarning));
     }
 
     @Test
     void shouldWarnOnMissingLabelWithCommentInBeginningOnOneLine() {
-        assertNotificationsInSupportedVersions(
-                "explain /* Testing */ MATCH (n:X) RETURN n", containsItem(unknownLabelWarning));
+        assertNotifications("explain /* Testing */ MATCH (n:X) RETURN n", containsItem(unknownLabelWarning));
     }
 
     @Test
     void shouldWarnOnMissingLabelWithCommentInMiddle() {
-        assertNotificationsInSupportedVersions(
+        assertNotifications(
                 "EXPLAIN\nMATCH (n)\n//TESTING \nMATCH (n:X)\nreturn n Limit 1", containsItem(unknownLabelWarning));
     }
 
@@ -391,7 +373,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
 
     @Test
     void shouldWarnOnMissingRelationshipType() {
-        assertNotificationsInSupportedVersions(
+        assertNotifications(
                 "EXPLAIN MATCH ()-[a:NO_SUCH_THING]->() RETURN a", containsItem(unknownRelationshipWarning));
     }
 
@@ -403,21 +385,20 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         }
 
         db.executeTransactionally("CREATE (n)-[r:R]->(m)");
-        assertNotificationsInSupportedVersions(
-                "EXPLAIN MATCH ()-[r:r]->() RETURN *", containsItem(unknownRelationshipWarning));
+        assertNotifications("EXPLAIN MATCH ()-[r:r]->() RETURN *", containsItem(unknownRelationshipWarning));
         shouldNotNotifyInStream("EXPLAIN MATCH ()-[r:R]->() RETURN *");
     }
 
     @Test
     void shouldWarnOnMissingRelationshipTypeWithComment() {
-        assertNotificationsInSupportedVersions(
+        assertNotifications(
                 "EXPLAIN /*Comment*/ MATCH ()-[a:NO_SUCH_THING]->() RETURN a",
                 containsItem(unknownRelationshipWarning));
     }
 
     @Test
     void shouldWarnOnMissingProperty() {
-        assertNotificationsInSupportedVersions(
+        assertNotifications(
                 "EXPLAIN MATCH (a {NO_SUCH_THING: 1337}) RETURN a", containsItem(unknownPropertyKeyWarning));
     }
 
@@ -425,14 +406,13 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     void shouldWarnOnMisspelledProperty() {
         db.executeTransactionally("CREATE (n {prop : 42})");
         db.executeTransactionally("CREATE (n)-[r:R]->(m)");
-        assertNotificationsInSupportedVersions(
-                "EXPLAIN MATCH (n) WHERE n.propp = 43 RETURN n", containsItem(unknownPropertyKeyWarning));
+        assertNotifications("EXPLAIN MATCH (n) WHERE n.propp = 43 RETURN n", containsItem(unknownPropertyKeyWarning));
         shouldNotNotifyInStream("EXPLAIN MATCH (n) WHERE n.prop = 43 RETURN n");
     }
 
     @Test
     void shouldWarnOnMissingPropertyWithComment() {
-        assertNotificationsInSupportedVersions(
+        assertNotifications(
                 "EXPLAIN /*Comment*/ MATCH (a {NO_SUCH_THING: 1337}) RETURN a",
                 containsItem(unknownPropertyKeyWarning));
     }

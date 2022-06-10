@@ -43,13 +43,13 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   test("deprecated procedure calls") {
     val queries = Seq("CALL oldProc()", "CALL oldProc() RETURN 1")
     val detail = NotificationDetail.Factory.deprecatedName("oldProc", "newProc")
-    assertNotificationInSupportedVersions(queries, DEPRECATED_PROCEDURE, detail)
+    assertNotification(queries, true, DEPRECATED_PROCEDURE, detail)
   }
 
   test("deprecated procedure result field") {
     val query = "CALL changedProc() YIELD oldField RETURN oldField"
     val detail = NotificationDetail.Factory.deprecatedField("changedProc", "oldField")
-    assertNotificationInSupportedVersions(query, DEPRECATED_PROCEDURE_RETURN_FIELD, detail)
+    assertNotification(Seq(query), true, DEPRECATED_PROCEDURE_RETURN_FIELD, detail)
   }
 
   // OTHER DEPRECATIONS IN 4.X
@@ -59,7 +59,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "MATCH (a)-[:A|:B|:C]-() RETURN a"
     )
 
-    assertNotificationInLastMajorVersion(queries, DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR)
+    assertNotification(queries, true, DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR)
 
     // clear caches of the rewritten queries to not keep notifications around
     dbms.clearQueryCaches()

@@ -49,7 +49,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.csv_legacy_quote_esc
 import static org.neo4j.configuration.GraphDatabaseSettings.cypher_hints_error;
 import static org.neo4j.configuration.GraphDatabaseSettings.cypher_lenient_create_relationship;
 import static org.neo4j.configuration.GraphDatabaseSettings.cypher_min_replan_interval;
-import static org.neo4j.configuration.GraphDatabaseSettings.cypher_parser_version;
 import static org.neo4j.configuration.GraphDatabaseSettings.cypher_planner;
 import static org.neo4j.configuration.GraphDatabaseSettings.cypher_render_plan_descriptions;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
@@ -472,7 +471,6 @@ class SettingMigratorsTest {
         Files.write(
                 confFile,
                 List.of(
-                        "cypher.default_language_version=4.4",
                         "cypher.forbid_exhaustive_shortestpath=true",
                         "cypher.forbid_shortestpath_common_nodes=false",
                         "cypher.hints_error=true",
@@ -486,7 +484,6 @@ class SettingMigratorsTest {
         var logProvider = new AssertableLogProvider();
         config.setLogger(logProvider.getLog(Config.class));
 
-        assertEquals(GraphDatabaseSettings.CypherParserVersion.V_44, config.get(cypher_parser_version));
         assertEquals(true, config.get(forbid_exhaustive_shortestpath));
         assertEquals(false, config.get(forbid_shortestpath_common_nodes));
         assertEquals(true, config.get(cypher_hints_error));

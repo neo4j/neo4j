@@ -46,7 +46,6 @@ import org.neo4j.cypher.internal.options.CypherQueryOptions
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
-import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator
@@ -845,7 +844,7 @@ class FabricPlannerTest
     "passes options on in remote and local parts" in {
 
       val inst = instance(
-        """CYPHER 4.3
+        """CYPHER
           |  planner=cost
           |  runtime=parallel
           |  updateStrategy=eager
@@ -873,7 +872,6 @@ class FabricPlannerTest
         offset = InputPosition.NONE,
         queryOptions = CypherQueryOptions(
           executionMode = CypherExecutionMode.default,
-          version = CypherVersion.v4_3,
           planner = CypherPlannerOption.cost,
           runtime = CypherRuntimeOption.parallel,
           updateStrategy = CypherUpdateStrategy.eager,
@@ -907,7 +905,7 @@ class FabricPlannerTest
     "default query options are not rendered" in {
 
       val inst = instance(
-        """CYPHER 4.4
+        """CYPHER
           |  interpretedPipesFallback=default
           |WITH 1 AS a
           |CALL {

@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.util.Ref
 
 object Deprecations {
 
-  case object syntacticallyDeprecatedFeaturesIn4_X extends SyntacticDeprecations {
+  case object syntacticallyDeprecatedFeatures extends SyntacticDeprecations {
 
     override val find: PartialFunction[Any, Deprecation] = {
 
@@ -49,7 +49,7 @@ object Deprecations {
   }
 
   // add new semantically deprecated features here
-  case object semanticallyDeprecatedFeaturesIn4_X extends SemanticDeprecations {
+  case object semanticallyDeprecatedFeatures extends SemanticDeprecations {
 
     override def find(semanticTable: SemanticTable): PartialFunction[Any, Deprecation] = Map.empty
   }

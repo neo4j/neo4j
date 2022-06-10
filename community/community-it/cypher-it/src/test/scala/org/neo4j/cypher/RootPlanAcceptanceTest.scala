@@ -23,41 +23,18 @@ import org.neo4j.cypher.internal.InterpretedRuntimeName
 import org.neo4j.cypher.internal.RuntimeName
 import org.neo4j.cypher.internal.SlottedRuntimeName
 import org.neo4j.cypher.internal.frontend.PlannerName
-import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
 import org.neo4j.graphdb.ExecutionPlanDescription
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
-  test("cost should be default planner in 4.3") {
+  test("cost should be default planner") {
     given("match (n) return n")
-      .withCypherVersion(CypherVersion.v4_3)
-      .shouldHaveCypherVersion(CypherVersion.v4_3)
       .shouldHavePlanner(CostBasedPlannerName.default)
   }
 
-  test("cost should be default planner in 4.4") {
+  test("slotted should be default runtime") {
     given("match (n) return n")
-      .withCypherVersion(CypherVersion.v4_4)
-      .shouldHaveCypherVersion(CypherVersion.v4_4)
-      .shouldHavePlanner(CostBasedPlannerName.default)
-  }
-
-  test("3.5 query should have 3.5 version") {
-    given("match (n) return n")
-      .withCypherVersion(CypherVersion.v3_5)
-      .shouldHaveCypherVersion(CypherVersion.v3_5)
-  }
-
-  test("slotted should be default runtime in 4.3") {
-    given("match (n) return n")
-      .withCypherVersion(CypherVersion.v4_3)
-      .shouldHaveRuntime(SlottedRuntimeName)
-  }
-
-  test("slotted should be default runtime in 4.4") {
-    given("match (n) return n")
-      .withCypherVersion(CypherVersion.v4_4)
       .shouldHaveRuntime(SlottedRuntimeName)
   }
 
@@ -98,23 +75,15 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
   case class TestQuery(
     query: String,
-    cypherVersion: Option[CypherVersion] = None,
     planner: Option[PlannerName] = None,
     runtime: Option[RuntimeName] = None
   ) {
 
     lazy val planDescription: ExecutionPlanDescription = execute()
 
-    def withCypherVersion(version: CypherVersion): TestQuery = copy(cypherVersion = Some(version))
-
     def withPlanner(planner: PlannerName): TestQuery = copy(planner = Some(planner))
 
     def withRuntime(runtime: RuntimeName): TestQuery = copy(runtime = Some(runtime))
-
-    def shouldHaveCypherVersion(version: CypherVersion): TestQuery = {
-      planDescription.getArguments.get("version") should equal(s"CYPHER ${version.name}")
-      this
-    }
 
     def shouldHavePlanner(planner: PlannerName): TestQuery = {
       planDescription.getArguments.get("planner") should equal(s"${planner.toTextOutput}")
@@ -130,13 +99,12 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
     private def execute(): ExecutionPlanDescription = {
       graph.withTx { tx =>
-        val prepend = (cypherVersion, planner, runtime) match {
-          case (None, None, None) => ""
+        val prepend = (planner, runtime) match {
+          case (None, None) => ""
           case _ =>
-            val version = cypherVersion.map(_.name).getOrElse("")
             val plannerString = planner.map("planner=" + _.name).getOrElse("")
             val runtimeString = runtime.map("runtime=" + _.name).getOrElse("")
-            s"CYPHER $version $plannerString $runtimeString"
+            s"CYPHER $plannerString $runtimeString"
         }
         val result = executeOfficial(tx, s"$prepend PROFILE $query")
         result.resultAsString()

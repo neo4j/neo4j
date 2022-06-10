@@ -38,7 +38,7 @@ import scala.jdk.CollectionConverters.ListHasAsScala
  *
  * The PreParser converts queries like
  *
- * 'CYPHER 3.5 planner=cost,runtime=slotted MATCH (n) RETURN n'
+ * 'CYPHER planner=cost,runtime=slotted MATCH (n) RETURN n'
  *
  * into
  *
@@ -47,7 +47,6 @@ import scala.jdk.CollectionConverters.ListHasAsScala
  *   options: QueryOptions(
  *     planner: 'cost'
  *     runtime: 'slotted'
- *     version: '3.5'
  *   )
  * )
  */

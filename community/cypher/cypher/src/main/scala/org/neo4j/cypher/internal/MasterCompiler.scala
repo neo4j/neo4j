@@ -79,7 +79,6 @@ class MasterCompiler(compilerLibrary: CompilerLibrary) {
 
     // Do the compilation
     val compiler = compilerLibrary.selectCompiler(
-      query.options.queryOptions.version,
       query.options.queryOptions.planner,
       query.options.queryOptions.runtime,
       query.options.queryOptions.updateStrategy

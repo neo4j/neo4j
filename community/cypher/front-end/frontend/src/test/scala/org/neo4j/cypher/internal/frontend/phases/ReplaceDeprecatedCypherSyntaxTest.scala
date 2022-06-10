@@ -17,17 +17,17 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.rewriting.Deprecations.semanticallyDeprecatedFeaturesIn4_X
-import org.neo4j.cypher.internal.rewriting.Deprecations.syntacticallyDeprecatedFeaturesIn4_X
+import org.neo4j.cypher.internal.rewriting.Deprecations.semanticallyDeprecatedFeatures
+import org.neo4j.cypher.internal.rewriting.Deprecations.syntacticallyDeprecatedFeatures
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ReplaceDeprecatedCypherSyntaxTest extends CypherFunSuite with AstConstructionTestSupport with RewritePhaseTest {
 
   override def rewriterPhaseUnderTest: Transformer[BaseContext, BaseState, BaseState] =
-    SyntaxDeprecationWarningsAndReplacements(syntacticallyDeprecatedFeaturesIn4_X) andThen
+    SyntaxDeprecationWarningsAndReplacements(syntacticallyDeprecatedFeatures) andThen
       PreparatoryRewriting andThen
       SemanticAnalysis(warn = true) andThen
-      SyntaxDeprecationWarningsAndReplacements(semanticallyDeprecatedFeaturesIn4_X)
+      SyntaxDeprecationWarningsAndReplacements(semanticallyDeprecatedFeatures)
 
   override def astRewriteAndAnalyze: Boolean = false
 

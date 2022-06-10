@@ -48,9 +48,6 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
     GraphDatabaseSettings.cypher_min_replan_interval -> Duration.ofSeconds(0)
   )
 
-  private val currentVersion = "4.4"
-  private val previousMinor = "4.3"
-  private val previousMajor = "3.5"
   private val empty_parameters = "Map()"
 
   test("AstLogicalPlanCache re-uses cached plan across different execution modes") {
@@ -132,13 +129,13 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
         cacheListener.expectTrace(List(
           s"String: cacheFlushDetected",
           // firstQuery
-          s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)",
-          s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)",
+          s"String: cacheMiss: CacheKey($query,$empty_parameters,false)",
+          s"String: cacheCompile: CacheKey($query,$empty_parameters,false)",
           // secondQuery
-          s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)",
+          s"String: cacheHit: CacheKey($query,$empty_parameters,false)",
           // thirdQuery
-          s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)",
-          s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)" // String cache JIT compiles on the second hit
+          s"String: cacheHit: CacheKey($query,$empty_parameters,false)",
+          s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,$empty_parameters,false)" // String cache JIT compiles on the second hit
         ))
     }
   }
@@ -162,13 +159,13 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)",
+      s"String: cacheMiss: CacheKey($query,$empty_parameters,false)",
+      s"String: cacheCompile: CacheKey($query,$empty_parameters,false)",
       // profileQuery
       s"AST:    cacheHit", // no logical planning
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion PROFILE $query,$empty_parameters,false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion PROFILE $query,$empty_parameters,false)" // physical planning
+      s"String: cacheMiss: CacheKey(CYPHER PROFILE $query,$empty_parameters,false)",
+      s"String: cacheCompile: CacheKey(CYPHER PROFILE $query,$empty_parameters,false)" // physical planning
     ))
   }
 
@@ -191,13 +188,13 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion PROFILE $query,$empty_parameters,false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion PROFILE $query,$empty_parameters,false)",
+      s"String: cacheMiss: CacheKey(CYPHER PROFILE $query,$empty_parameters,false)",
+      s"String: cacheCompile: CacheKey(CYPHER PROFILE $query,$empty_parameters,false)",
       // query
       s"AST:    cacheHit", // no logical planning
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)" // physical planning
+      s"String: cacheMiss: CacheKey($query,$empty_parameters,false)",
+      s"String: cacheCompile: CacheKey($query,$empty_parameters,false)" // physical planning
     ))
   }
 
@@ -222,13 +219,13 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query1,$empty_parameters,false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query1,$empty_parameters,false)",
+      s"String: cacheMiss: CacheKey($query1,$empty_parameters,false)",
+      s"String: cacheCompile: CacheKey($query1,$empty_parameters,false)",
       // query2
       s"AST:    cacheHit", // Same AST, we should hit the cache,
       executionPlanCacheKeyHit, // same plan should hit the cache
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query2,$empty_parameters,false)", // Different string, we should miss the cache
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query2,$empty_parameters,false)"
+      s"String: cacheMiss: CacheKey($query2,$empty_parameters,false)", // Different string, we should miss the cache
+      s"String: cacheCompile: CacheKey($query2,$empty_parameters,false)"
     ))
   }
 
@@ -255,15 +252,15 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheMiss: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> Integer),false)",
       // second
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheHit: CacheKey($query,Map(n -> Integer),false)",
       // third
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheHit: CacheKey($query,Map(n -> Integer),false)",
       s"AST:    cacheHit",
       executionPlanCacheKeyMiss,
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)" // String cache JIT compiles on the first hit
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,Map(n -> Integer),false)" // String cache JIT compiles on the first hit
     ))
   }
 
@@ -289,20 +286,20 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)",
+      s"String: cacheMiss: CacheKey($query,$empty_parameters,false)",
+      s"String: cacheCompile: CacheKey($query,$empty_parameters,false)",
       // 2nd run
       s"AST:    cacheMiss",
       s"AST:    cacheCompileWithExpressionCodeGen", // replan=force calls into a method for immediate recompilation, even though recompilation is doing the same steps in the AST cache, but the tracer calls are unaware of that.
       executionPlanCacheKeyMiss, // we will miss here since we need to have reached the recompilation limit
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)",
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)",
+      s"String: cacheMiss: CacheKey($query,$empty_parameters,false)",
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,$empty_parameters,false)",
       // 3rd run
       s"AST:    cacheMiss",
       s"AST:    cacheCompileWithExpressionCodeGen",
       executionPlanCacheKeyHit, // since we get the same plan we will have a hit here
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)",
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)"
+      s"String: cacheMiss: CacheKey($query,$empty_parameters,false)",
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,$empty_parameters,false)"
     ))
   }
 
@@ -324,15 +321,15 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheMiss: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> Integer),false)",
       // params2
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheHit: CacheKey($query,Map(n -> Integer),false)",
       // params3
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheHit: CacheKey($query,Map(n -> Integer),false)",
       s"AST:    cacheHit",
       executionPlanCacheKeyMiss, // recompilation limit reached
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)" // String cache JIT compiles on the first hit
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,Map(n -> Integer),false)" // String cache JIT compiles on the first hit
     ))
   }
 
@@ -353,14 +350,14 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheMiss: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> Integer),false)",
       // params2
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> String),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> String),false)"
+      s"String: cacheMiss: CacheKey($query,Map(n -> String),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> String),false)"
     ))
   }
 
@@ -383,11 +380,11 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"String: cacheFlushDetected",
       s"AST:    cacheFlushDetected",
       // 1st run
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheMiss: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> Integer),false)",
       // 2nd run
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)"
+      s"String: cacheMiss: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> Integer),false)"
     ))
   }
 
@@ -415,11 +412,11 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"String: cacheFlushDetected",
       s"AST:    cacheFlushDetected",
       // 1st run
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $actualQuery,Map(n -> Integer),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $actualQuery,Map(n -> Integer),false)",
+      s"String: cacheMiss: CacheKey($actualQuery,Map(n -> Integer),false)",
+      s"String: cacheCompile: CacheKey($actualQuery,Map(n -> Integer),false)",
       // 2nd run
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $actualQuery,Map(n -> Integer),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $actualQuery,Map(n -> Integer),false)"
+      s"String: cacheMiss: CacheKey($actualQuery,Map(n -> Integer),false)",
+      s"String: cacheCompile: CacheKey($actualQuery,Map(n -> Integer),false)"
     ))
   }
 
@@ -439,15 +436,15 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $actualQuery,Map(m -> Integer, n -> Integer),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $actualQuery,Map(m -> Integer, n -> Integer),false)",
+      s"String: cacheMiss: CacheKey($actualQuery,Map(m -> Integer, n -> Integer),false)",
+      s"String: cacheCompile: CacheKey($actualQuery,Map(m -> Integer, n -> Integer),false)",
       // 2nd run
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $actualQuery,Map(m -> Integer, n -> Integer),false)",
+      s"String: cacheHit: CacheKey($actualQuery,Map(m -> Integer, n -> Integer),false)",
       // 3rd run
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $actualQuery,Map(m -> Integer, n -> Integer),false)",
+      s"String: cacheHit: CacheKey($actualQuery,Map(m -> Integer, n -> Integer),false)",
       s"AST:    cacheHit",
       executionPlanCacheKeyMiss,
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $currentVersion $actualQuery,Map(m -> Integer, n -> Integer),false)" // String cache JIT compiles on the first hit
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey($actualQuery,Map(m -> Integer, n -> Integer),false)" // String cache JIT compiles on the first hit
     ))
   }
 
@@ -466,13 +463,13 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       "AST: cacheMiss",
       "AST: cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion expressionEngine=interpreted RETURN 42 AS a,Map(),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion expressionEngine=interpreted RETURN 42 AS a,Map(),false)",
+      s"String: cacheMiss: CacheKey(CYPHER expressionEngine=interpreted RETURN 42 AS a,Map(),false)",
+      s"String: cacheCompile: CacheKey(CYPHER expressionEngine=interpreted RETURN 42 AS a,Map(),false)",
       // 2nd run
       "AST: cacheHit",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion expressionEngine=compiled RETURN 42 AS a,Map(),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion expressionEngine=compiled RETURN 42 AS a,Map(),false)"
+      s"String: cacheMiss: CacheKey(CYPHER expressionEngine=compiled RETURN 42 AS a,Map(),false)",
+      s"String: cacheCompile: CacheKey(CYPHER expressionEngine=compiled RETURN 42 AS a,Map(),false)"
     ))
   }
 
@@ -492,18 +489,18 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       "AST: cacheMiss",
       "AST: cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion operatorEngine=interpreted RETURN 42 AS a,Map(),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion operatorEngine=interpreted RETURN 42 AS a,Map(),false)",
+      s"String: cacheMiss: CacheKey(CYPHER operatorEngine=interpreted RETURN 42 AS a,Map(),false)",
+      s"String: cacheCompile: CacheKey(CYPHER operatorEngine=interpreted RETURN 42 AS a,Map(),false)",
       // 2nd run
       "AST: cacheHit",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion operatorEngine=compiled RETURN 42 AS a,Map(),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion operatorEngine=compiled RETURN 42 AS a,Map(),false)",
+      s"String: cacheMiss: CacheKey(CYPHER operatorEngine=compiled RETURN 42 AS a,Map(),false)",
+      s"String: cacheCompile: CacheKey(CYPHER operatorEngine=compiled RETURN 42 AS a,Map(),false)",
       // 3rd run
       "AST: cacheHit",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion RETURN 42 AS a,Map(),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion RETURN 42 AS a,Map(),false)"
+      s"String: cacheMiss: CacheKey(RETURN 42 AS a,Map(),false)",
+      s"String: cacheCompile: CacheKey(RETURN 42 AS a,Map(),false)"
     ))
   }
 
@@ -522,15 +519,15 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       "AST:    cacheMiss",
       "AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion runtime=interpreted RETURN 42 AS a,Map(),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion runtime=interpreted RETURN 42 AS a,Map(),false)",
+      s"String: cacheMiss: CacheKey(CYPHER runtime=interpreted RETURN 42 AS a,Map(),false)",
+      s"String: cacheCompile: CacheKey(CYPHER runtime=interpreted RETURN 42 AS a,Map(),false)",
       // 2nd run
       "AST:    cacheFlushDetected", // Different runtimes actually use different compilers (thus different AST caches), but they write to the same monitor
       "AST:    cacheMiss",
       "AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion runtime=slotted RETURN 42 AS a,Map(),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion runtime=slotted RETURN 42 AS a,Map(),false)"
+      s"String: cacheMiss: CacheKey(CYPHER runtime=slotted RETURN 42 AS a,Map(),false)",
+      s"String: cacheCompile: CacheKey(CYPHER runtime=slotted RETURN 42 AS a,Map(),false)"
     ))
   }
 
@@ -549,15 +546,15 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheMiss: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> Integer),false)",
       // 2nd run
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheHit: CacheKey($query,Map(n -> Integer),false)",
       // 3rd run
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheHit: CacheKey($query,Map(n -> Integer),false)",
       s"AST:    cacheHit",
       executionPlanCacheKeyMiss, // JIT compilation forces us to miss here
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)" // String cache JIT compiles on the first hit
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,Map(n -> Integer),false)" // String cache JIT compiles on the first hit
     ))
   }
 
@@ -575,8 +572,8 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)"
+      s"String: cacheMiss: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> Integer),false)"
     ))
   }
 
@@ -601,115 +598,19 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheMiss: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> Integer),false)",
       // 2nd run
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheHit: CacheKey($query,Map(n -> Integer),false)",
       // 3rd run
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheHit: CacheKey($query,Map(n -> Integer),false)",
       s"AST:    cacheHit",
       executionPlanCacheKeyMiss,
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,Map(n -> Integer),false)",
       // 4th run
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheHit: CacheKey($query,Map(n -> Integer),false)",
       // 5th run
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)"
-    ))
-  }
-
-  test("Different cypher version results in cache miss") {
-    val cacheListener = new LoggingTracer()
-
-    val query = "RETURN 1"
-
-    graph.withTx(tx => {
-      tx.execute(s"CYPHER $query").resultAsString()
-      tx.execute(s"CYPHER $previousMinor $query").resultAsString()
-      tx.execute(s"CYPHER $previousMajor $query").resultAsString()
-      tx.execute(s"CYPHER $currentVersion $query").resultAsString()
-      tx.execute(s"CYPHER $query").resultAsString()
-      tx.execute(s"CYPHER $previousMinor $query").resultAsString()
-      tx.execute(s"CYPHER $previousMajor $query").resultAsString()
-      tx.execute(s"CYPHER $currentVersion $query").resultAsString()
-      tx.execute(s"CYPHER $query").resultAsString()
-      tx.execute(s"CYPHER $previousMinor $query").resultAsString()
-      tx.execute(s"CYPHER $previousMajor $query").resultAsString()
-      tx.execute(s"CYPHER $currentVersion $query").resultAsString()
-      tx.execute(s"CYPHER $query").resultAsString()
-      tx.execute(s"CYPHER $previousMinor $query").resultAsString()
-      tx.execute(s"CYPHER $previousMajor $query").resultAsString()
-      tx.execute(s"CYPHER $currentVersion $query").resultAsString()
-    })
-
-    cacheListener.expectTrace(List(
-      // Round 1
-
-      // CYPHER $query
-      s"String: cacheFlushDetected",
-      s"AST:    cacheFlushDetected",
-      s"AST:    cacheMiss",
-      s"AST:    cacheCompile",
-      executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(),false)",
-      // CYPHER $previousMinor $query
-      s"AST:    cacheFlushDetected", // Different cypher versions actually use different compilers (thus different AST caches), but they write to the same monitor
-      s"AST:    cacheMiss",
-      s"AST:    cacheCompile",
-      executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $previousMinor $query,Map(),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $previousMinor $query,Map(),false)",
-      // CYPHER $previousMajor $query
-      s"AST:    cacheFlushDetected", // Different cypher versions actually use different compilers (thus different AST caches), but they write to the same monitor
-      s"AST:    cacheMiss",
-      s"AST:    cacheCompile",
-      executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $previousMajor $query,Map(),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $previousMajor $query,Map(),false)",
-      // CYPHER $currentVersion $query
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(),false)",
-
-      // Round 2
-
-      // CYPHER $query
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(),false)",
-      s"AST: cacheHit",
-      executionPlanCacheKeyMiss,
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $currentVersion RETURN 1,Map(),false)",
-      // CYPHER $previousMinor $query
-      s"String: cacheHit: CacheKey(CYPHER $previousMinor $query,Map(),false)",
-      // CYPHER $previousMajor $query
-      s"String: cacheHit: CacheKey(CYPHER $previousMajor $query,Map(),false)",
-      // CYPHER $currentVersion $query
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(),false)",
-
-      // Round 3
-
-      // CYPHER $query
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(),false)",
-      // CYPHER $previousMinor $query
-      s"String: cacheHit: CacheKey(CYPHER $previousMinor $query,Map(),false)",
-      s"AST: cacheHit",
-      executionPlanCacheKeyMiss,
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $previousMinor RETURN 1,Map(),false)",
-      // CYPHER $previousMajor $query
-      s"String: cacheHit: CacheKey(CYPHER $previousMajor $query,Map(),false)",
-      s"AST: cacheHit",
-      executionPlanCacheKeyMiss,
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $previousMajor RETURN 1,Map(),false)",
-      // CYPHER $currentVersion $query
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(),false)",
-
-      // Round 4 - Now everything is fully cached
-
-      // CYPHER $query
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(),false)",
-      // CYPHER $previousMinor $query
-      s"String: cacheHit: CacheKey(CYPHER $previousMinor $query,Map(),false)",
-      // CYPHER $previousMajor $query
-      s"String: cacheHit: CacheKey(CYPHER $previousMajor $query,Map(),false)",
-      // CYPHER $currentVersion $query
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(),false)"
+      s"String: cacheHit: CacheKey($query,Map(n -> Integer),false)"
     ))
   }
 
@@ -733,22 +634,22 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(),false)",
+      s"String: cacheMiss: CacheKey($query,Map(),false)",
+      s"String: cacheCompile: CacheKey($query,Map(),false)",
       // CREATE ()
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $createNodeQuery,Map(),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $createNodeQuery,Map(),false)",
+      s"String: cacheMiss: CacheKey($createNodeQuery,Map(),false)",
+      s"String: cacheCompile: CacheKey($createNodeQuery,Map(),false)",
       // RETURN 1
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyHit,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(),true)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(),true)",
+      s"String: cacheMiss: CacheKey($query,Map(),true)",
+      s"String: cacheCompile: CacheKey($query,Map(),true)",
       // RETURN 1
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(),true)"
+      s"String: cacheHit: CacheKey($query,Map(),true)"
     ))
   }
 
@@ -768,13 +669,13 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion RETURN 42 AS n,$empty_parameters,false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion RETURN 42 AS n,$empty_parameters,false)",
+      s"String: cacheMiss: CacheKey(RETURN 42 AS n,$empty_parameters,false)",
+      s"String: cacheCompile: CacheKey(RETURN 42 AS n,$empty_parameters,false)",
       // 2nd run
       s"AST:    cacheHit", // no logical planning
       executionPlanCacheKeyHit,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion RETURN 43 AS n,$empty_parameters,false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion RETURN 43 AS n,$empty_parameters,false)"
+      s"String: cacheMiss: CacheKey(RETURN 43 AS n,$empty_parameters,false)",
+      s"String: cacheCompile: CacheKey(RETURN 43 AS n,$empty_parameters,false)"
     ))
   }
 
@@ -794,13 +695,13 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion RETURN 42 AS n,$empty_parameters,false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion RETURN 42 AS n,$empty_parameters,false)",
+      s"String: cacheMiss: CacheKey(RETURN 42 AS n,$empty_parameters,false)",
+      s"String: cacheCompile: CacheKey(RETURN 42 AS n,$empty_parameters,false)",
       // 2nd run
       s"AST:    cacheHit", // no logical planning
       executionPlanCacheKeyHit,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion RETURN 43 AS n,$empty_parameters,false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion RETURN 43 AS n,$empty_parameters,false)"
+      s"String: cacheMiss: CacheKey(RETURN 43 AS n,$empty_parameters,false)",
+      s"String: cacheCompile: CacheKey(RETURN 43 AS n,$empty_parameters,false)"
     ))
   }
 
@@ -826,31 +727,31 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)",
+      s"String: cacheMiss: CacheKey($query,$empty_parameters,false)",
+      s"String: cacheCompile: CacheKey($query,$empty_parameters,false)",
       // 2nd run
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)",
+      s"String: cacheHit: CacheKey($query,$empty_parameters,false)",
       // 3rd run
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)",
+      s"String: cacheHit: CacheKey($query,$empty_parameters,false)",
       s"AST:    cacheHit", // no logical planning
       executionPlanCacheKeyMiss,
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)", // physical planning
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,$empty_parameters,false)", // physical planning
       // 4th run now everything is cached
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)",
+      s"String: cacheHit: CacheKey($query,$empty_parameters,false)",
       // CALL db.clearQueryCaches()
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $clearCacheQuery,$empty_parameters,false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $clearCacheQuery,$empty_parameters,false)",
+      s"String: cacheMiss: CacheKey($clearCacheQuery,$empty_parameters,false)",
+      s"String: cacheCompile: CacheKey($clearCacheQuery,$empty_parameters,false)",
       s"AST:    cacheFlushDetected",
       s"String: cacheFlushDetected",
       // 4th run
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,$empty_parameters,false)"
+      s"String: cacheMiss: CacheKey($query,$empty_parameters,false)",
+      s"String: cacheCompile: CacheKey($query,$empty_parameters,false)"
     ))
   }
 

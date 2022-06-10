@@ -48,7 +48,6 @@ import org.neo4j.cypher.internal.compiler.UpdateStrategy
 import org.neo4j.cypher.internal.compiler.defaultUpdateStrategy
 import org.neo4j.cypher.internal.compiler.eagerUpdateStrategy
 import org.neo4j.cypher.internal.compiler.phases.CachableLogicalPlanState
-import org.neo4j.cypher.internal.compiler.phases.CypherCompatibilityVersion
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.CachedSimpleMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ComponentConnectorPlanner
@@ -169,8 +168,7 @@ case class CypherPlanner(
   log: InternalLog,
   queryCaches: CypherQueryCaches,
   plannerOption: CypherPlannerOption,
-  updateStrategy: CypherUpdateStrategy,
-  compatibilityMode: CypherCompatibilityVersion
+  updateStrategy: CypherUpdateStrategy
 ) {
 
   private val caches = new queryCaches.CypherPlannerCaches()
@@ -220,7 +218,6 @@ case class CypherPlanner(
         Some(offset),
         tracer,
         params,
-        compatibilityMode,
         cancellationChecker
       )
       if (!config.planSystemCommands) caches.astCache.put(key, parsedQuery)

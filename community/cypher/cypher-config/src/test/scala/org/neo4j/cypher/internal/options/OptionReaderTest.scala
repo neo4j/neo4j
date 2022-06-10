@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.options
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
-import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -43,7 +42,6 @@ class OptionReaderTest extends CypherFunSuite {
     val options = CypherQueryOptions.fromValues(
       config = CypherConfiguration.fromConfig(
         Config.newBuilder()
-          .set(GraphDatabaseSettings.cypher_parser_version, GraphDatabaseSettings.CypherParserVersion.V_35)
           .set(GraphDatabaseInternalSettings.cypher_runtime, GraphDatabaseInternalSettings.CypherRuntime.INTERPRETED)
           .build()
       ),
@@ -52,7 +50,6 @@ class OptionReaderTest extends CypherFunSuite {
 
     options
       .shouldEqual(CypherQueryOptions.default.copy(
-        version = CypherVersion.v3_5,
         runtime = CypherRuntimeOption.interpreted
       ))
   }
@@ -101,12 +98,11 @@ class OptionReaderTest extends CypherFunSuite {
 
     val options = CypherQueryOptions.fromValues(
       config = CypherConfiguration.fromConfig(Config.defaults()),
-      keyValues = Set("version" -> "3.5", "planner" -> "dp", "debug" -> "toString", "debug" -> "ast")
+      keyValues = Set("planner" -> "dp", "debug" -> "toString", "debug" -> "ast")
     )
 
     options
       .shouldEqual(CypherQueryOptions.default.copy(
-        version = CypherVersion.v3_5,
         planner = CypherPlannerOption.dp,
         debugOptions = CypherDebugOptions(Set(CypherDebugOption.tostring, CypherDebugOption.ast))
       ))
@@ -117,17 +113,15 @@ class OptionReaderTest extends CypherFunSuite {
     val options = CypherQueryOptions.fromValues(
       config = CypherConfiguration.fromConfig(
         Config.newBuilder()
-          .set(GraphDatabaseSettings.cypher_parser_version, GraphDatabaseSettings.CypherParserVersion.V_35)
           .set(GraphDatabaseInternalSettings.cypher_runtime, GraphDatabaseInternalSettings.CypherRuntime.INTERPRETED)
           .build()
       ),
       keyValues =
-        Set("version" -> "4.3", "planner" -> "dp", "runtime" -> "slotted", "debug" -> "toString", "debug" -> "ast")
+        Set("planner" -> "dp", "runtime" -> "slotted", "debug" -> "toString", "debug" -> "ast")
     )
 
     options
       .shouldEqual(CypherQueryOptions.default.copy(
-        version = CypherVersion.v4_3,
         planner = CypherPlannerOption.dp,
         runtime = CypherRuntimeOption.slotted,
         debugOptions = CypherDebugOptions(Set(CypherDebugOption.tostring, CypherDebugOption.ast))

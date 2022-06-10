@@ -21,16 +21,11 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
-import org.neo4j.cypher.internal.compiler.phases.Compatibility3_5
-import org.neo4j.cypher.internal.compiler.phases.Compatibility4_3
-import org.neo4j.cypher.internal.compiler.phases.Compatibility4_4
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
-import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planning.CypherPlanner
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
-import org.neo4j.exceptions.SyntaxException
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.logging.InternalLog
 import org.neo4j.logging.InternalLogProvider
@@ -53,18 +48,11 @@ class CommunityCompilerFactory(
   override def supportsAdministrativeCommands(): Boolean = plannerConfig.planSystemCommands
 
   override def createCompiler(
-    cypherVersion: CypherVersion,
     cypherPlanner: CypherPlannerOption,
     cypherRuntime: CypherRuntimeOption,
     cypherUpdateStrategy: CypherUpdateStrategy,
     executionEngineProvider: () => ExecutionEngine
   ): Compiler = {
-
-    val compatibilityMode = cypherVersion match {
-      case CypherVersion.v3_5 => Compatibility3_5
-      case CypherVersion.v4_3 => Compatibility4_3
-      case CypherVersion.v4_4 => Compatibility4_4
-    }
 
     val planner =
       CypherPlanner(
@@ -74,17 +62,12 @@ class CommunityCompilerFactory(
         log,
         queryCaches,
         cypherPlanner,
-        cypherUpdateStrategy,
-        compatibilityMode
+        cypherUpdateStrategy
       )
 
     val runtime =
       if (plannerConfig.planSystemCommands)
-        cypherVersion match {
-          case CypherVersion.v3_5 =>
-            throw new SyntaxException("Commands towards system database are not supported in this Cypher version.")
-          case _ => CommunityAdministrationCommandRuntime(executionEngineProvider(), graph.getDependencyResolver)
-        }
+        CommunityAdministrationCommandRuntime(executionEngineProvider(), graph.getDependencyResolver)
       else
         CommunityRuntimeFactory.getRuntime(cypherRuntime, plannerConfig.useErrorsOverWarnings)
 

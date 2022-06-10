@@ -1354,8 +1354,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
                 assertNoIndexSeeks(result);
             }
             try (Result result = tx.execute(
-                    "cypher 3.5 profile match (n:" + LABEL.name() + ") where n." + PROP + " = $prop return n",
-                    params)) {
+                    "cypher profile match (n:" + LABEL.name() + ") where n." + PROP + " = $prop return n", params)) {
                 assertNoIndexSeeks(result);
             }
             tx.commit();

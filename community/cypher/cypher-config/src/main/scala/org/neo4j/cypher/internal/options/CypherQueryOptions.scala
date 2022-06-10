@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_OPERATOR_ENG
  * Collects all cypher options that can be set on query basis (pre-parser options)
  */
 case class CypherQueryOptions(
-  version: CypherVersion,
   executionMode: CypherExecutionMode,
   planner: CypherPlannerOption,
   runtime: CypherRuntimeOption,
@@ -142,29 +141,6 @@ case object CypherExecutionMode extends CypherOptionCompanion[CypherExecutionMod
   implicit val renderer: OptionRenderer[CypherExecutionMode] = OptionRenderer.create(_.render)
   implicit val cacheKey: OptionCacheKey[CypherExecutionMode] = OptionCacheKey.create(_.cacheKey)
   implicit val reader: OptionReader[CypherExecutionMode] = singleOptionReader()
-}
-
-sealed abstract class CypherVersion(versionName: String) extends CypherOption(versionName) {
-  override def companion: CypherVersion.type = CypherVersion
-  override def cacheKey: String = name
-}
-
-case object CypherVersion extends CypherOptionCompanion[CypherVersion](
-      name = "version",
-      setting = Some(GraphDatabaseSettings.cypher_parser_version),
-      cypherConfigField = Some(_.version)
-    ) {
-  case object v3_5 extends CypherVersion("3.5")
-  case object v4_3 extends CypherVersion("4.3")
-  case object v4_4 extends CypherVersion("4.4")
-
-  val default: CypherVersion = v4_4
-  def values: Set[CypherVersion] = Set(v3_5, v4_3, v4_4)
-
-  implicit val hasDefault: OptionDefault[CypherVersion] = OptionDefault.create(default)
-  implicit val renderer: OptionRenderer[CypherVersion] = OptionRenderer.create(_.render)
-  implicit val cacheKey: OptionCacheKey[CypherVersion] = OptionCacheKey.create(_.cacheKey)
-  implicit val reader: OptionReader[CypherVersion] = singleOptionReader()
 }
 
 sealed abstract class CypherPlannerOption(plannerName: String) extends CypherKeyValueOption(plannerName) {

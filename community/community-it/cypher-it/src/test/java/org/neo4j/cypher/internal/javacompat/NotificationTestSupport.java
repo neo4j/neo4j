@@ -23,10 +23,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
 
-import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -50,22 +47,13 @@ public class NotificationTestSupport {
     @Inject
     protected GraphDatabaseAPI db;
 
-    private final List<String> supportedCypherVersions = List.of("CYPHER 3.5", "CYPHER 4.3", "CYPHER 4.4");
+    void assertNotifications(String query, Matcher<Iterable<Notification>> matchesExpectation) {
 
-    void assertNotificationsInSupportedVersions(String query, Matcher<Iterable<Notification>> matchesExpectation) {
-        assertNotifications(supportedCypherVersions, query, matchesExpectation);
-    }
-
-    private void assertNotifications(
-            List<String> versions, String query, Matcher<Iterable<Notification>> matchesExpectation) {
-
-        versions.forEach(version -> {
-            try (Transaction transaction = db.beginTx()) {
-                try (Result result = transaction.execute(String.format("%s %s", version, query))) {
-                    assertThat(result.getNotifications(), matchesExpectation);
-                }
+        try (Transaction transaction = db.beginTx()) {
+            try (Result result = transaction.execute(query)) {
+                assertThat(result.getNotifications(), matchesExpectation);
             }
-        });
+        }
     }
 
     public static Matcher<Notification> notification(
@@ -133,56 +121,41 @@ public class NotificationTestSupport {
     }
 
     void shouldNotifyInStream(String query, InputPosition pos, NotificationCode code) {
-        Stream.of(supportedCypherVersions.toArray()).forEach(version -> {
-            try (Transaction transaction = db.beginTx()) {
-                // when
-                try (Result result = transaction.execute(version + query)) {
-                    // then
-                    NotificationCode.Notification notification = code.notification(pos);
-                    assertThat(Iterables.asList(result.getNotifications()), Matchers.hasItems(notification));
-                    Map<String, Object> arguments =
-                            result.getExecutionPlanDescription().getArguments();
-                    assertThat(arguments.get("version"), equalTo(version));
-                }
-                transaction.commit();
+        try (Transaction transaction = db.beginTx()) {
+            // when
+            try (Result result = transaction.execute(query)) {
+                // then
+                NotificationCode.Notification notification = code.notification(pos);
+                assertThat(Iterables.asList(result.getNotifications()), Matchers.hasItems(notification));
             }
-        });
+            transaction.commit();
+        }
     }
 
     void shouldNotifyInStreamWithDetail(
             String query, InputPosition pos, NotificationCode code, NotificationDetail detail) {
-        Stream.of(supportedCypherVersions.toArray()).forEach(version -> {
-            try (Transaction transaction = db.beginTx()) {
-                // when
-                try (Result result = transaction.execute(version + " " + query)) {
+        try (Transaction transaction = db.beginTx()) {
+            // when
+            try (Result result = transaction.execute(query)) {
 
-                    // then
-                    NotificationCode.Notification notification = code.notification(pos, detail);
-                    assertThat(Iterables.asList(result.getNotifications()), Matchers.hasItems(notification));
-                    Map<String, Object> arguments =
-                            result.getExecutionPlanDescription().getArguments();
-                    assertThat(arguments.get("version"), equalTo(version));
-                }
-                transaction.commit();
+                // then
+                NotificationCode.Notification notification = code.notification(pos, detail);
+                assertThat(Iterables.asList(result.getNotifications()), Matchers.hasItems(notification));
             }
-        });
+            transaction.commit();
+        }
     }
 
     void shouldNotNotifyInStream(String query) {
-        Stream.of(supportedCypherVersions.toArray()).forEach(version -> {
-            try (Transaction transaction = db.beginTx()) {
-                // when
-                try (Result result = transaction.execute(version + " " + query)) {
+        try (Transaction transaction = db.beginTx()) {
+            // when
+            try (Result result = transaction.execute(query)) {
 
-                    // then
-                    assertThat(Iterables.asList(result.getNotifications()), empty());
-                    Map<String, Object> arguments =
-                            result.getExecutionPlanDescription().getArguments();
-                    assertThat(arguments.get("version"), equalTo(version));
-                }
-                transaction.commit();
+                // then
+                assertThat(Iterables.asList(result.getNotifications()), empty());
             }
-        });
+            transaction.commit();
+        }
     }
 
     Matcher<Notification> cartesianProductWarning = notification(

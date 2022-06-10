@@ -228,37 +228,12 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     // Cypher settings
 
-    public enum CypherParserVersion {
-        DEFAULT("default"),
-        V_35("3.5"),
-        V_43("4.3"),
-        V_44("4.4");
-
-        private final String name;
-
-        CypherParserVersion(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public String toString() {
-            return name;
-        }
-    }
-
     @Description("If set to `true` a textual representation of the plan description will be rendered on the "
             + "server for all queries running with `EXPLAIN` or `PROFILE`. This allows clients such as the neo4j "
             + "browser and Cypher shell to show a more detailed plan description.")
     public static final Setting<Boolean> cypher_render_plan_descriptions = newBuilder(
                     "dbms.cypher.render_plan_description", BOOL, false)
             .dynamic()
-            .build();
-
-    @Description("Set this to specify the default parser (language version).")
-    public static final Setting<CypherParserVersion> cypher_parser_version = newBuilder(
-                    "dbms.cypher.default_language_version",
-                    ofEnum(CypherParserVersion.class),
-                    CypherParserVersion.DEFAULT)
             .build();
 
     public enum CypherPlanner {

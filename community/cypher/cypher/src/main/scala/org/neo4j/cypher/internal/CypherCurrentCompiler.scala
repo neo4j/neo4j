@@ -35,7 +35,6 @@ import org.neo4j.cypher.internal.logical.plans.SchemaLabelIndexUsage
 import org.neo4j.cypher.internal.logical.plans.SchemaRelationshipIndexUsage
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.options.CypherExecutionMode
-import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
@@ -161,7 +160,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       logicalPlanResult.extractedParams,
       buildCompilerInfo(logicalPlan, planState.plannerName, executionPlan.runtimeName),
       planState.plannerName,
-      query.options.queryOptions.version,
       queryType,
       logicalPlanResult.shouldBeCached,
       contextManager.config.enableMonitors,
@@ -307,7 +305,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
     override val extractedParams: MapValue,
     override val compilerInfo: CompilerInfo,
     plannerName: PlannerName,
-    cypherVersion: CypherVersion,
     internalQueryType: InternalQueryType,
     override val shouldBeCached: Boolean,
     enableMonitors: Boolean,
@@ -326,7 +323,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       PlanDescriptionBuilder(
         executionPlan.rewrittenPlan.getOrElse(logicalPlan),
         plannerName,
-        cypherVersion,
         readOnly,
         effectiveCardinalities,
         rawCardinalitiesInPlanDescription,

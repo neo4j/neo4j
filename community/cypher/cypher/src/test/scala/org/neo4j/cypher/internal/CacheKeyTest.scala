@@ -31,29 +31,27 @@ import org.neo4j.cypher.internal.options.CypherQueryOptions
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
-import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CacheKeyTest extends CypherFunSuite {
 
-  test("For default options, only version is part of cache key") {
+  test("For default options,the cache key should be empty") {
     val options = CypherQueryOptions.default
 
     options.cacheKey
-      .shouldEqual(CypherVersion.default.name)
+      .shouldEqual("")
   }
 
   test("EXPLAIN does not appear in cache key") {
     val options = CypherQueryOptions.default.copy(executionMode = CypherExecutionMode.explain)
 
     options.cacheKey
-      .shouldEqual(CypherVersion.default.name)
+      .shouldEqual("")
   }
 
   test("All non-default options should be part of cache key, except replan") {
     val options = CypherQueryOptions(
       executionMode = CypherExecutionMode.profile,
-      version = CypherVersion.v3_5,
       planner = CypherPlannerOption.dp,
       runtime = CypherRuntimeOption.pipelined,
       updateStrategy = CypherUpdateStrategy.eager,
@@ -67,7 +65,7 @@ class CacheKeyTest extends CypherFunSuite {
 
     options.cacheKey
       .shouldEqual(
-        "3.5 PROFILE planner=dp runtime=pipelined updateStrategy=eager expressionEngine=interpreted operatorEngine=interpreted interpretedPipesFallback=all connectComponentsPlanner=idp debug=querygraph debug=tostring"
+        "PROFILE planner=dp runtime=pipelined updateStrategy=eager expressionEngine=interpreted operatorEngine=interpreted interpretedPipesFallback=all connectComponentsPlanner=idp debug=querygraph debug=tostring"
       )
   }
 }

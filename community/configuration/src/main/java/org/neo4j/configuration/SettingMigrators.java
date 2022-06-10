@@ -46,7 +46,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.csv_legacy_quote_esc
 import static org.neo4j.configuration.GraphDatabaseSettings.cypher_hints_error;
 import static org.neo4j.configuration.GraphDatabaseSettings.cypher_lenient_create_relationship;
 import static org.neo4j.configuration.GraphDatabaseSettings.cypher_min_replan_interval;
-import static org.neo4j.configuration.GraphDatabaseSettings.cypher_parser_version;
 import static org.neo4j.configuration.GraphDatabaseSettings.cypher_planner;
 import static org.neo4j.configuration.GraphDatabaseSettings.cypher_render_plan_descriptions;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
@@ -170,7 +169,8 @@ public final class SettingMigrators {
                 "unsupported.dbms.tokenscan.log.prune_threshold",
                 "unsupported.dbms.tokenscan.log.rotation_threshold",
                 "unsupported.dbms.topology_graph.enable",
-                "unsupported.dbms.uris.rest");
+                "unsupported.dbms.uris.rest",
+                "cypher.default_language_version");
         private static final Collection<Mapping> LEGACY_UNSUPPORTED_SETTINGS_MAPPING = List.of(
                 new Mapping("dbms.capabilities.blocked", "internal.dbms.capabilities.blocked"),
                 new Mapping("dbms.connector.bolt.tcp_keep_alive", "internal.server.bolt.tcp_keep_alive"),
@@ -908,7 +908,6 @@ public final class SettingMigrators {
 
         private static void migrateCypherNamespace(
                 Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migrateSettingNameChange(values, log, "cypher.default_language_version", cypher_parser_version);
             migrateSettingNameChange(
                     values, log, "cypher.forbid_exhaustive_shortestpath", forbid_exhaustive_shortestpath);
             migrateSettingNameChange(

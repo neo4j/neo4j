@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
-import org.neo4j.cypher.internal.compiler.phases.Compatibility4_3
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ComponentConnectorPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.DPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.DefaultIDPSolverConfig
@@ -269,8 +268,7 @@ class CypherPlannerTest extends CypherFunSuite {
       NullLog.getInstance(),
       caches,
       CypherPlannerOption.default,
-      CypherUpdateStrategy.default,
-      compatibilityMode = Compatibility4_3
+      CypherUpdateStrategy.default
     )
 
     val query =

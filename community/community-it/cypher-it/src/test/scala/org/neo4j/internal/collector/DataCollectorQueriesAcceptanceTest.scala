@@ -536,7 +536,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     execute("CREATE (:User {age: 99})-[:KNOWS]->(:Buddy {p: 42})-[:WANTS]->(:Raccoon)") // create tokens
 
     execute("EXPLAIN MATCH (:User)-[:KNOWS]->(:Buddy)-[:WANTS]->(:Raccoon) RETURN 1")
-    execute("CYPHER 3.5 runtime=interpreted PROFILE CREATE ()")
+    execute("CYPHER runtime=interpreted PROFILE CREATE ()")
 
     // when
     val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
@@ -544,7 +544,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     // then
     res.toList should beListWithoutOrder(
       querySection("EXPLAIN MATCH (:L0)-[:R0]->(:L1)-[:R1]->(:L2) RETURN 1"),
-      querySection("CYPHER 3.5 runtime=interpreted PROFILE CREATE ()")
+      querySection("CYPHER runtime=interpreted PROFILE CREATE ()")
     )
   }
 

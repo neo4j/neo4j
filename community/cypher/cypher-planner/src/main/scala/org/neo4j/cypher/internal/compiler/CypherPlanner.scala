@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.planPipeLine
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.prepareForCaching
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.systemPipeLine
-import org.neo4j.cypher.internal.compiler.phases.CypherCompatibilityVersion
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
@@ -82,7 +81,6 @@ case class CypherPlanner[Context <: PlannerContext](
     offset: Option[InputPosition],
     tracer: CompilationPhaseTracer,
     params: MapValue,
-    compatibilityMode: CypherCompatibilityVersion,
     cancellationChecker: CancellationChecker
   ): BaseState = {
 
@@ -90,7 +88,6 @@ case class CypherPlanner[Context <: PlannerContext](
     val startState = InitialState(queryText, offset, plannerName, new AnonymousVariableNameGenerator)
     val context = BaseContextImpl(tracer, notificationLogger, rawQueryText, offset, monitors, cancellationChecker)
     CompilationPhases.parsing(ParsingConfig(
-      compatibilityMode,
       semanticFeatures = config.enabledSemanticFeatures,
       parameterTypeMapping = ParameterValueTypeHelper.asCypherTypeMap(params),
       obfuscateLiterals = config.obfuscateLiterals

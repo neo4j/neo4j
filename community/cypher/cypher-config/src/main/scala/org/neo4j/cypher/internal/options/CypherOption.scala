@@ -28,7 +28,7 @@ object CypherOption {
 }
 
 /**
- * Represents values of cypher options, like `4.3` in `CYPHER 4.3`
+ * Represents values of cypher options
  *
  * @param inputName Used to parse values and in error messages etc.
  */

@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.RuntimeName
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.BatchSize
 import org.neo4j.cypher.internal.plandescription.Arguments.Runtime
 import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeImpl
@@ -41,7 +40,6 @@ object PlanDescriptionBuilder {
   def apply(
     logicalPlan: LogicalPlan,
     plannerName: PlannerName,
-    cypherVersion: CypherVersion,
     readOnly: Boolean,
     effectiveCardinalities: EffectiveCardinalities,
     withRawCardinalities: Boolean,
@@ -59,7 +57,6 @@ object PlanDescriptionBuilder {
     new PlanDescriptionBuilder(
       logicalPlan: LogicalPlan,
       plannerName: PlannerName,
-      cypherVersion: CypherVersion,
       readOnly: Boolean,
       effectiveCardinalities: EffectiveCardinalities,
       withRawCardinalities: Boolean,
@@ -77,7 +74,6 @@ object PlanDescriptionBuilder {
 class PlanDescriptionBuilder(
   logicalPlan: LogicalPlan,
   plannerName: PlannerName,
-  cypherVersion: CypherVersion,
   readOnly: Boolean,
   effectiveCardinalities: EffectiveCardinalities,
   withRawCardinalities: Boolean,
@@ -96,7 +92,6 @@ class PlanDescriptionBuilder(
         .create(
           logicalPlan,
           plannerName,
-          cypherVersion,
           readOnly,
           effectiveCardinalities,
           withRawCardinalities,

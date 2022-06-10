@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.InvalidArgumentException
+import org.neo4j.exceptions.SyntaxException
 import org.neo4j.graphdb.config.Setting
 
 import scala.jdk.CollectionConverters.MapHasAsJava
@@ -51,13 +52,14 @@ class PreParserTest extends CypherFunSuite {
     intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER runtime=slotted runtime=interpreted RETURN 42"))
   }
 
-  test("should not allow multiple versions") {
-    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER 3.5 CYPHER 4.3 RETURN 42"))
-  }
-
   test("should not allow both EXPLAIN and PROFILE") {
     intercept[InvalidArgumentException](preParser.preParseQuery("EXPLAIN PROFILE RETURN 42"))
     intercept[InvalidArgumentException](preParser.preParseQuery("PROFILE EXPLAIN RETURN 42"))
+  }
+
+  test("should not allow CYPHER {version}") {
+    intercept[SyntaxException](preParser.preParseQuery("CYPHER 4.4 RETURN 42"))
+      .getMessage should include("Support for setting Cypher Version has been removed (line 1, column 8 (offset: 7))")
   }
 
   test("should not allow unknown options") {

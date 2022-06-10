@@ -42,7 +42,6 @@ public class ClientErrorIT extends AbstractRestFunctionalTestBase {
                 Arguments.of("Not a valid query", Status.Statement.SyntaxError),
                 Arguments.of("RETURN $foo", Status.Statement.ParameterMissing),
                 Arguments.of("MATCH (n) WITH n.prop AS n2 RETURN n2.prop", Status.Statement.TypeError),
-                Arguments.of("CYPHER 1.9 EXPLAIN MATCH n RETURN n", Status.Statement.ArgumentError),
                 Arguments.of("RETURN 10 / 0", Status.Statement.ArithmeticError),
                 Arguments.of("SHOW DATABASES", Status.Transaction.ForbiddenDueToTransactionType),
                 Arguments.of(

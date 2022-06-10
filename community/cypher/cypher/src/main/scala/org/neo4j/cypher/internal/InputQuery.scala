@@ -48,7 +48,8 @@ sealed trait InputQuery {
 case class PreParsedQuery(statement: String, rawStatement: String, options: QueryOptions) extends InputQuery {
 
   val statementWithVersionAndPlanner: String =
-    s"${options.cacheKey} $statement"
+    if (options.cacheKey.isEmpty) statement
+    else s"${options.cacheKey} $statement"
 
   override def cacheKey: String = statementWithVersionAndPlanner
 

@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.options.CypherDebugOptions
-import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
@@ -347,7 +346,6 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
         PlanDescriptionBuilder(
           executionPlan.rewrittenPlan.getOrElse(logicalQuery.logicalPlan),
           IDPPlannerName,
-          CypherVersion.default,
           logicalQuery.readOnly,
           logicalQuery.effectiveCardinalities,
           debugOptions.rawCardinalitiesEnabled,

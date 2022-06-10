@@ -328,7 +328,6 @@ import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.WaitForCompletion
-import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
@@ -391,9 +390,8 @@ object LogicalPlan2PlanDescriptionTest {
 
 class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPropertyChecks {
 
-  private val CYPHER_VERSION = Version("CYPHER 4.4")
-  private val RUNTIME_VERSION = RuntimeVersion("4.4")
-  private val PLANNER_VERSION = PlannerVersion("4.4")
+  private val RUNTIME_VERSION = RuntimeVersion("5.0")
+  private val PLANNER_VERSION = PlannerVersion("5.0")
 
   implicit val idGen: IdGen = new SequentialIdGen()
   private val readOnly = true
@@ -438,7 +436,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           details("a"),
           EstimatedRows(1, Some(15)),
           Order(asPrettyString.raw("a ASC")),
-          CYPHER_VERSION,
           RUNTIME_VERSION,
           Planner("COST"),
           PlannerImpl("IDP"),
@@ -463,7 +460,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           details(anonVar("111")),
           EstimatedRows(1, Some(10)),
           Order(asPrettyString.raw(s"${anonVar("111")} ASC")),
-          CYPHER_VERSION,
           RUNTIME_VERSION,
           Planner("COST"),
           PlannerImpl("IDP"),
@@ -486,7 +482,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         Seq(
           details(Seq("n1", "n2", "r", "v1", "v2")),
           EstimatedRows(42.3, Some(132)),
-          CYPHER_VERSION,
           RUNTIME_VERSION,
           Planner("COST"),
           PlannerImpl("IDP"),
@@ -4972,7 +4967,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     val producedPlanDescription = LogicalPlan2PlanDescription.create(
       logicalPlan,
       IDPPlannerName,
-      CypherVersion.default,
       readOnly,
       effectiveCardinalities,
       withRawCardinalities = false,

@@ -45,7 +45,6 @@ import org.neo4j.cypher.internal.frontend.phases.ProjectNamedPathsRewriter
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.SemanticTypeCheck
 import org.neo4j.cypher.internal.frontend.phases.StatementCondition
-import org.neo4j.cypher.internal.frontend.phases.SyntaxAdditionsErrors
 import org.neo4j.cypher.internal.frontend.phases.SyntaxDeprecationWarningsAndReplacements
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
@@ -56,7 +55,6 @@ import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityToInPredicate
 import org.neo4j.cypher.internal.frontend.phases.transitiveClosure
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
-import org.neo4j.cypher.internal.rewriting.Additions
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
@@ -101,7 +99,6 @@ object CompilationPhases {
       )
 
   case class ParsingConfig(
-    compatibilityMode: CypherCompatibilityVersion = Compatibility4_4,
     literalExtractionStrategy: LiteralExtractionStrategy = IfNoParameter,
     parameterTypeMapping: Map[String, CypherType] = Map.empty,
     semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
@@ -109,27 +106,15 @@ object CompilationPhases {
   )
 
   private def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
-    val compatibilityCheck: Transformer[BaseContext, BaseState, BaseState] =
-      config.compatibilityMode match {
-        case Compatibility3_5 =>
-          SyntaxAdditionsErrors(Additions.addedFeaturesIn4_x) andThen
-            SyntaxAdditionsErrors(Additions.addedFeaturesIn4_4)
-        case Compatibility4_3 =>
-          SyntaxAdditionsErrors(Additions.addedFeaturesIn4_4)
-        case Compatibility4_4 =>
-          Transformer.identity
-      }
-
     Parse andThen
-      compatibilityCheck andThen
-      SyntaxDeprecationWarningsAndReplacements(Deprecations.syntacticallyDeprecatedFeaturesIn4_X) andThen
+      SyntaxDeprecationWarningsAndReplacements(Deprecations.syntacticallyDeprecatedFeatures) andThen
       PreparatoryRewriting andThen
       If((_: BaseState) => config.obfuscateLiterals)(
         extractSensitiveLiterals
       ) andThen
       SemanticAnalysis(warn = true, config.semanticFeatures: _*) andThen
       SemanticTypeCheck andThen
-      SyntaxDeprecationWarningsAndReplacements(Deprecations.semanticallyDeprecatedFeaturesIn4_X)
+      SyntaxDeprecationWarningsAndReplacements(Deprecations.semanticallyDeprecatedFeatures)
   }
 
   // Phase 1
@@ -186,8 +171,3 @@ object CompilationPhases {
         UnsupportedSystemCommand
       )
 }
-
-sealed trait CypherCompatibilityVersion
-case object Compatibility3_5 extends CypherCompatibilityVersion
-case object Compatibility4_3 extends CypherCompatibilityVersion
-case object Compatibility4_4 extends CypherCompatibilityVersion

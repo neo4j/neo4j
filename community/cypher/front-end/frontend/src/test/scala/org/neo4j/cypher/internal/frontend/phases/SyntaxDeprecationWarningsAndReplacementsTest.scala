@@ -20,8 +20,8 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.helpers.TestContext
-import org.neo4j.cypher.internal.rewriting.Deprecations.semanticallyDeprecatedFeaturesIn4_X
-import org.neo4j.cypher.internal.rewriting.Deprecations.syntacticallyDeprecatedFeaturesIn4_X
+import org.neo4j.cypher.internal.rewriting.Deprecations.semanticallyDeprecatedFeatures
+import org.neo4j.cypher.internal.rewriting.Deprecations.syntacticallyDeprecatedFeatures
 import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVariables
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
@@ -49,10 +49,10 @@ class SyntaxDeprecationWarningsAndReplacementsTest extends CypherFunSuite {
       InitialState(query, None, plannerName, new AnonymousVariableNameGenerator, maybeStatement = Some(statement))
 
     val pipeline =
-      SyntaxDeprecationWarningsAndReplacements(syntacticallyDeprecatedFeaturesIn4_X) andThen
+      SyntaxDeprecationWarningsAndReplacements(syntacticallyDeprecatedFeatures) andThen
         PreparatoryRewriting andThen
         SemanticAnalysis(warn = true) andThen
-        SyntaxDeprecationWarningsAndReplacements(semanticallyDeprecatedFeaturesIn4_X)
+        SyntaxDeprecationWarningsAndReplacements(semanticallyDeprecatedFeatures)
 
     val transformedState = pipeline.transform(initialState, TestContext(logger))
 

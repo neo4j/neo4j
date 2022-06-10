@@ -31,9 +31,6 @@ import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.PreParserCache
 import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper
 import org.neo4j.cypher.internal.compiler.phases.BaseContextImpl
-import org.neo4j.cypher.internal.compiler.phases.Compatibility3_5
-import org.neo4j.cypher.internal.compiler.phases.Compatibility4_3
-import org.neo4j.cypher.internal.compiler.phases.Compatibility4_4
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
@@ -42,7 +39,6 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.options.CypherExecutionMode
-import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.planning.WrappedMonitors
@@ -111,13 +107,6 @@ case class FabricFrontEnd(
 
     private val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator
 
-    private val compatibilityMode =
-      query.options.queryOptions.version match {
-        case CypherVersion.v3_5 => Compatibility3_5
-        case CypherVersion.v4_3 => Compatibility4_3
-        case CypherVersion.v4_4 => Compatibility4_4
-      }
-
     private val semanticFeatures = Seq(
       MultipleGraphs,
       UseGraphSelector,
@@ -125,7 +114,6 @@ case class FabricFrontEnd(
     )
 
     private val parsingConfig = CompilationPhases.ParsingConfig(
-      compatibilityMode = compatibilityMode,
       parameterTypeMapping = ParameterValueTypeHelper.asCypherTypeMap(params),
       semanticFeatures =
         CompilationPhases.enabledSemanticFeatures(cypherConfig.enableExtraSemanticFeatures) ++ semanticFeatures,
