@@ -29,11 +29,19 @@ import org.neo4j.cypher.internal.util.InputPosition
 //
 trait ScopeExpression extends Expression {
   def introducedVariables: Set[LogicalVariable]
+  def scopeDependencies: Set[LogicalVariable]
+
+  // We need to override dependencies because the default implementation relies on scope Expressions computing the dependencies manually,
+  // so that it does not need to recurse into them.
+  final override def dependencies: Set[LogicalVariable] = scopeDependencies
 }
 
 case class FilterScope(variable: LogicalVariable, innerPredicate: Option[Expression])(val position: InputPosition)
     extends ScopeExpression {
-  val introducedVariables = Set(variable)
+  val introducedVariables: Set[LogicalVariable] = Set(variable)
+
+  override def scopeDependencies: Set[LogicalVariable] =
+    innerPredicate.fold(Set.empty[LogicalVariable])(_.dependencies) -- introducedVariables
 }
 
 case class ExtractScope(
@@ -41,13 +49,20 @@ case class ExtractScope(
   innerPredicate: Option[Expression],
   extractExpression: Option[Expression]
 )(val position: InputPosition) extends ScopeExpression {
-  val introducedVariables = Set(variable)
+  val introducedVariables: Set[LogicalVariable] = Set(variable)
+
+  override def scopeDependencies: Set[LogicalVariable] =
+    innerPredicate.fold(Set.empty[LogicalVariable])(_.dependencies) ++
+      extractExpression.fold(Set.empty[LogicalVariable])(_.dependencies) --
+      introducedVariables
 }
 
 case class ReduceScope(accumulator: LogicalVariable, variable: LogicalVariable, expression: Expression)(
   val position: InputPosition
 ) extends ScopeExpression {
-  val introducedVariables = Set(accumulator, variable)
+  val introducedVariables: Set[LogicalVariable] = Set(accumulator, variable)
+
+  override def scopeDependencies: Set[LogicalVariable] = expression.dependencies -- introducedVariables
 }
 
 /**

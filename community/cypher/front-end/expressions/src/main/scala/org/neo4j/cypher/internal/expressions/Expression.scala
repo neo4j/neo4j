@@ -38,10 +38,16 @@ object Expression {
   val DefaultTypeMismatchMessageGenerator =
     (expected: String, existing: String) => s"expected $expected but was $existing"
 
+  /**
+   * An Accumulator for walking over an Expressions tree while keeping track of variables in scope.
+   *
+   * @param data the accumulated data
+   * @param list a list of scopes, where each element is a Set of Variables in that scope.
+   */
   final case class TreeAcc[A](data: A, list: List[Set[LogicalVariable]] = List.empty) {
     def mapData(f: A => A): TreeAcc[A] = copy(data = f(data))
 
-    def inScope(variable: LogicalVariable) = list.exists(_.contains(variable))
+    def inScope(variable: LogicalVariable): Boolean = list.exists(_.contains(variable))
     def variablesInScope: Set[LogicalVariable] = list.toSet.flatten
 
     def pushScope(newVariable: LogicalVariable): TreeAcc[A] = pushScope(Set(newVariable))
@@ -74,34 +80,44 @@ abstract class Expression extends ASTNode {
 
   self =>
 
+  /**
+   * Collects the immediate arguments to this Expression.
+   */
   def arguments: Seq[Expression] = this.folder.treeFold(List.empty[Expression]) {
     case e: Expression if e != this =>
       acc => SkipChildren(acc :+ e)
   }
 
-  // Collects all sub-expressions recursively
+  /**
+   * Collects all sub-expressions recursively .
+   */
   def subExpressions: Seq[Expression] = this.folder.treeFold(List.empty[Expression]) {
     case e: Expression if e != this =>
       acc => TraverseChildren(acc :+ e)
   }
 
-  // All variables referenced from this expression or any of its children
-  // that are not introduced inside this expression
+  /** 
+   * All variables referenced from this expression or any of its children
+   * that are not introduced inside this expression.
+   */
   def dependencies: Set[LogicalVariable] =
     this.folder.treeFold(Expression.TreeAcc[Set[LogicalVariable]](Set.empty)) {
       case scope: ScopeExpression =>
         acc =>
-          val newAcc = acc.pushScope(scope.introducedVariables)
-          TraverseChildrenNewAccForSiblings(newAcc, _.popScope)
+          val newDependencies = scope.dependencies.filterNot(acc.inScope)
+          val newAcc = acc.mapData(_ ++ newDependencies)
+          SkipChildren(newAcc)
       case id: LogicalVariable => acc => {
           val newAcc = if (acc.inScope(id)) acc else acc.mapData(_ + id)
           TraverseChildren(newAcc)
         }
     }.data
 
-  // All (free) occurrences of variable in this expression or any of its children
-  // (i.e. excluding occurrences referring to shadowing redefinitions of variable)
-  def occurrences(variable: LogicalVariable): Set[Ref[Variable]] =
+  /** 
+   * All (free) occurrences of variable in this expression or any of its children
+   * (i.e. excluding occurrences referring to shadowing redefinitions of variable).
+   */
+  private def occurrences(variable: LogicalVariable): Set[Ref[Variable]] =
     this.folder.treeFold(Expression.TreeAcc[Set[Ref[Variable]]](Set.empty)) {
       case scope: ScopeExpression =>
         acc =>
@@ -114,18 +130,26 @@ abstract class Expression extends ASTNode {
         }
     }.data
 
-  def copyAndReplace(variable: LogicalVariable) = new {
-
-    def by(replacement: => Expression): Expression = {
-      val replacedOccurences = occurrences(variable)
-      self.endoRewrite(bottomUp(Rewriter.lift {
-        case occurrence: Variable if replacedOccurences(Ref(occurrence)) => replacement
-      }))
-    }
+  /**
+   * Replaces all occurrences of a variable in this Expression by the given replacements.
+   * This takes into account scoping and does not replace other Variables with the same name
+   * in nested inner scopes.
+   *
+   * @param variable    the variable to replace
+   * @param replacement the replacement expression
+   * @return this expression with `variable` replaced by `replacement.
+   */
+  def replaceAllOccurrencesBy(variable: LogicalVariable, replacement: => Expression): Expression = {
+    val occurrencesToReplace = occurrences(variable)
+    self.endoRewrite(bottomUp(Rewriter.lift {
+      case occurrence: Variable if occurrencesToReplace(Ref(occurrence)) => replacement
+    }))
   }
 
-  // List of child expressions together with any of its dependencies introduced
-  // by any of its parent expressions (where this expression is the root of the tree)
+  /** 
+   * List of child expressions together with any of its dependencies introduced
+   * by any of its parent expressions (where this expression is the root of the tree).
+   */
   def inputs: Seq[(Expression, Set[LogicalVariable])] =
     this.folder.treeFold(TreeAcc[Seq[(Expression, Set[LogicalVariable])]](Seq.empty)) {
       case scope: ScopeExpression =>

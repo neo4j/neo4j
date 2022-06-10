@@ -26,7 +26,11 @@ case class PatternExpression(pattern: RelationshipsPattern)(
 
   override def position: InputPosition = pattern.position
 
-  override def introducedVariables: Set[LogicalVariable] = pattern.element.allVariables -- outerScope
+  private val patternVariables = pattern.element.allVariables
+
+  override def introducedVariables: Set[LogicalVariable] = patternVariables -- outerScope
+
+  override def scopeDependencies: Set[LogicalVariable] = patternVariables intersect outerScope
 
   override def withOuterScope(outerScope: Set[LogicalVariable]): PatternExpression =
     copy()(outerScope, variableToCollectName, collectionName)

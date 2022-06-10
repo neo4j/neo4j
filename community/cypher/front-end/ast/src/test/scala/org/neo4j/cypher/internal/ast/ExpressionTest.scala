@@ -107,6 +107,52 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     expr.withOuterScope(Set.empty).dependencies should equal(Set.empty)
   }
 
+  test("should compute dependencies for pattern comprehension with dependency in projection") {
+    // [ (n)-->(k) | dep ]
+    val pat: RelationshipsPattern = RelationshipsPattern(
+      RelationshipChain(
+        NodePattern(Some(varFor("n")), None, None, None) _,
+        RelationshipPattern(None, None, None, None, None, SemanticDirection.OUTGOING) _,
+        NodePattern(Some(varFor("k")), None, None, None) _
+      ) _
+    ) _
+    val expr = PatternComprehension(
+      namedPath = None,
+      pattern = pat,
+      predicate = None,
+      projection = varFor("dep")
+    )(pos, Set.empty, "", "")
+
+    expr.withOuterScope(Set(varFor("n"), varFor("k"), varFor("dep"))).dependencies should equal(Set(
+      varFor("n"),
+      varFor("k"),
+      varFor("dep")
+    ))
+  }
+
+  test("should compute dependencies for pattern comprehension with dependency in predicate") {
+    // [ (n)-->(k) WHERE dep | k ]
+    val pat: RelationshipsPattern = RelationshipsPattern(
+      RelationshipChain(
+        NodePattern(Some(varFor("n")), None, None, None) _,
+        RelationshipPattern(None, None, None, None, None, SemanticDirection.OUTGOING) _,
+        NodePattern(Some(varFor("k")), None, None, None) _
+      ) _
+    ) _
+    val expr = PatternComprehension(
+      namedPath = None,
+      pattern = pat,
+      predicate = Some(varFor("dep")),
+      projection = varFor("k")
+    )(pos, Set.empty, "", "")
+
+    expr.withOuterScope(Set(varFor("n"), varFor("k"), varFor("dep"))).dependencies should equal(Set(
+      varFor("n"),
+      varFor("k"),
+      varFor("dep")
+    ))
+  }
+
   test("should compute dependencies for exists subclause with node predicate") {
     // MATCH (n) WHERE EXISTS { (n)-[r]->(p) WHERE n.prop = p.prop }
     val relChain = RelationshipChain(

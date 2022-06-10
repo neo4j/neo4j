@@ -25,6 +25,10 @@ case class CountExpression(pattern: PatternElement, optionalWhereExpression: Opt
 
   self =>
 
+  override def scopeDependencies: Set[LogicalVariable] =
+    (pattern.allVariables ++
+      optionalWhereExpression.fold(Set.empty[LogicalVariable])(_.dependencies)) intersect outerScope
+
   override def withOuterScope(outerScope: Set[LogicalVariable]): CountExpression = copy()(position, outerScope)
 
   override val introducedVariables: Set[LogicalVariable] = pattern.allVariables -- outerScope

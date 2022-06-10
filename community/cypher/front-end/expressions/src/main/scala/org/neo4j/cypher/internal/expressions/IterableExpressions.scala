@@ -72,9 +72,14 @@ case class PatternComprehension(
 
   override val introducedVariables: Set[LogicalVariable] = {
     val introducedInternally = namedPath.toSet ++ pattern.element.allVariables
-    val introducedExternally = introducedInternally -- outerScope
-    introducedExternally
+    introducedInternally -- outerScope
   }
+
+  override def scopeDependencies: Set[LogicalVariable] =
+    (namedPath.toSet ++
+      pattern.element.allVariables ++
+      predicate.fold(Set.empty[LogicalVariable])(_.dependencies) ++
+      projection.dependencies) intersect outerScope
 
   override def dup(children: Seq[AnyRef]): this.type = {
     PatternComprehension(
