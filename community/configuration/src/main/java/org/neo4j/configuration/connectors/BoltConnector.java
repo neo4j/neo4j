@@ -24,6 +24,7 @@ import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
+import static org.neo4j.configuration.SettingConstraints.NO_ALL_INTERFACES_ADDRESS;
 import static org.neo4j.configuration.SettingConstraints.min;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
@@ -67,6 +68,7 @@ public final class BoltConnector implements SettingsDeclaration {
     @Description("Advertised address for this connector")
     public static final Setting<SocketAddress> advertised_address = newBuilder(
                     "server.bolt.advertised_address", SOCKET_ADDRESS, new SocketAddress(DEFAULT_PORT))
+            .addConstraint(NO_ALL_INTERFACES_ADDRESS)
             .setDependency(default_advertised_address)
             .build();
 

@@ -27,6 +27,7 @@ import static java.util.Collections.emptySet;
 import static org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation.ON_HEAP;
 import static org.neo4j.configuration.SettingConstraints.ABSOLUTE_PATH;
 import static org.neo4j.configuration.SettingConstraints.HOSTNAME_ONLY;
+import static org.neo4j.configuration.SettingConstraints.NO_ALL_INTERFACES_ADDRESS;
 import static org.neo4j.configuration.SettingConstraints.POWER_OF_2;
 import static org.neo4j.configuration.SettingConstraints.any;
 import static org.neo4j.configuration.SettingConstraints.ifPrimary;
@@ -957,6 +958,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     public static final Setting<SocketAddress> default_advertised_address = newBuilder(
                     "server.default_advertised_address", SOCKET_ADDRESS, new SocketAddress("localhost"))
             .addConstraint(HOSTNAME_ONLY)
+            .addConstraint(NO_ALL_INTERFACES_ADDRESS)
             .immutable()
             .build();
 

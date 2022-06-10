@@ -252,6 +252,26 @@ public final class SettingConstraints {
         }
     };
 
+    public static final SettingConstraint<SocketAddress> NO_ALL_INTERFACES_ADDRESS = new SettingConstraint<>() {
+        @Override
+        public void validate(SocketAddress value, Configuration config) {
+            if (value != null && value.getHostname() != null) {
+                if (value.getHostname().matches("^0+\\.0+\\.0+\\.0+$")) {
+                    throw new IllegalArgumentException("advertised address cannot be '0.0.0.0'");
+                }
+
+                if ("::".equals(value.getHostname())) {
+                    throw new IllegalArgumentException("advertised address cannot be '::'");
+                }
+            }
+        }
+
+        @Override
+        public String getDescription() {
+            return "accessible address";
+        }
+    };
+
     public static final SettingConstraint<Path> ABSOLUTE_PATH = new SettingConstraint<>() {
         @Override
         public void validate(Path value, Configuration config) {
