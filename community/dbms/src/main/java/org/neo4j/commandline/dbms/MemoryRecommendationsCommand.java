@@ -103,7 +103,8 @@ public class MemoryRecommendationsCommand extends AbstractCommand
     private Long memory;
 
     @Option( names = "--docker", arity = "0", description = "The recommended memory settings are produced in the form of environment variables " +
-            "that can be directly passed to Neo4j docker container." )
+            "that can be directly passed to Neo4j docker container. The recommended use is to save the generated environment variables to a file " +
+            "and pass the file to a docker container using '--env-file' docker option." )
     private boolean dockerOutput;
 
     public MemoryRecommendationsCommand( ExecutionContext ctx )
@@ -290,7 +291,7 @@ public class MemoryRecommendationsCommand extends AbstractCommand
         {
             var nameWithFixedUnderscores = setting.name().replaceAll( "_", "__" );
             var nameWithFixedUnderscoresAndDots = nameWithFixedUnderscores.replaceAll( "\\.", "_" );
-            print( "EXPORT NEO4J_" + nameWithFixedUnderscoresAndDots + "='" + value + "'" );
+            print( "NEO4J_" + nameWithFixedUnderscoresAndDots + "='" + value + "'" );
         }
     }
 
