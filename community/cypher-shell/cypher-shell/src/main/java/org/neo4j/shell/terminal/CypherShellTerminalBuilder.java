@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.function.Supplier;
 
 import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parser.ShellStatementParser;
@@ -46,6 +47,7 @@ public class CypherShellTerminalBuilder
     private InputStream in;
     private boolean isInteractive = true;
     private boolean dumb;
+    private Supplier<SimplePrompt> simplePromptSupplier = SimplePrompt::defaultPrompt;
 
     /** if enabled is true, this is an interactive terminal that supports user input */
     public CypherShellTerminalBuilder interactive( boolean isInteractive )
@@ -77,6 +79,13 @@ public class CypherShellTerminalBuilder
         return this;
     }
 
+    @VisibleForTesting
+    public CypherShellTerminalBuilder simplePromptSupplier( Supplier<SimplePrompt> simplePromptSupplier )
+    {
+        this.simplePromptSupplier = simplePromptSupplier;
+        return this;
+    }
+
     public CypherShellTerminal build()
     {
         assert logger != null;
@@ -105,6 +114,7 @@ public class CypherShellTerminalBuilder
         var jLineTerminal = TerminalBuilder.builder();
 
         jLineTerminal.nativeSignals( true );
+        jLineTerminal.paused( true ); // Needed for SimplePrompt to work.
 
         if ( in != null )
         {
@@ -130,7 +140,7 @@ public class CypherShellTerminalBuilder
             .variable( LineReader.DISABLE_COMPLETION, true )
             .build();
 
-        return new JlineTerminal( reader, isInteractive, logger );
+        return new JlineTerminal( reader, isInteractive, logger, simplePromptSupplier );
     }
 
     public static CypherShellTerminalBuilder terminalBuilder()
