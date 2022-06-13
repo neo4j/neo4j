@@ -254,6 +254,7 @@ class LogicalPlanGenerator(
           state.semanticTable,
           state.cardinalities,
           po,
+          Set.empty,
           CostModelMonitor.DEFAULT
         ) <= costLimit
   }

@@ -1561,6 +1561,20 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
+  test("should start with a relationship type scan when node and relationship counts are the same") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100000)
+      .setRelationshipCardinality("()-[:REL]->()", 100000)
+      .build()
+
+    val query = "MATCH (a)-[r:REL]->(b) RETURN a"
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldBe planner.subPlanBuilder()
+      .relationshipTypeScan("(a)-[r:REL]->(b)")
+      .build()
+  }
+
   test("should not plan relationship type scan with filter for self loop with many relationships") {
     val query = "MATCH (a)-[r:REL]-(a) RETURN r"
 

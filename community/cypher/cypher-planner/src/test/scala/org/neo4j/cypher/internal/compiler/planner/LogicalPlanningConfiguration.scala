@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
@@ -59,7 +60,15 @@ trait LogicalPlanningConfiguration {
   ): CardinalityModel
 
   def costModel(executionModel: ExecutionModel = executionModel): PartialFunction[
-    (LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders, CostModelMonitor),
+    (
+      LogicalPlan,
+      QueryGraphSolverInput,
+      SemanticTable,
+      Cardinalities,
+      ProvidedOrders,
+      Set[PropertyAccess],
+      CostModelMonitor
+    ),
     Cost
   ]
   def graphStatistics: GraphStatistics

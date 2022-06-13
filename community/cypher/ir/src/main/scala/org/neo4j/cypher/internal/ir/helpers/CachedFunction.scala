@@ -46,10 +46,22 @@ object CachedFunction {
     untupled(apply(f.tupled))
   }
 
+  def apply[A, B, C, D, E, F, G, H](f: (A, B, C, D, E, F, G) => H): (A, B, C, D, E, F, G) => H = {
+    untupled(apply(f.tupled))
+  }
+
   /** Un-tupling for functions of arity 6. This transforms a function taking
    * a 6-tuple of arguments into a function of arity 6 which takes each argument separately.
    */
   def untupled[a1, a2, a3, a4, a5, a6, b](f: ((a1, a2, a3, a4, a5, a6)) => b): (a1, a2, a3, a4, a5, a6) => b = {
     (x1, x2, x3, x4, x5, x6) => f(Tuple6(x1, x2, x3, x4, x5, x6))
+  }
+
+  /** Un-tupling for functions of arity 7. This transforms a function taking
+   * a 7-tuple of arguments into a function of arity 7 which takes each argument separately.
+   */
+  def untupled[a1, a2, a3, a4, a5, a6, a7, b](f: ((a1, a2, a3, a4, a5, a6, a7)) => b)
+    : (a1, a2, a3, a4, a5, a6, a7) => b = {
+    (x1, x2, x3, x4, x5, x6, x7) => f(Tuple7(x1, x2, x3, x4, x5, x6, x7))
   }
 }

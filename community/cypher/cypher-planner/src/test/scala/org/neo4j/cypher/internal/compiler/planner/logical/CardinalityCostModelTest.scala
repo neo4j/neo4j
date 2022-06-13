@@ -66,6 +66,7 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
       semanticTable,
       cardinalities,
       providedOrders,
+      Set.empty,
       CostModelMonitor.DEFAULT
     )
   }

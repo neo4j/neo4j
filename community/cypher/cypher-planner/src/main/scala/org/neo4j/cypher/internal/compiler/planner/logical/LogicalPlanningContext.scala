@@ -139,4 +139,7 @@ case class LogicalPlanningContext(
       indexCompatiblePredicatesProviderContext.copy(outerPlanHasUpdates = hasUpdates)
     )
   }
+
+  val accessedAndAggregatingProperties: Set[PropertyAccess] =
+    accessedProperties ++ indexCompatiblePredicatesProviderContext.aggregatingProperties
 }

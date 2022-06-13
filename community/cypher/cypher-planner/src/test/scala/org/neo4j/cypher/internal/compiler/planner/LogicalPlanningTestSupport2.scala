@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.parsing
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.planPipeLine
@@ -218,9 +219,18 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           semanticTable: SemanticTable,
           cardinalities: Cardinalities,
           providedOrders: ProvidedOrders,
+          propertyAccess: Set[PropertyAccess],
           monitor: CostModelMonitor
         ) =>
-          config.costModel(executionModel)((plan, input, semanticTable, cardinalities, providedOrders, monitor))
+          config.costModel(executionModel)((
+            plan,
+            input,
+            semanticTable,
+            cardinalities,
+            providedOrders,
+            propertyAccess,
+            monitor
+          ))
 
       override def newCardinalityEstimator(
         queryGraphCardinalityModel: QueryGraphCardinalityModel,

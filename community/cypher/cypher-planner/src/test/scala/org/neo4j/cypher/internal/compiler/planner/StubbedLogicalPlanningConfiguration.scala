@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
@@ -222,13 +223,29 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
   }
 
   override def costModel(executionModel: ExecutionModel = executionModel): PartialFunction[
-    (LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders, CostModelMonitor),
+    (
+      LogicalPlan,
+      QueryGraphSolverInput,
+      SemanticTable,
+      Cardinalities,
+      ProvidedOrders,
+      Set[PropertyAccess],
+      CostModelMonitor
+    ),
     Cost
   ] = {
-    case (lp, input, semanticTable, cardinalities, providedOrders, monitor) =>
+    case (lp, input, semanticTable, cardinalities, providedOrders, propertyAccess, monitor) =>
       // Calling this in any case has the benefit of having the monitor passed down to the real cost model
       val realCost =
-        parent.costModel(executionModel)((lp, input, semanticTable, cardinalities, providedOrders, monitor))
+        parent.costModel(executionModel)((
+          lp,
+          input,
+          semanticTable,
+          cardinalities,
+          providedOrders,
+          propertyAccess,
+          monitor
+        ))
       if (cost.isDefinedAt((lp, input, cardinalities, providedOrders))) {
         cost((lp, input, cardinalities, providedOrders))
       } else {

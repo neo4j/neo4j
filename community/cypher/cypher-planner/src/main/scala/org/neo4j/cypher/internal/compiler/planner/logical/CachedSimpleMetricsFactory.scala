@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
@@ -63,6 +64,7 @@ object CachedSimpleMetricsFactory extends MetricsFactory {
         semanticTable: SemanticTable,
         cardinalities: Ref[Cardinalities],
         providedOrders: Ref[ProvidedOrders],
+        propertyAccess: Set[PropertyAccess],
         monitor: CostModelMonitor
       ) => {
         SimpleMetricsFactory.newCostModel(executionModel).costFor(
@@ -71,6 +73,7 @@ object CachedSimpleMetricsFactory extends MetricsFactory {
           semanticTable,
           cardinalities.value,
           providedOrders.value,
+          propertyAccess,
           monitor
         )
       }
@@ -81,9 +84,10 @@ object CachedSimpleMetricsFactory extends MetricsFactory {
       semanticTable: SemanticTable,
       cardinalities: Cardinalities,
       providedOrders: ProvidedOrders,
+      propertyAccess: Set[PropertyAccess],
       monitor: CostModelMonitor
     ) => {
-      cached(plan, input, semanticTable, Ref(cardinalities), Ref(providedOrders), monitor)
+      cached(plan, input, semanticTable, Ref(cardinalities), Ref(providedOrders), propertyAccess, monitor)
     }
   }
 

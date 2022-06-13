@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
@@ -100,6 +101,7 @@ object Metrics {
       semanticTable: SemanticTable,
       cardinalities: Cardinalities,
       providedOrders: ProvidedOrders,
+      propertyAccess: Set[PropertyAccess],
       monitor: CostModelMonitor
     ): Cost
   }

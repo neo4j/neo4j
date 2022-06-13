@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.ExecutionModel.SelectedBatchSize
 import org.neo4j.cypher.internal.compiler.ExecutionModel.VolcanoBatchSize
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.EffectiveCardinalities
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.HashJoin
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROBE_BUILD_COST
@@ -114,6 +115,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
     semanticTable: SemanticTable,
     cardinalities: Cardinalities,
     providedOrders: ProvidedOrders,
+    propertyAccess: Set[PropertyAccess],
     monitor: CostModelMonitor
   ): Cost = {
     // The plan we use here to select the batch size will obviously not be the final plan for the whole query.
@@ -128,6 +130,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
       semanticTable,
       plan,
       batchSize,
+      propertyAccess,
       monitor
     )
   }
@@ -147,6 +150,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
     semanticTable: SemanticTable,
     rootPlan: LogicalPlan,
     batchSize: SelectedBatchSize,
+    propertyAccess: Set[PropertyAccess],
     monitor: CostModelMonitor
   ): Cost = {
 
@@ -163,6 +167,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
         semanticTable,
         rootPlan,
         batchSize,
+        propertyAccess,
         monitor
       )
     ) getOrElse Cost.ZERO
@@ -175,12 +180,22 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
         semanticTable,
         rootPlan,
         batchSize,
+        propertyAccess,
         monitor
       )
     ) getOrElse Cost.ZERO
 
     val cost =
-      combinedCostForPlan(plan, effectiveCard, cardinalities, lhsCost, rhsCost, semanticTable, effectiveBatchSize)
+      combinedCostForPlan(
+        plan,
+        effectiveCard,
+        cardinalities,
+        lhsCost,
+        rhsCost,
+        semanticTable,
+        effectiveBatchSize,
+        propertyAccess
+      )
 
     monitor.reportPlanCost(rootPlan, plan, cost)
     monitor.reportPlanEffectiveCardinality(rootPlan, plan, effectiveCard.outputCardinality)
@@ -202,7 +217,8 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
     lhsCost: Cost,
     rhsCost: Cost,
     semanticTable: SemanticTable,
-    batchSize: SelectedBatchSize
+    batchSize: SelectedBatchSize,
+    propertyAccess: Set[PropertyAccess]
   ): Cost = plan match {
     case _: CartesianProduct =>
       val lhsCardinality = Cardinality.max(Cardinality.SINGLE, effectiveCardinalities.lhs)
@@ -223,7 +239,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
         effectiveCardinalities.rhs * PROBE_SEARCH_COST
 
     case _ =>
-      val rowCost = costPerRow(plan, effectiveCardinalities.inputCardinality, semanticTable)
+      val rowCost = costPerRow(plan, effectiveCardinalities.inputCardinality, semanticTable, propertyAccess)
       val costForThisPlan = effectiveCardinalities.inputCardinality * rowCost
       costForThisPlan + lhsCost + rhsCost
   }
@@ -237,11 +253,14 @@ object CardinalityCostModel {
   val PROPERTY_ACCESS_DB_HITS = 2
   val LABEL_CHECK_DB_HITS = 1
   val EXPAND_INTO_COST: CostPerRow = 6.4
+  val ALL_NODES_SCAN_COST_PER_ROW = 1.2
 
   val INDEX_SCAN_COST_PER_ROW = 1.0
   val INDEX_SEEK_COST_PER_ROW = 1.9
   // When reading from node store or relationship store
   val STORE_LOOKUP_COST_PER_ROW = 6.2
+
+  val DIRECTED_RELATIONSHIP_INDEX_SCAN_COST_PER_ROW = INDEX_SCAN_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW
 
   /**
    * PartialSort always has to Sort whole buckets, even when under a Limit.
@@ -279,7 +298,12 @@ object CardinalityCostModel {
    * @param semanticTable the semantic table
    * @return the cost of the plan per outgoing row
    */
-  private def costPerRow(plan: LogicalPlan, cardinality: Cardinality, semanticTable: SemanticTable): CostPerRow =
+  private def costPerRow(
+    plan: LogicalPlan,
+    cardinality: Cardinality,
+    semanticTable: SemanticTable,
+    propertyAccess: Set[PropertyAccess]
+  ): CostPerRow =
     plan match {
       /*
        * These constants are approximations derived from test runs,
@@ -297,7 +321,7 @@ object CardinalityCostModel {
 
       case Selection(predicate, _) => costPerRowFor(predicate, semanticTable)
 
-      case _: AllNodesScan => 1.2
+      case _: AllNodesScan => ALL_NODES_SCAN_COST_PER_ROW
 
       case e: OptionalExpand if e.mode == ExpandInto => EXPAND_INTO_COST
 
@@ -321,13 +345,26 @@ object CardinalityCostModel {
         // Only every second row needs to access the store
         => STORE_LOOKUP_COST_PER_ROW / 2
 
-      case _: DirectedRelationshipTypeScan |
-        _: DirectedRelationshipIndexScan => INDEX_SCAN_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW
+      case plan: DirectedRelationshipTypeScan =>
+        // A workaround for cases where we might get value from an index scan instead. Using the same cost means we will use leaf plan heuristic to decide.
+        if (propertyAccess.exists(_.variableName == plan.idName))
+          DIRECTED_RELATIONSHIP_INDEX_SCAN_COST_PER_ROW
+        else
+          ALL_NODES_SCAN_COST_PER_ROW * 2.2
 
-      case _: UndirectedRelationshipTypeScan |
-        _: UndirectedRelationshipIndexScan
+      case plan: UndirectedRelationshipTypeScan =>
+        // A workaround for cases where we might get value from an index scan instead. Using the same cost means we will use leaf plan heuristic to decide.
+        if (propertyAccess.exists(_.variableName == plan.idName))
+          // Only every second row needs to access the index and the store
+          DIRECTED_RELATIONSHIP_INDEX_SCAN_COST_PER_ROW / 2
+        else
+          ALL_NODES_SCAN_COST_PER_ROW * 1.3
+
+      case _: DirectedRelationshipIndexScan => DIRECTED_RELATIONSHIP_INDEX_SCAN_COST_PER_ROW
+
+      case _: UndirectedRelationshipIndexScan
         // Only every second row needs to access the index and the store
-        => (INDEX_SCAN_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW) / 2
+        => DIRECTED_RELATIONSHIP_INDEX_SCAN_COST_PER_ROW / 2
 
       case _: DirectedRelationshipIndexSeek |
         _: DirectedRelationshipIndexContainsScan |
@@ -470,7 +507,8 @@ object CardinalityCostModel {
       // It will, however, reduce the amount of effective rows after `recordEffectiveOutputCardinality` has multiplied the RHS with the LHS cardinality.
       val rhsReduction =
         limitingPlanWorkReduction(rhsCardinality, Cardinality.SINGLE, WorkReduction.NoReduction).copy(minimum =
-          Some(Cardinality.SINGLE))
+          Some(Cardinality.SINGLE)
+        )
       (parentWorkReduction, rhsReduction)
 
     // if there is no parentWorkReduction, all cases below are unnecessary, so let's skip doing unnecessary work

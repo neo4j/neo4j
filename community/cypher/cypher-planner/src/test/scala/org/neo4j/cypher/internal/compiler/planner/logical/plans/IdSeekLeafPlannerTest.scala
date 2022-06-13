@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
@@ -88,6 +89,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: SemanticTable,
         _: Cardinalities,
         _: ProvidedOrders,
+        _: Set[PropertyAccess],
         _: CostModelMonitor
       ) =>
         plan match {
@@ -124,6 +126,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: SemanticTable,
         _: Cardinalities,
         _: ProvidedOrders,
+        _: Set[PropertyAccess],
         _: CostModelMonitor
       ) =>
         plan match {
@@ -159,6 +162,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: SemanticTable,
         _: Cardinalities,
         _: ProvidedOrders,
+        _: Set[PropertyAccess],
         _: CostModelMonitor
       ) =>
         plan match {
@@ -196,6 +200,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: SemanticTable,
         _: Cardinalities,
         _: ProvidedOrders,
+        _: Set[PropertyAccess],
         _: CostModelMonitor
       ) =>
         plan match {
@@ -231,6 +236,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: SemanticTable,
         _: Cardinalities,
         _: ProvidedOrders,
+        _: Set[PropertyAccess],
         _: CostModelMonitor
       ) =>
         plan match {
@@ -269,6 +275,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: SemanticTable,
         _: Cardinalities,
         _: ProvidedOrders,
+        _: Set[PropertyAccess],
         _: CostModelMonitor
       ) =>
         plan match {
@@ -309,6 +316,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: SemanticTable,
         _: Cardinalities,
         _: ProvidedOrders,
+        _: Set[PropertyAccess],
         _: CostModelMonitor
       ) =>
         plan match {
@@ -363,6 +371,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: SemanticTable,
         _: Cardinalities,
         _: ProvidedOrders,
+        _: Set[PropertyAccess],
         _: CostModelMonitor
       ) =>
         plan match {
@@ -424,6 +433,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: SemanticTable,
         _: Cardinalities,
         _: ProvidedOrders,
+        _: Set[PropertyAccess],
         _: CostModelMonitor
       ) =>
         plan match {
@@ -473,6 +483,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: SemanticTable,
         _: Cardinalities,
         _: ProvidedOrders,
+        _: Set[PropertyAccess],
         _: CostModelMonitor
       ) =>
         plan match {
@@ -522,6 +533,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: SemanticTable,
         _: Cardinalities,
         _: ProvidedOrders,
+        _: Set[PropertyAccess],
         _: CostModelMonitor
       ) =>
         plan match {
@@ -568,6 +580,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: SemanticTable,
         _: Cardinalities,
         _: ProvidedOrders,
+        _: Set[PropertyAccess],
         _: CostModelMonitor
       ) =>
         plan match {
@@ -615,6 +628,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: SemanticTable,
         _: Cardinalities,
         _: ProvidedOrders,
+        _: Set[PropertyAccess],
         _: CostModelMonitor
       ) =>
         plan match {

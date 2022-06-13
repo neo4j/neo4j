@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
@@ -87,6 +88,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
         _: SemanticTable,
         _: Cardinalities,
         _: ProvidedOrders,
+        _: Set[PropertyAccess],
         _: CostModelMonitor
       ) =>
         plan match {
@@ -130,6 +132,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
         _: SemanticTable,
         _: Cardinalities,
         _: ProvidedOrders,
+        _: Set[PropertyAccess],
         _: CostModelMonitor
       ) =>
         plan match {
@@ -176,6 +179,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
         _: SemanticTable,
         _: Cardinalities,
         _: ProvidedOrders,
+        _: Set[PropertyAccess],
         _: CostModelMonitor
       ) =>
         plan match {

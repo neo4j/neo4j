@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.phases.AttributeFullyAssigned
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
@@ -117,8 +118,9 @@ case object QueryPlanner
           v3: SemanticTable,
           v4: Cardinalities,
           v5: ProvidedOrders,
+          v6: Set[PropertyAccess],
           monitor
-        ) => -context.metrics.cost.costFor(v1, v2, v3, v4, v5, monitor)
+        ) => -context.metrics.cost.costFor(v1, v2, v3, v4, v5, v6, monitor)
       )
     } else {
       context.metrics
