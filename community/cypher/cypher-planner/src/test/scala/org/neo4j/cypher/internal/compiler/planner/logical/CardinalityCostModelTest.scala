@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedSingleThreaded
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.DEFAULT_COST_PER_ROW
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.LABEL_CHECK_DB_HITS
@@ -58,7 +59,8 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
     semanticTable: SemanticTable,
     cardinalities: Cardinalities,
     providedOrders: ProvidedOrders,
-    executionModel: ExecutionModel = ExecutionModel.default
+    executionModel: ExecutionModel = ExecutionModel.default,
+    propertyAccess: Set[PropertyAccess] = Set.empty
   ): Cost = {
     CardinalityCostModel(executionModel).costFor(
       plan,
@@ -66,7 +68,7 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
       semanticTable,
       cardinalities,
       providedOrders,
-      Set.empty,
+      propertyAccess,
       CostModelMonitor.DEFAULT
     )
   }
@@ -686,5 +688,57 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
         )
       }
     }
+  }
+
+  test("should raise the cost of directed relationship type scan when property is used") {
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+    val plan = builder
+      .relationshipTypeScan("(a)-[r:REL]->(b)").withCardinality(100.0)
+      .build()
+
+    val lowCost = costFor(
+      plan,
+      QueryGraphSolverInput.empty,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      builder.providedOrders
+    )
+
+    val highCost = costFor(
+      plan,
+      QueryGraphSolverInput.empty,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      builder.providedOrders,
+      propertyAccess = Set(PropertyAccess("r", "prop"))
+    )
+
+    lowCost should be < highCost
+  }
+
+  test("should raise the cost of undirected relationship type scan when property is used") {
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+    val plan = builder
+      .relationshipTypeScan("(a)-[r:REL]-(b)").withCardinality(100.0)
+      .build()
+
+    val lowCost = costFor(
+      plan,
+      QueryGraphSolverInput.empty,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      builder.providedOrders
+    )
+
+    val highCost = costFor(
+      plan,
+      QueryGraphSolverInput.empty,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      builder.providedOrders,
+      propertyAccess = Set(PropertyAccess("r", "prop"))
+    )
+
+    lowCost should be < highCost
   }
 }
