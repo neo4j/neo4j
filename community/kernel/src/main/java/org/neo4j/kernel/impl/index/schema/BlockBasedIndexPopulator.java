@@ -24,7 +24,6 @@ import static org.neo4j.index.internal.gbptree.DataTree.W_SPLIT_KEEP_ALL_LEFT;
 import static org.neo4j.internal.helpers.collection.Iterables.first;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.kernel.impl.index.schema.BlockStorage.Monitor.NO_MONITOR;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyFromUpdate;
 import static org.neo4j.util.concurrent.Runnables.runAll;
 
@@ -95,6 +94,8 @@ import org.neo4j.values.storable.Value;
  * @param <KEY>
  */
 public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> extends NativeIndexPopulator<KEY> {
+    public static final Monitor NO_MONITOR = new Monitor.Adapter();
+
     private final boolean archiveFailedIndex;
     private final MemoryTracker memoryTracker;
     /**
@@ -104,7 +105,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
      */
     private final int mergeFactor;
 
-    private final BlockStorage.Monitor blockStorageMonitor;
+    private final Monitor monitor;
     // written to in a synchronized method when creating new thread-local instances, read from when population completes
     private final List<ThreadLocalBlockStorage> allScanUpdates = new CopyOnWriteArrayList<>();
     private final ThreadLocal<ThreadLocalBlockStorage> scanUpdates;
@@ -132,36 +133,13 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
             ByteBufferFactory bufferFactory,
             Config config,
             MemoryTracker memoryTracker,
-            ImmutableSet<OpenOption> openOptions) {
-        this(
-                databaseIndexContext,
-                indexFiles,
-                layout,
-                descriptor,
-                archiveFailedIndex,
-                bufferFactory,
-                config,
-                memoryTracker,
-                NO_MONITOR,
-                openOptions);
-    }
-
-    BlockBasedIndexPopulator(
-            DatabaseIndexContext databaseIndexContext,
-            IndexFiles indexFiles,
-            IndexLayout<KEY> layout,
-            IndexDescriptor descriptor,
-            boolean archiveFailedIndex,
-            ByteBufferFactory bufferFactory,
-            Config config,
-            MemoryTracker memoryTracker,
-            BlockStorage.Monitor blockStorageMonitor,
+            Monitor monitor,
             ImmutableSet<OpenOption> openOptions) {
         super(databaseIndexContext, indexFiles, layout, descriptor, openOptions);
         this.archiveFailedIndex = archiveFailedIndex;
         this.memoryTracker = memoryTracker;
         this.mergeFactor = config.get(GraphDatabaseInternalSettings.index_populator_merge_factor);
-        this.blockStorageMonitor = blockStorageMonitor;
+        this.monitor = monitor;
         this.scanUpdates = ThreadLocal.withInitial(this::newThreadLocalBlockStorage);
         this.bufferFactory = bufferFactory;
     }
@@ -256,6 +234,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
         }
 
         try {
+            monitor.scanCompletedStarted();
             phaseTracker.enterPhase(PhaseTracker.Phase.MERGE);
             if (!allScanUpdates.isEmpty()) {
                 mergeScanUpdates(populationWorkScheduler);
@@ -311,6 +290,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
             Exceptions.throwIfUnchecked(executionException);
             throw new RuntimeException(executionException);
         } finally {
+            monitor.scanCompletedEnded();
             mergeOngoingLatch.countDown();
         }
     }
@@ -655,7 +635,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
         private final AtomicLong entriesMerged = new AtomicLong();
 
         ThreadLocalBlockStorage(int id) throws IOException {
-            super(blockStorageMonitor);
+            super(monitor);
             Path storeFile = indexFiles.getStoreFile();
             Path blockFile = storeFile.resolveSibling(storeFile.getFileName() + ".scan-" + id);
             this.blockStorage = new BlockStorage<>(layout, bufferFactory, fileSystem, blockFile, this, memoryTracker);
@@ -727,6 +707,20 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
         @Override
         public void close() {
             closeAllUnchecked(buffers);
+        }
+    }
+
+    public interface Monitor extends BlockStorage.Monitor {
+        void scanCompletedStarted();
+
+        void scanCompletedEnded();
+
+        class Adapter extends BlockStorage.Monitor.Adapter implements Monitor {
+            @Override
+            public void scanCompletedStarted() {}
+
+            @Override
+            public void scanCompletedEnded() {}
         }
     }
 }

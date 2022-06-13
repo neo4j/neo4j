@@ -43,6 +43,7 @@ class NativeIndexPopulatorTestCases {
                         config,
                         INSTANCE,
                         tokenNameLookup,
+                        BlockBasedIndexPopulator.NO_MONITOR,
                         Sets.immutable.empty());
     }
 

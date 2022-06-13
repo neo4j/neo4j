@@ -41,32 +41,7 @@ class RangeBlockBasedIndexPopulator extends BlockBasedIndexPopulator<RangeKey> {
             Config config,
             MemoryTracker memoryTracker,
             TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions) {
-        this(
-                databaseIndexContext,
-                indexFiles,
-                layout,
-                descriptor,
-                archiveFailedIndex,
-                bufferFactory,
-                config,
-                memoryTracker,
-                tokenNameLookup,
-                BlockStorage.Monitor.NO_MONITOR,
-                openOptions);
-    }
-
-    RangeBlockBasedIndexPopulator(
-            DatabaseIndexContext databaseIndexContext,
-            IndexFiles indexFiles,
-            IndexLayout<RangeKey> layout,
-            IndexDescriptor descriptor,
-            boolean archiveFailedIndex,
-            ByteBufferFactory bufferFactory,
-            Config config,
-            MemoryTracker memoryTracker,
-            TokenNameLookup tokenNameLookup,
-            BlockStorage.Monitor blockStorageMonitor,
+            Monitor monitor,
             ImmutableSet<OpenOption> openOptions) {
         super(
                 databaseIndexContext,
@@ -77,7 +52,7 @@ class RangeBlockBasedIndexPopulator extends BlockBasedIndexPopulator<RangeKey> {
                 bufferFactory,
                 config,
                 memoryTracker,
-                blockStorageMonitor,
+                monitor,
                 openOptions);
         this.tokenNameLookup = tokenNameLookup;
     }

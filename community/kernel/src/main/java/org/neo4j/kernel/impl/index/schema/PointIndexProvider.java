@@ -112,6 +112,7 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey, PointLayou
                 bufferFactory,
                 config,
                 memoryTracker,
+                BlockBasedIndexPopulator.NO_MONITOR,
                 openOptions);
     }
 

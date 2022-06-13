@@ -95,6 +95,7 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
                 heapBufferFactory((int) kibiBytes(40)),
                 CONFIG,
                 EmptyMemoryTracker.INSTANCE,
+                BlockBasedIndexPopulator.NO_MONITOR,
                 Sets.immutable.empty());
         populator.create();
         return populator;

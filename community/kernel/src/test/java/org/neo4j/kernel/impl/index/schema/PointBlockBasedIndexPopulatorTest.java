@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.kernel.impl.index.schema.BlockBasedIndexPopulator.NO_MONITOR;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -77,7 +78,7 @@ public class PointBlockBasedIndexPopulatorTest extends BlockBasedIndexPopulatorT
 
     @Override
     PointBlockBasedIndexPopulator instantiatePopulator(
-            BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory, MemoryTracker memoryTracker)
+            BlockBasedIndexPopulator.Monitor monitor, ByteBufferFactory bufferFactory, MemoryTracker memoryTracker)
             throws IOException {
         final var populator = new PointBlockBasedIndexPopulator(
                 databaseIndexContext,
@@ -113,7 +114,7 @@ public class PointBlockBasedIndexPopulatorTest extends BlockBasedIndexPopulatorT
                 var reader = accessor.newAllEntriesValueReader(NULL_CONTEXT)) {
             assertThat(reader.iterator()).isExhausted();
         }
-        final var populator = instantiatePopulator(BlockStorage.Monitor.NO_MONITOR);
+        final var populator = instantiatePopulator(NO_MONITOR);
         assertThat(populator.indexConfig()).isEqualTo(spatialSettingsAsMap(SPATIAL_SETTINGS));
 
         try {

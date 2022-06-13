@@ -49,6 +49,7 @@ public class PointBlockBasedIndexPopulator extends BlockBasedIndexPopulator<Poin
             ByteBufferFactory bufferFactory,
             Config config,
             MemoryTracker memoryTracker,
+            Monitor monitor,
             ImmutableSet<OpenOption> openOptions) {
         super(
                 databaseIndexContext,
@@ -59,34 +60,7 @@ public class PointBlockBasedIndexPopulator extends BlockBasedIndexPopulator<Poin
                 bufferFactory,
                 config,
                 memoryTracker,
-                openOptions);
-        this.spatialSettings = spatialSettings;
-        this.configuration = configuration;
-    }
-
-    PointBlockBasedIndexPopulator(
-            DatabaseIndexContext databaseIndexContext,
-            IndexFiles indexFiles,
-            IndexLayout<PointKey> layout,
-            IndexDescriptor descriptor,
-            IndexSpecificSpaceFillingCurveSettings spatialSettings,
-            SpaceFillingCurveConfiguration configuration,
-            boolean archiveFailedIndex,
-            ByteBufferFactory bufferFactory,
-            Config config,
-            MemoryTracker memoryTracker,
-            BlockStorage.Monitor blockStorageMonitor,
-            ImmutableSet<OpenOption> openOptions) {
-        super(
-                databaseIndexContext,
-                indexFiles,
-                layout,
-                descriptor,
-                archiveFailedIndex,
-                bufferFactory,
-                config,
-                memoryTracker,
-                blockStorageMonitor,
+                monitor,
                 openOptions);
         this.spatialSettings = spatialSettings;
         this.configuration = configuration;

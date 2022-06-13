@@ -403,7 +403,7 @@ class BlockStorageTest {
         }
     }
 
-    private static class TrackingMonitor implements BlockStorage.Monitor {
+    private static class TrackingMonitor extends BlockStorage.Monitor.Adapter {
         // For entryAdded
         long entryAddedCallCount;
         int lastEntrySize;

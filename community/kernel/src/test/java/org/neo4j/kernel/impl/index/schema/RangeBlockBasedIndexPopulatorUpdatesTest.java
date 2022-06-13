@@ -49,6 +49,7 @@ class RangeBlockBasedIndexPopulatorUpdatesTest extends GenericBlockBasedIndexPop
                 config,
                 INSTANCE,
                 tokenNameLookup,
+                BlockBasedIndexPopulator.NO_MONITOR,
                 Sets.immutable.empty());
         populator.create();
         return populator;

@@ -32,7 +32,7 @@ import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
-import static org.neo4j.kernel.impl.index.schema.BlockStorage.Monitor.NO_MONITOR;
+import static org.neo4j.kernel.impl.index.schema.BlockBasedIndexPopulator.NO_MONITOR;
 import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStringValueResultingInIndexEntrySize;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.Race.throwing;
@@ -74,6 +74,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.impl.index.schema.BlockBasedIndexPopulator.Monitor;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -128,8 +129,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> {
     abstract IndexType indexType();
 
     abstract BlockBasedIndexPopulator<KEY> instantiatePopulator(
-            BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory, MemoryTracker memoryTracker)
-            throws IOException;
+            Monitor monitor, ByteBufferFactory bufferFactory, MemoryTracker memoryTracker) throws IOException;
 
     abstract Layout<KEY, NullValue> layout();
 
@@ -192,6 +192,8 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> {
             closed = true;
 
             // then
+            assertThat(monitor.scanCompletedEnded).isTrue();
+            mergeFuture.get();
             assertTrue(mergeFuture.isDone());
         } finally {
             if (!closed) {
@@ -568,7 +570,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> {
         }
     }
 
-    protected BlockBasedIndexPopulator<KEY> instantiatePopulator(BlockStorage.Monitor monitor) throws IOException {
+    protected BlockBasedIndexPopulator<KEY> instantiatePopulator(Monitor monitor) throws IOException {
         return instantiatePopulator(monitor, heapBufferFactory(100), INSTANCE);
     }
 
@@ -588,10 +590,11 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> {
         return IndexEntryUpdate.remove(i, INDEX_DESCRIPTOR, supportedValue(i));
     }
 
-    private static class TrappingMonitor extends BlockStorage.Monitor.Adapter {
+    private static class TrappingMonitor extends Monitor.Adapter {
         private final Barrier.Control barrier = new Barrier.Control();
         private final Barrier.Control mergeFinishedBarrier = new Barrier.Control();
         private final LongPredicate trapForMergeIterationFinished;
+        private volatile boolean scanCompletedEnded;
 
         TrappingMonitor(LongPredicate trapForMergeIterationFinished) {
             this.trapForMergeIterationFinished = trapForMergeIterationFinished;
@@ -607,6 +610,11 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> {
             if (trapForMergeIterationFinished.test(numberOfBlocksAfter)) {
                 mergeFinishedBarrier.reached();
             }
+        }
+
+        @Override
+        public void scanCompletedEnded() {
+            scanCompletedEnded = true;
         }
     }
 }

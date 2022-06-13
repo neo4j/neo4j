@@ -35,7 +35,7 @@ class RangeBlockBasedIndexPopulatorTest extends GenericBlockBasedIndexPopulatorT
 
     @Override
     BlockBasedIndexPopulator<RangeKey> instantiatePopulator(
-            BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory, MemoryTracker memoryTracker)
+            BlockBasedIndexPopulator.Monitor monitor, ByteBufferFactory bufferFactory, MemoryTracker memoryTracker)
             throws IOException {
         RangeLayout layout = layout();
         Config config = Config.defaults(GraphDatabaseInternalSettings.index_populator_merge_factor, 2);
