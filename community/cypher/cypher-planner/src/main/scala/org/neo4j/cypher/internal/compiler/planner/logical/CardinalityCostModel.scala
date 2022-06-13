@@ -506,9 +506,8 @@ object CardinalityCostModel {
       // Any existing work reduction does not propagate into the RHS, since that does not influence the amount of rows _per loop invocation_.
       // It will, however, reduce the amount of effective rows after `recordEffectiveOutputCardinality` has multiplied the RHS with the LHS cardinality.
       val rhsReduction =
-        limitingPlanWorkReduction(rhsCardinality, Cardinality.SINGLE, WorkReduction.NoReduction).copy(minimum =
-          Some(Cardinality.SINGLE)
-        )
+        limitingPlanWorkReduction(rhsCardinality, Cardinality.SINGLE, WorkReduction.NoReduction)
+          .copy(minimum = Some(Cardinality.SINGLE))
       (parentWorkReduction, rhsReduction)
 
     // if there is no parentWorkReduction, all cases below are unnecessary, so let's skip doing unnecessary work
