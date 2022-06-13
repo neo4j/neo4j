@@ -51,6 +51,11 @@ public interface LongDiffSets {
         }
 
         @Override
+        public LongSet getRemovedFromAdded() {
+            return LongSets.immutable.empty();
+        }
+
+        @Override
         public boolean isEmpty() {
             return true;
         }
@@ -86,6 +91,11 @@ public interface LongDiffSets {
      * @return all removed elements
      */
     LongSet getRemoved();
+
+    /**
+     * @return all elements that were added into and then removed from this collection.
+     */
+    LongSet getRemovedFromAdded();
 
     /**
      * Check if underlying diff set is empty

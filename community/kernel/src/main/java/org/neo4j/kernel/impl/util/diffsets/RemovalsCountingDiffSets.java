@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
@@ -58,6 +60,11 @@ public class RemovalsCountingDiffSets extends MutableLongDiffSetsImpl {
             return true;
         }
         return super.remove(elem);
+    }
+
+    @Override
+    public LongSet getRemovedFromAdded() {
+        return removedFromAdded != null ? removedFromAdded : LongSets.immutable.empty();
     }
 
     public boolean wasRemoved(long id) {

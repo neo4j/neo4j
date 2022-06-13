@@ -103,6 +103,11 @@ public class MutableLongDiffSetsImpl implements MutableLongDiffSets {
     }
 
     @Override
+    public LongSet getRemovedFromAdded() {
+        return LongSets.immutable.empty();
+    }
+
+    @Override
     public boolean isEmpty() {
         return added.isEmpty() && removed.isEmpty();
     }
