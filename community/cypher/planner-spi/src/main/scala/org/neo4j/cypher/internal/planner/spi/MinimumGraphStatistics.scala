@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.util.Selectivity
 object MinimumGraphStatistics {
   val MIN_NODES_ALL: Int = 10
   val MIN_NODES_WITH_LABEL: Int = 10
-  val MIN_PATTERN_STEP: Int = 1
+  val MIN_PATTERN_STEP: Int = 3
 
   val MIN_NODES_ALL_CARDINALITY: Cardinality = Cardinality(MIN_NODES_ALL)
   val MIN_NODES_WITH_LABEL_CARDINALITY: Cardinality = Cardinality(MIN_NODES_WITH_LABEL)
