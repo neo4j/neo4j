@@ -63,7 +63,7 @@ Apache Software License, Version 2.0
   LZ4 and xxHash
   magnolia
   mercator
-  Neo4j Java Driver (Slim package)
+  Neo4j Java Driver
   Netty/Buffer
   Netty/Codec
   Netty/Codec/HTTP

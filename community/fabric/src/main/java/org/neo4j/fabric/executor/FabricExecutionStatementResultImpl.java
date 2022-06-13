@@ -19,6 +19,7 @@
  */
 package org.neo4j.fabric.executor;
 
+import java.util.List;
 import java.util.function.Consumer;
 import org.neo4j.fabric.stream.Record;
 import org.neo4j.fabric.stream.StatementResult;
@@ -37,8 +38,8 @@ class FabricExecutionStatementResultImpl implements StatementResult {
     }
 
     @Override
-    public Flux<String> columns() {
-        return statementResult.columns().doOnError(failureHandler);
+    public List<String> columns() {
+        return statementResult.columns();
     }
 
     @Override

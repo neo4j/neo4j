@@ -19,6 +19,7 @@
  */
 package org.neo4j.fabric.executor;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.cypher.internal.FullyParsedQuery;
@@ -172,7 +173,7 @@ public class FabricKernelTransaction {
         }
 
         @Override
-        public Flux<String> columns() {
+        public List<String> columns() {
             return wrappedResult.columns();
         }
 

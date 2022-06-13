@@ -143,7 +143,7 @@
     <awaitility.version>4.2.0</awaitility.version>
     <log4j.version>2.17.1</log4j.version>
     <slf4j.version>1.7.30</slf4j.version>
-    <neo4j-java-driver.version>4.4.5</neo4j-java-driver.version>
+    <neo4j-java-driver.version>5.0.0-alpha02</neo4j-java-driver.version>
     <skip-scalastyle>false</skip-scalastyle>
   </properties>
 
@@ -1053,7 +1053,7 @@
       <!-- testing -->
       <dependency>
         <groupId>org.neo4j.driver</groupId>
-        <artifactId>neo4j-java-driver-slim</artifactId>
+        <artifactId>neo4j-java-driver</artifactId>
         <version>${neo4j-java-driver.version}</version>
         <scope>test</scope>
       </dependency>

@@ -42,6 +42,7 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.reactive.ReactiveResult;
 import org.neo4j.driver.types.Path;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -55,7 +56,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.BoltDbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
-import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @BoltDbmsExtension(configurationCallback = "configure")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -209,7 +210,8 @@ class SnapshotExecutionTest {
     void testResultStreaming() {
         var query = joinAsLines("UNWIND range(0, 100) AS a", "RETURN a");
 
-        int receivedRecords = Flux.from(driver.rxSession().run(query).records())
+        int receivedRecords = Mono.fromDirect(driver.reactiveSession().run(query))
+                .flatMapMany(ReactiveResult::records)
                 .limitRate(5)
                 .take(50)
                 .collectList()

@@ -19,13 +19,14 @@
  */
 package org.neo4j.fabric.stream;
 
+import java.util.List;
 import org.neo4j.fabric.stream.summary.Summary;
 import org.neo4j.graphdb.QueryExecutionType;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface StatementResult {
-    Flux<String> columns();
+    List<String> columns();
 
     Flux<Record> records();
 

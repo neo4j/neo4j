@@ -20,8 +20,6 @@
 package org.neo4j.fabric.bolt;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 import org.neo4j.bolt.dbapi.BoltQueryExecution;
 import org.neo4j.cypher.internal.javacompat.ResultSubscriber;
 import org.neo4j.fabric.config.FabricConfig;
@@ -36,7 +34,6 @@ import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public class BoltQueryExecutionImpl implements BoltQueryExecution {
@@ -99,27 +96,19 @@ public class BoltQueryExecutionImpl implements BoltQueryExecution {
         private boolean initialised;
         private final Mono<Summary> summary;
         private final Mono<QueryExecutionType> queryExecutionType;
-        private final Supplier<List<String>> columns;
+        private final List<String> columns;
 
         private QueryExecutionImpl(
                 Rx2SyncStream rx2SyncStream,
                 QuerySubscriber subscriber,
-                Flux<String> columns,
+                List<String> columns,
                 Mono<Summary> summary,
                 Mono<QueryExecutionType> queryExecutionType) {
             this.rx2SyncStream = rx2SyncStream;
             this.subscriber = subscriber;
             this.summary = summary;
             this.queryExecutionType = queryExecutionType;
-
-            AtomicReference<List<String>> columnsStore = new AtomicReference<>();
-            this.columns = () -> {
-                if (columnsStore.get() == null) {
-                    columnsStore.compareAndSet(null, columns.collectList().block());
-                }
-
-                return columnsStore.get();
-            };
+            this.columns = columns;
         }
 
         private Summary getSummary() {
@@ -143,7 +132,7 @@ public class BoltQueryExecutionImpl implements BoltQueryExecution {
 
         @Override
         public String[] fieldNames() {
-            return columns.get().toArray(new String[0]);
+            return columns.toArray(new String[0]);
         }
 
         @Override
@@ -154,7 +143,7 @@ public class BoltQueryExecutionImpl implements BoltQueryExecution {
 
             if (!initialised) {
                 initialised = true;
-                subscriber.onResult(columns.get().size());
+                subscriber.onResult(columns.size());
             }
 
             try {
@@ -185,7 +174,7 @@ public class BoltQueryExecutionImpl implements BoltQueryExecution {
         }
 
         private void publishFields(Record record) throws Exception {
-            for (int i = 0; i < columns.get().size(); i++) {
+            for (int i = 0; i < columns.size(); i++) {
                 subscriber.onField(i, record.getValue(i));
             }
         }

@@ -19,6 +19,9 @@
  */
 package org.neo4j.fabric.stream;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import org.neo4j.fabric.stream.summary.Summary;
@@ -40,36 +43,36 @@ public final class StatementResults {
     }
 
     public static StatementResult initial() {
-        return new BasicStatementResult(Flux.empty(), Flux.just(Records.empty()), Mono.empty(), Mono.empty());
+        return new BasicStatementResult(
+                Collections.emptyList(), Flux.just(Records.empty()), Mono.empty(), Mono.empty());
     }
 
     public static StatementResult connectVia(SubscribableExecution execution, QuerySubject subject) {
         QueryExecution queryExecution = execution.subscribe(subject);
         subject.setQueryExecution(queryExecution);
         return create(
-                Flux.fromArray(queryExecution.fieldNames()),
+                Arrays.asList(queryExecution.fieldNames()),
                 Flux.from(subject),
                 subject.getSummary(),
                 Mono.just(queryExecution.executionType()));
     }
 
     public static StatementResult create(
-            Flux<String> columns, Flux<Record> records, Mono<Summary> summary, Mono<QueryExecutionType> executionType) {
+            List<String> columns, Flux<Record> records, Mono<Summary> summary, Mono<QueryExecutionType> executionType) {
         return new BasicStatementResult(columns, records, summary, executionType);
     }
 
     public static <E extends Throwable> StatementResult withErrorMapping(
             StatementResult statementResult, Class<E> type, Function<? super E, ? extends Throwable> mapper) {
-        var columns = statementResult.columns().onErrorMap(type, mapper);
         var records = statementResult.records().onErrorMap(type, mapper);
         var summary = statementResult.summary().onErrorMap(type, mapper);
         var executionType = statementResult.executionType().onErrorMap(type, mapper);
 
-        return create(columns, records, summary, executionType);
+        return create(statementResult.columns(), records, summary, executionType);
     }
 
     public static StatementResult error(Throwable err) {
-        return new BasicStatementResult(Flux.error(err), Flux.error(err), Mono.error(err), Mono.error(err));
+        return new BasicStatementResult(Collections.emptyList(), Flux.error(err), Mono.error(err), Mono.error(err));
     }
 
     public static StatementResult trace(StatementResult input) {
@@ -92,13 +95,13 @@ public final class StatementResults {
     }
 
     private static class BasicStatementResult implements StatementResult {
-        private final Flux<String> columns;
+        private final List<String> columns;
         private final Flux<Record> records;
         private final Mono<Summary> summary;
         private final Mono<QueryExecutionType> executionType;
 
         BasicStatementResult(
-                Flux<String> columns,
+                List<String> columns,
                 Flux<Record> records,
                 Mono<Summary> summary,
                 Mono<QueryExecutionType> executionType) {
@@ -109,7 +112,7 @@ public final class StatementResults {
         }
 
         @Override
-        public Flux<String> columns() {
+        public List<String> columns() {
             return columns;
         }
 

@@ -31,11 +31,10 @@ import org.junit.jupiter.api.TestInstance;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Transaction;
-import org.neo4j.driver.reactive.RxResult;
-import org.neo4j.driver.reactive.RxTransaction;
+import org.neo4j.driver.reactive.ReactiveResult;
+import org.neo4j.driver.reactive.ReactiveTransaction;
 import org.neo4j.test.extension.BoltDbmsExtension;
 import org.neo4j.test.extension.Inject;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @BoltDbmsExtension
@@ -68,25 +67,28 @@ class BoltLocalResultStreamTest {
 
     @Test
     void testRxResultStream() {
-        List<String> result = inRxTx(tx -> {
-            RxResult statementResult = tx.run("UNWIND range(0, 4) AS i RETURN 'r' + i as A");
-            return Flux.from(statementResult.records()).limitRate(1).collectList().block().stream()
-                    .map(r -> r.get("A").asString())
-                    .collect(Collectors.toList());
-        });
+        List<String> result = inRxTx(tx -> Mono.fromDirect(tx.run("UNWIND range(0, 4) AS i RETURN 'r' + i as A"))
+                .flatMapMany(ReactiveResult::records)
+                .limitRate(1)
+                .collectList()
+                .block()
+                .stream()
+                .map(r -> r.get("A").asString())
+                .collect(Collectors.toList()));
 
         assertThat(result).isEqualTo(List.of("r0", "r1", "r2", "r3", "r4"));
     }
 
     @Test
     void testPartialStream() {
-        List<String> result = inRxTx(tx -> {
-            RxResult statementResult = tx.run("UNWIND range(0, 4) AS i RETURN 'r' + i as A");
-
-            return Flux.from(statementResult.records()).limitRequest(2).collectList().block().stream()
-                    .map(r -> r.get("A").asString())
-                    .collect(Collectors.toList());
-        });
+        List<String> result = inRxTx(tx -> Mono.fromDirect(tx.run("UNWIND range(0, 4) AS i RETURN 'r' + i as A"))
+                .flatMapMany(ReactiveResult::records)
+                .limitRequest(2)
+                .collectList()
+                .block()
+                .stream()
+                .map(r -> r.get("A").asString())
+                .collect(Collectors.toList()));
 
         assertThat(result).isEqualTo(List.of("r0", "r1"));
     }
@@ -97,10 +99,10 @@ class BoltLocalResultStreamTest {
         }
     }
 
-    private static <T> T inRxTx(Function<RxTransaction, T> workload) {
-        var session = driver.rxSession();
+    private static <T> T inRxTx(Function<ReactiveTransaction, T> workload) {
+        var session = driver.reactiveSession();
         try {
-            RxTransaction tx = Mono.from(session.beginTransaction()).block();
+            ReactiveTransaction tx = Mono.from(session.beginTransaction()).block();
             try {
                 return workload.apply(tx);
             } finally {

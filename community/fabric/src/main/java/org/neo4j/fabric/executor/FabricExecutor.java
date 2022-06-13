@@ -22,6 +22,8 @@ package org.neo4j.fabric.executor;
 import static org.neo4j.fabric.stream.StatementResults.withErrorMapping;
 import static scala.jdk.javaapi.CollectionConverters.asJava;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -261,20 +263,20 @@ public class FabricExecutor {
             if (plan.executionType() == FabricPlan.EXPLAIN() && plan.inFabricContext()) {
                 lifecycle.endSuccess();
                 return StatementResults.create(
-                        Flux.fromIterable(asJava(query.outputColumns())),
+                        asJava(query.outputColumns()),
                         Flux.empty(),
                         Mono.just(new MergedSummary(Mono.just(plan.query().description()), statistics, notifications)),
                         Mono.just(EffectiveQueryType.queryExecutionType(plan, accessMode)));
             } else {
                 FragmentResult fragmentResult = run(query, null);
 
-                Flux<String> columns;
+                List<String> columns;
                 Flux<Record> records;
                 if (query.producesResults()) {
-                    columns = Flux.fromIterable(asJava(query.outputColumns()));
+                    columns = asJava(query.outputColumns());
                     records = fragmentResult.records;
                 } else {
-                    columns = Flux.empty();
+                    columns = Collections.emptyList();
                     records = fragmentResult.records.then(Mono.<Record>empty()).flux();
                 }
 
