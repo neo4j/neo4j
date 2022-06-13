@@ -19,10 +19,20 @@
  */
 package org.neo4j.kernel.diagnostics.providers;
 
+import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+import static org.neo4j.io.ByteUnit.bytesToString;
+
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -41,11 +51,14 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider {
 
     @Override
     public void dump(DiagnosticsLogger logger) {
-        LogFiles logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        Dependencies dependencyResolver = database.getDependencyResolver();
+        FileSystemAbstraction fileSystem = dependencyResolver.resolveDependency(FileSystemAbstraction.class);
+
+        LogFiles logFiles = dependencyResolver.resolveDependency(LogFiles.class);
         try {
             logger.log("Transaction log files stored on file store: "
                     + FileUtils.getFileStoreType(logFiles.logFilesDirectory()));
-            dumpTransactionLogInformation(logger, logFiles.getLogFile());
+            dumpTransactionLogInformation(logger, logFiles.getLogFile(), fileSystem);
             dumpCheckpointLogInformation(logger, logFiles.getCheckpointFile());
         } catch (Exception e) {
             logger.log("Error trying to dump transaction log files info.");
@@ -53,20 +66,36 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider {
         }
     }
 
-    private void dumpTransactionLogInformation(DiagnosticsLogger logger, LogFile logFile) throws IOException {
+    private void dumpTransactionLogInformation(
+            DiagnosticsLogger logger, LogFile logFile, FileSystemAbstraction fileSystem) throws IOException {
         logger.log("Transaction log files:");
         logger.log(" - existing transaction log versions " + logFile.getLowestLogVersion() + "-"
                 + logFile.getHighestLogVersion());
-        for (long logVersion = logFile.getLowestLogVersion(); logFile.versionExists(logVersion); logVersion++) {
+        boolean foundTransactions = false;
+        for (long logVersion = logFile.getLowestLogVersion();
+                logFile.versionExists(logVersion) && !foundTransactions;
+                logVersion++) {
             if (logFile.hasAnyEntries(logVersion)) {
                 LogHeader header = logFile.extractHeader(logVersion);
                 long firstTransactionIdInThisLog = header.getLastCommittedTxId() + 1;
                 logger.log(" - oldest transaction " + firstTransactionIdInThisLog + " found in log with version "
                         + logVersion);
-                return;
+                foundTransactions = true;
             }
         }
-        logger.log(" - no transactions found");
+        if (!foundTransactions) {
+            logger.log(" - no transactions found");
+        } else {
+            logger.log("Files: (filename : creation date - size)");
+            long totalSize = 0;
+            for (Path txLogFile : logFile.getMatchedFiles()) {
+                long size = fileSystem.getFileSize(txLogFile);
+                totalSize += size;
+                logger.log(String.format(
+                        "  %s: %s - %s", txLogFile.getFileName(), getFileCreationDate(txLogFile), bytesToString(size)));
+            }
+            logger.log("  Total size of files: " + bytesToString(totalSize));
+        }
     }
 
     private void dumpCheckpointLogInformation(DiagnosticsLogger logger, CheckpointFile checkpointFile)
@@ -79,5 +108,18 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider {
                 .ifPresentOrElse(
                         checkpoint -> logger.log(" - last checkpoint: " + checkpoint),
                         () -> logger.log(" - no checkpoints found"));
+    }
+
+    private static String getFileCreationDate(Path file) {
+        try {
+            ZonedDateTime modifiedDate = Files.readAttributes(file, BasicFileAttributes.class)
+                    .creationTime()
+                    .toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .withNano(0); // truncate milliseconds
+            return ISO_OFFSET_DATE_TIME.format(modifiedDate);
+        } catch (IOException e) {
+            return "<UNKNOWN>";
+        }
     }
 }

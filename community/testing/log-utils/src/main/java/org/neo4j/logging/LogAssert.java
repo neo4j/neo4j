@@ -61,6 +61,27 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider> 
         return this;
     }
 
+    public LogAssert containsMessagesInOrder(String... messages) {
+        isNotNull();
+        int prevIndex = -1;
+        for (String message : messages) {
+            int index = messageIndex(message, prevIndex);
+            if (index < 0) {
+                if (!haveMessage(message)) {
+                    failWithMessage(
+                            "Expected log to contain messages: `%s` but no matches found in:%n%s",
+                            Arrays.toString(messages), actual.serialize());
+                } else {
+                    failWithMessage(
+                            "Expected log to contain: `%s` in order `%s` but was not matching:%n%s",
+                            message, Arrays.toString(messages), actual.serialize());
+                }
+            }
+            prevIndex = index;
+        }
+        return this;
+    }
+
     public LogAssert containsMessagesOnce(String... messages) {
         isNotNull();
         for (String message : messages) {
@@ -285,6 +306,18 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider> 
         var logCalls = actual.getLogCalls();
         return logCalls.stream()
                 .anyMatch(call -> matchedLogger(call) && matchedLevel(call) && matchedMessage(message, call));
+    }
+
+    private int messageIndex(String message, int startIndex) {
+        var logCalls = actual.getLogCalls();
+        int index = 0;
+        for (LogCall call : logCalls) {
+            if (index >= startIndex && matchedLogger(call) && matchedLevel(call) && matchedMessage(message, call)) {
+                return index;
+            }
+            index++;
+        }
+        return -1;
     }
 
     private long messageMatchCount(String message) {
