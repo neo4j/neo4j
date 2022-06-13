@@ -56,7 +56,7 @@ class RecordProcessorStepTest {
             step.start(0);
             int batchesPerThread = 100;
             AtomicLong nextId = new AtomicLong();
-            Race race = new Race().withEndCondition();
+            Race race = new Race();
             race.addContestants(
                     numThreads,
                     () -> {
@@ -73,7 +73,7 @@ class RecordProcessorStepTest {
 
             // then
             step.done();
-            assertThat(result.longValue()).isEqualTo(numThreads * config.batchSize());
+            assertThat(result.longValue()).isEqualTo(numThreads * config.batchSize() * batchesPerThread);
         }
 
         // then also

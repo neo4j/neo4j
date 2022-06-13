@@ -202,7 +202,8 @@ public class Race {
      */
     private Async startRace() {
         if (endCondition == null) {
-            endCondition = () -> true;
+            var unlimited = contestants.stream().anyMatch(c -> c.maxNumberOfRuns == UNLIMITED);
+            endCondition = () -> unlimited;
         }
 
         readySet = new CountDownLatch(contestants.size());
