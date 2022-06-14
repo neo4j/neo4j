@@ -384,6 +384,9 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
     for {
       predicateKind <- predicateKinds
       disjunction <- predicateKind.findDisjunctions(qg)
+      // Maximum number of predicates on a single variable after which we give up trying to plan a distinct union to avoid stack overflow errors.
+      // It was introduced after a query with > 7k types in a single relationship pattern landed us in trouble.
+      if disjunction.predicates.length <= context.predicatesAsUnionMaxSize
       plansPerExpression = findPlansPerPredicate(disjunction)
       // We can only solve the whole OR. If one predicate didn't yield any plan, we have to give up.
       if plansPerExpression.forall(_.nonEmpty)

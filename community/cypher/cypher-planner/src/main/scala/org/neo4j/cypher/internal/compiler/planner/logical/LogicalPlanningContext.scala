@@ -51,6 +51,7 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   metrics: Metrics,
                                   semanticTable: SemanticTable,
                                   strategy: QueryGraphSolver,
+                                  predicatesAsUnionMaxSize: Int,
                                   input: QueryGraphSolverInput = QueryGraphSolverInput.empty,
                                   // When planning tails, this gives contextual information about the plan of the so-far solved
                                   // query graphs, which will be connected with an Apply with the tail-query graph plan.

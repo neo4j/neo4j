@@ -815,4 +815,14 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     @Description( "Enables sketching of next transaction log file in the background during reverse recovery." )
     public static final Setting<Boolean> pre_sketch_transaction_logs = newBuilder( "unsupported.dbms.tx_log.presketch", BOOL, false ).build();
+
+    @Internal
+    @Description( "Maximum size after which the planner will not attempt to plan the disjunction of predicates on a single variable as a distinct union." +
+              "For example, given the following pattern: `()-[e:FOO|BAR|BAZ]->()`, the planner will attempt to plan a union of `e:Foo`, `e:Bar`, and `e:Baz`" +
+              "unless `unsupported.cypher.predicates_as_union_max_size` is less than 3." )
+    public static final Setting<Integer> predicates_as_union_max_size =
+            newBuilder( "unsupported.cypher.predicates_as_union_max_size", INT, 255 )
+                    .addConstraint( min( 0 ) )
+                    .build();
+
 }

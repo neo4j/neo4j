@@ -134,4 +134,5 @@ class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val p
   def pipelinedBatchSizeBig: Int = config.pipelinedBatchSizeBig
   def enabledSemanticFeatures: Seq[SemanticFeature] = CompilationPhases.enabledSemanticFeatures(config.enableExtraSemanticFeatures)
   def planningTextIndexesEnabled: Boolean = config.planningTextIndexesEnabled
+  def predicatesAsUnionMaxSize: Int = config.predicatesAsUnionMaxSize
 }

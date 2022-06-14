@@ -99,7 +99,8 @@ case object QueryPlanner
       debugOptions = context.debugOptions,
       anonymousVariableNameGenerator = from.anonymousVariableNameGenerator,
       cancellationChecker = context.cancellationChecker,
-      planningTextIndexesEnabled = context.config.planningTextIndexesEnabled
+      planningTextIndexesEnabled = context.config.planningTextIndexesEnabled,
+      predicatesAsUnionMaxSize = context.config.predicatesAsUnionMaxSize
     )
   }
 
