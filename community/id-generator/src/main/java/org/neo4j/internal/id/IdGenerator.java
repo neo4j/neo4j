@@ -127,6 +127,22 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         return PrimitiveLongResourceCollections.emptyIterator();
     }
 
+    /**
+     * Marks IDs as being one state or another. A typical chain of interactions:
+     * <ul>Allocating, creating and deleting
+     *     <li>ID X allocated from high ID when reserving an ID for an entity</li>
+     *     <li>{@link #markUsed(long)} when entity with ID X is committed</li>
+     *     <li>{@link #markDeleted(long)} when entity with ID X is later perhaps deleted</li>
+     *     <li>{@link #markFree(long)} when entity with ID X is eligible, after being deleted,
+     *     to be reused for another entity</li>
+     *     <li>X can now be allocated again, but from the freelist instead of from high ID</li>
+     * </ul>
+     * <ul>Allocating then un-allocating in case transaction rolls back
+     *     <li>ID X allocated from high ID when reserving an ID for an entity</li>
+     *     <li>{@link #markUnallocated(long)} when entity with ID is rolled back, i.e. X never used</li>
+     *     <li>X can now be allocated again, but from the freelist instead of from high ID</li>
+     * </ul>
+     */
     interface Marker extends AutoCloseable {
         default void markUsed(long id) {
             markUsed(id, 1);
@@ -146,8 +162,50 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 
         void markFree(long id, int numberOfIds);
 
+        /**
+         * For an ID that was allocated and later not committed (e.g. tx rolled back).
+         */
+        default void markUnallocated(long id) {
+            markUnallocated(id, 1);
+        }
+
+        void markUnallocated(long id, int numberOfIds);
+
         @Override
         void close();
+
+        class Delegate implements Marker {
+            protected final Marker actual;
+
+            Delegate(Marker actual) {
+                this.actual = actual;
+            }
+
+            @Override
+            public void markUsed(long id, int numberOfIds) {
+                actual.markUsed(id, numberOfIds);
+            }
+
+            @Override
+            public void markDeleted(long id, int numberOfIds) {
+                actual.markDeleted(id, numberOfIds);
+            }
+
+            @Override
+            public void markFree(long id, int numberOfIds) {
+                actual.markFree(id, numberOfIds);
+            }
+
+            @Override
+            public void markUnallocated(long id, int numberOfIds) {
+                actual.markUnallocated(id, numberOfIds);
+            }
+
+            @Override
+            public void close() {
+                actual.close();
+            }
+        }
     }
 
     class Delegate implements IdGenerator {
@@ -265,6 +323,10 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 
         @Override
         public void markDeleted(long id, int numberOfIds) { // no-op
+        }
+
+        @Override
+        public void markUnallocated(long id, int numberOfIds) { // no-op
         }
 
         @Override

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
@@ -26,8 +27,12 @@ import static org.neo4j.test.Race.throwing;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import org.assertj.core.data.Percentage;
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -35,7 +40,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.id.IdController;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.Race;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -59,6 +66,11 @@ class RollbackIdLeakIT {
     @Test
     void shouldNotLeakHighIdsOnRollbackAfterCrashAndRecovery() throws IOException {
         shouldNotLeakHighIdsOnRollback(this::nonClean);
+    }
+
+    @Test
+    void shouldNotLeakHighIdsOnRollbackAfterIdMaintenance() throws IOException {
+        shouldNotLeakHighIdsOnRollback(this::idMaintenance);
     }
 
     private static void shouldNotLeakHighIdsOnRollback(Supplier<DbRestarter> restarterSupplier) throws IOException {
@@ -129,6 +141,11 @@ class RollbackIdLeakIT {
         shouldNotLeakHighIdsOnCreateDeleteInSameTx(this::nonClean);
     }
 
+    @Test
+    void shouldNotLeakHighIdsOnCreateDeleteInSameTxAfterIdMaintenance() throws IOException {
+        shouldNotLeakHighIdsOnCreateDeleteInSameTx(this::idMaintenance);
+    }
+
     private static void shouldNotLeakHighIdsOnCreateDeleteInSameTx(Supplier<DbRestarter> restarterSupplier)
             throws IOException {
         // given
@@ -163,6 +180,72 @@ class RollbackIdLeakIT {
             }
 
             assertAllocateIds(restarter.restart(), nodeIds, relationshipIds);
+        }
+    }
+
+    @Test
+    void shouldReuseRolledBackIds() throws IOException {
+        try (var dbManager = clean()) {
+            // given
+            var db = dbManager.start();
+            var race = new Race();
+            var numTransactions = new AtomicInteger();
+            var allocatedIds = LongSets.mutable.empty();
+            var threads = 4;
+            var txSize = 5;
+            var rounds = 1_000;
+            race.addContestants(
+                    threads,
+                    () -> {
+                        // Do some creations and randomly decide to commit or rollback
+                        try (var tx = db.beginTx()) {
+                            for (var i = 0; i < txSize; i++) {
+                                allocatedIds.add(tx.createNode().getId());
+                            }
+                            if (numTransactions.incrementAndGet() % 2 == 0) {
+                                tx.commit();
+                            }
+                        }
+                        ((GraphDatabaseAPI) db)
+                                .getDependencyResolver()
+                                .resolveDependency(IdController.class)
+                                .maintenance();
+                    },
+                    rounds);
+
+            // when
+            race.goUnchecked();
+
+            // then
+            var expectedMaxAllocatedIds = threads * txSize * rounds / 2;
+            assertThat(allocatedIds.size()).isCloseTo(expectedMaxAllocatedIds, Percentage.withPercentage(10));
+        }
+    }
+
+    @Test
+    void shouldReuseRolledBackIdsMultipleTimes() throws IOException {
+        try (var dbManager = clean()) {
+            // given
+            var db = dbManager.start();
+            LongSet referenceIds = null;
+            for (int r = 0; r < 10; r++) {
+                var ids = LongSets.mutable.empty();
+                try (var tx = db.beginTx()) {
+                    for (var i = 0; i < 10; i++) {
+                        var node = tx.createNode();
+                        ids.add(node.getId());
+                    }
+                }
+                if (r == 0) {
+                    referenceIds = ids;
+                } else {
+                    assertThat(ids).isEqualTo(referenceIds);
+                }
+                ((GraphDatabaseAPI) db)
+                        .getDependencyResolver()
+                        .resolveDependency(IdController.class)
+                        .maintenance();
+            }
         }
     }
 
@@ -236,6 +319,33 @@ class RollbackIdLeakIT {
                         .setFileSystem(fs)
                         .build();
                 return dbms.database(DEFAULT_DATABASE_NAME);
+            }
+        };
+    }
+
+    private DbRestarter idMaintenance() {
+        return new DbRestarter() {
+            private DatabaseManagementService dbms;
+
+            @Override
+            public GraphDatabaseService start() {
+                dbms = new TestDatabaseManagementServiceBuilder(directory.homePath()).build();
+                return dbms.database(DEFAULT_DATABASE_NAME);
+            }
+
+            @Override
+            public GraphDatabaseService restart() {
+                var db = dbms.database(DEFAULT_DATABASE_NAME);
+                ((GraphDatabaseAPI) db)
+                        .getDependencyResolver()
+                        .resolveDependency(IdController.class)
+                        .maintenance();
+                return db;
+            }
+
+            @Override
+            public void close() {
+                dbms.shutdown();
             }
         };
     }

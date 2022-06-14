@@ -79,6 +79,9 @@ class IdGeneratorUpdatesWorkSyncTest {
         public void markFree(long id, int numberOfIds) {}
 
         @Override
+        public void markUnallocated(long id, int numberOfIds) {}
+
+        @Override
         public void close() {}
 
         boolean used(long id, int numberOfIds) {

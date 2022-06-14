@@ -49,6 +49,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.exceptions.UnspecifiedKernelException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
@@ -79,6 +80,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.ExecutionContext;
@@ -841,12 +843,29 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private void rollback(TransactionListenersState listenersState) throws KernelException {
         try {
-            try {
-                dropCreatedConstraintIndexes();
-            } catch (IllegalStateException | SecurityException e) {
-                throw new TransactionFailureException(
-                        Status.Transaction.TransactionRollbackFailed, e, "Could not drop created constraint indexes");
-            }
+            AutoCloseable constraintDropper = () -> {
+                try {
+                    dropCreatedConstraintIndexes();
+                } catch (IllegalStateException | SecurityException e) {
+                    throw new TransactionFailureException(
+                            Status.Transaction.TransactionRollbackFailed,
+                            e,
+                            "Could not drop created constraint indexes");
+                }
+            };
+            AutoCloseable storageRollback = () -> {
+                if (txState != null) {
+                    try (var rollbackContext = contextFactory.create("transaction rollback")) {
+                        storageEngine.rollback(txState, rollbackContext);
+                    }
+                }
+            };
+
+            IOUtils.close((s, throwable) -> throwable, constraintDropper, storageRollback);
+        } catch (KernelException | RuntimeException | Error e) {
+            throw e;
+        } catch (Throwable throwable) {
+            throw new UnspecifiedKernelException(Status.Transaction.TransactionRollbackFailed, throwable);
         } finally {
             afterRollback(listenersState);
         }

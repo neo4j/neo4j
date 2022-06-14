@@ -131,6 +131,14 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
     void apply(CommandsToApply batch, TransactionApplicationMode mode) throws Exception;
 
     /**
+     * Called for a transaction that gets rolled back.
+     * @param txState transaction state of the failed transaction, can be {@code null}.
+     * or {@code null} if no commands had been extracted.
+     * @param cursorContext cursor context.
+     */
+    void rollback(ReadableTransactionState txState, CursorContext cursorContext);
+
+    /**
      * Flushes and forces all changes down to underlying storage. This is a blocking call and when it returns
      * all changes applied to this storage engine will be durable.
      *

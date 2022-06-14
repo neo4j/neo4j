@@ -821,6 +821,11 @@ class FreeIdScannerTest {
                 }
 
                 @Override
+                public void markUnallocated(long id, int numberOfIds) {
+                    actual.markUnallocated(id, numberOfIds);
+                }
+
+                @Override
                 public void close() {
                     actual.close();
                 }

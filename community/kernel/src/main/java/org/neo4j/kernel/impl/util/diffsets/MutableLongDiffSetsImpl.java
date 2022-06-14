@@ -104,7 +104,7 @@ public class MutableLongDiffSetsImpl implements MutableLongDiffSets {
 
     @Override
     public LongSet getRemovedFromAdded() {
-        return LongSets.immutable.empty();
+        throw new UnsupportedOperationException();
     }
 
     @Override

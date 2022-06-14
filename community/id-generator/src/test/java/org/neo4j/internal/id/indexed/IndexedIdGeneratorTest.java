@@ -1380,6 +1380,65 @@ class IndexedIdGeneratorTest {
         }
     }
 
+    @Test
+    void shouldReuseRolledbackIdAllocatedFromHighId() throws IOException {
+        // given
+        open();
+        idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
+        var id = idGenerator.nextId(NULL_CONTEXT);
+        markUnallocated(id);
+        idGenerator.maintenance(NULL_CONTEXT);
+
+        // when
+        var idAfterUnallocated = idGenerator.nextId(NULL_CONTEXT);
+
+        // then
+        assertThat(idAfterUnallocated).isEqualTo(id);
+    }
+
+    @Test
+    void shouldReuseRolledbackIdAllocatedFromHighIdAfterHigherCommittedIds() throws IOException {
+        // given
+        open();
+        idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
+        var id = idGenerator.nextId(NULL_CONTEXT);
+        var otherId = idGenerator.nextId(NULL_CONTEXT);
+        markUsed(otherId);
+        markUnallocated(id);
+        idGenerator.maintenance(NULL_CONTEXT);
+
+        // when
+        var idAfterUnallocated = idGenerator.nextId(NULL_CONTEXT);
+
+        // then
+        assertThat(idAfterUnallocated).isEqualTo(id);
+    }
+
+    @Test
+    void shouldReuseRolledbackIdAllocatedFromReusedId() throws IOException {
+        // given
+        open();
+        idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
+        var id1 = idGenerator.nextId(NULL_CONTEXT);
+        var id2 = idGenerator.nextId(NULL_CONTEXT);
+        var id3 = idGenerator.nextId(NULL_CONTEXT);
+        markUsed(id1);
+        markUsed(id2);
+        markUsed(id3);
+        markDeleted(id2);
+        markFree(id2);
+        idGenerator.maintenance(NULL_CONTEXT);
+        assertThat(idGenerator.nextId(NULL_CONTEXT)).isEqualTo(id2);
+        markUnallocated(id2);
+        idGenerator.maintenance(NULL_CONTEXT);
+
+        // when
+        var idAfterUnallocated = idGenerator.nextId(NULL_CONTEXT);
+
+        // then
+        assertThat(idAfterUnallocated).isEqualTo(id2);
+    }
+
     private void assertOperationThrowInReadOnlyMode(Function<IndexedIdGenerator, Executable> operation)
             throws IOException {
         Path file = directory.file("existing");
@@ -1566,6 +1625,16 @@ class IndexedIdGeneratorTest {
     private void markFree(long id, int size) {
         try (Marker marker = idGenerator.marker(NULL_CONTEXT)) {
             marker.markFree(id, size);
+        }
+    }
+
+    private void markUnallocated(long id) {
+        markUnallocated(id, 1);
+    }
+
+    private void markUnallocated(long id, int size) {
+        try (Marker marker = idGenerator.marker(NULL_CONTEXT)) {
+            marker.markUnallocated(id, size);
         }
     }
 

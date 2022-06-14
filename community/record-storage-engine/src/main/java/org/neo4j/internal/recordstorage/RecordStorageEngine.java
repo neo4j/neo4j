@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -56,6 +57,7 @@ import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.internal.kernel.api.exceptions.TransactionApplyKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -112,6 +114,7 @@ import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -142,6 +145,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     private final boolean consistencyCheckApply;
     private final boolean parallelIndexUpdatesApply;
     private IndexUpdatesWorkSync indexUpdatesSync;
+    private final IdGeneratorFactory idGeneratorFactory;
     private final CursorContextFactory contextFactory;
     private final MemoryTracker otherMemoryTracker;
     private final CommandLockVerification.Factory commandLockVerificationFactory;
@@ -190,6 +194,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         this.lockService = lockService;
         this.databaseHealth = databaseHealth;
         this.constraintSemantics = constraintSemantics;
+        this.idGeneratorFactory = idGeneratorFactory;
         this.contextFactory = contextFactory;
         this.otherMemoryTracker = otherMemoryTracker;
         this.commandLockVerificationFactory = commandLockVerificationFactory;
@@ -464,6 +469,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             CommandLockVerification commandLockVerification =
                     commandLockVerificationFactory.create(locks, txState, neoStores, schemaRuleAccess, storeCursors);
             commandLockVerification.verifySufficientlyLocked(commands);
+
+            unallocateIds(txState.addedAndRemovedNodes().getRemovedFromAdded(), RecordIdType.NODE, cursorContext);
+            unallocateIds(
+                    txState.addedAndRemovedRelationships().getRemovedFromAdded(),
+                    RecordIdType.RELATIONSHIP,
+                    cursorContext);
         }
     }
 
@@ -521,6 +532,30 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                     cause, "Failed to apply transaction: %s", batch == null ? initialBatch : batch);
             databaseHealth.panic(kernelException);
             throw kernelException;
+        }
+    }
+
+    @Override
+    public void rollback(ReadableTransactionState txState, CursorContext cursorContext) {
+        // Extract allocated IDs from created nodes/relationships from txState
+        // (optionally) flick through the commands to try and salvage other types of IDs, like property/dynamic record
+        // IDs, but that's way less bang for your buck.
+        unallocateIds(txState.addedAndRemovedNodes(), RecordIdType.NODE, cursorContext);
+        unallocateIds(txState.addedAndRemovedRelationships(), RecordIdType.RELATIONSHIP, cursorContext);
+    }
+
+    private void unallocateIds(LongDiffSets ids, IdType idType, CursorContext cursorContext) {
+        // Free those that were created
+        unallocateIds(ids.getAdded(), idType, cursorContext);
+        // Free those that were created and then deleted
+        unallocateIds(ids.getRemovedFromAdded(), idType, cursorContext);
+    }
+
+    private void unallocateIds(LongSet ids, IdType idType, CursorContext cursorContext) {
+        if (!ids.isEmpty()) {
+            try (var marker = idGeneratorFactory.get(idType).marker(cursorContext)) {
+                ids.forEach(marker::markUnallocated);
+            }
         }
     }
 

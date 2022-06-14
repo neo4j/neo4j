@@ -296,6 +296,11 @@ class ParallelRecoveryVisitorTest {
             applyOrder[applyOrderCursor.getAndIncrement()] = idOf(batch);
         }
 
+        @Override
+        public void rollback(ReadableTransactionState txState, CursorContext rollbackContext) {
+            throw new UnsupportedOperationException();
+        }
+
         long[] lockOrder() {
             return Arrays.copyOf(lockOrder, lockOrderCursor.get());
         }

@@ -46,14 +46,7 @@ class BufferingIdGenerator extends IdGenerator.Delegate {
 
     @Override
     public Marker marker(CursorContext cursorContext) {
-        Marker actual = super.marker(cursorContext);
-        return new Marker() {
-            @Override
-            public void markUsed(long id, int numberOfIds) {
-                // Goes straight in
-                actual.markUsed(id, numberOfIds);
-            }
-
+        return new Marker.Delegate(super.marker(cursorContext)) {
             @Override
             public void markDeleted(long id, int numberOfIds) {
                 // Run these by the buffering too
@@ -64,16 +57,6 @@ class BufferingIdGenerator extends IdGenerator.Delegate {
                 if (bufferedDeletedIds.size() > 10_000) {
                     collector.run();
                 }
-            }
-
-            @Override
-            public void markFree(long id, int numberOfIds) {
-                actual.markFree(id, numberOfIds);
-            }
-
-            @Override
-            public void close() {
-                actual.close();
             }
         };
     }

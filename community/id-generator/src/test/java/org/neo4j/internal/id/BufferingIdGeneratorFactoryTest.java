@@ -352,6 +352,9 @@ class BufferingIdGeneratorFactoryTest {
             freed.add(Pair.of(id, numberOfIds));
         }
 
+        @Override
+        public void markUnallocated(long id, int numberOfIds) {}
+
         void verifyDeleted(long id, int numberOfIds) {
             assertThat(deleted.remove(Pair.of(id, numberOfIds))).isTrue();
         }

@@ -55,7 +55,7 @@ class IdRange {
     static final int BITSET_SHIFT = log2floor(BITSET_SIZE);
 
     private long generation;
-    private boolean addition;
+    private byte addition;
     private final long[][] bitSets;
     private final int numOfLongs;
 
@@ -103,7 +103,25 @@ class IdRange {
 
     void clear(long generation, boolean addition) {
         this.generation = generation;
-        this.addition = addition;
+        this.addition = (byte) (addition ? 0b111 : 0);
+        fill(bitSets[BITSET_COMMIT], 0);
+        fill(bitSets[BITSET_REUSE], 0);
+        fill(bitSets[BITSET_RESERVED], 0);
+    }
+
+    private static byte additionBit(boolean addition, int bitSet) {
+        return (byte) (addition ? (1 << bitSet) : 0);
+    }
+
+    private static boolean isAddition(byte addition, int bitSet) {
+        return (addition & (1 << bitSet)) != 0;
+    }
+
+    void clear(long generation, boolean additionCommit, boolean additionReuse, boolean additionReserved) {
+        this.generation = generation;
+        this.addition = (byte) (additionBit(additionCommit, BITSET_COMMIT)
+                | additionBit(additionReuse, BITSET_REUSE)
+                | additionBit(additionReserved, BITSET_RESERVED));
         fill(bitSets[BITSET_COMMIT], 0);
         fill(bitSets[BITSET_REUSE], 0);
         fill(bitSets[BITSET_RESERVED], 0);
@@ -136,7 +154,7 @@ class IdRange {
         }
 
         for (int bitSetIndex = 0; bitSetIndex < BITSET_COUNT; bitSetIndex++) {
-            mergeBitSet(bitSets[bitSetIndex], other.bitSets[bitSetIndex], other.addition);
+            mergeBitSet(bitSets[bitSetIndex], other.bitSets[bitSetIndex], isAddition(other.addition, bitSetIndex));
         }
 
         return true;
@@ -149,13 +167,12 @@ class IdRange {
     }
 
     private void verifyMerge(IdRangeKey key, IdRange other) {
-        boolean addition = other.addition;
         long[] intoBitSet = bitSets[BITSET_COMMIT];
         long[] fromBitSet = other.bitSets[BITSET_COMMIT];
         for (int i = 0; i < intoBitSet.length; i++) {
             long into = intoBitSet[i];
             long from = fromBitSet[i];
-            if (addition) {
+            if (isAddition(other.addition, BITSET_COMMIT)) {
                 if ((into & from) != 0) {
                     int idsPerRange = numOfLongs * Long.SIZE;
                     throw new IllegalStateException(format(
@@ -187,8 +204,14 @@ class IdRange {
 
     @Override
     public String toString() {
-        StringBuilder builder =
-                new StringBuilder().append(addition ? "+" : "-").append(" gen:").append(generation);
+        var additionCommit = isAddition(addition, BITSET_COMMIT);
+        StringBuilder builder = new StringBuilder(additionCommit ? "+" : "-");
+        if (additionCommit != isAddition(addition, BITSET_REUSE)
+                || additionCommit != isAddition(addition, BITSET_RESERVED)) {
+            builder.append(isAddition(addition, BITSET_REUSE) ? "+" : "-");
+            builder.append(isAddition(addition, BITSET_RESERVED) ? "+" : "-");
+        }
+        builder.append(" gen:").append(generation);
         appendBitSet(builder, bitSets[BITSET_COMMIT], "deleted ");
         appendBitSet(builder, bitSets[BITSET_REUSE], "freed   ");
         appendBitSet(builder, bitSets[BITSET_RESERVED], "reserved");

@@ -144,7 +144,7 @@ class IdRangeMarker implements IndexedIdGenerator.InternalMarker {
 
     @Override
     public void markUsed(long id, int numberOfIds) {
-        bridgeGapBetweenHighestWrittenIdAndThisId(id, numberOfIds);
+        bridgeGapBetweenHighestWrittenIdAndThisId(id, numberOfIds, false);
         if (!hasReservedIdInRange(id, id + numberOfIds)) {
             prepareRange(id, false);
             value.setBitsForAllTypes(idOffset(id), numberOfIds);
@@ -195,6 +195,24 @@ class IdRangeMarker implements IndexedIdGenerator.InternalMarker {
         freeIdsNotifier.set(true);
     }
 
+    @Override
+    public void markUnallocated(long id, int numberOfIds) {
+        // To bridge this gap here is going to be very rare, basically if there are allocations that
+        // are not committed but instead freed (tx rollback after writes).
+        bridgeGapBetweenHighestWrittenIdAndThisId(id, numberOfIds, true);
+        if (!hasReservedIdInRange(id, id + numberOfIds)) {
+            key.setIdRangeIdx(idRangeIndex(id));
+            value.clear(generation, true, true, false);
+            var idOffset = idOffset(id);
+            value.setBits(BITSET_REUSE, idOffset, numberOfIds);
+            value.setBits(BITSET_RESERVED, idOffset, numberOfIds);
+            writer.merge(key, value, merger);
+            monitor.markedAsFree(id, numberOfIds);
+        }
+
+        freeIdsNotifier.set(true);
+    }
+
     private void prepareRange(long id, boolean addition) {
         key.setIdRangeIdx(idRangeIndex(id));
         value.clear(generation, addition);
@@ -215,12 +233,13 @@ class IdRangeMarker implements IndexedIdGenerator.InternalMarker {
      * @param id the id being updated.
      * @param numberOfIds number of ids this id allocation is.
      */
-    private void bridgeGapBetweenHighestWrittenIdAndThisId(long id, int numberOfIds) {
+    private void bridgeGapBetweenHighestWrittenIdAndThisId(long id, int numberOfIds, boolean includeThis) {
         long highestWrittenId = this.highestWrittenId.get();
-        if (bridgeIdGaps && highestWrittenId < id) {
+        long to = includeThis ? id + numberOfIds : id;
+        if (bridgeIdGaps && highestWrittenId < to) {
             key.setIdRangeIdx(-1);
             boolean dirty = false;
-            while (highestWrittenId < id - 1) {
+            while (highestWrittenId < to - 1) {
                 long bridgeId = ++highestWrittenId;
                 if (!isReservedId(bridgeId)) {
                     // Since we're potentially setting multiple bits in this loop we have to monitor when we cross the
@@ -252,9 +271,9 @@ class IdRangeMarker implements IndexedIdGenerator.InternalMarker {
                 writer.merge(key, value, merger);
             }
 
-            // Well, we bridged the gap up and including id - 1, but we know that right after this the actual id will be
-            // written
-            // so to try to isolate updates to highestWrittenId to this method we can might as well do that right here.
+            // Well, we bridged the gap up and including id - 1, but we know that right after this the actual id
+            // will be written so to try to isolate updates to highestWrittenId to this method we can might as well
+            // do that right here.
             this.highestWrittenId.set(id + numberOfIds - 1);
         }
     }
