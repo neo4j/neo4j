@@ -19,6 +19,9 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
+import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
+import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
+
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -36,6 +39,20 @@ public abstract class BaseRoutingTableProcedureValidator implements RoutingTable
         databaseContextProvider
                 .databaseIdRepository()
                 .getById(namedDatabaseId.databaseId())
-                .orElseThrow(() -> RoutingTableProcedureHelpers.databaseNotFoundException(namedDatabaseId.name()));
+                .orElseThrow(() -> databaseNotFoundException(namedDatabaseId.name()));
+    }
+
+    protected static ProcedureException databaseNotAvailableException(String databaseName) {
+        return new ProcedureException(
+                DatabaseUnavailable,
+                "Unable to get a routing table for database '" + databaseName
+                        + "' because this database is unavailable");
+    }
+
+    protected static ProcedureException databaseNotFoundException(String databaseName) {
+        return new ProcedureException(
+                DatabaseNotFound,
+                "Unable to get a routing table for database '" + databaseName
+                        + "' because this database does not exist");
     }
 }

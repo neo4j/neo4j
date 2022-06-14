@@ -19,6 +19,8 @@
  */
 package org.neo4j.commandline.dbms;
 
+import java.util.Map;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.module.edition.migration.CommunityMigrationEditionModuleFactory;
 import org.neo4j.graphdb.factory.module.edition.migration.MigrationEditionModuleFactory;
 
@@ -26,5 +28,9 @@ public class SystemDbUpgraderCommunityTest extends SystemDbUpgraderAbstractTestB
     @Override
     protected MigrationEditionModuleFactory migrationEditionModuleFactory() {
         return new CommunityMigrationEditionModuleFactory();
+    }
+
+    protected Map<Setting<?>, Object> baseConfig() {
+        return Map.of();
     }
 }

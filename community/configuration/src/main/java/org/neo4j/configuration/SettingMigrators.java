@@ -169,6 +169,7 @@ public final class SettingMigrators {
                 "unsupported.dbms.tokenscan.log.prune_threshold",
                 "unsupported.dbms.tokenscan.log.rotation_threshold",
                 "unsupported.dbms.topology_graph.enable",
+                "unsupported.dbms.topology_graph_updater.enable",
                 "unsupported.dbms.uris.rest",
                 "cypher.default_language_version");
         private static final Collection<Mapping> LEGACY_UNSUPPORTED_SETTINGS_MAPPING = List.of(
@@ -505,9 +506,6 @@ public final class SettingMigrators {
                 new Mapping(
                         "unsupported.dbms.strictly_prioritize_id_freelist",
                         "internal.dbms.strictly_prioritize_id_freelist"),
-                new Mapping(
-                        "unsupported.dbms.topology_graph_updater.enable",
-                        "internal.dbms.topology_graph_updater.enable"),
                 new Mapping("unsupported.dbms.tracer", "internal.dbms.tracer"),
                 new Mapping("unsupported.dbms.transaction_start_timeout", "internal.dbms.transaction_start_timeout"),
                 new Mapping("unsupported.dbms.tx.logs.dedicated.appender", "internal.dbms.tx.logs.dedicated.appender"),

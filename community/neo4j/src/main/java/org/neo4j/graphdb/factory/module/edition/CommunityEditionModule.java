@@ -28,7 +28,6 @@ import java.util.function.Supplier;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
 import org.neo4j.collection.Dependencies;
-import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -46,12 +45,10 @@ import org.neo4j.dbms.database.DatabaseRepository;
 import org.neo4j.dbms.database.DefaultDatabaseContextFactory;
 import org.neo4j.dbms.database.DefaultDatabaseContextFactoryComponents;
 import org.neo4j.dbms.database.DefaultSystemGraphComponent;
-import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
 import org.neo4j.dbms.database.DetailedDbInfoProvider;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.dbms.database.StandaloneDatabaseInfoService;
 import org.neo4j.dbms.database.SystemGraphComponents;
-import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.identity.DefaultIdentityModule;
 import org.neo4j.dbms.identity.ServerIdentity;
@@ -233,15 +230,7 @@ public class CommunityEditionModule extends StandaloneEditionModule implements D
 
     @Override
     public void registerSystemGraphInitializer(GlobalModule globalModule) {
-        DependencyResolver globalDependencies = globalModule.getGlobalDependencies();
-        Supplier<GraphDatabaseService> systemSupplier = systemSupplier(globalDependencies);
-        var systemGraphComponents = globalModule.getSystemGraphComponents();
-        SystemGraphInitializer initializer = CommunityEditionModule.tryResolveOrCreate(
-                SystemGraphInitializer.class,
-                globalModule.getExternalDependencyResolver(),
-                () -> new DefaultSystemGraphInitializer(systemSupplier, systemGraphComponents));
-        globalModule.getGlobalDependencies().satisfyDependency(initializer);
-        globalModule.getGlobalLife().add(initializer);
+        registerSystemGraphInitializer(globalModule, globalModule.getGlobalDependencies());
         registerDefaultDatabaseInitializer(globalModule);
     }
 
@@ -258,18 +247,6 @@ public class CommunityEditionModule extends StandaloneEditionModule implements D
         systemGraphComponents.register(systemGraphComponent);
         var communityTopologyGraphComponentComponent = new CommunityTopologyGraphComponent(config, log);
         systemGraphComponents.register(communityTopologyGraphComponentComponent);
-    }
-
-    protected static Supplier<GraphDatabaseService> systemSupplier(DependencyResolver dependencies) {
-        return () -> {
-            DatabaseContextProvider<?> databaseContextProvider =
-                    dependencies.resolveDependency(DatabaseContextProvider.class);
-            return databaseContextProvider
-                    .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
-                    .orElseThrow(
-                            () -> new RuntimeException("No database called `" + SYSTEM_DATABASE_NAME + "` was found."))
-                    .databaseFacade();
-        };
     }
 
     private void setupSecurityGraphInitializer(GlobalModule globalModule) {

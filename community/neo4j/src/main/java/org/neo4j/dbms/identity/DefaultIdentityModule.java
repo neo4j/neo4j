@@ -29,7 +29,7 @@ public class DefaultIdentityModule extends AbstractIdentityModule {
         return DefaultIdentityModule::new;
     }
 
-    private DefaultIdentityModule(GlobalModule globalModule) {
+    public DefaultIdentityModule(GlobalModule globalModule) {
         this(globalModule, UUID.randomUUID());
     }
 

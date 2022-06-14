@@ -28,8 +28,6 @@ import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.logging.InternalLogProvider;
 
 public final class SingleInstanceRoutingProcedureInstaller extends AbstractRoutingProcedureInstaller {
-    private static final String DESCRIPTION = "Returns endpoints of this instance.";
-
     private final DatabaseContextProvider<?> databaseContextProvider;
     private final ClientRoutingDomainChecker clientRoutingDomainChecker;
     private final ConnectorPortRegister portRegister;
@@ -58,7 +56,6 @@ public final class SingleInstanceRoutingProcedureInstaller extends AbstractRouti
 
         return new GetRoutingTableProcedure(
                 namespace,
-                DESCRIPTION,
                 databaseContextProvider,
                 validator,
                 routingTableProvider,

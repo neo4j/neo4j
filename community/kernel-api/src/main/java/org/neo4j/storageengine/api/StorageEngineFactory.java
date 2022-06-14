@@ -449,12 +449,19 @@ public interface StorageEngineFactory {
     /**
      * Selects storage engine which has the name found in the given {@link Configuration}, see {@link GraphDatabaseInternalSettings#storage_engine}.
      *
+     * If {@link GraphDatabaseInternalSettings#storage_engine} is empty or null it will return the {@link #defaultStorageEngine()}
+     *
      * @param configuration the {@link Configuration} to read the name from.
-     * @return the {@link StorageEngineFactory} for this name.
+     * @return the {@link StorageEngineFactory} for the name provided via config or the default one.
      * @throws IllegalArgumentException if no storage engine with the given name was found.
      */
     static StorageEngineFactory selectStorageEngine(Configuration configuration) {
-        return selectStorageEngine(configuration.get(storage_engine));
+        var storageEngine = configuration.get(storage_engine);
+        if (isNotEmpty(storageEngine)) {
+            return selectStorageEngine(storageEngine);
+        } else {
+            return defaultStorageEngine();
+        }
     }
 
     /**

@@ -1101,6 +1101,158 @@
     "enterpriseOnly": false
   },
   {
+    "admin": true,
+    "name": "dbms.cluster.benchmark.start",
+    "option": {
+      "deprecated": false
+    },
+    "signature": "dbms.cluster.benchmark.start(dbName :: STRING?, nThreads :: INTEGER?, blockSize :: INTEGER?) :: VOID",
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "worksOnSystem": false,
+    "returnDescription": [],
+    "description": "Start the benchmark.",
+    "rolesExecution": [
+      "admin"
+    ],
+    "argumentDescription": [
+      {
+        "name": "dbName",
+        "description": "dbName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "nThreads",
+        "description": "nThreads :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "blockSize",
+        "description": "blockSize :: INTEGER?",
+        "type": "INTEGER?"
+      }
+    ],
+    "mode": "DBMS",
+    "enterpriseOnly": true
+  },
+  {
+    "admin": true,
+    "name": "dbms.cluster.benchmark.stop",
+    "option": {
+      "deprecated": false
+    },
+    "signature": "dbms.cluster.benchmark.stop(dbName :: STRING?) :: (dbName :: STRING?, totalRequests :: INTEGER?, totalBytes :: INTEGER?, timeMillis :: INTEGER?, opsPerMilli :: FLOAT?, mbPerSecond :: FLOAT?)",
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "worksOnSystem": false,
+    "returnDescription": [
+      {
+        "name": "dbName",
+        "description": "dbName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "totalRequests",
+        "description": "totalRequests :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "totalBytes",
+        "description": "totalBytes :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "timeMillis",
+        "description": "timeMillis :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "opsPerMilli",
+        "description": "opsPerMilli :: FLOAT?",
+        "type": "FLOAT?"
+      },
+      {
+        "name": "mbPerSecond",
+        "description": "mbPerSecond :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "description": "Stop a running benchmark.",
+    "rolesExecution": [
+      "admin"
+    ],
+    "argumentDescription": [
+      {
+        "name": "dbName",
+        "description": "dbName :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "mode": "DBMS",
+    "enterpriseOnly": true
+  },
+  {
+    "admin": true,
+    "name": "dbms.cluster.checkConnectivity",
+    "option": {
+      "deprecated": false
+    },
+    "signature": "dbms.cluster.checkConnectivity(port-name = null :: STRING?, server = null :: STRING?) :: (serverId :: STRING?, mode-constraint :: STRING?, port-name :: STRING?, port-address :: STRING?, result :: STRING?)",
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "worksOnSystem": true,
+    "returnDescription": [
+      {
+        "name": "serverId",
+        "description": "serverId :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "mode-constraint",
+        "description": "mode-constraint :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "port-name",
+        "description": "port-name :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "port-address",
+        "description": "port-address :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "result",
+        "description": "result :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "description": "Check the connectivity of this instance to other cluster members. Not all ports are relevant to all members. Valid values for 'port-name' are: []",
+    "rolesExecution": [
+      "admin"
+    ],
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=null, type=STRING?}",
+        "name": "port-name",
+        "description": "port-name = null :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "default": "DefaultParameterValue{value=null, type=STRING?}",
+        "name": "server",
+        "description": "server = null :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "mode": "DBMS",
+    "enterpriseOnly": true
+  },
+  {
     "name": "dbms.cluster.overview",
     "description": "Overview of all currently accessible cluster members, their databases and roles.",
     "mode": "DBMS",
@@ -1190,8 +1342,45 @@
     "enterpriseOnly": true
   },
   {
+    "admin": true,
+    "name": "dbms.cluster.readReplicaToggle",
+    "option": {
+      "deprecated": false
+    },
+    "signature": "dbms.cluster.readReplicaToggle(databaseName :: STRING?, pause :: BOOLEAN?) :: (state :: STRING?)",
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "worksOnSystem": true,
+    "returnDescription": [
+      {
+        "name": "state",
+        "description": "state :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "description": "The toggle can pause or resume read replica",
+    "rolesExecution": [
+      "admin"
+    ],
+    "argumentDescription": [
+      {
+        "name": "databaseName",
+        "description": "databaseName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "pause",
+        "description": "pause :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      }
+    ],
+    "mode": "DBMS",
+    "enterpriseOnly": true
+  },
+  {
     "name": "dbms.cluster.routing.getRoutingTable",
-    "description": "Returns endpoints of this instance.",
+    "description": "Returns the advertised bolt capable endpoints for a given database, divided by each endpoint's capabilities. For example an endpoint may serve read queries, write queries and/or future getRoutingTable requests.",
     "mode": "DBMS",
     "worksOnSystem": true,
     "signature": "dbms.cluster.routing.getRoutingTable(context :: MAP?, database = null :: STRING?) :: (ttl :: INTEGER?, servers :: LIST? OF MAP?)",
@@ -1232,6 +1421,38 @@
       "deprecated": false
     },
     "enterpriseOnly": false
+  },
+  {
+    "admin": true,
+    "name": "dbms.cluster.setDefaultDatabase",
+    "option": {
+      "deprecated": false
+    },
+    "signature": "dbms.cluster.setDefaultDatabase(databaseName :: STRING?) :: (result :: STRING?)",
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "worksOnSystem": true,
+    "returnDescription": [
+      {
+        "name": "result",
+        "description": "result :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "description": "Change the default database to the provided value. The database must exist and the old default database must be stopped.",
+    "rolesExecution": [
+      "admin"
+    ],
+    "argumentDescription": [
+      {
+        "name": "databaseName",
+        "description": "databaseName :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "mode": "WRITE",
+    "enterpriseOnly": true
   },
   {
     "name": "dbms.components",
@@ -1748,7 +1969,7 @@
   },
   {
     "name": "dbms.routing.getRoutingTable",
-    "description": "Returns endpoints of this instance.",
+    "description": "Returns the advertised bolt capable endpoints for a given database, divided by each endpoint's capabilities. For example an endpoint may serve read queries, write queries and/or future getRoutingTable requests.",
     "mode": "DBMS",
     "worksOnSystem": true,
     "signature": "dbms.routing.getRoutingTable(context :: MAP?, database = null :: STRING?) :: (ttl :: INTEGER?, servers :: LIST? OF MAP?)",

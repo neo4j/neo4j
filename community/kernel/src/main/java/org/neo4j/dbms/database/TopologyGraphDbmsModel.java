@@ -76,8 +76,10 @@ public interface TopologyGraphDbmsModel {
                 case SECONDARY -> {
                     return HostedOnMode.replica;
                 }
-                default -> throw new IllegalStateException(
-                        "Must specify a mode constraint currently, it cannot be 'None'");
+                case NONE -> {
+                    return HostedOnMode.single;
+                }
+                default -> throw new UnsupportedOperationException("Mode constraint not supported: " + modeConstraint);
             }
         }
     }

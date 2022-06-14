@@ -19,8 +19,6 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
-import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
-
 import java.util.Optional;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
@@ -46,13 +44,10 @@ public class LocalRoutingTableProcedureValidator extends BaseRoutingTableProcedu
     private void assertDatabaseIsOperational(NamedDatabaseId namedDatabaseId) throws ProcedureException {
         Optional<Database> database = getDatabase(namedDatabaseId);
         if (database.isEmpty()) {
-            throw RoutingTableProcedureHelpers.databaseNotFoundException(namedDatabaseId.name());
+            throw databaseNotFoundException(namedDatabaseId.name());
         }
         if (!database.get().getDatabaseAvailabilityGuard().isAvailable()) {
-            throw new ProcedureException(
-                    DatabaseUnavailable,
-                    "Unable to get a routing table for database '" + namedDatabaseId.name()
-                            + "' because this database is unavailable");
+            throw databaseNotAvailableException(namedDatabaseId.name());
         }
     }
 

@@ -56,6 +56,8 @@ import org.neo4j.values.virtual.MapValue;
 
 public final class GetRoutingTableProcedure implements CallableProcedure {
     private static final String NAME = "getRoutingTable";
+    private static final String DESCRIPTION =
+            "Returns the advertised bolt capable endpoints for a given database, divided by each endpoint's capabilities. For example an endpoint may serve read queries, write queries and/or future getRoutingTable requests.";
     public static final String ADDRESS_CONTEXT_KEY = "address";
 
     private final ProcedureSignature signature;
@@ -72,7 +74,6 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
 
     public GetRoutingTableProcedure(
             List<String> namespace,
-            String description,
             DatabaseContextProvider<?> databaseContextProvider,
             RoutingTableProcedureValidator validator,
             SingleAddressRoutingTableProvider routingTableProvider,
@@ -81,7 +82,6 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
             InternalLogProvider logProvider) {
         this(
                 namespace,
-                description,
                 databaseContextProvider,
                 validator,
                 routingTableProvider,
@@ -93,7 +93,6 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
 
     public GetRoutingTableProcedure(
             List<String> namespace,
-            String description,
             DatabaseContextProvider<?> databaseContextProvider,
             RoutingTableProcedureValidator validator,
             ClientSideRoutingTableProvider clientSideRoutingTableProvider,
@@ -101,7 +100,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
             ClientRoutingDomainChecker clientRoutingDomainChecker,
             Config config,
             InternalLogProvider logProvider) {
-        this.signature = buildSignature(namespace, description);
+        this.signature = buildSignature(namespace, DESCRIPTION);
         this.databaseContextProvider = databaseContextProvider;
         this.log = logProvider.getLog(getClass());
         this.validator = validator;
@@ -165,7 +164,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
         var databaseId = databaseContextProvider
                 .databaseIdRepository()
                 .getByName(databaseName)
-                .orElseThrow(() -> RoutingTableProcedureHelpers.databaseNotFoundException(databaseName));
+                .orElseThrow(() -> BaseRoutingTableProcedureValidator.databaseNotFoundException(databaseName));
         return databaseId;
     }
 

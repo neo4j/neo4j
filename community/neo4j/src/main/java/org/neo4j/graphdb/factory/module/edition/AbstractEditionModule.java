@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.factory.module.edition;
 
+import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 import static org.neo4j.procedure.impl.temporal.TemporalFunction.registerTemporalFunctions;
 
 import java.util.function.Supplier;
@@ -27,14 +28,19 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.dbms.database.DatabaseInfoService;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
+import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
 import org.neo4j.dbms.database.SystemGraphComponents;
+import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
@@ -215,5 +221,29 @@ public abstract class AbstractEditionModule {
                                 globalModule.getTracers().getPageCacheTracer())
                         .withLogService(globalModule.getLogService())
                         .build());
+    }
+
+    protected static void registerSystemGraphInitializer(
+            GlobalModule globalModule, DependencyResolver globalDependencies) {
+        Supplier<GraphDatabaseService> systemSupplier = CommunityEditionModule.systemSupplier(globalDependencies);
+        var systemGraphComponents = globalModule.getSystemGraphComponents();
+        SystemGraphInitializer initializer = CommunityEditionModule.tryResolveOrCreate(
+                SystemGraphInitializer.class,
+                globalModule.getExternalDependencyResolver(),
+                () -> new DefaultSystemGraphInitializer(systemSupplier, systemGraphComponents));
+        globalModule.getGlobalDependencies().satisfyDependency(initializer);
+        globalModule.getGlobalLife().add(initializer);
+    }
+
+    protected static Supplier<GraphDatabaseService> systemSupplier(DependencyResolver dependencies) {
+        return () -> {
+            DatabaseContextProvider<?> databaseContextProvider =
+                    dependencies.resolveDependency(DatabaseContextProvider.class);
+            return databaseContextProvider
+                    .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
+                    .orElseThrow(() -> new DatabaseShutdownException(
+                            new DatabaseManagementException("System database is not (yet) available")))
+                    .databaseFacade();
+        };
     }
 }
