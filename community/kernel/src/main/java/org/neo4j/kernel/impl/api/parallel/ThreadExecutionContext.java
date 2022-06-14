@@ -32,6 +32,8 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.TransactionMemoryPool;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
@@ -44,18 +46,21 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     private final ThreadExecutionContextRead contextRead;
     private final StoreCursors storageCursors;
     private final IndexMonitor monitor;
+    private final MemoryTracker contextTracker;
 
     public ThreadExecutionContext(
             KernelTransactionImplementation ktx,
             CursorContextFactory contextFactory,
             StorageEngine storageEngine,
             Config config,
-            IndexMonitor monitor) {
+            IndexMonitor monitor,
+            TransactionMemoryPool transactionMemoryPool) {
         this.cursorTracer = new ExecutionContextCursorTracer(PageCacheTracer.NULL, TRANSACTION_EXECUTION_TAG);
         this.ktxContext = ktx.cursorContext();
         this.context = contextFactory.create(cursorTracer);
         this.accessMode = ktx.securityContext().mode();
         this.storageCursors = storageEngine.createStorageCursors(context);
+        this.contextTracker = transactionMemoryPool.getPoolMemoryTracker();
         this.contextRead = new ThreadExecutionContextRead(
                 this,
                 ktx.dataRead(),
@@ -100,6 +105,11 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     @Override
     public QueryContext queryContext() {
         return contextRead;
+    }
+
+    @Override
+    public MemoryTracker memoryTracker() {
+        return contextTracker;
     }
 
     IndexMonitor monitor() {

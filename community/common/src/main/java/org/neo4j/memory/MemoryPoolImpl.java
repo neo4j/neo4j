@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * A pool of memory that can be limited. The implementation is thread-safe.
  */
-class MemoryPoolImpl implements MemoryPool {
+public class MemoryPoolImpl implements MemoryPool {
     private final AtomicLong maxMemory = new AtomicLong();
     private final AtomicLong usedHeapBytes = new AtomicLong();
     private final AtomicLong usedNativeBytes = new AtomicLong();
@@ -38,7 +38,7 @@ class MemoryPoolImpl implements MemoryPool {
      * @param limit of the pool, passing 0 will result in an unbounded pool
      * @param strict if true enforce limit by throwing exception
      */
-    MemoryPoolImpl(long limit, boolean strict, String limitSettingName) {
+    public MemoryPoolImpl(long limit, boolean strict, String limitSettingName) {
         this.limitSettingName = limitSettingName;
         this.maxMemory.set(validateSize(limit));
         this.strict = strict;

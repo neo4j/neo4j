@@ -674,7 +674,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         statistics.init(2, contextFactory.create(tracer));
 
         assertEquals(2, statistics.cpuTimeMillis());
-        assertEquals(13, statistics.estimatedHeapMemory());
+        assertEquals(mebiBytes(2), statistics.estimatedHeapMemory());
         assertEquals(14, statistics.usedNativeMemory());
         assertEquals(-1, statistics.heapAllocatedBytes());
         assertEquals(1, statistics.totalTransactionPageCacheFaults());

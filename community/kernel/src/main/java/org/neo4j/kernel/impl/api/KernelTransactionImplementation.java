@@ -25,7 +25,6 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.apache.commons.lang3.StringUtils.defaultString;
-import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
@@ -121,11 +120,7 @@ import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.internal.event.TransactionListenersState;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.memory.EmptyMemoryTracker;
-import org.neo4j.memory.LimitedMemoryTracker;
-import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.resources.CpuClock;
@@ -173,6 +168,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final ClockContext clocks;
     private final AccessCapabilityFactory accessCapabilityFactory;
     private final ConstraintSemantics constraintSemantics;
+    private final TransactionMemoryPool transactionMemoryPool;
     private CursorContext cursorContext;
     private final CursorContextFactory contextFactory;
     private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
@@ -211,7 +207,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private InternalTransaction internalTransaction;
     private volatile TraceProvider traceProvider;
     private volatile TransactionInitializationTrace initializationTrace;
-    private final LimitedMemoryTracker memoryTracker;
+    private final MemoryTracker memoryTracker;
     private final Config config;
     private volatile long transactionHeapBytesLimit;
 
@@ -256,26 +252,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             Dependencies dependencies,
             NamedDatabaseId namedDatabaseId,
             LeaseService leaseService,
-            ScopedMemoryPool transactionMemoryPool,
+            ScopedMemoryPool dbTransactionsPool,
             DatabaseReadOnlyChecker readOnlyDatabaseChecker,
             TransactionExecutionMonitor transactionExecutionMonitor,
             AbstractSecurityLog securityLog,
             Locks.Client lockClient,
             KernelTransactions kernelTransactions,
-            LogProvider internalLogProvider) {
+            LogProvider logProvider) {
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.contextFactory = contextFactory;
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
-        long heapGrabSize = config.get(GraphDatabaseInternalSettings.initial_transaction_heap_grab_size);
-        this.memoryTracker = config.get(memory_tracking)
-                ? new LocalMemoryTracker(
-                        transactionMemoryPool,
-                        0,
-                        heapGrabSize,
-                        memory_transaction_max_size.name(),
-                        () -> !closed,
-                        memoryLeakLogger(internalLogProvider.getLog(getClass())))
-                : EmptyMemoryTracker.INSTANCE;
+        this.transactionMemoryPool = new TransactionMemoryPool(dbTransactionsPool, config, () -> !closed, logProvider);
+        this.memoryTracker = transactionMemoryPool.getTransactionTracker();
         this.eventListeners = eventListeners;
         this.constraintIndexCreator = constraintIndexCreator;
         this.commitProcess = commitProcess;
@@ -348,8 +336,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             long transactionTimeout,
             long userTransactionId,
             ClientConnectionInfo clientInfo) {
-        assert memoryTracker.estimatedHeapMemory() == 0;
-        assert memoryTracker.usedNativeMemory() == 0;
+        assert transactionMemoryPool.usedHeap() == 0;
+        assert transactionMemoryPool.usedNative() == 0;
         this.cursorContext = contextFactory.create(TRANSACTION_TAG);
         this.transactionalCursors.reset(cursorContext);
         this.accessCapability = accessCapabilityFactory.newAccessCapability(readOnlyDatabaseChecker);
@@ -379,7 +367,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.currentStatement.initialize(lockClient, cursorContext, startTimeMillis);
         this.operations.initialize(cursorContext);
         this.initializationTrace = traceProvider.getTraceInfo();
-        this.memoryTracker.setLimit(transactionHeapBytesLimit);
+        this.transactionMemoryPool.setLimit(transactionHeapBytesLimit);
         this.innerTransactionHandler = new InnerTransactionHandlerImpl(kernelTransactions);
         return this;
     }
@@ -473,7 +461,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public ExecutionContext createExecutionContext() {
-        return new ThreadExecutionContext(this, contextFactory, storageEngine, config, allStoreHolder.monitor());
+        return new ThreadExecutionContext(
+                this, contextFactory, storageEngine, config, allStoreHolder.monitor(), transactionMemoryPool);
     }
 
     @Override
@@ -837,8 +826,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 transactionId = txId;
                 afterCommit(listenersState);
             }
-            transactionMonitor.addHeapTransactionSize(memoryTracker.heapHighWaterMark());
-            transactionMonitor.addNativeTransactionSize(memoryTracker.usedNativeMemory());
+            transactionMonitor.addHeapTransactionSize(transactionMemoryPool.usedHeap());
+            transactionMonitor.addNativeTransactionSize(transactionMemoryPool.usedNative());
         }
     }
 
@@ -1021,7 +1010,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             transactionalCursors.close();
             cursorContext.close();
             initializationTrace = NONE;
-            memoryTracker.reset();
+            transactionMemoryPool.reset();
             innerTransactionHandler.close();
             innerTransactionHandler = null;
         } finally {
@@ -1084,6 +1073,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public void dispose() {
         storageReader.close();
+        transactionMemoryPool.close();
     }
 
     /**
@@ -1207,14 +1197,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
          * @return estimated amount of used heap memory
          */
         long estimatedHeapMemory() {
-            return transaction.memoryTracker().estimatedHeapMemory();
+            return transaction.transactionMemoryPool.usedHeap();
         }
 
         /**
          * @return amount of native memory
          */
         long usedNativeMemory() {
-            return transaction.memoryTracker().usedNativeMemory();
+            return transaction.transactionMemoryPool.usedNative();
         }
 
         /**
@@ -1301,12 +1291,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         config.addListener(
                 transaction_sampling_percentage, (before, after) -> traceProvider = getTraceProvider(config));
         config.addListener(memory_transaction_max_size, (before, after) -> transactionHeapBytesLimit = after);
-    }
-
-    private static LocalMemoryTracker.Monitor memoryLeakLogger(Log log) {
-        return leakedNativeMemoryBytes -> log.warn(
-                "Potential direct memory leak. Expecting all allocated direct memory to be released, but still has "
-                        + leakedNativeMemoryBytes);
     }
 
     /**

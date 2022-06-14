@@ -23,6 +23,7 @@ import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
@@ -62,6 +63,12 @@ public interface ExecutionContext extends AutoCloseable {
      * @return the query execution context of this execution context
      */
     QueryContext queryContext();
+
+    /**
+     * Execution context local memory tracker. Transactional memory limit is shared between all execution contexts
+     * that created from this transaction.
+     */
+    MemoryTracker memoryTracker();
 
     /**
      * Mark execution context as completed and prepare any data that needs to be reported back to owning transaction.

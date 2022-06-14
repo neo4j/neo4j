@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi.parallel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 import java.util.ArrayList;
@@ -36,10 +37,14 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.ExecutionContext;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.impl.api.TransactionExecutionStatistic;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.time.Clocks;
 import org.neo4j.util.concurrent.Futures;
 
 @DbmsExtension
@@ -59,6 +64,47 @@ public class ExecutionContextIT {
     @AfterEach
     void tearDown() {
         executors.shutdown();
+    }
+
+    @RepeatedTest(10)
+    void contextMemoryTracking() throws ExecutionException {
+        try (Transaction transaction = databaseAPI.beginTx()) {
+            var ktx = (KernelTransactionImplementation) ((InternalTransaction) transaction).kernelTransaction();
+            var futures = new ArrayList<Future<?>>(NUMBER_OF_WORKERS);
+            var contexts = new ArrayList<ExecutionContext>(NUMBER_OF_WORKERS);
+            for (int i = 0; i < NUMBER_OF_WORKERS; i++) {
+                var executionContext = ktx.createExecutionContext();
+                futures.add(executors.submit(() -> {
+                    for (int j = 0; j < 5; j++) {
+                        executionContext.memoryTracker().allocateHeap(10);
+                    }
+                    executionContext.complete();
+                }));
+                contexts.add(executionContext);
+            }
+            Futures.getAll(futures);
+
+            KernelTransactions kernelTransactions =
+                    databaseAPI.getDependencyResolver().resolveDependency(KernelTransactions.class);
+
+            var transactionHandle = kernelTransactions.activeTransactions().stream()
+                    .filter(tx -> tx.isUnderlyingTransaction(ktx))
+                    .findFirst()
+                    .orElseThrow();
+            assertEquals(mebiBytes(40), transactionHandle.transactionStatistic().getEstimatedUsedHeapMemory());
+            assertEquals(0, transactionHandle.transactionStatistic().getNativeAllocatedBytes());
+
+            closeAllUnchecked(contexts);
+
+            assertEquals(mebiBytes(40), transactionHandle.transactionStatistic().getEstimatedUsedHeapMemory());
+            assertEquals(0, transactionHandle.transactionStatistic().getNativeAllocatedBytes());
+
+            transaction.close();
+
+            var statistic = new TransactionExecutionStatistic(ktx, Clocks.nanoClock(), 0);
+            assertEquals(0, statistic.getEstimatedUsedHeapMemory());
+            assertEquals(0, statistic.getNativeAllocatedBytes());
+        }
     }
 
     @RepeatedTest(10)

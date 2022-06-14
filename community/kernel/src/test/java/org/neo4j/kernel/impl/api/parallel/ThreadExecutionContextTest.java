@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.TransactionMemoryPool;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -54,8 +55,8 @@ class ThreadExecutionContextTest {
         when(storageEngine.createStorageCursors(any())).thenReturn(storeCursors);
         var monitor = mock(IndexMonitor.class);
 
-        try (var executionContext =
-                new ThreadExecutionContext(ktx, contextFactory, storageEngine, Config.defaults(), monitor)) {
+        try (var executionContext = new ThreadExecutionContext(
+                ktx, contextFactory, storageEngine, Config.defaults(), monitor, mock(TransactionMemoryPool.class))) {
             executionContext.complete();
         }
 

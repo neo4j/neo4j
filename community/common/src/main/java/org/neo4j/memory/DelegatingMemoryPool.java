@@ -22,7 +22,7 @@ package org.neo4j.memory;
 public class DelegatingMemoryPool implements MemoryPool {
     private final MemoryPool delegate;
 
-    DelegatingMemoryPool(MemoryPool delegate) {
+    public DelegatingMemoryPool(MemoryPool delegate) {
         this.delegate = delegate;
     }
 

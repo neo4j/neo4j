@@ -40,7 +40,7 @@ import org.neo4j.values.virtual.VirtualValues
 
 object MemoryManagementTestBase {
   // The configured max memory per transaction in Bytes
-  val maxMemory: Long = ByteUnit.mebiBytes(3)
+  val maxMemory: Long = ByteUnit.mebiBytes(6)
 }
 
 trait InputStreams[CONTEXT <: RuntimeContext] {
@@ -994,8 +994,8 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
   test("should not kill transactional subquery if both inner and outer together exceed the limit") {
     // Determined empirically
     val rowCount = runtime.name.toUpperCase() match {
-      case InterpretedRuntimeName.name => 12000
-      case SlottedRuntimeName.name     => 22000
+      case InterpretedRuntimeName.name => 32000
+      case SlottedRuntimeName.name     => 52000
     }
 
     // given
