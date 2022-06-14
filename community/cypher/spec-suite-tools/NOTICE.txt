@@ -186,6 +186,7 @@ MIT License
   jersey-inject-hk2
   SLF4J API Module
   SLF4J NOP Binding
+  sourcecode_2.13
 
 Unlicense
   jersey-container-servlet

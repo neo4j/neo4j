@@ -80,6 +80,7 @@ MIT License
   DataTable
   fastparse_2.13
   geny_2.13
+  sourcecode_2.13
 
 Dependencies with multiple licenses
 -----------------------------------
