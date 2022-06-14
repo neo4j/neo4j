@@ -1463,7 +1463,7 @@ public class Operations implements Write, SchemaWrite {
         }
 
         // Create constraints
-        constraint = indexBackedConstraintCreate(constraint, prototype);
+        constraint = indexBackedConstraintCreate(constraint, prototype, ignored -> {});
         return constraint;
     }
 
@@ -1615,11 +1615,11 @@ public class Operations implements Write, SchemaWrite {
             throw e;
         }
 
-        // enforce constraints
-        enforceNodeKeyConstraint(schema);
+        // Check that node key constraints are supported before we start doing any work
+        constraintSemantics.assertNodeKeyConstraintAllowed(constraint.schema().asLabelSchemaDescriptor());
 
-        // create constraint
-        indexBackedConstraintCreate(constraint, prototype);
+        // create constraint and enforce it after index population when we have the lock again
+        indexBackedConstraintCreate(constraint, prototype, this::enforceNodeKeyConstraint);
         return constraint;
     }
 
@@ -1864,7 +1864,10 @@ public class Operations implements Write, SchemaWrite {
 
     @SuppressWarnings("unchecked")
     private <T extends IndexBackedConstraintDescriptor> T indexBackedConstraintCreate(
-            T constraint, IndexPrototype prototype) throws KernelException {
+            T constraint,
+            IndexPrototype prototype,
+            ConstraintIndexCreator.PropertyExistenceEnforcer propertyExistenceEnforcer)
+            throws KernelException {
         try {
             if (allStoreHolder.constraintExists(constraint)) {
                 throw new AlreadyConstrainedException(constraint, CONSTRAINT_CREATION, token);
@@ -1899,7 +1902,8 @@ public class Operations implements Write, SchemaWrite {
                                 + prototype.userDescription(token));
             }
 
-            IndexDescriptor index = constraintIndexCreator.createUniquenessConstraintIndex(ktx, constraint, prototype);
+            IndexDescriptor index = constraintIndexCreator.createUniquenessConstraintIndex(
+                    ktx, constraint, prototype, propertyExistenceEnforcer);
             if (!allStoreHolder.constraintExists(constraint)) {
                 // This looks weird, but since we release the label lock while awaiting population of the index
                 // backing this constraint there can be someone else getting ahead of us, creating this exact

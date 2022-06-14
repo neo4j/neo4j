@@ -118,7 +118,7 @@ class ConstraintIndexCreatorTest {
 
         // when
         IndexDescriptor constraintIndex =
-                creator.createUniquenessConstraintIndex(createTransaction(), constraint, prototype);
+                creator.createUniquenessConstraintIndex(createTransaction(), constraint, prototype, x -> {});
 
         // then
         assertEquals(INDEX_ID, constraintIndex.getId());
@@ -150,7 +150,7 @@ class ConstraintIndexCreatorTest {
         KernelTransactionImplementation transaction = createTransaction();
         UniquePropertyValueValidationException exception = assertThrows(
                 UniquePropertyValueValidationException.class,
-                () -> creator.createUniquenessConstraintIndex(transaction, constraint, prototype));
+                () -> creator.createUniquenessConstraintIndex(transaction, constraint, prototype, x -> {}));
         assertEquals(
                 "Existing data does not satisfy Constraint( name='constraint', type='UNIQUENESS', schema=(:Label {prop}) ): "
                         + "Both node 2 and node 1 share the property value ( String(\"a\") )",
@@ -194,7 +194,7 @@ class ConstraintIndexCreatorTest {
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        creator.createUniquenessConstraintIndex(transaction, constraint, prototype);
+        creator.createUniquenessConstraintIndex(transaction, constraint, prototype, x -> {});
 
         // then
         verify(transaction.lockClient()).releaseExclusive(ResourceTypes.LABEL, schema.getLabelId());
@@ -224,7 +224,7 @@ class ConstraintIndexCreatorTest {
         KernelTransactionImplementation transaction = createTransaction();
         assertThrows(
                 AlreadyConstrainedException.class,
-                () -> creator.createUniquenessConstraintIndex(transaction, constraint, prototype));
+                () -> creator.createUniquenessConstraintIndex(transaction, constraint, prototype, x -> {}));
 
         // then
         assertEquals(
@@ -256,7 +256,7 @@ class ConstraintIndexCreatorTest {
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        creator.createUniquenessConstraintIndex(transaction, constraint, prototype);
+        creator.createUniquenessConstraintIndex(transaction, constraint, prototype, x -> {});
 
         // then
         assertEquals(1, kernel.transactions.size());
@@ -279,7 +279,7 @@ class ConstraintIndexCreatorTest {
         // when
         assertThrows(AlreadyConstrainedException.class, () -> {
             KernelTransactionImplementation transaction = createTransaction();
-            creator.createUniquenessConstraintIndex(transaction, constraint, prototype);
+            creator.createUniquenessConstraintIndex(transaction, constraint, prototype, x -> {});
         });
 
         // then
@@ -306,7 +306,7 @@ class ConstraintIndexCreatorTest {
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        creator.createUniquenessConstraintIndex(transaction, constraint, prototype);
+        creator.createUniquenessConstraintIndex(transaction, constraint, prototype, x -> {});
 
         // then
         assertEquals(1, kernel.transactions.size());
@@ -328,7 +328,7 @@ class ConstraintIndexCreatorTest {
         ConstraintIndexCreator creator = new ConstraintIndexCreator(() -> kernel, indexingService, logProvider);
         KernelTransactionImplementation transaction = createTransaction();
 
-        creator.createUniquenessConstraintIndex(transaction, constraint, prototype);
+        creator.createUniquenessConstraintIndex(transaction, constraint, prototype, x -> {});
 
         String constraintString = constraint.userDescription(tokenRead);
         assertThat(logProvider)

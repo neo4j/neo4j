@@ -37,6 +37,8 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 public interface ConstraintValidator {
+    void assertNodeKeyConstraintAllowed(LabelSchemaDescriptor descriptor) throws CreateConstraintFailureException;
+
     void validateNodeKeyConstraint(
             NodeLabelIndexCursor allNodes,
             NodeCursor nodeCursor,
