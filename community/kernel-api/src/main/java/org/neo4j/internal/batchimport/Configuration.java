@@ -268,25 +268,20 @@ public interface Configuration {
         if (percent > 100) {
             throw new IllegalArgumentException("Expected percentage to be < 100, was " + percent);
         }
-        long totalPhysicalMemory = OsBeanUtil.getTotalPhysicalMemory();
-        if (totalPhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE) {
+        long freePhysicalMemory = OsBeanUtil.getFreePhysicalMemory();
+        if (freePhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE) {
             // Unable to detect amount of free memory, so rather max memory should be explicitly set
             // in order to get best performance. However let's just go with a default of 2G in this case.
             return gibiBytes(2);
         }
 
         double factor = percent / 100D;
-        long jvmMaxMemory = Runtime.getRuntime().maxMemory();
-        long halfPhysicalMemory = totalPhysicalMemory / 2;
-        if (jvmMaxMemory > halfPhysicalMemory) {
-            // The JVM max heap size (-Xmx) have been configured to use a significant portion of the machine memory.
-            // This isn't reasonable, at the very least not desirable for an import since the majority of memory lives
-            // off-heap.
-            // So if this is the case then assume only half the memory is assigned to the JVM, otherwise the importer
-            // performance could be massively crippled.
-            jvmMaxMemory = halfPhysicalMemory;
-        }
-        long availableMemory = totalPhysicalMemory - jvmMaxMemory;
+        // If the JVM max heap size (-Xmx) have been configured to use a significant portion of the machine memory
+        // then it's not reasonable for running this tool, at the very least not desirable since the majority of
+        // memory lives off-heap. So if this is the case then assume only half the memory is assigned to the JVM,
+        // otherwise the importer performance could be massively crippled.
+        long jvmMaxMemory = Math.min(Runtime.getRuntime().maxMemory(), freePhysicalMemory / 2);
+        long availableMemory = freePhysicalMemory - jvmMaxMemory;
         return round(availableMemory * factor);
     }
 }

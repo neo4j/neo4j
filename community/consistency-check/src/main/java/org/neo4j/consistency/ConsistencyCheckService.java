@@ -381,7 +381,7 @@ public class ConsistencyCheckService {
                 // Now that there's no existing page cache we have the opportunity to change that setting for the
                 // benefit of a faster consistency check ahead of us. Ask the checker what the optimal amount of
                 // available off-heap memory would be and change the page cache memory setting a bit in that direction.
-                long availablePhysicalMemory = OsBeanUtil.getTotalPhysicalMemory();
+                long availablePhysicalMemory = OsBeanUtil.getFreePhysicalMemory();
                 if (availablePhysicalMemory != OsBeanUtil.VALUE_UNAVAILABLE) {
                     availablePhysicalMemory *=
                             config.get(GraphDatabaseInternalSettings.consistency_check_memory_limit_factor);

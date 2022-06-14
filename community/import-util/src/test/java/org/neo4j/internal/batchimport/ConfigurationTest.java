@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.batchimport;
 
-import static java.lang.Math.abs;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.data.Percentage.withPercentage;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
@@ -61,8 +61,8 @@ class ConfigurationTest {
 
     @Test
     void shouldCalculateCorrectMaxMemorySetting() {
-        long totalMachineMemory = OsBeanUtil.getTotalPhysicalMemory();
-        assumeTrue(totalMachineMemory != VALUE_UNAVAILABLE);
+        long freeMachineMemory = OsBeanUtil.getFreePhysicalMemory();
+        assumeTrue(freeMachineMemory != VALUE_UNAVAILABLE);
 
         // given
         int percent = 70;
@@ -77,8 +77,7 @@ class ConfigurationTest {
         long memory = config.maxOffHeapMemory();
 
         // then
-        long expected = (long) ((totalMachineMemory - Runtime.getRuntime().maxMemory()) * (percent / 100D));
-        long diff = abs(expected - memory);
-        assertThat(diff).isLessThan((long) (expected / 10D));
+        long expected = (long) ((freeMachineMemory - Runtime.getRuntime().maxMemory()) * (percent / 100D));
+        assertThat(memory).isCloseTo(expected, withPercentage(10));
     }
 }
