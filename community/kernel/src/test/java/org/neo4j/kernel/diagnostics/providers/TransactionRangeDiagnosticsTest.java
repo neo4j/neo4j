@@ -191,7 +191,7 @@ class TransactionRangeDiagnosticsTest {
         // THEN
         assertThat(logProvider)
                 .containsMessagesInOrder(
-                        "Files: (filename : creation date - size)",
+                        "files: (filename : creation date - size)",
                         "neostore.transaction.db.0:", // Hard to assert on date here
                         "- 31B",
                         "neostore.transaction.db.1:",
@@ -202,7 +202,7 @@ class TransactionRangeDiagnosticsTest {
                         "- 31B",
                         "neostore.transaction.db.11:",
                         "- 31B",
-                        "Total size of files: 372B");
+                        "total size of files: 372B");
     }
 
     private Database databaseWithLogFilesContainingLowestTxId(LogFiles files) {

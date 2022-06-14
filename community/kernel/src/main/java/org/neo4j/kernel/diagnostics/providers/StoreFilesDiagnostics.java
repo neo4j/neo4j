@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.diagnostics.providers;
 
-import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.io.fs.FileUtils.getFileStoreType;
 
@@ -27,8 +26,7 @@ import java.io.IOException;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -37,6 +35,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
+import org.neo4j.internal.helpers.Format;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -111,11 +110,8 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider {
 
     private static String getFileModificationDate(Path file) {
         try {
-            ZonedDateTime modifiedDate = Files.getLastModifiedTime(file)
-                    .toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .withNano(0); // truncate milliseconds
-            return ISO_OFFSET_DATE_TIME.format(modifiedDate);
+            Instant instant = Files.getLastModifiedTime(file).toInstant();
+            return Format.date(instant);
         } catch (IOException e) {
             return "<UNKNOWN>";
         }

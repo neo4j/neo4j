@@ -19,19 +19,18 @@
  */
 package org.neo4j.kernel.diagnostics.providers;
 
-import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static org.neo4j.io.ByteUnit.bytesToString;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.internal.helpers.Format;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.database.Database;
@@ -86,15 +85,16 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider {
         if (!foundTransactions) {
             logger.log(" - no transactions found");
         } else {
-            logger.log("Files: (filename : creation date - size)");
+            logger.log(" - files: (filename : creation date - size)");
             long totalSize = 0;
             for (Path txLogFile : logFile.getMatchedFiles()) {
                 long size = fileSystem.getFileSize(txLogFile);
                 totalSize += size;
                 logger.log(String.format(
-                        "  %s: %s - %s", txLogFile.getFileName(), getFileCreationDate(txLogFile), bytesToString(size)));
+                        "     %s: %s - %s",
+                        txLogFile.getFileName(), getFileCreationDate(txLogFile), bytesToString(size)));
             }
-            logger.log("  Total size of files: " + bytesToString(totalSize));
+            logger.log(" - total size of files: " + bytesToString(totalSize));
         }
     }
 
@@ -112,12 +112,10 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider {
 
     private static String getFileCreationDate(Path file) {
         try {
-            ZonedDateTime modifiedDate = Files.readAttributes(file, BasicFileAttributes.class)
+            Instant instant = Files.readAttributes(file, BasicFileAttributes.class)
                     .creationTime()
-                    .toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .withNano(0); // truncate milliseconds
-            return ISO_OFFSET_DATE_TIME.format(modifiedDate);
+                    .toInstant();
+            return Format.date(instant);
         } catch (IOException e) {
             return "<UNKNOWN>";
         }
