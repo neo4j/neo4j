@@ -28,9 +28,12 @@ import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions.Head
+import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
+import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Rewriter
@@ -45,26 +48,36 @@ case class limitNestedPlanExpressions(cardinalities: Cardinalities, otherAttribu
     extends Rewriter {
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 
+  /**
+   * To avoid never stopping in the `fixedPoint` in [[PlanRewriter]], 
+   * we cannot insert a Limit if the top plan is already a Limit or the rewrite of a Limit that we already inserted. 
+   */
+  private def shouldInsertLimitOnTopOf(plan: LogicalPlan): Boolean =
+    !plan.isInstanceOf[Limit] &&
+      !plan.isInstanceOf[Eager] &&
+      !plan.isInstanceOf[Top] &&
+      !plan.isInstanceOf[PartialTop]
+
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case fi @ FunctionInvocation(
         Namespace(List()),
         FunctionName(Head.name),
         _,
         IndexedSeq(npe @ NestedPlanCollectExpression(plan, _, _))
-      ) if !plan.isInstanceOf[Limit] =>
+      ) if shouldInsertLimitOnTopOf(plan) =>
       val newPlan =
         planLimitOnTopOf(plan, SignedDecimalIntegerLiteral("1")(npe.position))(otherAttributes.copy(plan.id))
       cardinalities.set(newPlan.id, Cardinality.SINGLE)
       fi.copy(args = IndexedSeq(npe.copy(newPlan)(npe.position)))(fi.position)
 
-    case ci @ ContainerIndex(npe @ NestedPlanCollectExpression(plan, _, _), index) if !plan.isInstanceOf[Limit] =>
+    case ci @ ContainerIndex(npe @ NestedPlanCollectExpression(plan, _, _), index) if shouldInsertLimitOnTopOf(plan) =>
       val newPlan = planLimitOnTopOf(plan, Add(SignedDecimalIntegerLiteral("1")(npe.position), index)(npe.position))(
         otherAttributes.copy(plan.id)
       )
       cardinalities.set(newPlan.id, Cardinality.SINGLE)
       ci.copy(expr = npe.copy(newPlan)(npe.position))(ci.position)
 
-    case ls @ ListSlice(npe @ NestedPlanCollectExpression(plan, _, _), _, Some(to)) if !plan.isInstanceOf[Limit] =>
+    case ls @ ListSlice(npe @ NestedPlanCollectExpression(plan, _, _), _, Some(to)) if shouldInsertLimitOnTopOf(plan) =>
       val newPlan = planLimitOnTopOf(plan, Add(SignedDecimalIntegerLiteral("1")(npe.position), to)(npe.position))(
         otherAttributes.copy(plan.id)
       )

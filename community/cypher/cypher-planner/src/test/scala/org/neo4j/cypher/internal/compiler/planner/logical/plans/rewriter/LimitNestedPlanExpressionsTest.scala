@@ -26,9 +26,13 @@ import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
+import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -105,5 +109,45 @@ class LimitNestedPlanExpressionsTest extends CypherFunSuite with LogicalPlanning
         Some(SignedDecimalIntegerLiteral("4")(pos))
       )(pos)
     )
+  }
+
+  test("should not insert Limit on top of Eager in Head function") {
+    val argument: LogicalPlan = Argument(Set("a"))
+    val eager = Eager(argument)
+    val nestedPlan = NestedPlanExpression.collect(eager, aLit, aLit)(pos)
+    val head = function("head", nestedPlan)
+
+    head.endoRewrite(rewriter) should equal(head)
+  }
+
+  test("should not insert Limit on top of Top in container index") {
+    val argument: LogicalPlan = Argument(Set("a"))
+    val top = Top(argument, Seq(Ascending("x")), literalInt(1))
+    val nestedPlan = NestedPlanExpression.collect(top, aLit, aLit)(pos)
+    val ci = ContainerIndex(nestedPlan, SignedDecimalIntegerLiteral("3")(pos))(pos)
+
+    ci.endoRewrite(rewriter) should equal(ci)
+  }
+
+  test("should not insert Limit on top of PartialTop in list slice to") {
+    val argument: LogicalPlan = Argument(Set("a"))
+    val partialTop = PartialTop(argument, Seq.empty, Seq.empty, literalInt(1))
+    val nestedPlan = NestedPlanExpression.collect(partialTop, aLit, aLit)(pos)
+    val ls = ListSlice(nestedPlan, None, Some(SignedDecimalIntegerLiteral("4")(pos)))(pos)
+
+    ls.endoRewrite(rewriter) should equal(ls)
+  }
+
+  test("should not insert Limit on top of Eager in list slice from/to") {
+    val argument: LogicalPlan = Argument(Set("a"))
+    val eager = Eager(argument)
+    val nestedPlan = NestedPlanExpression.collect(eager, aLit, aLit)(pos)
+    val ls = ListSlice(
+      nestedPlan,
+      Some(SignedDecimalIntegerLiteral("2")(pos)),
+      Some(SignedDecimalIntegerLiteral("4")(pos))
+    )(pos)
+
+    ls.endoRewrite(rewriter) should equal(ls)
   }
 }
