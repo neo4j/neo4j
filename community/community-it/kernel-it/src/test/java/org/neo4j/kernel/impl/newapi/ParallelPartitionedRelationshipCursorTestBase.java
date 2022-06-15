@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -74,22 +73,21 @@ public abstract class ParallelPartitionedRelationshipCursorTestBase<G extends Ke
 
     @Test
     void shouldScanASubsetOfRelationships() {
-        CursorContext cursorContext = tx.cursorContext();
-        try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(cursorContext)) {
-            // when
-            PartitionedScan<RelationshipScanCursor> scan = read.allRelationshipsScan(32, NULL_CONTEXT);
-            assertTrue(scan.reservePartition(
-                    relationships, NULL_CONTEXT, tx.securityContext().mode()));
-
-            assertTrue(relationships.next());
-            assertEquals(RELATIONSHIPS.get(0), relationships.relationshipReference());
-            assertTrue(relationships.next());
-            assertEquals(RELATIONSHIPS.get(1), relationships.relationshipReference());
-            assertTrue(relationships.next());
-            assertEquals(RELATIONSHIPS.get(2), relationships.relationshipReference());
-            assertTrue(relationships.next());
-            assertEquals(RELATIONSHIPS.get(3), relationships.relationshipReference());
-            assertFalse(relationships.next());
+        var cursorContext = tx.cursorContext();
+        try (var relationships = cursors.allocateRelationshipScanCursor(cursorContext)) {
+            var scan = read.allRelationshipsScan(64, NULL_CONTEXT);
+            // Iterate over one subset/batch/partition. Given the test graph this should
+            // have some but not all relationships. Exact numbers will depend on if the storage
+            // engine stores relationships as independent entities or embeds relationships on nodes.
+            scan.reservePartition(
+                    relationships, cursorContext, tx.securityContext().mode());
+            var ids = new LongArrayList();
+            while (relationships.next()) {
+                ids.add(relationships.relationshipReference());
+            }
+            assertTrue(ids.size() > 0);
+            assertTrue(ids.size() < RELATIONSHIPS.size());
+            assertTrue(RELATIONSHIPS.containsAll(ids));
         }
     }
 
