@@ -76,16 +76,18 @@ case object moveWithPastMatch extends Rewriter with StepSequencer.Step with ASTR
   }
   private case class MatchGroup(clauses: Seq[Match]) extends QuerySection {
     def containsOptionalMatch: Boolean = clauses.exists(_.optional)
-    def usesVariableFromWith(w: With): Boolean = {
+    def usesVariableFromWith(mw: MovableWith): Boolean = {
       // We can be sure all return items are aliased at this point
+      val withVars = mw.currentScope ++ mw.previousScope
       clauses.exists {
-        m => m.folder.findAllByClass[LogicalVariable].exists(w.returnItems.items.flatMap(_.alias).contains)
+        m => m.folder.findAllByClass[LogicalVariable].exists(withVars)
       }
     }
     def allExportedVariablesAsReturnItems: Seq[AliasedReturnItem] = clauses.flatMap(_.allExportedVariables.map(v => AliasedReturnItem(v))).distinct
   }
-  private case class MovableWith(`with`: With) extends QuerySection {
+  private case class MovableWith(`with`: With, previousScope: Set[LogicalVariable]) extends QuerySection {
     override def clauses: Seq[Clause] = Seq(`with`)
+    def currentScope: Set[LogicalVariable] = `with`.returnItems.items.flatMap(_.alias).toSet
   }
   private case class OtherClause(clause: Clause) extends QuerySection {
     override def clauses: Seq[Clause] = Seq(clause)
@@ -103,7 +105,11 @@ case object moveWithPastMatch extends Rewriter with StepSequencer.Step with ASTR
           previousSections :+ MatchGroup(Seq(m))
         case (previousSections, w:With) if isMovableWith(w) && previousSections.forall(_.isInstanceOf[MovableWith]) =>
           // A with clause that can potentially be moved. Only if at beginning or after other movable WITHs.
-          previousSections :+ MovableWith(w)
+          val previousScope = previousSections
+              .lastOption
+              .map(_.asInstanceOf[MovableWith].currentScope)
+              .getOrElse(Set.empty)
+            previousSections :+ MovableWith(w, previousScope)
         case (previousSections, clause) =>
           // New OtherClause
           previousSections :+ OtherClause(clause)
@@ -111,15 +117,15 @@ case object moveWithPastMatch extends Rewriter with StepSequencer.Step with ASTR
 
       // Move WITHs around
       val newSections = sections.foldLeft(Seq.empty[QuerySection]) {
-        case (previousSections :+ MovableWith(w), mg: MatchGroup)
+        case (previousSections :+ (mw @ MovableWith(w, _)), mg: MatchGroup)
           if !(insideSubquery && q.importWith.contains(w)) &&
-            !mg.usesVariableFromWith(w)  =>
+            !mg.usesVariableFromWith(mw)  =>
           // The WITH can be moved past the MatchGroup
           val newWith = w.copy(returnItems = w.returnItems.copy(items =
             w.returnItems.items ++ mg.allExportedVariablesAsReturnItems
           )(w.returnItems.position))(w.position)
 
-          previousSections :+ mg :+ MovableWith(newWith)
+          previousSections :+ mg :+ mw.copy(`with` = newWith)
         case (previousSections, section) =>
           previousSections :+ section
       }
