@@ -24,12 +24,15 @@ import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryStream;
@@ -43,6 +46,9 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.neo4j.io.fs.watcher.DefaultFileSystemWatcher;
 import org.neo4j.io.fs.watcher.FileWatcher;
+import org.neo4j.io.memory.NativeScopedBuffer;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * Default file system abstraction that creates files using the underlying file system.
@@ -51,8 +57,7 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
     static final String UNABLE_TO_CREATE_DIRECTORY_FORMAT = "Unable to write directory path [%s] for Neo4j store.";
     public static final Set<OpenOption> WRITE_OPTIONS = Set.of(READ, WRITE, CREATE);
     private static final Set<OpenOption> READ_OPTIONS = Set.of(READ);
-    private static final OpenOption[] APPEND_OPTIONS = new OpenOption[] {CREATE, APPEND};
-    private static final OpenOption[] DEFAULT_OUTPUT_OPTIONS = new OpenOption[0];
+    private static final Set<OpenOption> APPEND_OPTIONS = Set.of(CREATE, APPEND);
 
     @Override
     public FileWatcher fileWatcher() throws IOException {
@@ -73,7 +78,7 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
 
     @Override
     public InputStream openAsInputStream(Path fileName) throws IOException {
-        return new BufferedInputStream(openFileInputStream(fileName));
+        return new BufferedInputStream(openFileInputStream(fileName), (int) kibiBytes(8));
     }
 
     @Override
@@ -217,11 +222,98 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
         return new StoreFileChannel(channel);
     }
 
-    private static InputStream openFileInputStream(Path fileName) throws IOException {
-        return Files.newInputStream(fileName);
+    private InputStream openFileInputStream(Path path) throws IOException {
+        FileChannel channel = FileChannel.open(path, READ_OPTIONS);
+        StoreFileChannel fileChannel = getStoreFileChannel(channel);
+        fileChannel.tryMakeUninterruptible();
+        return new NativeByteBufferInputStream(fileChannel);
     }
 
-    private static OutputStream openFileOutputStream(Path fileName, boolean append) throws IOException {
-        return Files.newOutputStream(fileName, append ? APPEND_OPTIONS : DEFAULT_OUTPUT_OPTIONS);
+    private OutputStream openFileOutputStream(Path path, boolean append) throws IOException {
+        FileChannel channel = FileChannel.open(path, append ? APPEND_OPTIONS : WRITE_OPTIONS);
+        StoreFileChannel fileChannel = getStoreFileChannel(channel);
+        fileChannel.tryMakeUninterruptible();
+        return new NativeByteBufferOutputStream(fileChannel);
+    }
+
+    @VisibleForTesting
+    static class NativeByteBufferOutputStream extends OutputStream {
+
+        private final StoreFileChannel fileChannel;
+        private final ByteBuffer buffer;
+        private final NativeScopedBuffer scopedBuffer;
+
+        public NativeByteBufferOutputStream(StoreFileChannel fileChannel) {
+            this.fileChannel = fileChannel;
+            this.scopedBuffer =
+                    new NativeScopedBuffer((int) kibiBytes(8), ByteOrder.LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE);
+            this.buffer = scopedBuffer.getBuffer();
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            throw new UnsupportedOperationException("All stream operations should be buffer based.");
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) throws IOException {
+            int length;
+            for (int offset = off; offset < off + len; offset += length) {
+                length = Math.min(len - offset, buffer.capacity());
+                buffer.clear();
+                buffer.put(b, offset, length);
+                buffer.flip();
+                fileChannel.writeAll(buffer);
+            }
+        }
+
+        @Override
+        public void close() throws IOException {
+            fileChannel.close();
+            scopedBuffer.close();
+            super.close();
+        }
+    }
+
+    private static class NativeByteBufferInputStream extends InputStream {
+
+        private final StoreFileChannel fileChannel;
+        private final ByteBuffer buffer;
+        private final NativeScopedBuffer scopedBuffer;
+
+        public NativeByteBufferInputStream(StoreFileChannel fileChannel) {
+            this.fileChannel = fileChannel;
+            this.scopedBuffer =
+                    new NativeScopedBuffer((int) kibiBytes(8), ByteOrder.LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE);
+            this.buffer = scopedBuffer.getBuffer();
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            buffer.clear();
+            int dataToRead = len - off;
+            if (dataToRead < buffer.capacity()) {
+                buffer.limit(dataToRead);
+            }
+            int readData = fileChannel.read(buffer);
+            if (readData == -1) {
+                return -1;
+            }
+            buffer.flip();
+            buffer.get(b, off, readData);
+            return readData;
+        }
+
+        @Override
+        public int read() throws IOException {
+            throw new UnsupportedOperationException("All stream operations should be buffer based.");
+        }
+
+        @Override
+        public void close() throws IOException {
+            fileChannel.close();
+            scopedBuffer.close();
+            super.close();
+        }
     }
 }
