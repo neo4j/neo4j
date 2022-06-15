@@ -22,9 +22,6 @@ package org.neo4j.internal.id.indexed;
 import static org.neo4j.internal.id.IdUtils.combinedIdAndNumberOfIds;
 import static org.neo4j.internal.id.IdUtils.idFromCombinedId;
 import static org.neo4j.internal.id.IdUtils.numberOfIdsFromCombinedId;
-import static org.neo4j.internal.id.indexed.IdRange.IdState;
-import static org.neo4j.internal.id.indexed.IdRange.IdState.DELETED;
-import static org.neo4j.internal.id.indexed.IdRange.IdState.FREE;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -265,6 +262,9 @@ class FreeIdScanner implements Closeable {
         boolean startedNow = ongoingScanRangeIndex == null;
         IdRangeKey from = ongoingScanRangeIndex == null ? LOW_KEY : new IdRangeKey(ongoingScanRangeIndex);
         boolean seekerExhausted = false;
+        IdRange.FreeIdVisitor visitor =
+                (id, numberOfIds) -> queueId(pendingIdQueue, availableSpaceById, id, numberOfIds);
+
         try (Seeker<IdRangeKey, IdRange> scanner = tree.seek(from, HIGH_KEY, cursorContext)) {
             // Continue scanning until the cache is full or there's nothing more to scan
             while (availableSpaceById.intValue() > 0) {
@@ -272,7 +272,9 @@ class FreeIdScanner implements Closeable {
                     seekerExhausted = true;
                     break;
                 }
-                queueIdsFromTreeItem(scanner.key(), scanner.value(), pendingIdQueue, availableSpaceById);
+
+                var baseId = scanner.key().getIdRangeIdx() * idsPerEntry;
+                scanner.value().visitFreeIds(baseId, generation, visitor);
             }
             // If there's more left to scan "this round" then make a note of it so that we start from this place the
             // next time
@@ -289,39 +291,15 @@ class FreeIdScanner implements Closeable {
         return somethingWasCached;
     }
 
-    private void queueIdsFromTreeItem(
-            IdRangeKey key, IdRange range, PendingIdQueue pendingIdQueue, MutableInt availableSpaceById) {
-        final long baseId = key.getIdRangeIdx() * idsPerEntry;
-        final boolean differentGeneration = generation != range.getGeneration();
+    private boolean queueId(PendingIdQueue pendingIdQueue, MutableInt availableSpaceById, long id, int numberOfIds) {
+        assert layout.idRangeIndex(id) == layout.idRangeIndex(id + numberOfIds - 1);
 
-        int firstFreeI = -1;
-        for (int i = 0; i < idsPerEntry && availableSpaceById.intValue() > 0; i++) {
-            final IdState state = range.getState(i);
-            boolean isFree = state == FREE || (differentGeneration && state == DELETED);
-            if (isFree) {
-                if (firstFreeI == -1) {
-                    firstFreeI = i;
-                }
-            } else if (firstFreeI != -1) {
-                queueId(pendingIdQueue, availableSpaceById, baseId, firstFreeI, i - firstFreeI);
-                firstFreeI = -1;
-            }
-        }
-
-        if (firstFreeI != -1) {
-            queueId(pendingIdQueue, availableSpaceById, baseId, firstFreeI, idsPerEntry - firstFreeI);
-        }
-    }
-
-    private void queueId(
-            PendingIdQueue pendingIdQueue, MutableInt availableSpaceById, long baseId, int firstFreeI, int slotSize) {
-        long startId = baseId + firstFreeI;
-        assert layout.idRangeIndex(startId) == layout.idRangeIndex(startId + slotSize - 1);
-
-        int accepted = pendingIdQueue.offer(startId, slotSize);
+        int accepted = pendingIdQueue.offer(id, numberOfIds);
         if (accepted > 0) {
-            availableSpaceById.addAndGet(-accepted);
+            var availableSpaceAfterQueue = availableSpaceById.addAndGet(-accepted);
+            return availableSpaceAfterQueue > 0;
         }
+        return true;
     }
 
     @Override

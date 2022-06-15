@@ -34,8 +34,12 @@ import static org.neo4j.internal.id.indexed.IdRange.IdState.USED;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
@@ -173,6 +177,111 @@ class IdRangeTest {
         }
     }
 
+    @Test
+    void shouldFindFreeId() {
+        // given
+        var idRange = new IdRange(2);
+        long generation = 2;
+        idRange.setGeneration(generation);
+        int numBits = random.nextInt(1, 5);
+        int bit = random.nextInt(128 - (numBits - 1));
+        long baseId = random.nextLong(1_000);
+        idRange.setBits(BITSET_COMMIT, bit, numBits);
+        idRange.setBits(BITSET_REUSE, bit, numBits);
+
+        // when
+        var visitor = new Visitor();
+        idRange.visitFreeIds(baseId, generation, visitor);
+
+        // then
+        assertThat(visitor.hasId(baseId + bit, numBits)).isTrue();
+    }
+
+    @Test
+    void shouldNotFindNonFreeId() {
+        // given
+        var idRange = new IdRange(2);
+        long generation = 2;
+        idRange.setGeneration(generation);
+        int numBits = random.nextInt(1, 5);
+        int bit = random.nextInt(128 - (numBits - 1));
+        long baseId = random.nextLong(1_000);
+        idRange.setBits(BITSET_COMMIT, bit, numBits);
+
+        // when
+        var visitor = new Visitor();
+        idRange.visitFreeIds(baseId, generation, visitor);
+
+        // then
+        assertThat(visitor.numIds()).isZero();
+    }
+
+    @Test
+    void shouldNotFindFreedReservedId() {
+        // given
+        var idRange = new IdRange(2);
+        long generation = 2;
+        idRange.setGeneration(generation);
+        int numBits = random.nextInt(1, 5);
+        int bit = random.nextInt(128 - (numBits - 1));
+        long baseId = random.nextLong(1_000);
+        idRange.setBits(BITSET_COMMIT, bit, numBits);
+        idRange.setBits(BITSET_REUSE, bit, numBits);
+        idRange.setBits(BITSET_RESERVED, bit, numBits);
+
+        // when
+        var visitor = new Visitor();
+        idRange.visitFreeIds(baseId, generation, visitor);
+
+        // then
+        assertThat(visitor.numIds()).isZero();
+    }
+
+    @Test
+    void shouldFindIdForDifferentGeneration() {
+        // given
+        var idRange = new IdRange(2);
+        long generation = 2;
+        idRange.setGeneration(generation);
+        int numBits = random.nextInt(1, 5);
+        int bit = random.nextInt(128 - (numBits - 1));
+        long baseId = random.nextLong(1_000);
+        idRange.setBits(BITSET_COMMIT, bit, numBits);
+
+        // when
+        var visitor = new Visitor();
+        idRange.visitFreeIds(baseId, generation + 1, visitor);
+
+        // then
+        assertThat(visitor.hasId(baseId + bit, numBits)).isTrue();
+    }
+
+    @Test
+    void shouldFindMultipleFreeIds() {
+        // given
+        var idRange = new IdRange(2);
+        long generation = 2;
+        idRange.setGeneration(generation);
+        var expected = LongLists.mutable.empty();
+        long baseId = random.nextLong(1_000);
+        for (int i = 0, bit = random.nextInt(10); i < 10; i++, bit += random.nextInt(2, 10)) {
+            expected.add(baseId + bit);
+            idRange.setBits(BITSET_COMMIT, bit, 1);
+            idRange.setBits(BITSET_REUSE, bit, 1);
+        }
+
+        // when
+        var visitor = new Visitor();
+        idRange.visitFreeIds(baseId, generation, visitor);
+
+        // then
+        var iterator = expected.longIterator();
+        while (iterator.hasNext()) {
+            var expectedId = iterator.next();
+            assertThat(visitor.hasId(expectedId, 1)).isTrue();
+        }
+    }
+
     private static Stream<Arguments> slotSizesAndOffsets() {
         List<Arguments> permutations = new ArrayList<>();
         for (int s = 1; s < 128; s++) {
@@ -299,5 +408,24 @@ class IdRangeTest {
                 throw new UnsupportedOperationException(state.name());
         }
         return idRange;
+    }
+
+    private static class Visitor implements IdRange.FreeIdVisitor {
+        private final Set<Pair<Long, Integer>> ids = new HashSet<>();
+
+        @Override
+        public boolean visitFreeId(long id, int numberOfIds) {
+            boolean added = ids.add(Pair.of(id, numberOfIds));
+            assertThat(added).isTrue();
+            return true;
+        }
+
+        private boolean hasId(long id, int numBits) {
+            return ids.contains(Pair.of(id, numBits));
+        }
+
+        int numIds() {
+            return ids.size();
+        }
     }
 }
