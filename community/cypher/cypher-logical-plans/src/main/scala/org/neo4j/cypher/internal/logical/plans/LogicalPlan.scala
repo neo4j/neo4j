@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan.VERBOSE_TO_STRING
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewritable
@@ -38,13 +39,13 @@ import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.schema.IndexType
 
 import java.lang.reflect.Method
-
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
 
 object LogicalPlan {
   val LOWEST_TX_LAYER = 0
+  val VERBOSE_TO_STRING = false
 }
 
 /*
@@ -158,6 +159,14 @@ abstract class LogicalPlan(idGen: IdGen)
   def isLeaf: Boolean = lhs.isEmpty && rhs.isEmpty
 
   override def toString: String = {
+    if (VERBOSE_TO_STRING) {
+      verboseToString
+    } else {
+      LogicalPlanToPlanBuilderString(this)
+    }
+  }
+
+  def verboseToString: String = {
     def indent(level: Int, in: String): String = level match {
       case 0 => in
       case _ => System.lineSeparator() + "  " * level + in
