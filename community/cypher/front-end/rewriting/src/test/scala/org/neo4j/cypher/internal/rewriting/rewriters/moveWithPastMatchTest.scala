@@ -185,4 +185,126 @@ class moveWithPastMatchTest extends CypherFunSuite with RewriteTest {
         |RETURN a AS a""".stripMargin
     )
   }
+
+  test("does not move WITH if variables from MATCH exist in previous scope") {
+    assertIsNotRewritten(
+      """WITH 1 AS n
+        |WITH n AS m
+        |MATCH (n)
+        |RETURN *
+        |""".stripMargin
+    )
+    assertIsNotRewritten(
+      """MATCH (n)
+        |CALL {
+        |  WITH n
+        |  WITH n AS m
+        |  MATCH (n)
+        |  RETURN n AS x
+        |}
+        |RETURN *
+        |""".stripMargin
+    )
+    assertIsNotRewritten(
+      """WITH 1 AS n
+        |WITH 2 AS m
+        |MATCH (n)
+        |RETURN *
+        |""".stripMargin
+    )
+    assertIsNotRewritten(
+      """MATCH (n)
+        |CALL {
+        |  WITH n
+        |  WITH 1 AS m
+        |  MATCH (n)
+        |  RETURN n AS x
+        |}
+        |RETURN *
+        |""".stripMargin
+    )
+  }
+
+  test("moves WITH only while variables from MATCH do not exist in previous scope") {
+    assertRewrite(
+      """WITH 1 AS n
+        |WITH n AS m
+        |WITH m AS t
+        |WITH t AS u
+        |MATCH (n)
+        |RETURN *
+        |""".stripMargin,
+      """WITH 1 AS n
+        |WITH n AS m
+        |MATCH (n)
+        |WITH m AS t, n AS n
+        |WITH t AS u, n AS n
+        |RETURN *
+        |""".stripMargin
+    )
+    assertRewrite(
+      """MATCH (n)
+        |CALL {
+        |  WITH n
+        |  WITH n AS m
+        |  WITH m AS t
+        |  WITH t AS u
+        |  MATCH (n)
+        |  RETURN n AS x
+        |}
+        |RETURN *
+        |""".stripMargin,
+      """MATCH (n)
+        |CALL {
+        |  WITH n
+        |  WITH n AS m
+        |  MATCH (n)
+        |  WITH m AS t, n AS n
+        |  WITH t AS u, n AS n
+        |  RETURN n AS x
+        |}
+        |RETURN *
+        |""".stripMargin
+    )
+    assertRewrite(
+      """WITH 1 AS n
+        |WITH 2 AS m
+        |WITH 3 AS t
+        |WITH 4 AS u
+        |MATCH (n)
+        |RETURN *
+        |""".stripMargin,
+      """WITH 1 AS n
+        |WITH 2 AS m
+        |MATCH (n)
+        |WITH 3 AS t, n AS n
+        |WITH 4 AS u, n AS n
+        |RETURN *
+        |""".stripMargin
+    )
+    assertRewrite(
+      """MATCH (n)
+        |CALL {
+        |  WITH n
+        |  WITH 1 AS m
+        |  WITH 2 AS t
+        |  WITH 3 AS u
+        |  MATCH (n)
+        |  RETURN n AS x
+        |}
+        |RETURN *
+        |""".stripMargin,
+      """MATCH (n)
+        |CALL {
+        |  WITH n
+        |  WITH 1 AS m
+        |  MATCH (n)
+        |  WITH 2 AS t, n AS n
+        |  WITH 3 AS u, n AS n
+        |  RETURN n AS x
+        |}
+        |RETURN *
+        |""".stripMargin
+    )
+  }
 }
