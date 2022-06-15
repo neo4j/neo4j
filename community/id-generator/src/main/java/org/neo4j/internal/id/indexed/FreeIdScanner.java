@@ -31,9 +31,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
-import static org.neo4j.internal.id.indexed.IdRange.IdState;
-import static org.neo4j.internal.id.indexed.IdRange.IdState.DELETED;
-import static org.neo4j.internal.id.indexed.IdRange.IdState.FREE;
 
 /**
  * Responsible for starting and managing scans of a {@link GBPTree}, populating a cache with free ids that gets discovered in the scan.
@@ -199,6 +196,8 @@ class FreeIdScanner implements Closeable
         boolean startedNow = ongoingScanRangeIndex == null;
         IdRangeKey from = ongoingScanRangeIndex == null ? LOW_KEY : new IdRangeKey( ongoingScanRangeIndex );
         boolean seekerExhausted = false;
+        IdRange.FreeIdVisitor visitor = id -> queueId( pendingItemsToCache, maxItemsToCache, id );
+
         try ( Seeker<IdRangeKey,IdRange> scanner = tree.seek( from, HIGH_KEY, cursorContext ) )
         {
             // Continue scanning until the cache is full or there's nothing more to scan
@@ -209,7 +208,9 @@ class FreeIdScanner implements Closeable
                     seekerExhausted = true;
                     break;
                 }
-                queueIdsFromTreeItem( scanner.key(), scanner.value(), pendingItemsToCache, maxItemsToCache );
+
+                var baseId = scanner.key().getIdRangeIdx() * idsPerEntry;
+                scanner.value().visitFreeIds( baseId, generation, visitor );
             }
             // If there's more left to scan "this round" then make a note of it so that we start from this place the next time
             ongoingScanRangeIndex = seekerExhausted ? null : scanner.key().getIdRangeIdx();
@@ -227,19 +228,14 @@ class FreeIdScanner implements Closeable
         return somethingWasCached;
     }
 
-    private void queueIdsFromTreeItem( IdRangeKey key, IdRange range, LinkedChunkLongArray pendingItemsToCache, int maxItemsToCache )
+    private boolean queueId( LinkedChunkLongArray pendingItemsToCache, int maxItemsToCache, long id )
     {
-        final long baseId = key.getIdRangeIdx() * idsPerEntry;
-        final boolean differentGeneration = generation != range.getGeneration();
-
-        for ( int i = 0; i < idsPerEntry && pendingItemsToCache.size() < maxItemsToCache; i++ )
+        if ( pendingItemsToCache.size() < maxItemsToCache )
         {
-            final IdState state = range.getState( i );
-            if ( state == FREE || (differentGeneration && state == DELETED) )
-            {
-                pendingItemsToCache.add( baseId + i );
-            }
+            pendingItemsToCache.add( id );
+            return true;
         }
+        return false;
     }
 
     @Override

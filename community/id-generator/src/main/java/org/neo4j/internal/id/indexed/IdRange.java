@@ -156,6 +156,34 @@ class IdRange
         }
     }
 
+    void visitFreeIds( long baseId, long generation, FreeIdVisitor visitor )
+    {
+        var differentGeneration = generation != this.generation;
+        var baseI = 0;
+        for ( var i = 0; i < numOfLongs; i++, baseI += BITSET_SIZE )
+        {
+            var commitBits = bitSets[BITSET_COMMIT][i];
+            var reuseBits = bitSets[BITSET_REUSE][i];
+            var reservedBits = bitSets[BITSET_RESERVED][i];
+
+            while ( commitBits != 0 )
+            {
+                var bit = Long.lowestOneBit( commitBits );
+                if ( differentGeneration || ((reuseBits & bit) != 0 && (reservedBits & bit) == 0) )
+                {
+                    var localBitIndex = Long.numberOfTrailingZeros( bit );
+                    var bitIndex = baseI + localBitIndex;
+                    var id = baseId + bitIndex;
+                    if ( !visitor.visitFreeId( id ) )
+                    {
+                        return;
+                    }
+                }
+                commitBits ^= bit;
+            }
+        }
+    }
+
     private void verifyMerge( IdRange other )
     {
         boolean addition = other.addition;
@@ -230,5 +258,11 @@ class IdRange
         USED,
         DELETED,
         FREE
+    }
+
+    @FunctionalInterface
+    interface FreeIdVisitor
+    {
+        boolean visitFreeId( long id );
     }
 }

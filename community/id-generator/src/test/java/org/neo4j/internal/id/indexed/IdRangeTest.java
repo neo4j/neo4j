@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.id.indexed;
 
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
@@ -32,6 +35,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
@@ -160,6 +164,114 @@ class IdRangeTest
         assertEquals( FREE, idStateGetsNormalizedAs( 1, 0, 1 ) );
         assertEquals( FREE, idStateGetsNormalizedAs( 1, 1, 0 ) );
         assertEquals( FREE, idStateGetsNormalizedAs( 1, 1, 1 ) );
+    }
+
+    @Test
+    void shouldFindFreeId()
+    {
+        // given
+        var idRange = new IdRange( 2 );
+        long generation = 2;
+        idRange.setGeneration( generation );
+        int bit = random.nextInt( 128 );
+        long baseId = random.nextLong( 1_000 );
+        idRange.setBit( BITSET_COMMIT, bit );
+        idRange.setBit( BITSET_REUSE, bit );
+
+        // when
+        var visitor = new Visitor();
+        idRange.visitFreeIds( baseId, generation, visitor );
+
+        // then
+        assertThat( visitor.hasId( baseId + bit ) ).isTrue();
+    }
+
+    @Test
+    void shouldNotFindNonFreeId()
+    {
+        // given
+        var idRange = new IdRange( 2 );
+        long generation = 2;
+        idRange.setGeneration( generation );
+        int bit = random.nextInt( 128 );
+        long baseId = random.nextLong( 1_000 );
+        idRange.setBit( BITSET_COMMIT, bit );
+
+        // when
+        var visitor = new Visitor();
+        idRange.visitFreeIds( baseId, generation, visitor );
+
+        // then
+        assertThat( visitor.numIds() ).isZero();
+    }
+
+    @Test
+    void shouldNotFindFreedReservedId()
+    {
+        // given
+        var idRange = new IdRange( 2 );
+        long generation = 2;
+        idRange.setGeneration( generation );
+        int bit = random.nextInt( 128 );
+        long baseId = random.nextLong( 1_000 );
+        idRange.setBit( BITSET_COMMIT, bit );
+        idRange.setBit( BITSET_REUSE, bit );
+        idRange.setBit( BITSET_RESERVED, bit );
+
+        // when
+        var visitor = new Visitor();
+        idRange.visitFreeIds( baseId, generation, visitor );
+
+        // then
+        assertThat( visitor.numIds() ).isZero();
+    }
+
+    @Test
+    void shouldFindIdForDifferentGeneration()
+    {
+        // given
+        var idRange = new IdRange( 2 );
+        long generation = 2;
+        idRange.setGeneration( generation );
+        int bit = random.nextInt( 128 );
+        long baseId = random.nextLong( 1_000 );
+        idRange.setBit( BITSET_COMMIT, bit );
+
+        // when
+        var visitor = new Visitor();
+        idRange.visitFreeIds( baseId, generation + 1, visitor );
+
+        // then
+        assertThat( visitor.hasId( baseId + bit ) ).isTrue();
+    }
+
+    @Test
+    void shouldFindMultipleFreeIds()
+    {
+        // given
+        var idRange = new IdRange( 2 );
+        long generation = 2;
+        idRange.setGeneration( generation );
+        var expected = LongLists.mutable.empty();
+        long baseId = random.nextLong( 1_000 );
+        for ( int i = 0, bit = random.nextInt( 10 ); i < 10; i++, bit += random.nextInt( 2, 10 ) )
+        {
+            expected.add( baseId + bit );
+            idRange.setBit( BITSET_COMMIT, bit );
+            idRange.setBit( BITSET_REUSE, bit );
+        }
+
+        // when
+        var visitor = new Visitor();
+        idRange.visitFreeIds( baseId, generation, visitor );
+
+        // then
+        var iterator = expected.longIterator();
+        while ( iterator.hasNext() )
+        {
+            var expectedId = iterator.next();
+            assertThat( visitor.hasId( expectedId ) ).isTrue();
+        }
     }
 
     private IdState idStateGetsNormalizedAs( int commitBit, int reuseBit, int reservedBit )
@@ -293,5 +405,28 @@ class IdRangeTest
             throw new UnsupportedOperationException( state.name() );
         }
         return idRange;
+    }
+
+    private static class Visitor implements IdRange.FreeIdVisitor
+    {
+        private final MutableLongSet ids = LongSets.mutable.empty();
+
+        @Override
+        public boolean visitFreeId( long id )
+        {
+            boolean added = ids.add( id );
+            assertThat( added ).isTrue();
+            return true;
+        }
+
+        private boolean hasId( long id )
+        {
+            return ids.contains( id );
+        }
+
+        int numIds()
+        {
+            return ids.size();
+        }
     }
 }
