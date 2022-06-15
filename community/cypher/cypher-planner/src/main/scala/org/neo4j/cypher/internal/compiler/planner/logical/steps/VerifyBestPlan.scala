@@ -45,7 +45,6 @@ import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.exceptions.HintException
@@ -84,7 +83,7 @@ object VerifyBestPlan {
             }
 
           throw new InternalException(
-            s"Expected: \n$expected \n\nActual: \n$constructed\n\nPlan: \n${LogicalPlanToPlanBuilderString(plan)} \n\n$moreDetails"
+            s"Expected: \n$expected \n\nActual: \n$constructed\n\nPlan:\n$plan\n\nVerbose plan:\n${plan.verboseToString}\n\n$moreDetails"
           )
         } else {
           // unknown planner issue failed to find plan matching hints (i.e. "implicit hints")
