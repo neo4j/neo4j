@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureEx
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -71,6 +72,12 @@ public class ConstraintIndexCreator
         this.log = logProvider.getLog( ConstraintIndexCreator.class );
     }
 
+    @FunctionalInterface
+    public interface PropertyExistenceEnforcer
+    {
+        void existenceEnforcement( SchemaDescriptor schemaDescriptor ) throws KernelException;
+    }
+
     /**
      * You MUST hold a label write lock before you call this method.
      * However the label write lock is temporarily released while populating the index backing the constraint.
@@ -86,12 +93,14 @@ public class ConstraintIndexCreator
      * <li>Acquire the LABEL WRITE lock (effectively blocking concurrent transactions changing
      * data related to this constraint, and it so happens, most other transactions as well) and verify
      * the uniqueness of the built index</li>
+     * <li>Verify property existence (if required)</li>
      * <li>Leave this method, knowing that the uniqueness constraint rule will be added to tx state
      * and this tx committed, which will create the uniqueness constraint</li>
      * </ol>
      */
     public IndexDescriptor createUniquenessConstraintIndex( KernelTransactionImplementation transaction,
-            IndexBackedConstraintDescriptor constraint, IndexPrototype prototype )
+            IndexBackedConstraintDescriptor constraint, IndexPrototype prototype,
+            PropertyExistenceEnforcer propertyExistenceEnforcer )
             throws TransactionFailureException, CreateConstraintFailureException,
             UniquePropertyValueValidationException, AlreadyConstrainedException
     {
@@ -144,6 +153,8 @@ public class ConstraintIndexCreator
             {
                 indexingService.getIndexProxy( index ).verifyDeferredConstraints( propertyAccessor );
             }
+            validatePropertyExistenceConstraint( constraint, propertyExistenceEnforcer, index );
+
             log.info( "Constraint %s verified.", constraintString );
             success = true;
             return index;
@@ -175,6 +186,25 @@ public class ConstraintIndexCreator
                     dropUniquenessConstraintIndex( index );
                 }
             }
+        }
+    }
+
+    private void validatePropertyExistenceConstraint(
+            IndexBackedConstraintDescriptor constraint,
+            PropertyExistenceEnforcer propertyExistenceEnforcer,
+            IndexDescriptor index )
+            throws CreateConstraintFailureException
+    {
+        try
+        {
+            propertyExistenceEnforcer.existenceEnforcement( index.schema() );
+        }
+        catch ( KernelException e )
+        {
+            CreateConstraintFailureException createConstraintFailureException = new CreateConstraintFailureException(
+                    constraint, "Failed during property existence validation: " + e.getMessage() );
+            createConstraintFailureException.addSuppressed( e );
+            throw createConstraintFailureException;
         }
     }
 

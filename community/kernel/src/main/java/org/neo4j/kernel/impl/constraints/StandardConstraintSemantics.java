@@ -68,6 +68,13 @@ public class StandardConstraintSemantics extends ConstraintSemantics
     }
 
     @Override
+    public void assertNodeKeyConstraintAllowed( LabelSchemaDescriptor descriptor )
+            throws CreateConstraintFailureException
+    {
+        throw nodeKeyConstraintsNotAllowed( descriptor );
+    }
+
+    @Override
     public void validateNodeKeyConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor, PropertyCursor propertyCursor,
             LabelSchemaDescriptor descriptor, TokenNameLookup tokenNameLookup ) throws CreateConstraintFailureException
     {

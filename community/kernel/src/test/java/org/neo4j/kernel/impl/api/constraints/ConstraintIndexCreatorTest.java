@@ -120,7 +120,7 @@ class ConstraintIndexCreatorTest
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
 
         // when
-        IndexDescriptor constraintIndex = creator.createUniquenessConstraintIndex( createTransaction(), constraint, prototype );
+        IndexDescriptor constraintIndex = creator.createUniquenessConstraintIndex( createTransaction(), constraint, prototype, x -> {} );
 
         // then
         assertEquals( INDEX_ID, constraintIndex.getId() );
@@ -151,7 +151,7 @@ class ConstraintIndexCreatorTest
         // when
         KernelTransactionImplementation transaction = createTransaction();
         UniquePropertyValueValidationException exception = assertThrows( UniquePropertyValueValidationException.class,
-                () -> creator.createUniquenessConstraintIndex( transaction, constraint, prototype ) );
+                () -> creator.createUniquenessConstraintIndex( transaction, constraint, prototype, x -> {} ) );
         assertEquals( "Existing data does not satisfy Constraint( name='constraint', type='UNIQUENESS', schema=(:Label {prop}) ): " +
                         "Both node 2 and node 1 share the property value ( String(\"a\") )",
                 exception.getMessage() );
@@ -196,7 +196,7 @@ class ConstraintIndexCreatorTest
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        creator.createUniquenessConstraintIndex( transaction, constraint, prototype );
+        creator.createUniquenessConstraintIndex( transaction, constraint, prototype, x -> {} );
 
         // then
         verify( transaction.lockClient() )
@@ -225,7 +225,7 @@ class ConstraintIndexCreatorTest
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        assertThrows( AlreadyConstrainedException.class, () -> creator.createUniquenessConstraintIndex( transaction, constraint, prototype ) );
+        assertThrows( AlreadyConstrainedException.class, () -> creator.createUniquenessConstraintIndex( transaction, constraint, prototype, x -> {} ) );
 
         // then
         assertEquals( 0, kernel.transactions.size(), "There should have been no need to acquire a statement to create the constraint index" );
@@ -254,7 +254,7 @@ class ConstraintIndexCreatorTest
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        creator.createUniquenessConstraintIndex( transaction, constraint, prototype );
+        creator.createUniquenessConstraintIndex( transaction, constraint, prototype, x -> {} );
 
         // then
         assertEquals( 1, kernel.transactions.size() );
@@ -278,7 +278,7 @@ class ConstraintIndexCreatorTest
         assertThrows( AlreadyConstrainedException.class, () ->
         {
             KernelTransactionImplementation transaction = createTransaction();
-            creator.createUniquenessConstraintIndex( transaction, constraint, prototype );
+            creator.createUniquenessConstraintIndex( transaction, constraint, prototype, x -> {} );
         } );
 
         // then
@@ -303,7 +303,7 @@ class ConstraintIndexCreatorTest
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        creator.createUniquenessConstraintIndex( transaction, constraint, prototype );
+        creator.createUniquenessConstraintIndex( transaction, constraint, prototype, x -> {} );
 
         // then
         assertEquals( 1, kernel.transactions.size() );
@@ -325,7 +325,7 @@ class ConstraintIndexCreatorTest
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
         KernelTransactionImplementation transaction = createTransaction();
 
-        creator.createUniquenessConstraintIndex( transaction, constraint, prototype );
+        creator.createUniquenessConstraintIndex( transaction, constraint, prototype, x -> {} );
 
         String constraintString = constraint.userDescription( tokenRead );
         assertThat( logProvider ).containsMessages( format( "Starting constraint creation: %s.", constraintString ),
