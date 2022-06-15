@@ -25,6 +25,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -49,6 +50,17 @@ public class CommunityTopologyGraphDbmsModelTest extends BaseTopologyGraphDbmsMo
     protected void createModel( Transaction tx )
     {
         dbmsModel = new CommunityTopologyGraphDbmsModel( tx );
+    }
+
+    @Test
+    void shouldReturnInternalReferenceForDatabaseNodeWithoutNameLabel()
+    {
+        // given
+        var fooDb = newDatabase( b -> b.withDatabase( "foo" ) );
+        var expected = new DatabaseReference.Internal( new NormalizedDatabaseName( "foo" ), fooDb );
+
+        // when/then
+        assertThat( dbmsModel.getDatabaseRefByAlias( "foo" ) ).isEqualTo( Optional.of( expected ) );
     }
 
     @Test

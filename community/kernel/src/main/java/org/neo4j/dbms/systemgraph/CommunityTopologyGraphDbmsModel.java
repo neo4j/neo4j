@@ -191,9 +191,11 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
 
     private Optional<DatabaseReference> getInternalDatabaseReference( String databaseName )
     {
-        var aliasNode = Optional.ofNullable( tx.findNode( DATABASE_NAME_LABEL, NAME_PROPERTY, databaseName ) );
-        return aliasNode.flatMap( alias -> getTargetedDatabase( alias )
-                .flatMap( db -> createInternalReference( alias, db ) ) );
+        Optional<DatabaseReference> aliasNode = Optional.ofNullable( tx.findNode( DATABASE_NAME_LABEL, NAME_PROPERTY, databaseName ) )
+                .flatMap( alias -> getTargetedDatabase( alias )
+                        .flatMap( db -> createInternalReference( alias, db )));
+        return aliasNode.or( () -> getDatabaseIdBy( DATABASE_NAME_PROPERTY, databaseName )
+                .map(this::primaryRefFromDatabaseId) );
     }
 
     private Optional<DatabaseReference> getExternalDatabaseReference( String databaseName )
