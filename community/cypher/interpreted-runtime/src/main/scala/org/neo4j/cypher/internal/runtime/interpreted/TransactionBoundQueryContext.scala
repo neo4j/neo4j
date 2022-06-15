@@ -531,12 +531,12 @@ private[internal] class TransactionBoundReadQueryContext(
   }
 
   override def isALabelSetOnNode(node: Long, nodeCursor: NodeCursor): Boolean = {
-    positionNodeCursor(node, nodeCursor)
+    singleNodePositioned(node, nodeCursor)
     nodeCursor.hasLabel()
   }
 
   private def getLabelTokenSetForNode(node: Long, nodeCursor: NodeCursor) = {
-    positionNodeCursor(node, nodeCursor)
+    singleNodePositioned(node, nodeCursor)
     nodeCursor.labels()
   }
 
@@ -731,17 +731,6 @@ private[internal] class TransactionBoundReadQueryContext(
 
     // No such index existed, throw same exception type that Iterators.single gives if no index exists
     throw new NoSuchElementException(s"No such ${indexType.toString.toLowerCase} index exists.")
-  }
-
-  private def positionNodeCursor(node: Long, nodeCursor: NodeCursor) = {
-    reads().singleNode(node, nodeCursor)
-    if (!nodeCursor.next()) {
-      if (nodeReadOps.isDeletedInThisTx(node)) {
-        throw new EntityNotFoundException(s"Node with id $node has been deleted in this transaction")
-      } else {
-        VirtualValues.EMPTY_LIST
-      }
-    }
   }
 
   private def innerNodeIndexSeek(
