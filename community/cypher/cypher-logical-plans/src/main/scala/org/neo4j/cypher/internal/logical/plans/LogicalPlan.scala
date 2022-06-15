@@ -168,39 +168,25 @@ abstract class LogicalPlan(idGen: IdGen)
 
   def verboseToString: String = {
     def indent(level: Int, in: String): String = level match {
-      case 0 => in
-      case _ => System.lineSeparator() + "  " * level + in
+      case _ => System.lineSeparator() + "| " * level + in
     }
 
-    val childrenHeap = new mutable.ArrayStack[(String, Int, Option[LogicalPlan])]
-    childrenHeap.push(("", 0, Some(this)))
-    val sb = new StringBuilder()
+    val childrenHeap = new mutable.Stack[(Int, LogicalPlan)]
+    childrenHeap.push((0, this))
+    val sb = new mutable.StringBuilder()
 
     while (childrenHeap.nonEmpty) {
-      childrenHeap.pop() match {
-        case (prefix, level, Some(plan)) =>
-          val children = plan.lhs.toIndexedSeq ++ plan.rhs.toIndexedSeq
-          val nonChildFields = plan.productIterator.filterNot(children.contains).mkString(", ")
-          val prodPrefix = plan.productPrefix
-          sb.append(indent(level, s"""$prefix$prodPrefix($nonChildFields) {""".stripMargin))
+      val (level, plan) = childrenHeap.pop()
+      val children = plan.lhs.toIndexedSeq ++ plan.rhs.toIndexedSeq
+      val nonChildFields = plan.productIterator.filterNot(children.contains).mkString(", ")
+      val prodPrefix = plan.productPrefix
+      sb.append(indent(level, s"""$prodPrefix($nonChildFields)""".stripMargin))
 
-          (plan.lhs, plan.rhs) match {
-            case (None, None) =>
-              sb.append("}")
-            case (Some(_), None) =>
-              childrenHeap.push((System.lineSeparator() + "  " * level + "}", level + 1, None))
-              childrenHeap.push(("LHS -> ", level + 1, plan.lhs))
-            case _ =>
-              childrenHeap.push((System.lineSeparator() + "  " * level + "}", level + 1, None))
-              childrenHeap.push(("RHS -> ", level + 1, plan.rhs))
-              childrenHeap.push(("LHS -> ", level + 1, plan.lhs))
-          }
-        case (prefix, _, _) =>
-          sb.append(prefix)
-      }
+      plan.lhs.map(lhsChild => childrenHeap.push((level, lhsChild)))
+      plan.rhs.map(rhsChild => childrenHeap.push((level + 1, rhsChild)))
     }
 
-    sb.toString()
+    sb.toString().trim
   }
 
   def satisfiesExpressionDependencies(e: Expression): Boolean =
