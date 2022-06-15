@@ -167,26 +167,14 @@ abstract class LogicalPlan(idGen: IdGen)
   }
 
   def verboseToString: String = {
-    def indent(level: Int, in: String): String = level match {
-      case _ => System.lineSeparator() + "| " * level + in
-    }
-
-    val childrenHeap = new mutable.Stack[(Int, LogicalPlan)]
-    childrenHeap.push((0, this))
-    val sb = new mutable.StringBuilder()
-
-    while (childrenHeap.nonEmpty) {
-      val (level, plan) = childrenHeap.pop()
+    def planRepresentation(plan: LogicalPlan): String = {
       val children = plan.lhs.toIndexedSeq ++ plan.rhs.toIndexedSeq
       val nonChildFields = plan.productIterator.filterNot(children.contains).mkString(", ")
       val prodPrefix = plan.productPrefix
-      sb.append(indent(level, s"""$prodPrefix($nonChildFields)""".stripMargin))
-
-      plan.lhs.map(lhsChild => childrenHeap.push((level, lhsChild)))
-      plan.rhs.map(rhsChild => childrenHeap.push((level + 1, rhsChild)))
+      s"$prodPrefix($nonChildFields)"
     }
 
-    sb.toString().trim
+    LogicalPlanTreeRenderer.render(this, "| ", planRepresentation)
   }
 
   def satisfiesExpressionDependencies(e: Expression): Boolean =

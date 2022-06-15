@@ -62,8 +62,6 @@ import scala.collection.mutable
 object LogicalPlanToPlanBuilderString {
   private val expressionStringifier = ExpressionStringifier(expressionStringifierExtension, preferSingleQuotes = true)
 
-  private case class LevelPlanItem(level: Int, plan: LogicalPlan)
-
   /**
    * Generates a string that plays nicely together with `AbstractLogicalPlanBuilder`.
    */
@@ -102,15 +100,8 @@ object LogicalPlanToPlanBuilderString {
     extra: Option[LogicalPlan => String],
     planPrefixDot: Option[LogicalPlan => String]
   ) = {
-    var childrenStack = LevelPlanItem(0, logicalPlan) :: Nil
-    val sb = new mutable.StringBuilder()
-
-    while (childrenStack.nonEmpty) {
-      val LevelPlanItem(level, plan) = childrenStack.head
-      childrenStack = childrenStack.tail
-
-      sb ++= ".|" * level
-
+    def planRepresentation(plan: LogicalPlan, extra: Option[LogicalPlan => String], planPrefixDot: Option[LogicalPlan => String]): String = {
+      val sb = new mutable.StringBuilder()
       sb ++= planPrefixDot.fold(".")(_.apply(plan))
       sb ++= pre(plan)
       sb += '('
@@ -118,18 +109,17 @@ object LogicalPlanToPlanBuilderString {
       sb += ')'
       extra.foreach(e => sb ++= e.apply(plan))
 
-      plan.lhs.foreach(lhs => childrenStack ::= LevelPlanItem(level, lhs))
-      plan.rhs.foreach(rhs => childrenStack ::= LevelPlanItem(level + 1, rhs))
-
-      if (childrenStack.nonEmpty) sb ++= System.lineSeparator()
+      sb.toString()
     }
+
+    val treeString = LogicalPlanTreeRenderer.render(logicalPlan, ".|", planRepresentation(_, extra, planPrefixDot))
 
     if (extra.isEmpty) {
-      sb ++= System.lineSeparator()
-      sb ++= ".build()"
+      s"""$treeString
+         |.build()""".stripMargin
+    } else {
+      treeString
     }
-
-    sb.toString()
   }
 
   /**
