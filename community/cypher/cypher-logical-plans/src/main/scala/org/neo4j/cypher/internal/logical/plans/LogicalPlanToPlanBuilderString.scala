@@ -100,7 +100,11 @@ object LogicalPlanToPlanBuilderString {
     extra: Option[LogicalPlan => String],
     planPrefixDot: Option[LogicalPlan => String]
   ) = {
-    def planRepresentation(plan: LogicalPlan, extra: Option[LogicalPlan => String], planPrefixDot: Option[LogicalPlan => String]): String = {
+    def planRepresentation(
+      plan: LogicalPlan,
+      extra: Option[LogicalPlan => String],
+      planPrefixDot: Option[LogicalPlan => String]
+    ): String = {
       val sb = new mutable.StringBuilder()
       sb ++= planPrefixDot.fold(".")(_.apply(plan))
       sb ++= pre(plan)

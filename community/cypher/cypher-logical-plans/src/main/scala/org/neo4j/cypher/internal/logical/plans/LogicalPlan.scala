@@ -39,6 +39,7 @@ import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.schema.IndexType
 
 import java.lang.reflect.Method
+
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
