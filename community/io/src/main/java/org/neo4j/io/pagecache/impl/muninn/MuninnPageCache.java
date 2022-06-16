@@ -47,7 +47,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Supplier;
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.Suppliers;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.mem.MemoryAllocator;
@@ -743,12 +742,7 @@ public class MuninnPageCache implements PageCache {
                         prev.next = current.next;
                     }
                     pageCacheTracer.unmappedFile(file.swapperId, file);
-                    try {
-                        flushAndCloseWithoutFail(file);
-                    } catch (InterruptedException e) {
-                        // just reset interrupted status and continue other shutdown
-                        Thread.currentThread().interrupt();
-                    }
+                    flushAndCloseWithoutFail(file);
                     break;
                 }
                 prev = current;
@@ -757,7 +751,7 @@ public class MuninnPageCache implements PageCache {
         }
     }
 
-    private void flushAndCloseWithoutFail(MuninnPagedFile file) throws InterruptedException {
+    private void flushAndCloseWithoutFail(MuninnPagedFile file) {
         boolean flushedAndClosed = false;
         boolean printedFirstException = false;
         do {
@@ -826,9 +820,6 @@ public class MuninnPageCache implements PageCache {
         try (FileFlushEvent flushEvent = pageCacheTracer.beginFileFlush(muninnPagedFile.swapper);
                 var buffer = bufferFactory.createBuffer()) {
             muninnPagedFile.flushAndForceInternal(flushEvent, false, limiter, buffer);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new UnderlyingStorageException(e);
         }
     }
 
