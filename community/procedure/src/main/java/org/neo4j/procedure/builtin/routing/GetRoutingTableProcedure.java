@@ -71,6 +71,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
     private final String defaultDatabaseName;
     private final Supplier<GraphDatabaseSettings.RoutingMode> defaultRouterSupplier;
     private final Supplier<Boolean> boltEnabled;
+    private final InstanceClusterView instanceClusterView;
 
     public GetRoutingTableProcedure(
             List<String> namespace,
@@ -79,7 +80,8 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
             SingleAddressRoutingTableProvider routingTableProvider,
             ClientRoutingDomainChecker clientRoutingDomainChecker,
             Config config,
-            InternalLogProvider logProvider) {
+            InternalLogProvider logProvider,
+            InstanceClusterView instanceClusterView) {
         this(
                 namespace,
                 databaseContextProvider,
@@ -88,7 +90,8 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
                 routingTableProvider,
                 clientRoutingDomainChecker,
                 config,
-                logProvider);
+                logProvider,
+                instanceClusterView);
     }
 
     public GetRoutingTableProcedure(
@@ -99,7 +102,8 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
             ServerSideRoutingTableProvider serverSideRoutingTableProvider,
             ClientRoutingDomainChecker clientRoutingDomainChecker,
             Config config,
-            InternalLogProvider logProvider) {
+            InternalLogProvider logProvider,
+            InstanceClusterView instanceClusterView) {
         this.signature = buildSignature(namespace, DESCRIPTION);
         this.databaseContextProvider = databaseContextProvider;
         this.log = logProvider.getLog(getClass());
@@ -110,6 +114,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
         this.defaultDatabaseName = config.get(default_database);
         this.defaultRouterSupplier = () -> config.get(GraphDatabaseSettings.routing_default_router);
         this.boltEnabled = () -> config.get(BoltConnector.enabled);
+        this.instanceClusterView = instanceClusterView;
     }
 
     @Override
@@ -202,6 +207,11 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
 
     private boolean shouldGetClientSideRouting(
             GraphDatabaseSettings.RoutingMode defaultRouter, Optional<SocketAddress> clientProvidedAddress) {
+
+        if (instanceClusterView.amIAlone()) {
+            return false;
+        }
+
         switch (defaultRouter) {
             case CLIENT:
                 // in client mode everyone gets client routing behaviour all the time

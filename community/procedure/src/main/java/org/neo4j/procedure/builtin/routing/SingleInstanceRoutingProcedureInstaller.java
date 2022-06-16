@@ -61,6 +61,7 @@ public final class SingleInstanceRoutingProcedureInstaller extends AbstractRouti
                 routingTableProvider,
                 clientRoutingDomainChecker,
                 config,
-                logProvider);
+                logProvider,
+                () -> false);
     }
 }
