@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
 
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
@@ -128,7 +127,7 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey, RangeLayou
     }
 
     @Override
-    RangeLayout layout(IndexDescriptor descriptor, Path storeFile) {
+    RangeLayout layout(IndexDescriptor descriptor) {
         int numberOfSlots = descriptor.schema().getPropertyIds().length;
         return new RangeLayout(numberOfSlots);
     }

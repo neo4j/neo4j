@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import static org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory.getConfiguredSpaceFillingCurveConfiguration;
 
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.util.Map;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
@@ -84,7 +83,7 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey, PointLayou
     }
 
     @Override
-    PointLayout layout(IndexDescriptor descriptor, Path storeFile) {
+    PointLayout layout(IndexDescriptor descriptor) {
         IndexConfig indexConfig = descriptor.getIndexConfig();
         Map<CoordinateReferenceSystem, SpaceFillingCurveSettings> settings =
                 SpatialIndexConfig.extractSpatialConfig(indexConfig);

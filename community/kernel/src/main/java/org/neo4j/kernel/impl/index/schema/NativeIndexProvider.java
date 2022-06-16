@@ -79,11 +79,9 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>, LAYOUT exten
      * Instantiates the {@link Layout} which is used in the index backing this native index provider.
      *
      * @param descriptor the {@link IndexDescriptor} for this index.
-     * @param storeFile  index store file, since some layouts may depend on contents of the header. If {@code null} it means that nothing must be read from the
-     *                   file before or while instantiating the layout.
      * @return the correct {@link Layout} for the index.
      */
-    abstract LAYOUT layout(IndexDescriptor descriptor, Path storeFile);
+    abstract LAYOUT layout(IndexDescriptor descriptor);
 
     @Override
     public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor) {
@@ -104,13 +102,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>, LAYOUT exten
 
         IndexFiles indexFiles = indexFiles(descriptor);
         return newIndexPopulator(
-                indexFiles,
-                layout(descriptor, null /*meaning don't read from this file since we're recreating it anyway*/),
-                descriptor,
-                bufferFactory,
-                memoryTracker,
-                tokenNameLookup,
-                openOptions);
+                indexFiles, layout(descriptor), descriptor, bufferFactory, memoryTracker, tokenNameLookup, openOptions);
     }
 
     protected abstract IndexPopulator newIndexPopulator(
@@ -129,8 +121,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>, LAYOUT exten
             TokenNameLookup tokenNameLookup,
             ImmutableSet<OpenOption> openOptions) {
         IndexFiles indexFiles = indexFiles(descriptor);
-        return newIndexAccessor(
-                indexFiles, layout(descriptor, indexFiles.getStoreFile()), descriptor, tokenNameLookup, openOptions);
+        return newIndexAccessor(indexFiles, layout(descriptor), descriptor, tokenNameLookup, openOptions);
     }
 
     protected abstract IndexAccessor newIndexAccessor(
