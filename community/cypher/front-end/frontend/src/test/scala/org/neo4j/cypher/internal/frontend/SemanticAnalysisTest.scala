@@ -707,6 +707,22 @@ class SemanticAnalysisTest extends CypherFunSuite {
     )
   }
 
+  test("subquery without RETURN should not declare variables from YIELD in the outer scope") {
+    val q =
+      """CALL {
+        |  CALL dbms.procedures() YIELD name
+        |}
+        |RETURN name
+        |""".stripMargin
+
+    val startState = initStartState(q)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+    context.errors shouldBe Seq(
+      SemanticError("Variable `name` not defined", InputPosition(52, 4, 8))
+    )
+  }
+
   private def initStartState(query: String) =
     InitialState(query, None, NoPlannerName, new AnonymousVariableNameGenerator)
 

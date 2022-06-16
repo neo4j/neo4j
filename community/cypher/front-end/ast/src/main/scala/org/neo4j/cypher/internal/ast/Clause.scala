@@ -1136,8 +1136,10 @@ case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[Subque
   }
 
   private def declareOutputVariablesInOuterScope(rootScope: Scope): SemanticCheck = {
-    val scopeForDeclaringVariables = part.finalScope(rootScope)
-    declareVariables(scopeForDeclaringVariables.symbolTable.values)
+    when (part.isYielding) {
+      val scopeForDeclaringVariables = part.finalScope(rootScope)
+      declareVariables(scopeForDeclaringVariables.symbolTable.values)
+    }
   }
 
   private def checkNoNestedCallInTransactions: SemanticCheck = {
