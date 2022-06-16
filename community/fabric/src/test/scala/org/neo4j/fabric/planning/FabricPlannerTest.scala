@@ -19,6 +19,8 @@
  */
 package org.neo4j.fabric.planning
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.configuration.GraphDatabaseInternalSettings.CypherParallelRuntimeSupport
 import org.neo4j.cypher.internal.FullyParsedQuery
 import org.neo4j.cypher.internal.QueryOptions
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
@@ -41,6 +43,7 @@ import org.neo4j.cypher.internal.options.CypherExecutionMode
 import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
 import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
 import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
+import org.neo4j.cypher.internal.options.CypherParallelRuntimeSupportOption
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherQueryOptions
 import org.neo4j.cypher.internal.options.CypherReplanOption
@@ -843,6 +846,11 @@ class FabricPlannerTest
 
     "passes options on in remote and local parts" in {
 
+      cypherConfig.config.set(
+        GraphDatabaseInternalSettings.cypher_parallel_runtime_support,
+        CypherParallelRuntimeSupport.ALL
+      )
+
       val inst = instance(
         """CYPHER
           |  planner=cost
@@ -880,7 +888,8 @@ class FabricPlannerTest
           interpretedPipesFallback = CypherInterpretedPipesFallbackOption.disabled,
           replan = CypherReplanOption.force,
           connectComponentsPlanner = CypherConnectComponentsPlannerOption.greedy,
-          debugOptions = CypherDebugOptions(Set(CypherDebugOption.tostring))
+          debugOptions = CypherDebugOptions(Set(CypherDebugOption.tostring)),
+          parallelRuntimeSupportOption = CypherParallelRuntimeSupportOption.all
         )
       )
 
@@ -904,6 +913,10 @@ class FabricPlannerTest
 
     "default query options are not rendered" in {
 
+      cypherConfig.config.set(
+        GraphDatabaseInternalSettings.cypher_parallel_runtime_support,
+        CypherParallelRuntimeSupport.DISABLED
+      )
       val inst = instance(
         """CYPHER
           |  interpretedPipesFallback=default

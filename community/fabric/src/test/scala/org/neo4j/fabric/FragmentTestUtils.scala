@@ -131,6 +131,7 @@ trait FragmentTestUtils {
   val params: MapValue = MapValue.EMPTY
 
   def signatures: ProcedureSignatureResolver
+
   val cypherConfig: CypherConfiguration = CypherConfiguration.fromConfig(Config.defaults())
   val monitors: Monitors = new Monitors
 

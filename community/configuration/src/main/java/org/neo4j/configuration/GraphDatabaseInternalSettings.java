@@ -316,6 +316,29 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
 
     @Internal
     @Description(
+            "Enable or disable the parallel runtime. The parallel runtime is an experimental feature and is disabled by default.")
+    public static final Setting<Boolean> cypher_enable_parallel_runtime = newBuilder(
+                    "internal.cypher.enable_parallel_runtime", BOOL, false)
+            .dynamic()
+            .build();
+
+    @Internal
+    @Description(
+            "Enable or disable the parallel runtime. The parallel runtime is an experimental feature and is disabled by default.")
+    public static final Setting<CypherParallelRuntimeSupport> cypher_parallel_runtime_support = newBuilder(
+                    "internal.cypher.parallel_runtime_support",
+                    ofEnum(CypherParallelRuntimeSupport.class),
+                    CypherParallelRuntimeSupport.DISABLED)
+            .dynamic()
+            .build();
+
+    public enum CypherParallelRuntimeSupport {
+        DISABLED,
+        ALL
+    }
+
+    @Internal
+    @Description(
             "The worker management determines how the Cypher parallel runtime will distribute query execution work between multiple threads.")
     public static final Setting<CypherWorkerManagement> cypher_worker_management = newBuilder(
                     "internal.cypher.worker_management",

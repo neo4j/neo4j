@@ -162,4 +162,15 @@ class OptionReaderTest extends CypherFunSuite {
     exception.getMessage.should(include("invalid1") and include("invalid2"))
   }
 
+  test("Fails on parallel runtime config disabled") {
+    val exception = intercept[InvalidCypherOption](CypherQueryOptions.fromValues(
+      config = CypherConfiguration.fromConfig(Config.defaults()),
+      keyValues = Set("runtime" -> "parallel")
+    ))
+
+    exception.getMessage.should(
+      be("Cannot use RUNTIME 'parallel' with 'internal.cypher.parallel_runtime_support:disabled'.")
+    )
+  }
+
 }

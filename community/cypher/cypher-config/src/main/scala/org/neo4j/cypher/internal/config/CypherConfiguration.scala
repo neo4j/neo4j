@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.config.CypherConfiguration.statsDivergenceFromC
 import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
 import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
 import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
+import org.neo4j.cypher.internal.options.CypherParallelRuntimeSupportOption
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 
@@ -109,6 +110,22 @@ class CypherConfiguration private (val config: Config) {
   private var _obfuscateLiterals: Boolean = config.get(GraphDatabaseSettings.log_queries_obfuscate_literals)
   private var _renderPlanDescription: Boolean = config.get(GraphDatabaseSettings.cypher_render_plan_descriptions)
 
+  private var _parallelRuntimeSupport: CypherParallelRuntimeSupportOption =
+    CypherParallelRuntimeSupportOption.fromConfig(config)
+
+  config.addListener[GraphDatabaseInternalSettings.CypherParallelRuntimeSupport](
+    GraphDatabaseInternalSettings.cypher_parallel_runtime_support,
+    (
+      _: GraphDatabaseInternalSettings.CypherParallelRuntimeSupport,
+      newValue: GraphDatabaseInternalSettings.CypherParallelRuntimeSupport
+    ) =>
+      _parallelRuntimeSupport =
+        CypherParallelRuntimeSupportOption.fromConfig(Config.newBuilder().set(
+          GraphDatabaseInternalSettings.cypher_parallel_runtime_support,
+          newValue
+        ).build())
+  )
+
   config.addListener[java.lang.Boolean](
     GraphDatabaseSettings.log_queries_obfuscate_literals,
     (_: java.lang.Boolean, newValue: java.lang.Boolean) => _obfuscateLiterals = newValue
@@ -121,4 +138,5 @@ class CypherConfiguration private (val config: Config) {
 
   def obfuscateLiterals: Boolean = _obfuscateLiterals
   def renderPlanDescription: Boolean = _renderPlanDescription
+  def parallelRuntimeSupport: CypherParallelRuntimeSupportOption = _parallelRuntimeSupport
 }
