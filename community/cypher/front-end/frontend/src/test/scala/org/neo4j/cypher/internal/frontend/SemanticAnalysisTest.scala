@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
-import org.neo4j.cypher.internal.util.DeprecatedRepeatedRelVarInPatternExpression
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -1527,6 +1526,19 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
         "Relationship pattern predicates are not allowed when a path length is specified"
       )
     )
+  }
+
+  test("subquery without RETURN should not declare variables from YIELD in the outer scope") {
+    val query =
+      """CALL {
+        |  CALL dbms.procedures() YIELD name
+        |}
+        |RETURN name
+        |""".stripMargin
+
+    expectErrorMessagesFrom(
+      query,
+      Set("Variable `name` not defined"))
   }
 
   // ------- Helpers ------------------------------
