@@ -114,6 +114,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -1070,8 +1071,26 @@ public class DetectRandomSabotageIT
                         {
                             tokenHolders.propertyKeyTokens().getOrCreateInternalIds( new String[]{tokenName}, tokenId );
                             PropertyStore propertyStore = stores.getPropertyStore();
-                            PropertyRecord property = randomRecord( random, propertyStore, usedRecord(), storageCursors.readCursor( PROPERTY_CURSOR ) );
-                            PropertyBlock block = property.iterator().next();
+                            PropertyRecord property;
+                            PropertyBlock block;
+                            boolean foundNonInternal = false;
+
+                            // Find a property with a public (non-internal) key
+                            do
+                            {
+                                property = randomRecord( random, propertyStore, usedRecord(), storageCursors.readCursor( PROPERTY_CURSOR ) );
+                                block = property.iterator().next();
+                                try
+                                {
+                                    tokenHolders.propertyKeyTokens().getInternalTokenById( block.getKeyIndexId() );
+                                }
+                                catch ( TokenNotFoundException e )
+                                {
+                                    foundNonInternal = true;
+                                }
+                            }
+                            while ( !foundNonInternal );
+
                             property.removePropertyBlock( block.getKeyIndexId() );
                             PropertyBlock newBlock = new PropertyBlock();
                             propertyStore.encodeValue( newBlock, tokenId[0], intValue( 11 ), NULL, INSTANCE );
