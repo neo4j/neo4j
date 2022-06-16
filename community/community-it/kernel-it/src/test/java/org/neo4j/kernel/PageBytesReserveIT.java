@@ -24,8 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.include_versions_under_development;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.multi_version_store;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.select_specific_record_format;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.internal.helpers.collection.Iterators.count;
 
 import java.util.concurrent.TimeUnit;
@@ -60,7 +60,7 @@ class PageBytesReserveIT {
     void reserveBytesInPageHeader(int reservedBytes) {
         var managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
                 .setConfig(reserved_page_header_bytes, reservedBytes)
-                .setConfig(select_specific_record_format, MultiVersionFormat.NAME)
+                .setConfig(db_format, MultiVersionFormat.NAME)
                 .setConfig(include_versions_under_development, true)
                 .setConfig(multi_version_store, true)
                 .build();
@@ -97,7 +97,7 @@ class PageBytesReserveIT {
     void reserveBytesInPageHeaderWithAdditionalIndexes(int reservedBytes) {
         var managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
                 .setConfig(reserved_page_header_bytes, reservedBytes)
-                .setConfig(select_specific_record_format, MultiVersionFormat.NAME)
+                .setConfig(db_format, MultiVersionFormat.NAME)
                 .setConfig(include_versions_under_development, true)
                 .setConfig(multi_version_store, true)
                 .build();

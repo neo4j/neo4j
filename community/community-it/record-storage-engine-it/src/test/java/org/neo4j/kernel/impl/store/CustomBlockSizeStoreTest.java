@@ -23,8 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
+import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -38,7 +39,7 @@ public class CustomBlockSizeStoreTest {
 
     @ExtensionCallback
     void configure(TestDatabaseManagementServiceBuilder builder) {
-        builder.setConfig(GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME);
+        builder.setConfig(GraphDatabaseSettings.db_format, FormatFamily.ALIGNED.name());
         builder.setConfig(GraphDatabaseInternalSettings.string_block_size, 62);
         builder.setConfig(GraphDatabaseInternalSettings.array_block_size, 302);
     }

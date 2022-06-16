@@ -173,7 +173,7 @@ class RecordFormatPropertyConfiguratorTest {
 
         @Override
         public FormatFamily getFormatFamily() {
-            return FormatFamily.standard;
+            return FormatFamily.STANDARD;
         }
 
         @Override

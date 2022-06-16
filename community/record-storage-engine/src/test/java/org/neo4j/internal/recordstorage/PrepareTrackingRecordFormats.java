@@ -143,7 +143,7 @@ public class PrepareTrackingRecordFormats implements RecordFormats {
 
     @Override
     public FormatFamily getFormatFamily() {
-        return FormatFamily.standard;
+        return FormatFamily.STANDARD;
     }
 
     @Override

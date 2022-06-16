@@ -21,8 +21,8 @@ package migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.storage_engine;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
 import static org.neo4j.values.storable.Values.pointValue;
 
@@ -34,7 +34,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
+import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -100,7 +100,7 @@ class PointPropertiesRecordFormatIT {
 
     private static DatabaseManagementService startDatabaseService(Path storeDir) {
         return new TestDatabaseManagementServiceBuilder(storeDir)
-                .setConfig(storage_engine, RecordStorageEngineFactory.NAME)
+                .setConfig(db_format, FormatFamily.ALIGNED.name())
                 .build();
     }
 

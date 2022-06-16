@@ -53,6 +53,7 @@ import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -94,9 +95,7 @@ class ImportPanicIT {
                     ExecutionMonitor.INVISIBLE,
                     AdditionalInitialIds.EMPTY,
                     EMPTY_LOG_TAIL,
-                    Config.defaults(
-                            GraphDatabaseSettings.record_format_created_db,
-                            GraphDatabaseSettings.DatabaseRecordFormat.standard),
+                    Config.defaults(GraphDatabaseSettings.db_format, FormatFamily.STANDARD.name()),
                     Monitor.NO_MONITOR,
                     jobScheduler,
                     Collector.EMPTY,

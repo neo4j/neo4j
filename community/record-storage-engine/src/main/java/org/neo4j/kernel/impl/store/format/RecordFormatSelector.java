@@ -28,10 +28,8 @@ import static org.neo4j.internal.helpers.collection.Iterables.map;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.StreamSupport;
 import org.apache.commons.lang3.StringUtils;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -55,7 +53,6 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersionIdentifier;
-import org.neo4j.util.FeatureToggles;
 
 /**
  * Selects record format that will be used in a database.
@@ -67,14 +64,7 @@ import org.neo4j.util.FeatureToggles;
 public class RecordFormatSelector {
     private static final String STORE_SELECTION_TAG = "storeSelection";
 
-    /**
-     * System property to override record format in tests via maven profile.
-     * {@link GraphDatabaseInternalSettings#select_specific_record_format} has higher priority then this property.
-     */
-    private static final String RECORD_FORMAT_OVERRIDE =
-            FeatureToggles.getString(RecordFormatSelector.class, "RECORD_FORMAT_OVERRIDE", "");
-
-    /** Default format here should be kept same as {@link GraphDatabaseSettings#record_format_created_db#defaultFormat()}. */
+    /** Default format here should be kept same as {@link GraphDatabaseSettings#db_format}. */
     private static final RecordFormats DEFAULT_FORMAT = PageAligned.LATEST_RECORD_FORMATS;
 
     private static final List<RecordFormats> KNOWN_FORMATS = asList(
@@ -213,15 +203,9 @@ public class RecordFormatSelector {
             return null;
         }
 
-        var specificFormat = trySelectSpecificFormat(config);
-        if (specificFormat != null) {
-            return specificFormat;
-        }
-
-        RecordFormats formats = loadRecordFormat(
-                config.get(GraphDatabaseSettings.record_format_created_db).name(), false);
-
         boolean includeDevFormats = config.get(GraphDatabaseInternalSettings.include_versions_under_development);
+        RecordFormats formats = loadRecordFormat(config.get(GraphDatabaseSettings.db_format), includeDevFormats);
+
         if (includeDevFormats && formats != null) {
             Optional<RecordFormats> newestFormatInFamily = findLatestFormatInFamily(formats, true);
             formats = newestFormatInFamily.orElse(formats);
@@ -229,39 +213,11 @@ public class RecordFormatSelector {
         return formats;
     }
 
-    private static RecordFormats trySelectSpecificFormat(Config config) {
-        var specificFormat = config.get(GraphDatabaseInternalSettings.select_specific_record_format);
-        if (StringUtils.isNotEmpty(specificFormat)) {
-            return selectSpecificFormat(
-                    specificFormat, config.get(GraphDatabaseInternalSettings.include_versions_under_development));
-        }
-        if (!RECORD_FORMAT_OVERRIDE.isEmpty()) {
-            return selectSpecificFormat(RECORD_FORMAT_OVERRIDE, true);
-        }
-        return null;
-    }
-
     private static Optional<RecordFormats> findLatestFormatInFamily(RecordFormats result, boolean includeDevFormats) {
         return Iterables.stream(allFormats())
-                .filter(format -> format.getFormatFamily() == result.getFormatFamily()
+                .filter(format -> format.getFormatFamily().equals(result.getFormatFamily())
                         && (includeDevFormats || !format.formatUnderDevelopment()))
                 .max(comparingInt(RecordFormats::majorVersion).thenComparingInt(RecordFormats::minorVersion));
-    }
-
-    /**
-     * Finds which format, if any, succeeded the specified format. Only formats in the same family are considered.
-     *
-     * @param format to find successor to.
-     * @return the format with the lowest generation > format.generation, or None if no such format is known.
-     */
-    public static Optional<RecordFormats> findSupportedSuccessor(final RecordFormats format) {
-        return StreamSupport.stream(RecordFormatSelector.allFormats().spliterator(), false)
-                .filter(candidate ->
-                        candidate.getFormatFamily() == format.getFormatFamily() && !candidate.formatUnderDevelopment())
-                .filter(candidate -> candidate.majorVersion() > format.majorVersion()
-                        || (candidate.majorVersion() == format.majorVersion()
-                                && candidate.minorVersion() > format.minorVersion()))
-                .min(comparingInt(RecordFormats::majorVersion).thenComparingInt(RecordFormats::minorVersion));
     }
 
     /**
@@ -282,7 +238,7 @@ public class RecordFormatSelector {
      * Formats under development can be included in the search depending on the corresponding setting in the supplied config.
      */
     public static RecordFormats findLatestFormatInFamily(String formatFamily, Config config) {
-        RecordFormats formats = findLatestFormatInFamily(formatFamily);
+        RecordFormats formats = loadRecordFormat(formatFamily, false);
 
         boolean includeDevFormats = config.get(GraphDatabaseInternalSettings.include_versions_under_development);
         if (includeDevFormats && formats != null) {
@@ -299,13 +255,13 @@ public class RecordFormatSelector {
      * Formats under development are not included in the search.
      */
     public static RecordFormats findLatestFormatInFamily(String formatFamily) {
-        if (Arrays.stream(FormatFamily.values())
-                .map(Enum::name)
-                .noneMatch(familyName -> familyName.equals(formatFamily))) {
+        RecordFormats recordFormats = loadRecordFormat(formatFamily, false);
+
+        if (recordFormats == null) {
             throw new IllegalArgumentException("Unknown format family: '" + formatFamily + "'");
         }
 
-        return loadRecordFormat(formatFamily, false);
+        return recordFormats;
     }
 
     /**
@@ -318,24 +274,12 @@ public class RecordFormatSelector {
     public static RecordFormats findLatestMinorVersion(RecordFormats format, Config config) {
         var includeDevFormats = config.get(GraphDatabaseInternalSettings.include_versions_under_development);
         return Iterables.stream(allFormats())
-                .filter(candidate -> candidate.getFormatFamily() == format.getFormatFamily()
+                .filter(candidate -> candidate.getFormatFamily().equals(format.getFormatFamily())
                         && candidate.majorVersion() == format.majorVersion()
                         && candidate.minorVersion() > format.minorVersion()
                         && (includeDevFormats || !candidate.formatUnderDevelopment()))
                 .max(comparingInt(RecordFormats::minorVersion))
                 .orElse(format);
-    }
-
-    private static RecordFormats selectSpecificFormat(String recordFormat, boolean includeDevFormats) {
-        RecordFormats formats = loadRecordFormat(recordFormat, includeDevFormats);
-        if (formats == null) {
-            throw new IllegalArgumentException("No record format found with the name '" + recordFormat + "'.");
-        }
-        if (includeDevFormats) {
-            Optional<RecordFormats> newestFormatInFamily = findLatestFormatInFamily(formats, true);
-            formats = newestFormatInFamily.orElse(formats);
-        }
-        return formats;
     }
 
     private static RecordFormats loadRecordFormat(String recordFormat, boolean includeDevFormats) {

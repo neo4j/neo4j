@@ -20,7 +20,6 @@
 package org.neo4j.storageengine.api;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.storage_engine;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 
 import java.io.IOException;
@@ -37,7 +36,7 @@ import java.util.stream.Collectors;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
@@ -179,6 +178,13 @@ public interface StorageEngineFactory {
      * @return true of store exist, false otherwise
      */
     boolean storageExists(FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCache pageCache);
+
+    /**
+     * Check if a format is supported by the factory
+     * @param format format to check if it is supported
+     * @return true if supported, false otherwise
+     */
+    boolean supportedFormat(String format);
 
     /**
      * Instantiates a read-only {@link TransactionIdStore} to be used outside of a {@link StorageEngine}.
@@ -447,21 +453,26 @@ public interface StorageEngineFactory {
     }
 
     /**
-     * Selects storage engine which has the name found in the given {@link Configuration}, see {@link GraphDatabaseInternalSettings#storage_engine}.
-     *
-     * If {@link GraphDatabaseInternalSettings#storage_engine} is empty or null it will return the {@link #defaultStorageEngine()}
+     * Selects storage engine which matches the store format found in the given {@link Configuration}, see {@link GraphDatabaseSettings#db_format}.
      *
      * @param configuration the {@link Configuration} to read the name from.
-     * @return the {@link StorageEngineFactory} for the name provided via config or the default one.
-     * @throws IllegalArgumentException if no storage engine with the given name was found.
+     * @return the {@link StorageEngineFactory} for this name.
+     * @throws IllegalArgumentException if no storage engine matching the store format with the given name was found.
      */
     static StorageEngineFactory selectStorageEngine(Configuration configuration) {
-        var storageEngine = configuration.get(storage_engine);
-        if (isNotEmpty(storageEngine)) {
-            return selectStorageEngine(storageEngine);
-        } else {
-            return defaultStorageEngine();
+        Collection<StorageEngineFactory> storageEngineFactories = allAvailableStorageEngines();
+        Optional<StorageEngineFactory> storageEngine = storageEngineFactories.stream()
+                .filter(engine -> engine.supportedFormat(configuration.get(GraphDatabaseSettings.db_format)))
+                .findFirst();
+        if (storageEngine.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "No storage engine supports format '" + configuration.get(GraphDatabaseSettings.db_format)
+                            + "'. Available storage engines are: "
+                            + allAvailableStorageEngines().stream()
+                                    .map(e -> "'" + e.name() + "'")
+                                    .collect(Collectors.joining(", ")));
         }
+        return storageEngine.get();
     }
 
     /**
@@ -475,7 +486,10 @@ public interface StorageEngineFactory {
     static StorageEngineFactory selectStorageEngine(
             FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, Configuration configuration) {
         return selectStorageEngine(
-                fs, databaseLayout, pageCache, configuration != null ? configuration.get(storage_engine) : null);
+                fs,
+                databaseLayout,
+                pageCache,
+                configuration != null ? configuration.get(GraphDatabaseSettings.db_format) : null);
     }
 
     /**
@@ -487,10 +501,10 @@ public interface StorageEngineFactory {
      * This parameter can be {@code null}, which then means to select use the default.
      * @return the found {@link StorageEngineFactory}.
      */
-    static StorageEngineFactory selectStorageEngine(
+    private static StorageEngineFactory selectStorageEngine(
             FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, String specificNameOrNull) {
         // - Does a store exist at this location? -> get the one able to open it
-        // - Is there a specific name of a storage engine to look for? -> get that one
+        // - Is there a specific name of a store format to look for? -> get the storage engine that recognizes it
         // - Use the default one
         Optional<StorageEngineFactory> forExistingStore =
                 StorageEngineFactory.selectStorageEngine(fs, databaseLayout, pageCache);
@@ -499,7 +513,16 @@ public interface StorageEngineFactory {
         }
 
         if (isNotEmpty(specificNameOrNull)) {
-            return StorageEngineFactory.selectStorageEngine(specificNameOrNull);
+            Collection<StorageEngineFactory> storageEngineFactories = allAvailableStorageEngines();
+            return storageEngineFactories.stream()
+                    .filter(engine -> engine.supportedFormat(specificNameOrNull))
+                    .findFirst()
+                    .orElseThrow(() ->
+                            new IllegalArgumentException("No storage engine supports format '" + specificNameOrNull
+                                    + "'. Available storage engines are: "
+                                    + allAvailableStorageEngines().stream()
+                                            .map(e -> "'" + e.name() + "'")
+                                            .collect(Collectors.joining(", "))));
         }
 
         return defaultStorageEngine();

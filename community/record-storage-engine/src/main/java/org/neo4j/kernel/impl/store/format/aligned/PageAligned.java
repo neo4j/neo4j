@@ -26,5 +26,5 @@ public class PageAligned {
     private PageAligned() {}
 
     public static final RecordFormats LATEST_RECORD_FORMATS = PageAlignedV5_0.RECORD_FORMATS;
-    public static final String LATEST_NAME = FormatFamily.aligned.name();
+    public static final String LATEST_NAME = FormatFamily.ALIGNED.name();
 }

@@ -47,7 +47,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
@@ -92,7 +92,7 @@ class RelationshipGroupDefragmenterTest {
                 of(Config.defaults(), 1),
                 of(
                         Config.defaults(
-                                GraphDatabaseInternalSettings.select_specific_record_format,
+                                GraphDatabaseSettings.db_format,
                                 ForcedSecondaryUnitRecordFormats.DEFAULT_RECORD_FORMATS.name()),
                         2));
     }

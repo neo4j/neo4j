@@ -24,6 +24,7 @@ import static org.neo4j.kernel.impl.store.format.StoreVersion.ALIGNED_V4_3;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.RecordFormatFamilyCapability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.LabelTokenRecordFormat;
@@ -58,10 +59,15 @@ import org.neo4j.storageengine.api.format.Index44Compatibility;
  */
 public class PageAlignedV4_3 extends BaseRecordFormats {
     public static final RecordFormats RECORD_FORMATS = new PageAlignedV4_3();
-    public static final String NAME = FormatFamily.aligned.name() + "V4_3";
+    public static final String NAME = FormatFamily.ALIGNED.name() + "V4_3";
 
     private PageAlignedV4_3() {
-        super(ALIGNED_V4_3, 0, 1, FormatFamily.aligned.formatCapability(), Index44Compatibility.INSTANCE);
+        super(
+                ALIGNED_V4_3,
+                0,
+                1,
+                new RecordFormatFamilyCapability(FormatFamily.ALIGNED),
+                Index44Compatibility.INSTANCE);
     }
 
     @Override
@@ -111,7 +117,7 @@ public class PageAlignedV4_3 extends BaseRecordFormats {
 
     @Override
     public FormatFamily getFormatFamily() {
-        return FormatFamily.aligned;
+        return FormatFamily.ALIGNED;
     }
 
     @Override

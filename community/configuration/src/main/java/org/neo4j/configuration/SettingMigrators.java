@@ -165,6 +165,7 @@ public final class SettingMigrators {
                 "unsupported.dbms.memory.pagecache.warmup.legacy_profile_loader",
                 "unsupported.dbms.lucene.ephemeral",
                 "unsupported.dbms.recovery.ignore_store_id_validation",
+                "unsupported.dbms.storage_engine",
                 "unsupported.dbms.tokenscan.log.enabled",
                 "unsupported.dbms.tokenscan.log.prune_threshold",
                 "unsupported.dbms.tokenscan.log.rotation_threshold",
@@ -502,7 +503,6 @@ public final class SettingMigrators {
                 new Mapping(
                         "unsupported.dbms.storage.consistency_check_on_apply",
                         "internal.dbms.storage.consistency_check_on_apply"),
-                new Mapping("unsupported.dbms.storage_engine", "internal.dbms.storage_engine"),
                 new Mapping(
                         "unsupported.dbms.strictly_prioritize_id_freelist",
                         "internal.dbms.strictly_prioritize_id_freelist"),

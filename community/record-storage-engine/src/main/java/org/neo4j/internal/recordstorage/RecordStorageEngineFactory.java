@@ -278,6 +278,12 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     }
 
     @Override
+    public boolean supportedFormat(String format) {
+        return Iterables.stream(RecordFormatSelector.allFormats())
+                .anyMatch(f -> f.name().equals(format) && !f.onlyForMigration());
+    }
+
+    @Override
     public TransactionIdStore readOnlyTransactionIdStore(LogTailMetadata logTailMetadata) throws IOException {
         return new ReadOnlyTransactionIdStore(logTailMetadata);
     }

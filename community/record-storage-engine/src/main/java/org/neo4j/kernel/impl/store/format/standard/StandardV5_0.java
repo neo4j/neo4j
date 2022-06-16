@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.format.standard;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.RecordFormatFamilyCapability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -37,10 +38,10 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 public class StandardV5_0 extends BaseRecordFormats {
     public static final String STORE_VERSION = StoreVersion.STANDARD_V5_0.versionString();
     public static final RecordFormats RECORD_FORMATS = new StandardV5_0();
-    public static final String NAME = FormatFamily.standard.name();
+    public static final String NAME = FormatFamily.STANDARD.name();
 
     public StandardV5_0() {
-        super(StoreVersion.STANDARD_V5_0, 1, 1, FormatFamily.standard.formatCapability());
+        super(StoreVersion.STANDARD_V5_0, 1, 1, new RecordFormatFamilyCapability(FormatFamily.STANDARD));
     }
 
     @Override
@@ -85,7 +86,7 @@ public class StandardV5_0 extends BaseRecordFormats {
 
     @Override
     public FormatFamily getFormatFamily() {
-        return FormatFamily.standard;
+        return FormatFamily.STANDARD;
     }
 
     @Override

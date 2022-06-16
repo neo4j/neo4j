@@ -76,6 +76,7 @@ import org.neo4j.service.Services;
 import org.neo4j.util.Preconditions;
 
 public class Config implements Configuration {
+    private static final String OVERRIDE_STORE_FORMAT_KEY = "NEO4J_OVERRIDE_STORE_FORMAT";
     public static final String DEFAULT_CONFIG_FILE_NAME = "neo4j.conf";
     public static final String DEFAULT_CONFIG_DIR_NAME = "conf";
     private static final String STRICT_FAILURE_MESSAGE =
@@ -303,7 +304,7 @@ public class Config implements Configuration {
             if (expandCommands) {
                 validateFilePermissionForCommandExpansion(configFiles);
             }
-            return new Config(
+            Config cfg = new Config(
                     settingsClasses,
                     groupSettingClasses,
                     settingMigrators,
@@ -314,6 +315,15 @@ public class Config implements Configuration {
                     log,
                     expandCommands,
                     strictWarningMessage);
+
+            // Allow overriding the store format setting (useful for example in test profiles)
+            String overrideStoreFormat = System.getProperty(OVERRIDE_STORE_FORMAT_KEY);
+            if (overrideStoreFormat != null && !cfg.isExplicitlySet(GraphDatabaseSettings.db_format)) {
+                cfg.set(GraphDatabaseSettings.db_format, overrideStoreFormat);
+                cfg.set(GraphDatabaseInternalSettings.include_versions_under_development, true);
+            }
+
+            return cfg;
         }
 
         private static void validateFilePermissionForCommandExpansion(List<Path> files) {

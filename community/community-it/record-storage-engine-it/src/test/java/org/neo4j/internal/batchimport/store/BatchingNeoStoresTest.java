@@ -47,6 +47,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.RelationshipType;
@@ -257,8 +258,7 @@ class BatchingNeoStoresTest {
             throws Exception {
         // given
         Config config = Config.defaults(
-                GraphDatabaseInternalSettings.select_specific_record_format,
-                ForcedSecondaryUnitRecordFormats.DEFAULT_RECORD_FORMATS.name());
+                GraphDatabaseSettings.db_format, ForcedSecondaryUnitRecordFormats.DEFAULT_RECORD_FORMATS.name());
         try (BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache(
                 fileSystem,
                 pageCache,
@@ -288,8 +288,7 @@ class BatchingNeoStoresTest {
             throws Exception {
         // given
         Config config = Config.defaults(
-                GraphDatabaseInternalSettings.select_specific_record_format,
-                ForcedSecondaryUnitRecordFormats.DEFAULT_RECORD_FORMATS.name());
+                GraphDatabaseSettings.db_format, ForcedSecondaryUnitRecordFormats.DEFAULT_RECORD_FORMATS.name());
         try (BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache(
                 fileSystem,
                 pageCache,

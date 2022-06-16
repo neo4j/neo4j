@@ -167,7 +167,6 @@ public interface TopologyGraphDbmsModel {
     String DATABASE_UPDATE_ID_PROPERTY = "update_id";
     String DATABASE_STORE_RANDOM_ID_PROPERTY = "store_random_id";
     String DATABASE_DESIGNATED_SEEDER_PROPERTY = "designated_seeder";
-    String DATABASE_STORAGE_ENGINE_PROPERTY = "storage_engine";
     String DATABASE_STORE_FORMAT_NEW_DB_PROPERTY = "creation_store_format";
     String DATABASE_PRIMARIES_PROPERTY = "primaries";
     String DATABASE_SECONDARIES_PROPERTY = "secondaries";

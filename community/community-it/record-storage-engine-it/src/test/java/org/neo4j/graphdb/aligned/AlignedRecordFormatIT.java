@@ -29,9 +29,8 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
+import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersion;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -55,9 +54,7 @@ public class AlignedRecordFormatIT {
 
     @ExtensionCallback
     void configure(TestDatabaseManagementServiceBuilder builder) {
-        builder.setConfig(GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME);
-        builder.setConfig(
-                GraphDatabaseSettings.record_format_created_db, GraphDatabaseSettings.DatabaseRecordFormat.aligned);
+        builder.setConfig(GraphDatabaseSettings.db_format, FormatFamily.ALIGNED.name());
     }
 
     @Test

@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.format.multiversion;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat;
 import static org.neo4j.kernel.impl.store.format.StoreVersion.MULTIVERSION;
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.RecordFormatFamilyCapability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
@@ -51,8 +51,8 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
  * Experimental format which uses little-endian byte order.
  *
  * This format has its own experimental format family to avoid interference with other formats in testing.
- * Not publicly visible, i.e. there is no {@link DatabaseRecordFormat} option to select it.
- * It can be selected using {@link GraphDatabaseInternalSettings#select_specific_record_format} setting.
+ * Not publicly visible, i.e. the name isn't exposed, but technically it is possible to select if you know about it.
+ * It can be selected using {@link GraphDatabaseSettings#db_format} setting.
  */
 public class MultiVersionFormat extends BaseRecordFormats {
     public static final RecordFormats RECORD_FORMATS = new MultiVersionFormat();
@@ -63,7 +63,7 @@ public class MultiVersionFormat extends BaseRecordFormats {
                 MULTIVERSION,
                 1,
                 0,
-                FormatFamily.multiversion.formatCapability(),
+                new RecordFormatFamilyCapability(FormatFamily.MULTIVERSION),
                 RecordStorageCapability.LITTLE_ENDIAN,
                 RecordStorageCapability.MULTI_VERSIONED);
     }
@@ -115,7 +115,7 @@ public class MultiVersionFormat extends BaseRecordFormats {
 
     @Override
     public FormatFamily getFormatFamily() {
-        return FormatFamily.multiversion;
+        return FormatFamily.MULTIVERSION;
     }
 
     @Override

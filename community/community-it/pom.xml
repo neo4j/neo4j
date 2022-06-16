@@ -73,13 +73,13 @@
             <activation>
                 <activeByDefault>false</activeByDefault>
                 <property>
-                    <name>NEO4J_TEST_OVERRIDE_STORAGE_ENGINE</name>
+                    <name>NEO4J_OVERRIDE_STORE_FORMAT</name>
                     <value>freki</value>
                 </property>
             </activation>
             <properties>
                 <test.runner.jvm.settings.additional>
-                    -DNEO4J_TEST_OVERRIDE_STORAGE_ENGINE=freki
+                    -DNEO4J_OVERRIDE_STORE_FORMAT=freki
                 </test.runner.jvm.settings.additional>
             </properties>
             <dependencies>

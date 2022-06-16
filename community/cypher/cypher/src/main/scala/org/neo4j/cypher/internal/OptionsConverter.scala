@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.MapValueOps.Ops
 import org.neo4j.cypher.internal.ast.NoOptions
@@ -47,6 +48,7 @@ import org.neo4j.kernel.impl.index.schema.PointIndexProvider
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
 import org.neo4j.kernel.impl.index.schema.TextIndexProviderFactory
 import org.neo4j.kernel.impl.index.schema.TokenIndexProvider
+import org.neo4j.storageengine.api.StorageEngineFactory
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.DoubleValue
@@ -99,7 +101,6 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
   val EXISTING_SEED_INSTANCE = "existingDataSeedInstance"
   val NUM_PRIMARIES = "primaries"
   val NUM_SECONDARIES = "secondaries"
-  val STORAGE_ENGINE = "storageEngine"
   val STORE_FORMAT = "storeFormat"
   val VISIBLE_PERMITTED_OPTIONS = s"'$EXISTING_DATA', '$EXISTING_SEED_INSTANCE', '$STORE_FORMAT'"
 
@@ -108,7 +109,7 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
 
   override def convert(map: MapValue): CreateDatabaseOptions = {
 
-    map.foldLeft(CreateDatabaseOptions(None, None, None, None, None, None)) { case (ops, (key, value)) =>
+    map.foldLeft(CreateDatabaseOptions(None, None, None, None, None)) { case (ops, (key, value)) =>
       // existingData
       if (key.equalsIgnoreCase(EXISTING_DATA)) {
         value match {
@@ -153,28 +154,22 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
               s"Could not create database with specified $NUM_SECONDARIES '$value'. Expected non-negative integer number of secondaries."
             )
         }
-        // storageEngine
-      } else if (key.equalsIgnoreCase(STORAGE_ENGINE)) {
-        value match {
-          case storageEngine: TextValue => ops.copy(storageEngine = Some(storageEngine.stringValue()))
-          case _ =>
-            throw new InvalidArgumentsException(
-              s"Could not create database with specified $STORAGE_ENGINE '$value', String expected."
-            )
-        }
         // storeFormat
       } else if (key.equalsIgnoreCase(STORE_FORMAT)) {
         value match {
           case storeFormat: TextValue =>
             try {
-              // Convert to DatabaseRecordFormat to see that it is a valid value but let's store it as a string to open up for when formats for the next storage engine are also added.
-              ops.copy(storeFormatNewDb =
-                Some(GraphDatabaseSettings.DatabaseRecordFormat.valueOf(storeFormat.stringValue()).name()))
+              // Validate the format by looking for a storage engine that supports it - will throw if none was found
+              StorageEngineFactory.selectStorageEngine(Config.defaults(
+                GraphDatabaseSettings.db_format,
+                storeFormat.stringValue()
+              ))
+              ops.copy(storeFormatNewDb = Some(storeFormat.stringValue()))
             } catch {
               case _: Exception =>
                 throw new InvalidArgumentsException(
                   s"Could not create database with specified $STORE_FORMAT '${storeFormat.stringValue()}'. Unknown format, supported formats are "
-                    + GraphDatabaseSettings.DatabaseRecordFormat.values().mkString("('", "', '", "')")
+                    + "'aligned', 'standard' or 'high_limit'"
                 )
             }
           case _ =>
@@ -644,7 +639,6 @@ case class CreateDatabaseOptions(
   databaseSeed: Option[String],
   primaries: Option[Integer],
   secondaries: Option[Integer],
-  storageEngine: Option[String],
   storeFormatNewDb: Option[String]
 )
 

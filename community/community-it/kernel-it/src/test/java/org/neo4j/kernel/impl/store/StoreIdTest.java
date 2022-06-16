@@ -59,12 +59,11 @@ class StoreIdTest {
 
     @ParameterizedTest
     @CsvSource({"standard,record-standard-1-1", "aligned,record-aligned-1-1"})
-    void testRetrievalOfStoreId(GraphDatabaseSettings.DatabaseRecordFormat format, String expectedStoreVersion)
-            throws IOException {
+    void testRetrievalOfStoreId(String format, String expectedStoreVersion) throws IOException {
         assertNull(StoreId.retrieveFromStore(fileSystem, databaseLayout, pageCache, NULL_CONTEXT));
         var dbms = new TestDatabaseManagementServiceBuilder(databaseLayout)
                 .setFileSystem(fileSystem)
-                .setConfig(GraphDatabaseSettings.record_format_created_db, format)
+                .setConfig(GraphDatabaseSettings.db_format, format)
                 .build();
         dbms.shutdown();
 

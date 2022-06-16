@@ -188,7 +188,7 @@ public class StoreFactory {
         openOptions = openOptions.newWithAll(PageCacheOptionsSelector.select(recordFormats));
 
         // we need to modify options only for aligned format and avoid passing direct io option in all other cases
-        if (recordFormats.getFormatFamily() != FormatFamily.aligned) {
+        if (!recordFormats.getFormatFamily().equals(FormatFamily.ALIGNED)) {
             return openOptions;
         }
         if (!config.get(GraphDatabaseSettings.pagecache_direct_io)) {

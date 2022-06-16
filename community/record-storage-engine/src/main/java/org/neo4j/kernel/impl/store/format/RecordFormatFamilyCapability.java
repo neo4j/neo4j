@@ -23,10 +23,10 @@ import java.util.Objects;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
-class RecordFormatFamilyCapability implements Capability {
+public class RecordFormatFamilyCapability implements Capability {
     private final FormatFamily family;
 
-    RecordFormatFamilyCapability(FormatFamily family) {
+    public RecordFormatFamilyCapability(FormatFamily family) {
         this.family = family;
     }
 
@@ -49,7 +49,7 @@ class RecordFormatFamilyCapability implements Capability {
             return false;
         }
         RecordFormatFamilyCapability that = (RecordFormatFamilyCapability) o;
-        return family == that.family;
+        return family.equals(that.family);
     }
 
     @Override

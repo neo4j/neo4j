@@ -85,7 +85,6 @@
       "-XX:HeapDumpPath=target/test data"
       -Dinternal.dbms.multiversioned.store.override=${multiversion.store}
       -Dorg.neo4j.io.pagecache.impl.muninn.MuninnWritePageCursor.CHECK_WRITE_LOCKS=true
-      -Dorg.neo4j.kernel.impl.store.format.RecordFormatSelector.RECORD_FORMAT_OVERRIDE=${recordformat.override}
       -Dorg.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer.CHECK_REPORTED_COUNTERS=${cursor.counters.check}
       -Dorg.neo4j.internal.unsafe.UnsafeUtil.DIRTY_MEMORY=true
       -Dorg.neo4j.internal.unsafe.UnsafeUtil.CHECK_NATIVE_ACCESS=true
@@ -111,7 +110,6 @@
     <excludedTestGroups/>
     <forkCounts>1</forkCounts>
     <multiversion.store>false</multiversion.store>
-    <recordformat.override/>
     <parallel.tests>false</parallel.tests>
     <maven.build.timestamp.format>yyMMddHHmmssSSS</maven.build.timestamp.format>
     <cursor.counters.check>true</cursor.counters.check>
@@ -917,9 +915,15 @@
       <id>multiVersionRecordFormat</id>
       <activation>
         <activeByDefault>false</activeByDefault>
+        <property>
+          <name>NEO4J_OVERRIDE_STORE_FORMAT</name>
+          <value>multiversion</value>
+        </property>
       </activation>
       <properties>
-        <recordformat.override>multiversion</recordformat.override>
+        <test.runner.jvm.settings.additional>
+          -DNEO4J_OVERRIDE_STORE_FORMAT=multiversion
+        </test.runner.jvm.settings.additional>
         <excludedTestGroups>recordformatoverride</excludedTestGroups>
       </properties>
     </profile>

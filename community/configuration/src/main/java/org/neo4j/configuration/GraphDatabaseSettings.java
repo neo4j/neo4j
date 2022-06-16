@@ -175,20 +175,12 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             newBuilder("server.config.strict_validation.enabled", BOOL, true).build();
 
     @Description(
-            "Database record format. This is the format that will be used for new databases. "
+            "Database format. This is the format that will be used for new databases. Valid values are `standard`, `aligned`, or `high_limit`."
                     + "The `aligned` format is essentially the `standard` format with some minimal padding at the end of pages such that a single "
                     + "record will never cross a page boundary. The `high_limit` format is available for Enterprise Edition only. "
                     + "It is required if you have a graph that is larger than 34 billion nodes, 34 billion relationships, or 68 billion properties.")
-    public static final Setting<DatabaseRecordFormat> record_format_created_db = newBuilder(
-                    "dbms.record_format_created_db", ofEnum(DatabaseRecordFormat.class), DatabaseRecordFormat.aligned)
-            .dynamic()
-            .build();
-
-    public enum DatabaseRecordFormat {
-        standard,
-        aligned,
-        high_limit
-    }
+    public static final Setting<String> db_format =
+            newBuilder("db.format", STRING, "aligned").dynamic().build();
 
     @Description(
             "Whether to allow a system graph upgrade to happen automatically in single instance mode (dbms.mode=SINGLE). "

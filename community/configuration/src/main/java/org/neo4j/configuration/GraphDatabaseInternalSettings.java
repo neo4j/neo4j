@@ -922,14 +922,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Boolean> do_parallel_recovery =
             newBuilder("internal.dbms.recovery.enable_parallelism", BOOL, false).build();
 
-    @Description(
-            "Name of storage engine to use when creating new databases (except system database). If null or empty string then a default will be used."
-                    + "This setting will not be used for loading existing databases, where instead the appropriate storage engine for the specific database "
-                    + "will be used")
-    @Internal
-    public static final Setting<String> storage_engine =
-            newBuilder("internal.dbms.storage_engine", STRING, "record").build();
-
     @Internal
     @Description("Whether or not to log contents of data that is inconsistent when deleting it.")
     public static final Setting<Boolean> log_inconsistent_data_deletion = newBuilder(
@@ -1011,12 +1003,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Boolean> include_versions_under_development = newBuilder(
                     "internal.dbms.include_dev_record_format_versions", BOOL, false)
             .build();
-
-    @Internal
-    @Description("Selects specific record format for new dbs and upgrade. Overrides dbms.record_format_created_db. "
-            + "To be used from tests that need to use a test format that can't normally be selected.")
-    public static final Setting<String> select_specific_record_format =
-            newBuilder("internal.dbms.select_specfic_record_format", STRING, "").build();
 
     @Internal
     @Description("If set, the database will locate token index files in the old location and under the old name."

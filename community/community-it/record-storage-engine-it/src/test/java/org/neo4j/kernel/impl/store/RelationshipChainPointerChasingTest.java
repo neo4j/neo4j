@@ -27,7 +27,6 @@ import static org.neo4j.internal.helpers.collection.Iterables.asArray;
 import java.util.Iterator;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -36,7 +35,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
+import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -61,7 +60,7 @@ class RelationshipChainPointerChasingTest {
 
     @ExtensionCallback
     static void configure(TestDatabaseManagementServiceBuilder builder) {
-        builder.setConfig(GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME);
+        builder.setConfig(GraphDatabaseSettings.db_format, FormatFamily.ALIGNED.name());
         builder.setConfig(GraphDatabaseSettings.dense_node_threshold, THRESHOLD);
     }
 

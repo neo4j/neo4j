@@ -24,6 +24,7 @@ import static org.neo4j.kernel.impl.store.format.StoreVersion.ALIGNED_V5_0;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.RecordFormatFamilyCapability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.LabelTokenRecordFormat;
@@ -57,10 +58,10 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
  */
 public class PageAlignedV5_0 extends BaseRecordFormats {
     public static final RecordFormats RECORD_FORMATS = new PageAlignedV5_0();
-    public static final String NAME = FormatFamily.aligned.name();
+    public static final String NAME = FormatFamily.ALIGNED.name();
 
     private PageAlignedV5_0() {
-        super(ALIGNED_V5_0, 1, 1, FormatFamily.aligned.formatCapability());
+        super(ALIGNED_V5_0, 1, 1, new RecordFormatFamilyCapability(FormatFamily.ALIGNED));
     }
 
     @Override
@@ -110,7 +111,7 @@ public class PageAlignedV5_0 extends BaseRecordFormats {
 
     @Override
     public FormatFamily getFormatFamily() {
-        return FormatFamily.aligned;
+        return FormatFamily.ALIGNED;
     }
 
     @Override

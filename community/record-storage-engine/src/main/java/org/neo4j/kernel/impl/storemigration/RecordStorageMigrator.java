@@ -287,8 +287,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             StoreId oldStoreId = fieldAccess.readStoreId();
             long random = oldStoreId.getRandom();
             // Update store id if we have done a migration
-            if (oldFormat.getFormatFamily() != newFormat.getFormatFamily()
-                    || oldFormat.majorVersion() != newFormat.majorVersion()) {
+            if (oldFormat.majorVersion() != newFormat.majorVersion()
+                    || !oldFormat.getFormatFamily().equals(newFormat.getFormatFamily())) {
                 random = new SecureRandom().nextLong();
             }
 

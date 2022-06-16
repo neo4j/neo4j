@@ -179,7 +179,7 @@ public class MigrateStoreCommand extends AbstractCommand {
                     checkDatabaseExistence(databaseLayout);
 
                     if (SYSTEM_DATABASE_NAME.equals(dbName)) {
-                        formatForDb = GraphDatabaseSettings.DatabaseRecordFormat.aligned.name();
+                        formatForDb = "aligned";
                     }
 
                     try (Closeable ignored = LockChecker.checkDatabaseLock(databaseLayout)) {

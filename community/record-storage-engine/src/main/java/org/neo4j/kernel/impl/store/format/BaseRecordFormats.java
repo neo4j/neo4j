@@ -88,8 +88,8 @@ public abstract class BaseRecordFormats implements RecordFormats {
             return false;
         }
 
-        return majorFormatVersion == other.majorVersion()
-                && minorFormatVersion == other.minorVersion()
+        return majorVersion() == other.majorVersion()
+                && minorVersion() == other.minorVersion()
                 && node().equals(other.node())
                 && relationship().equals(other.relationship())
                 && relationshipGroup().equals(other.relationshipGroup())

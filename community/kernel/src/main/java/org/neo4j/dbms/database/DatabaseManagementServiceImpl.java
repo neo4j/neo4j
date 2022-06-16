@@ -19,16 +19,16 @@
  */
 package org.neo4j.dbms.database;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.storage_engine;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 
 import java.util.List;
 import java.util.stream.Collectors;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.api.DatabaseExistsException;
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.config.Configuration;
@@ -78,14 +78,23 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService 
     }
 
     @Override
-    public void createDatabase(String name, Configuration databaseSpecificSettings) {
-        String storageEngineName = getStorageEngine(databaseSpecificSettings);
-        systemDatabaseExecute("CREATE DATABASE `" + name + "` OPTIONS {storageEngine:\"" + storageEngineName + "\"}");
+    public void createDatabase(String name) throws DatabaseExistsException {
+        systemDatabaseExecute("CREATE DATABASE `" + name + "`");
     }
 
-    private String getStorageEngine(Configuration databaseSpecificSettings) {
-        String dbSpecificStorageEngineName = databaseSpecificSettings.get(storage_engine);
-        return dbSpecificStorageEngineName != null ? dbSpecificStorageEngineName : globalConfig.get(storage_engine);
+    @Override
+    public void createDatabase(String name, Configuration databaseSpecificSettings) {
+        String storeFormat = getStoreFormat(databaseSpecificSettings);
+        systemDatabaseExecute("CREATE DATABASE `" + name + "` OPTIONS {storeFormat:\"" + storeFormat + "\"}");
+    }
+
+    private String getStoreFormat(Configuration databaseSpecificSettings) {
+        String dbSpecificStoreFormat = null;
+        if (!(databaseSpecificSettings instanceof Config)
+                || ((Config) databaseSpecificSettings).isExplicitlySet(db_format)) {
+            dbSpecificStoreFormat = databaseSpecificSettings.get(db_format);
+        }
+        return dbSpecificStoreFormat != null ? dbSpecificStoreFormat : globalConfig.get(db_format);
     }
 
     @Override
@@ -162,9 +171,5 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService 
             throw new IllegalArgumentException(
                     "Registration of transaction event listeners on " + SYSTEM_DATABASE_NAME + " is not supported.");
         }
-    }
-
-    private interface SystemDatabaseExecutionContext {
-        void accept(GraphDatabaseAPI database, InternalTransaction transaction) throws KernelException;
     }
 }

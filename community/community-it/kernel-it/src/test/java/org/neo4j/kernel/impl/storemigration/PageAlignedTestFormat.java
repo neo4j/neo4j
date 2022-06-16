@@ -25,6 +25,7 @@ import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.RecordFormatFamilyCapability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV5_0;
 import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
@@ -51,7 +52,11 @@ public abstract class PageAlignedTestFormat extends BaseRecordFormats implements
     private final String versionString;
 
     public PageAlignedTestFormat(String name, String versionString, int majorFormatVersion, int minorFormatVersion) {
-        super(ALIGNED_V5_0, majorFormatVersion, minorFormatVersion, FormatFamily.aligned.formatCapability());
+        super(
+                ALIGNED_V5_0,
+                majorFormatVersion,
+                minorFormatVersion,
+                new RecordFormatFamilyCapability(FormatFamily.ALIGNED));
         this.name = name;
         this.versionString = versionString;
     }
@@ -108,7 +113,7 @@ public abstract class PageAlignedTestFormat extends BaseRecordFormats implements
 
     @Override
     public FormatFamily getFormatFamily() {
-        return FormatFamily.aligned;
+        return FormatFamily.ALIGNED;
     }
 
     @Override

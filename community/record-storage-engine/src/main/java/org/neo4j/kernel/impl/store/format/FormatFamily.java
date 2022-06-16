@@ -19,30 +19,16 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.neo4j.storageengine.api.format.Capability;
-
 /**
  * Family of the format. Family of format is specific to a format across all version that format support.
  * Two formats in different versions should have same format family.
  * Family is one of the criteria that will determine if migration between formats is possible.
  */
-public enum FormatFamily {
-    standard(0),
-    aligned(1),
-    high_limit(2),
-    multiversion(-999);
-
-    private final int rank;
-    private final Capability formatCapability;
-
-    FormatFamily(int rank) {
-        this.rank = rank;
-        this.formatCapability = new RecordFormatFamilyCapability(this);
-    }
-
-    public Capability formatCapability() {
-        return formatCapability;
-    }
+public record FormatFamily(String name, int rank) {
+    public static final FormatFamily STANDARD = new FormatFamily("standard", 0);
+    public static final FormatFamily ALIGNED = new FormatFamily("aligned", 1);
+    public static final FormatFamily HIGH_LIMIT = new FormatFamily("high_limit", 2);
+    public static final FormatFamily MULTIVERSION = new FormatFamily("multiversion", -999);
 
     /**
      * Check if this format family is higher ranked than another format family.
@@ -52,5 +38,10 @@ public enum FormatFamily {
      */
     public boolean isHigherThan(FormatFamily other) {
         return rank > other.rank;
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 }
