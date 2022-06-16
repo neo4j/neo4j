@@ -140,11 +140,9 @@ public class DataImporter {
             }
             pool.shutdown();
 
-            long nextWait = 0;
             try {
-                while (!pool.awaitTermination(nextWait, TimeUnit.MILLISECONDS)) {
+                while (!pool.awaitTermination(executionMonitor.checkIntervalMillis(), TimeUnit.MILLISECONDS)) {
                     executionMonitor.check(execution);
-                    nextWait = executionMonitor.nextCheckTime() - currentTimeMillis();
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -279,8 +277,8 @@ public class DataImporter {
         }
 
         @Override
-        public void awaitCompleted() throws InterruptedException {
-            completed.await();
+        public boolean awaitCompleted(long time, TimeUnit unit) throws InterruptedException {
+            return completed.await(time, unit);
         }
 
         @Override

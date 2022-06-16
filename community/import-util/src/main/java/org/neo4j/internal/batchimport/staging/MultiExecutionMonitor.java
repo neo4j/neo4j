@@ -24,7 +24,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.time.Clocks;
 
 /**
- * {@link ExecutionMonitor} that wraps several other monitors. Each wrapper monitor can still specify
+ * {@link ExecutionMonitor} that wraps several other monitors. Each wrapped monitor can still specify
  * individual poll frequencies and this {@link MultiExecutionMonitor} will make that happen.
  */
 public class MultiExecutionMonitor implements ExecutionMonitor {
@@ -72,7 +72,7 @@ public class MultiExecutionMonitor implements ExecutionMonitor {
     }
 
     @Override
-    public long nextCheckTime() {
+    public long checkIntervalMillis() {
         // Find the lowest of all end times
         long low = endTimes[0];
         for (int i = 1; i < monitors.length; i++) {
@@ -86,7 +86,7 @@ public class MultiExecutionMonitor implements ExecutionMonitor {
 
     private void fillEndTimes() {
         for (int i = 0; i < monitors.length; i++) {
-            endTimes[i] = monitors[i].nextCheckTime();
+            endTimes[i] = monitors[i].checkIntervalMillis();
         }
     }
 
@@ -96,7 +96,7 @@ public class MultiExecutionMonitor implements ExecutionMonitor {
         for (int i = 0; i < monitors.length; i++) {
             if (currentTimeMillis >= endTimes[i]) {
                 monitors[i].check(execution);
-                endTimes[i] = monitors[i].nextCheckTime();
+                endTimes[i] = currentTimeMillis + monitors[i].checkIntervalMillis();
             }
         }
     }

@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -121,8 +122,8 @@ public abstract class AbstractStep<T> implements Step<T> {
     }
 
     @Override
-    public void awaitCompleted() throws InterruptedException {
-        completed.await();
+    public boolean awaitCompleted(long time, TimeUnit unit) throws InterruptedException {
+        return completed.await(time, unit);
     }
 
     protected void issuePanic(Throwable cause) {

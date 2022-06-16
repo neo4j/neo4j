@@ -23,13 +23,11 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import org.neo4j.time.Clocks;
 
 /**
  * Processor assigner strategies that are useful for testing as to exercise
@@ -42,7 +40,7 @@ public class ProcessorAssignmentStrategies {
      * Right of the bat assigns all permitted processors to random steps that allow multiple threads.
      */
     public static ExecutionMonitor eagerRandomSaturation(final int availableProcessor) {
-        return new AbstractAssigner(Clocks.systemClock(), 10, SECONDS) {
+        return new AbstractAssigner(10, SECONDS) {
             @Override
             public void start(StageExecution execution) {
                 saturate(availableProcessor, execution);
@@ -72,7 +70,7 @@ public class ProcessorAssignmentStrategies {
      * For every check assigns a random number of more processors to random steps that allow multiple threads.
      */
     public static ExecutionMonitor randomSaturationOverTime(final int availableProcessor) {
-        return new AbstractAssigner(Clocks.systemClock(), 100, MILLISECONDS) {
+        return new AbstractAssigner(100, MILLISECONDS) {
             private int processors = availableProcessor;
 
             @Override
@@ -102,7 +100,7 @@ public class ProcessorAssignmentStrategies {
     }
 
     public static ExecutionMonitor saturateSpecificStep(int stepIndex) {
-        return new AbstractAssigner(Clocks.systemClock(), 100, MILLISECONDS) {
+        return new AbstractAssigner(100, MILLISECONDS) {
             @Override
             public void start(StageExecution execution) {
                 int index = 0;
@@ -124,8 +122,8 @@ public class ProcessorAssignmentStrategies {
     private abstract static class AbstractAssigner extends ExecutionMonitor.Adapter {
         private final Map<String, Map<String, Integer>> processors = new HashMap<>();
 
-        protected AbstractAssigner(Clock clock, long time, TimeUnit unit) {
-            super(clock, time, unit);
+        protected AbstractAssigner(long time, TimeUnit unit) {
+            super(time, unit);
         }
 
         protected void registerProcessorCount(StageExecution execution) {

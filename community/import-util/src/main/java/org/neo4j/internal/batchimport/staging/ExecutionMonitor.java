@@ -19,10 +19,8 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.time.Clocks;
 
 /**
  * Gets notified now and then about {@link StageExecution}, where statistics can be read and displayed,
@@ -53,9 +51,9 @@ public interface ExecutionMonitor {
     void done(boolean successful, long totalTimeMillis, String additionalInformation);
 
     /**
-     * @return next time stamp when this monitor would like to check that status of current execution.
+     * @return rough time interval this monitor needs checking.
      */
-    long nextCheckTime();
+    long checkIntervalMillis();
 
     /**
      * Called periodically while executing a {@link StageExecution}.
@@ -66,21 +64,15 @@ public interface ExecutionMonitor {
      * Base implementation with most methods defaulting to not doing anything.
      */
     abstract class Adapter implements ExecutionMonitor {
-        private final Clock clock;
         private final long intervalMillis;
 
-        public Adapter(Clock clock, long time, TimeUnit unit) {
-            this.clock = clock;
+        public Adapter(long time, TimeUnit unit) {
             this.intervalMillis = unit.toMillis(time);
         }
 
-        public Adapter(long time, TimeUnit unit) {
-            this(Clocks.systemClock(), time, unit);
-        }
-
         @Override
-        public long nextCheckTime() {
-            return clock.millis() + intervalMillis;
+        public long checkIntervalMillis() {
+            return intervalMillis;
         }
 
         @Override
@@ -107,7 +99,7 @@ public interface ExecutionMonitor {
         }
 
         @Override
-        public long nextCheckTime() {
+        public long checkIntervalMillis() {
             return Long.MAX_VALUE;
         }
 

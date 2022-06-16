@@ -23,7 +23,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.time.Clock;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
@@ -34,9 +33,9 @@ class MultiExecutionMonitorTest {
     @Test
     void shouldCheckMultipleMonitors() {
         // GIVEN
+        TestableMonitor first = new TestableMonitor(100, MILLISECONDS, "first");
+        TestableMonitor other = new TestableMonitor(250, MILLISECONDS, "other");
         FakeClock clock = Clocks.fakeClock();
-        TestableMonitor first = new TestableMonitor(clock, 100, MILLISECONDS, "first");
-        TestableMonitor other = new TestableMonitor(clock, 250, MILLISECONDS, "other");
         MultiExecutionMonitor multiMonitor = new MultiExecutionMonitor(clock, first, other);
 
         // WHEN/THEN
@@ -64,8 +63,8 @@ class MultiExecutionMonitorTest {
         private int timesPolled;
         private final String name;
 
-        TestableMonitor(Clock clock, long interval, TimeUnit unit, String name) {
-            super(clock, interval, unit);
+        TestableMonitor(long interval, TimeUnit unit, String name) {
+            super(interval, unit);
             this.name = name;
         }
 

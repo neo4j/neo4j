@@ -32,6 +32,7 @@ import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLong;
@@ -403,7 +404,7 @@ class ForkedProcessorStepTest {
         }
 
         @Override
-        public void awaitCompleted() {
+        public boolean awaitCompleted(long time, TimeUnit unit) {
             throw new UnsupportedOperationException();
         }
 

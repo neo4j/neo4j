@@ -20,6 +20,7 @@
 package org.neo4j.internal.batchimport.staging;
 
 import java.time.Clock;
+import java.util.concurrent.TimeUnit;
 import org.neo4j.time.Clocks;
 
 /**
@@ -53,7 +54,9 @@ public class ExecutionSupervisor {
         start(execution);
 
         try {
-            execution.awaitCompletion();
+            while (!execution.awaitCompletion(monitor.checkIntervalMillis(), TimeUnit.MILLISECONDS)) {
+                monitor.check(execution);
+            }
         } catch (InterruptedException e) {
             execution.panic(e);
         } finally {

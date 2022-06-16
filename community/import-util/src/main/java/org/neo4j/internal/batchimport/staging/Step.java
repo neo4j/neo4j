@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
+import java.util.concurrent.TimeUnit;
 import org.neo4j.internal.batchimport.Parallelizable;
 import org.neo4j.internal.batchimport.stats.Key;
 import org.neo4j.internal.batchimport.stats.StepStats;
@@ -104,11 +105,18 @@ public interface Step<T> extends Parallelizable, AutoCloseable, Panicable {
      */
     boolean isCompleted();
 
+    default void awaitCompleted() throws InterruptedException {
+        awaitCompleted(Long.MAX_VALUE, TimeUnit.HOURS);
+    }
+
     /**
-     * Waits for this step to become completed, i.e. until {@link #isCompleted()} returns {@code true}. If this step is already completed
-     * then this method will return immediately.
+     * Waits until this step is {@link #isCompleted() completed} and maximum the specified amount of time.
+     * @param time max amount of time to wait for completion.
+     * @param unit unit of time to wait.
+     * @return {@code true} if this step was {@link #isCompleted() completed} before calling this method or
+     * became completed during the specified time period, otherwise {@code false}.
      */
-    void awaitCompleted() throws InterruptedException;
+    boolean awaitCompleted(long time, TimeUnit unit) throws InterruptedException;
 
     /**
      * Called by the {@link Stage} when setting up the stage. This will form a pipeline of steps,

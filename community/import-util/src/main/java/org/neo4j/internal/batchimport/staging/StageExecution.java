@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
@@ -90,9 +91,16 @@ public class StageExecution implements StageControl, AutoCloseable {
     }
 
     public void awaitCompletion() throws InterruptedException {
+        awaitCompletion(Long.MAX_VALUE, TimeUnit.HOURS);
+    }
+
+    public boolean awaitCompletion(long timeout, TimeUnit unit) throws InterruptedException {
         for (Step<?> step : pipeline) {
-            step.awaitCompleted();
+            if (!step.awaitCompleted(timeout, unit)) {
+                return false;
+            }
         }
+        return true;
     }
 
     public void start() {

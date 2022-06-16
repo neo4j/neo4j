@@ -436,8 +436,8 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
     }
 
     @Override
-    public long nextCheckTime() {
-        return currentTimeMillis() + 200;
+    public long checkIntervalMillis() {
+        return 200;
     }
 
     @Override

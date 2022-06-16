@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.neo4j.internal.batchimport.stats.DetailLevel;
 import org.neo4j.internal.batchimport.stats.Key;
 import org.neo4j.internal.batchimport.stats.Keys;
@@ -118,8 +119,8 @@ public class ControlledStep<T> implements Step<T>, StatsProvider {
     }
 
     @Override
-    public void awaitCompleted() throws InterruptedException {
-        completed.await();
+    public boolean awaitCompleted(long time, TimeUnit unit) throws InterruptedException {
+        return completed.await(time, unit);
     }
 
     @Override

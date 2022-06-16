@@ -655,8 +655,8 @@ public class ParallelBatchImporterTest {
         }
 
         @Override
-        public long nextCheckTime() {
-            return delegate.nextCheckTime();
+        public long checkIntervalMillis() {
+            return delegate.checkIntervalMillis();
         }
 
         @Override
