@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
@@ -43,13 +42,12 @@ class PropertyKeyTest {
 
     @Test
     void lazyLoadWithinWriteTransaction() throws IOException {
-        int count = 3000;
-
-        long nodeId = -1;
+        int count = 1000;
+        String nodeId;
         try (var tx = db.beginTx()) {
             var node = tx.createNode();
             mapWithManyProperties(count).forEach(node::setProperty);
-            nodeId = node.getId();
+            nodeId = node.getElementId();
             tx.commit();
         }
 
@@ -59,7 +57,7 @@ class PropertyKeyTest {
         // When
         try (Transaction tx = db.beginTx()) {
             tx.createNode();
-            Node node = tx.getNodeById(nodeId);
+            var node = tx.getNodeByElementId(nodeId);
 
             // Then
             assertThat(node.getPropertyKeys()).hasSize(count);
