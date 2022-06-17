@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
@@ -42,7 +43,6 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
     val query = new LogicalQueryBuilder(this)
       .produceResults("x")
       .subqueryForeach()
-      .|.emptyResult()
       .|.create(createNode("n", "N"))
       .|.argument()
       .unwind(s"range(1, $sizeHint) AS x")
@@ -63,12 +63,38 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
         .withStatistics(nodesCreated = sizeHint, labelsAdded = sizeHint))
   }
 
+  test("subqueryForeach should forward the table from the LHS with union") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .subqueryForeach()
+      .|.union()
+      .|.|.create(createNode("m", "M"))
+      .|.|.argument()
+      .|.create(createNode("n", "N"))
+      .|.argument()
+      .unwind(s"range(1, $sizeHint) AS x")
+      .argument()
+      .build(readOnly = false)
+
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
+    consume(runtimeResult)
+
+    // then
+    val nodes = Iterables.asList(tx.getAllNodes)
+    nodes.size
+      .shouldBe(sizeHint * 2)
+
+    runtimeResult
+      .should(beColumns("x")
+        .withRows(singleColumn(Range.inclusive(1, sizeHint)))
+        .withStatistics(nodesCreated = sizeHint * 2, labelsAdded = sizeHint * 2))
+  }
+
   test("subqueryForeach with empty LHS should do nothing") {
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .emptyResult()
       .subqueryForeach()
-      .|.emptyResult()
       .|.create(createNode("n", "N"))
       .|.argument()
       .unwind("[] AS x")
@@ -91,7 +117,6 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
     val query = new LogicalQueryBuilder(this)
       .produceResults("x")
       .subqueryForeach()
-      .|.emptyResult()
       .|.setProperty("n", "prop", "x")
       .|.create(createNode("n", "N"))
       .|.argument("x")
@@ -118,6 +143,42 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
+  test("subqueryForeach should handle nested void subquery") {
+    // MATCH (n)
+    // CALL {
+    //  CALL {
+    //   CREATE (x: Foo)
+    //  }
+    // }
+    // RETURN *
+    val nNodes = given {
+      nodeGraph(sizeHint, "N")
+    }
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .subqueryForeach()
+      .|.subqueryForeach()
+      .|.|.create(createNode("m", "M"))
+      .|.|.argument()
+      .|.argument()
+      .allNodeScan("n", "N")
+      .build(readOnly = false)
+
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
+    consume(runtimeResult)
+
+    // then
+    val ns = tx.findNodes(Label.label("M")).asScala.toList
+    ns.size
+      .shouldEqual(sizeHint)
+
+    runtimeResult
+      .should(beColumns("n")
+        .withRows(singleColumn(nNodes))
+        .withStatistics(nodesCreated = sizeHint, labelsAdded = sizeHint))
+
+  }
+
   test("subqueryForeach should handle nested subqueryForeach") {
     // UNWIND range(1, $sizeHint) AS x
     // CALL {
@@ -136,9 +197,7 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
     val query = new LogicalQueryBuilder(this)
       .produceResults("x")
       .subqueryForeach()
-      .|.emptyResult()
       .|.subqueryForeach()
-      .|.|.emptyResult()
       .|.|.setProperty("m", "y", "y")
       .|.|.setProperty("m", "x", "x")
       .|.|.create(createNode("m", "M"))
@@ -194,7 +253,6 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
     val query = new LogicalQueryBuilder(this)
       .produceResults("x")
       .subqueryForeach()
-      .|.emptyResult()
       .|.setProperty("m", "x", "x")
       .|.apply(fromSubquery = true)
       .|.|.setProperty("m", "y", "y")
@@ -253,7 +311,6 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
       .setProperty("n", "x", "x")
       .apply(fromSubquery = true)
       .|.subqueryForeach()
-      .|.|.emptyResult()
       .|.|.setProperty("m", "y", "y")
       .|.|.setProperty("m", "x", "x")
       .|.|.create(createNode("m", "M"))
@@ -289,12 +346,54 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
         .withStatistics(nodesCreated = sizeHint * 3, labelsAdded = sizeHint * 3, propertiesSet = sizeHint * 6))
   }
 
+  test("subqueryForeach should handle multiple nested apply") {
+    // given
+    val n = Math.sqrt(sizeHint).toInt
+
+    val (xNodes, yNodes) = given {
+      (nodeGraph(n, "X"), nodeGraph(n, "Y"))
+
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .apply()
+      .|.apply()
+      .|.|.subqueryForeach()
+      .|.|.|.create(createNodeWithProperties("z", Seq("Z"), "{a: a}"))
+      .|.|.|.argument()
+      .|.|.unwind("[1,2,3] as a")
+      .|.|.argument()
+      .|.nodeByLabelScan("y", "Y")
+      .nodeByLabelScan("x", "X")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val expected = for {
+      x <- xNodes
+      y <- yNodes
+      _ <- Seq(1, 2, 3)
+    } yield Array(x, y)
+
+    runtimeResult
+      .should(beColumns("x", "y")
+        .withRows(expected)
+        .withStatistics(
+          nodesCreated = xNodes.size * yNodes.size * 3,
+          labelsAdded = xNodes.size * yNodes.size * 3,
+          propertiesSet = xNodes.size * yNodes.size * 3
+        ))
+  }
+
   test("subqueryForeach under exhaustive limit should execute side-effects") {
     val query = new LogicalQueryBuilder(this)
       .produceResults("x")
       .exhaustiveLimit(0)
       .subqueryForeach()
-      .|.emptyResult()
       .|.create(createNode("n", "N"))
       .|.argument()
       .unwind(s"range(1, $sizeHint) AS x")
