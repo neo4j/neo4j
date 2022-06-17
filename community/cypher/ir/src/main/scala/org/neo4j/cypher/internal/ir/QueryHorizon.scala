@@ -22,13 +22,10 @@ package org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.PatternComprehension
-import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters
+import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -60,14 +57,10 @@ trait QueryHorizon extends Foldable {
      */
   protected def getAllQGsWithLeafInfo: Seq[QgWithLeafInfo] = {
     val filtered = dependingExpressions.filter(!_.isInstanceOf[Variable])
-    val patternComprehensions = filtered.folder.findAllByClass[PatternComprehension].map((e: PatternComprehension) =>
-      ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator)
+    val iRExpressions: Seq[QgWithLeafInfo] = filtered.folder.findAllByClass[IRExpression].flatMap((e: IRExpression) =>
+      e.query.query.allQGsWithLeafInfo
     )
-    val patternExpressions = filtered.folder.findAllByClass[PatternExpression].map((e: PatternExpression) =>
-      ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator)
-    )
-    val qgs = patternComprehensions ++ patternExpressions :+ getQueryGraphFromDependingExpressions
-    qgs.map(QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves)
+    QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves(getQueryGraphFromDependingExpressions) +: iRExpressions
   }
 
   protected def getQueryGraphFromDependingExpressions: QueryGraph = {

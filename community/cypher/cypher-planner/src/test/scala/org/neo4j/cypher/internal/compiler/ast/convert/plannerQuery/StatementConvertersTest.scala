@@ -28,23 +28,17 @@ import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
-import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PathExpression
-import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.expressions.RelationshipChain
-import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.DistinctQueryProjection
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryPagination
@@ -56,6 +50,7 @@ import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
@@ -691,11 +686,19 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     // Then inner pattern query graph
     val relName = "anon_2"
     val nodeName = "anon_3"
-    val exp = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(Variable("a")(pos)), None, None, None) _,
-      RelationshipPattern(Some(Variable(relName)(pos)), None, None, None, None, OUTGOING) _,
-      NodePattern(Some(Variable(nodeName)(pos)), None, None, None) _
-    ) _) _)(Set(Variable(relName)(pos), Variable(nodeName)(pos)), "", "")) _
+    val exp = ExistsIRExpression(
+      PlannerQuery(
+        RegularSinglePlannerQuery(
+          QueryGraph(
+            argumentIds = Set("a"),
+            patternNodes = Set("a", nodeName),
+            patternRelationships =
+              Set(PatternRelationship(relName, ("a", nodeName), OUTGOING, Seq(), SimplePatternLength))
+          )
+        )
+      ),
+      s"exists((a)-[`${relName}`]->(`${nodeName}`))"
+    )(pos)
     val predicate = Predicate(Set("a"), exp)
     val selections = Selections(Set(predicate))
 
@@ -743,11 +746,21 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     // Then inner pattern query graph
     val relName = "anon_2"
     val nodeName = "anon_3"
-    val exp1 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(Variable("a")(pos)), None, None, None) _,
-      RelationshipPattern(Some(Variable(relName)(pos)), None, None, None, None, OUTGOING) _,
-      NodePattern(Some(Variable(nodeName)(pos)), None, None, None) _
-    ) _) _)(Set(Variable(relName)(pos), Variable(nodeName)(pos)), "", "")) _
+
+    val exp1 = ExistsIRExpression(
+      PlannerQuery(
+        RegularSinglePlannerQuery(
+          QueryGraph(
+            argumentIds = Set("a"),
+            patternNodes = Set("a", nodeName),
+            patternRelationships =
+              Set(PatternRelationship(relName, ("a", nodeName), OUTGOING, Seq(), SimplePatternLength))
+          )
+        )
+      ),
+      s"exists((a)-[`${relName}`]->(`${nodeName}`))"
+    )(pos)
+
     val exp2 = in(prop("a", "prop"), listOfInt(42))
     val orPredicate = Predicate(Set("a"), ors(exp1, exp2))
     val selections = Selections(Set(orPredicate))
@@ -763,11 +776,21 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     // Then inner pattern query graph
     val relName = "anon_2"
     val nodeName = "anon_3"
-    val exp1 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(Variable("a")(pos)), None, None, None) _,
-      RelationshipPattern(Some(Variable(relName)(pos)), None, None, None, None, OUTGOING) _,
-      NodePattern(Some(Variable(nodeName)(pos)), None, None, None) _
-    ) _) _)(Set(Variable(relName)(pos), Variable(nodeName)(pos)), "", "")) _
+
+    val exp1 = ExistsIRExpression(
+      PlannerQuery(
+        RegularSinglePlannerQuery(
+          QueryGraph(
+            argumentIds = Set("a"),
+            patternNodes = Set("a", nodeName),
+            patternRelationships =
+              Set(PatternRelationship(relName, ("a", nodeName), OUTGOING, Seq(), SimplePatternLength))
+          )
+        )
+      ),
+      s"exists((a)-[`${relName}`]->(`${nodeName}`))"
+    )(pos)
+
     val exp2 = in(prop("a", "prop"), listOfInt(42))
     val orPredicate = Predicate(Set("a"), ors(exp1, exp2))
     val selections = Selections(Set(orPredicate))
@@ -783,11 +806,21 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     // Then inner pattern query graph
     val relName = "anon_2"
     val nodeName = "anon_3"
-    val exp1 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(Variable("a")(pos)), None, None, None) _,
-      RelationshipPattern(Some(Variable(relName)(pos)), None, None, None, None, OUTGOING) _,
-      NodePattern(Some(Variable(nodeName)(pos)), None, None, None) _
-    ) _) _)(Set(Variable(relName)(pos), Variable(nodeName)(pos)), "", "")) _
+
+    val exp1 = ExistsIRExpression(
+      PlannerQuery(
+        RegularSinglePlannerQuery(
+          QueryGraph(
+            argumentIds = Set("a"),
+            patternNodes = Set("a", nodeName),
+            patternRelationships =
+              Set(PatternRelationship(relName, ("a", nodeName), OUTGOING, Seq(), SimplePatternLength))
+          )
+        )
+      ),
+      s"exists((a)-[`${relName}`]->(`${nodeName}`))"
+    )(pos)
+
     val exp2 = in(prop("a", "prop"), listOfInt(42))
     val exp3 = in(prop("a", "prop2"), listOfInt(21))
     val orPredicate = Predicate(Set("a"), ors(exp1, exp2, exp3))
@@ -1121,19 +1154,27 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val result =
       buildSinglePlannerQuery("MATCH (owner) WITH owner, COUNT(*) AS collected WHERE (owner)--() RETURN owner")
 
-    // (owner)-[anon_0]-(anon_0)
-    val patternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(varFor("owner")), None, None, None)(pos),
-      RelationshipPattern(Some(varFor("anon_2")), None, None, None, None, BOTH)(pos),
-      NodePattern(Some(varFor("anon_3")), None, None, None)(pos)
-    )(pos))(pos))(Set(varFor("anon_2"), varFor("anon_3")), "", "")
+    // (owner)-[anon_2]-(anon_3)
+    val subqueryExpression = ExistsIRExpression(
+      PlannerQuery(
+        RegularSinglePlannerQuery(
+          QueryGraph(
+            argumentIds = Set("owner"),
+            patternNodes = Set("owner", "anon_3"),
+            patternRelationships =
+              Set(PatternRelationship("anon_2", ("owner", "anon_3"), BOTH, Seq(), SimplePatternLength))
+          )
+        )
+      ),
+      s"exists((`owner`)-[`anon_2`]-(`anon_3`))"
+    )(pos)
 
     val expectation = RegularSinglePlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("owner")),
       horizon = AggregatingQueryProjection(
         groupingExpressions = Map("owner" -> varFor("owner")),
         aggregationExpressions = Map("collected" -> CountStar()(pos)),
-        selections = Selections(Set(Predicate(Set("owner"), exists(patternExpression))))
+        selections = Selections(Set(Predicate(Set("owner"), subqueryExpression)))
       ),
       tail = Some(RegularSinglePlannerQuery(
         queryGraph = QueryGraph(argumentIds = Set("collected", "owner")),

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.Selections.containsPatternPredicates
+import org.neo4j.cypher.internal.ir.Selections.containsExistsSubquery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case object selectHasLabelWithJoin extends SelectionCandidateGenerator with SelectionCandidateGeneratorFactory {
@@ -43,7 +43,7 @@ case object selectHasLabelWithJoin extends SelectionCandidateGenerator with Sele
     if (!context.planContext.canLookupNodesByLabel) {
       Iterator.empty
     } else {
-      unsolvedPredicates.iterator.filterNot(containsPatternPredicates).collect {
+      unsolvedPredicates.iterator.filterNot(containsExistsSubquery).collect {
         case s @ HasLabels(variable: Variable, Seq(labelName))
           if queryGraph.patternNodes.contains(variable.name) && !queryGraph.argumentIds.contains(variable.name) =>
           val providedOrder = ResultOrdering.providedOrderForLabelScan(

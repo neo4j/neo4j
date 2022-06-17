@@ -38,16 +38,25 @@ import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Ors
-import org.neo4j.cypher.internal.expressions.PatternComprehension
-import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
-import org.neo4j.cypher.internal.expressions.functions.Exists
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Size
+import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.PlannerQuery
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.QueryPagination
+import org.neo4j.cypher.internal.ir.RegularQueryProjection
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
+import org.neo4j.cypher.internal.ir.ast.ListIRExpression
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
@@ -96,38 +105,48 @@ case object getDegreeRewriter extends Rewriter {
     case e @ Equals(value, GetDegree(node, typ, dir)) =>
       HasDegree(node, typ, dir, value)(e.position)
 
-    // SIZE( (a)-[]->() )
-    case SizeFunctionOfPatternComprehension(node, types, dir) =>
+    // SIZE( [p=(a)-[]->() | p] )
+    case SizeFunctionOfListIRExpression(node, types, dir) =>
       calculateUsingGetDegree(node, types, dir)
 
     // EXISTS( (a)-[]->() ) rewritten to GetDegree( (a)-[]->() ) > 0
-    case ExistsFunctionOfPatternExpressions(node, types, dir) =>
+    case EligibleExistsIRExpression(node, types, dir) =>
       existsToUsingHasDegreeGreaterThan(node, types, dir)
   }
 
   private def calculateUsingGetDegree(
-    node: LogicalVariable,
+    node: String,
     types: Seq[RelTypeName],
     dir: SemanticDirection
   ): Expression = {
     types
-      .map(typ => GetDegree(node.copyId, Some(typ), dir)(typ.position))
+      .map(typ => GetDegree(Variable(node)(InputPosition.NONE), Some(typ), dir)(typ.position))
       .reduceOption[Expression](Add(_, _)(InputPosition.NONE))
-      .getOrElse(GetDegree(node.copyId, None, dir)(InputPosition.NONE))
+      .getOrElse(GetDegree(Variable(node)(InputPosition.NONE), None, dir)(InputPosition.NONE))
   }
 
   private def existsToUsingHasDegreeGreaterThan(
-    node: LogicalVariable,
+    node: String,
     types: Seq[RelTypeName],
     dir: SemanticDirection
   ): Expression = {
     val all = types.map(typ =>
-      HasDegreeGreaterThan(node.copyId, Some(typ), dir, SignedDecimalIntegerLiteral("0")(InputPosition.NONE))(
+      HasDegreeGreaterThan(
+        Variable(node)(InputPosition.NONE),
+        Some(typ),
+        dir,
+        SignedDecimalIntegerLiteral("0")(InputPosition.NONE)
+      )(
         typ.position
       )
     )
     if (all.isEmpty) {
-      HasDegreeGreaterThan(node.copyId, None, dir, SignedDecimalIntegerLiteral("0")(InputPosition.NONE))(
+      HasDegreeGreaterThan(
+        Variable(node)(InputPosition.NONE),
+        None,
+        dir,
+        SignedDecimalIntegerLiteral("0")(InputPosition.NONE)
+      )(
         InputPosition.NONE
       )
     } else if (all.size == 1) {
@@ -139,16 +158,16 @@ case object getDegreeRewriter extends Rewriter {
 
   def isEligible(
     pe: Expression,
-    node: LogicalVariable,
-    rel: LogicalVariable,
-    otherNode: LogicalVariable,
+    node: String,
+    rel: String,
+    otherNode: String,
     types: Seq[RelTypeName],
     dir: SemanticDirection
-  ): Option[(LogicalVariable, Seq[RelTypeName], SemanticDirection)] = {
+  ): Option[(String, Seq[RelTypeName], SemanticDirection)] = {
     val peDeps = pe.dependencies
-    if (peDeps.contains(node) && !peDeps.contains(rel) && !peDeps.contains(otherNode)) {
+    if (peDeps.exists(_.name == node) && !peDeps.exists(_.name == rel) && !peDeps.exists(_.name == otherNode)) {
       Some((node, types, dir))
-    } else if (!peDeps.contains(node) && !peDeps.contains(rel) && peDeps.contains(otherNode)) {
+    } else if (!peDeps.exists(_.name == node) && !peDeps.exists(_.name == rel) && peDeps.exists(_.name == otherNode)) {
       Some((otherNode, types, dir.reversed))
     } else {
       None
@@ -172,42 +191,78 @@ object RelationshipsPatternSolvableByGetDegree {
   }
 }
 
-object ExistsFunctionOfPatternExpressions {
+object QuerySolvableByGetDegree {
 
-  def unapply(arg: Any): Option[(LogicalVariable, Seq[RelTypeName], SemanticDirection)] = arg match {
-    case Exists(
-        pe @ PatternExpression(RelationshipsPatternSolvableByGetDegree(
+  object SetExtractor {
+    def unapplySeq[T](s: Set[T]): Option[Seq[T]] = Some(s.toSeq)
+  }
+
+  def unapply(arg: Any): Option[(String, String, String, Seq[RelTypeName], SemanticDirection)] = arg match {
+    case PlannerQuery(RegularSinglePlannerQuery(
+        QueryGraph(
+          SetExtractor(PatternRelationship(
+            relationship,
+            (firstNode, secondNode),
+            direction,
+            types,
+            SimplePatternLength
+          )),
+          SetExtractor(),
+          patternNodes,
+          SetExtractor(argument),
+          Selections.empty,
+          IndexedSeq(),
+          SetExtractor(),
+          SetExtractor(),
+          IndexedSeq()
+        ),
+        InterestingOrder.empty,
+        RegularQueryProjection(_, QueryPagination.empty, Selections.empty),
+        None,
+        None
+      )) if patternNodes.contains(argument) && patternNodes == Set(firstNode, secondNode) =>
+      Some((firstNode, relationship, secondNode, types, direction))
+    case _ => None
+  }
+}
+
+object EligibleExistsIRExpression {
+
+  def unapply(arg: Any): Option[(String, Seq[RelTypeName], SemanticDirection)] = arg match {
+    case e @ ExistsIRExpression(
+        QuerySolvableByGetDegree(
           node,
           rel,
           otherNode,
           types,
           dir
-        ))
+        ),
+        _
       ) =>
-      isEligible(pe, node, rel, otherNode, types, dir)
+      isEligible(e, node, rel, otherNode, types, dir)
 
     case _ => None
   }
 }
 
-object SizeFunctionOfPatternComprehension {
+object SizeFunctionOfListIRExpression {
 
-  def unapply(arg: Any): Option[(LogicalVariable, Seq[RelTypeName], SemanticDirection)] = arg match {
+  def unapply(arg: Any): Option[(String, Seq[RelTypeName], SemanticDirection)] = arg match {
     case Size(
-        pe @ PatternComprehension(
-          _,
-          RelationshipsPatternSolvableByGetDegree(
+        e @ ListIRExpression(
+          QuerySolvableByGetDegree(
             node,
             rel,
             otherNode,
             types,
             dir
           ),
-          None,
+          _,
+          _,
           _
         )
       ) =>
-      isEligible(pe, node, rel, otherNode, types, dir)
+      isEligible(e, node, rel, otherNode, types, dir)
 
     case _ => None
   }

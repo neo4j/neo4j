@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.CreateIrExpressions
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.GetDegree
@@ -45,6 +46,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.expressions.functions.Size
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -52,15 +54,19 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
   // All pattern elements have been named at this point, so the outer scope of PatternExpression is used to signal which expressions come from the outside.
   // In the test names, empty names denote anonymous notes, i.e. ones that do not come from the outside.
 
+  private def createIrExpressions = CreateIrExpressions(new AnonymousVariableNameGenerator())
+
   test("Rewrite exists( (a)-[:FOO]->() ) to GetDegree( (a)-[:FOO]->() ) > 0") {
-    val incoming = Exists(patternExpression(from = Some("a"), relationships = Seq("FOO")))(pos)
+    val incoming =
+      createIrExpressions(Exists(patternExpression(from = Some("a"), relationships = Seq("FOO")))(pos))
     val expected = HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(0))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
   }
 
   test("Rewrite exists( ()-[:FOO]->(a) ) to GetDegree( (a)<-[:FOO]-() ) > 0") {
-    val incoming = Exists(patternExpression(to = Some("a"), relationships = Seq("FOO")))(pos)
+    val incoming =
+      createIrExpressions(Exists(patternExpression(to = Some("a"), relationships = Seq("FOO")))(pos))
     val expected = HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(0))(pos)
     getDegreeRewriter(incoming) should equal(expected)
   }
@@ -68,7 +74,9 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
   test(
     "Rewrite exists( (a)-[:FOO|:BAR]->() ) to HasDegreeGreaterThan( (a)-[:FOO]->(), 0) OR HasDegreeGreaterThan( (a)-[:BAR]->(), 0)"
   ) {
-    val incoming = Exists.asInvocation(patternExpression(from = Some("a"), relationships = Seq("FOO", "BAR")))(pos)
+    val incoming = createIrExpressions(Exists.asInvocation(
+      patternExpression(from = Some("a"), relationships = Seq("FOO", "BAR"))
+    )(pos))
     val expected =
       ors(
         HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(0))(pos),
@@ -79,38 +87,44 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
   }
 
   test("Does not rewrite exists((a {prop: 5})-[:FOO]->()) ") {
-    val incoming = Exists(patternExpression(
+    val incoming = createIrExpressions(Exists(patternExpression(
       from = Some("a"),
       to = Some("b"),
       relationships = Seq("FOO"),
       fromPropertyPredicate = Some(mapOf("prop" -> literalInt(5)))
-    ))(pos)
+    ))(pos))
 
     getDegreeRewriter(incoming) should equal(incoming)
   }
 
   test("Does not rewrite exists( (a)-[:FOO]->(b) )") {
-    val incoming = Exists(patternExpression(from = Some("a"), to = Some("b"), relationships = Seq("FOO")))(pos)
+    val incoming =
+      createIrExpressions(Exists(patternExpression(from = Some("a"), to = Some("b"), relationships = Seq("FOO")))(
+        pos
+      ))
 
     getDegreeRewriter(incoming) should equal(incoming)
   }
 
   test("Rewrite size([ (a)-[:FOO]->() | 1 ]) to GetDegree( (a)-[:FOO]->() )") {
-    val incoming = Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos)
+    val incoming =
+      createIrExpressions(Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos))
     val expected = GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.OUTGOING)(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
   }
 
   test("Rewrite size([ ()-[:FOO]->(a) | 1 ]) to GetDegree( (a)<-[:FOO]-() )") {
-    val incoming = Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos)
+    val incoming =
+      createIrExpressions(Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos))
     val expected = GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.INCOMING)(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
   }
 
   test("Rewrite size([ (a)-[:FOO|:BAR]->() | 1 ]) to GetDegree( (a)-[:FOO]->() ) + GetDegree( (a)-[:BAR]->() )") {
-    val incoming = Size(patternComprehension(from = Some("a"), relationships = Seq("FOO", "BAR")))(pos)
+    val incoming =
+      createIrExpressions(Size(patternComprehension(from = Some("a"), relationships = Seq("FOO", "BAR")))(pos))
     val expected =
       add(
         GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING)(pos),
@@ -121,25 +135,33 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
   }
 
   test("Does not rewrite size([ (a)-[:FOO]->(b) | 1 ]) ") {
-    val incoming = Size(patternComprehension(from = Some("a"), to = Some("b"), relationships = Seq("FOO")))(pos)
+    val incoming =
+      createIrExpressions(Size(patternComprehension(from = Some("a"), to = Some("b"), relationships = Seq("FOO")))(
+        pos
+      ))
 
     getDegreeRewriter(incoming) should equal(incoming)
   }
 
   test("Does not rewrite size([ (a)-[:FOO]->() WHERE a.prop | 1 ]) ") {
-    val incoming = Size(patternComprehension(
+    val incoming = createIrExpressions(Size(patternComprehension(
       from = Some("a"),
       to = Some("b"),
       relationships = Seq("FOO"),
       predicate = Some(prop("a", "prop"))
-    ))(pos)
+    ))(pos))
 
     getDegreeRewriter(incoming) should equal(incoming)
   }
 
   test("Rewrite size([ (a)-[:FOO]->() | 1 ]) > 5 to HasDegreeGreaterThan( (a)-[:FOO]->() , 5)") {
     val incoming =
-      GreaterThan(Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos), literalInt(5))(pos)
+      createIrExpressions(GreaterThan(
+        Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos),
+        literalInt(5)
+      )(
+        pos
+      ))
     val expected = HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
@@ -147,7 +169,12 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("Rewrite size([ ()-[:FOO]->(a) | 1 ]) > 5 to HasDegreeGreaterThan( (a)<-[:FOO]-() , 5)") {
     val incoming =
-      GreaterThan(Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos), literalInt(5))(pos)
+      createIrExpressions(GreaterThan(
+        Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos),
+        literalInt(5)
+      )(
+        pos
+      ))
     val expected = HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
@@ -155,7 +182,12 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("Rewrite 5 > size([ (a)-[:FOO]->() | 1 ]) to HasDegreeLessThan( (a)-[:FOO]->() , 5)") {
     val incoming =
-      GreaterThan(literalInt(5), Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos))(pos)
+      createIrExpressions(GreaterThan(
+        literalInt(5),
+        Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos)
+      )(
+        pos
+      ))
     val expected = HasDegreeLessThan(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
@@ -163,47 +195,52 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("Rewrite 5 > size([ ()-[:FOO]->(a) | 1 ]) to HasDegreeLessThan( (a)<-[:FOO]-() , 5)") {
     val incoming =
-      GreaterThan(literalInt(5), Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos))(pos)
+      createIrExpressions(GreaterThan(
+        literalInt(5),
+        Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos)
+      )(
+        pos
+      ))
     val expected = HasDegreeLessThan(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
   }
 
   test("Rewrite size([ (a)-[:FOO]->() | 1 ]) >= 5 to HasDegreeGreaterThanOrEqual( (a)-[:FOO]->() , 5)") {
-    val incoming = GreaterThanOrEqual(
+    val incoming = createIrExpressions(GreaterThanOrEqual(
       Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos),
       literalInt(5)
-    )(pos)
+    )(pos))
     val expected = HasDegreeGreaterThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
   }
 
   test("Rewrite size([ ()-[:FOO]->(a) | 1 ]) >= 5 to HasDegreeGreaterThanOrEqual( (a)<-[:FOO]-() , 5)") {
-    val incoming = GreaterThanOrEqual(
+    val incoming = createIrExpressions(GreaterThanOrEqual(
       Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos),
       literalInt(5)
-    )(pos)
+    )(pos))
     val expected = HasDegreeGreaterThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
   }
 
   test("Rewrite 5 >= size([ (a)-[:FOO]->() | 1 ]) to HasDegreeLessThanOrEqual( (a)-[:FOO]->() , 5)") {
-    val incoming = GreaterThanOrEqual(
+    val incoming = createIrExpressions(GreaterThanOrEqual(
       literalInt(5),
       Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos)
-    )(pos)
+    )(pos))
     val expected = HasDegreeLessThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
   }
 
   test("Rewrite 5 >= size([ ()-[:FOO]->(a) | 1 ]) to HasDegreeLessThanOrEqual( (a)<-[:FOO]-() , 5)") {
-    val incoming = GreaterThanOrEqual(
+    val incoming = createIrExpressions(GreaterThanOrEqual(
       literalInt(5),
       Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos)
-    )(pos)
+    )(pos))
     val expected = HasDegreeLessThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
@@ -211,7 +248,12 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("Rewrite size([ (a)-[:FOO]->() | 1 ]) = 5 to HasDegree( (a)-[:FOO]->() , 5)") {
     val incoming =
-      Equals(Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos), literalInt(5))(pos)
+      createIrExpressions(Equals(
+        Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos),
+        literalInt(5)
+      )(
+        pos
+      ))
     val expected = HasDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
@@ -219,7 +261,12 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("Rewrite size([ ()-[:FOO]->(a) | 1 ]) = 5 to HasDegree( (a)<-[:FOO]-() , 5)") {
     val incoming =
-      Equals(Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos), literalInt(5))(pos)
+      createIrExpressions(Equals(
+        Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos),
+        literalInt(5)
+      )(
+        pos
+      ))
     val expected = HasDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
@@ -227,7 +274,12 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("Rewrite 5 = size([ (a)-[:FOO]->() | 1 ]) to HasDegree( (a)-[:FOO]->() , 5)") {
     val incoming =
-      Equals(literalInt(5), Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos))(pos)
+      createIrExpressions(Equals(
+        literalInt(5),
+        Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos)
+      )(
+        pos
+      ))
     val expected = HasDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
@@ -235,17 +287,22 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("Rewrite 5 = size([ ()-[:FOO]->(a) | 1 ]) to HasDegree( (a)<-[:FOO]-() , 5)") {
     val incoming =
-      Equals(literalInt(5), Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos))(pos)
+      createIrExpressions(Equals(
+        literalInt(5),
+        Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos)
+      )(
+        pos
+      ))
     val expected = HasDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
   }
 
   test("Rewrite size([ (a)-[:FOO]->() | 1 ]) <= 5 to HasDegreeLessThanOrEqual( (a)-[:FOO]->() , 5)") {
-    val incoming = LessThanOrEqual(
+    val incoming = createIrExpressions(LessThanOrEqual(
       Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos),
       literalInt(5)
-    )(pos)
+    )(pos))
     val expected = HasDegreeLessThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
@@ -253,17 +310,22 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("Rewrite size([ ()-[:FOO]->(a) | 1 ]) <= 5 to HasDegreeLessThanOrEqual( (a)<-[:FOO]-() , 5)") {
     val incoming =
-      LessThanOrEqual(Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos), literalInt(5))(pos)
+      createIrExpressions(LessThanOrEqual(
+        Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos),
+        literalInt(5)
+      )(
+        pos
+      ))
     val expected = HasDegreeLessThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
   }
 
   test("Rewrite 5 <= size([ (a)-[:FOO]->() | 1]) to HasDegreeGreaterThanOrEqual( (a)-[:FOO]->() , 5)") {
-    val incoming = LessThanOrEqual(
+    val incoming = createIrExpressions(LessThanOrEqual(
       literalInt(5),
       Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos)
-    )(pos)
+    )(pos))
     val expected = HasDegreeGreaterThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
@@ -271,7 +333,12 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("Rewrite 5 <= size([ ()-[:FOO]->(a) | 1]) to HasDegreeGreaterThanOrEqual( (a)<-[:FOO]-() , 0)") {
     val incoming =
-      LessThanOrEqual(literalInt(5), Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos))(pos)
+      createIrExpressions(LessThanOrEqual(
+        literalInt(5),
+        Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos)
+      )(
+        pos
+      ))
     val expected = HasDegreeGreaterThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
@@ -279,7 +346,12 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("Rewrite size([ (a)-[:FOO]->() | 1 ]) < 5 to HasDegreeLessThan( (a)-[:FOO]->() , 0)") {
     val incoming =
-      LessThan(Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos), literalInt(5))(pos)
+      createIrExpressions(LessThan(
+        Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos),
+        literalInt(5)
+      )(
+        pos
+      ))
     val expected = HasDegreeLessThan(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
@@ -287,7 +359,12 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("Rewrite size([ ()-[:FOO]->(a) | 1 ]) < 5 to HasDegreeLessThan( (a)<-[:FOO]-() , 0)") {
     val incoming =
-      LessThan(Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos), literalInt(5))(pos)
+      createIrExpressions(LessThan(
+        Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos),
+        literalInt(5)
+      )(
+        pos
+      ))
     val expected = HasDegreeLessThan(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
@@ -295,7 +372,12 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("Rewrite 5 < size([ (a)-[:FOO]->() | 1 ]) to HasDegreeGreaterThan( (a)-[:FOO]->() , 5)") {
     val incoming =
-      LessThan(literalInt(5), Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos))(pos)
+      createIrExpressions(LessThan(
+        literalInt(5),
+        Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos)
+      )(
+        pos
+      ))
     val expected = HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
@@ -303,7 +385,12 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("Rewrite 5 < size([ ()-[:FOO]->(a) | 1 ]) to HasDegreeGreaterThan( (a)<-[:FOO]-() , 5)") {
     val incoming =
-      LessThan(literalInt(5), Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos))(pos)
+      createIrExpressions(LessThan(
+        literalInt(5),
+        Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos)
+      )(
+        pos
+      ))
     val expected = HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)

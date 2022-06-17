@@ -28,11 +28,10 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PartialPredicate
-import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.expressions.functions.Exists
+import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -165,6 +164,8 @@ case class Selections private (predicates: Set[Predicate]) {
 
 object Selections {
 
+  val empty: Selections = Selections(Set())
+
   def apply(): Selections = new Selections(Set.empty)
 
   /**
@@ -188,12 +189,12 @@ object Selections {
   def from(expressions: Iterable[Expression]): Selections = Selections(expressions.flatMap(_.asPredicates).toSet)
   def from(expressions: Expression): Selections = Selections(expressions.asPredicates)
 
-  def containsPatternPredicates(e: Expression): Boolean = e match {
-    case _: ExistsSubClause                => true
-    case Not(_: ExistsSubClause)           => true
-    case Exists(_: PatternExpression)      => true
-    case Not(Exists(_: PatternExpression)) => true
-    case Ors(exprs)                        => exprs.exists(containsPatternPredicates)
-    case _                                 => false
+  def containsExistsSubquery(e: Expression): Boolean = e match {
+    case _: ExistsSubClause         => true
+    case _: ExistsIRExpression      => true
+    case Not(_: ExistsSubClause)    => true
+    case Not(_: ExistsIRExpression) => true
+    case Ors(exprs)                 => exprs.exists(containsExistsSubquery)
+    case _                          => false
   }
 }

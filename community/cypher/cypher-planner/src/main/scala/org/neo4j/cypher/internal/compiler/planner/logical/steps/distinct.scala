@@ -32,7 +32,7 @@ object distinct {
     context: LogicalPlanningContext
   ): LogicalPlan = {
 
-    val solver = PatternExpressionSolver.solverFor(plan, context)
+    val solver = SubqueryExpressionSolver.solverFor(plan, context)
     val groupingExpressionsMap = distinctQueryProjection.groupingExpressions.map { case (k, v) =>
       (k, solver.solve(v, Some(k)))
     }

@@ -104,7 +104,8 @@ object StatementConverters {
     semanticTable: SemanticTable,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): PlannerQuery = {
-    val plannerQueryPart = toPlannerQueryPart(query.part, semanticTable, anonymousVariableNameGenerator)
+    val rewrittenQuery = query.endoRewrite(CreateIrExpressions(anonymousVariableNameGenerator))
+    val plannerQueryPart = toPlannerQueryPart(rewrittenQuery.part, semanticTable, anonymousVariableNameGenerator)
     PlannerQuery(plannerQueryPart)
   }
 

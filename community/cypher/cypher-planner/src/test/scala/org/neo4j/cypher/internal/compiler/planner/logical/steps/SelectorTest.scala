@@ -25,17 +25,15 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.SelectorHeuristic
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.PatternExpression
-import org.neo4j.cypher.internal.expressions.RelationshipChain
-import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.expressions.functions.Exists
+import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -189,22 +187,27 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should not introduce semi apply for unsolved exclusive pattern predicate when nodes not applicable") {
     // MATCH (a) WHERE (a)-->()
-    val relChain = RelationshipChain(
-      NodePattern(Some(varFor("a")), None, None, None) _,
-      RelationshipPattern(
-        Some(varFor("  UNNAMED1")),
-        None,
-        None,
-        None,
-        None,
-        SemanticDirection.OUTGOING
-      ) _,
-      NodePattern(Some(varFor("  UNNAMED2")), None, None, None) _
-    ) _
+    val subqueryExpression = ExistsIRExpression(
+      PlannerQuery(
+        RegularSinglePlannerQuery(
+          QueryGraph(
+            argumentIds = Set("a"),
+            patternNodes = Set("a", "  UNNAMED2"),
+            patternRelationships =
+              Set(PatternRelationship(
+                "  UNNAMED1",
+                ("a", "  UNNAMED2"),
+                SemanticDirection.OUTGOING,
+                Seq.empty,
+                SimplePatternLength
+              ))
+          )
+        )
+      ),
+      ""
+    )(pos)
 
-    val patternExp = Exists(PatternExpression(RelationshipsPattern(relChain) _)(Set(varFor("a")), "", "")) _
-
-    val predicate = Predicate(Set("a"), patternExp)
+    val predicate = Predicate(Set("a"), subqueryExpression)
     val selections = Selections(Set(predicate))
 
     val qg = QueryGraph(

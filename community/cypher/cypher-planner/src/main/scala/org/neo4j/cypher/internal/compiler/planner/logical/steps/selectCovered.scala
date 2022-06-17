@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.Selections.containsPatternPredicates
+import org.neo4j.cypher.internal.ir.Selections.containsExistsSubquery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case object selectCovered extends SelectionCandidateGenerator with SelectionCandidateGeneratorFactory {
@@ -37,7 +37,7 @@ case object selectCovered extends SelectionCandidateGenerator with SelectionCand
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
   ): Iterator[SelectionCandidate] = {
-    val unsolvedScalarPredicates = unsolvedPredicates.filterNot(containsPatternPredicates)
+    val unsolvedScalarPredicates = unsolvedPredicates.filterNot(containsExistsSubquery)
 
     if (unsolvedScalarPredicates.isEmpty) {
       Iterator.empty

@@ -40,12 +40,17 @@ import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadRemoveConflict
 import org.neo4j.cypher.internal.ir.MergeNodePattern
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.RegularQueryProjection
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
+import org.neo4j.cypher.internal.ir.ast.ListIRExpression
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setProperty
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -329,6 +334,32 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     )
 
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe empty
+  }
+
+  test("allQueryGraphs should include IRExpressions recursively") {
+    val innerQg1 = QueryGraph(patternNodes = Set("a"))
+    val innerQg2 = QueryGraph(patternNodes = Set("b"))
+    val qg = QueryGraph(
+      selections = Selections.from(Seq(
+        ExistsIRExpression(PlannerQuery(RegularSinglePlannerQuery(innerQg1)), "")(pos),
+        ListIRExpression(PlannerQuery(RegularSinglePlannerQuery(innerQg2)), "", "", "")(pos)
+      ))
+    )
+
+    qg.allQGsWithLeafInfo.map(_.queryGraph) should (contain(innerQg1) and contain(innerQg2))
+  }
+
+  test("allQueryGraphs in horizon should include IRExpressions recursively") {
+    val innerQg1 = QueryGraph(patternNodes = Set("a"))
+    val innerQg2 = QueryGraph(patternNodes = Set("b"))
+    val horizon = RegularQueryProjection(
+      Map(
+        "a" -> ExistsIRExpression(PlannerQuery(RegularSinglePlannerQuery(innerQg1)), "")(pos),
+        "b" -> ListIRExpression(PlannerQuery(RegularSinglePlannerQuery(innerQg2)), "", "", "")(pos)
+      )
+    )
+
+    horizon.allQueryGraphs.map(_.queryGraph) should (contain(innerQg1) and contain(innerQg2))
   }
 
   private def createNode(name: String, labels: String*) =

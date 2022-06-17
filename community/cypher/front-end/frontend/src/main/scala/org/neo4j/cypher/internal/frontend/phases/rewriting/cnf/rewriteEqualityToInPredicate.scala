@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.util.bottomUp
 case object rewriteEqualityToInPredicate extends StatementRewriter with StepSequencer.Step
     with PlanPipelineTransformerFactory {
 
-  override def instance(from: BaseState, ignored: BaseContext): Rewriter = bottomUp(Rewriter.lift {
+  val instance: Rewriter = bottomUp(Rewriter.lift {
     // if f is deterministic: f(a) = value => f(a) IN [value]
     case predicate @ Equals(DeterministicFunctionInvocation(invocation), value) =>
       In(invocation, ListLiteral(Seq(value))(value.position))(predicate.position)
@@ -53,6 +53,8 @@ case object rewriteEqualityToInPredicate extends StatementRewriter with StepSequ
     case predicate @ Equals(prop @ Property(id: Variable, propKeyName), idValueExpr) =>
       In(prop, ListLiteral(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
   })
+
+  override def instance(from: BaseState, ignored: BaseContext): Rewriter = instance
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 

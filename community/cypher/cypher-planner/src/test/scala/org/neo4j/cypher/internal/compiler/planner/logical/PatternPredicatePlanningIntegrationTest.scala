@@ -62,6 +62,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   private val planner = plannerBuilder()
     .setAllNodesCardinality(100)
     .setLabelCardinality("B", 10)
+    .setLabelCardinality("C", 10)
+    .setLabelCardinality("D", 1)
     .setLabelCardinality("Foo", 10)
     .setLabelCardinality("Person", 10)
     .setLabelCardinality("ComedyClub", 10)
@@ -77,6 +79,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     .setRelationshipCardinality("()-[:X]-(:Foo)", 10)
     .setRelationshipCardinality("()-[:Y]-()", 10)
     .setRelationshipCardinality("()-[]->(:B)", 10)
+    .setRelationshipCardinality("()-[]->(:C)", 10)
+    .setRelationshipCardinality("()-[]->(:D)", 10)
     .setRelationshipCardinality("()-[:KNOWS]-()", 10)
     .setRelationshipCardinality("(:Person)-[:KNOWS]-()", 10)
     .setRelationshipCardinality("(:Person)-[:KNOWS]-(:Person)", 10)
@@ -95,6 +99,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     .addNodeIndex("Label", Seq("prop"), 1.0, 0.1, indexType = IndexType.RANGE)
     .addNodeIndex("UniqueLabel", Seq("prop"), 1.0, 0.01, isUnique = true, indexType = IndexType.RANGE)
     .addNodeIndex("TextLabel", Seq("prop"), 1.0, 0.01, indexType = IndexType.TEXT)
+    .addNodeIndex("D", Seq("prop"), 1.0, 0.01)
     .build()
 
   private val reduceExpr = reduce(
@@ -143,8 +148,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       planner.planBuilder()
         .produceResults("`u.id`")
         .projection("u.id AS `u.id`")
-        .sort(Seq(Ascending("size([(u)-[r:FOLLOWS]->(u2:User) | u2.id])")))
-        .projection("size(anon_1) AS `size([(u)-[r:FOLLOWS]->(u2:User) | u2.id])`")
+        .sort(Seq(Ascending("size(anon_6)")))
+        .projection("size(anon_1) AS `size(anon_6)`")
         .rollUpApply("anon_1", "anon_0")
         .|.projection("u2.id AS anon_0")
         .|.filter("u2:User")
@@ -1257,11 +1262,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       """.stripMargin
 
     val nestedPlan = planner.subPlanBuilder()
+      .projection("b.age AS anon_0")
       .expand("(a)-[anon_2]->(b)")
       .allNodeScan("a")
       .build()
     val nestedCollection =
-      NestedPlanCollectExpression(nestedPlan, prop("b", "age"), "[(a)-[`anon_2`]->(b) | b.age]")(pos)
+      NestedPlanCollectExpression(nestedPlan, varFor("anon_0"), "[(a)-[`anon_2`]->(b) | b.age]")(pos)
     val reduceExprWithNestedPlan = reduce(
       varFor("sum", pos),
       literalInt(0, pos),
@@ -1358,11 +1364,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       """.stripMargin
 
     val nestedPlan = planner.subPlanBuilder()
+      .projection("b.age AS anon_0")
       .expand("(a)-[anon_2]->(b)")
       .allNodeScan("a")
       .build()
     val nestedCollection =
-      NestedPlanCollectExpression(nestedPlan, prop("b", "age"), "[(a)-[`anon_2`]->(b) | b.age]")(pos)
+      NestedPlanCollectExpression(nestedPlan, varFor("anon_0"), "[(a)-[`anon_2`]->(b) | b.age]")(pos)
     val reduceExprWithNestedPlan = reduce(
       varFor("sum", pos),
       literalInt(0, pos),
@@ -1391,11 +1398,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       """.stripMargin
 
     val nestedPlan = planner.subPlanBuilder()
+      .projection("b.age AS anon_0")
       .expand("(a)-[anon_4]->(b)")
       .allNodeScan("a")
       .build()
     val nestedCollection =
-      NestedPlanCollectExpression(nestedPlan, prop("b", "age"), "[(a)-[`anon_4`]->(b) | b.age]")(pos)
+      NestedPlanCollectExpression(nestedPlan, varFor("anon_0"), "[(a)-[`anon_4`]->(b) | b.age]")(pos)
     val reduceExprWithNestedPlan = reduce(
       varFor("sum", pos),
       literalInt(0, pos),
@@ -1425,11 +1433,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       """.stripMargin
 
     val nestedPlan = planner.subPlanBuilder()
+      .projection("b.age AS anon_0")
       .expand("(a)-[anon_4]->(b)")
       .allNodeScan("a")
       .build()
     val nestedCollection =
-      NestedPlanCollectExpression(nestedPlan, prop("b", "age"), "[(a)-[`anon_4`]->(b) | b.age]")(pos)
+      NestedPlanCollectExpression(nestedPlan, varFor("anon_0"), "[(a)-[`anon_4`]->(b) | b.age]")(pos)
     val reduceExprWithNestedPlan = reduce(
       varFor("sum", pos),
       literalInt(0, pos),
@@ -1619,6 +1628,132 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     plan.folder.treeExists({
       case _: RollUpApply => true
     }) should be(false)
+  }
+
+  test("should solve and name pattern comprehensions with NestedPlanExpression for Projection") {
+    val q =
+      """
+        |MATCH (n)
+        |RETURN [(n)-->(b) | b.age][1] AS age
+        """.stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+
+    val expectedNestedPlan = planner.subPlanBuilder()
+      .limit(add(literalInt(1), literalInt(1)))
+      .projection("b.age AS anon_0")
+      .expand("(n)-[anon_2]->(b)")
+      .argument("n")
+      .build()
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .projection(Map("age" -> containerIndex(
+          NestedPlanCollectExpression(expectedNestedPlan, varFor("anon_0"), "[(n)-[`anon_2`]->(b) | b.age]")(pos),
+          literalInt(1)
+        )))
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("should solve and name pattern expressions with NestedPlanExpression for Projection") {
+    val q =
+      """
+        |MATCH (n)
+        |RETURN exists( (n)-->()-->() ) AS foo
+        """.stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+
+    val expectedNestedPlan = planner.subPlanBuilder()
+      .expand("(anon_3)-[anon_4]->(anon_5)")
+      .expand("(n)-[anon_2]->(anon_3)")
+      .argument("n")
+      .build()
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .projection(Map("foo" ->
+          NestedPlanExistsExpression(expectedNestedPlan, "exists((n)-[`anon_2`]->(`anon_3`)-[`anon_4`]->(`anon_5`))")(
+            pos
+          )))
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("should solve and name pattern expressions with inlined Label filter with NestedPlanExpression for Projection") {
+    val q =
+      """
+        |MATCH (n)
+        |RETURN exists( (n)-->(:B) ) AS foo
+        """.stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+
+    val expectedNestedPlan = planner.subPlanBuilder()
+      .filter("anon_3:B")
+      .expand("(n)-[anon_2]->(anon_3)")
+      .argument("n")
+      .build()
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .projection(Map("foo" ->
+          NestedPlanExistsExpression(expectedNestedPlan, "exists((n)-[`anon_2`]->(`anon_3`:B))")(pos)))
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test(
+    "should solve and name pattern expressions with two disjoint inlined Label filters with NestedPlanExpression for Projection"
+  ) {
+    val q =
+      """
+        |MATCH (n)
+        |RETURN exists( (n)-->(:B|C) ) AS foo
+        """.stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+
+    val expectedNestedPlan = planner.subPlanBuilder()
+      .filterExpression(hasAnyLabel("anon_3", "B", "C"))
+      .expand("(n)-[anon_2]->(anon_3)")
+      .argument("n")
+      .build()
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .projection(Map("foo" ->
+          NestedPlanExistsExpression(expectedNestedPlan, "exists((n)-[`anon_2`]->(`anon_3`:B|C))")(pos)))
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("should use index seeks for subqueries if suitable") {
+    val q =
+      """
+        |MATCH (n)
+        |RETURN exists( (n)-->(:D {prop: 5}) ) AS foo
+        """.stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+
+    val expectedNestedPlan = planner.subPlanBuilder()
+      .expandInto("(n)-[anon_2]->(anon_3)")
+      .nodeIndexOperator("anon_3:D(prop=5)", argumentIds = Set("n"))
+      .build()
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .projection(Map("foo" ->
+          NestedPlanExistsExpression(expectedNestedPlan, "exists((n)-[`anon_2`]->(`anon_3`:D {prop: 5}))")(pos)))
+        .allNodeScan("n")
+        .build()
+    )
   }
 
   test("should not use RollupApply for PatternComprehensions in list slice to") {

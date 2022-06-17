@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
+import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -205,6 +206,12 @@ case object plannerQueryPartPlanner {
         else
           unionPlan
     }
+
+  /**
+   * Plan a subquery from an IRExpression with the given context.
+   */
+  def planSubquery(subqueryExpression: IRExpression, context: LogicalPlanningContext): LogicalPlan =
+    plan(subqueryExpression.query.query, context.forSubquery())
 }
 
 trait SingleQueryPlanner {

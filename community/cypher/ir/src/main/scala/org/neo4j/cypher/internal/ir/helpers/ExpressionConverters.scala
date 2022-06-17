@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.NodePatternExpression
-import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelationshipChain
@@ -121,38 +120,6 @@ object ExpressionConverters {
     QueryGraph(
       patternNodes = rewrittenPattern.map(_.variable.get.name).toSet,
       argumentIds = qgArguments
-    ).addPredicates(predicates: _*)
-  }
-
-  /**
-   * Turn a PatternComprehension into a query graph.
-   *
-   * @param exp the pattern comprehension
-   * @param availableSymbols all symbols available in the outer scope. Only used to assert that all dependencies can be satisfied.
-   */
-  def asQueryGraph(
-    exp: PatternComprehension,
-    availableSymbols: Set[String],
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-  ): QueryGraph = {
-    val addUniquenessPredicates = AddUniquenessPredicates(anonymousVariableNameGenerator)
-    val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
-    val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
-    val relChain: RelationshipChain = exp.pattern.element
-    val predicates: IndexedSeq[Expression] = relChain.folder.fold(uniquePredicates.toIndexedSeq) {
-      case pattern: AnyRef if normalizer(anonymousVariableNameGenerator).extract.isDefinedAt(pattern) =>
-        acc => acc ++ normalizer(anonymousVariableNameGenerator).extract(pattern)
-      case _ => identity
-    } ++ exp.predicate
-
-    val rewrittenChain =
-      relChain.endoRewrite(topDown(Rewriter.lift(normalizer(anonymousVariableNameGenerator).replace)))
-
-    val patternContent = rewrittenChain.destructed
-    QueryGraph(
-      patternRelationships = patternContent.rels.toSet,
-      patternNodes = patternContent.nodeIds.toSet,
-      argumentIds = getQueryGraphArguments(exp, availableSymbols)
     ).addPredicates(predicates: _*)
   }
 

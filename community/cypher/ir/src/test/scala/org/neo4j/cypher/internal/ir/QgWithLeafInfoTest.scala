@@ -22,16 +22,11 @@ package org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.MapExpression
-import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.PatternComprehension
-import org.neo4j.cypher.internal.expressions.PatternExpression
-import org.neo4j.cypher.internal.expressions.RelationshipChain
-import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.expressions.RelationshipsPattern
-import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.StableIdentifier
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.UnstableIdentifier
+import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
+import org.neo4j.cypher.internal.ir.ast.ListIRExpression
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -419,18 +414,23 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
     qgWithLeafInfo.allKnownUnstableNodeProperties(semanticTable) should equal(Set(propName("prop")))
   }
 
-  test("allKnownUnstableNodeProperties includes pattern expression property key names") {
+  test("allKnownUnstableNodeProperties includes ir expression property key names") {
     val a = StableIdentifier("a", isIdStable = false)
-    val pExp = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(varFor("a")), None, Some(MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)), None)(pos),
-      RelationshipPattern(None, None, None, None, None, BOTH)(pos),
-      NodePattern(None, None, None, None)(pos)
-    )(pos))(pos))(Set.empty, "", "")
+    val irExp = ExistsIRExpression(
+      PlannerQuery(
+        RegularSinglePlannerQuery(
+          horizon = RegularQueryProjection(Map(
+            "x" -> MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)
+          ))
+        )
+      ),
+      ""
+    )(pos)
 
     val qg = QueryGraph(
       patternNodes = Set("a"),
       argumentIds = Set("b"),
-      selections = Selections.from(pExp)
+      selections = Selections.from(irExp)
     )
     val qgWithLeafInfo = QgWithLeafInfo(qg, Set.empty, Set.empty, Some(a))
 
@@ -449,25 +449,25 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
     qgWithLeafInfo.allKnownUnstableRelProperties(semanticTable) should equal(Set(propName("prop")))
   }
 
-  test("allKnownUnstableRelProperties includes pattern comprehension property key names") {
+  test("allKnownUnstableRelProperties includes ir expression property key names") {
     val a = StableIdentifier("a", isIdStable = false)
-    val pComp = PatternComprehension(
-      None,
-      RelationshipsPattern(RelationshipChain(
-        NodePattern(Some(varFor("a")), None, Some(MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)), None)(
-          pos
-        ),
-        RelationshipPattern(None, None, None, None, None, BOTH)(pos),
-        NodePattern(None, None, None, None)(pos)
-      )(pos))(pos),
-      None,
-      literalInt(5)
-    )(pos, Set.empty, "", "")
+    val irExp = ListIRExpression(
+      PlannerQuery(
+        RegularSinglePlannerQuery(
+          horizon = RegularQueryProjection(Map(
+            "x" -> MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)
+          ))
+        )
+      ),
+      "",
+      "",
+      ""
+    )(pos)
 
     val qg = QueryGraph(
       patternNodes = Set("a"),
       argumentIds = Set("b"),
-      selections = Selections.from(pComp)
+      selections = Selections.from(irExp)
     )
     val qgWithLeafInfo = QgWithLeafInfo(qg, Set.empty, Set.empty, Some(a))
 

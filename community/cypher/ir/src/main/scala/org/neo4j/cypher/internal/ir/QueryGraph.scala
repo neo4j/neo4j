@@ -25,13 +25,10 @@ import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.PartialPredicate
-import org.neo4j.cypher.internal.expressions.PatternComprehension
-import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters
+import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 import scala.collection.mutable
@@ -117,17 +114,12 @@ case class QueryGraph(
    *         is not safe to use for planning pattern expressions and pattern comprehensions.
    */
   lazy val allQGsWithLeafInfo: Seq[QgWithLeafInfo] = {
-    val patternComprehensions = this.folder.findAllByClass[PatternComprehension].toSet.map((e: PatternComprehension) =>
-      ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator)
+    val iRExpressions: Seq[QgWithLeafInfo] = this.folder.findAllByClass[IRExpression].flatMap((e: IRExpression) =>
+      e.query.query.allQGsWithLeafInfo
     )
-    val patternExpressions = this.folder.findAllByClass[PatternExpression].toSet.map((e: PatternExpression) =>
-      ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator)
-    )
-    val allQgsWithLeafInfo = Seq(this) ++
-      patternComprehensions ++
-      patternExpressions
-    allQgsWithLeafInfo.map(QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves) ++
-      optionalMatches.flatMap(_.allQGsWithLeafInfo)
+    QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves(this) +:
+      (iRExpressions ++
+        optionalMatches.flatMap(_.allQGsWithLeafInfo))
   }
 
   /**

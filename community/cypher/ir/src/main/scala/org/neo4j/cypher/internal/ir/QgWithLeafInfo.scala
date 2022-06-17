@@ -22,13 +22,12 @@ package org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
-import org.neo4j.cypher.internal.expressions.PatternComprehension
-import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.Identifier
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.StableIdentifier
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.UnstableIdentifier
+import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.helpers.CachedFunction
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -154,21 +153,19 @@ case class QgWithLeafInfo(
 
   val allKnownUnstableNodeProperties: SemanticTable => Set[PropertyKeyName] =
     CachedFunction((semanticTable: SemanticTable) => {
-      patternNodesAndArguments(semanticTable).flatMap(allKnownUnstablePropertiesFor) ++ patternExpressionProperties
+      patternNodesAndArguments(semanticTable).flatMap(allKnownUnstablePropertiesFor) ++ irExpressionProperties
     })
 
   val allKnownUnstableRelProperties: SemanticTable => Set[PropertyKeyName] = CachedFunction(
     (semanticTable: SemanticTable) => {
       patternRelationshipsAndArguments(semanticTable).flatMap(
         allKnownUnstablePropertiesFor
-      ) ++ patternExpressionProperties
+      ) ++ irExpressionProperties
     }
   )
 
-  private lazy val patternExpressionProperties: Set[PropertyKeyName] = {
-    (queryGraph.folder.findAllByClass[PatternComprehension] ++ queryGraph.folder.findAllByClass[
-      PatternExpression
-    ]).flatMap {
+  private lazy val irExpressionProperties: Set[PropertyKeyName] = {
+    queryGraph.folder.findAllByClass[IRExpression].flatMap {
       _.folder.findAllByClass[PropertyKeyName]
     }.toSet
   }

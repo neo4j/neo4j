@@ -35,7 +35,7 @@ object projection {
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val stillToSolveProjection = projectionsLeft(in, projectionsToPlan, context.planningAttributes.solveds)
-    val solver = PatternExpressionSolver.solverFor(in, context)
+    val solver = SubqueryExpressionSolver.solverFor(in, context)
     val projectionsMap = stillToSolveProjection.map { case (k, v) => (k, solver.solve(v, Some(k))) }
     val plan = solver.rewrittenPlan()
 

@@ -43,7 +43,7 @@ object aggregation {
     context: LogicalPlanningContext
   ): LogicalPlan = {
 
-    val solver = PatternExpressionSolver.solverFor(plan, context)
+    val solver = SubqueryExpressionSolver.solverFor(plan, context)
     val groupingExpressionsMap = aggregation.groupingExpressions.map { case (k, v) => (k, solver.solve(v, Some(k))) }
     val aggregations = aggregation.aggregationExpressions.map { case (k, v) => (k, solver.solve(v, Some(k))) }
     val rewrittenPlan = solver.rewrittenPlan()

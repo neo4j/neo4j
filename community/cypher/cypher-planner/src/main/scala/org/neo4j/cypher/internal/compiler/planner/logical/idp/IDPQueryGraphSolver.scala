@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.planner.logical.PatternExpressionSolving
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner
@@ -107,7 +106,7 @@ case class IDPQueryGraphSolver(
   singleComponentSolver: SingleComponentPlannerTrait,
   componentConnector: JoinDisconnectedQueryGraphComponents
 )(monitor: IDPQueryGraphSolverMonitor)
-    extends QueryGraphSolver with PatternExpressionSolving {
+    extends QueryGraphSolver {
 
   override def plan(
     queryGraph: QueryGraph,

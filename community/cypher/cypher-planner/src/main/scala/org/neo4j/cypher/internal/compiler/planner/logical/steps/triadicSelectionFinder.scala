@@ -21,24 +21,25 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
-import org.neo4j.cypher.internal.expressions.LabelExpression.containsGpmSpecificRelType
-import org.neo4j.cypher.internal.expressions.LabelExpression.getRelTypes
-import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Not
-import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.RelationshipChain
-import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.Selections.containsPatternPredicates
+import org.neo4j.cypher.internal.ir.QueryPagination
+import org.neo4j.cypher.internal.ir.RegularQueryProjection
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.Selections.containsExistsSubquery
+import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -55,14 +56,28 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator with Sele
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
   ): Iterator[SelectionCandidate] = {
-    unsolvedPredicates.iterator.filter(containsPatternPredicates).collect {
+    unsolvedPredicates.iterator.filter(containsExistsSubquery).collect {
       // WHERE NOT (a)-[:X]->(c)
-      case predicate @ Not(Exists(patternExpr: PatternExpression)) =>
-        findMatchingRelationshipPattern(positivePredicate = false, predicate, patternExpr, input, queryGraph, context)
+      case predicate @ Not(subqueryExpression: ExistsIRExpression) =>
+        findMatchingRelationshipPattern(
+          positivePredicate = false,
+          predicate,
+          subqueryExpression,
+          input,
+          queryGraph,
+          context
+        )
           .map(SelectionCandidate(_, Set(predicate)))
       // WHERE (a)-[:X]->(c)
-      case predicate @ Exists(patternExpr: PatternExpression) =>
-        findMatchingRelationshipPattern(positivePredicate = true, predicate, patternExpr, input, queryGraph, context)
+      case predicate: ExistsIRExpression =>
+        findMatchingRelationshipPattern(
+          positivePredicate = true,
+          predicate,
+          predicate,
+          input,
+          queryGraph,
+          context
+        )
           .map(SelectionCandidate(_, Set(predicate)))
     }.flatten
   }
@@ -70,7 +85,7 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator with Sele
   private def findMatchingRelationshipPattern(
     positivePredicate: Boolean,
     triadicPredicate: Expression,
-    patternExpression: PatternExpression,
+    subqueryExpression: ExistsIRExpression,
     in: LogicalPlan,
     qg: QueryGraph,
     context: LogicalPlanningContext
@@ -80,7 +95,7 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator with Sele
     case Selection(Ands(predicates), exp: Expand) => findMatchingOuterExpand(
         positivePredicate,
         triadicPredicate,
-        patternExpression,
+        subqueryExpression,
         predicates.toSeq,
         exp,
         qg,
@@ -89,7 +104,7 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator with Sele
 
     // MATCH (a)-[:X]->(b)-[:Y]->(c) WHERE (predicate involving (a)-[:X]->(c))
     case exp: Expand =>
-      findMatchingOuterExpand(positivePredicate, triadicPredicate, patternExpression, Seq.empty, exp, qg, context)
+      findMatchingOuterExpand(positivePredicate, triadicPredicate, subqueryExpression, Seq.empty, exp, qg, context)
 
     case _ => Seq.empty
   }
@@ -97,7 +112,7 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator with Sele
   private def findMatchingOuterExpand(
     positivePredicate: Boolean,
     triadicPredicate: Expression,
-    patternExpression: PatternExpression,
+    subqueryExpression: ExistsIRExpression,
     incomingPredicates: Seq[Expression],
     expand: Expand,
     qg: QueryGraph,
@@ -107,7 +122,7 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator with Sele
       findMatchingInnerExpand(
         positivePredicate,
         triadicPredicate,
-        patternExpression,
+        subqueryExpression,
         incomingPredicates,
         Seq.empty,
         exp1,
@@ -120,7 +135,7 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator with Sele
       findMatchingInnerExpand(
         positivePredicate,
         triadicPredicate,
-        patternExpression,
+        subqueryExpression,
         incomingPredicates,
         innerPredicates.toSeq,
         exp1,
@@ -135,7 +150,7 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator with Sele
   private def findMatchingInnerExpand(
     positivePredicate: Boolean,
     triadicPredicate: Expression,
-    patternExpression: PatternExpression,
+    subqueryExpression: ExistsIRExpression,
     incomingPredicates: Seq[Expression],
     leftPredicates: Seq[Expression],
     exp1: Expand,
@@ -147,7 +162,7 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator with Sele
       exp1.mode == ExpandAll && exp1.to == exp2.from &&
       matchingLabels(positivePredicate, exp1.to, exp2.to, qg) &&
       leftPredicatesAcceptable(exp1.to, leftPredicates) &&
-      matchingRelationshipPattern(patternExpression, exp1.from, exp2.to, exp1.types, exp1.dir)
+      matchingIRExpression(subqueryExpression, exp1.from, exp2.to, exp1.types, exp1.dir)
     ) {
 
       val left =
@@ -213,29 +228,46 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator with Sele
       labels1.isEmpty || labels2.nonEmpty && (labels2 subsetOf labels1)
   }
 
-  private def matchingRelationshipPattern(
-    pattern: PatternExpression,
+  private def matchingIRExpression(
+    pattern: ExistsIRExpression,
     from: String,
     to: String,
     types: Seq[RelTypeName],
     dir: SemanticDirection
   ): Boolean = pattern match {
     // (a)-[:X]->(c)
-    case PatternExpression(
-        RelationshipsPattern(
-          RelationshipChain(
-            NodePattern(Some(Variable(predicateFrom)), None, None, None),
-            RelationshipPattern(Some(rel), predicateTypes, None, None, None, predicateDir),
-            NodePattern(Some(Variable(predicateTo)), None, None, None)
-          )
-        )
+    case ExistsIRExpression(
+        PlannerQuery(RegularSinglePlannerQuery(
+          QueryGraph(
+            SetExtractor(PatternRelationship(
+              rel,
+              (predicateFrom, predicateTo),
+              predicateDir,
+              predicateTypes,
+              SimplePatternLength
+            )),
+            SetExtractor(),
+            patternNodes,
+            _,
+            Selections.empty,
+            IndexedSeq(),
+            SetExtractor(),
+            SetExtractor(),
+            IndexedSeq()
+          ),
+          InterestingOrder.empty,
+          RegularQueryProjection(_, QueryPagination.empty, Selections.empty),
+          None,
+          None
+        )),
+        _
       )
-      if predicateFrom == from
+      if patternNodes == Set(predicateFrom, predicateTo)
+        && predicateFrom == from
         && predicateTo == to
         && predicateDir == dir
-        && !containsGpmSpecificRelType(predicateTypes)
-        && getRelTypes(predicateTypes) == types
-        && !pattern.dependencies.contains(rel) => true
+        && predicateTypes == types
+        && !pattern.dependencies.map(_.name).contains(rel) => true
     case _ => false
   }
 }
