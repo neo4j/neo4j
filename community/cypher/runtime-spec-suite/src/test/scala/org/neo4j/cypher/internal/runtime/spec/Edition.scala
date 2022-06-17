@@ -50,7 +50,7 @@ trait RuntimeContextManagerFactory[CONTEXT <: RuntimeContext] {
 class Edition[CONTEXT <: RuntimeContext](
   graphBuilderFactory: () => TestDatabaseManagementServiceBuilder,
   runtimeContextManagerFactory: RuntimeContextManagerFactory[CONTEXT],
-  configs: (Setting[_], Object)*
+  val configs: (Setting[_], Object)*
 ) {
 
   def newGraphManagementService(additionalConfigs: (Setting[_], Object)*): DatabaseManagementService = {

@@ -51,7 +51,7 @@ import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.kernel.api.KernelTransaction
 
 abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
-  val edition: Edition[CONTEXT],
+  edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
   val sizeHint: Int,
   costOfGetPropertyChain: Long, // the reported dbHits for getting the property chain

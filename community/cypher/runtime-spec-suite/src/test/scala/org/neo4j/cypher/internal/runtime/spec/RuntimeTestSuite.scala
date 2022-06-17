@@ -48,6 +48,7 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.QueryStatistics
+import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.api.Kernel
 import org.neo4j.kernel.api.procedure.CallableProcedure
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction
@@ -107,7 +108,7 @@ object RuntimeTestSuite {
  *  - evaluated by it's results
  */
 abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
-  edition: Edition[CONTEXT],
+  baseEdition: Edition[CONTEXT],
   val runtime: CypherRuntime[CONTEXT],
   workloadMode: Boolean = false
 ) extends CypherFunSuite
@@ -125,7 +126,17 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   val logProvider: AssertableLogProvider = new AssertableLogProvider()
   val debugOptions: CypherDebugOptions = CypherDebugOptions.default
   val isParallel: Boolean = runtime.name.toLowerCase == "parallel"
-  val runOnlySafeScenarios: Boolean = false // !System.getenv().containsKey("RUN_EXPERIMENTAL")
+  val runOnlySafeScenarios: Boolean = !System.getenv().containsKey("RUN_EXPERIMENTAL")
+
+  protected var edition: Edition[CONTEXT] = baseEdition
+
+  def setAdditionalConfigs(configs: Array[(Setting[_], Object)]): Unit = {
+    require(managementService == null)
+    require(graphDb == null)
+    require(runtimeTestSupport == null)
+    require(kernel == null)
+    edition = edition.copyWith(configs: _*)
+  }
 
   protected def restartDB(): Unit = {
     managementService = edition.newGraphManagementService()
