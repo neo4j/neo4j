@@ -97,4 +97,9 @@ public class RunMessage extends TransactionInitiatingMessage {
     public int hashCode() {
         return Objects.hash(super.hashCode(), statement, params);
     }
+
+    @Override
+    public String toString() {
+        return "RUN \"" + this.statement + "\", " + this.params + ", " + meta();
+    }
 }

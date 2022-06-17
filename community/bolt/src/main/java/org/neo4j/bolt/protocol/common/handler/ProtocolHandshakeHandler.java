@@ -166,6 +166,8 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
             ctx.pipeline().addLast("channelThrottleHandler", new ChannelThrottleHandler(writeTimeoutMill));
         }
 
+        ProtocolLoggingHandler.shiftToEndIfPresent(ctx);
+
         ctx.pipeline()
                 .addLast("outboundPayloadAccumulator", new RecordResponseAccumulator())
                 .addLast("requestHandler", new RequestHandler(connection, new ResultHandler(connection, log)))

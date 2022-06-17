@@ -29,6 +29,7 @@ import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.BoltConnectionFactory;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.handler.DiscoveryResponseHandler;
+import org.neo4j.bolt.protocol.common.handler.ProtocolLoggingHandler;
 import org.neo4j.bolt.protocol.common.handler.TransportSelectionHandler;
 import org.neo4j.bolt.protocol.common.protector.ChannelProtector;
 import org.neo4j.bolt.protocol.common.protector.UnauthenticatedChannelProtector;
@@ -116,6 +117,12 @@ public class SocketTransport implements NettyServer.ProtocolInitializer {
 
                 memoryTracker.allocateHeap(TransportSelectionHandler.SHALLOW_SIZE);
                 var discoveryServiceHandler = new DiscoveryResponseHandler(authConfigProvider);
+
+                if (config.get(BoltConnectorInternalSettings.protocol_logging)) {
+                    boltChannel.memoryTracker().allocateHeap(ProtocolLoggingHandler.SHALLOW_SIZE);
+
+                    ch.pipeline().addLast("protocolLoggingHandler", new ProtocolLoggingHandler(logging));
+                }
 
                 var transportSelectionHandler = new TransportSelectionHandler(
                         boltChannel,

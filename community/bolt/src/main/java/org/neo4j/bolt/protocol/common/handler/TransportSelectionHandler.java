@@ -227,7 +227,11 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
 
         ctx.pipeline()
                 .addLast("protocolNegotiationRequestEncoder", new ProtocolNegotiationResponseEncoder())
-                .addLast("protocolNegotiationRequestDecoder", new ProtocolNegotiationRequestDecoder())
+                .addLast("protocolNegotiationRequestDecoder", new ProtocolNegotiationRequestDecoder());
+
+        ProtocolLoggingHandler.shiftToEndIfPresent(ctx);
+
+        ctx.pipeline()
                 .addLast(
                         "protocolHandshakeHandler",
                         new ProtocolHandshakeHandler(

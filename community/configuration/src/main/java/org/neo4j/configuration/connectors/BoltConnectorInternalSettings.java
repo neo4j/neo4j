@@ -44,8 +44,14 @@ import org.neo4j.io.ByteUnit;
 
 @ServiceProvider
 public final class BoltConnectorInternalSettings implements SettingsDeclaration {
+
     public static final String LOOPBACK_NAME = "bolt-loopback";
     public static final int DEFAULT_LOOPBACK_CONNECTOR_PORT = 7689;
+
+    @Internal
+    @Description("Enable protocol level logging for incoming connections on the Bolt connector")
+    public static final Setting<Boolean> protocol_logging =
+            newBuilder("internal.server.bolt.protocol_logging", BOOL, false).build();
 
     @Internal
     @Description(

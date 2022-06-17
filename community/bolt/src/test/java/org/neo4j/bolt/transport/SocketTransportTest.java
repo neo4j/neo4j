@@ -20,6 +20,7 @@
 package org.neo4j.bolt.transport;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -36,6 +37,7 @@ import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.BoltConnectionFactory;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.handler.AuthenticationTimeoutHandler;
+import org.neo4j.bolt.protocol.common.handler.ProtocolLoggingHandler;
 import org.neo4j.bolt.protocol.common.handler.TransportSelectionHandler;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.configuration.Config;
@@ -50,7 +52,7 @@ class SocketTransportTest {
     @Test
     void shouldManageChannelsInChannelInitializer() {
         NetworkConnectionTracker connectionTracker = mock(NetworkConnectionTracker.class);
-        SocketTransport socketTransport = newSocketTransport(connectionTracker);
+        SocketTransport socketTransport = newSocketTransport(connectionTracker, false);
 
         EmbeddedChannel channel = new EmbeddedChannel(socketTransport.channelInitializer());
 
@@ -65,7 +67,7 @@ class SocketTransportTest {
 
     @Test
     void shouldInstallAuthTimeoutHandler() {
-        SocketTransport socketTransport = newSocketTransport(NetworkConnectionTracker.NO_OP);
+        SocketTransport socketTransport = newSocketTransport(NetworkConnectionTracker.NO_OP, false);
 
         EmbeddedChannel channel = new EmbeddedChannel(socketTransport.channelInitializer());
 
@@ -73,8 +75,24 @@ class SocketTransportTest {
     }
 
     @Test
+    void shouldInstallProtocolLoggingHandlerWhenEnabled() {
+        var transport = newSocketTransport(NetworkConnectionTracker.NO_OP, true);
+        var channel = new EmbeddedChannel(transport.channelInitializer());
+
+        assertNotNull(channel.pipeline().get(ProtocolLoggingHandler.class));
+    }
+
+    @Test
+    void shouldSkipProtocolLoggingHandlerWhenDisabled() {
+        var transport = newSocketTransport(NetworkConnectionTracker.NO_OP, false);
+        var channel = new EmbeddedChannel(transport.channelInitializer());
+
+        assertNull(channel.pipeline().get(ProtocolLoggingHandler.class));
+    }
+
+    @Test
     void shouldInstallTransportSelectionHandler() {
-        SocketTransport socketTransport = newSocketTransport(NetworkConnectionTracker.NO_OP);
+        SocketTransport socketTransport = newSocketTransport(NetworkConnectionTracker.NO_OP, false);
 
         EmbeddedChannel channel = new EmbeddedChannel(socketTransport.channelInitializer());
 
@@ -82,10 +100,14 @@ class SocketTransportTest {
         assertNotNull(handler);
     }
 
-    private static SocketTransport newSocketTransport(NetworkConnectionTracker connectionTracker) {
+    private static SocketTransport newSocketTransport(
+            NetworkConnectionTracker connectionTracker, boolean enableProtocolLogging) {
         var config = mock(Config.class);
+
         when(config.get(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout))
                 .thenReturn(Duration.ZERO);
+        when(config.get(BoltConnectorInternalSettings.protocol_logging)).thenReturn(enableProtocolLogging);
+
         return new SocketTransport(
                 "bolt",
                 new InetSocketAddress("localhost", 7687),

@@ -56,4 +56,11 @@ public record ProtocolNegotiationRequest(int magicNumber, List<ProtocolVersion> 
     public int hashCode() {
         return Objects.hash(magicNumber, proposedVersions);
     }
+
+    @Override
+    public String toString() {
+        return "ProtocolNegotiationRequest{" + "magicNumber=0x"
+                + Integer.toHexString(magicNumber) + ", proposedVersions="
+                + proposedVersions + '}';
+    }
 }
