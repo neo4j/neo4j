@@ -54,14 +54,7 @@ case object normalizeMatchPredicates extends StepSequencer.Step with ASTRewriter
     cypherExceptionFactory: CypherExceptionFactory,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter =
-    normalizeMatchPredicates(
-      MatchPredicateNormalizerChain(
-        PropertyPredicateNormalizer(anonymousVariableNameGenerator),
-        LabelExpressionsInPatternsNormalizer,
-        NodePatternPredicateNormalizer,
-        RelationshipPatternPredicateNormalizer
-      )
-    )
+    normalizeMatchPredicates(MatchPredicateNormalizer.defaultNormalizer(anonymousVariableNameGenerator))
 }
 
 case class normalizeMatchPredicates(normalizer: MatchPredicateNormalizer) extends Rewriter {

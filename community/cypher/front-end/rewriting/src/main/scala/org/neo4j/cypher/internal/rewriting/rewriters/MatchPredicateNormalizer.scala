@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 /**
@@ -42,4 +43,15 @@ trait MatchPredicateNormalizer {
       case patternElement: AnyRef if extract.isDefinedAt(patternElement) => acc => acc ++ extract(patternElement)
       case _                                                             => identity
     }
+}
+
+object MatchPredicateNormalizer {
+
+  def defaultNormalizer(anonymousVariableNameGenerator: AnonymousVariableNameGenerator): MatchPredicateNormalizer =
+    MatchPredicateNormalizerChain(
+      PropertyPredicateNormalizer(anonymousVariableNameGenerator),
+      LabelExpressionsInPatternsNormalizer,
+      NodePatternPredicateNormalizer,
+      RelationshipPatternPredicateNormalizer
+    )
 }
