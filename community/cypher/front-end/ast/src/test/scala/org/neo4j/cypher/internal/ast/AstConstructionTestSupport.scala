@@ -64,9 +64,12 @@ import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.Modulo
+import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.Multiply
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Namespace
+import org.neo4j.cypher.internal.expressions.NilPathStep
+import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
@@ -76,6 +79,8 @@ import org.neo4j.cypher.internal.expressions.NumberLiteral
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.PathExpression
+import org.neo4j.cypher.internal.expressions.PathStep
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
@@ -94,10 +99,12 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
+import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SingleIterablePredicate
+import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.StartsWith
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Subtract
@@ -124,6 +131,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 
 import java.nio.charset.StandardCharsets
 
+import scala.annotation.tailrec
 import scala.language.implicitConversions
 
 trait AstConstructionTestSupport extends CypherTestSupport {
@@ -678,5 +686,68 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def increasePos(position: InputPosition, inc: Int): InputPosition = {
     InputPosition(position.offset + inc, position.line, position.column + inc)
+  }
+
+  /**
+   * Small utility to build PathExpressions.
+   */
+  object PathExpressionBuilder {
+    def node(name: String): PathExpressionBuilder = PathExpressionBuilder(Seq(name))
+  }
+
+  /**
+   * @param nodes the nodes
+   * @param rels tuples for each relationship with (name, direction, isVarLength)
+   */
+  case class PathExpressionBuilder private (
+    nodes: Seq[String] = Seq.empty,
+    rels: Seq[(String, SemanticDirection, Boolean)] = Seq.empty
+  ) {
+
+    def outTo(relName: String, nodeName: String): PathExpressionBuilder =
+      copy(nodes = nodes :+ nodeName, rels = rels :+ (relName, OUTGOING, false))
+
+    def bothTo(relName: String, nodeName: String): PathExpressionBuilder =
+      copy(nodes = nodes :+ nodeName, rels = rels :+ (relName, BOTH, false))
+
+    def inTo(relName: String, nodeName: String): PathExpressionBuilder =
+      copy(nodes = nodes :+ nodeName, rels = rels :+ (relName, INCOMING, false))
+
+    def outToVarLength(relName: String, nodeName: String): PathExpressionBuilder =
+      copy(nodes = nodes :+ nodeName, rels = rels :+ (relName, OUTGOING, true))
+
+    def bothToVarLength(relName: String, nodeName: String): PathExpressionBuilder =
+      copy(nodes = nodes :+ nodeName, rels = rels :+ (relName, BOTH, true))
+
+    def inToVarLength(relName: String, nodeName: String): PathExpressionBuilder =
+      copy(nodes = nodes :+ nodeName, rels = rels :+ (relName, INCOMING, true))
+
+    def build(): PathExpression = {
+      @tailrec
+      def nextStep(
+        reversedNodes: List[String],
+        reversedRels: List[(String, SemanticDirection, Boolean)],
+        currentPathStep: PathStep
+      ): PathStep = {
+        (reversedNodes, reversedRels) match {
+          case (Nil, Nil) =>
+            currentPathStep
+          case (node :: nodeTail, Nil) =>
+            val step = NodePathStep(varFor(node), currentPathStep)(pos)
+            nextStep(nodeTail, Nil, step)
+          case (node :: nodeTail, rel :: relTail) =>
+            val step = rel match {
+              case (relName, direction, false) =>
+                SingleRelationshipPathStep(varFor(relName), direction, Some(varFor(node)), currentPathStep)(pos)
+              case (relName, direction, true) =>
+                MultiRelationshipPathStep(varFor(relName), direction, Some(varFor(node)), currentPathStep)(pos)
+            }
+            nextStep(nodeTail, relTail, step)
+        }
+      }
+
+      val pathStep = nextStep(nodes.reverse.toList, rels.reverse.toList, NilPathStep()(pos))
+      PathExpression(pathStep)(pos)
+    }
   }
 }
