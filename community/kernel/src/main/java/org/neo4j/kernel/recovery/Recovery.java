@@ -50,7 +50,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabasePageCache;
-import org.neo4j.dbms.database.TopologyGraphDbmsModel.HostedOnMode;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GroupingRecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;

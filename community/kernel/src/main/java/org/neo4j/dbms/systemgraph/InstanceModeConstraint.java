@@ -17,22 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.dbms.database;
+package org.neo4j.dbms.systemgraph;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
-import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.annotations.api.PublicApi;
 
-public final class DatabaseIdCacheClearingListener extends TransactionEventListenerAdapter<Object> {
-    private final DatabaseIdRepository.Caching repository;
+@PublicApi
+public
+enum InstanceModeConstraint {
+    PRIMARY(true, false),
+    SECONDARY(false, true),
+    // Temporary value, to be removed when mode goes away.
+    SINGLE(true, false),
+    NONE(true, true);
 
-    public DatabaseIdCacheClearingListener(DatabaseIdRepository.Caching repository) {
-        this.repository = repository;
+    private final boolean canBePrimary;
+    private final boolean canBeSecondary;
+
+    InstanceModeConstraint(boolean canBePrimary, boolean canBeSecondary) {
+        this.canBePrimary = canBePrimary;
+        this.canBeSecondary = canBeSecondary;
     }
 
-    @Override
-    public void afterCommit(TransactionData data, Object state, GraphDatabaseService databaseService) {
-        repository.invalidateAll();
+    public boolean canBePrimary() {
+        return canBePrimary;
+    }
+
+    public boolean canBeSecondary() {
+        return canBeSecondary;
     }
 }

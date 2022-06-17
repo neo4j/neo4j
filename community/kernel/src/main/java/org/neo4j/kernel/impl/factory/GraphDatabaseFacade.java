@@ -35,7 +35,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.TopologyGraphDbmsModel.HostedOnMode;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.ResultTransformer;
 import org.neo4j.graphdb.Transaction;

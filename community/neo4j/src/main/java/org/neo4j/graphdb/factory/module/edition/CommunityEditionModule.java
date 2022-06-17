@@ -39,7 +39,7 @@ import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContextProvider;
-import org.neo4j.dbms.database.DatabaseIdCacheClearingListener;
+import org.neo4j.dbms.database.DatabaseReferenceCacheClearingListener;
 import org.neo4j.dbms.database.DatabaseInfoService;
 import org.neo4j.dbms.database.DatabaseLifecycles;
 import org.neo4j.dbms.database.DatabaseOperationCounts;
@@ -71,8 +71,11 @@ import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.database.MapCachingDatabaseIdRepository;
+import org.neo4j.kernel.database.MapCachingDatabaseReferenceRepository;
 import org.neo4j.kernel.database.SystemGraphDatabaseIdRepository;
+import org.neo4j.kernel.database.SystemGraphDatabaseReferenceRepository;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
@@ -142,9 +145,10 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                 createIdContextFactory(globalModule),
                 createCommitProcessFactory(),
                 this);
-        var mapCachingDatabaseIdRepository = new MapCachingDatabaseIdRepository();
-        var databaseIdCacheCleaner = new DatabaseIdCacheClearingListener(mapCachingDatabaseIdRepository);
-        var databaseRepository = new DatabaseRepository<StandaloneDatabaseContext>(mapCachingDatabaseIdRepository);
+
+        var databaseIdRepo = new MapCachingDatabaseIdRepository();
+        var databaseReferenceRepo = new MapCachingDatabaseReferenceRepository();
+        var databaseRepository = new DatabaseRepository<StandaloneDatabaseContext>(databaseIdRepo);
         var rootDatabaseIdRepository = CommunityEditionModule.tryResolveOrCreate(
                 DatabaseIdRepository.class,
                 globalModule.getExternalDependencyResolver(),
@@ -152,7 +156,17 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                         .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
                         .orElseThrow(() -> new DatabaseShutdownException(
                                 new DatabaseManagementException("Unable to retrieve the system database!")))));
-        mapCachingDatabaseIdRepository.setDelegate(rootDatabaseIdRepository);
+        var rootDatabaseReferenceRepository = CommunityEditionModule.tryResolveOrCreate(
+                DatabaseReferenceRepository.class,
+                globalModule.getExternalDependencyResolver(),
+                () -> new SystemGraphDatabaseReferenceRepository(() -> databaseRepository
+                        .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
+                        .orElseThrow(() -> new DatabaseShutdownException(
+                                new DatabaseManagementException("Unable to retrieve the system database!")))));
+        databaseIdRepo.setDelegate(rootDatabaseIdRepository);
+        databaseReferenceRepo.setDelegate(rootDatabaseReferenceRepository);
+        var databaseIdCacheCleaner = new DatabaseReferenceCacheClearingListener(databaseIdRepo, databaseReferenceRepo);
+
         var databaseLifecycles = new DatabaseLifecycles(
                 databaseRepository,
                 globalModule.getGlobalConfig().get(default_database),

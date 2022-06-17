@@ -21,7 +21,7 @@ package org.neo4j.kernel.internal;
 
 import java.util.concurrent.TimeUnit;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.dbms.database.TopologyGraphDbmsModel.HostedOnMode;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;

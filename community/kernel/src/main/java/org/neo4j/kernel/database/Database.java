@@ -56,7 +56,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.dbms.database.DatabasePageCache;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
-import org.neo4j.dbms.database.TopologyGraphDbmsModel.HostedOnMode;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Factory;

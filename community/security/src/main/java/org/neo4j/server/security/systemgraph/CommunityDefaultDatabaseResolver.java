@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.security.systemgraph;
 
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_LABEL;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_LABEL;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
 
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;

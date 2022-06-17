@@ -23,7 +23,7 @@ import java.util.function.Function;
 import java.util.function.LongFunction;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.DatabaseConfig;
-import org.neo4j.dbms.database.TopologyGraphDbmsModel.HostedOnMode;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.config.Configuration;

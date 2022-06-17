@@ -54,7 +54,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
-import org.neo4j.dbms.database.TopologyGraphDbmsModel.HostedOnMode;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.logging.LoggingReporterFactoryInvocationHandler;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;

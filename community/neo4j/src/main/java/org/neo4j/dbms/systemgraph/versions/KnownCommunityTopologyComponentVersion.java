@@ -19,18 +19,18 @@
  */
 package org.neo4j.dbms.systemgraph.versions;
 
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_ACCESS_PROPERTY;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_LABEL;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_LABEL;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.NAME_PROPERTY;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.PRIMARY_PROPERTY;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.TARGETS_RELATIONSHIP;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_ACCESS_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_LABEL;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_LABEL;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAME_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.PRIMARY_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS_RELATIONSHIP;
 
 import java.util.stream.Stream;
 import org.neo4j.dbms.database.ComponentVersion;
 import org.neo4j.dbms.database.KnownSystemComponentVersion;
-import org.neo4j.dbms.database.TopologyGraphDbmsModel;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;

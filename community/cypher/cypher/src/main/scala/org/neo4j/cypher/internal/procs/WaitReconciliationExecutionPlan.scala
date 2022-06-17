@@ -32,11 +32,11 @@ import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
-import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE
-import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME
-import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY
-import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY
-import org.neo4j.dbms.database.TopologyGraphDbmsModel.TARGETS
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS
 import org.neo4j.graphdb.Transaction
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.api.KernelTransaction

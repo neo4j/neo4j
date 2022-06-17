@@ -19,8 +19,8 @@
  */
 package org.neo4j.dbms.database;
 
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DatabaseAccess.READ_ONLY;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DatabaseAccess.READ_WRITE;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseAccess.READ_ONLY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseAccess.READ_WRITE;
 
 import java.util.List;
 import java.util.Optional;

@@ -37,8 +37,8 @@ import org.neo4j.cypher.internal.util.HomeDatabaseNotPresent
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.StringType
-import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_LABEL
-import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_LABEL
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.exceptions.ParameterNotFoundException

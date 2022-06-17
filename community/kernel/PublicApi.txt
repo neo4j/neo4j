@@ -1,0 +1,14 @@
+org.neo4j.dbms.systemgraph.InstanceModeConstraint public final enum extends java.lang.Enum<org.neo4j.dbms.systemgraph.InstanceModeConstraint>
+org.neo4j.dbms.systemgraph.InstanceModeConstraint::NONE org.neo4j.dbms.systemgraph.InstanceModeConstraint public static final
+org.neo4j.dbms.systemgraph.InstanceModeConstraint::PRIMARY org.neo4j.dbms.systemgraph.InstanceModeConstraint public static final
+org.neo4j.dbms.systemgraph.InstanceModeConstraint::SECONDARY org.neo4j.dbms.systemgraph.InstanceModeConstraint public static final
+org.neo4j.dbms.systemgraph.InstanceModeConstraint::SINGLE org.neo4j.dbms.systemgraph.InstanceModeConstraint public static final
+org.neo4j.dbms.systemgraph.InstanceModeConstraint::canBePrimary() boolean public
+org.neo4j.dbms.systemgraph.InstanceModeConstraint::canBeSecondary() boolean public
+org.neo4j.dbms.systemgraph.InstanceModeConstraint::valueOf(java.lang.String) org.neo4j.dbms.systemgraph.InstanceModeConstraint public static
+org.neo4j.dbms.systemgraph.InstanceModeConstraint::values() org.neo4j.dbms.systemgraph.InstanceModeConstraint[] public static
+org.neo4j.dbms.systemgraph.SystemDatabaseMode public final enum extends java.lang.Enum<org.neo4j.dbms.systemgraph.SystemDatabaseMode>
+org.neo4j.dbms.systemgraph.SystemDatabaseMode::PRIMARY org.neo4j.dbms.systemgraph.SystemDatabaseMode public static final
+org.neo4j.dbms.systemgraph.SystemDatabaseMode::SECONDARY org.neo4j.dbms.systemgraph.SystemDatabaseMode public static final
+org.neo4j.dbms.systemgraph.SystemDatabaseMode::valueOf(java.lang.String) org.neo4j.dbms.systemgraph.SystemDatabaseMode public static
+org.neo4j.dbms.systemgraph.SystemDatabaseMode::values() org.neo4j.dbms.systemgraph.SystemDatabaseMode[] public static

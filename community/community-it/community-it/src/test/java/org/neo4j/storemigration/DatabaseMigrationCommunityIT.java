@@ -20,9 +20,9 @@
 package org.neo4j.storemigration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_LABEL;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_LABEL;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.NAME_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_LABEL;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_LABEL;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAME_PROPERTY;
 import static org.neo4j.graphdb.schema.IndexType.LOOKUP;
 import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_LABEL;
 

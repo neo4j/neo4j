@@ -17,23 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.dbms;
+package org.neo4j.dbms.systemgraph;
 
-import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
+import org.neo4j.annotations.api.PublicApi;
 
-public enum DefaultOperatorState implements OperatorState {
-    STOPPED(TopologyGraphDbmsModel.DatabaseStatus.OFFLINE.statusName()),
-    STARTED(TopologyGraphDbmsModel.DatabaseStatus.ONLINE.statusName()),
-    UNKNOWN("unknown");
-
-    private final String description;
-
-    DefaultOperatorState(String description) {
-        this.description = description;
-    }
-
-    @Override
-    public String description() {
-        return description;
-    }
+@PublicApi
+public
+enum SystemDatabaseMode {
+    PRIMARY,
+    SECONDARY
 }

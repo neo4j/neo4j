@@ -22,6 +22,7 @@ package org.neo4j.dbms.database;
 import java.util.HashMap;
 import java.util.Map;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 import org.neo4j.graphdb.config.Setting;
 
 public record DatabaseOptions(Map<Setting<?>, Object> settings, TopologyGraphDbmsModel.HostedOnMode mode) {
