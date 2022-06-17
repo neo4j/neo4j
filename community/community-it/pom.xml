@@ -77,11 +77,6 @@
                     <value>freki</value>
                 </property>
             </activation>
-            <properties>
-                <test.runner.jvm.settings.additional>
-                    -DNEO4J_OVERRIDE_STORE_FORMAT=freki
-                </test.runner.jvm.settings.additional>
-            </properties>
             <dependencies>
                 <dependency>
                     <groupId>com.neo4j</groupId>

@@ -73,6 +73,7 @@
     </jdk.custom.options>
     <test.runner.jvm/>
     <test.runner.jvm.settings.additional/>
+    <test.runner.jvm.settings.db.format/>
     <test.runner.jvm.settings>
       -Xmx2G
       -XX:+UseG1GC
@@ -103,6 +104,7 @@
       -XX:+UnlockDiagnosticVMOptions
       -XX:+DebugNonSafepoints
       ${jdk.custom.options}
+      ${test.runner.jvm.settings.db.format}
       ${test.runner.jvm.settings.additional}
     </test.runner.jvm.settings>
     <default.jupiter.test.timeout>20m</default.jupiter.test.timeout>
@@ -921,10 +923,25 @@
         </property>
       </activation>
       <properties>
-        <test.runner.jvm.settings.additional>
+        <test.runner.jvm.settings.db.format>
           -DNEO4J_OVERRIDE_STORE_FORMAT=multiversion
-        </test.runner.jvm.settings.additional>
+        </test.runner.jvm.settings.db.format>
         <excludedTestGroups>recordformatoverride</excludedTestGroups>
+      </properties>
+    </profile>
+    <profile>
+      <id>test-freki</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>NEO4J_OVERRIDE_STORE_FORMAT</name>
+          <value>freki</value>
+        </property>
+      </activation>
+      <properties>
+        <test.runner.jvm.settings.db.format>
+          -DNEO4J_OVERRIDE_STORE_FORMAT=freki
+        </test.runner.jvm.settings.db.format>
       </properties>
     </profile>
     <profile>
