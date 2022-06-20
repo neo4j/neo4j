@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertRelationshipCount;
 import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertRelationships;
@@ -49,6 +50,13 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
     private final int typeOne = 1;
     private final int typeTwo = 2;
     private final int typeThree = 3;
+
+    boolean isNodeBased() throws KernelException {
+        try (var tx = beginTransaction()) {
+            var cursor = tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT);
+            return cursor instanceof DefaultNodeBasedRelationshipTypeIndexCursor;
+        }
+    }
 
     @ParameterizedTest
     @EnumSource(value = IndexOrder.class)
@@ -223,6 +231,9 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
 
     @Test
     void shouldNotLoadDeletedRelationshipOnReadFromStore() throws Exception {
+        // Do not run this on node based relationship index
+        assumeFalse(isNodeBased());
+
         // given
         long first;
         long second;
@@ -268,6 +279,9 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
 
     @Test
     void shouldFailOnReadRelationshipBeforeReadFromStore() throws Exception {
+        // Do not run this on node based relationship index
+        assumeFalse(isNodeBased());
+
         // given
         long rel;
         try (var tx = beginTransaction()) {
