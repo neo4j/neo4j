@@ -38,7 +38,7 @@ class PageAwareByteArrayCursor extends PageCursor {
     private PageCursor current;
     private long currentPageId = UNBOUND_PAGE_ID;
     private long nextPageId;
-    private PageCursor linkedCursor;
+    private PageAwareByteArrayCursor linkedCursor;
     private boolean shouldRetry;
     private int closeCount;
 
@@ -348,12 +348,13 @@ class PageAwareByteArrayCursor extends PageCursor {
 
     @Override
     public PageCursor openLinkedCursor(long pageId) {
-        PageCursor toReturn = new PageAwareByteArrayCursor(pages, payloadSize, pageId);
         if (linkedCursor != null) {
-            linkedCursor.close();
+            if (linkedCursor.closeCount == 0) {
+                throw new IllegalStateException("Previously created linked PageAwareByteArrayCursor still in use");
+            }
         }
-        linkedCursor = toReturn;
-        return toReturn;
+        linkedCursor = new PageAwareByteArrayCursor(pages, payloadSize, pageId);
+        return linkedCursor;
     }
 
     @Override
@@ -365,6 +366,9 @@ class PageAwareByteArrayCursor extends PageCursor {
     public boolean isWriteLocked() {
         return current == null || current.isWriteLocked();
     }
+
+    @Override
+    public void unpin() {}
 
     public int getCloseCount() {
         return closeCount;

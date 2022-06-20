@@ -41,7 +41,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
     }
 
     @Override
-    protected void unpinCurrentPage() {
+    public void unpin() {
         long pageRef = pinnedPageRef;
         if (pageRef != 0) {
             tracer.unpin(loadPlainCurrentPageId(), swapper);
@@ -59,16 +59,28 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
             }
         }
         clearPageCursorState();
+        storeCurrentPageId(UNBOUND_PAGE_ID);
     }
 
     private void eagerlyFlushAndUnlockPage(long pageRef) {
-        if (LOCKED_PAGES != null && multiVersioned) {
-            var locker = LOCKED_PAGES.removeKeyIfAbsent(pageRef, -1);
-            if (locker != Thread.currentThread().getId()) {
-                throw new IllegalStateException("oops");
+        long flushStamp = 0;
+        if (multiVersioned) {
+            // in multiversion case check if we last of the linked cursors who pin that page
+            if (!isPinnedByLinkedFriends(pageRef)) {
+                if (LOCKED_PAGES != null) {
+                    // remove before unlock to avoid clearing others lock
+                    var locker = LOCKED_PAGES.removeKeyIfAbsent(pageRef, -1);
+                    var currentThread = Thread.currentThread().getId();
+                    if (locker != currentThread) {
+                        throw new IllegalStateException("Recorded locker of the page is " + locker
+                                + " doesn't match current thread id " + currentThread);
+                    }
+                }
+                flushStamp = PageList.unlockWriteAndTryTakeFlushLock(pageRef);
             }
+        } else {
+            flushStamp = PageList.unlockWriteAndTryTakeFlushLock(pageRef);
         }
-        long flushStamp = PageList.unlockWriteAndTryTakeFlushLock(pageRef);
         if (flushStamp != 0) {
             boolean success = false;
             try {
@@ -81,7 +93,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
 
     @Override
     public boolean next() throws IOException {
-        unpinCurrentPage();
+        unpin();
         long lastPageId = assertCursorOpenFileMappedAndGetIdOfLastPage();
         if (nextPageId < 0) {
             storeCurrentPageId(UNBOUND_PAGE_ID);
@@ -106,33 +118,67 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
 
     @Override
     protected boolean tryLockPage(long pageRef) {
-        if (LOCKED_PAGES != null && multiVersioned) {
-            // you see we are not atomic or synchronized here, this is ok, because we care about *current* thread
-            // already being successful in taking write lock on this page
-            var locker = LOCKED_PAGES.getIfAbsent(pageRef, -1);
-            var threadId = Thread.currentThread().getId();
-            if (locker == threadId) {
-                throw new IllegalStateException("Multiversioned page locks are not reentrant. Thread " + threadId
-                        + " already holds write lock on page " + pageRef);
+        if (multiVersioned) {
+            if (isPinnedByLinkedFriends(pageRef)) {
+                return true;
             }
+            if (LOCKED_PAGES != null) {
+                // you see we are not atomic or synchronized here, this is ok, because we care about *current* thread
+                // already being successful in taking write lock on this page
+                var locker = LOCKED_PAGES.getIfAbsent(pageRef, -1);
+                var threadId = Thread.currentThread().getId();
+                if (locker == threadId) {
+                    throw new IllegalStateException(
+                            "Multiversioned page locks are not reentrant unless it's from linked cursors. Other thread "
+                                    + threadId + " already holds write lock on page " + pageRef);
+                }
+            }
+            var writeLock = PageList.tryWriteLock(pageRef, true);
+            if (LOCKED_PAGES != null && writeLock) {
+                LOCKED_PAGES.put(pageRef, Thread.currentThread().getId());
+            }
+            return writeLock;
         }
-        var writeLock = PageList.tryWriteLock(pageRef, multiVersioned);
-        if (LOCKED_PAGES != null && multiVersioned && writeLock) {
-            LOCKED_PAGES.put(pageRef, Thread.currentThread().getId());
+        return PageList.tryWriteLock(pageRef, false);
+    }
+
+    private boolean isPinnedByLinkedFriends(long pageRef) {
+        var backwardCursor = backLinkedCursor;
+        while (backwardCursor != null) {
+            if (backwardCursor.pinnedPageRef == pageRef) {
+                return true;
+            }
+            backwardCursor = backwardCursor.backLinkedCursor;
         }
-        return writeLock;
+        var forwardCursor = linkedCursor;
+        while (forwardCursor != null) {
+            if (forwardCursor.pinnedPageRef == pageRef) {
+                return true;
+            }
+            forwardCursor = forwardCursor.linkedCursor;
+        }
+        return false;
     }
 
     @Override
     protected void unlockPage(long pageRef) {
-        if (LOCKED_PAGES != null && multiVersioned) {
-            // remove before unlock to avoid clearing others lock
-            var locker = LOCKED_PAGES.removeKeyIfAbsent(pageRef, -1);
-            if (locker != Thread.currentThread().getId()) {
-                throw new IllegalStateException("oops");
+        if (multiVersioned) {
+            // in multiversion case check if we last of the linked cursors who pin that page
+            if (!isPinnedByLinkedFriends(pageRef)) {
+                if (LOCKED_PAGES != null) {
+                    // remove before unlock to avoid clearing others lock
+                    var locker = LOCKED_PAGES.removeKeyIfAbsent(pageRef, -1);
+                    var currentThread = Thread.currentThread().getId();
+                    if (locker != currentThread) {
+                        throw new IllegalStateException("Recorded locker of the page is " + locker
+                                + " doesn't match current thread id " + currentThread);
+                    }
+                }
+                PageList.unlockWrite(pageRef);
             }
+        } else {
+            PageList.unlockWrite(pageRef);
         }
-        PageList.unlockWrite(pageRef);
     }
 
     @Override

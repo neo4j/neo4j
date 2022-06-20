@@ -386,8 +386,9 @@ public abstract class PageCursor implements AutoCloseable {
      * on the relevant paged file. This cursor will then also delegate to the linked cursor when checking
      * {@link #shouldRetry()} and {@link #checkAndClearBoundsFlag()}.
      * <p>
-     * Opening a linked cursor on a cursor that already has a linked cursor, will close the older linked cursor.
      * Closing a cursor also closes any linked cursor.
+     * Opening a linked cursor on a cursor that already has an opened linked cursor is not possible.
+     * Close the older linked cursor, or create linked cursor from the older linked cursor.
      *
      * @param pageId The page id that the linked cursor will be placed at after its first call to {@link #next()}.
      * @return A cursor that is linked with this cursor.
@@ -404,4 +405,12 @@ public abstract class PageCursor implements AutoCloseable {
      * {@code false} otherwise.
      */
     public abstract boolean isWriteLocked();
+
+    /**
+     * Unpins cursor releasing any locks that it was holding on the page that the cursor is currently positioned at.
+     * It clears the page reference making all access to the cursor be out of bounds until the next call to {@link #next()} or {@link #next(long)}
+     * This method doesn't affect where subsequent call to {@link #next()} will position the cursor.
+     * This doesn't affect linked cursors if any.
+     */
+    public abstract void unpin();
 }

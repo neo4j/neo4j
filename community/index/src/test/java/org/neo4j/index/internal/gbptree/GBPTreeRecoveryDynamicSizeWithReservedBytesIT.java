@@ -22,10 +22,8 @@ package org.neo4j.index.internal.gbptree;
 import java.nio.file.OpenOption;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.junit.jupiter.api.Disabled;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 
-@Disabled("TODO mvcc: GBPTree requires reentrant write locks on page cache pages")
 public class GBPTreeRecoveryDynamicSizeWithReservedBytesIT extends GBPTreeRecoveryDynamicSizeIT {
     @Override
     ImmutableSet<OpenOption> getOpenOptions() {

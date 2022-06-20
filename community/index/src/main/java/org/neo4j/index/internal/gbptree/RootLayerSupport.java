@@ -294,6 +294,10 @@ class RootLayerSupport {
         return cursor;
     }
 
+    PageCursor openCursor(int pfFlags, CursorContext cursorContext) throws IOException {
+        return pagedFile.io(0L /*Ignored*/, pfFlags, cursorContext);
+    }
+
     long generation() {
         return generationSupplier.getAsLong();
     }

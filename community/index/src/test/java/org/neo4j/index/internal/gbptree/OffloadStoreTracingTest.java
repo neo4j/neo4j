@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.index.internal.gbptree.CursorCreator.bind;
 import static org.neo4j.index.internal.gbptree.OffloadIdValidator.ALWAYS_TRUE;
 import static org.neo4j.index.internal.gbptree.RawBytes.EMPTY_BYTES;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
@@ -59,8 +60,8 @@ class OffloadStoreTracingTest {
         cursorContext = contextFactory.create("testCursorTracer");
         pagedFile = pageCache.map(testDirectory.createFile("file"), pageCache.pageSize(), "neo4j");
         OffloadPageCursorFactory pcFactory = pagedFile::io;
-        idProvider = new FreeListIdProvider(pagedFile, 10);
-        idProvider.initializeAfterCreation(CursorContext.NULL_CONTEXT);
+        idProvider = new FreeListIdProvider(pagedFile.payloadSize(), 10);
+        idProvider.initializeAfterCreation(bind(pagedFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext));
         offloadStore = new OffloadStoreImpl<>(layout, idProvider, pcFactory, ALWAYS_TRUE, pageCache.pageSize());
     }
 
@@ -98,7 +99,7 @@ class OffloadStoreTracingTest {
         assertZeroCursor();
 
         offloadStore.free(1, 1, 1, cursorContext);
-        idProvider.flush(1, 1, cursorContext);
+        idProvider.flush(1, 1, bind(pagedFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext));
 
         assertThat(cursorTracer.faults()).isEqualTo(0);
         assertThat(cursorTracer.pins()).isEqualTo(1);

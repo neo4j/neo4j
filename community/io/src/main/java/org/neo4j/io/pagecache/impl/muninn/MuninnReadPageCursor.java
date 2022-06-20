@@ -33,7 +33,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
     }
 
     @Override
-    protected void unpinCurrentPage() {
+    public void unpin() {
         if (pinnedPageRef != 0) {
             tracer.unpin(loadPlainCurrentPageId(), swapper);
         }
@@ -43,7 +43,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
 
     @Override
     public boolean next() throws IOException {
-        unpinCurrentPage();
+        unpin();
         long lastPageId = assertCursorOpenFileMappedAndGetIdOfLastPage();
         if (nextPageId > lastPageId || nextPageId < 0) {
             storeCurrentPageId(UNBOUND_PAGE_ID);

@@ -84,10 +84,11 @@ interface TreeWriterCoordination {
     void reset();
 
     /**
-     * Flips to pessimistic mode. This will force all methods to take extra caution and never end up in a situation
+     * Does {@link #reset()} and flips to pessimistic mode. This will force all methods to take extra caution and never end up in a situation
      * where it will be necessary to return {@code false}.
+     * @return true if mode is changed, and false otherwise, i.e. there is no difference between modes, or already in pessimistic mode
      */
-    void flipToPessimisticMode();
+    boolean flipToPessimisticMode();
 
     /**
      * Does nothing and has no requirement of starting from the root every time.
@@ -129,6 +130,8 @@ interface TreeWriterCoordination {
         public void reset() {}
 
         @Override
-        public void flipToPessimisticMode() {}
+        public boolean flipToPessimisticMode() {
+            return false;
+        }
     };
 }

@@ -22,6 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import static java.lang.String.format;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.util.Arrays.asList;
+import static org.neo4j.index.internal.gbptree.CursorCreator.bind;
 import static org.neo4j.index.internal.gbptree.GBPTreeOpenOptions.NO_FLUSH_ON_CLOSE;
 import static org.neo4j.index.internal.gbptree.Generation.generation;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
@@ -31,6 +32,7 @@ import static org.neo4j.index.internal.gbptree.Header.CARRY_OVER_PREVIOUS_HEADER
 import static org.neo4j.index.internal.gbptree.Header.replace;
 import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -566,7 +568,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             this.pagedFile = openOrCreate(pageCache, indexFile, cursorContext, databaseName, openOptions);
             this.payloadSize = pagedFile.payloadSize();
             closed = false;
-            this.freeList = new FreeListIdProvider(pagedFile, IdSpace.MIN_TREE_NODE_ID);
+            this.freeList = new FreeListIdProvider(pagedFile.payloadSize(), IdSpace.MIN_TREE_NODE_ID);
             TreeNodeLatchService latchService = new TreeNodeLatchService();
             this.rootLayerSupport = new RootLayerSupport(
                     pagedFile,
@@ -631,7 +633,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         rootLayer.initializeAfterCreation(cursorContext);
 
         // Initialize free-list
-        freeList.initializeAfterCreation(cursorContext);
+        freeList.initializeAfterCreation(bind(pagedFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext));
         try (FileFlushEvent fileFlush = pageCacheTracer.beginFileFlush()) {
             pagedFile.flushAndForce(fileFlush);
         }
@@ -997,7 +999,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             long generation = this.generation;
             long stableGeneration = stableGeneration(generation);
             long unstableGeneration = unstableGeneration(generation);
-            freeList.flush(stableGeneration, unstableGeneration, cursorContext);
+            freeList.flush(stableGeneration, unstableGeneration, bind(pagedFile, PF_SHARED_WRITE_LOCK, cursorContext));
 
             // Flush dirty pages since that last flush above. This should be a very small set of pages
             // and should be rather fast. In here writers are blocked and we want to minimize this
@@ -1166,7 +1168,8 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             throws IOException {
         CleanTrackingConsistencyCheckVisitor cleanTrackingVisitor = new CleanTrackingConsistencyCheckVisitor(visitor);
         try (PageCursor cursor = pagedFile.io(0L /*ignored*/, PF_SHARED_READ_LOCK, cursorContext);
-                ConsistencyCheckState state = new ConsistencyCheckState(indexFile, freeList, visitor, cursorContext)) {
+                ConsistencyCheckState state = new ConsistencyCheckState(
+                        indexFile, freeList, visitor, bind(pagedFile, PF_SHARED_READ_LOCK, cursorContext))) {
             if (dirtyOnStartup && reportDirty) {
                 cleanTrackingVisitor.dirtyOnStartup(indexFile);
             }

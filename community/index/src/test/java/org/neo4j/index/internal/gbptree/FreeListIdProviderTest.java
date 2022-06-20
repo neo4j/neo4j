@@ -23,16 +23,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.neo4j.index.internal.gbptree.FreeListIdProvider.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.Generation.generation;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.test.Race.throwing;
 
 import java.io.IOException;
@@ -51,7 +45,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.index.internal.gbptree.FreeListIdProvider.Monitor;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -67,7 +60,6 @@ class FreeListIdProviderTest {
     private static final long BASE_ID = 5;
 
     private PageAwareByteArrayCursor cursor;
-    private final PagedFile pagedFile = mock(PagedFile.class);
     private final FreelistPageMonitor monitor = new FreelistPageMonitor();
     private FreeListIdProvider freelist;
 
@@ -77,12 +69,7 @@ class FreeListIdProviderTest {
     @BeforeEach
     void setUpPagedFile() throws IOException {
         cursor = new PageAwareByteArrayCursor(PAYLOAD_SIZE);
-
-        when(pagedFile.io(anyLong(), anyInt(), any()))
-                .thenAnswer(invocation -> cursor.duplicate(invocation.getArgument(0)));
-        when(pagedFile.payloadSize()).thenReturn(PAYLOAD_SIZE);
-
-        freelist = new FreeListIdProvider(pagedFile, BASE_ID, monitor);
+        freelist = new FreeListIdProvider(PAYLOAD_SIZE, BASE_ID, monitor);
         freelist.initialize(BASE_ID + 1, BASE_ID + 1, BASE_ID + 1, 0, 0);
     }
 
@@ -93,9 +80,9 @@ class FreeListIdProviderTest {
         fillPageWithRandomBytes(releasedId);
 
         // WHEN
-        freelist.releaseId(GENERATION_ONE, GENERATION_TWO, releasedId, NULL_CONTEXT);
-        freelist.flush(GENERATION_ONE, GENERATION_TWO, NULL_CONTEXT);
-        long acquiredId = freelist.acquireNewId(GENERATION_TWO, GENERATION_THREE, NULL_CONTEXT);
+        freelist.releaseId(GENERATION_ONE, GENERATION_TWO, releasedId, CursorCreator.bind(cursor));
+        freelist.flush(GENERATION_ONE, GENERATION_TWO, CursorCreator.bind(cursor));
+        long acquiredId = freelist.acquireNewId(GENERATION_TWO, GENERATION_THREE, CursorCreator.bind(cursor));
 
         // THEN
         assertEquals(releasedId, acquiredId);
@@ -109,13 +96,13 @@ class FreeListIdProviderTest {
         int entries = freelist.entriesPerPage() + freelist.entriesPerPage() / 2;
         long baseId = 101;
         for (int i = 0; i < entries; i++) {
-            freelist.releaseId(GENERATION_ONE, GENERATION_TWO, baseId + i, NULL_CONTEXT);
+            freelist.releaseId(GENERATION_ONE, GENERATION_TWO, baseId + i, CursorCreator.bind(cursor));
         }
-        freelist.flush(GENERATION_ONE, GENERATION_TWO, NULL_CONTEXT);
+        freelist.flush(GENERATION_ONE, GENERATION_TWO, CursorCreator.bind(cursor));
 
         // WHEN/THEN
         for (int i = 0; i < entries; i++) {
-            long acquiredId = freelist.acquireNewId(GENERATION_TWO, GENERATION_THREE, NULL_CONTEXT);
+            long acquiredId = freelist.acquireNewId(GENERATION_TWO, GENERATION_THREE, CursorCreator.bind(cursor));
             assertEquals(baseId + i, acquiredId);
         }
     }
@@ -129,21 +116,22 @@ class FreeListIdProviderTest {
         MutableLongSet released = new LongHashSet();
         do {
             prevId = acquiredId;
-            acquiredId = freelist.acquireNewId(GENERATION_ONE, GENERATION_TWO, NULL_CONTEXT);
-            freelist.releaseId(GENERATION_ONE, GENERATION_TWO, acquiredId, NULL_CONTEXT);
+            acquiredId = freelist.acquireNewId(GENERATION_ONE, GENERATION_TWO, CursorCreator.bind(cursor));
+            freelist.releaseId(GENERATION_ONE, GENERATION_TWO, acquiredId, CursorCreator.bind(cursor));
             released.add(acquiredId);
         } while (acquiredId - prevId == 1);
-        freelist.flush(GENERATION_ONE, GENERATION_TWO, NULL_CONTEXT);
+        freelist.flush(GENERATION_ONE, GENERATION_TWO, CursorCreator.bind(cursor));
 
         // WHEN
         while (!released.isEmpty()) {
-            long reAcquiredId = freelist.acquireNewId(GENERATION_TWO, GENERATION_THREE, NULL_CONTEXT);
+            long reAcquiredId = freelist.acquireNewId(GENERATION_TWO, GENERATION_THREE, CursorCreator.bind(cursor));
             assertTrue(released.remove(reAcquiredId));
         }
-        freelist.flush(GENERATION_ONE, GENERATION_TWO, NULL_CONTEXT);
+        freelist.flush(GENERATION_ONE, GENERATION_TWO, CursorCreator.bind(cursor));
 
         // THEN
-        assertEquals(freelistPageId, freelist.acquireNewId(GENERATION_THREE, GENERATION_FOUR, NULL_CONTEXT));
+        assertEquals(
+                freelistPageId, freelist.acquireNewId(GENERATION_THREE, GENERATION_FOUR, CursorCreator.bind(cursor)));
     }
 
     @Test
@@ -162,7 +150,8 @@ class FreeListIdProviderTest {
                     // acquire
                     int count = random.intBetween(5, 10);
                     for (int k = 0; k < count; k++) {
-                        long acquiredId = freelist.acquireNewId(stableGeneration, unstableGeneration, NULL_CONTEXT);
+                        long acquiredId =
+                                freelist.acquireNewId(stableGeneration, unstableGeneration, CursorCreator.bind(cursor));
                         assertTrue(acquired.add(acquiredId));
                         acquiredList.add(acquiredId);
                     }
@@ -172,13 +161,13 @@ class FreeListIdProviderTest {
                     for (int k = 0; k < count && !acquired.isEmpty(); k++) {
                         long id = acquiredList.remove(random.nextInt(acquiredList.size()));
                         assertTrue(acquired.remove(id));
-                        freelist.releaseId(stableGeneration, unstableGeneration, id, NULL_CONTEXT);
+                        freelist.releaseId(stableGeneration, unstableGeneration, id, CursorCreator.bind(cursor));
                     }
                 }
             }
 
             for (long id : acquiredList) {
-                freelist.releaseId(stableGeneration, unstableGeneration, id, NULL_CONTEXT);
+                freelist.releaseId(stableGeneration, unstableGeneration, id, CursorCreator.bind(cursor));
             }
             acquiredList.clear();
             acquired.clear();
@@ -211,10 +200,10 @@ class FreeListIdProviderTest {
                 int count = ThreadLocalRandom.current().nextInt(1, 10);
                 long[] ids = new long[count];
                 for (int i = 0; i < count; i++) {
-                    ids[i] = freelist.acquireNewId(stableGeneration, unstableGeneration, NULL_CONTEXT);
+                    ids[i] = freelist.acquireNewId(stableGeneration, unstableGeneration, cursor::duplicate);
                 }
                 for (long id : ids) {
-                    freelist.releaseId(stableGeneration, unstableGeneration, id, NULL_CONTEXT);
+                    freelist.releaseId(stableGeneration, unstableGeneration, id, cursor::duplicate);
                 }
                 numIdsAcquiredThisCheckpoint.addAndGet(count);
             } finally {
@@ -227,7 +216,7 @@ class FreeListIdProviderTest {
             try {
                 long gen = generation.get();
                 long unstableGeneration = unstableGeneration(gen);
-                freelist.flush(stableGeneration(gen), unstableGeneration, NULL_CONTEXT);
+                freelist.flush(stableGeneration(gen), unstableGeneration, cursor::duplicate);
                 generation.set(generation(unstableGeneration, unstableGeneration + 1));
                 checkpoints.incrementAndGet();
                 int idsThisCheckpoint = numIdsAcquiredThisCheckpoint.getAndSet(0);
@@ -284,7 +273,7 @@ class FreeListIdProviderTest {
                     int count = rng.nextInt(1, 10);
                     long[] ids = new long[count];
                     for (int i = 0; i < count; i++) {
-                        ids[i] = freelist.acquireNewId(stableGeneration, unstableGeneration, NULL_CONTEXT);
+                        ids[i] = freelist.acquireNewId(stableGeneration, unstableGeneration, cursor::duplicate);
                     }
                     synchronized (acquisitions) {
                         acquisitions.add(ids);
@@ -307,7 +296,7 @@ class FreeListIdProviderTest {
                         }
                     }
                     for (long id : idsToRelease) {
-                        freelist.releaseId(stableGeneration, unstableGeneration, id, NULL_CONTEXT);
+                        freelist.releaseId(stableGeneration, unstableGeneration, id, cursor::duplicate);
                     }
                 }
             } finally {
@@ -320,7 +309,7 @@ class FreeListIdProviderTest {
             try {
                 long gen = generation.get();
                 long unstableGeneration = unstableGeneration(gen);
-                freelist.flush(stableGeneration(gen), unstableGeneration, NULL_CONTEXT);
+                freelist.flush(stableGeneration(gen), unstableGeneration, CursorCreator.bind(cursor));
                 generation.set(generation(unstableGeneration, unstableGeneration + 1));
                 checkpoints.incrementAndGet();
             } finally {
@@ -337,19 +326,19 @@ class FreeListIdProviderTest {
         // GIVEN a couple of released ids
         MutableLongSet expected = new LongHashSet();
         for (int i = 0; i < 100; i++) {
-            expected.add(freelist.acquireNewId(GENERATION_ONE, GENERATION_TWO, NULL_CONTEXT));
+            expected.add(freelist.acquireNewId(GENERATION_ONE, GENERATION_TWO, CursorCreator.bind(cursor)));
         }
         expected.forEach(id -> {
             try {
-                freelist.releaseId(GENERATION_ONE, GENERATION_TWO, id, NULL_CONTEXT);
+                freelist.releaseId(GENERATION_ONE, GENERATION_TWO, id, CursorCreator.bind(cursor));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         });
-        freelist.flush(GENERATION_ONE, GENERATION_TWO, NULL_CONTEXT);
+        freelist.flush(GENERATION_ONE, GENERATION_TWO, CursorCreator.bind(cursor));
         // and only a few acquired
         for (int i = 0; i < 10; i++) {
-            long acquiredId = freelist.acquireNewId(GENERATION_TWO, GENERATION_THREE, NULL_CONTEXT);
+            long acquiredId = freelist.acquireNewId(GENERATION_TWO, GENERATION_THREE, CursorCreator.bind(cursor));
             assertTrue(expected.remove(acquiredId));
         }
 
@@ -361,7 +350,7 @@ class FreeListIdProviderTest {
                         assertTrue(expected.remove(pageId));
                     }
                 },
-                NULL_CONTEXT);
+                cursor::duplicate);
         assertTrue(expected.isEmpty());
     }
 
@@ -378,10 +367,10 @@ class FreeListIdProviderTest {
             }
         });
         for (int i = 0; i < 100; i++) {
-            long id = freelist.acquireNewId(GENERATION_ONE, GENERATION_TWO, NULL_CONTEXT);
-            freelist.releaseId(GENERATION_ONE, GENERATION_TWO, id, NULL_CONTEXT);
+            long id = freelist.acquireNewId(GENERATION_ONE, GENERATION_TWO, CursorCreator.bind(cursor));
+            freelist.releaseId(GENERATION_ONE, GENERATION_TWO, id, CursorCreator.bind(cursor));
         }
-        freelist.flush(GENERATION_ONE, GENERATION_TWO, NULL_CONTEXT);
+        freelist.flush(GENERATION_ONE, GENERATION_TWO, CursorCreator.bind(cursor));
         assertTrue(expected.size() > 0);
 
         // WHEN/THEN
@@ -392,7 +381,7 @@ class FreeListIdProviderTest {
                         assertTrue(expected.remove(pageId));
                     }
                 },
-                NULL_CONTEXT);
+                cursor::duplicate);
         assertTrue(expected.isEmpty());
     }
 
@@ -401,8 +390,8 @@ class FreeListIdProviderTest {
         // GIVEN a couple of released ids
         MutableLongSet expected = new LongHashSet();
         for (int i = 0; i < 10; i++) {
-            long id = freelist.acquireNewId(GENERATION_ONE, GENERATION_TWO, NULL_CONTEXT);
-            freelist.releaseId(GENERATION_ONE, GENERATION_TWO, id, NULL_CONTEXT);
+            long id = freelist.acquireNewId(GENERATION_ONE, GENERATION_TWO, CursorCreator.bind(cursor));
+            freelist.releaseId(GENERATION_ONE, GENERATION_TWO, id, CursorCreator.bind(cursor));
             expected.add(id);
         }
 
@@ -414,7 +403,7 @@ class FreeListIdProviderTest {
                         assertTrue(expected.remove(pageId));
                     }
                 },
-                NULL_CONTEXT);
+                cursor::duplicate);
         assertTrue(expected.isEmpty());
     }
 

@@ -24,10 +24,9 @@ import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 
-public class GBPTreeDynamicSizeWithReservedBytesIT extends GBPTreeDynamicSizeIT {
-
+class MultiRootGBPTreeWithMVCCTest extends MultiRootGBPTreeTest {
     @Override
-    ImmutableSet<OpenOption> getOpenOptions() {
+    protected ImmutableSet<OpenOption> getOpenOptions() {
         return Sets.immutable.of(PageCacheOpenOptions.MULTI_VERSIONED);
     }
 }

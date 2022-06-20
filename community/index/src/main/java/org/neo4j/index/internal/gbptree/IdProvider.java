@@ -21,7 +21,6 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * Provide tree node (page) ids which can be used for storing tree node data.
@@ -34,26 +33,31 @@ interface IdProvider {
      *
      * @param stableGeneration current stable generation.
      * @param unstableGeneration current unstable generation.
-     * @param cursorContext underlying page cache cursor context
+     * @param cursorCreator function to create write page cursor, if this method is called within context of another write cursor, this should create linked cursor
      * @return page id guaranteed to current not be used and whose bytes are all zeros.
      * @throws IOException on {@link PageCursor} error.
      */
-    long acquireNewId(long stableGeneration, long unstableGeneration, CursorContext cursorContext) throws IOException;
+    long acquireNewId(long stableGeneration, long unstableGeneration, CursorCreator cursorCreator) throws IOException;
 
     /**
      * Releases a page id which has previously been used, but isn't anymore, effectively allowing
-     * it to be reused and returned from {@link #acquireNewId(long, long, CursorContext)}.
+     * it to be reused and returned from {@link #acquireNewId(long, long, CursorCreator)}.
      *
      * @param stableGeneration current stable generation.
      * @param unstableGeneration current unstable generation.
      * @param id page id to release.
-     * @param cursorContext underlying page cache cursor context
+     * @param cursorCreator function to create write page cursor, if this method is called within context of another write cursor, this should create linked cursor
      * @throws IOException on {@link PageCursor} error.
      */
-    void releaseId(long stableGeneration, long unstableGeneration, long id, CursorContext cursorContext)
+    void releaseId(long stableGeneration, long unstableGeneration, long id, CursorCreator cursorCreator)
             throws IOException;
 
-    void visitFreelist(IdProviderVisitor visitor, CursorContext cursorContext) throws IOException;
+    /**
+     * @param visitor - visitor
+     * @param cursorCreator function to create read page cursor
+     * @throws IOException on {@link PageCursor} error.
+     */
+    void visitFreelist(IdProviderVisitor visitor, CursorCreator cursorCreator) throws IOException;
 
     long lastId();
 

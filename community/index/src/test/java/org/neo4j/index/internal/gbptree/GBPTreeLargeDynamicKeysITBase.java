@@ -19,7 +19,6 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -44,7 +43,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.RandomSupport;
@@ -124,9 +122,6 @@ abstract class GBPTreeLargeDynamicKeysITBase {
 
     @Test
     void putAndRemoveRandomlyDistributedKeys() throws IOException {
-        assumeThat(getOpenOptions())
-                .as("TODO mvcc: mvcc variant doesn't work here because of reentrant write locks on pages.")
-                .doesNotContain(PageCacheOpenOptions.MULTI_VERSIONED);
         try (GBPTree<RawBytes, RawBytes> tree = createIndex()) {
             int keyValueSizeOverflow = tree.keyValueSizeCap() + 1;
 

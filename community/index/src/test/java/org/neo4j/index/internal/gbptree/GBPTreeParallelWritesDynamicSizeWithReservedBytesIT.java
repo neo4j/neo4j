@@ -22,10 +22,8 @@ package org.neo4j.index.internal.gbptree;
 import java.nio.file.OpenOption;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.junit.jupiter.api.Disabled;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 
-@Disabled("TODO mvcc: GBPTree requires multiple write cursors on the same page. This test deadlocks currently.")
 public class GBPTreeParallelWritesDynamicSizeWithReservedBytesIT extends GBPTreeParallelWritesDynamicSizeIT {
     @Override
     ImmutableSet<OpenOption> getOpenOptions() {

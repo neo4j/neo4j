@@ -21,9 +21,11 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -57,7 +59,7 @@ public class MuninnPageCacheWithReserveBytesTest extends MuninnPageCacheTest {
     }
 
     @Test
-    void allowOpeningMultipleReadAndSingleWriteCursorsPerThread() {
+    void allowOpeningMultipleReadAndLinkedWriteCursorsPerThread() {
         assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
             configureStandardPageCache();
 
@@ -72,11 +74,15 @@ public class MuninnPageCacheWithReserveBytesTest extends MuninnPageCacheTest {
                     PageCursor a = pfA.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT);
                     PageCursor b = pfA.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT);
                     PageCursor writerMain = pfA.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT);
+                    PageCursor writerLinked1 = writerMain.openLinkedCursor(0);
+                    PageCursor writerLinked2 = writerLinked1.openLinkedCursor(0);
                     PageCursor e = pfB.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT);
                     PageCursor f = pfB.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
                 assertTrue(a.next());
                 assertTrue(b.next());
                 assertTrue(writerMain.next());
+                assertTrue(writerLinked1.next());
+                assertTrue(writerLinked2.next());
                 assertTrue(e.next());
                 assertTrue(f.next());
 
@@ -98,5 +104,23 @@ public class MuninnPageCacheWithReserveBytesTest extends MuninnPageCacheTest {
                 assertTrue(anotherWriterLockedPage.get());
             }
         });
+    }
+
+    @Test
+    void eagerFlushMustWriteToFileOnUnpinWithLinkedCursors() throws Exception {
+        configureStandardPageCache();
+        Path file = file("a");
+        try (PagedFile pf = map(file, filePageSize);
+                PageCursor cursor = pf.io(0, PF_SHARED_WRITE_LOCK | PF_EAGER_FLUSH, NULL_CONTEXT);
+                PageCursor linked = cursor.openLinkedCursor(0)) {
+            assertTrue(cursor.next());
+            assertTrue(linked.next());
+            writeRecords(cursor);
+            cursor.unpin(); // linked cursor still holds write lock on page 0 and no flush happened
+            assertThatThrownBy(() -> verifyRecordsInFile(file, recordsPerFilePage))
+                    .isInstanceOf(AssertionError.class);
+            linked.unpin();
+            verifyRecordsInFile(file, recordsPerFilePage);
+        }
     }
 }

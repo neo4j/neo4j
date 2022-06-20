@@ -47,6 +47,7 @@ public abstract sealed class RootLayerConfiguration<ROOT_KEY>
     abstract Layout<ROOT_KEY, RootMappingValue> rootLayout();
 
     static final class SingleRootLayerConfiguration extends RootLayerConfiguration<SingleRoot> {
+
         @Override
         <VALUE, KEY> RootLayer<SingleRoot, KEY, VALUE> buildRootLayer(
                 RootLayerSupport rootLayerSupport,

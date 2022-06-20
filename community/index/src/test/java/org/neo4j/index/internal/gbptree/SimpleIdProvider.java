@@ -28,7 +28,6 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.context.CursorContext;
 
 class SimpleIdProvider implements IdProvider {
     private final Queue<Pair<Long, Long>> releasedIds = new LinkedList<>();
@@ -41,7 +40,7 @@ class SimpleIdProvider implements IdProvider {
     }
 
     @Override
-    public long acquireNewId(long stableGeneration, long unstableGeneration, CursorContext cursorContext) {
+    public long acquireNewId(long stableGeneration, long unstableGeneration, CursorCreator cursorCreator) {
         if (!releasedIds.isEmpty()) {
             Pair<Long, Long> free = releasedIds.peek();
             if (free.getLeft() <= stableGeneration) {
@@ -56,7 +55,7 @@ class SimpleIdProvider implements IdProvider {
     }
 
     @Override
-    public void releaseId(long stableGeneration, long unstableGeneration, long id, CursorContext cursorContext) {
+    public void releaseId(long stableGeneration, long unstableGeneration, long id, CursorCreator cursorCreator) {
         releasedIds.add(Pair.of(unstableGeneration, id));
     }
 
@@ -67,7 +66,7 @@ class SimpleIdProvider implements IdProvider {
     }
 
     @Override
-    public void visitFreelist(IdProviderVisitor visitor, CursorContext cursorContext) {
+    public void visitFreelist(IdProviderVisitor visitor, CursorCreator cursorCreator) {
         int pos = 0;
         visitor.beginFreelistPage(0);
         for (Pair<Long, Long> releasedId : releasedIds) {

@@ -1082,6 +1082,21 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
+    void currentPageIdIsUnboundAfterUnpin() {
+        assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
+            configureStandardPageCache();
+
+            try (PagedFile pagedFile = map(file("a"), filePageSize);
+                    PageCursor cursor = pagedFile.io(0L, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                assertTrue(cursor.next());
+                assertThat(cursor.getCurrentPageId()).isEqualTo(0L);
+                cursor.unpin();
+                assertThat(cursor.getCurrentPageId()).isEqualTo(PageCursor.UNBOUND_PAGE_ID);
+            }
+        });
+    }
+
+    @Test
     void pageCursorMustKnowCurrentFilePageSize() {
         assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
             configureStandardPageCache();
@@ -1865,6 +1880,31 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 assertTrue(f.next());
                 assertTrue(g.next());
                 assertTrue(h.next());
+            }
+        });
+    }
+
+    @Test
+    void allowOpeningMultipleNonInterleavingWriteCursorsPerThread() {
+        assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
+            configureStandardPageCache();
+
+            Path fileA = existingFile("a");
+            Path fileB = existingFile("b");
+
+            generateFileWithRecords(fileA, 1, 16, recordsPerFilePage, reservedBytes, pageCachePageSize);
+            generateFileWithRecords(fileB, 1, 16, recordsPerFilePage, reservedBytes, pageCachePageSize);
+
+            try (PagedFile pfA = map(fileA, filePageSize);
+                    PagedFile pfB = map(fileB, filePageSize);
+                    PageCursor c = pfA.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT);
+                    PageCursor d = pfA.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT);
+                    PageCursor g = pfB.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT);
+                    PageCursor h = pfB.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                assertTrue(c.next(0));
+                assertTrue(d.next(1));
+                assertTrue(g.next(0));
+                assertTrue(h.next(1));
             }
         });
     }
@@ -3096,31 +3136,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             assertNotSame(b, c);
             b.close();
             c.close();
-        }
-    }
-
-    @Test
-    void pageCursorCloseWithClosedLinkedCursorShouldNotReturnSameObjectToCursorPoolTwice() throws Exception {
-        Path file = file("a");
-        generateFileWithRecords(
-                file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes, filePageSize);
-        getPageCache(fs, maxPages, PageCacheTracer.NULL);
-        try (PagedFile pf = map(file, filePageSize)) {
-            PageCursor a = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT);
-            a.openLinkedCursor(0);
-            a.openLinkedCursor(0).close();
-            a.close();
-
-            PageCursor x = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT);
-            PageCursor y = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT);
-            PageCursor z = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT);
-
-            assertNotSame(x, y);
-            assertNotSame(x, z);
-            assertNotSame(y, z);
-            x.close();
-            y.close();
-            z.close();
         }
     }
 
@@ -4881,44 +4896,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    void openingLinkedCursorMustCloseExistingLinkedCursor() {
-        assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
-            configureStandardPageCache();
-            Path file = file("a");
-
-            // write case
-            try (PagedFile pf = map(file, filePageSize);
-                    PageCursor parent = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
-                PageCursor linked = parent.openLinkedCursor(1);
-                assertTrue(parent.next());
-                assertTrue(linked.next());
-                writeRecords(parent);
-                writeRecords(linked);
-                parent.openLinkedCursor(2);
-
-                // should cause out of bounds condition because it should be closed by our opening of another linked
-                // cursor
-                linked.putByte(0, (byte) 1);
-                assertTrue(linked.checkAndClearBoundsFlag());
-            }
-
-            // read case
-            try (PagedFile pf = map(file, filePageSize);
-                    PageCursor parent = pf.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
-                PageCursor linked = parent.openLinkedCursor(1);
-                assertTrue(parent.next());
-                assertTrue(linked.next());
-                parent.openLinkedCursor(2);
-
-                // should cause out of bounds condition because it should be closed by our opening of another linked
-                // cursor
-                linked.getByte(0);
-                assertTrue(linked.checkAndClearBoundsFlag());
-            }
-        });
-    }
-
-    @Test
     void shouldRetryOnParentCursorMustReturnTrueIfLinkedCursorNeedsRetry() {
         assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
             configureStandardPageCache();
@@ -5296,6 +5273,24 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
+    void openingLinkedCursorIfPreviousLinkedCursorIsNotClosedCursorMustThrow() throws Exception {
+        configureStandardPageCache();
+        try (PagedFile pf = map(file("a"), filePageSize)) {
+            try (var writer = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                assertTrue(writer.next());
+                writer.openLinkedCursor(0);
+                assertThrows(IllegalStateException.class, () -> writer.openLinkedCursor(1));
+            }
+
+            try (var reader = pf.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                assertTrue(reader.next());
+                reader.openLinkedCursor(0);
+                assertThrows(IllegalStateException.class, () -> reader.openLinkedCursor(1));
+            }
+        }
+    }
+
+    @Test
     void settingNullCursorExceptionMustThrow() throws Exception {
         configureStandardPageCache();
         try (PagedFile pf = map(file("a"), filePageSize);
@@ -5436,6 +5431,19 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             assertTrue(cursor.next());
             writeRecords(cursor);
             assertTrue(cursor.next()); // this will unpin and flush page 0
+            verifyRecordsInFile(file, recordsPerFilePage);
+        }
+    }
+
+    @Test
+    void eagerFlushMustWriteToFileOnExplicitUnpin() throws Exception {
+        configureStandardPageCache();
+        Path file = file("a");
+        try (PagedFile pf = map(file, filePageSize);
+                PageCursor cursor = pf.io(0, PF_SHARED_WRITE_LOCK | PF_EAGER_FLUSH, NULL_CONTEXT)) {
+            assertTrue(cursor.next());
+            writeRecords(cursor);
+            cursor.unpin();
             verifyRecordsInFile(file, recordsPerFilePage);
         }
     }

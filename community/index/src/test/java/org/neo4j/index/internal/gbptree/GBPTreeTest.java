@@ -80,7 +80,6 @@ import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -140,7 +139,7 @@ class GBPTreeTest {
     @Inject
     private LifeSupport lifeSupport;
 
-    private Path indexFile;
+    protected Path indexFile;
     private ExecutorService executor;
     protected int defaultPageSize;
 
@@ -1486,7 +1485,11 @@ class GBPTreeTest {
             try (GBPTree<MutableLong, MutableLong> index =
                     index(specificPageCache).build()) {
                 assertThatThrownBy(
-                                () -> index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),
+                                () -> {
+                                    try (var unused = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
+                                        // nothing
+                                    }
+                                },
                                 "Expected to throw because root pointed to by tree state should have a valid successor.")
                         .isInstanceOf(TreeInconsistencyException.class)
                         .hasMessageContaining(PointerChecking.WRITER_TRAVERSE_OLD_STATE_MESSAGE);
@@ -1970,8 +1973,7 @@ class GBPTreeTest {
     }
 
     @Test
-    @Disabled("TODO mvcc: GBPTree requires reentrant write locks on page cache pages")
-    public void shouldBeAbleToAcquireMultipleParallelWritersAndWriteSomeInEach() throws IOException {
+    void shouldBeAbleToAcquireMultipleParallelWritersAndWriteSomeInEach() throws IOException {
         // given
         try (PageCache pageCache = createPageCache(defaultPageSize);
                 GBPTree<MutableLong, MutableLong> index = index(pageCache).build()) {

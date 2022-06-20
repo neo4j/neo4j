@@ -437,6 +437,9 @@ public class StubPageCursor extends PageCursor {
         return writeLocked;
     }
 
+    @Override
+    public void unpin() {}
+
     public void setWriteLocked(boolean writeLocked) {
         this.writeLocked = writeLocked;
     }

@@ -289,4 +289,7 @@ class ReadableChannelPageCursor extends PageCursor {
     public boolean isWriteLocked() {
         return false;
     }
+
+    @Override
+    public void unpin() {}
 }

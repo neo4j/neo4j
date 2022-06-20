@@ -20,14 +20,22 @@
 package org.neo4j.index.internal.gbptree;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.nio.file.OpenOption;
+import org.apache.commons.lang3.mutable.MutableLong;
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.ChecksumMismatchException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 
 public class GBPTreeWithReservedBytesTest extends GBPTreeTest {
     @Override
@@ -67,6 +75,43 @@ public class GBPTreeWithReservedBytesTest extends GBPTreeTest {
             assertThatThrownBy(() -> index(pageCache).build())
                     .isInstanceOf(ChecksumMismatchException.class)
                     .hasMessageContaining("Page checksum mismatch");
+        }
+    }
+
+    @Test
+    void shouldThrowIfTreeStatePointToRootWithValidSuccessor() throws Exception {
+        // GIVEN
+        try (PageCache specificPageCache = createPageCache(defaultPageSize)) {
+            index(specificPageCache).build().close();
+
+            // a tree state pointing to root with valid successor
+            try (PagedFile pagedFile = specificPageCache.map(
+                            indexFile, specificPageCache.pageSize(), DEFAULT_DATABASE_NAME, getOpenOptions());
+                    PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                Pair<TreeState, TreeState> treeStates =
+                        TreeStatePair.readStatePages(cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B);
+                TreeState newestState = TreeStatePair.selectNewestValidState(treeStates);
+                long rootId = newestState.rootId();
+                long stableGeneration = newestState.stableGeneration();
+                long unstableGeneration = newestState.unstableGeneration();
+
+                TreeNode.goTo(cursor, "root", rootId);
+                TreeNode.setSuccessor(cursor, 42, stableGeneration + 1, unstableGeneration + 1);
+            }
+
+            // WHEN
+            try (GBPTree<MutableLong, MutableLong> index =
+                    index(specificPageCache).build()) {
+                assertThatThrownBy(
+                                () -> {
+                                    try (var unused = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
+                                        unused.put(new MutableLong(11), new MutableLong(13));
+                                    }
+                                },
+                                "Expected to throw because root pointed to by tree state should have a valid successor.")
+                        .isInstanceOf(TreeInconsistencyException.class)
+                        .hasMessageContaining(PointerChecking.WRITER_TRAVERSE_OLD_STATE_MESSAGE);
+            }
         }
     }
 }

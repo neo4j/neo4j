@@ -101,7 +101,7 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
                 id, node, layout, NO_MONITOR, TreeWriterCoordination.NO_COORDINATION, DATA_LAYER_FLAG);
         structurePropagation = new StructurePropagation<>(layout.newKey(), layout.newKey(), layout.newKey());
 
-        long firstPage = id.acquireNewId(stableGeneration, unstableGeneration, NULL_CONTEXT);
+        long firstPage = id.acquireNewId(stableGeneration, unstableGeneration, CursorCreator.bind(cursor));
         goTo(cursor, firstPage);
         goTo(utilCursor, firstPage);
 
@@ -2155,7 +2155,7 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
 
     private void newRootFromSplit(StructurePropagation<KEY> split) throws IOException {
         assertTrue(split.hasRightKeyInsert);
-        long rootId = id.acquireNewId(stableGeneration, unstableGeneration, NULL_CONTEXT);
+        long rootId = id.acquireNewId(stableGeneration, unstableGeneration, CursorCreator.bind(cursor));
         cursor.next(rootId);
         node.initializeInternal(cursor, DATA_LAYER_FLAG, stableGeneration, unstableGeneration);
         node.setChildAt(cursor, split.midChild, 0, stableGeneration, unstableGeneration);

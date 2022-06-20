@@ -252,6 +252,11 @@ public class DelegatingPageCursor extends PageCursor {
         return delegate.isWriteLocked();
     }
 
+    @Override
+    public void unpin() {
+        delegate.unpin();
+    }
+
     public PageCursor unwrap() {
         return delegate;
     }

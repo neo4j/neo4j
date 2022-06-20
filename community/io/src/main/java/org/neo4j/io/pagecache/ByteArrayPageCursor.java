@@ -334,6 +334,9 @@ public class ByteArrayPageCursor extends PageCursor {
         return true;
     }
 
+    @Override
+    public void unpin() {}
+
     private record ByteArrayPagedFile(int pageSize) implements PagedFile {
         @Override
         public PageCursor io(long pageId, int pf_flags, CursorContext context) throws IOException {

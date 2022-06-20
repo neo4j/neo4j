@@ -615,7 +615,7 @@ class GBPTreeConsistencyChecker<KEY> {
         private final GBPTreeConsistencyCheckVisitor visitor;
 
         ConsistencyCheckState(
-                Path file, IdProvider idProvider, GBPTreeConsistencyCheckVisitor visitor, CursorContext cursorContext)
+                Path file, IdProvider idProvider, GBPTreeConsistencyCheckVisitor visitor, CursorCreator cursorCreator)
                 throws IOException {
             this.file = file;
             this.lastId = idProvider.lastId();
@@ -625,7 +625,7 @@ class GBPTreeConsistencyChecker<KEY> {
 
             IdProvider.IdProviderVisitor freelistSeenIdsVisitor =
                     new FreelistSeenIdsVisitor(file, seenIds, lastId, visitor);
-            idProvider.visitFreelist(freelistSeenIdsVisitor, cursorContext);
+            idProvider.visitFreelist(freelistSeenIdsVisitor, cursorCreator);
         }
 
         private long highId() {

@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import static org.neo4j.index.internal.gbptree.CursorCreator.bind;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
 import static org.neo4j.index.internal.gbptree.SeekCursor.LEAF_LEVEL;
@@ -98,7 +99,7 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
             GBPTreeStructure<SingleRoot, KEY, VALUE> structure = new GBPTreeStructure<>(
                     null, null, treeNode, layout, stableGeneration(generation), unstableGeneration(generation));
             structure.visitTree(cursor, visitor, cursorContext);
-            support.idProvider().visitFreelist(visitor, cursorContext);
+            support.idProvider().visitFreelist(visitor, bind(support, PF_SHARED_READ_LOCK, cursorContext));
         }
     }
 

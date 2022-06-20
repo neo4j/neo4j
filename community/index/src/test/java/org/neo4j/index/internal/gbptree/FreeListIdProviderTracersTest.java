@@ -21,12 +21,13 @@ package org.neo4j.index.internal.gbptree;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.index.internal.gbptree.CursorCreator.bind;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -53,8 +54,8 @@ public class FreeListIdProviderTracersTest {
         assertZeroCursor(cursorContext);
 
         try (var freeListFile = pageCache.map(testDirectory.createFile("init"), pageCache.pageSize(), DATABASE_NAME)) {
-            FreeListIdProvider listIdProvider = new FreeListIdProvider(freeListFile, 0);
-            listIdProvider.initializeAfterCreation(cursorContext);
+            FreeListIdProvider listIdProvider = new FreeListIdProvider(freeListFile.payloadSize(), 0);
+            listIdProvider.initializeAfterCreation(bind(freeListFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext));
         }
 
         assertOneCursor(cursorContext);
@@ -66,12 +67,16 @@ public class FreeListIdProviderTracersTest {
         assertZeroCursor(cursorContext);
 
         try (var freeListFile = pageCache.map(testDirectory.createFile("newId"), pageCache.pageSize(), DATABASE_NAME)) {
-            FreeListIdProvider listIdProvider = new FreeListIdProvider(freeListFile, 0);
-            listIdProvider.initializeAfterCreation(NULL_CONTEXT);
-            listIdProvider.acquireNewId(1, 1, cursorContext);
+            FreeListIdProvider listIdProvider = new FreeListIdProvider(freeListFile.payloadSize(), 0);
+            var cursorCreator = bind(freeListFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext);
+            listIdProvider.initializeAfterCreation(cursorCreator);
+            listIdProvider.acquireNewId(1, 1, cursorCreator);
         }
 
-        assertOneCursor(cursorContext);
+        var cursorTracer = cursorContext.getCursorTracer();
+        assertThat(cursorTracer.pins()).isEqualTo(2);
+        assertThat(cursorTracer.unpins()).isEqualTo(2);
+        assertThat(cursorTracer.faults()).isEqualTo(2);
     }
 
     @Test
@@ -81,10 +86,11 @@ public class FreeListIdProviderTracersTest {
 
         try (var freeListFile =
                 pageCache.map(testDirectory.createFile("releaseId"), pageCache.pageSize(), DATABASE_NAME)) {
-            FreeListIdProvider listIdProvider = new FreeListIdProvider(freeListFile, 0);
-            listIdProvider.initializeAfterCreation(cursorContext);
-            listIdProvider.releaseId(1, 1, 42, cursorContext);
-            listIdProvider.flush(1, 1, cursorContext);
+            FreeListIdProvider listIdProvider = new FreeListIdProvider(freeListFile.payloadSize(), 0);
+            var cursorCreator = bind(freeListFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext);
+            listIdProvider.initializeAfterCreation(cursorCreator);
+            listIdProvider.releaseId(1, 1, 42, cursorCreator);
+            listIdProvider.flush(1, 1, cursorCreator);
         }
 
         var cursorTracer = cursorContext.getCursorTracer();
@@ -100,10 +106,11 @@ public class FreeListIdProviderTracersTest {
 
         try (var freeListFile =
                 pageCache.map(testDirectory.createFile("differentReleaseId"), pageCache.pageSize(), DATABASE_NAME)) {
-            FreeListIdProvider listIdProvider = new FreeListIdProvider(freeListFile, 0);
+            FreeListIdProvider listIdProvider = new FreeListIdProvider(freeListFile.payloadSize(), 0);
             listIdProvider.initialize(0, 1, 0, listIdProvider.entriesPerPage() - 1, 0);
-            listIdProvider.releaseId(1, 1, 42, cursorContext);
-            listIdProvider.flush(1, 1, cursorContext);
+            var cursorCreator = bind(freeListFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext);
+            listIdProvider.releaseId(1, 1, 42, cursorCreator);
+            listIdProvider.flush(1, 1, cursorCreator);
             assertEquals(0, listIdProvider.metaData().writePos());
         }
 
@@ -121,18 +128,18 @@ public class FreeListIdProviderTracersTest {
 
         try (var freeListFile =
                 pageCache.map(testDirectory.createFile("traversal"), pageCache.pageSize(), DATABASE_NAME)) {
-            FreeListIdProvider listIdProvider = new FreeListIdProvider(freeListFile, 0);
+            FreeListIdProvider listIdProvider = new FreeListIdProvider(freeListFile.payloadSize(), 0);
             listIdProvider.initialize(100, 0, 1, listIdProvider.entriesPerPage() - 1, 0);
-            listIdProvider.releaseId(1, 1, 42, NULL_CONTEXT);
-            listIdProvider.flush(1, 1, NULL_CONTEXT);
+            var cursorCreator = bind(freeListFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext);
+            listIdProvider.releaseId(1, 1, 42, cursorCreator);
+            listIdProvider.flush(1, 1, cursorCreator);
             assertEquals(0, listIdProvider.metaData().writePos());
-
-            listIdProvider.visitFreelist(new IdProvider.IdProviderVisitor.Adaptor(), cursorContext);
+            listIdProvider.visitFreelist(new IdProvider.IdProviderVisitor.Adaptor(), cursorCreator);
         }
 
         var cursorTracer = cursorContext.getCursorTracer();
-        assertThat(cursorTracer.pins()).isEqualTo(3);
-        assertThat(cursorTracer.unpins()).isEqualTo(3);
+        assertThat(cursorTracer.pins()).isEqualTo(6);
+        assertThat(cursorTracer.unpins()).isEqualTo(6);
         assertThat(cursorTracer.hits()).isEqualTo(3);
     }
 

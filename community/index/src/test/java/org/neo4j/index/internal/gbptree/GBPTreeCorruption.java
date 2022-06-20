@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import static org.neo4j.index.internal.gbptree.CursorCreator.bind;
 import static org.neo4j.index.internal.gbptree.GBPTreeGenerationTarget.NO_GENERATION_TARGET;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_KEYCOUNT;
@@ -364,8 +365,9 @@ public final class GBPTreeCorruption {
     public static <KEY, VALUE> IndexCorruption<KEY, VALUE> addFreelistEntry(long releasedId) {
         return (pagedFile, layout, node, treeState) -> {
             FreeListIdProvider freelist = getFreelist(pagedFile, treeState);
-            freelist.releaseId(treeState.stableGeneration(), treeState.unstableGeneration(), releasedId, NULL_CONTEXT);
-            freelist.flush(treeState.stableGeneration(), treeState.unstableGeneration(), NULL_CONTEXT);
+            var cursorCreator = bind(pagedFile, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT);
+            freelist.releaseId(treeState.stableGeneration(), treeState.unstableGeneration(), releasedId, cursorCreator);
+            freelist.flush(treeState.stableGeneration(), treeState.unstableGeneration(), cursorCreator);
             try (PageCursor cursor = pagedFile.io(0, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                 goTo(cursor, "", treeState.pageId());
                 FreeListIdProvider.FreelistMetaData freelistMetaData = freelist.metaData();
@@ -477,7 +479,7 @@ public final class GBPTreeCorruption {
     }
 
     private static FreeListIdProvider getFreelist(PagedFile pagedFile, TreeState treeState) {
-        FreeListIdProvider freelist = new FreeListIdProvider(pagedFile, treeState.lastId());
+        FreeListIdProvider freelist = new FreeListIdProvider(pagedFile.payloadSize(), treeState.lastId());
         freelist.initialize(
                 treeState.lastId(),
                 treeState.freeListWritePageId(),

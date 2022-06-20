@@ -458,8 +458,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                     }
                     try (PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, cursorContext)) {
                         assertTrue(cursor.next());
+                        cursor.openLinkedCursor(1).close();
                         cursor.openLinkedCursor(1);
-                        cursor.openLinkedCursor(1); // opening new linked cursor closes previous one
                         assertEquals(i * 7 + 7, defaultPageCacheTracer.openedCursors());
                         assertEquals(i * 7 + 5, defaultPageCacheTracer.closedCursors());
                     }

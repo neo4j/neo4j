@@ -104,6 +104,7 @@ public abstract class MuninnPageCursor extends PageCursor {
     protected boolean closed;
 
     protected MuninnPageCursor linkedCursor;
+    protected MuninnPageCursor backLinkedCursor;
     protected JobHandle<?> preFetcher;
 
     // This is a String with the exception message if usePreciseCursorErrorStackTraces is false, otherwise it is a
@@ -258,7 +259,7 @@ public abstract class MuninnPageCursor extends PageCursor {
 
     private void closeLinks(MuninnPageCursor cursor) {
         while (cursor != null && !cursor.closed) {
-            cursor.unpinCurrentPage();
+            cursor.unpin();
             cursor.closed = true;
             // Signal to any pre-fetchers that the cursor is closed.
             cursor.storeCurrentPageId(UNBOUND_PAGE_ID);
@@ -278,16 +279,19 @@ public abstract class MuninnPageCursor extends PageCursor {
             throw new IllegalStateException("Cannot open linked cursor on closed page cursor");
         }
         if (linkedCursor != null) {
-            closeLinks(linkedCursor);
+            if (!linkedCursor.closed) {
+                throw new IllegalStateException("Previously created linked cursor still in use");
+            }
             linkedCursor.openCursor(pageId);
         } else {
             linkedCursor = (MuninnPageCursor) pagedFile.io(pageId, pf_flags, cursorContext);
+            linkedCursor.backLinkedCursor = this;
         }
         return linkedCursor;
     }
 
     /**
-     * Must be called by {@link #unpinCurrentPage()}.
+     * Must be called by {@link #unpin()}.
      */
     protected void clearPageCursorState() {
         // We don't need to clear the pointer field, because setting the page size to 0 will make all future accesses
@@ -472,8 +476,6 @@ public abstract class MuninnPageCursor extends PageCursor {
         }
         return pagedFile.getLastPageId();
     }
-
-    protected abstract void unpinCurrentPage();
 
     protected abstract void convertPageFaultLock(long pageRef);
 

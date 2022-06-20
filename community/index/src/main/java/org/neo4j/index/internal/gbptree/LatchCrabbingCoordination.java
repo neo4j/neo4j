@@ -230,10 +230,14 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
     }
 
     @Override
-    public void flipToPessimisticMode() {
+    public boolean flipToPessimisticMode() {
         reset();
-        pessimistic = true;
-        inc(Stat.PESSIMISTIC);
+        if (!pessimistic) {
+            pessimistic = true;
+            inc(Stat.PESSIMISTIC);
+            return true;
+        }
+        return false;
     }
 
     /**

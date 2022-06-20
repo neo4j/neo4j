@@ -100,7 +100,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         id = new SimpleIdProvider(cursor::duplicate);
 
         id.reset();
-        long newId = id.acquireNewId(stableGeneration, unstableGeneration, NULL_CONTEXT);
+        long newId = id.acquireNewId(stableGeneration, unstableGeneration, CursorCreator.bind(cursor));
         goTo(cursor, newId);
         readCursor.next(newId);
 
@@ -1716,7 +1716,8 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         long currentPageId = readCursor.getCurrentPageId();
         root.goTo(readCursor);
         ThrowingConsistencyCheckVisitor visitor = new ThrowingConsistencyCheckVisitor();
-        try (ConsistencyCheckState state = new ConsistencyCheckState(null, id, visitor, NULL_CONTEXT)) {
+        try (ConsistencyCheckState state =
+                new ConsistencyCheckState(null, id, visitor, CursorCreator.bind(readCursor))) {
             GBPTreeConsistencyChecker<KEY> consistencyChecker =
                     new GBPTreeConsistencyChecker<>(node, layout, state, stableGeneration, unstableGeneration, true);
             consistencyChecker.check(null, readCursor, root, visitor, NULL_CONTEXT);
@@ -1924,7 +1925,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
 
     private void newRootFromSplit(StructurePropagation<KEY> split) throws IOException {
         assertThat(split.hasRightKeyInsert).isTrue();
-        long rootId = id.acquireNewId(stableGeneration, unstableGeneration, NULL_CONTEXT);
+        long rootId = id.acquireNewId(stableGeneration, unstableGeneration, CursorCreator.bind(cursor));
         goTo(cursor, rootId);
         node.initializeInternal(cursor, DATA_LAYER_FLAG, stableGeneration, unstableGeneration);
         node.setChildAt(cursor, split.midChild, 0, stableGeneration, unstableGeneration);

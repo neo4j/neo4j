@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import static java.lang.String.format;
+import static org.neo4j.index.internal.gbptree.CursorCreator.bind;
 import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
 
 import java.io.IOException;
@@ -180,7 +181,11 @@ public class OffloadStoreImpl<KEY, VALUE> implements OffloadStore<KEY, VALUE> {
     @Override
     public void free(long offloadId, long stableGeneration, long unstableGeneration, CursorContext cursorContext)
             throws IOException {
-        idProvider.releaseId(stableGeneration, unstableGeneration, offloadId, cursorContext);
+        idProvider.releaseId(
+                stableGeneration,
+                unstableGeneration,
+                offloadId,
+                bind(pcFactory, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext));
     }
 
     @VisibleForTesting
@@ -211,7 +216,8 @@ public class OffloadStoreImpl<KEY, VALUE> implements OffloadStore<KEY, VALUE> {
 
     private long acquireNewId(long stableGeneration, long unstableGeneration, CursorContext cursorContext)
             throws IOException {
-        return idProvider.acquireNewId(stableGeneration, unstableGeneration, cursorContext);
+        return idProvider.acquireNewId(
+                stableGeneration, unstableGeneration, bind(pcFactory, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext));
     }
 
     private static void placeCursorAtOffloadId(PageCursor cursor, long offloadId) throws IOException {

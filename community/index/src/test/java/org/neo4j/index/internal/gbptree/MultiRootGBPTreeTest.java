@@ -37,6 +37,7 @@ import static org.neo4j.util.concurrent.Futures.getAllResults;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +53,7 @@ import java.util.function.Predicate;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.data.Percentage;
 import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
@@ -102,13 +104,17 @@ class MultiRootGBPTreeTest {
                 NO_HEADER_WRITER,
                 immediate(),
                 writable(),
-                Sets.immutable.empty(),
+                getOpenOptions(),
                 "db",
                 "test multi-root tree",
                 new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY),
                 multipleRoots(rootKeyLayout, (int) kibiBytes(1)),
                 pageCacheTracer);
         highestUsableSeed = layout.highestUsableSeed();
+    }
+
+    protected ImmutableSet<OpenOption> getOpenOptions() {
+        return Sets.immutable.empty();
     }
 
     @AfterEach
@@ -198,8 +204,8 @@ class MultiRootGBPTreeTest {
     @Test
     void shouldWriteToMultipleRootsInParallel() throws Exception {
         // given
-        var numRoots = random.nextInt(2, 20);
-        var numThreads = random.nextInt(2, 8);
+        var numRoots = random.nextInt(2, 50);
+        var numThreads = random.nextInt(2, 16);
         var externalIds = randomExternalIds(numRoots);
         var executor = Executors.newFixedThreadPool(numThreads);
         var numWritten = new AtomicInteger[numRoots];
@@ -437,7 +443,7 @@ class MultiRootGBPTreeTest {
                         NO_HEADER_WRITER,
                         immediate(),
                         writable(),
-                        Sets.immutable.empty(),
+                        getOpenOptions(),
                         "db",
                         "test multi-root tree",
                         new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY),
@@ -463,7 +469,7 @@ class MultiRootGBPTreeTest {
                         NO_HEADER_WRITER,
                         immediate(),
                         writable(),
-                        Sets.immutable.empty(),
+                        getOpenOptions(),
                         "db",
                         "test multi-root tree",
                         new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY),
@@ -490,7 +496,7 @@ class MultiRootGBPTreeTest {
                             NO_HEADER_WRITER,
                             immediate(),
                             writable(),
-                            Sets.immutable.empty(),
+                            getOpenOptions(),
                             "db",
                             "test multi-root tree",
                             new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY),

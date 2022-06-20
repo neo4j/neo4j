@@ -42,9 +42,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
@@ -57,8 +59,6 @@ import org.neo4j.test.utils.TestDirectory;
 @TestDirectoryExtension
 @ExtendWith(RandomExtension.class)
 abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
-    @RegisterExtension
-    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
 
     @Inject
     private TestDirectory directory;
@@ -66,12 +66,15 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
     @Inject
     private RandomSupport random;
 
+    private DefaultPageCacheTracer pageCacheTracer;
     private PageCache pageCache;
 
     @BeforeEach
     void start() {
+        pageCacheTracer = new DefaultPageCacheTracer();
         pageCache = PageCacheSupportExtension.getPageCache(
-                new DefaultFileSystemAbstraction(), config().withPageSize(256).withAccessChecks(true));
+                new DefaultFileSystemAbstraction(),
+                config().withPageSize(256).withAccessChecks(true).withTracer(pageCacheTracer));
     }
 
     @AfterEach
@@ -89,8 +92,10 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
     void shouldDoRandomWritesInParallel() throws IOException {
         // given
         var openOptions = getOpenOptions();
+
         var layout = getLayout(random, GBPTreeTestUtil.calculatePayloadSize(pageCache, openOptions));
         try (var index = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout)
+                .with(pageCacheTracer)
                 .with(openOptions)
                 .build()) {
             var threads = Runtime.getRuntime().availableProcessors();
@@ -103,6 +108,8 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
             var seed = random.seed();
             for (int round = 0; round < 5; round++) {
                 var race = new Race();
+                var cursorContext =
+                        new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY).create("test");
                 for (var i = 0; i < threads; i++) {
                     int id = i;
                     var threadSeed = seed++;
@@ -110,7 +117,7 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
                             throwing(() -> {
                                 var random = new Random(threadSeed);
                                 var data = dataPerThread[id];
-                                try (var writer = index.writer(NULL_CONTEXT)) {
+                                try (var writer = index.writer(cursorContext)) {
                                     for (int j = 0; j < 2_000; j++) {
                                         var v = random.nextFloat();
                                         var entrySeed = random.nextLong(1_000) * threads + id;
@@ -131,7 +138,7 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
                             1);
                 }
                 race.goUnchecked();
-                index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
+                index.checkpoint(FileFlushEvent.NULL, cursorContext);
             }
 
             // then

@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import static java.lang.Integer.max;
 import static java.lang.Math.abs;
+import static org.neo4j.index.internal.gbptree.CursorCreator.bind;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
 import static org.neo4j.index.internal.gbptree.InternalTreeLogic.DEFAULT_SPLIT_RATIO;
@@ -132,24 +133,23 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
     @Override
     void create(ROOT_KEY dataRootKey, CursorContext cursorContext) throws IOException {
         dataRootKey = rootLayout.copyKey(dataRootKey);
+        long generation = support.generation();
+        long stableGeneration = stableGeneration(generation);
+        long unstableGeneration = unstableGeneration(generation);
+        var cursorCreator = bind(support, PF_SHARED_WRITE_LOCK, cursorContext);
+        long rootId = support.idProvider().acquireNewId(stableGeneration, unstableGeneration, cursorCreator);
+        Root dataRoot = new Root(rootId, unstableGeneration);
+        support.initializeNewRoot(dataRoot, dataTreeNode, DATA_LAYER_FLAG, cursorContext);
         try (Writer<ROOT_KEY, RootMappingValue> rootMappingWriter = support.internalParallelWriter(
                 rootLayout, rootTreeNode, DEFAULT_SPLIT_RATIO, cursorContext, this, ROOT_LAYER_FLAG)) {
-            long generation = support.generation();
-            long stableGeneration = stableGeneration(generation);
-            long unstableGeneration = unstableGeneration(generation);
-            long rootId = support.idProvider().acquireNewId(stableGeneration, unstableGeneration, cursorContext);
-            Root dataRoot = new Root(rootId, unstableGeneration);
-            support.initializeNewRoot(dataRoot, dataTreeNode, DATA_LAYER_FLAG, cursorContext);
-            try {
-                // Write it to the root mapping tree
-                rootMappingWriter.merge(
-                        dataRootKey, new RootMappingValue().initialize(dataRoot), DONT_ALLOW_CREATE_EXISTING_ROOT);
-                // Cache the created root
-                cache(new DataTreeRoot<>(dataRootKey, dataRoot));
-            } catch (DataTreeAlreadyExistsException e) {
-                support.idProvider().releaseId(stableGeneration, unstableGeneration, rootId, cursorContext);
-                throw e;
-            }
+            // Write it to the root mapping tree
+            rootMappingWriter.merge(
+                    dataRootKey, new RootMappingValue().initialize(dataRoot), DONT_ALLOW_CREATE_EXISTING_ROOT);
+            // Cache the created root
+            cache(new DataTreeRoot<>(dataRootKey, dataRoot));
+        } catch (DataTreeAlreadyExistsException e) {
+            support.idProvider().releaseId(stableGeneration, unstableGeneration, rootId, cursorCreator);
+            throw e;
         }
     }
 
@@ -208,7 +208,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                                     stableGeneration(generation),
                                     unstableGeneration(generation),
                                     rootIdToRelease.longValue(),
-                                    cursorContext);
+                                    bind(support, PF_SHARED_WRITE_LOCK, cursorContext));
                     break;
                 }
             }
@@ -235,9 +235,10 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                 dataLayout,
                 stableGeneration(generation),
                 unstableGeneration(generation));
+        var cursorCreator = bind(support, PF_SHARED_READ_LOCK, cursorContext);
         try (PageCursor cursor = support.openRootCursor(root, PF_SHARED_READ_LOCK, cursorContext)) {
             structure.visitTree(cursor, visitor, cursorContext);
-            support.idProvider().visitFreelist(visitor, cursorContext);
+            support.idProvider().visitFreelist(visitor, cursorCreator);
         }
 
         try (Seeker<ROOT_KEY, RootMappingValue> allRootsSeek = allRootsSeek(cursorContext)) {
@@ -246,7 +247,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                 try (PageCursor cursor =
                         support.openRootCursor(allRootsSeek.value().asRoot(), PF_SHARED_READ_LOCK, cursorContext)) {
                     structure.visitTree(cursor, visitor, cursorContext);
-                    support.idProvider().visitFreelist(visitor, cursorContext);
+                    support.idProvider().visitFreelist(visitor, cursorCreator);
                 }
             }
         }
