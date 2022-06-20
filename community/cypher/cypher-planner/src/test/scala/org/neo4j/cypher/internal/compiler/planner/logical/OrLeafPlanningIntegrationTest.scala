@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValue
@@ -1394,7 +1393,9 @@ class OrLeafPlanningIntegrationTest
     }
   }
 
-  test("should not plan a distinct union if the number of predicates on a single variable in a WHERE sub-clause is greater than `predicates_as_union_max_size`") {
+  test(
+    "should not plan a distinct union if the number of predicates on a single variable in a WHERE sub-clause is greater than `predicates_as_union_max_size`"
+  ) {
     val cfg = plannerConfig()
       .withSetting(GraphDatabaseInternalSettings.predicates_as_union_max_size, java.lang.Integer.valueOf(1))
       .build()
@@ -1415,7 +1416,9 @@ class OrLeafPlanningIntegrationTest
     plan shouldEqual expectedPlan
   }
 
-  test("should not plan a distinct union if the size of the relationship type disjunction is greater than `predicates_as_union_max_size`") {
+  test(
+    "should not plan a distinct union if the size of the relationship type disjunction is greater than `predicates_as_union_max_size`"
+  ) {
     val cfg = plannerConfig()
       .withSetting(GraphDatabaseInternalSettings.predicates_as_union_max_size, java.lang.Integer.valueOf(1))
       .build()

@@ -298,7 +298,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       metrics,
       semanticTable,
       strategy,
-     predicatesAsUnionMaxSize = config.predicatesAsUnionMaxSize,
+      predicatesAsUnionMaxSize = config.predicatesAsUnionMaxSize,
       QueryGraphSolverInput(Map.empty, Map.empty),
       notificationLogger = notificationLogger,
       useErrorsOverWarnings = useErrorsOverWarnings,
