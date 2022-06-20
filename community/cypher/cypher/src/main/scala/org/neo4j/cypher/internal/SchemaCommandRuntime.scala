@@ -281,15 +281,18 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         SuccessResult
       })
 
-    case DoNothingIfExistsForIndex(entityName, propertyKeyNames, indexType, name) => _ =>
-      val innerIndexType = indexType match {
-        case BTREE => IndexType.BTREE
-        case POINT => IndexType.POINT
-        case RANGE => IndexType.RANGE
-        case TEXT  => IndexType.TEXT
-        case it    => throw new IllegalStateException(s"Did not expect index type $it here: only btree, point, range or text indexes." )
+    case DoNothingIfExistsForIndex(entityName, propertyKeyNames, indexType, name, options) => _ =>
+      val (innerIndexType, optionsConverter) = indexType match {
+        case BTREE => (IndexType.BTREE, CreateBtreeIndexOptionsConverter("btree index"))
+        case POINT => (IndexType.POINT, CreatePointIndexOptionsConverter)
+        case RANGE => (IndexType.RANGE, CreateRangeIndexOptionsConverter("range index"))
+        case TEXT => (IndexType.TEXT, CreateTextIndexOptionsConverter)
+        case it => throw new IllegalStateException(s"Did not expect index type $it here: only btree, point, range or text indexes.")
       }
-      SchemaExecutionPlan("DoNothingIfExist", (ctx, _) => {
+      SchemaExecutionPlan("DoNothingIfExist", (ctx, params) => {
+        // Assert correct options to get errors even if matching index already exists
+        optionsConverter.convert(options, params)
+
         val (entityId, entityType) = getEntityInfo(entityName, ctx)
         val propertyKeyIds = propertyKeyNames.map(p => propertyToId(ctx)(p).id)
         if (Try(ctx.indexReference(innerIndexType, entityId, entityType, propertyKeyIds: _*).getName).isSuccess) {
@@ -301,8 +304,11 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         }
       }, None)
 
-    case DoNothingIfExistsForLookupIndex(entityType, name) => _ =>
-      SchemaExecutionPlan("DoNothingIfExist", (ctx, _) => {
+    case DoNothingIfExistsForLookupIndex(entityType, name, options) => _ =>
+      SchemaExecutionPlan("DoNothingIfExist", (ctx, params) => {
+        // Assert correct options to get errors even if matching index already exists
+        CreateLookupIndexOptionsConverter.convert(options, params)
+
         if (Try(ctx.lookupIndexReference(entityType).getName).isSuccess) {
           IgnoredResult
         } else if (name.exists(ctx.indexExists)) {
@@ -312,8 +318,11 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         }
       }, None)
 
-    case DoNothingIfExistsForFulltextIndex(entityNames, propertyKeyNames, name) => _ =>
-      SchemaExecutionPlan("DoNothingIfExist", (ctx, _) => {
+    case DoNothingIfExistsForFulltextIndex(entityNames, propertyKeyNames, name, options) => _ =>
+      SchemaExecutionPlan("DoNothingIfExist", (ctx, params) => {
+        // Assert correct options to get errors even if matching index already exists
+        CreateFulltextIndexOptionsConverter.convert(options, params)
+
         val (entityIds, entityType) = getMultipleEntityInfo(entityNames, ctx)
         val propertyKeyIds = propertyKeyNames.map(p => propertyToId(ctx)(p).id)
         if (Try(ctx.fulltextIndexReference(entityIds, entityType, propertyKeyIds: _*).getName).isSuccess) {

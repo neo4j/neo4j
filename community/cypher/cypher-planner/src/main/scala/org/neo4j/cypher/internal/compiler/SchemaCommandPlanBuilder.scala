@@ -81,10 +81,11 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
                          props: List[Property],
                          indexType: IndexType,
                          name: Option[String],
-                         ifExistsDo: IfExistsDo): (List[PropertyKeyName], Option[DoNothingIfExistsForIndex]) = {
+                         ifExistsDo: IfExistsDo,
+                         options: Options): (List[PropertyKeyName], Option[DoNothingIfExistsForIndex]) = {
       val propKeys = props.map(_.propertyKey)
       val source = ifExistsDo match {
-        case IfExistsDoNothing => Some(plans.DoNothingIfExistsForIndex(entityName, propKeys, indexType, name))
+        case IfExistsDoNothing => Some(plans.DoNothingIfExistsForIndex(entityName, propKeys, indexType, name, options))
         case _ => None
       }
       (propKeys, source)
@@ -95,7 +96,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
                          name: Option[String],
                          ifExistsDo: IfExistsDo,
                          options: Options): Option[LogicalPlan] = {
-      val (propKeys, source) = handleIfExistsDo(entityName, props, IndexType.BTREE, name, ifExistsDo)
+      val (propKeys, source) = handleIfExistsDo(entityName, props, IndexType.BTREE, name, ifExistsDo, options)
       Some(plans.CreateBtreeIndex(source, entityName, propKeys, name, options))
     }
 
@@ -104,7 +105,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
                          name: Option[String],
                          ifExistsDo: IfExistsDo,
                          options: Options): Option[LogicalPlan] = {
-      val (propKeys, source) = handleIfExistsDo(entityName, props, IndexType.RANGE, name, ifExistsDo)
+      val (propKeys, source) = handleIfExistsDo(entityName, props, IndexType.RANGE, name, ifExistsDo, options)
       Some(plans.CreateRangeIndex(source, entityName, propKeys, name, options))
     }
 
@@ -115,7 +116,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
                             options: Options): Option[LogicalPlan] = {
       val propKeys = props.map(_.propertyKey)
       val source = ifExistsDo match {
-        case IfExistsDoNothing => Some(plans.DoNothingIfExistsForFulltextIndex(entityNames, propKeys, name))
+        case IfExistsDoNothing => Some(plans.DoNothingIfExistsForFulltextIndex(entityNames, propKeys, name, options))
         case _ => None
       }
       Some(plans.CreateFulltextIndex(source, entityNames, propKeys, name, options))
@@ -126,7 +127,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
                         name: Option[String],
                         ifExistsDo: IfExistsDo,
                         options: Options): Option[LogicalPlan] = {
-      val (propKeys, source) = handleIfExistsDo(entityName, props, IndexType.TEXT, name, ifExistsDo)
+      val (propKeys, source) = handleIfExistsDo(entityName, props, IndexType.TEXT, name, ifExistsDo, options)
       Some(plans.CreateTextIndex(source, entityName, propKeys, name, options))
     }
 
@@ -135,7 +136,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
                         name: Option[String],
                         ifExistsDo: IfExistsDo,
                         options: Options): Option[LogicalPlan] = {
-      val (propKeys, source) = handleIfExistsDo(entityName, props, IndexType.POINT, name, ifExistsDo)
+      val (propKeys, source) = handleIfExistsDo(entityName, props, IndexType.POINT, name, ifExistsDo, options)
       Some(plans.CreatePointIndex(source, entityName, propKeys, name, options))
     }
 
@@ -223,7 +224,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       case CreateLookupIndex(_, isNodeIndex, _, name, ifExistsDo, options, _) =>
         val entityType = if (isNodeIndex) EntityType.NODE else EntityType.RELATIONSHIP
         val source = ifExistsDo match {
-          case IfExistsDoNothing => Some(plans.DoNothingIfExistsForLookupIndex(entityType, name))
+          case IfExistsDoNothing => Some(plans.DoNothingIfExistsForLookupIndex(entityType, name, options))
           case _ => None
         }
         Some(plans.CreateLookupIndex(source, entityType, name, options))

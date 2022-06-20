@@ -85,9 +85,9 @@ case class CreatePointIndex(source: Option[DoNothingIfExistsForIndex], entityNam
 case class DropIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 case class DropIndexOnName(name: String, ifExists: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
-case class DoNothingIfExistsForIndex(entityName: Either[LabelName, RelTypeName], propertyKeyNames: List[PropertyKeyName], indexType: IndexType, name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
-case class DoNothingIfExistsForLookupIndex(entityType: EntityType, name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
-case class DoNothingIfExistsForFulltextIndex(entityNames: Either[List[LabelName], List[RelTypeName]], propertyKeyNames: List[PropertyKeyName], name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
+case class DoNothingIfExistsForIndex(entityName: Either[LabelName, RelTypeName], propertyKeyNames: List[PropertyKeyName], indexType: IndexType, name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
+case class DoNothingIfExistsForLookupIndex(entityType: EntityType, name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
+case class DoNothingIfExistsForFulltextIndex(entityNames: Either[List[LabelName], List[RelTypeName]], propertyKeyNames: List[PropertyKeyName], name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 case class DoNothingIfExistsForConstraint(entity: String, entityName: Either[LabelName, RelTypeName], props: Seq[Property], assertion: ConstraintType, name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
 sealed trait ConstraintType

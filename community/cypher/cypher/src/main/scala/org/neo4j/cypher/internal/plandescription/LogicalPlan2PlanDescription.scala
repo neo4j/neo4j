@@ -403,13 +403,13 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
         val info = relationshipCountFromCountStoreInfo(ident, startLabel, typeNames, endLabel)
         PlanDescriptionImpl(id, "RelationshipCountFromCountStore", NoChildren, Seq(Details(info)), variables, withRawCardinalities)
 
-      case DoNothingIfExistsForIndex(entityName, propertyKeyNames, indexType, nameOption) =>
+      case DoNothingIfExistsForIndex(entityName, propertyKeyNames, indexType, nameOption, _) =>
         PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(indexInfo(indexType.name(), nameOption, entityName, propertyKeyNames, NoOptions))), variables, withRawCardinalities)
 
-      case DoNothingIfExistsForLookupIndex(entityType, nameOption) =>
+      case DoNothingIfExistsForLookupIndex(entityType, nameOption, _) =>
         PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(lookupIndexInfo(nameOption, entityType, NoOptions))), variables, withRawCardinalities)
 
-      case DoNothingIfExistsForFulltextIndex(entityNames, propertyKeyNames, nameOption) =>
+      case DoNothingIfExistsForFulltextIndex(entityNames, propertyKeyNames, nameOption, _) =>
         PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(fulltextIndexInfo(nameOption, entityNames, propertyKeyNames, NoOptions))), variables, withRawCardinalities)
 
       case CreateBtreeIndex(_, entityName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
