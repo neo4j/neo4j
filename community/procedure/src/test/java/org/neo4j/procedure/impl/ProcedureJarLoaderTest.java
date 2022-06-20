@@ -33,11 +33,17 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.jar.Attributes;
+import java.util.jar.JarOutputStream;
+import java.util.jar.Manifest;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
+import java.util.zip.ZipInputStream;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
@@ -192,6 +198,55 @@ public class ProcedureJarLoaderTest
     }
 
     @Test
+    void shouldLoadMultiReleaseJarsAndLoadVersionedClass() throws Exception
+    {
+        // given
+        URL jar = createMrJarFor( Runtime.version(), ClassWithOneProcedure.class );
+
+        AssertableLogProvider logProvider = new AssertableLogProvider( true );
+        ProcedureJarLoader jarloader = new ProcedureJarLoader( procedureCompiler(), logProvider.getLog( ProcedureJarLoader.class ) );
+
+        // when
+        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( parentDir( jar ) ).procedures();
+
+        List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
+
+        // then
+        assertThat( signatures ).containsExactly(
+                procedureSignature( "org", "neo4j", "procedure", "impl", "myProcedure" )
+                        .out( "someNumber", NTInteger )
+                        .build()
+        );
+
+        assertThat( logProvider ).doesNotHaveAnyLogs();
+    }
+
+    @Test
+    void shouldLoadMultiReleaseJarsAndIgnoreFutureVersions() throws Exception
+    {
+        // given
+        Runtime.Version nextVersion = Runtime.Version.parse( String.valueOf( Runtime.version().feature() + 1 ) );
+        URL jar = createMrJarFor( nextVersion, ClassWithOneProcedure.class );
+
+        AssertableLogProvider logProvider = new AssertableLogProvider( true );
+        ProcedureJarLoader jarloader = new ProcedureJarLoader( procedureCompiler(), logProvider.getLog( ProcedureJarLoader.class ) );
+
+        // when
+        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( parentDir( jar ) ).procedures();
+
+        List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
+
+        // then
+        assertThat( signatures ).containsExactly(
+                procedureSignature( "org", "neo4j", "procedure", "impl", "myProcedure" )
+                        .out( "someNumber", NTInteger )
+                        .build()
+        );
+
+        assertThat( logProvider ).doesNotHaveAnyLogs();
+    }
+
+    @Test
     void shouldGiveHelpfulErrorOnWildCardProcedure() throws Throwable
     {
         // Given
@@ -297,15 +352,15 @@ public class ProcedureJarLoaderTest
                 )
                 .make();
 
-        URL jar = unloaded.toJar( testDirectory.createFile( new Random().nextInt() + ".jar" ).toFile() ).toURI().toURL();
+        Path jar = unloaded.toJar( testDirectory.createFile( new Random().nextInt() + ".jar" ).toFile() ).toPath();
 
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
         ProcedureJarLoader jarloader = new ProcedureJarLoader( procedureCompiler(), logProvider.getLog( ProcedureJarLoader.class ) );
 
-        jarloader.loadProceduresFromDir( parentDir( jar ) );
+        jarloader.loadProceduresFromDir( jar.getParent() );
 
         assertThat( logProvider ).containsMessages(
-                format( "Failed to load `%s` from plugin jar `%s`: %s", className, jar.getFile(), "Bad return type" ) );
+                format( "Failed to load `%s` from plugin jar `%s`: %s", className, jar, "Bad return type" ) );
     }
 
     @Test
@@ -363,6 +418,44 @@ public class ProcedureJarLoaderTest
     private URL createJarFor( Class<?> ... targets ) throws IOException
     {
         return new JarBuilder().createJarFor( testDirectory.createFile( new Random().nextInt() + ".jar" ), targets );
+    }
+
+    private URL createMrJarFor( Runtime.Version version, Class<?>... targets ) throws IOException
+    {
+        String versionPrefix = String.format( "META-INF/versions/%d/", version.feature() );
+        var manifest = new Manifest();
+        // need to set a version, otherwise no main attributes will be written
+        manifest.getMainAttributes().put( Attributes.Name.MANIFEST_VERSION, "1.0" );
+        manifest.getMainAttributes().putValue( "Multi-Release", "true" );
+
+        var finalJar = testDirectory.createFile( new Random().nextInt() + ".jar" );
+        try ( JarOutputStream jarOut = new JarOutputStream( Files.newOutputStream( finalJar ), manifest ) )
+        {
+            URL jar = createJarFor( targets );
+
+            try ( ZipInputStream jarInStream = new ZipInputStream( jar.openStream() ) )
+            {
+                ZipEntry nextEntry;
+
+                while ( (nextEntry = jarInStream.getNextEntry()) != null )
+                {
+                    byte[] byteCode = jarInStream.readAllBytes();
+
+                    jarOut.putNextEntry( nextEntry );
+                    jarOut.write( byteCode );
+                    jarOut.closeEntry();
+
+                    jarOut.putNextEntry( new ZipEntry( versionPrefix + nextEntry.getName() ) );
+                    jarOut.write( byteCode );
+                    jarOut.closeEntry();
+                }
+            }
+
+            Path previousJarFile = testDirectory.file( Paths.get( jar.getPath() ).getFileName().toString() );
+            Files.deleteIfExists( previousJarFile );
+        }
+
+        return finalJar.toUri().toURL();
     }
 
     public static class Output

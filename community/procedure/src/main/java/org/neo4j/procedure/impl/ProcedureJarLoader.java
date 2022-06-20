@@ -27,11 +27,12 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.zip.ZipEntry;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
-import java.util.zip.ZipInputStream;
 
 import org.neo4j.collection.AbstractPrefetchingRawIterator;
 import org.neo4j.collection.RawIterator;
@@ -91,7 +92,7 @@ class ProcedureJarLoader
         URLClassLoader loader = new URLClassLoader( jarFilesURLs, this.getClass().getClassLoader() );
 
         Callables out = new Callables();
-        for ( URL jarFile : jarFilesURLs )
+        for ( Path jarFile : jarFiles )
         {
             loadProcedures( jarFile, loader, out );
         }
@@ -102,7 +103,7 @@ class ProcedureJarLoader
     {
         try
         {
-            new ZipFile( jarFile.toFile() ).close();
+            new JarFile( jarFile.toFile(), true, ZipFile.OPEN_READ, JarFile.runtimeVersion() ).close();
             return false;
         }
         catch ( IOException e )
@@ -112,7 +113,7 @@ class ProcedureJarLoader
         }
     }
 
-    private Callables loadProcedures( URL jar, ClassLoader loader, Callables target )
+    private Callables loadProcedures( Path jar, ClassLoader loader, Callables target )
             throws IOException, KernelException
     {
         RawIterator<Class<?>,IOException> classes = listClassesIn( jar, loader );
@@ -138,9 +139,10 @@ class ProcedureJarLoader
         }
     }
 
-    private RawIterator<Class<?>,IOException> listClassesIn( URL jar, ClassLoader loader ) throws IOException
+    private RawIterator<Class<?>,IOException> listClassesIn( Path jar, ClassLoader loader ) throws IOException
     {
-        ZipInputStream zip = new ZipInputStream( jar.openStream() );
+        JarFile jarFile = new JarFile( jar.toFile(), true, ZipFile.OPEN_READ, JarFile.runtimeVersion() );
+        Iterator<JarEntry> jarEntries = jarFile.versionedStream().iterator();
 
         return new AbstractPrefetchingRawIterator<>()
         {
@@ -149,14 +151,9 @@ class ProcedureJarLoader
             {
                 try
                 {
-                    while ( true )
+                    while ( jarEntries.hasNext() )
                     {
-                        ZipEntry nextEntry = zip.getNextEntry();
-                        if ( nextEntry == null )
-                        {
-                            zip.close();
-                            return null;
-                        }
+                        JarEntry nextEntry = jarEntries.next();
 
                         String name = nextEntry.getName();
                         if ( name.endsWith( ".class" ) )
@@ -175,14 +172,17 @@ class ProcedureJarLoader
                             }
                             catch ( UnsatisfiedLinkError | NoClassDefFoundError | VerifyError | Exception e )
                             {
-                                log.warn( "Failed to load `%s` from plugin jar `%s`: %s", className, jar.getFile(), e.getMessage() );
+                                log.warn( "Failed to load `%s` from plugin jar `%s`: %s", className, jar, e.getMessage() );
                             }
                         }
                     }
+
+                    jarFile.close();
+                    return null;
                 }
                 catch ( IOException | RuntimeException e )
                 {
-                    zip.close();
+                    jarFile.close();
                     throw e;
                 }
             }
