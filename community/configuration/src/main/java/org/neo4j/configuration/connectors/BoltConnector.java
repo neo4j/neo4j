@@ -134,7 +134,7 @@ public final class BoltConnector implements SettingsDeclaration {
         /**
          * Causes keep-alive messages to be sent only while streaming results.
          */
-        @Deprecated
+        @Deprecated(forRemoval = true)
         STREAMING,
 
         /**
