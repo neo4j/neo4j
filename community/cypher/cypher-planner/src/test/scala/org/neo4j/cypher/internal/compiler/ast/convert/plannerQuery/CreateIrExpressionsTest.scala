@@ -205,6 +205,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               PatternRelationship(r2.name, (m.name, o.name), INCOMING, Seq.empty, SimplePatternLength)
             ),
             selections = Selections.from(Seq(
+              not(equals(r, r2)),
               rPred,
               oPred,
               equals(prop(r.name, "prop"), literalInt(5)),
@@ -362,6 +363,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               PatternRelationship(r2.name, (m.name, o.name), INCOMING, Seq.empty, SimplePatternLength)
             ),
             selections = Selections.from(Seq(
+              not(equals(r, r2)),
               rPred,
               oPred,
               equals(prop(r.name, "prop"), literalInt(5)),

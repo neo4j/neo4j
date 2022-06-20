@@ -1667,6 +1667,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     val plan = planner.plan(q).stripProduceResults
 
     val expectedNestedPlan = planner.subPlanBuilder()
+      .filter("not anon_2 = anon_4")
       .expand("(anon_3)-[anon_4]->(anon_5)")
       .expand("(n)-[anon_2]->(anon_3)")
       .argument("n")
@@ -1817,5 +1818,36 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       )(pos)))
       .allNodeScan("a")
       .build())
+  }
+
+  test("should honor relationship uniqueness for pattern expression") {
+    val logicalPlan = planner.plan("MATCH (a) WHERE (a)-->()-->() RETURN a")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("a")
+        .semiApply()
+        .|.filter("not anon_2 = anon_4") // This filter upholds rel uniqueness
+        .|.expandAll("(anon_3)-[anon_4]->(anon_5)")
+        .|.expandAll("(a)-[anon_2]->(anon_3)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should honor relationship uniqueness for pattern comprehension") {
+    val logicalPlan = planner.plan("MATCH (a) RETURN [(a)-->(b)-->(c) | c.prop] AS props")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("props")
+        .rollUpApply("props", "anon_0")
+        .|.projection("c.prop AS anon_0")
+        .|.filter("not anon_2 = anon_3") // This filter upholds rel uniqueness
+        .|.expandAll("(b)-[anon_3]->(c)")
+        .|.expandAll("(a)-[anon_2]->(b)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
   }
 }

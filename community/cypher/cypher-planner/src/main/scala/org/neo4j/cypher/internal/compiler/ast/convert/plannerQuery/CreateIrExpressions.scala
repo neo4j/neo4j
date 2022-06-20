@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.RelationshipChainDestructor
+import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.MatchPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.inlineNamedPathsInPatternComprehensions
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
@@ -49,6 +50,7 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
   private val pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression
   private val stringifier = ExpressionStringifier(_.asCanonicalStringVal)
   private val patternNormalizer = MatchPredicateNormalizer.defaultNormalizer(anonymousVariableNameGenerator)
+  private val addUniquenessPredicates = AddUniquenessPredicates(anonymousVariableNameGenerator)
 
   /**
    * MatchPredicateNormalizer invalidates some conditions that are usually fixed by later rewriters.
@@ -78,15 +80,21 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
     horizon: QueryHorizon
   ): PlannerQuery = {
     val patternContent = pattern.element.destructedRelationshipChain
+
+    // Create predicates for relationship uniqueness
+    val uniqueRels = addUniquenessPredicates.collectUniqueRels(pattern)
+    val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, pattern.position)
+    // Extract inlined predicates
     val extractedPredicates: Seq[Expression] =
       patternNormalizer.extractAllFrom(pattern).endoRewrite(fixExtractedPredicatesRewriter)
+
     val qg = QueryGraph(
       argumentIds = dependencies,
       patternNodes = patternContent.nodeIds.toSet,
       patternRelationships = patternContent.rels.toSet,
       shortestPathPatterns =
         patternContent.shortestPaths.toSet, // Not really needed, PatternExpressions/PatternComprehension can't express shortestPath
-      selections = Selections.from(extractedPredicates ++ maybePredicate)
+      selections = Selections.from(uniquePredicates ++ extractedPredicates ++ maybePredicate)
     )
 
     PlannerQuery(RegularSinglePlannerQuery(
