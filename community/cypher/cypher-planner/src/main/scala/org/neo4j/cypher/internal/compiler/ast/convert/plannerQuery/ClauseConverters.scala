@@ -340,7 +340,7 @@ object ClauseConverters {
     clause.pattern.patternParts.foreach {
       // CREATE (n :L1:L2 {prop: 42})
       case EveryPath(NodePattern(Some(id), labelExpression, props, None)) =>
-        val labels = getLabelNameSeq(labelExpression)
+        val labels = getLabelNameSet(labelExpression)
         nodes += CreateNode(id.name, labels, props)
         seenPatternNodes += id.name
         ()
@@ -376,11 +376,11 @@ object ClauseConverters {
     builder.amendQueryGraph(_.addMutatingPatterns(CreatePattern(nodes.toSeq, relationships.toSeq)))
   }
 
-  private def getLabelNameSeq(labelExpression: Option[LabelExpression]): Seq[LabelName] = {
+  private def getLabelNameSet(labelExpression: Option[LabelExpression]): Set[LabelName] = {
     labelExpression match {
-      case Some(Leaf(labelName: LabelName)) => Seq(labelName)
-      case Some(ColonConjunction(lhs, rhs)) => getLabelNameSeq(Some(lhs)) ++ getLabelNameSeq(Some(rhs))
-      case None                             => Seq.empty
+      case Some(Leaf(labelName: LabelName)) => Set(labelName)
+      case Some(ColonConjunction(lhs, rhs)) => getLabelNameSet(Some(lhs)) ++ getLabelNameSet(Some(rhs))
+      case None                             => Set.empty
     }
   }
 
@@ -408,7 +408,7 @@ object ClauseConverters {
 
   private def createNodeCommand(pattern: NodePattern): CreateNodeCommand = pattern match {
     case NodePattern(Some(variable), labelExpression, props, None) =>
-      CreateNodeCommand(CreateNode(variable.name, getLabelNameSeq(labelExpression), props), variable)
+      CreateNodeCommand(CreateNode(variable.name, getLabelNameSet(labelExpression), props), variable)
     case _ => throw new InternalException("All nodes must be named at this instance")
   }
 
@@ -603,7 +603,7 @@ object ClauseConverters {
     clause.pattern match {
       // MERGE (n :L1:L2 {prop: 42})
       case EveryPath(NodePattern(Some(id), labelExpression, props, _)) =>
-        val labels = getLabelNameSeq(labelExpression)
+        val labels = getLabelNameSet(labelExpression)
         val currentlyAvailableVariables = builder.currentlyAvailableVariables
         val labelPredicates = labels.map(l => HasLabels(id, Seq(l))(id.position))
         val propertyPredicates = toPropertySelection(id, toPropertyMap(props))

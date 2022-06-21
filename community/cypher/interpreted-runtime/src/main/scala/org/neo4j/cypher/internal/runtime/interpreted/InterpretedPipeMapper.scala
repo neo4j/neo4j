@@ -676,7 +676,7 @@ case class InterpretedPipeMapper(
           val nodeOps = nodes.map {
             case ir.CreateNode(node, labels, properties) =>
               CreateNode(
-                CreateNodeCommand(node, labels.map(LazyLabel.apply), properties.map(buildExpression)),
+                CreateNodeCommand(node, labels.toSeq.map(LazyLabel.apply), properties.map(buildExpression)),
                 allowNullOrNaNProperty = true
               )
           }
@@ -1115,7 +1115,7 @@ case class InterpretedPipeMapper(
         CreatePipe(
           source,
           nodes.map(n =>
-            CreateNodeCommand(n.idName, n.labels.map(LazyLabel.apply), n.properties.map(buildExpression))
+            CreateNodeCommand(n.idName, n.labels.toSeq.map(LazyLabel.apply), n.properties.map(buildExpression))
           ).toArray,
           relationships.map(r =>
             CreateRelationshipCommand(
@@ -1132,7 +1132,7 @@ case class InterpretedPipeMapper(
         val creates = createNodes.map {
           case ir.CreateNode(node, labels, properties) =>
             CreateNode(
-              CreateNodeCommand(node, labels.map(LazyLabel.apply), properties.map(buildExpression)),
+              CreateNodeCommand(node, labels.toSeq.map(LazyLabel.apply), properties.map(buildExpression)),
               allowNullOrNaNProperty = false
             )
         } ++ createRelationships.map {
@@ -1161,7 +1161,7 @@ case class InterpretedPipeMapper(
         )(id = id)
 
       case SetLabels(_, name, labels) =>
-        SetPipe(source, SetLabelsOperation(name, labels.map(LazyLabel.apply)))(id = id)
+        SetPipe(source, SetLabelsOperation(name, labels.toSeq.map(LazyLabel.apply)))(id = id)
 
       case SetNodeProperty(_, name, propertyKey, expression) =>
         val needsExclusiveLock =
@@ -1261,7 +1261,7 @@ case class InterpretedPipeMapper(
         SetPipe(source, SetPropertiesOperation(buildExpression(entityExpr), keys, values))(id = id)
 
       case RemoveLabels(_, name, labels) =>
-        RemoveLabelsPipe(source, name, labels.map(LazyLabel.apply))(id = id)
+        RemoveLabelsPipe(source, name, labels.toSeq.map(LazyLabel.apply))(id = id)
 
       case DeleteNode(_, expression) =>
         DeletePipe(source, buildExpression(expression), forced = false)(id = id)

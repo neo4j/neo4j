@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
+import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.LenientCreateRelationship
@@ -78,7 +79,9 @@ abstract class EntityCreateSlottedPipe(source: Pipe) extends BaseCreatePipe(sour
   }
 }
 
-case class CreateNodeSlottedCommand(idOffset: Int, labels: Seq[LazyLabel], properties: Option[Expression])
+case class CreateNodeSlottedCommand(idOffset: Int, labels: Seq[LazyLabel], properties: Option[Expression]) {
+  checkOnlyWhenAssertionsAreEnabled(labels.toSet.size == labels.size)
+}
 
 case class CreateRelationshipSlottedCommand(
   relIdOffset: Int,

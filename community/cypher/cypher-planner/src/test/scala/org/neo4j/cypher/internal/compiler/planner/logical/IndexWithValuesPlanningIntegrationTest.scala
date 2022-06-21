@@ -725,7 +725,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
             IndexOrderNone,
             IndexType.RANGE
           ),
-          Seq(CreateNode("n", Seq(labelName("Awesome")), Some(mapOf(("prop", literalString("foo")))))),
+          Seq(CreateNode("n", Set(labelName("Awesome")), Some(mapOf(("prop", literalString("foo")))))),
           Seq.empty,
           Seq.empty,
           Seq.empty,
@@ -756,7 +756,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
             IndexOrderNone,
             IndexType.RANGE
           ),
-          Seq(CreateNode("n", Seq(labelName("Awesome")), Some(mapOf(("prop", literalString("foo")))))),
+          Seq(CreateNode("n", Set(labelName("Awesome")), Some(mapOf(("prop", literalString("foo")))))),
           Seq.empty,
           Seq.empty,
           Seq.empty,
@@ -788,7 +788,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
             IndexOrderNone,
             IndexType.RANGE
           ),
-          Seq(CreateNode("n", Seq(labelName("Awesome")), Some(mapOf(("prop", literalString("foo")))))),
+          Seq(CreateNode("n", Set(labelName("Awesome")), Some(mapOf(("prop", literalString("foo")))))),
           Seq.empty,
           Seq.empty,
           Seq.empty,

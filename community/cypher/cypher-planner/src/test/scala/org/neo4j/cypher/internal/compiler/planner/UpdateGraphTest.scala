@@ -246,7 +246,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
       IndexedSeq(
         DeleteExpression(Variable("a")(pos), forced = false),
         MergeNodePattern(
-          CreateNode("b", Seq(LabelName("L3")(pos), LabelName("L3")(pos)), None),
+          CreateNode("b", Set(LabelName("L3")(pos), LabelName("L3")(pos)), None),
           QueryGraph.empty,
           Seq.empty,
           Seq.empty
@@ -279,7 +279,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     val ug = QueryGraph(mutatingPatterns =
       IndexedSeq(
         MergeNodePattern(
-          CreateNode("b", Seq(labelName("Label")), Some(mapOfInt("prop" -> 123))),
+          CreateNode("b", Set(labelName("Label")), Some(mapOfInt("prop" -> 123))),
           QueryGraph.empty,
           Seq.empty,
           Seq.empty
@@ -299,7 +299,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     val ug = QueryGraph(mutatingPatterns =
       IndexedSeq(
         MergeNodePattern(
-          CreateNode("b", Seq(labelName("Label")), Some(mapOfInt("prop" -> 123))),
+          CreateNode("b", Set(labelName("Label")), Some(mapOfInt("prop" -> 123))),
           QueryGraph.empty,
           Seq.empty,
           Seq.empty
@@ -320,7 +320,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     val ug = QueryGraph(mutatingPatterns =
       IndexedSeq(
         MergeNodePattern(
-          CreateNode("b", Seq(labelName("OtherLabel")), Some(mapOfInt("prop" -> 123))),
+          CreateNode("b", Set(labelName("OtherLabel")), Some(mapOfInt("prop" -> 123))),
           QueryGraph.empty,
           Seq.empty,
           Seq.empty
@@ -332,7 +332,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   private def createNode(name: String, labels: String*) =
-    CreatePattern(List(CreateNode(name, labels.map(l => LabelName(l)(pos)), None)), Nil)
+    CreatePattern(List(CreateNode(name, labels.map(l => LabelName(l)(pos)).toSet, None)), Nil)
 
   private def createRelationship(name: String, start: String, relType: String, end: String) =
     CreatePattern(

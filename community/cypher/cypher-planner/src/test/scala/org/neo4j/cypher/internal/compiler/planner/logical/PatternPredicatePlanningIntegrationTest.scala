@@ -1174,12 +1174,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
             _,
             RollUpApply(AllNodesScan("n", SetExtractor()), _ /* <- This is the subQuery */, _, _) // Match part
           ),
-          Seq(CreateNode("n", Seq(), Some(_: MapExpression))),
+          Seq(CreateNode("n", labels, Some(_: MapExpression))),
           Seq(),
           Seq(),
           Seq(),
           _
-        ) => ()
+        ) if labels.isEmpty => ()
     }
   }
 

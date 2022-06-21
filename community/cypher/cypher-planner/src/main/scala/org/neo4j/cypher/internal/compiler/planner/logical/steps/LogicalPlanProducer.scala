@@ -2140,7 +2140,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   def planSetLabel(inner: LogicalPlan, pattern: SetLabelPattern, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
-    val plan = SetLabels(inner, pattern.idName, pattern.labels)
+    val plan = SetLabels(inner, pattern.idName, pattern.labels.toSet)
     val providedOrder = providedOrderOfUpdate(plan, inner, context.executionModel)
     annotate(plan, solved, providedOrder, context)
   }
@@ -2281,7 +2281,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   def planRemoveLabel(inner: LogicalPlan, pattern: RemoveLabelPattern, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
-    val plan = RemoveLabels(inner, pattern.idName, pattern.labels)
+    val plan = RemoveLabels(inner, pattern.idName, pattern.labels.toSet)
     val providedOrder = providedOrderOfUpdate(plan, inner, context.executionModel)
     annotate(plan, solved, providedOrder, context)
   }

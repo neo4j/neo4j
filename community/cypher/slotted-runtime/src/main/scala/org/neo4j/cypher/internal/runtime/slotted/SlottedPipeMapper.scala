@@ -620,7 +620,7 @@ class SlottedPipeMapper(
             CreateSlottedNode(
               CreateNodeSlottedCommand(
                 slots.getLongOffsetFor(node),
-                labels.map(LazyLabel.apply),
+                labels.toSeq.map(LazyLabel.apply),
                 properties.map(convertExpressions)
               ),
               allowNullOrNaNProperty = true
@@ -873,7 +873,7 @@ class SlottedPipeMapper(
           nodes.map(n =>
             CreateNodeSlottedCommand(
               slots.getLongOffsetFor(n.idName),
-              n.labels.map(LazyLabel.apply),
+              n.labels.toSeq.map(LazyLabel.apply),
               n.properties.map(convertExpressions)
             )
           ).toIndexedSeq,
@@ -897,7 +897,7 @@ class SlottedPipeMapper(
             CreateSlottedNode(
               CreateNodeSlottedCommand(
                 slots.getLongOffsetFor(node),
-                labels.map(LazyLabel.apply),
+                labels.toSeq.map(LazyLabel.apply),
                 properties.map(convertExpressions)
               ),
               allowNullOrNaNProperty = false

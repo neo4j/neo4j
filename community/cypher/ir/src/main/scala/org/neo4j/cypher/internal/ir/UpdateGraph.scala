@@ -107,9 +107,9 @@ trait UpdateGraph {
    * CREATE (:A) CREATE (:B:C) would make a Set(Set(A), Set(B,C))
    */
   lazy val createLabels: Set[Set[LabelName]] =
-    createPatterns.flatMap(_.nodes).map(_.labels.toSet).toSet ++
-      mergeNodePatterns.map(_.createNode.labels.toSet) ++
-      mergeRelationshipPatterns.flatMap(_.createNodes).map(_.labels.toSet)
+    createPatterns.flatMap(_.nodes).map(_.labels).toSet ++
+      mergeNodePatterns.map(_.createNode.labels) ++
+      mergeRelationshipPatterns.flatMap(_.createNodes).map(_.labels)
 
   /*
    * Finds all node properties being created with CREATE ({prop...})

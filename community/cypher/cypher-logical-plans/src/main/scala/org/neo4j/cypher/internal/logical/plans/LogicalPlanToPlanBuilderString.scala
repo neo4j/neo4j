@@ -943,8 +943,8 @@ object LogicalPlanToPlanBuilderString {
         wrapInQuotations(idName)
       case Prober(_, _) =>
         "Prober.NoopProbe" // We do not preserve the object reference through the string transformation
-      case RemoveLabels(_, idName, labelNames) => wrapInQuotationsAndMkString(idName +: labelNames.map(_.name))
-      case SetLabels(_, idName, labelNames)    => wrapInQuotationsAndMkString(idName +: labelNames.map(_.name))
+      case RemoveLabels(_, idName, labelNames) => wrapInQuotationsAndMkString(idName +: labelNames.map(_.name).toSeq)
+      case SetLabels(_, idName, labelNames)    => wrapInQuotationsAndMkString(idName +: labelNames.map(_.name).toSeq)
       case LoadCSV(_, url, variableName, format, fieldTerminator, _, _) =>
         val fieldTerminatorStr = fieldTerminator.fold("None")(ft => s"Some(${wrapInQuotations(ft)})")
         Seq(
@@ -1072,7 +1072,7 @@ object LogicalPlanToPlanBuilderString {
 
   private def createNodeToString(createNode: CreateNode) = createNode match {
     case CreateNode(idName, labels, None) =>
-      s"createNode(${wrapInQuotationsAndMkString(idName +: labels.map(_.name))})"
+      s"createNode(${wrapInQuotationsAndMkString(idName +: labels.map(_.name).toSeq)})"
     case CreateNode(idName, labels, Some(props)) =>
       s"createNodeWithProperties(${wrapInQuotations(idName)}, Seq(${wrapInQuotationsAndMkString(labels.map(_.name))}), ${wrapInQuotations(expressionStringifier(props))})"
   }

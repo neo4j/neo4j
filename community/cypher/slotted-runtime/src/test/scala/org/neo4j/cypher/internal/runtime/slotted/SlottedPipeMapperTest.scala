@@ -193,7 +193,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
   test("eagerize before create node") {
     val allNodeScan: AllNodesScan = AllNodesScan("x", Set.empty)
     val eager = Eager(allNodeScan)
-    val createNode = Create(eager, List(CreateNode("z", Seq(label), None)), Nil)
+    val createNode = Create(eager, List(CreateNode("z", Set(label), None)), Nil)
 
     // when
     val pipe = build(createNode)
@@ -220,7 +220,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("create node") {
     val argument = Argument()
-    val createNode = Create(argument, List(CreateNode("z", Seq(label), None)), Nil)
+    val createNode = Create(argument, List(CreateNode("z", Set(label), None)), Nil)
 
     // when
     val pipe = build(createNode)

@@ -3150,7 +3150,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Create(
           lhsLP,
-          Seq(CreateNode("x", Seq.empty, None)),
+          Seq(CreateNode("x", Set.empty, None)),
           Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None))
         ),
         32.2
@@ -3162,7 +3162,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Create(
           lhsLP,
-          Seq(CreateNode("x", Seq(label("Label")), None)),
+          Seq(CreateNode("x", Set(label("Label")), None)),
           Seq(CreateRelationship("  UNNAMED67", "x", relType("R"), "y", SemanticDirection.INCOMING, None))
         ),
         32.2
@@ -3180,7 +3180,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Create(
           lhsLP,
-          Seq(CreateNode("x", Seq(label("Label1"), label("Label2")), None)),
+          Seq(CreateNode("x", Set(label("Label1"), label("Label2")), None)),
           Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None))
         ),
         32.2
@@ -3198,7 +3198,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Create(
           lhsLP,
-          Seq(CreateNode("x", Seq(label("Label")), Some(properties))),
+          Seq(CreateNode("x", Set(label("Label")), Some(properties))),
           Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, Some(properties)))
         ),
         32.2
@@ -3223,7 +3223,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Merge(
           lhsLP,
-          Seq(CreateNode("x", Seq.empty, None)),
+          Seq(CreateNode("x", Set.empty, None)),
           Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None)),
           Seq.empty,
           Seq.empty,
@@ -3238,7 +3238,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Merge(
           lhsLP,
-          Seq(CreateNode("x", Seq(label("L")), None)),
+          Seq(CreateNode("x", Set(label("L")), None)),
           Seq.empty,
           Seq(SetLabelPattern("x", Seq(label("NEW")))),
           Seq.empty,
@@ -3259,7 +3259,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Merge(
           lhsLP,
-          Seq(CreateNode("x", Seq(label("L")), None)),
+          Seq(CreateNode("x", Set(label("L")), None)),
           Seq.empty,
           Seq.empty,
           Seq(SetLabelPattern("x", Seq(label("NEW")))),
@@ -3280,7 +3280,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Merge(
           lhsLP,
-          Seq(CreateNode("x", Seq(label("L")), None)),
+          Seq(CreateNode("x", Set(label("L")), None)),
           Seq.empty,
           Seq(SetLabelPattern("x", Seq(label("ON_MATCH")))),
           Seq(SetLabelPattern("x", Seq(label("ON_CREATE")))),
@@ -3301,7 +3301,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Merge(
           lhsLP,
-          Seq(CreateNode("x", Seq.empty, Some(properties))),
+          Seq(CreateNode("x", Set.empty, Some(properties))),
           Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, Some(properties))),
           Seq.empty,
           Seq.empty,
@@ -3322,7 +3322,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Merge(
           lhsLP,
-          Seq(CreateNode("x", Seq(label("L")), Some(properties))),
+          Seq(CreateNode("x", Set(label("L")), Some(properties))),
           Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, Some(properties))),
           Seq.empty,
           Seq.empty,
@@ -3364,7 +3364,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Merge(
           lhsLP,
-          Seq(CreateNode("x", Seq(label("L")), None)),
+          Seq(CreateNode("x", Set(label("L")), None)),
           Seq.empty,
           Seq(SetNodePropertiesPattern("x", Seq((key("p1"), number("1")), (key("p2"), number("2"))))),
           Seq.empty,
@@ -4287,23 +4287,23 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("Updates") {
     // RemoveLabels
     assertGood(
-      attach(RemoveLabels(lhsLP, "x", Seq(label("L1"))), 1.0),
+      attach(RemoveLabels(lhsLP, "x", Set(label("L1"))), 1.0),
       planDescription(id, "RemoveLabels", SingleChild(lhsPD), Seq(details("x:L1")), Set("a", "x"))
     )
 
     assertGood(
-      attach(RemoveLabels(lhsLP, "x", Seq(label("L1"), label("L2"))), 1.0),
+      attach(RemoveLabels(lhsLP, "x", Set(label("L1"), label("L2"))), 1.0),
       planDescription(id, "RemoveLabels", SingleChild(lhsPD), Seq(details("x:L1:L2")), Set("a", "x"))
     )
 
     // SetLabels
     assertGood(
-      attach(SetLabels(lhsLP, "x", Seq(label("L1"))), 1.0),
+      attach(SetLabels(lhsLP, "x", Set(label("L1"))), 1.0),
       planDescription(id, "SetLabels", SingleChild(lhsPD), Seq(details("x:L1")), Set("a", "x"))
     )
 
     assertGood(
-      attach(SetLabels(lhsLP, "x", Seq(label("L1"), label("L2"))), 1.0),
+      attach(SetLabels(lhsLP, "x", Set(label("L1"), label("L2"))), 1.0),
       planDescription(id, "SetLabels", SingleChild(lhsPD), Seq(details("x:L1:L2")), Set("a", "x"))
     )
 

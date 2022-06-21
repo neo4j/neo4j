@@ -145,7 +145,7 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should use exhaustive limit when moving eager on top of limit when there are updates") {
-    val leaf = Create(newMockedLogicalPlan(), nodes = Seq(CreateNode("n", Seq.empty, None)), relationships = Seq.empty)
+    val leaf = Create(newMockedLogicalPlan(), nodes = Seq(CreateNode("n", Set.empty, None)), relationships = Seq.empty)
     rewrite(
       Projection(
         Limit(

@@ -419,7 +419,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     var curr: LogicalPlan =
       Create(
         source,
-        (0 until nLongs).map(i => CreateNode(longPrefix + i, Nil, None)),
+        (0 until nLongs).map(i => CreateNode(longPrefix + i, Set.empty, None)),
         Nil
       )
 

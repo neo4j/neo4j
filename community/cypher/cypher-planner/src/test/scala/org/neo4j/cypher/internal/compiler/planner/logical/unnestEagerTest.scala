@@ -295,10 +295,10 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningAttributesTestS
   test("should unnest set labels from rhs of apply") {
     val lhs = newMockedLogicalPlan()
     val rhs = newMockedLogicalPlan()
-    val set = SetLabels(rhs, "a", Seq.empty)
+    val set = SetLabels(rhs, "a", Set.empty)
     val input = Apply(lhs, set)
 
-    rewrite(input) should equal(SetLabels(Apply(lhs, rhs), "a", Seq.empty))
+    rewrite(input) should equal(SetLabels(Apply(lhs, rhs), "a", Set.empty))
   }
 
   test("should unnest remove labels from rhs of apply") {

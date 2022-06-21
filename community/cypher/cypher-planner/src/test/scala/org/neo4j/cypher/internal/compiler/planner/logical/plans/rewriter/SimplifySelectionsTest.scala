@@ -45,7 +45,7 @@ class SimplifySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("should rewrite Selection(false, Create) to ExhaustiveLimit(Create, 0)") {
-    val source = Create(FakePlan(Set.empty), Seq(CreateNode("n", Seq.empty, None)), Seq.empty)
+    val source = Create(FakePlan(Set.empty), Seq(CreateNode("n", Set.empty, None)), Seq.empty)
     val selection = Selection(Seq(falseLiteral), source)
 
     selection.endoRewrite(simplifySelections) should equal(

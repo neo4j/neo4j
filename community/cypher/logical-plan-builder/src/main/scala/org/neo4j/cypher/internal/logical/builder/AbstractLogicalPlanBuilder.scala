@@ -729,12 +729,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def setLabels(nodeVariable: String, labels: String*): IMPL = {
-    val labelNames = labels.map(l => LabelName(l)(InputPosition.NONE))
+    val labelNames = labels.map(l => LabelName(l)(InputPosition.NONE)).toSet
     appendAtCurrentIndent(UnaryOperator(lp => SetLabels(lp, nodeVariable, labelNames)(_)))
   }
 
   def removeLabels(nodeVariable: String, labels: String*): IMPL = {
-    val labelNames = labels.map(l => LabelName(l)(InputPosition.NONE))
+    val labelNames = labels.map(l => LabelName(l)(InputPosition.NONE)).toSet
     appendAtCurrentIndent(UnaryOperator(lp => RemoveLabels(lp, nodeVariable, labelNames)(_)))
   }
 
@@ -1886,10 +1886,10 @@ object AbstractLogicalPlanBuilder {
   }
 
   def createNode(node: String, labels: String*): CreateNode =
-    CreateNode(node, labels.map(LabelName(_)(pos)), None)
+    CreateNode(node, labels.map(LabelName(_)(pos)).toSet, None)
 
   def createNodeWithProperties(node: String, labels: Seq[String], properties: String): CreateNode =
-    CreateNode(node, labels.map(LabelName(_)(pos)), Some(Parser.parseExpression(properties)))
+    CreateNode(node, labels.map(LabelName(_)(pos)).toSet, Some(Parser.parseExpression(properties)))
 
   def createRelationship(
     relationship: String,

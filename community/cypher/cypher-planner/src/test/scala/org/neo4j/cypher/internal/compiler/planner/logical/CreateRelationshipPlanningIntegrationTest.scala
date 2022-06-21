@@ -36,8 +36,8 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
       .emptyResult()
       .create(
         Seq(
-          CreateNode("a", Seq.empty, None),
-          CreateNode("b", Seq.empty, None)
+          CreateNode("a", Set.empty, None),
+          CreateNode("b", Set.empty, None)
         ),
         Seq(
           CreateRelationship("r", "a", relTypeName("R"), "b", SemanticDirection.OUTGOING, None)
@@ -54,10 +54,10 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
       .emptyResult()
       .create(
         Seq(
-          CreateNode("a", Seq.empty, None),
-          CreateNode("b", Seq.empty, None),
-          CreateNode("c", Seq.empty, None),
-          CreateNode("d", Seq.empty, None)
+          CreateNode("a", Set.empty, None),
+          CreateNode("b", Set.empty, None),
+          CreateNode("c", Set.empty, None),
+          CreateNode("d", Set.empty, None)
         ),
         Seq(
           CreateRelationship("r1", "a", relTypeName("R1"), "b", SemanticDirection.OUTGOING, None),
@@ -76,9 +76,9 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
       .emptyResult()
       .create(
         Seq(
-          CreateNode("a", Seq.empty, None),
-          CreateNode("b", Seq.empty, None),
-          CreateNode("c", Seq.empty, None)
+          CreateNode("a", Set.empty, None),
+          CreateNode("b", Set.empty, None),
+          CreateNode("c", Set.empty, None)
         ),
         Seq(
           CreateRelationship("r1", "a", relTypeName("R1"), "b", SemanticDirection.INCOMING, None),
@@ -96,7 +96,7 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
       .emptyResult()
       .create(
         Seq(
-          CreateNode("b", Seq.empty, None)
+          CreateNode("b", Set.empty, None)
         ),
         Seq(
           CreateRelationship("r", "n", relTypeName("T"), "b", SemanticDirection.OUTGOING, None)
@@ -150,7 +150,7 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
       .emptyResult()
       .create(
         Seq(
-          CreateNode("b", Seq.empty, None)
+          CreateNode("b", Set.empty, None)
         ),
         Seq(
           CreateRelationship("r", "a", relTypeName("T"), "b", SemanticDirection.OUTGOING, None)

@@ -1408,7 +1408,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     val lhs = NodeByLabelScan("x", LABEL, Set.empty, IndexOrderNone)
     val argument = Argument()
     val list = listOfInt(1, 2, 3)
-    val rhs = Create(argument, List(CreateNode("z", Seq.empty, None)), Nil)
+    val rhs = Create(argument, List(CreateNode("z", Set.empty, None)), Nil)
     val foreach = ForeachApply(lhs, rhs, "i", list)
 
     val semanticTableWithList =
@@ -1450,7 +1450,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     val lhs = NodeByLabelScan("x", LABEL, Set.empty, IndexOrderNone)
     val argument = Argument()
     val list = listOf(varFor("x"))
-    val rhs = Create(argument, List(CreateNode("z", Seq.empty, None)), Nil)
+    val rhs = Create(argument, List(CreateNode("z", Set.empty, None)), Nil)
     val foreach = ForeachApply(lhs, rhs, "i", list)
 
     val semanticTableWithList =

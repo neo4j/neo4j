@@ -211,7 +211,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
   }
 
   private def nodes(names: String*) = {
-    names.map(name => CreateNode(name, Seq.empty, None))
+    names.map(name => CreateNode(name, Set.empty, None))
   }
 
   private def relationship(name: String, startNode: String, relType: String, endNode: String) = {
