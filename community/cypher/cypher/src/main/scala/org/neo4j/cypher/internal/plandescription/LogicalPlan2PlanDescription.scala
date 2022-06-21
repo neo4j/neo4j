@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.common.EntityType
+import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ExecutableBy
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.Options
@@ -1008,10 +1009,10 @@ case class LogicalPlan2PlanDescription(
       case s: ShowTransactions =>
         val idsDescription = s.ids match {
           case Left(ls) =>
-            asPrettyString.raw(if (ls.isEmpty) "allTransactions" else s"transactions: ${ls.mkString(", ")}")
-          case Right(p) => asPrettyString.raw(s"transactions: $$${p.name}")
+            asPrettyString.raw(if (ls.isEmpty) "allTransactions" else s"transactions(${ls.mkString(", ")})")
+          case Right(e) => asPrettyString.raw(s"transactions(${e.asCanonicalStringVal})")
         }
-        val colsDescription = if (s.verbose) pretty"allColumns" else pretty"defaultColumns"
+        val colsDescription = transactionColumnInfo(s.yieldColumns, s.yieldAll)
         PlanDescriptionImpl(
           id,
           "ShowTransactions",
@@ -1024,13 +1025,14 @@ case class LogicalPlan2PlanDescription(
       case t: TerminateTransactions =>
         val idsDescription = t.ids match {
           case Left(ls) => asPrettyString.raw(ls.mkString(", "))
-          case Right(p) => asPrettyString.raw(s"$$${p.name}")
+          case Right(e) => asPrettyString.raw(s"${e.asCanonicalStringVal}")
         }
+        val colsDescription = transactionColumnInfo(t.yieldColumns, t.yieldAll)
         PlanDescriptionImpl(
           id,
           "TerminateTransactions",
           NoChildren,
-          Seq(Details(pretty"transactions: $idsDescription")),
+          Seq(Details(pretty"$colsDescription, transactions($idsDescription)")),
           variables,
           withRawCardinalities
         )
@@ -2543,4 +2545,16 @@ case class LogicalPlan2PlanDescription(
       }.mkPrettyString(", ")
       pretty"SET $setOps"
   }
+
+  private def transactionColumnInfo(yieldColumns: List[CommandResultItem], yieldAll: Boolean): PrettyString =
+    if (yieldColumns.nonEmpty)
+      asPrettyString.raw(yieldColumns.map(y => {
+        val variableName = y.originalName
+        val aliasName = y.aliasedVariable.name
+
+        if (!variableName.equals(aliasName)) s"$variableName AS $aliasName"
+        else variableName
+      }).mkString("columns(", ", ", ")"))
+    else if (yieldAll) pretty"allColumns"
+    else pretty"defaultColumns"
 }

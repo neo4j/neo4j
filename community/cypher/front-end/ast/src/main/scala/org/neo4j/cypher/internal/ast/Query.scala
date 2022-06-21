@@ -108,7 +108,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   def importWith: Option[With] = {
     def hasImportFormat(w: With) = w match {
-      case With(false, ri, None, None, None, None) =>
+      case With(false, ri, None, None, None, None, _) =>
         ri.items.forall(_.isPassThrough)
       case _ =>
         false
@@ -256,6 +256,39 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
         optError.fold(semanticErrors)(semanticErrors :+ _)
     }
 
+    val commandErrors =
+      if (clauses.count(_.isInstanceOf[CommandClause]) > 1) {
+        val missingYield = clauses.sliding(2).foldLeft(Vector.empty[SemanticError]) {
+          case (semanticErrors, pair) =>
+            val optError = pair match {
+              case Seq(command: TransactionsCommandClause, clause: With) if command.yieldAll =>
+                Some(SemanticError(
+                  s"When combining `${command.name}` with other show and/or terminate commands, `YIELD *` isn't permitted.",
+                  clause.position
+                ))
+              case Seq(_: CommandClause, clause: With) if clause.withType != AddedInRewrite => None
+              case Seq(command: CommandClause, _) =>
+                Some(SemanticError(
+                  s"When combining `${command.name}` with other show and/or terminate commands, `YIELD` is mandatory.",
+                  command.position
+                ))
+              case _ => None
+            }
+            optError.fold(semanticErrors)(semanticErrors :+ _)
+        }
+
+        val missingReturn = clauses.last match {
+          case clause: Return if !clause.addedInRewrite => None
+          case clause =>
+            Some(SemanticError(
+              "When combining show and/or terminate commands, `RETURN` isn't optional.",
+              clause.position
+            ))
+        }
+
+        missingYield ++ missingReturn
+      } else Vector.empty[SemanticError]
+
     val validLastClauses = "a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD"
 
     val concludeError = clauses match {
@@ -281,7 +314,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
         }
     }
 
-    semantics.SemanticCheckResult(s, sequenceErrors ++ concludeError)
+    semantics.SemanticCheckResult(s, sequenceErrors ++ concludeError ++ commandErrors)
   }
 
   private def checkNoCallInTransactionsAfterWriteClause(clauses: Seq[Clause]): SemanticCheck = {

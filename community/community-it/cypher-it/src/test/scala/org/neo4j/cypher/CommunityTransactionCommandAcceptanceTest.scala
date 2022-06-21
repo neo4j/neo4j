@@ -82,12 +82,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should show all transactions") {
     // GIVEN
-    createUser()
-    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
-    val latch = new DoubleLatch(2)
-    val tx = ThreadedTransaction(latch)
-    tx.execute(username, password, threading, unwindQuery)
-    latch.startAndWaitForAllToStart()
+    val (unwindQuery, latch) = setupUserWithOneTransaction()
 
     // WHEN
     val res = execute("SHOW TRANSACTIONS").toList
@@ -139,12 +134,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should only show given transactions") {
     // GIVEN
-    createUser()
-    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
-    val latch = new DoubleLatch(2)
-    val tx = ThreadedTransaction(latch)
-    tx.execute(username, password, threading, unwindQuery)
-    latch.startAndWaitForAllToStart()
+    val (unwindQuery, latch) = setupUserWithOneTransaction()
 
     // WHEN
     val unwindId = getTransactionIdExecutingQuery(unwindQuery)
@@ -204,12 +194,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should show all transactions when executing on system database") {
     // GIVEN
-    createUser()
-    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
-    val latch = new DoubleLatch(2)
-    val tx = ThreadedTransaction(latch)
-    tx.execute(username, password, threading, unwindQuery)
-    latch.startAndWaitForAllToStart()
+    val (unwindQuery, latch) = setupUserWithOneTransaction()
 
     // WHEN
     selectDatabase(SYSTEM_DATABASE_NAME)
@@ -256,12 +241,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should show given transactions with string parameter") {
     // GIVEN
-    createUser()
-    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
-    val latch = new DoubleLatch(2)
-    val tx = ThreadedTransaction(latch)
-    tx.execute(username, password, threading, unwindQuery)
-    latch.startAndWaitForAllToStart()
+    val (unwindQuery, latch) = setupUserWithOneTransaction()
 
     // WHEN
     val unwindId = getTransactionIdExecutingQuery(unwindQuery)
@@ -275,12 +255,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should show given transactions with list parameter") {
     // GIVEN
-    createUser()
-    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
-    val latch = new DoubleLatch(2)
-    val tx = ThreadedTransaction(latch)
-    tx.execute(username, password, threading, unwindQuery)
-    latch.startAndWaitForAllToStart()
+    val (unwindQuery, latch) = setupUserWithOneTransaction()
 
     // WHEN
     val unwindId = getTransactionIdExecutingQuery(unwindQuery)
@@ -464,12 +439,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should show all transactions with specific YIELD") {
     // GIVEN
-    createUser()
-    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
-    val latch = new DoubleLatch(2)
-    val tx = ThreadedTransaction(latch)
-    tx.execute(username, password, threading, unwindQuery)
-    latch.startAndWaitForAllToStart()
+    val (unwindQuery, latch) = setupUserWithOneTransaction()
     val unwindId = getTransactionIdExecutingQuery(unwindQuery)
     val showIdNumber = unwindId.split("-")(2).toInt + 2
     val showId = s"neo4j-transaction-$showIdNumber"
@@ -516,12 +486,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should show transactions with YIELD and ORDER BY ASC") {
     // GIVEN
-    createUser()
-    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
-    val latch = new DoubleLatch(2)
-    val tx = ThreadedTransaction(latch)
-    tx.execute(username, password, threading, unwindQuery)
-    latch.startAndWaitForAllToStart()
+    val (unwindQuery, latch) = setupUserWithOneTransaction()
     val unwindId = getTransactionIdExecutingQuery(unwindQuery)
     val showIdNumber = unwindId.split("-")(2).toInt + 2
     val showId = s"neo4j-transaction-$showIdNumber"
@@ -543,12 +508,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should show transactions with YIELD and ORDER BY DESC") {
     // GIVEN
-    createUser()
-    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
-    val latch = new DoubleLatch(2)
-    val tx = ThreadedTransaction(latch)
-    tx.execute(username, password, threading, unwindQuery)
-    latch.startAndWaitForAllToStart()
+    val (unwindQuery, latch) = setupUserWithOneTransaction()
     val unwindId = getTransactionIdExecutingQuery(unwindQuery)
     val showIdNumber = unwindId.split("-")(2).toInt + 2
     val showId = s"neo4j-transaction-$showIdNumber"
@@ -642,15 +602,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should show transactions with full yield") {
     // GIVEN
-    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
-    val matchQuery = "MATCH (n) RETURN n"
-    createUser()
-    createUser(username2)
     val latch = new DoubleLatch(3)
-    val tx1 = ThreadedTransaction(latch)
-    tx1.execute(username, password, threading, unwindQuery)
-    val tx2 = ThreadedTransaction(latch)
-    tx2.execute(username2, password, threading, matchQuery)
+    val (unwindQuery, matchQuery) = setupTwoUsersAndOneTransactionEach(latch)
     latch.startAndWaitForAllToStart()
     val unwindId = getTransactionIdExecutingQuery(unwindQuery)
     val matchId = getTransactionIdExecutingQuery(matchQuery)
@@ -708,12 +661,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should show transactions with aggregation") {
     // GIVEN
-    createUser()
-    val latch = new DoubleLatch(2)
-    val tx = ThreadedTransaction(latch)
-    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
-    tx.execute(username, password, threading, unwindQuery)
-    latch.startAndWaitForAllToStart()
+    val (unwindQuery, latch) = setupUserWithOneTransaction()
     val unwindId = getTransactionIdExecutingQuery(unwindQuery)
     val showIdNumber = unwindId.split("-")(2).toInt + 2
     val showId = s"neo4j-transaction-$showIdNumber"
@@ -730,11 +678,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should show transactions with double aggregation") {
     // GIVEN
-    createUser()
-    val latch = new DoubleLatch(2)
-    val tx = ThreadedTransaction(latch)
-    tx.execute(username, password, threading, "UNWIND [1,2,3] AS x RETURN x")
-    latch.startAndWaitForAllToStart()
+    val (_, latch) = setupUserWithOneTransaction()
 
     // WHEN: the query is rewritten to include WITH (splitting the aggregation)
     // (WHERE to remove random system transactions from parallel tests/set-up)
@@ -749,11 +693,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should show transactions with double aggregation when executing on system database") {
     // GIVEN
-    createUser()
-    val latch = new DoubleLatch(2)
-    val tx = ThreadedTransaction(latch)
-    tx.execute(username, password, threading, "UNWIND [1,2,3] AS x RETURN x")
-    latch.startAndWaitForAllToStart()
+    val (_, latch) = setupUserWithOneTransaction()
 
     // WHEN: the query is rewritten to include WITH (splitting the aggregation)
     // (WHERE to remove random system transactions from parallel tests/set-up)
@@ -771,12 +711,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should terminate transaction") {
     // GIVEN
-    createUser()
-    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
-    val latch = new DoubleLatch(2, true)
-    val tx = ThreadedTransaction(latch)
-    tx.execute(username, password, threading, unwindQuery)
-    latch.startAndWaitForAllToStart()
+    val (unwindQuery, latch) = setupUserWithOneTransaction()
 
     try {
       // WHEN
@@ -871,12 +806,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Try to terminate already terminated transaction") {
     // GIVEN
-    createUser()
-    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
-    val latch = new DoubleLatch(2, true)
-    val tx = ThreadedTransaction(latch)
-    tx.execute(username, password, threading, unwindQuery)
-    latch.startAndWaitForAllToStart()
+    val (unwindQuery, latch) = setupUserWithOneTransaction()
 
     try {
       // WHEN
@@ -926,12 +856,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should terminate transaction when executing on system database") {
     // GIVEN
-    createUser()
-    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
-    val latch = new DoubleLatch(2, true)
-    val tx = ThreadedTransaction(latch)
-    tx.execute(username, password, threading, unwindQuery)
-    latch.startAndWaitForAllToStart()
+    val (unwindQuery, latch) = setupUserWithOneTransaction()
 
     try {
       // WHEN
@@ -952,12 +877,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should terminate transactions with string parameter") {
     // GIVEN
-    createUser()
-    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
-    val latch = new DoubleLatch(2)
-    val tx = ThreadedTransaction(latch)
-    tx.execute(username, password, threading, unwindQuery)
-    latch.startAndWaitForAllToStart()
+    val (unwindQuery, latch) = setupUserWithOneTransaction()
 
     try {
       // WHEN
@@ -977,12 +897,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should terminate transactions with list parameter") {
     // GIVEN
-    createUser()
-    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
-    val latch = new DoubleLatch(2)
-    val tx = ThreadedTransaction(latch)
-    tx.execute(username, password, threading, unwindQuery)
-    latch.startAndWaitForAllToStart()
+    val (unwindQuery, latch) = setupUserWithOneTransaction()
 
     try {
       // WHEN
@@ -1002,13 +917,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should always terminate transaction in community") {
     // GIVEN
-    createUser()
+    val (unwindQuery, latch) = setupUserWithOneTransaction()
     createUser(username2)
-    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
-    val latch = new DoubleLatch(2, true)
-    val tx = ThreadedTransaction(latch)
-    tx.execute(username, password, threading, unwindQuery)
-    latch.startAndWaitForAllToStart()
 
     try {
       // WHEN
@@ -1091,12 +1001,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should terminate transaction with specific YIELD") {
     // GIVEN
-    createUser()
-    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
-    val latch = new DoubleLatch(2, true)
-    val tx = ThreadedTransaction(latch)
-    tx.execute(username, password, threading, unwindQuery)
-    latch.startAndWaitForAllToStart()
+    val (unwindQuery, latch) = setupUserWithOneTransaction()
 
     try {
       // WHEN
@@ -1317,12 +1222,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("should fail to terminate transaction with WHERE without YIELD") {
     // GIVEN
-    createUser()
-    val query = "UNWIND [1,2,3] AS x RETURN x"
-    val latch = new DoubleLatch(2, true)
-    val tx = ThreadedTransaction(latch)
-    tx.execute(username, password, threading, query)
-    latch.startAndWaitForAllToStart()
+    val (query, latch) = setupUserWithOneTransaction()
 
     try {
       val txId = getTransactionIdExecutingQuery(query)
@@ -1340,6 +1240,123 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       val res = execute(s"SHOW TRANSACTION '$txId'").toList
       res should have size 1
       res.head("status") should be("Running")
+    } finally {
+      latch.finishAndWaitForAllToFinish()
+    }
+  }
+
+  // Combination tests
+
+  test("Should show and terminate transaction with id from show") {
+    // GIVEN
+    val (unwindQuery, latch) = setupUserWithOneTransaction()
+
+    try {
+      val unwindTransactionId = getTransactionIdExecutingQuery(unwindQuery)
+
+      // WHEN
+      val result = execute(
+        s"""SHOW TRANSACTION '$unwindTransactionId'
+           |YIELD transactionId
+           |TERMINATE TRANSACTION transactionId
+           |YIELD message, transactionId AS txId, username
+           |RETURN *""".stripMargin
+      ).toList
+
+      // THEN
+      result should be(List(Map(
+        "message" -> "Transaction terminated.",
+        "txId" -> unwindTransactionId,
+        "transactionId" -> unwindTransactionId,
+        "username" -> username
+      )))
+    } finally {
+      latch.finishAndWaitForAllToFinish()
+    }
+  }
+
+  test("Should terminate and show transaction with id from terminate") {
+    // GIVEN
+    val (unwindQuery, latch) = setupUserWithOneTransaction()
+
+    try {
+      val unwindTransactionId = getTransactionIdExecutingQuery(unwindQuery)
+
+      // WHEN
+      val result = execute(
+        s"""TERMINATE TRANSACTION '$unwindTransactionId'
+           |YIELD message, transactionId AS txId, username
+           |SHOW TRANSACTION txId
+           |YIELD transactionId, username AS user
+           |RETURN *""".stripMargin
+      ).toList
+
+      // THEN
+      result should be(List(Map(
+        "message" -> "Transaction terminated.",
+        "txId" -> unwindTransactionId,
+        "transactionId" -> unwindTransactionId,
+        "username" -> username,
+        "user" -> username
+      )))
+    } finally {
+      latch.finishAndWaitForAllToFinish()
+    }
+  }
+
+  test("Should show, terminate and show transaction with id from previous clauses") {
+    // GIVEN
+    val (unwindQuery, latch) = setupUserWithOneTransaction()
+
+    try {
+      val unwindTransactionId = getTransactionIdExecutingQuery(unwindQuery)
+
+      // WHEN
+      val result = execute(
+        s"""SHOW TRANSACTION '$unwindTransactionId'
+           |YIELD transactionId
+           |TERMINATE TRANSACTION transactionId
+           |YIELD message, transactionId AS txId, username
+           |SHOW TRANSACTION txId
+           |YIELD username AS user
+           |RETURN *""".stripMargin
+      ).toList
+
+      // THEN
+      result should be(List(Map(
+        "message" -> "Transaction terminated.",
+        "txId" -> unwindTransactionId,
+        "transactionId" -> unwindTransactionId,
+        "username" -> username,
+        "user" -> username
+      )))
+    } finally {
+      latch.finishAndWaitForAllToFinish()
+    }
+  }
+
+  test("Should show and terminate transaction with specific return") {
+    // GIVEN
+    val (unwindQuery, latch) = setupUserWithOneTransaction()
+
+    try {
+      val unwindTransactionId = getTransactionIdExecutingQuery(unwindQuery)
+
+      // WHEN
+      val result = execute(
+        s"""SHOW TRANSACTION '$unwindTransactionId'
+           |YIELD transactionId
+           |TERMINATE TRANSACTION transactionId
+           |YIELD message AS m, transactionId AS txId, username
+           |RETURN m AS username, txId, transactionId""".stripMargin
+      ).toList
+
+      // THEN
+      result should be(List(Map(
+        "username" -> "Transaction terminated.",
+        "txId" -> unwindTransactionId,
+        "transactionId" -> unwindTransactionId
+      )))
     } finally {
       latch.finishAndWaitForAllToFinish()
     }
@@ -1445,6 +1462,21 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     tx2.execute(username2, password, threading, user2Query)
 
     (user1Query, user2Query)
+  }
+
+  /* Creates a latch and sets up one query for _username_ on neo4j.
+   * Starts the latch.
+   *
+   * Returns the query and the latch.
+   */
+  def setupUserWithOneTransaction(): (String, DoubleLatch) = {
+    val latch = new DoubleLatch(2, true)
+    createUser()
+    val userQuery = "UNWIND [1,2,3] AS x RETURN x"
+    val tx = ThreadedTransaction(latch)
+    tx.execute(username, password, threading, userQuery)
+    latch.startAndWaitForAllToStart()
+    (userQuery, latch)
   }
 
   private def getTransactionIdExecutingQuery(query: String): String = {

@@ -20,12 +20,19 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ast.CommandClause
+import org.neo4j.cypher.internal.ast.TransactionsCommandClause
 import org.neo4j.cypher.internal.expressions.Expression
 
 case class CommandProjection(clause: CommandClause) extends QueryHorizon {
 
-  override def exposedSymbols(coveredIds: Set[String]): Set[String] =
-    coveredIds ++ clause.unfilteredColumns.columns.map(_.name)
+  override def exposedSymbols(coveredIds: Set[String]): Set[String] = {
+    val columnNames = clause match {
+      case t: TransactionsCommandClause if t.yieldItems.nonEmpty =>
+        t.yieldItems.map(_.aliasedVariable.name)
+      case _ => clause.unfilteredColumns.columns.map(_.name)
+    }
+    coveredIds ++ columnNames
+  }
 
   override def dependingExpressions: Seq[Expression] = Seq()
 

@@ -210,7 +210,7 @@ object ClauseConverters {
 
   private def addReturnToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Return): PlannerQueryBuilder =
     clause match {
-      case Return(distinct, ReturnItems(star, items, _), optOrderBy, skip, limit, _) if !star =>
+      case Return(distinct, ReturnItems(star, items, _), optOrderBy, skip, limit, _, _) if !star =>
         val queryPagination = QueryPagination().withSkip(skip).withLimit(limit)
 
         val projection = asQueryProjection(distinct, items).withPagination(queryPagination)
@@ -735,7 +735,7 @@ object ClauseConverters {
 
       Handles: ... WITH * [WHERE <predicate>] ...
        */
-      case With(false, ri, None, None, None, where)
+      case With(false, ri, None, None, None, where, _)
         if optionalMatchesOK(where)
           && noUpdates
           && returnItemsOK(ri)
@@ -750,7 +750,7 @@ object ClauseConverters {
 
       Handles all other WITH clauses
        */
-      case With(distinct, projection, orderBy, skip, limit, where) =>
+      case With(distinct, projection, orderBy, skip, limit, where, _) =>
         val selections = asSelections(where)
         val returnItems = asReturnItems(builder.currentQueryGraph, projection)
 

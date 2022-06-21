@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowIndexType
 import org.neo4j.cypher.internal.ast.TextIndexes
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand.Nonunique
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand.Unique
@@ -62,7 +63,7 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
 case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, columns: List[ShowColumn])
     extends Command(columns) {
 
-  override def originalNameRows(state: QueryState): ClosingIterator[Map[String, AnyValue]] = {
+  override def originalNameRows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]] = {
     val ctx = state.query
     ctx.assertShowIndexAllowed()
     val indexes: Map[IndexDescriptor, IndexInfo] = ctx.getAllIndexes()

@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 
 import org.neo4j.configuration.helpers.DatabaseNameValidator
-import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.dbms.database.DatabaseContext
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource
@@ -30,7 +31,6 @@ import org.neo4j.kernel.api.KernelTransactionHandle
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.kernel.impl.api.KernelTransactions
-import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.StringValue
 import org.neo4j.values.virtual.ListValue
 
@@ -55,12 +55,12 @@ case object TransactionCommandHelper {
     else Set.empty
   }
 
-  def extractIds(ids: Either[List[String], Expression], params: Array[AnyValue]): List[String] = {
+  def extractIds(ids: Either[List[String], Expression], state: QueryState, baseRow: CypherRow): List[String] = {
     // Get the id string values and make sure we don't have duplicates
     ids match {
       case Left(ls) => ls.toSet.toList
-      case Right(p: ParameterFromSlot) =>
-        params(p.offset) match {
+      case Right(e) =>
+        e(baseRow, state) match {
           case s: StringValue => List(s.stringValue())
           case l: ListValue =>
             val list = l.iterator().asScala
@@ -71,7 +71,6 @@ case object TransactionCommandHelper {
           case x =>
             throw new ParameterWrongTypeException(s"Expected a string or a list of strings, but got: ${x.toString}")
         }
-      case x => throw new IllegalStateException(s"Expected a list of strings or a parameter, but got: ${x.toString}")
     }
   }
 }

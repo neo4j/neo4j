@@ -105,6 +105,18 @@ class AdministrationAndSchemaCommandParserTestBase extends JavaccParserAstTestBa
 
   def pwParam(name: String): Parameter = Parameter(name, CTString)(_)
 
+  def commandResultItem(original: String, alias: Option[String]): ast.CommandResultItem =
+    ast.CommandResultItem(original, alias.map(varFor(_)).getOrElse(varFor(original)))(pos)
+
+  def withFromYield(
+    returnItems: ast.ReturnItems,
+    orderBy: Option[ast.OrderBy] = None,
+    skip: Option[ast.Skip] = None,
+    limit: Option[ast.Limit] = None,
+    where: Option[ast.Where] = None
+  ): ast.With =
+    ast.With(distinct = false, returnItems, orderBy, skip, limit, where = where, withType = ast.ParsedAsYield)(pos)
+
   type resourcePrivilegeFunc = (
     ast.PrivilegeType,
     ast.ActionResource,
@@ -379,13 +391,12 @@ class AdministrationAndSchemaCommandParserTestBase extends JavaccParserAstTestBa
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, r, ast.RevokeBothType()(pos), q)
 
-  // Can't use the `return_` methods in `AstConstructionTestSupport`
-  // since that results in `Cannot resolve overloaded method 'return_'` for unknown reasons
   def returnClause(
     returnItems: ast.ReturnItems,
     orderBy: Option[ast.OrderBy] = None,
     limit: Option[ast.Limit] = None,
-    distinct: Boolean = false
+    distinct: Boolean = false,
+    skip: Option[ast.Skip] = None
   ): ast.Return =
-    ast.Return(distinct, returnItems, orderBy, None, limit)(pos)
+    ast.Return(distinct, returnItems, orderBy, skip, limit)(pos)
 }

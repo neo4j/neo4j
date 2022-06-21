@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler
 
+import org.neo4j.cypher.internal.ast.AddedInRewrite
 import org.neo4j.cypher.internal.ast.AlterAliasAction
 import org.neo4j.cypher.internal.ast.AlterDatabase
 import org.neo4j.cypher.internal.ast.AlterDatabaseAction
@@ -62,6 +63,7 @@ import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NoWait
+import org.neo4j.cypher.internal.ast.ParsedAsYield
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
@@ -100,6 +102,7 @@ import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
+import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
@@ -185,6 +188,14 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       val checkCredentialsExpired = !signature.allowExpiredCredentials
       plans.SystemProcedureCall(signature.name.toString, resolved, returns, context.params, checkCredentialsExpired)
     }
+
+    // Check for non-administration commands that are allowed on system database, e.g. SHOW PROCEDURES YIELD ...
+    // Currently doesn't allow WITH except when it is used instead of YIELD
+    def checkClausesAllowedOnSystem(clauses: Seq[Clause]) =
+      clauses.exists(_.isInstanceOf[CommandClauseAllowedOnSystem]) && clauses.forall {
+        case w: With => w.withType == ParsedAsYield || w.withType == AddedInRewrite
+        case c       => c.isInstanceOf[ClauseAllowedOnSystem]
+      }
 
     val maybeLogicalPlan: Option[plans.LogicalPlan] = from.statement() match {
       // SHOW USERS
@@ -765,7 +776,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!
       case Query(SingleQuery(Seq(
           resolved @ plans.ResolvedCall(signature, _, _, _, _, _),
-          returns @ Return(_, _, _, _, _, _)
+          returns @ Return(_, _, _, _, _, _, _)
         ))) if signature.systemProcedure =>
         Some(planSystemProcedureCall(resolved, Some(returns)))
 
@@ -774,11 +785,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(planSystemProcedureCall(resolved, None))
 
       // Non-administration commands that are allowed on system database, e.g. SHOW PROCEDURES YIELD ...
-      // Currently doesn't allow WITH, is this a problem for rewrites?
-      case q @ Query(SingleQuery(clauses))
-        if clauses.exists(_.isInstanceOf[CommandClauseAllowedOnSystem]) && clauses.forall(
-          _.isInstanceOf[ClauseAllowedOnSystem]
-        ) =>
+      case q @ Query(SingleQuery(clauses)) if checkClausesAllowedOnSystem(clauses) =>
         clauses.folder.treeExists {
           case p: PatternExpression => throw context.cypherExceptionFactory.syntaxException(
               "You cannot include a pattern expression in the RETURN clause on a system database",

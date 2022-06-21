@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
+import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.CurrentUser
@@ -60,6 +61,7 @@ import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.ReadOnlyAccess
 import org.neo4j.cypher.internal.ast.ReadWriteAccess
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
+import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
@@ -75,12 +77,12 @@ import org.neo4j.cypher.internal.ast.UserDefinedFunctions
 import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.ast.ValidSyntax
 import org.neo4j.cypher.internal.ast.WriteAction
+import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
@@ -2745,68 +2747,186 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("ShowTransactions") {
-    assertGood(
-      attach(ShowTransactions(Left(List.empty), verbose = false, List.empty), 1.0),
-      planDescription(id, "ShowTransactions", NoChildren, Seq(details("defaultColumns, allTransactions")), Set.empty)
-    )
+    val defaultColumns = List("xxx", "yyy").map(s => ShowColumn(s)(pos))
 
     assertGood(
-      attach(ShowTransactions(Left(List("db1-transaction-123")), verbose = true, List.empty), 1.0),
+      attach(ShowTransactions(Left(List.empty), verbose = false, defaultColumns, List.empty, yieldAll = false), 1.0),
       planDescription(
         id,
         "ShowTransactions",
         NoChildren,
-        Seq(details("allColumns, transactions: db1-transaction-123")),
-        Set.empty
+        Seq(details("defaultColumns, allTransactions")),
+        Set("xxx", "yyy")
       )
     )
 
     assertGood(
       attach(
-        ShowTransactions(Left(List("db1-transaction-123", "db2-transaction-456")), verbose = false, List.empty),
+        ShowTransactions(
+          Left(List("db1-transaction-123")),
+          verbose = true,
+          defaultColumns,
+          List.empty,
+          yieldAll = true
+        ),
         1.0
       ),
       planDescription(
         id,
         "ShowTransactions",
         NoChildren,
-        Seq(details("defaultColumns, transactions: db1-transaction-123, db2-transaction-456")),
-        Set.empty
+        Seq(details("allColumns, transactions(db1-transaction-123)")),
+        Set("xxx", "yyy")
       )
     )
 
     assertGood(
-      attach(ShowTransactions(Right(ExplicitParameter("foo", CTAny)(pos)), verbose = true, List.empty), 1.0),
-      planDescription(id, "ShowTransactions", NoChildren, Seq(details("allColumns, transactions: $foo")), Set.empty)
+      attach(
+        ShowTransactions(
+          Left(List("db1-transaction-123", "db2-transaction-456")),
+          verbose = false,
+          List("xxx", "yyy", "vvv").map(s => ShowColumn(s)(pos)),
+          List(
+            CommandResultItem("xxx", varFor("xxx"))(pos),
+            CommandResultItem("yyy", varFor("zzz"))(pos),
+            CommandResultItem("vvv", varFor("vvv"))(pos)
+          ),
+          yieldAll = false
+        ),
+        1.0
+      ),
+      planDescription(
+        id,
+        "ShowTransactions",
+        NoChildren,
+        Seq(details("columns(xxx, yyy AS zzz, vvv), transactions(db1-transaction-123, db2-transaction-456)")),
+        Set("xxx", "zzz", "vvv")
+      )
+    )
+
+    assertGood(
+      attach(
+        ShowTransactions(
+          Right(parameter("foo", CTAny)),
+          verbose = true,
+          defaultColumns,
+          List.empty,
+          yieldAll = false
+        ),
+        1.0
+      ),
+      planDescription(
+        id,
+        "ShowTransactions",
+        NoChildren,
+        Seq(details("defaultColumns, transactions($foo)")),
+        Set("xxx", "yyy")
+      )
+    )
+
+    assertGood(
+      attach(
+        ShowTransactions(
+          Right(varFor("foo")),
+          verbose = true,
+          defaultColumns,
+          List.empty,
+          yieldAll = false
+        ),
+        1.0
+      ),
+      planDescription(
+        id,
+        "ShowTransactions",
+        NoChildren,
+        Seq(details("defaultColumns, transactions(foo)")),
+        Set("xxx", "yyy")
+      )
+    )
+
+    assertGood(
+      attach(
+        ShowTransactions(
+          Right(Add(varFor("foo"), stringLiteral("123"))(pos)),
+          verbose = true,
+          defaultColumns,
+          List.empty,
+          yieldAll = false
+        ),
+        1.0
+      ),
+      planDescription(
+        id,
+        "ShowTransactions",
+        NoChildren,
+        Seq(details("defaultColumns, transactions(foo + 123)")),
+        Set("xxx", "yyy")
+      )
     )
   }
 
   test("TerminateTransactions") {
+    val defaultColumns = List("xxx", "yyy").map(s => ShowColumn(s)(pos))
+
     assertGood(
-      attach(TerminateTransactions(Left(List("db1-transaction-123")), List.empty), 1.0),
+      attach(
+        TerminateTransactions(Left(List("db1-transaction-123")), defaultColumns, List.empty, yieldAll = false),
+        1.0
+      ),
       planDescription(
         id,
         "TerminateTransactions",
         NoChildren,
-        Seq(details("transactions: db1-transaction-123")),
-        Set.empty
+        Seq(details("defaultColumns, transactions(db1-transaction-123)")),
+        Set("xxx", "yyy")
       )
     )
 
     assertGood(
-      attach(TerminateTransactions(Left(List("db1-transaction-123", "db2-transaction-456")), List.empty), 1.0),
+      attach(
+        TerminateTransactions(
+          Left(List("db1-transaction-123", "db2-transaction-456")),
+          defaultColumns,
+          List(CommandResultItem("xxx", varFor("xxx"))(pos), CommandResultItem("yyy", varFor("zzz"))(pos)),
+          yieldAll = false
+        ),
+        1.0
+      ),
       planDescription(
         id,
         "TerminateTransactions",
         NoChildren,
-        Seq(details("transactions: db1-transaction-123, db2-transaction-456")),
-        Set.empty
+        Seq(details("columns(xxx, yyy AS zzz), transactions(db1-transaction-123, db2-transaction-456)")),
+        Set("xxx", "zzz")
       )
     )
 
     assertGood(
-      attach(TerminateTransactions(Right(ExplicitParameter("foo", CTAny)(pos)), List.empty), 1.0),
-      planDescription(id, "TerminateTransactions", NoChildren, Seq(details("transactions: $foo")), Set.empty)
+      attach(
+        TerminateTransactions(Right(parameter("foo", CTAny)), defaultColumns, List.empty, yieldAll = true),
+        1.0
+      ),
+      planDescription(
+        id,
+        "TerminateTransactions",
+        NoChildren,
+        Seq(details("allColumns, transactions($foo)")),
+        Set("xxx", "yyy")
+      )
+    )
+
+    assertGood(
+      attach(
+        TerminateTransactions(Right(number("123")), defaultColumns, List.empty, yieldAll = true),
+        1.0
+      ),
+      planDescription(
+        id,
+        "TerminateTransactions",
+        NoChildren,
+        Seq(details("allColumns, transactions(123)")),
+        Set("xxx", "yyy")
+      )
     )
   }
 

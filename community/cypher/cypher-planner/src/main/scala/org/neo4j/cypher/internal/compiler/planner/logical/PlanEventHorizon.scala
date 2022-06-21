@@ -241,15 +241,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
         SortPlanner.ensureSortedPlanWithSolved(projected, interestingOrderConfig, context, updateSolvedOrdering)
 
       case CommandProjection(clause) =>
-        AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-          plan match {
-            case Argument(args) => args.isEmpty
-            case _              => false
-          },
-          "Command projections should only be planned as if they were leaf plans."
-        )
-
-        val commandPlan = context.logicalPlanProducer.planCommand(clause, context)
+        val commandPlan = context.logicalPlanProducer.planCommand(plan, clause, context)
         SortPlanner.ensureSortedPlanWithSolved(commandPlan, interestingOrderConfig, context, updateSolvedOrdering)
 
       case _ =>

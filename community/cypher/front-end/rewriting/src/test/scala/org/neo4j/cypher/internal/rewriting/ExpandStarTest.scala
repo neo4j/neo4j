@@ -18,9 +18,14 @@ package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.TerminateTransactionsClause
+import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.rewriting.rewriters.expandShowWhere
@@ -128,9 +133,43 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
     assertRewrite(
       "SHOW FUNCTIONS YIELD *",
       """SHOW FUNCTIONS
-        |YIELD aggregating, argumentDescription, category, description, isBuiltIn, name, returnDescription, rolesBoostedExecution, rolesExecution, signature
+        |YIELD name, category, description, signature, isBuiltIn, argumentDescription, returnDescription, aggregating, rolesExecution, rolesBoostedExecution
+        |RETURN name, category, description, signature, isBuiltIn, argumentDescription, returnDescription, aggregating, rolesExecution, rolesBoostedExecution""".stripMargin,
+      rewriteShowCommand = true,
+      showCommandReturnAddedInRewrite = true
+    )
+
+    assertRewrite(
+      "SHOW FUNCTIONS YIELD * RETURN *",
+      """SHOW FUNCTIONS
+        |YIELD name, category, description, signature, isBuiltIn, argumentDescription, returnDescription, aggregating, rolesExecution, rolesBoostedExecution
         |RETURN name, category, description, signature, isBuiltIn, argumentDescription, returnDescription, aggregating, rolesExecution, rolesBoostedExecution""".stripMargin,
       rewriteShowCommand = true
+    )
+
+    assertRewrite(
+      "SHOW TRANSACTIONS YIELD * RETURN *",
+      """SHOW TRANSACTIONS
+        |YIELD database, transactionId, currentQueryId, outerTransactionId, connectionId, clientAddress, username, metaData, currentQuery, parameters, planner, runtime,
+        |indexes, startTime, currentQueryStartTime, protocol, requestUri, status, currentQueryStatus, statusDetails, resourceInformation, activeLockCount, currentQueryActiveLockCount,
+        |elapsedTime, cpuTime, waitTime, idleTime, currentQueryElapsedTime, currentQueryCpuTime, currentQueryWaitTime, currentQueryIdleTime, currentQueryAllocatedBytes, allocatedDirectBytes,
+        |estimatedUsedHeapMemory, pageHits, pageFaults, currentQueryPageHits, currentQueryPageFaults, initializationStackTrace
+        |RETURN database, transactionId, currentQueryId, outerTransactionId, connectionId, clientAddress, username, metaData, currentQuery, parameters, planner, runtime,
+        |indexes, startTime, currentQueryStartTime, protocol, requestUri, status, currentQueryStatus, statusDetails, resourceInformation, activeLockCount, currentQueryActiveLockCount,
+        |elapsedTime, cpuTime, waitTime, idleTime, currentQueryElapsedTime, currentQueryCpuTime, currentQueryWaitTime, currentQueryIdleTime, currentQueryAllocatedBytes, allocatedDirectBytes,
+        |estimatedUsedHeapMemory, pageHits, pageFaults, currentQueryPageHits, currentQueryPageFaults, initializationStackTrace""".stripMargin,
+      rewriteShowCommand = true,
+      moveYieldToWith = true
+    )
+
+    assertRewrite(
+      "TERMINATE TRANSACTIONS 'db-transaction-123' YIELD *",
+      """TERMINATE TRANSACTIONS 'db-transaction-123'
+        |YIELD transactionId, username, message
+        |RETURN transactionId, username, message""".stripMargin,
+      rewriteShowCommand = true,
+      showCommandReturnAddedInRewrite = true,
+      moveYieldToWith = true
     )
 
     assertRewrite(
@@ -162,22 +201,69 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
     val original = prepRewrite(s"${wizz}RETURN *")
     val checkResult = original.semanticCheck(SemanticState.clean)
     val after = original.rewrite(expandStar(checkResult.state))
-    val returnItem = after.asInstanceOf[Query].part.asInstanceOf[SingleQuery].clauses.last.asInstanceOf[
-      Return
-    ].returnItems.items.head.asInstanceOf[AliasedReturnItem]
+    val returnItem = after.asInstanceOf[Query].part.asInstanceOf[SingleQuery]
+      .clauses.last.asInstanceOf[Return].returnItems.items.head.asInstanceOf[AliasedReturnItem]
     returnItem.expression.position should equal(expressionPos)
     returnItem.variable.position.offset should equal(expressionPos.offset)
   }
 
-  private def assertRewrite(originalQuery: String, expectedQuery: String, rewriteShowCommand: Boolean = false): Unit = {
+  private def assertRewrite(
+    originalQuery: String,
+    expectedQuery: String,
+    rewriteShowCommand: Boolean = false,
+    showCommandReturnAddedInRewrite: Boolean = false,
+    moveYieldToWith: Boolean = false
+  ): Unit = {
     val original = prepRewrite(originalQuery, rewriteShowCommand)
     val expected = prepRewrite(expectedQuery)
+    val expectedUpdatedReturn =
+      if (showCommandReturnAddedInRewrite) {
+        updateClauses(
+          expected,
+          clauses => {
+            // update `addedInRewrite` flag on the return
+            val ret = clauses.last.asInstanceOf[Return]
+            val newRet = ret.copy(addedInRewrite = true)(ret.position)
+            clauses.dropRight(1) :+ newRet
+          }
+        )
+      } else expected
+    val expectedUpdatedYield =
+      if (moveYieldToWith) {
+        updateClauses(
+          expectedUpdatedReturn,
+          clauses => {
+            // transaction commands parses YIELD as WITH *
+            clauses.map {
+              case s: ShowTransactionsClause =>
+                s.copy(yieldAll = true, yieldItems = List.empty)(s.position)
+
+              case t: TerminateTransactionsClause =>
+                t.copy(yieldAll = true, yieldItems = List.empty)(t.position)
+
+              case w: With =>
+                val returnItems = w.returnItems.defaultOrderOnColumns.map(c =>
+                  c.map(v => aliasedReturnItem(varFor(v)))
+                ).getOrElse(List.empty)
+                w.copy(returnItems =
+                  w.returnItems.copy(
+                    includeExisting = false,
+                    items = returnItems,
+                    defaultOrderOnColumns = None
+                  )(w.returnItems.position)
+                )(w.position)
+
+              case c => c
+            }
+          }
+        )
+      } else expectedUpdatedReturn
 
     val checkResult = original.semanticCheck(SemanticState.clean)
     val rewriter = expandStar(checkResult.state)
 
     val result = original.rewrite(rewriter)
-    assert(result === expected)
+    assert(result === expectedUpdatedYield)
   }
 
   private def prepRewrite(q: String, rewriteShowCommand: Boolean = false) = {
@@ -189,5 +275,14 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
       else
         inSequence(normalizeWithAndReturnClauses(exceptionFactory, devNullLogger))
     JavaCCParser.parse(q, exceptionFactory, nameGenerator).endoRewrite(rewriter)
+  }
+
+  private def updateClauses(statement: Statement, updateClauses: Seq[Clause] => Seq[Clause]): Statement = {
+    val query = statement.asInstanceOf[Query]
+    val singleQuery = query.part.asInstanceOf[SingleQuery]
+    val clauses = singleQuery.clauses
+    val newClauses = updateClauses(clauses)
+    val newSingleQuery = singleQuery.copy(newClauses)(singleQuery.position)
+    query.copy(newSingleQuery)(query.position)
   }
 }

@@ -59,6 +59,7 @@ import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ConstraintVersion0
 import org.neo4j.cypher.internal.ast.ConstraintVersion1
 import org.neo4j.cypher.internal.ast.ConstraintVersion2
@@ -171,6 +172,7 @@ import org.neo4j.cypher.internal.ast.OnMatch
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.OrderBy
+import org.neo4j.cypher.internal.ast.ParsedAsYield
 import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.PrivilegeType
@@ -349,6 +351,7 @@ import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.LiteralEntry
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.MapProjectionElement
@@ -1177,24 +1180,53 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
   override def showTransactionsClause(
     p: InputPosition,
-    ids: SimpleEither[util.List[String], Parameter],
+    ids: SimpleEither[util.List[String], Expression],
     where: Where,
-    hasYield: Boolean
+    yieldClause: Yield
   ): Clause = {
     val scalaIds =
       ids.asScala.left.map(_.asScala.toList) // if left: map the string list to scala, if right: changes nothing
-    ShowTransactionsClause.apply(scalaIds, Option(where), hasYield)(p)
+    val (yieldAll, yieldedItems) = getYieldAllAndYieldItems(yieldClause)
+    ShowTransactionsClause(scalaIds, Option(where), yieldedItems, yieldAll)(p)
   }
 
   override def terminateTransactionsClause(
     p: InputPosition,
-    ids: SimpleEither[util.List[String], Parameter],
+    ids: SimpleEither[util.List[String], Expression],
     where: Where,
-    hasYield: Boolean
+    yieldClause: Yield
   ): Clause = {
     val scalaIds =
       ids.asScala.left.map(_.asScala.toList) // if left: map the string list to scala, if right: changes nothing
-    TerminateTransactionsClause(scalaIds, hasYield, Option(where).map(_.position))(p)
+    val (yieldAll, yieldedItems) = getYieldAllAndYieldItems(yieldClause)
+    TerminateTransactionsClause(scalaIds, yieldedItems, yieldAll, Option(where).map(_.position))(p)
+  }
+
+  private def getYieldAllAndYieldItems(yieldClause: Yield): (Boolean, List[CommandResultItem]) = {
+    val yieldAll = Option(yieldClause).exists(_.returnItems.includeExisting)
+    val yieldedItems = Option(yieldClause)
+      .map(_.returnItems.items.map(item => {
+        // yield is always parsed as `variable` with potentially `AS variable` after
+        val variable = item.expression.asInstanceOf[LogicalVariable]
+        val aliasedVariable: LogicalVariable = item.alias.getOrElse(variable)
+        CommandResultItem(variable.name, aliasedVariable)(item.position)
+      }).toList)
+      .getOrElse(List.empty)
+    (yieldAll, yieldedItems)
+  }
+
+  override def turnYieldToWith(yieldClause: Yield): Clause = {
+    val returnItems = yieldClause.returnItems
+    val itemOrder = if (returnItems.items.nonEmpty) Some(returnItems.items.map(_.name).toList) else None
+    With(
+      distinct = false,
+      ReturnItems(includeExisting = true, Seq(), itemOrder)(returnItems.position),
+      yieldClause.orderBy,
+      yieldClause.skip,
+      yieldClause.limit,
+      yieldClause.where,
+      withType = ParsedAsYield
+    )(yieldClause.position)
   }
 
   // Schema Commands

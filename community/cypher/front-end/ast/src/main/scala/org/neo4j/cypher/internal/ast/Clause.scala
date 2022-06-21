@@ -96,6 +96,7 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTPath
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 sealed trait Clause extends ASTNode with SemanticCheckable {
   def name: String
@@ -585,7 +586,7 @@ object CommandClause {
 }
 
 // For a query to be allowed to run on system it needs to consist of:
-// - only ClauseAllowedOnSystem clauses
+// - only ClauseAllowedOnSystem clauses (or the WITH that was parsed as YIELD/added in rewriter for transaction commands)
 // - at least one CommandClauseAllowedOnSystem clause
 sealed trait ClauseAllowedOnSystem
 sealed trait CommandClauseAllowedOnSystem extends ClauseAllowedOnSystem
@@ -802,86 +803,154 @@ object ShowFunctionsClause {
   }
 }
 
+trait TransactionsCommandClause extends CommandClause with CommandClauseAllowedOnSystem {
+  // Original columns before potential rename or filtering in YIELD
+  def transactionColumns: List[TransactionColumn]
+
+  // Yielded columns or yield *
+  def yieldItems: List[CommandResultItem]
+  def yieldAll: Boolean
+
+  // Transaction ids, either:
+  // - a list of strings
+  // - a single expression resolving to a single string or a list of strings
+  def ids: Either[List[String], Expression]
+
+  // Semantic check:
+  private lazy val columnsMap: Map[String, CypherType] =
+    transactionColumns.map(column => column.name -> column.cypherType).toMap[String, CypherType]
+
+  private def checkYieldItems: SemanticCheck =
+    if (yieldItems.nonEmpty) yieldItems.foldSemanticCheck(_.semanticCheck(columnsMap))
+    else super.semanticCheck
+
+  override def semanticCheck: SemanticCheck = ids match {
+    case Right(e) => SemanticExpressionCheck.simple(e) chain checkYieldItems
+    case _        => checkYieldItems
+  }
+}
+
+// Yield columns: keeps track of the original name and the yield variable (either same name or renamed)
+case class CommandResultItem(originalName: String, aliasedVariable: LogicalVariable)(val position: InputPosition)
+    extends ASTNode with SemanticAnalysisTooling {
+
+  def semanticCheck(columns: Map[String, CypherType]): SemanticCheck =
+    columns
+      .get(originalName)
+      .map { typ => declareVariable(aliasedVariable, typ): SemanticCheck }
+      .getOrElse(error(s"Trying to YIELD non-existing column: `$originalName`", position))
+}
+
+// Column name together with the column type
+// Used to create the ShowColumns but without keeping variables
+// (as having undeclared variables in the ast caused issues with namespacer)
+case class TransactionColumn(name: String, cypherType: CypherType = CTString)
+
 case class ShowTransactionsClause(
-  unfilteredColumns: DefaultOrAllShowColumns,
-  ids: Either[List[String], Parameter],
+  briefTransactionColumns: List[TransactionColumn],
+  allTransactionColumns: List[TransactionColumn],
+  ids: Either[List[String], Expression],
   where: Option[Where],
-  hasYield: Boolean
-)(val position: InputPosition) extends CommandClause with CommandClauseAllowedOnSystem {
+  yieldItems: List[CommandResultItem],
+  yieldAll: Boolean
+)(val position: InputPosition) extends TransactionsCommandClause {
   override def name: String = "SHOW TRANSACTIONS"
 
-  override def moveWhereToYield: CommandClause = copy(where = None, hasYield = true)(position)
+  private val useAllColumns = yieldItems.nonEmpty || yieldAll
+
+  val transactionColumns: List[TransactionColumn] =
+    if (useAllColumns) allTransactionColumns else briefTransactionColumns
+
+  private val briefColumns = briefTransactionColumns.map(c => ShowColumn(c.name, c.cypherType)(position))
+  private val allColumns = allTransactionColumns.map(c => ShowColumn(c.name, c.cypherType)(position))
+
+  val unfilteredColumns: DefaultOrAllShowColumns =
+    DefaultOrAllShowColumns(useAllColumns, briefColumns, allColumns)
+
+  override def moveWhereToYield: CommandClause = copy(where = None)(position)
 }
 
 object ShowTransactionsClause {
 
   def apply(
-    ids: Either[List[String], Parameter],
+    ids: Either[List[String], Expression],
     where: Option[Where],
-    hasYield: Boolean
+    yieldItems: List[CommandResultItem],
+    yieldAll: Boolean
   )(position: InputPosition): ShowTransactionsClause = {
-    val showColumns = List(
+    val columns = List(
       // (column, brief)
-      (ShowColumn("database")(position), true),
-      (ShowColumn("transactionId")(position), true),
-      (ShowColumn("currentQueryId")(position), true),
-      (ShowColumn("outerTransactionId")(position), false),
-      (ShowColumn("connectionId")(position), true),
-      (ShowColumn("clientAddress")(position), true),
-      (ShowColumn("username")(position), true),
-      (ShowColumn("metaData", CTMap)(position), false),
-      (ShowColumn("currentQuery")(position), true),
-      (ShowColumn("parameters", CTMap)(position), false),
-      (ShowColumn("planner")(position), false),
-      (ShowColumn("runtime")(position), false),
-      (ShowColumn("indexes", CTList(CTMap))(position), false),
-      (ShowColumn("startTime")(position), true),
-      (ShowColumn("currentQueryStartTime")(position), false),
-      (ShowColumn("protocol")(position), false),
-      (ShowColumn("requestUri")(position), false),
-      (ShowColumn("status")(position), true),
-      (ShowColumn("currentQueryStatus")(position), false),
-      (ShowColumn("statusDetails")(position), false),
-      (ShowColumn("resourceInformation", CTMap)(position), false),
-      (ShowColumn("activeLockCount", CTInteger)(position), false),
-      (ShowColumn("currentQueryActiveLockCount", CTInteger)(position), false),
-      (ShowColumn("elapsedTime", CTDuration)(position), true),
-      (ShowColumn("cpuTime", CTDuration)(position), false),
-      (ShowColumn("waitTime", CTDuration)(position), false),
-      (ShowColumn("idleTime", CTDuration)(position), false),
-      (ShowColumn("currentQueryElapsedTime", CTDuration)(position), false),
-      (ShowColumn("currentQueryCpuTime", CTDuration)(position), false),
-      (ShowColumn("currentQueryWaitTime", CTDuration)(position), false),
-      (ShowColumn("currentQueryIdleTime", CTDuration)(position), false),
-      (ShowColumn("currentQueryAllocatedBytes", CTInteger)(position), false),
-      (ShowColumn("allocatedDirectBytes", CTInteger)(position), false),
-      (ShowColumn("estimatedUsedHeapMemory", CTInteger)(position), false),
-      (ShowColumn("pageHits", CTInteger)(position), false),
-      (ShowColumn("pageFaults", CTInteger)(position), false),
-      (ShowColumn("currentQueryPageHits", CTInteger)(position), false),
-      (ShowColumn("currentQueryPageFaults", CTInteger)(position), false),
-      (ShowColumn("initializationStackTrace")(position), false)
+      (TransactionColumn("database"), true),
+      (TransactionColumn("transactionId"), true),
+      (TransactionColumn("currentQueryId"), true),
+      (TransactionColumn("outerTransactionId"), false),
+      (TransactionColumn("connectionId"), true),
+      (TransactionColumn("clientAddress"), true),
+      (TransactionColumn("username"), true),
+      (TransactionColumn("metaData", CTMap), false),
+      (TransactionColumn("currentQuery"), true),
+      (TransactionColumn("parameters", CTMap), false),
+      (TransactionColumn("planner"), false),
+      (TransactionColumn("runtime"), false),
+      (TransactionColumn("indexes", CTList(CTMap)), false),
+      (TransactionColumn("startTime"), true),
+      (TransactionColumn("currentQueryStartTime"), false),
+      (TransactionColumn("protocol"), false),
+      (TransactionColumn("requestUri"), false),
+      (TransactionColumn("status"), true),
+      (TransactionColumn("currentQueryStatus"), false),
+      (TransactionColumn("statusDetails"), false),
+      (TransactionColumn("resourceInformation", CTMap), false),
+      (TransactionColumn("activeLockCount", CTInteger), false),
+      (TransactionColumn("currentQueryActiveLockCount", CTInteger), false),
+      (TransactionColumn("elapsedTime", CTDuration), true),
+      (TransactionColumn("cpuTime", CTDuration), false),
+      (TransactionColumn("waitTime", CTDuration), false),
+      (TransactionColumn("idleTime", CTDuration), false),
+      (TransactionColumn("currentQueryElapsedTime", CTDuration), false),
+      (TransactionColumn("currentQueryCpuTime", CTDuration), false),
+      (TransactionColumn("currentQueryWaitTime", CTDuration), false),
+      (TransactionColumn("currentQueryIdleTime", CTDuration), false),
+      (TransactionColumn("currentQueryAllocatedBytes", CTInteger), false),
+      (TransactionColumn("allocatedDirectBytes", CTInteger), false),
+      (TransactionColumn("estimatedUsedHeapMemory", CTInteger), false),
+      (TransactionColumn("pageHits", CTInteger), false),
+      (TransactionColumn("pageFaults", CTInteger), false),
+      (TransactionColumn("currentQueryPageHits", CTInteger), false),
+      (TransactionColumn("currentQueryPageFaults", CTInteger), false),
+      (TransactionColumn("initializationStackTrace"), false)
     )
-    val briefShowColumns = showColumns.filter(_._2).map(_._1)
-    val allShowColumns = showColumns.map(_._1)
+    val briefColumns = columns.filter(_._2).map(_._1)
+    val allColumns = columns.map(_._1)
 
-    ShowTransactionsClause(DefaultOrAllShowColumns(hasYield, briefShowColumns, allShowColumns), ids, where, hasYield)(
-      position
-    )
+    ShowTransactionsClause(
+      briefColumns,
+      allColumns,
+      ids,
+      where,
+      yieldItems,
+      yieldAll
+    )(position)
   }
 }
 
 case class TerminateTransactionsClause(
-  unfilteredColumns: DefaultOrAllShowColumns,
-  ids: Either[List[String], Parameter],
-  hasYield: Boolean,
+  transactionColumns: List[TransactionColumn],
+  ids: Either[List[String], Expression],
+  yieldItems: List[CommandResultItem],
+  yieldAll: Boolean,
   wherePos: Option[InputPosition]
-)(val position: InputPosition) extends CommandClause with CommandClauseAllowedOnSystem {
+)(val position: InputPosition) extends TransactionsCommandClause {
   override def name: String = "TERMINATE TRANSACTIONS"
+
+  private val columns = transactionColumns.map(c => ShowColumn(c.name, c.cypherType)(position))
+
+  val unfilteredColumns: DefaultOrAllShowColumns =
+    DefaultOrAllShowColumns(useAllColumns = yieldItems.nonEmpty || yieldAll, columns, columns)
 
   override def semanticCheck: SemanticCheck = when(ids match {
     case Left(ls) => ls.size < 1
-    case Right(_) => false // parameter list length needs to be checked at runtime
+    case Right(_) => false // expression list length needs to be checked at runtime
   }) {
     error("Missing transaction id to terminate, the transaction id can be found using `SHOW TRANSACTIONS`", position)
   } chain when(wherePos.isDefined) {
@@ -898,21 +967,23 @@ case class TerminateTransactionsClause(
 object TerminateTransactionsClause {
 
   def apply(
-    ids: Either[List[String], Parameter],
-    hasYield: Boolean,
+    ids: Either[List[String], Expression],
+    yieldItems: List[CommandResultItem],
+    yieldAll: Boolean,
     wherePos: Option[InputPosition]
   )(position: InputPosition): TerminateTransactionsClause = {
     // All columns are currently default
     val columns = List(
-      ShowColumn("transactionId")(position),
-      ShowColumn("username")(position),
-      ShowColumn("message")(position)
+      TransactionColumn("transactionId"),
+      TransactionColumn("username"),
+      TransactionColumn("message")
     )
 
     TerminateTransactionsClause(
-      DefaultOrAllShowColumns(useAllColumns = hasYield, columns, columns),
+      columns,
       ids,
-      hasYield,
+      yieldItems,
+      yieldAll,
       wherePos
     )(position)
   }
@@ -1068,9 +1139,9 @@ object ProjectionClause {
   def unapply(arg: ProjectionClause)
     : Option[(Boolean, ReturnItems, Option[OrderBy], Option[Skip], Option[Limit], Option[Where])] = {
     arg match {
-      case With(distinct, ri, orderBy, skip, limit, where) => Some((distinct, ri, orderBy, skip, limit, where))
-      case Return(distinct, ri, orderBy, skip, limit, _)   => Some((distinct, ri, orderBy, skip, limit, None))
-      case Yield(ri, orderBy, skip, limit, where)          => Some((false, ri, orderBy, skip, limit, where))
+      case With(distinct, ri, orderBy, skip, limit, where, _) => Some((distinct, ri, orderBy, skip, limit, where))
+      case Return(distinct, ri, orderBy, skip, limit, _, _)   => Some((distinct, ri, orderBy, skip, limit, None))
+      case Yield(ri, orderBy, skip, limit, where)             => Some((false, ri, orderBy, skip, limit, where))
     }
   }
 
@@ -1268,6 +1339,12 @@ sealed trait ProjectionClause extends HorizonClause {
   }
 }
 
+// used for SHOW/TERMINATE commands
+sealed trait WithType
+case object DefaultWith extends WithType
+case object ParsedAsYield extends WithType
+case object AddedInRewrite extends WithType
+
 object With {
 
   def apply(returnItems: ReturnItems)(pos: InputPosition): With =
@@ -1280,7 +1357,8 @@ case class With(
   orderBy: Option[OrderBy],
   skip: Option[Skip],
   limit: Option[Limit],
-  where: Option[Where]
+  where: Option[Where],
+  withType: WithType = DefaultWith
 )(val position: InputPosition) extends ProjectionClause {
 
   override def name = "WITH"
@@ -1307,7 +1385,8 @@ case class Return(
   orderBy: Option[OrderBy],
   skip: Option[Skip],
   limit: Option[Limit],
-  excludedNames: Set[String] = Set.empty
+  excludedNames: Set[String] = Set.empty,
+  addedInRewrite: Boolean = false // used for SHOW/TERMINATE commands
 )(val position: InputPosition) extends ProjectionClause with ClauseAllowedOnSystem {
 
   override def name = "RETURN"

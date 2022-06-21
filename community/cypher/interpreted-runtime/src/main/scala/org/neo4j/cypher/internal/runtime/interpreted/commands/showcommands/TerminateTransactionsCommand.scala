@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 
+import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ShowColumn
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource
@@ -35,11 +37,14 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
 // TERMINATE TRANSACTION[S] transaction-id[,...]
-case class TerminateTransactionsCommand(givenIds: Either[List[String], Expression], columns: List[ShowColumn])
-    extends Command(columns) {
+case class TerminateTransactionsCommand(
+  givenIds: Either[List[String], Expression],
+  columns: List[ShowColumn],
+  yieldColumns: List[CommandResultItem]
+) extends TransactionCommand(columns, yieldColumns) {
 
-  override def originalNameRows(state: QueryState): ClosingIterator[Map[String, AnyValue]] = {
-    val ids = TransactionCommandHelper.extractIds(givenIds, state.params)
+  override def originalNameRows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]] = {
+    val ids = TransactionCommandHelper.extractIds(givenIds, state, baseRow)
     if (ids.isEmpty) throw new InvalidSemanticsException(
       "Missing transaction id to terminate, the transaction id can be found using `SHOW TRANSACTIONS`."
     )
@@ -111,13 +116,15 @@ case class TerminateTransactionsCommand(givenIds: Either[List[String], Expressio
         })
     }
     // Add 'transaction not found' results for the ids on non-existing databases as well
-    val updatedRows = rows ++ otherTxIds.map(txId => {
+    val updatedWithExtraRows = rows ++ otherTxIds.map(txId => {
       Map(
         "transactionId" -> Values.stringValue(txId.toString),
         "username" -> Values.NO_VALUE,
         "message" -> Values.stringValue("Transaction not found.")
       )
     })
-    ClosingIterator.apply(updatedRows.iterator)
+
+    val updatedColumnNameRows = updateRowsWithPotentiallyRenamedColumns(updatedWithExtraRows.toList)
+    ClosingIterator.apply(updatedColumnNameRows.iterator)
   }
 }

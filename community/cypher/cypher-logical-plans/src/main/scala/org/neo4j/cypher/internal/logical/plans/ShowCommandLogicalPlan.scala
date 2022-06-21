@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ExecutableBy
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowConstraintType
 import org.neo4j.cypher.internal.ast.ShowFunctionType
 import org.neo4j.cypher.internal.ast.ShowIndexType
-import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 case class ShowIndexes(indexType: ShowIndexType, verbose: Boolean, defaultColumns: List[ShowColumn])(implicit
@@ -45,9 +46,25 @@ case class ShowFunctions(
   defaultColumns: List[ShowColumn]
 )(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
 
-case class ShowTransactions(ids: Either[List[String], Parameter], verbose: Boolean, defaultColumns: List[ShowColumn])(
-  implicit idGen: IdGen
-) extends CommandLogicalPlan(idGen)
+abstract class TransactionCommandLogicalPlan(idGen: IdGen) extends CommandLogicalPlan(idGen) {
+  def yieldColumns: List[CommandResultItem]
 
-case class TerminateTransactions(ids: Either[List[String], Parameter], defaultColumns: List[ShowColumn])(implicit
-idGen: IdGen) extends CommandLogicalPlan(idGen)
+  override def availableSymbols: Set[String] =
+    if (yieldColumns.nonEmpty) yieldColumns.map(_.aliasedVariable.name).toSet
+    else super.availableSymbols
+}
+
+case class ShowTransactions(
+  ids: Either[List[String], Expression],
+  verbose: Boolean,
+  defaultColumns: List[ShowColumn],
+  yieldColumns: List[CommandResultItem],
+  yieldAll: Boolean
+)(implicit idGen: IdGen) extends TransactionCommandLogicalPlan(idGen)
+
+case class TerminateTransactions(
+  ids: Either[List[String], Expression],
+  defaultColumns: List[ShowColumn],
+  yieldColumns: List[CommandResultItem],
+  yieldAll: Boolean
+)(implicit idGen: IdGen) extends TransactionCommandLogicalPlan(idGen)

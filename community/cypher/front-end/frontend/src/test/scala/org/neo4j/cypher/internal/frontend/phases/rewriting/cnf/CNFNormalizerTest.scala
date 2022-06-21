@@ -242,7 +242,7 @@ object TestStatement {
   }
 
   def unapply(s: Statement): Option[Expression] = s match {
-    case Query(SingleQuery(Seq(Return(_, ReturnItems(_, Seq(AliasedReturnItem(expression, _)), _), _, _, _, _)))) =>
+    case Query(SingleQuery(Seq(Return(_, ReturnItems(_, Seq(AliasedReturnItem(expression, _)), _), _, _, _, _, _)))) =>
       Some(expression)
     case _ => None
   }

@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ConstraintVersion2
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateAliasAction
@@ -156,6 +157,7 @@ import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.OrderBy
+import org.neo4j.cypher.internal.ast.ParsedAsYield
 import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.PrivilegeCommand
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
@@ -285,6 +287,7 @@ import org.neo4j.cypher.internal.ast.generator.AstGenerator.boolean
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.char
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.oneOrMore
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.tuple
+import org.neo4j.cypher.internal.ast.generator.AstGenerator.twoOrMore
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.zeroOrMore
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
@@ -412,6 +415,8 @@ import org.scalacheck.util.Buildable
 
 import java.nio.charset.StandardCharsets
 
+import scala.util.Random
+
 object AstGenerator {
   val OR_MORE_UPPER_BOUND = 3
 
@@ -426,6 +431,12 @@ object AstGenerator {
 
   def oneOrMore[T](seq: Seq[T]): Gen[Seq[T]] =
     choose(1, Math.min(OR_MORE_UPPER_BOUND, seq.size)).flatMap(pick(_, seq)).map(_.toSeq)
+
+  def twoOrMore[T](gen: Gen[T]): Gen[List[T]] =
+    choose(2, OR_MORE_UPPER_BOUND).flatMap(listOfN(_, gen))
+
+  def twoOrMore[T](seq: Seq[T]): Gen[Seq[T]] =
+    choose(2, Math.min(OR_MORE_UPPER_BOUND, seq.size)).flatMap(pick(_, seq)).map(_.toSeq)
 
   def tuple[A, B](ga: Gen[A], gb: Gen[B]): Gen[(A, B)] = for {
     a <- ga
@@ -1312,41 +1323,162 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   }
 
   def _showTransactions: Gen[Query] = for {
-    idList <- zeroOrMore(string)
-    param <- _parameter
-    ids <- oneOf(Left(idList), Right(param))
+    ids <- transactionIds
     yields <- _eitherYieldOrWhere
+    yieldAll <- boolean
     use <- option(_use)
   } yield {
     val showClauses = yields match {
-      case Some(Right(w))           => Seq(ShowTransactionsClause(ids, Some(w), hasYield = false)(pos))
-      case Some(Left((y, Some(r)))) => Seq(ShowTransactionsClause(ids, None, hasYield = true)(pos), y, r)
-      case Some(Left((y, None)))    => Seq(ShowTransactionsClause(ids, None, hasYield = true)(pos), y)
-      case _                        => Seq(ShowTransactionsClause(ids, None, hasYield = false)(pos))
+      case Some(Right(w)) => Seq(ShowTransactionsClause(ids, Some(w), List.empty, yieldAll = false)(pos))
+      case Some(Left((y, Some(r)))) =>
+        val (w, yi) = turnYieldToWith(y)
+        Seq(ShowTransactionsClause(ids, None, yi, yieldAll = false)(pos), w, r)
+      case Some(Left((y, None))) =>
+        val (w, yi) = turnYieldToWith(y)
+        Seq(ShowTransactionsClause(ids, None, yi, yieldAll = false)(pos), w)
+      case _ if yieldAll =>
+        Seq(ShowTransactionsClause(ids, None, List.empty, yieldAll = true)(pos), getFullWithStarFromYield)
+      case _ => Seq(ShowTransactionsClause(ids, None, List.empty, yieldAll = false)(pos))
     }
     val fullClauses = use.map(u => u +: showClauses).getOrElse(showClauses)
     Query(SingleQuery(fullClauses)(pos))(pos)
   }
 
   def _terminateTransactions: Gen[Query] = for {
-    idList <- zeroOrMore(string)
-    param <- _parameter
-    ids <- oneOf(Left(idList), Right(param))
+    ids <- transactionIds
     yields <- option(_yield)
+    yieldAll <- boolean
     returns <- option(_return)
     use <- option(_use)
   } yield {
     val terminateClauses = (yields, returns) match {
-      case (Some(y), Some(r)) => Seq(TerminateTransactionsClause(ids, hasYield = true, None)(pos), y, r)
-      case (Some(y), None)    => Seq(TerminateTransactionsClause(ids, hasYield = true, None)(pos), y)
-      case _                  => Seq(TerminateTransactionsClause(ids, hasYield = false, None)(pos))
+      case (Some(y), Some(r)) =>
+        val (w, yi) = turnYieldToWith(y)
+        Seq(TerminateTransactionsClause(ids, yi, yieldAll = false, None)(pos), w, r)
+      case (Some(y), None) =>
+        val (w, yi) = turnYieldToWith(y)
+        Seq(TerminateTransactionsClause(ids, yi, yieldAll = false, None)(pos), w)
+      case _ if yieldAll =>
+        Seq(TerminateTransactionsClause(ids, List.empty, yieldAll = true, None)(pos), getFullWithStarFromYield)
+      case _ => Seq(TerminateTransactionsClause(ids, List.empty, yieldAll = false, None)(pos))
     }
     val fullClauses = use.map(u => u +: terminateClauses).getOrElse(terminateClauses)
     Query(SingleQuery(fullClauses)(pos))(pos)
   }
 
-  def _showCommands: Gen[Query] =
-    oneOf(_showIndexes, _showConstraints, _showProcedures, _showFunctions, _showTransactions, _terminateTransactions)
+  def _combinedTransactionCommands: Gen[Query] = for {
+    show <- showAsPartOfCombined
+    terminate <- terminateAsPartOfCombined
+    additionalShow <- zeroOrMore(showAsPartOfCombined)
+    additionalTerminate <- zeroOrMore(terminateAsPartOfCombined)
+    showFirst <- boolean
+    returns <- _return
+    use <- option(_use)
+  } yield {
+
+    val clauses =
+      if (additionalShow.isEmpty && additionalTerminate.isEmpty) {
+        // no additional clauses so take the two base ones
+        if (showFirst) show ++ terminate else terminate ++ show
+      } else if (additionalTerminate.isEmpty) {
+        // Only additional show, make show only command
+        // add base show to ensure at least 2 clauses
+        show ++ additionalShow.flatten
+      } else if (additionalShow.isEmpty) {
+        // Only additional terminate, make terminate only command
+        // add base terminate to ensure at least 2 clauses
+        terminate ++ additionalTerminate.flatten
+      } else {
+        // multiple additional clauses, add all together and mix the order they appear in
+        // (keeping the yield/with together with its respective clause)
+        val allPairs = Seq(show, terminate) ++ additionalShow ++ additionalTerminate
+        val scrambled = Random.shuffle(allPairs)
+        scrambled.flatten
+      }
+
+    val clausesWithReturn = clauses :+ returns
+    val fullClauses = use.map(u => u +: clausesWithReturn).getOrElse(clausesWithReturn)
+    Query(SingleQuery(fullClauses)(pos))(pos)
+  }
+
+  private def showAsPartOfCombined: Gen[Seq[Clause]] = for {
+    ids <- transactionIds
+    yields <- _yield
+    yieldAll <- boolean
+  } yield {
+    val (withClause, items) = turnYieldToWith(yields)
+    if (yieldAll) Seq(ShowTransactionsClause(ids, None, List.empty, yieldAll = true)(pos), getFullWithStarFromYield)
+    else Seq(ShowTransactionsClause(ids, None, items, yieldAll = false)(pos), withClause)
+  }
+
+  private def terminateAsPartOfCombined: Gen[Seq[Clause]] = for {
+    ids <- transactionIds
+    yields <- _yield
+    yieldAll <- boolean
+  } yield {
+    val (withClause, items) = turnYieldToWith(yields)
+    if (yieldAll)
+      Seq(TerminateTransactionsClause(ids, List.empty, yieldAll = true, None)(pos), getFullWithStarFromYield)
+    else Seq(TerminateTransactionsClause(ids, items, yieldAll = false, None)(pos), withClause)
+  }
+
+  /* Ids for the transaction commands:
+   * - can be an expression or a list of strings
+   * - a singular string is parsed as string expression
+   * - no ids gives an empty list
+   * - two or more ids give an id list
+   */
+  private def transactionIds: Gen[Either[List[String], Expression]] = for {
+    multiIdList <- twoOrMore(string)
+    idList <- oneOf(List.empty, multiIdList)
+    expr <- _expression
+    ids <- oneOf(Left(idList), Right(expr))
+  } yield {
+    ids
+  }
+
+  private def turnYieldToWith(yieldClause: Yield): (With, List[CommandResultItem]) = {
+    val returnItems = yieldClause.returnItems
+    val yieldItems =
+      returnItems.items.map(r => {
+        val variable = r.expression.asInstanceOf[Variable]
+        val aliasedVariable = r.alias.getOrElse(variable)
+        CommandResultItem(variable.name, aliasedVariable)(pos)
+      }).toList
+    val itemOrder = if (returnItems.items.nonEmpty) Some(returnItems.items.map(_.name).toList) else None
+    val withClause = With(
+      distinct = false,
+      ReturnItems(includeExisting = true, Seq(), itemOrder)(returnItems.position),
+      yieldClause.orderBy,
+      yieldClause.skip,
+      yieldClause.limit,
+      yieldClause.where,
+      withType = ParsedAsYield
+    )(yieldClause.position)
+
+    (withClause, yieldItems)
+  }
+
+  private def getFullWithStarFromYield =
+    With(
+      distinct = false,
+      ReturnItems(includeExisting = true, Seq())(pos),
+      None,
+      None,
+      None,
+      None,
+      withType = ParsedAsYield
+    )(pos)
+
+  def _showCommands: Gen[Query] = oneOf(
+    _showIndexes,
+    _showConstraints,
+    _showProcedures,
+    _showFunctions,
+    _showTransactions,
+    _terminateTransactions,
+    _combinedTransactionCommands
+  )
 
   // Schema commands
   // ----------------------------------

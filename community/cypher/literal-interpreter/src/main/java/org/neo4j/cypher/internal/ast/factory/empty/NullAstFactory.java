@@ -740,13 +740,18 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL showTransactionsClause(NULL p, SimpleEither<List<String>, NULL> ids, NULL aNull, boolean hasYield) {
+    public NULL showTransactionsClause(NULL p, SimpleEither<List<String>, NULL> ids, NULL aNull, NULL yieldClause) {
         return null;
     }
 
     @Override
     public NULL terminateTransactionsClause(
-            NULL p, SimpleEither<List<String>, NULL> ids, NULL where, boolean hasYield) {
+            NULL p, SimpleEither<List<String>, NULL> ids, NULL where, NULL yieldClause) {
+        return null;
+    }
+
+    @Override
+    public NULL turnYieldToWith(NULL yieldClause) {
         return null;
     }
 

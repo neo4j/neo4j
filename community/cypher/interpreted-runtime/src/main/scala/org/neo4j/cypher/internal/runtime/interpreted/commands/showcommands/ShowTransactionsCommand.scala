@@ -21,10 +21,12 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 
 import org.apache.commons.lang3.StringUtils.EMPTY
 import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ShowColumn
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.internal.kernel.api.helpers.TransactionDependenciesResolver
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource
@@ -54,11 +56,12 @@ import scala.jdk.CollectionConverters.MapHasAsScala
 case class ShowTransactionsCommand(
   givenIds: Either[List[String], Expression],
   verbose: Boolean,
-  defaultColumns: List[ShowColumn]
-) extends Command(defaultColumns) {
+  defaultColumns: List[ShowColumn],
+  yieldColumns: List[CommandResultItem]
+) extends TransactionCommand(defaultColumns, yieldColumns) {
 
-  override def originalNameRows(state: QueryState): ClosingIterator[Map[String, AnyValue]] = {
-    val ids = TransactionCommandHelper.extractIds(givenIds, state.params)
+  override def originalNameRows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]] = {
+    val ids = TransactionCommandHelper.extractIds(givenIds, state, baseRow)
     val ctx = state.query
     val securityContext = ctx.transactionalContext.securityContext
 
@@ -327,7 +330,9 @@ case class ShowTransactionsCommand(
           briefResult
         }
     }
-    ClosingIterator.apply(rows.iterator)
+
+    val updatedRows = updateRowsWithPotentiallyRenamedColumns(rows)
+    ClosingIterator.apply(updatedRows.iterator)
   }
 
   private def getConfiguredTimeZone(ctx: QueryContext): ZoneId =

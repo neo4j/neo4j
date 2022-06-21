@@ -27,7 +27,8 @@ import org.neo4j.cypher.internal.util.attribution.Id
 case class CommandPipe(command: Command)(val id: Id = Id.INVALID_ID) extends Pipe {
 
   override protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
-    command.rows(state).map {
+    val baseContext = state.newRowWithArgument(rowFactory)
+    command.rows(state, baseContext).map {
       commandRow =>
         val row = state.newRowWithArgument(rowFactory)
         commandRow.foreach {

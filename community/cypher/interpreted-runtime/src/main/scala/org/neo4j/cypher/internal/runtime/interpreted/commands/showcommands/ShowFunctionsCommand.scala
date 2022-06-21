@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowFunctionType
 import org.neo4j.cypher.internal.ast.UserDefinedFunctions
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature
@@ -50,7 +51,7 @@ case class ShowFunctionsCommand(
   isCommunity: Boolean
 ) extends Command(columns) {
 
-  override def originalNameRows(state: QueryState): ClosingIterator[Map[String, AnyValue]] = {
+  override def originalNameRows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]] = {
     lazy val systemGraph = state.query.systemGraph
 
     val privileges =

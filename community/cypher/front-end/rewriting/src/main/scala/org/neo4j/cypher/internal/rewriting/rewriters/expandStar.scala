@@ -43,12 +43,12 @@ case class expandStar(state: SemanticState) extends Rewriter {
   override def apply(that: AnyRef): AnyRef = instance(that)
 
   private val rewriter = Rewriter.lift {
-    case clause @ With(_, values, _, _, _, _) if values.includeExisting =>
+    case clause @ With(_, values, _, _, _, _, _) if values.includeExisting =>
       val newReturnItems =
         if (values.includeExisting) returnItems(clause, values.items, values.defaultOrderOnColumns) else values
       clause.copy(returnItems = newReturnItems)(clause.position)
 
-    case clause @ Return(_, values, _, _, _, excludedNames) if values.includeExisting =>
+    case clause @ Return(_, values, _, _, _, excludedNames, _) if values.includeExisting =>
       val newReturnItems =
         if (values.includeExisting) returnItems(clause, values.items, values.defaultOrderOnColumns, excludedNames)
         else values

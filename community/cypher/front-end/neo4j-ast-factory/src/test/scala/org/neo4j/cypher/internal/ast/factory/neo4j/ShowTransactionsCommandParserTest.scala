@@ -20,9 +20,6 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.Parameter
-import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
 /* Tests for listing transactions */
@@ -30,32 +27,61 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
 
   Seq("TRANSACTION", "TRANSACTIONS").foreach { transactionKeyword =>
     test(s"SHOW $transactionKeyword") {
-      assertAst(query(ast.ShowTransactionsClause(Left(List.empty), None, hasYield = false)(defaultPos)))
+      assertAst(query(ast.ShowTransactionsClause(Left(List.empty), None, List.empty, yieldAll = false)(defaultPos)))
     }
 
     test(s"SHOW $transactionKeyword 'db1-transaction-123'") {
       assertAst(
-        query(ast.ShowTransactionsClause(Left(List("db1-transaction-123")), None, hasYield = false)(defaultPos))
+        query(
+          ast.ShowTransactionsClause(
+            Right(literalString("db1-transaction-123")),
+            None,
+            List.empty,
+            yieldAll = false
+          )(defaultPos)
+        )
       )
     }
 
     test(s"""SHOW $transactionKeyword "db1-transaction-123"""") {
       assertAst(
-        query(ast.ShowTransactionsClause(Left(List("db1-transaction-123")), None, hasYield = false)(defaultPos))
+        query(
+          ast.ShowTransactionsClause(
+            Right(literalString("db1-transaction-123")),
+            None,
+            List.empty,
+            yieldAll = false
+          )(defaultPos)
+        )
       )
     }
 
     test(s"SHOW $transactionKeyword 'my.db-transaction-123'") {
       assertAst(
-        query(ast.ShowTransactionsClause(Left(List("my.db-transaction-123")), None, hasYield = false)(defaultPos))
+        query(ast.ShowTransactionsClause(
+          Right(literalString("my.db-transaction-123")),
+          None,
+          List.empty,
+          yieldAll = false
+        )(defaultPos))
       )
     }
 
     test(s"SHOW $transactionKeyword $$param") {
       assertAst(query(ast.ShowTransactionsClause(
-        Right(Parameter("param", CTAny)((1, 7 + transactionKeyword.length, 6 + transactionKeyword.length))),
+        Right(parameter("param", CTAny)),
         None,
-        hasYield = false
+        List.empty,
+        yieldAll = false
+      )(defaultPos)))
+    }
+
+    test(s"SHOW $transactionKeyword $$where") {
+      assertAst(query(ast.ShowTransactionsClause(
+        Right(parameter("where", CTAny)),
+        None,
+        List.empty,
+        yieldAll = false
       )(defaultPos)))
     }
 
@@ -63,29 +89,119 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       assertAst(query(ast.ShowTransactionsClause(
         Left(List("db1 - transaction - 123", "db2-transaction-45a6")),
         None,
-        hasYield = false
+        List.empty,
+        yieldAll = false
       )(defaultPos)))
     }
 
     test(s"SHOW $transactionKeyword 'yield-transaction-123'") {
       assertAst(
-        query(ast.ShowTransactionsClause(Left(List("yield-transaction-123")), None, hasYield = false)(defaultPos))
+        query(ast.ShowTransactionsClause(
+          Right(literalString("yield-transaction-123")),
+          None,
+          List.empty,
+          yieldAll = false
+        )(defaultPos))
       )
     }
 
     test(s"SHOW $transactionKeyword 'where-transaction-123'") {
       assertAst(
-        query(ast.ShowTransactionsClause(Left(List("where-transaction-123")), None, hasYield = false)(defaultPos))
+        query(ast.ShowTransactionsClause(
+          Right(literalString("where-transaction-123")),
+          None,
+          List.empty,
+          yieldAll = false
+        )(defaultPos))
       )
     }
 
     test(s"USE db SHOW $transactionKeyword") {
       assertAst(
-        query(use(varFor("db")), ast.ShowTransactionsClause(Left(List.empty), None, hasYield = false)(pos)),
+        query(use(varFor("db")), ast.ShowTransactionsClause(Left(List.empty), None, List.empty, yieldAll = false)(pos)),
         comparePosition = false
       )
     }
 
+  }
+
+  test("SHOW TRANSACTION db-transaction-123") {
+    assertAst(query(
+      ast.ShowTransactionsClause(
+        Right(subtract(subtract(varFor("db"), varFor("transaction")), literalInt(123))),
+        None,
+        List.empty,
+        yieldAll = false
+      )(pos)
+    ))
+  }
+
+  test("SHOW TRANSACTION 'neo4j'+'-transaction-'+3") {
+    assertAst(query(
+      ast.ShowTransactionsClause(
+        Right(add(add(literalString("neo4j"), literalString("-transaction-")), literalInt(3))),
+        None,
+        List.empty,
+        yieldAll = false
+      )(pos)
+    ))
+  }
+
+  test("SHOW TRANSACTION ('neo4j'+'-transaction-'+3)") {
+    assertAst(query(
+      ast.ShowTransactionsClause(
+        Right(add(add(literalString("neo4j"), literalString("-transaction-")), literalInt(3))),
+        None,
+        List.empty,
+        yieldAll = false
+      )(pos)
+    ))
+  }
+
+  test("SHOW TRANSACTIONS ['db1-transaction-123', 'db2-transaction-456']") {
+    assertAst(query(
+      ast.ShowTransactionsClause(
+        Right(listOfString("db1-transaction-123", "db2-transaction-456")),
+        None,
+        List.empty,
+        yieldAll = false
+      )(pos)
+    ))
+  }
+
+  test("SHOW TRANSACTION foo") {
+    assertAst(query(
+      ast.ShowTransactionsClause(Right(varFor("foo")), None, List.empty, yieldAll = false)(pos)
+    ))
+  }
+
+  test("SHOW TRANSACTION x+2") {
+    assertAst(query(
+      ast.ShowTransactionsClause(Right(add(varFor("x"), literalInt(2))), None, List.empty, yieldAll = false)(pos)
+    ))
+  }
+
+  test("SHOW TRANSACTIONS YIELD") {
+    assertAst(query(
+      ast.ShowTransactionsClause(Right(varFor("YIELD")), None, List.empty, yieldAll = false)(pos)
+    ))
+  }
+
+  test("SHOW TRANSACTIONS YIELD (123 + xyz)") {
+    assertAst(query(
+      ast.ShowTransactionsClause(
+        Right(function("YIELD", add(literalInt(123), varFor("xyz")))),
+        None,
+        List.empty,
+        yieldAll = false
+      )(pos)
+    ))
+  }
+
+  test("SHOW TRANSACTIONS ALL") {
+    assertAst(query(
+      ast.ShowTransactionsClause(Right(varFor("ALL")), None, List.empty, yieldAll = false)(pos)
+    ))
   }
 
   // Filtering tests
@@ -94,10 +210,9 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAst(query(
       ast.ShowTransactionsClause(
         Left(List.empty),
-        Some(ast.Where(
-          Equals(varFor("transactionId", (1, 24, 23)), StringLiteral("db1-transaction-123")((1, 40, 39)))((1, 38, 37))
-        )((1, 18, 17))),
-        hasYield = false
+        Some(where(equals(varFor("transactionId"), literalString("db1-transaction-123")))),
+        List.empty,
+        yieldAll = false
       )(defaultPos)
     ))
   }
@@ -105,8 +220,13 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   test("SHOW TRANSACTIONS YIELD database") {
     assertAst(
       query(
-        ast.ShowTransactionsClause(Left(List.empty), None, hasYield = true)(pos),
-        yieldClause(returnItems(variableReturnItem("database")))
+        ast.ShowTransactionsClause(
+          Left(List.empty),
+          None,
+          List(commandResultItem("database", Some("database"))),
+          yieldAll = false
+        )(pos),
+        withFromYield(returnAllItems.withDefaultOrderOnColumns(List("database")))
       ),
       comparePosition = false
     )
@@ -114,10 +234,15 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
 
   test("SHOW TRANSACTIONS 'db1-transaction-123', 'db2-transaction-456' YIELD *") {
     assertAst(query(
-      ast.ShowTransactionsClause(Left(List("db1-transaction-123", "db2-transaction-456")), None, hasYield = true)(
+      ast.ShowTransactionsClause(
+        Left(List("db1-transaction-123", "db2-transaction-456")),
+        None,
+        List.empty,
+        yieldAll = true
+      )(
         defaultPos
       ),
-      yieldClause(returnAllItems)
+      withFromYield(returnAllItems)
     ))
   }
 
@@ -127,9 +252,10 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
         ast.ShowTransactionsClause(
           Left(List("db1-transaction-123", "db2-transaction-456", "yield")),
           None,
-          hasYield = true
+          List.empty,
+          yieldAll = true
         )(pos),
-        yieldClause(returnAllItems)
+        withFromYield(returnAllItems)
       ),
       comparePosition = false
     )
@@ -138,8 +264,8 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   test("SHOW TRANSACTIONS YIELD * ORDER BY transactionId SKIP 2 LIMIT 5") {
     assertAst(
       query(
-        ast.ShowTransactionsClause(Left(List.empty), None, hasYield = true)(pos),
-        yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("transactionId")))), Some(skip(2)), Some(limit(5)))
+        ast.ShowTransactionsClause(Left(List.empty), None, List.empty, yieldAll = true)(pos),
+        withFromYield(returnAllItems, Some(orderBy(sortItem(varFor("transactionId")))), Some(skip(2)), Some(limit(5)))
       ),
       comparePosition = false
     )
@@ -149,9 +275,17 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAst(
       query(
         use(varFor("db")),
-        ast.ShowTransactionsClause(Left(List.empty), None, hasYield = true)(pos),
-        yieldClause(
-          returnItems(variableReturnItem("transactionId"), aliasedReturnItem("activeLockCount", "pp")),
+        ast.ShowTransactionsClause(
+          Left(List.empty),
+          None,
+          List(
+            commandResultItem("transactionId", Some("transactionId")),
+            commandResultItem("activeLockCount", Some("pp"))
+          ),
+          yieldAll = false
+        )(pos),
+        withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("transactionId", "pp")),
           where = Some(where(lessThan(varFor("pp"), literalInt(50L))))
         ),
         return_(variableReturnItem("transactionId"))
@@ -166,9 +300,17 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAst(
       query(
         use(varFor("db")),
-        ast.ShowTransactionsClause(Left(List.empty), None, hasYield = true)(pos),
-        yieldClause(
-          returnItems(variableReturnItem("transactionId"), aliasedReturnItem("activeLockCount", "pp")),
+        ast.ShowTransactionsClause(
+          Left(List.empty),
+          None,
+          List(
+            commandResultItem("transactionId", Some("transactionId")),
+            commandResultItem("activeLockCount", Some("pp"))
+          ),
+          yieldAll = false
+        )(pos),
+        withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("transactionId", "pp")),
           Some(orderBy(sortItem(varFor("pp")))),
           Some(skip(2)),
           Some(limit(5)),
@@ -180,14 +322,16 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     )
   }
 
-  test("SHOW TRANSACTIONS 'db1-transaction-123' YIELD transactionId AS TRANSACTION, database AS OUTPUT") {
+  test("SHOW TRANSACTIONS $param YIELD transactionId AS TRANSACTION, database AS OUTPUT") {
     assertAst(
       query(
-        ast.ShowTransactionsClause(Left(List("db1-transaction-123")), None, hasYield = true)(pos),
-        yieldClause(returnItems(
-          aliasedReturnItem("transactionId", "TRANSACTION"),
-          aliasedReturnItem("database", "OUTPUT")
-        ))
+        ast.ShowTransactionsClause(
+          Right(parameter("param", CTAny)),
+          None,
+          List(commandResultItem("transactionId", Some("TRANSACTION")), commandResultItem("database", Some("OUTPUT"))),
+          yieldAll = false
+        )(pos),
+        withFromYield(returnAllItems.withDefaultOrderOnColumns(List("TRANSACTION", "OUTPUT")))
       ),
       comparePosition = false
     )
@@ -196,11 +340,13 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   test("SHOW TRANSACTIONS 'where' YIELD transactionId AS TRANSACTION, database AS OUTPUT") {
     assertAst(
       query(
-        ast.ShowTransactionsClause(Left(List("where")), None, hasYield = true)(pos),
-        yieldClause(returnItems(
-          aliasedReturnItem("transactionId", "TRANSACTION"),
-          aliasedReturnItem("database", "OUTPUT")
-        ))
+        ast.ShowTransactionsClause(
+          Right(literalString("where")),
+          None,
+          List(commandResultItem("transactionId", Some("TRANSACTION")), commandResultItem("database", Some("OUTPUT"))),
+          yieldAll = false
+        )(pos),
+        withFromYield(returnAllItems.withDefaultOrderOnColumns(List("TRANSACTION", "OUTPUT")))
       ),
       comparePosition = false
     )
@@ -209,9 +355,10 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   test("SHOW TRANSACTION 'db1-transaction-123' WHERE transactionId = 'db1-transaction-124'") {
     assertAst(
       query(ast.ShowTransactionsClause(
-        Left(List("db1-transaction-123")),
+        Right(literalString("db1-transaction-123")),
         Some(where(equals(varFor("transactionId"), literalString("db1-transaction-124")))),
-        hasYield = false
+        List.empty,
+        yieldAll = false
       )(pos)),
       comparePosition = false
     )
@@ -220,9 +367,10 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   test("SHOW TRANSACTION 'yield' WHERE transactionId = 'where'") {
     assertAst(
       query(ast.ShowTransactionsClause(
-        Left(List("yield")),
+        Right(literalString("yield")),
         Some(where(equals(varFor("transactionId"), literalString("where")))),
-        hasYield = false
+        List.empty,
+        yieldAll = false
       )(pos)),
       comparePosition = false
     )
@@ -235,15 +383,220 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       query(ast.ShowTransactionsClause(
         Left(List("db1-transaction-123", "db1-transaction-124")),
         Some(where(in(varFor("transactionId"), listOfString("db1-transaction-124", "db1-transaction-125")))),
-        hasYield = false
+        List.empty,
+        yieldAll = false
       )(pos)),
+      comparePosition = false
+    )
+  }
+
+  test(
+    "SHOW TRANSACTION db1-transaction-123 WHERE transactionId IN ['db1-transaction-124', 'db1-transaction-125']"
+  ) {
+    assertAst(
+      query(ast.ShowTransactionsClause(
+        Right(subtract(subtract(varFor("db1"), varFor("transaction")), literalInt(123))),
+        Some(where(in(varFor("transactionId"), listOfString("db1-transaction-124", "db1-transaction-125")))),
+        List.empty,
+        yieldAll = false
+      )(pos)),
+      comparePosition = false
+    )
+  }
+
+  test("SHOW TRANSACTIONS ['db1-transaction-123', 'db2-transaction-456'] YIELD *") {
+    assertAst(
+      query(
+        ast.ShowTransactionsClause(
+          Right(listOfString("db1-transaction-123", "db2-transaction-456")),
+          None,
+          List.empty,
+          yieldAll = true
+        )(pos),
+        withFromYield(returnAllItems)
+      ),
+      comparePosition = false
+    )
+  }
+
+  test("SHOW TRANSACTIONS $x+'123' YIELD transactionId AS TRANSACTION, database AS SHOW") {
+    assertAst(
+      query(
+        ast.ShowTransactionsClause(
+          Right(add(parameter("x", CTAny), literalString("123"))),
+          None,
+          List(commandResultItem("transactionId", Some("TRANSACTION")), commandResultItem("database", Some("SHOW"))),
+          yieldAll = false
+        )(pos),
+        withFromYield(returnAllItems.withDefaultOrderOnColumns(List("TRANSACTION", "SHOW")))
+      ),
+      comparePosition = false
+    )
+  }
+
+  test("SHOW TRANSACTIONS where YIELD *") {
+    assertAst(
+      query(
+        ast.ShowTransactionsClause(
+          Right(varFor("where")),
+          None,
+          List.empty,
+          yieldAll = true
+        )(pos),
+        withFromYield(returnAllItems)
+      ),
+      comparePosition = false
+    )
+  }
+
+  test("SHOW TRANSACTIONS yield YIELD *") {
+    assertAst(
+      query(
+        ast.ShowTransactionsClause(
+          Right(varFor("yield")),
+          None,
+          List.empty,
+          yieldAll = true
+        )(pos),
+        withFromYield(returnAllItems)
+      ),
+      comparePosition = false
+    )
+  }
+
+  test("SHOW TRANSACTIONS show YIELD *") {
+    assertAst(
+      query(
+        ast.ShowTransactionsClause(
+          Right(varFor("show")),
+          None,
+          List.empty,
+          yieldAll = true
+        )(pos),
+        withFromYield(returnAllItems)
+      ),
+      comparePosition = false
+    )
+  }
+
+  test("SHOW TRANSACTIONS terminate YIELD *") {
+    assertAst(
+      query(
+        ast.ShowTransactionsClause(
+          Right(varFor("terminate")),
+          None,
+          List.empty,
+          yieldAll = true
+        )(pos),
+        withFromYield(returnAllItems)
+      ),
+      comparePosition = false
+    )
+  }
+
+  test("SHOW TRANSACTIONS YIELD yield") {
+    assertAst(
+      query(
+        ast.ShowTransactionsClause(
+          Left(List.empty),
+          None,
+          List(commandResultItem("yield", Some("yield"))),
+          yieldAll = false
+        )(pos),
+        withFromYield(returnAllItems.withDefaultOrderOnColumns(List("yield")))
+      ),
+      comparePosition = false
+    )
+  }
+
+  test("SHOW TRANSACTIONS where WHERE true") {
+    assertAst(
+      query(
+        ast.ShowTransactionsClause(
+          Right(varFor("where")),
+          Some(where(trueLiteral)),
+          List.empty,
+          yieldAll = false
+        )(pos)
+      ),
+      comparePosition = false
+    )
+  }
+
+  test("SHOW TRANSACTIONS yield WHERE true") {
+    assertAst(
+      query(
+        ast.ShowTransactionsClause(
+          Right(varFor("yield")),
+          Some(where(trueLiteral)),
+          List.empty,
+          yieldAll = false
+        )(pos)
+      ),
+      comparePosition = false
+    )
+  }
+
+  test("SHOW TRANSACTIONS show WHERE true") {
+    assertAst(
+      query(
+        ast.ShowTransactionsClause(
+          Right(varFor("show")),
+          Some(where(trueLiteral)),
+          List.empty,
+          yieldAll = false
+        )(pos)
+      ),
+      comparePosition = false
+    )
+  }
+
+  test("SHOW TRANSACTIONS terminate WHERE true") {
+    assertAst(
+      query(
+        ast.ShowTransactionsClause(
+          Right(varFor("terminate")),
+          Some(where(trueLiteral)),
+          List.empty,
+          yieldAll = false
+        )(pos)
+      ),
+      comparePosition = false
+    )
+  }
+
+  test("SHOW TRANSACTIONS `yield` YIELD *") {
+    assertAst(
+      query(
+        ast.ShowTransactionsClause(
+          Right(varFor("yield")),
+          None,
+          List.empty,
+          yieldAll = true
+        )(pos),
+        withFromYield(returnAllItems)
+      ),
+      comparePosition = false
+    )
+  }
+
+  test("SHOW TRANSACTIONS `where` WHERE true") {
+    assertAst(
+      query(
+        ast.ShowTransactionsClause(
+          Right(varFor("where")),
+          Some(where(trueLiteral)),
+          List.empty,
+          yieldAll = false
+        )(pos)
+      ),
       comparePosition = false
     )
   }
 
   // Negative tests
 
-  test("SHOW TRANSACTION db-transaction-123") {
+  test("SHOW TRANSACTION db-transaction-123, abc") {
     failsToParse
   }
 
@@ -259,27 +612,19 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     failsToParse
   }
 
-  test("SHOW TRANSACTIONS ['db1-transaction-123', 'db2-transaction-456']") {
+  test("SHOW TRANSACTIONS ['db1-transaction-123', 'db2-transaction-456'], abc") {
     failsToParse
   }
 
-  test("SHOW TRANSACTION foo") {
+  test("SHOW TRANSACTION foo, 'abc'") {
     failsToParse
   }
 
-  test("SHOW TRANSACTION x+2") {
-    failsToParse
-  }
-
-  test("SHOW TRANSACTIONS YIELD") {
+  test("SHOW TRANSACTION x+2, abc") {
     failsToParse
   }
 
   test("SHOW TRANSACTIONS YIELD * YIELD *") {
-    failsToParse
-  }
-
-  test("SHOW TRANSACTIONS YIELD (123 + xyz)") {
     failsToParse
   }
 
@@ -322,10 +667,6 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     failsToParse
   }
 
-  test("SHOW TRANSACTIONS ALL") {
-    failsToParse
-  }
-
   // Invalid clause order
 
   for (prefix <- Seq("USE neo4j", "")) {
@@ -341,7 +682,8 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
 
     test(s"$prefix SHOW TRANSACTIONS WITH name, type RETURN *") {
       // Can't parse WITH after SHOW
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      // parses varFor("WITH")
+      assertFailsWithMessageStart(testName, "Invalid input 'name': expected")
     }
 
     test(s"$prefix WITH 'n' as n SHOW TRANSACTIONS YIELD name RETURN name as numIndexes") {
@@ -349,15 +691,18 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     }
 
     test(s"$prefix SHOW TRANSACTIONS RETURN name as numIndexes") {
-      assertFailsWithMessageStart(testName, "Invalid input 'RETURN': expected")
+      // parses varFor("RETURN")
+      assertFailsWithMessageStart(testName, "Invalid input 'name': expected")
     }
 
     test(s"$prefix SHOW TRANSACTIONS WITH 1 as c RETURN name as numIndexes") {
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      // parses varFor("WITH")
+      assertFailsWithMessageStart(testName, "Invalid input '1': expected")
     }
 
     test(s"$prefix SHOW TRANSACTIONS WITH 1 as c") {
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      // parses varFor("WITH")
+      assertFailsWithMessageStart(testName, "Invalid input '1': expected")
     }
 
     test(s"$prefix SHOW TRANSACTIONS YIELD a WITH a RETURN a") {
@@ -368,43 +713,66 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       assertFailsWithMessageStart(testName, "Invalid input 'UNWIND': expected")
     }
 
-    test(s"$prefix SHOW TRANSACTIONS YIELD id SHOW TRANSACTIONS YIELD id2 RETURN id2") {
-      assertFailsWithMessageStart(testName, "Invalid input 'SHOW': expected")
-    }
-
     test(s"$prefix SHOW TRANSACTIONS RETURN id2 YIELD id2") {
-      assertFailsWithMessageStart(testName, "Invalid input 'RETURN': expected")
+      // parses varFor("RETURN")
+      assertFailsWithMessageStart(testName, "Invalid input 'id2': expected")
     }
   }
 
   // Brief/verbose not allowed
 
   test("SHOW TRANSACTION BRIEF") {
-    failsToParse
+    assertAst(query(
+      ast.ShowTransactionsClause(Right(varFor("BRIEF")), None, List.empty, yieldAll = false)(pos)
+    ))
   }
 
   test("SHOW TRANSACTIONS BRIEF YIELD *") {
-    failsToParse
+    assertAst(query(
+      ast.ShowTransactionsClause(Right(varFor("BRIEF")), None, List.empty, yieldAll = true)(pos),
+      withFromYield(returnAllItems)
+    ))
   }
 
   test("SHOW TRANSACTIONS BRIEF WHERE transactionId = 'db1-transaction-123'") {
-    failsToParse
+    assertAst(query(
+      ast.ShowTransactionsClause(
+        Right(varFor("BRIEF")),
+        Some(where(equals(varFor("transactionId"), literalString("db1-transaction-123")))),
+        List.empty,
+        yieldAll = false
+      )(pos)
+    ))
   }
 
   test("SHOW TRANSACTION VERBOSE") {
-    failsToParse
+    assertAst(query(
+      ast.ShowTransactionsClause(Right(varFor("VERBOSE")), None, List.empty, yieldAll = false)(pos)
+    ))
   }
 
   test("SHOW TRANSACTIONS VERBOSE YIELD *") {
-    failsToParse
+    assertAst(query(
+      ast.ShowTransactionsClause(Right(varFor("VERBOSE")), None, List.empty, yieldAll = true)(pos),
+      withFromYield(returnAllItems)
+    ))
   }
 
   test("SHOW TRANSACTIONS VERBOSE WHERE transactionId = 'db1-transaction-123'") {
-    failsToParse
+    assertAst(query(
+      ast.ShowTransactionsClause(
+        Right(varFor("VERBOSE")),
+        Some(where(equals(varFor("transactionId"), literalString("db1-transaction-123")))),
+        List.empty,
+        yieldAll = false
+      )(pos)
+    ))
   }
 
   test("SHOW TRANSACTION OUTPUT") {
-    failsToParse
+    assertAst(query(
+      ast.ShowTransactionsClause(Right(varFor("OUTPUT")), None, List.empty, yieldAll = false)(pos)
+    ))
   }
 
   test("SHOW TRANSACTION BRIEF OUTPUT") {

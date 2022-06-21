@@ -1568,11 +1568,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(ProcedureCall(rewrittenInner, rewrittenCall), solved, providedOrder, context)
   }
 
-  def planCommand(clause: CommandClause, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty)
-      .withHorizon(CommandProjection(clause))
+  def planCommand(inner: LogicalPlan, clause: CommandClause, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(CommandProjection(clause)))
 
-    // TODO as we support more commands, this match case should probably live somewhere else
     val plan = clause match {
       case s: ShowIndexesClause =>
         ShowIndexes(s.indexType, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns)
@@ -1583,12 +1581,20 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       case s: ShowFunctionsClause =>
         ShowFunctions(s.functionType, s.executable, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns)
       case s: ShowTransactionsClause =>
-        ShowTransactions(s.ids, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns)
+        ShowTransactions(
+          s.ids,
+          s.unfilteredColumns.useAllColumns,
+          s.unfilteredColumns.columns,
+          s.yieldItems,
+          s.yieldAll
+        )
       case s: TerminateTransactionsClause =>
-        TerminateTransactions(s.ids, s.unfilteredColumns.columns)
+        TerminateTransactions(s.ids, s.unfilteredColumns.columns, s.yieldItems, s.yieldAll)
     }
+    val annotatedPlan = annotate(plan, solved, ProvidedOrder.empty, context)
 
-    annotate(plan, solved, ProvidedOrder.empty, context)
+    val apply = Apply(inner, annotatedPlan)
+    annotate(apply, solved, ProvidedOrder.empty, context)
   }
 
   def planPassAll(inner: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {

@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.ast.prettifier
 
 import org.neo4j.cypher.internal.ast.Access
 import org.neo4j.cypher.internal.ast.ActionResource
+import org.neo4j.cypher.internal.ast.AddedInRewrite
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AllDatabasesQualifier
@@ -32,6 +33,7 @@ import org.neo4j.cypher.internal.ast.AlterRemoteDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ConstraintVersion
 import org.neo4j.cypher.internal.ast.ConstraintVersion0
 import org.neo4j.cypher.internal.ast.ConstraintVersion2
@@ -108,6 +110,7 @@ import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.OrderBy
+import org.neo4j.cypher.internal.ast.ParsedAsYield
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.ProcedureAllQualifier
 import org.neo4j.cypher.internal.ast.ProcedureQualifier
@@ -731,7 +734,8 @@ case class Prettifier(
     def queryPart(part: QueryPart): String =
       part match {
         case SingleQuery(clauses) =>
-          clauses.map(dispatch).mkString(NL)
+          // Need to filter away empty strings as SHOW/TERMINATE commands might get an empty string from YIELD/WITH/RETURN clauses
+          clauses.map(dispatch).filter(_.nonEmpty).mkString(NL)
 
         case union: Union =>
           val lhs = queryPart(union.part)
@@ -875,25 +879,41 @@ case class Prettifier(
       (as ++ is).mkString(", ")
     }
 
-    def asString(r: Return): String = {
-      val d = if (r.distinct) " DISTINCT" else ""
-      val i = asString(r.returnItems)
-      val ind = indented()
-      val o = r.orderBy.map(ind.asString).map(asNewLine).getOrElse("")
-      val l = r.limit.map(ind.asString).map(asNewLine).getOrElse("")
-      val s = r.skip.map(ind.asString).map(asNewLine).getOrElse("")
-      s"${INDENT}RETURN$d $i$o$s$l"
-    }
+    def asString(r: Return): String =
+      if (r.addedInRewrite) ""
+      else {
+        val d = if (r.distinct) " DISTINCT" else ""
+        val i = asString(r.returnItems)
+        val ind = indented()
+        val o = r.orderBy.map(ind.asString).map(asNewLine).getOrElse("")
+        val l = r.limit.map(ind.asString).map(asNewLine).getOrElse("")
+        val s = r.skip.map(ind.asString).map(asNewLine).getOrElse("")
+        s"${INDENT}RETURN$d $i$o$s$l"
+      }
 
     def asString(w: With): String = {
-      val d = if (w.distinct) " DISTINCT" else ""
-      val i = asString(w.returnItems)
       val ind = indented()
-      val o = w.orderBy.map(ind.asString).map(asNewLine).getOrElse("")
-      val l = w.limit.map(ind.asString).map(asNewLine).getOrElse("")
-      val s = w.skip.map(ind.asString).map(asNewLine).getOrElse("")
-      val wh = w.where.map(ind.asString).map(asNewLine).getOrElse("")
-      s"${INDENT}WITH$d $i$o$s$l$wh"
+      val rewrittenClauses = List(
+        w.orderBy.map(ind.asString),
+        w.skip.map(ind.asString),
+        w.limit.map(ind.asString),
+        w.where.map(ind.asString)
+      ).flatten
+
+      if (w.withType == ParsedAsYield || w.withType == AddedInRewrite) {
+        // part of SHOW/TERMINATE TRANSACTION which prettifies the YIELD items part
+        // but it no longer knows the subclauses, hence prettifying them here
+
+        // only add newlines between subclauses and not in front of the first one
+        if (rewrittenClauses.nonEmpty)
+          s"$INDENT${rewrittenClauses.head}${rewrittenClauses.tail.map(asNewLine).mkString}"
+        else ""
+      } else {
+        val d = if (w.distinct) " DISTINCT" else ""
+        val i = asString(w.returnItems)
+
+        s"${INDENT}WITH$d $i${rewrittenClauses.map(asNewLine).mkString}"
+      }
     }
 
     def asString(y: Yield): String = {
@@ -977,18 +997,31 @@ case class Prettifier(
       val ids = idsAsString(s.ids)
       val ind = indented()
       val where = s.where.map(ind.asString).map(asNewLine).getOrElse("")
-      s"SHOW TRANSACTIONS$ids$where"
+      val yielded = partialYieldAsString(s.yieldItems, s.yieldAll)
+      s"SHOW TRANSACTIONS$ids$where$yielded"
     }
 
     def asString(s: TerminateTransactionsClause): String = {
       val ids = idsAsString(s.ids)
-      s"TERMINATE TRANSACTIONS$ids"
+      val yielded = partialYieldAsString(s.yieldItems, s.yieldAll)
+      s"TERMINATE TRANSACTIONS$ids$yielded"
     }
 
-    private def idsAsString(ids: Either[List[String], Parameter]): String = ids match {
+    private def idsAsString(ids: Either[List[String], Expression]): String = ids match {
       case Left(s)  => if (s.nonEmpty) s.map(id => expr.quote(id)).mkString(" ", ", ", "") else ""
-      case Right(p) => s" $$${ExpressionStringifier.backtick(p.name)}"
+      case Right(e) => s" ${expr(e)}"
     }
+
+    private def partialYieldAsString(yieldItems: List[CommandResultItem], yieldAll: Boolean): String =
+      if (yieldItems.nonEmpty) {
+        val items = yieldItems.map(c => {
+          if (!c.aliasedVariable.name.equals(c.originalName)) {
+            backtick(c.originalName) + " AS " + expr(c.aliasedVariable)
+          } else expr(c.aliasedVariable)
+        }).mkString(", ")
+        asNewLine(s"${INDENT}YIELD $items")
+      } else if (yieldAll) asNewLine(s"${INDENT}YIELD *")
+      else ""
 
     def asString(s: SetClause): String = {
       val items = s.items.map {

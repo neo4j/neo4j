@@ -70,7 +70,7 @@ class ResolveTokensTest extends CypherFunSuite {
               Seq(),
               Some(Where(Equals(Property(Variable("n"), pkToken), StringLiteral("Resolved"))))
             ),
-            Return(false, ReturnItems(true, Seq(), _), None, None, None, _)
+            Return(false, ReturnItems(true, Seq(), _), None, None, None, _, _)
           ))
         ) =>
         pkToken.name should equal("name")
@@ -94,7 +94,7 @@ class ResolveTokensTest extends CypherFunSuite {
               Seq(),
               Some(Where(Equals(Property(Variable("n"), pkToken), StringLiteral("Unresolved"))))
             ),
-            Return(false, ReturnItems(true, Seq(), _), None, None, None, _)
+            Return(false, ReturnItems(true, Seq(), _), None, None, None, _, _)
           ))
         ) =>
         pkToken.name should equal("name")
@@ -118,7 +118,7 @@ class ResolveTokensTest extends CypherFunSuite {
               Seq(),
               Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
             ),
-            Return(false, ReturnItems(true, Seq(), _), None, None, None, _)
+            Return(false, ReturnItems(true, Seq(), _), None, None, None, _, _)
           ))
         ) =>
         labelToken.name should equal("Resolved")
@@ -142,7 +142,7 @@ class ResolveTokensTest extends CypherFunSuite {
               Seq(),
               Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
             ),
-            Return(false, ReturnItems(true, Seq(), _), None, None, None, _)
+            Return(false, ReturnItems(true, Seq(), _), None, None, None, _, _)
           ))
         ) =>
         labelToken.name should equal("Unresolved")
@@ -177,7 +177,7 @@ class ResolveTokensTest extends CypherFunSuite {
               Seq(),
               None
             ),
-            Return(false, ReturnItems(true, Seq(), _), None, None, None, _)
+            Return(false, ReturnItems(true, Seq(), _), None, None, None, _, _)
           ))
         ) =>
         relTypeToken.name should equal("RESOLVED")
@@ -212,7 +212,7 @@ class ResolveTokensTest extends CypherFunSuite {
               Seq(),
               None
             ),
-            Return(false, ReturnItems(true, Seq(), _), None, None, None, _)
+            Return(false, ReturnItems(true, Seq(), _), None, None, None, _, _)
           ))
         ) =>
         relTypeToken.name should equal("UNRESOLVED")

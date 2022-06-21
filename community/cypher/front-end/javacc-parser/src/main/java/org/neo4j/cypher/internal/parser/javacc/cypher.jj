@@ -45,6 +45,7 @@ package org.neo4j.cypher.internal.parser.javacc;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -3206,6 +3207,7 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) :
     Token start = null;
     Token showCommandType = null;
     STATEMENT statement = null;
+    List<CLAUSE> clauses = null;
 }
 {
     start=<SHOW>
@@ -3233,7 +3235,7 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) :
         | statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowProcedures( start, useClause )
         | statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.ALL )
-        | statement=ShowTransactions( start, useClause )
+        | clauses=ShowTransactions( start )
         | statement=ShowAliases( start, useClause )
         | statement=ShowPrivileges( start, useClause )
         | <ROLE> statement=ShowRolePrivileges( start, useClause )
@@ -3259,6 +3261,13 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) :
             )
     )
     {
+        if ( clauses != null ) {
+            if ( useClause != null )
+            {
+                clauses.add( 0, useClause );
+            }
+            statement = astFactory.newSingleQuery( pos( start ), clauses );
+        }
         return statement;
     }
 }
@@ -3266,15 +3275,19 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) :
 STATEMENT TerminateCommand( USE_CLAUSE useClause ) :
 {
     Token start = null;
-    STATEMENT statement = null;
+    List<CLAUSE> clauses = null;
 }
 {
     start=<TERMINATE>
     (
-        statement=TerminateTransactions( start, useClause )
+        clauses=TerminateTransactions( start )
     )
     {
-        return statement;
+        if ( useClause != null )
+        {
+            clauses.add( 0, useClause );
+        }
+        return astFactory.newSingleQuery( pos( start ), clauses );
     }
 }
 
@@ -3662,38 +3675,36 @@ STATEMENT ShowFunctions( Token start, USE_CLAUSE useClause, ShowCommandFilterTyp
     }
 }
 
-STATEMENT ShowTransactions( Token start, USE_CLAUSE useClause ):
+List<CLAUSE> ShowTransactions( Token start ):
 {
-    List<CLAUSE> clauses = new ArrayList<>();
-    if (useClause != null)
-    {
-        clauses.add( useClause );
-    }
-
-    List<String> ids = new ArrayList<>();
-    PARAMETER param = null;
-    SimpleEither<List<String>, PARAMETER> idEither = SimpleEither.left(ids);
+    List<CLAUSE> clauses = new LinkedList<>();
+    SimpleEither<List<String>, EXPRESSION> idEither = SimpleEither.left(new ArrayList<>());
 
     WHERE where = null;
     YIELD yieldClause = null;
     RETURN_CLAUSE returnClause = null;
+
+    List<CLAUSE> tailClauses = null;
 }
 {
     ( <TRANSACTION> | <TRANSACTIONS> )
     (
-        //lookaheads for potential symbolicNames "yield", "where"
-        LOOKAHEAD(<YIELD>) yieldClause=YieldClause() ( returnClause=ReturnClause() ) ?
-        | LOOKAHEAD(<WHERE>) where=WhereClause()
-        | ( (ids=TransactionIdStringList() { idEither=SimpleEither.left(ids); }) | (param=Parameter( ParameterType.ANY ) { idEither=SimpleEither.right(param); }) ) (
-            ( yieldClause=YieldClause() ( returnClause=ReturnClause() ) ? )
-            | where=WhereClause()
-        )?
+        LOOKAHEAD(showOrTerminateTransactions()) tailClauses=showOrTerminateTransactions()
+        | ( LOOKAHEAD(transactionIds() (WhereClause() | YieldClause()))
+              idEither=transactionIds() (
+                  ( yieldClause=YieldClause() ( returnClause=ReturnClause() ) ? )
+                  | where=WhereClause()
+              )
+          | LOOKAHEAD(YieldClause()) yieldClause=YieldClause() ( returnClause=ReturnClause() ) ?
+          | LOOKAHEAD(WhereClause()) where=WhereClause()
+          | idEither=transactionIds()
+        ) ( tailClauses=showOrTerminateTransactions() )?
     )?
     {
         if ( yieldClause != null )
         {
-            clauses.add( astFactory.showTransactionsClause( pos( start ), idEither,  where, true ) );
-            clauses.add( yieldClause );
+            clauses.add( astFactory.showTransactionsClause( pos( start ), idEither,  where, yieldClause ) );
+            clauses.add( astFactory.turnYieldToWith( yieldClause ) );
             if ( returnClause != null )
             {
                 clauses.add( returnClause );
@@ -3701,43 +3712,45 @@ STATEMENT ShowTransactions( Token start, USE_CLAUSE useClause ):
         }
         else
         {
-            clauses.add( astFactory.showTransactionsClause( pos( start ), idEither, where, false ) );
+            clauses.add( astFactory.showTransactionsClause( pos( start ), idEither, where, null ) );
         }
-        return astFactory.newSingleQuery( pos( start ), clauses );
+        if ( tailClauses != null ) {
+            clauses.addAll( tailClauses );
+        }
+        return clauses;
     }
 }
 
-STATEMENT TerminateTransactions( Token start, USE_CLAUSE useClause ):
+List<CLAUSE> TerminateTransactions( Token start ):
 {
-    List<CLAUSE> clauses = new ArrayList<>();
-    if (useClause != null)
-    {
-        clauses.add( useClause );
-    }
-
-    List<String> ids = new ArrayList<>();
-    PARAMETER param = null;
-    SimpleEither<List<String>, PARAMETER> idEither = SimpleEither.left(ids);
+    List<CLAUSE> clauses = new LinkedList<>();
+    SimpleEither<List<String>, EXPRESSION> idEither = SimpleEither.left(new ArrayList<>());
 
     WHERE where = null;
     YIELD yieldClause = null;
     RETURN_CLAUSE returnClause = null;
+
+    List<CLAUSE> tailClauses = null;
 }
 {
     ( <TRANSACTION> | <TRANSACTIONS> )
     (
-        (ids=TransactionIdStringList() { idEither=SimpleEither.left(ids); })
-        | (param=Parameter( ParameterType.ANY ) { idEither=SimpleEither.right(param); })
-    )?
-    (
-        ( yieldClause=YieldClause() ( returnClause=ReturnClause() )? )
-        | where=WhereClause()
+        LOOKAHEAD(showOrTerminateTransactions()) tailClauses=showOrTerminateTransactions()
+        | ( LOOKAHEAD(transactionIds() (WhereClause() | YieldClause()))
+              idEither=transactionIds() (
+                  ( yieldClause=YieldClause() ( returnClause=ReturnClause() ) ? )
+                  | where=WhereClause()
+              )
+          | LOOKAHEAD(YieldClause()) yieldClause=YieldClause() ( returnClause=ReturnClause() ) ?
+          | LOOKAHEAD(WhereClause()) where=WhereClause()
+          | idEither=transactionIds()
+        ) ( tailClauses=showOrTerminateTransactions() )?
     )?
     {
         if ( yieldClause != null )
         {
-            clauses.add( astFactory.terminateTransactionsClause( pos( start ), idEither, where, true ) );
-            clauses.add( yieldClause );
+            clauses.add( astFactory.terminateTransactionsClause( pos( start ), idEither, where, yieldClause ) );
+            clauses.add( astFactory.turnYieldToWith( yieldClause ) );
             if ( returnClause != null )
             {
                 clauses.add( returnClause );
@@ -3745,9 +3758,41 @@ STATEMENT TerminateTransactions( Token start, USE_CLAUSE useClause ):
         }
         else
         {
-            clauses.add( astFactory.terminateTransactionsClause( pos( start ), idEither, where, false ) );
+            clauses.add( astFactory.terminateTransactionsClause( pos( start ), idEither, where, null ) );
         }
-        return astFactory.newSingleQuery( pos( start ), clauses );
+        if ( tailClauses != null ) {
+            clauses.addAll( tailClauses );
+        }
+        return clauses;
+    }
+}
+
+List<CLAUSE> showOrTerminateTransactions():
+{
+    Token start = null;
+    List<CLAUSE> clauses = null;
+}
+{
+    (
+        (start=<TERMINATE> clauses=TerminateTransactions(start))
+        | (start=<SHOW> clauses=ShowTransactions(start))
+    )
+    {
+        return clauses;
+    }
+}
+
+SimpleEither<List<String>, EXPRESSION> transactionIds():
+{
+    List<String> ids = new ArrayList<>();
+    EXPRESSION expr = null;
+    SimpleEither<List<String>, EXPRESSION> idEither = SimpleEither.left(ids);
+}
+{
+    ( LOOKAHEAD(TransactionIdString() ",") (ids=TransactionIdStringList() { idEither=SimpleEither.left(ids); })
+    | (expr=Expression() { idEither=SimpleEither.right(expr); }) )
+    {
+        return idEither;
     }
 }
 

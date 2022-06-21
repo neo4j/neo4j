@@ -864,6 +864,10 @@ class PrettifierIT extends CypherFunSuite {
       """SHOW TRANSACTIONS "db1-transaction-123"""",
     "show transactions $param" ->
       "SHOW TRANSACTIONS $param",
+    "show transactions ['db1-transaction-123', 'db1-transaction-123']" ->
+      """SHOW TRANSACTIONS ["db1-transaction-123", "db1-transaction-123"]""",
+    "show transactions db1-transaction-123" ->
+      """SHOW TRANSACTIONS (db1 - transaction) - 123""",
     "show transactions 'db1-transaction-123', 'db2-transaction-456'" ->
       """SHOW TRANSACTIONS "db1-transaction-123", "db2-transaction-456"""",
     "show \ntransaction\n 'db1-transaction-123'" ->
@@ -898,6 +902,10 @@ class PrettifierIT extends CypherFunSuite {
       """TERMINATE TRANSACTIONS "db1-transaction-123"""",
     "terminate transactions $param" ->
       "TERMINATE TRANSACTIONS $param",
+    "terminate transactions ['db1-transaction-123']" ->
+      """TERMINATE TRANSACTIONS ["db1-transaction-123"]""",
+    "terminate transactions x+2" ->
+      """TERMINATE TRANSACTIONS x + 2""",
     "terminate transactions 'db1-transaction-123', 'db2-transaction-456'" ->
       """TERMINATE TRANSACTIONS "db1-transaction-123", "db2-transaction-456"""",
     "terminate \ntransaction\n 'db1-transaction-123'" ->
@@ -919,7 +927,52 @@ class PrettifierIT extends CypherFunSuite {
         |YIELD currentQueryId
         |  ORDER BY currentQueryId ASCENDING
         |  SKIP 1
-        |  LIMIT 1""".stripMargin
+        |  LIMIT 1""".stripMargin,
+
+    // combine show and terminate transactions
+
+    "show transaction terminate transaction" ->
+      """SHOW TRANSACTIONS
+        |TERMINATE TRANSACTIONS""".stripMargin,
+    """terminate transaction $x+'123' yield transactionId AS txIdT
+      |show transaction txIdT yield transactionId AS txIdS""".stripMargin ->
+      """TERMINATE TRANSACTIONS $x + "123"
+        |YIELD transactionId AS txIdT
+        |SHOW TRANSACTIONS txIdT
+        |YIELD transactionId AS txIdS""".stripMargin,
+    """terminate transaction 'db1-transaction-123' yield currentQueryId order by currentQueryId skip 1 limit 1
+      |show transaction 'db1-transaction-123' yield currentQueryId order by currentQueryId skip 1 limit 1""".stripMargin ->
+      """TERMINATE TRANSACTIONS "db1-transaction-123"
+        |YIELD currentQueryId
+        |  ORDER BY currentQueryId ASCENDING
+        |  SKIP 1
+        |  LIMIT 1
+        |SHOW TRANSACTIONS "db1-transaction-123"
+        |YIELD currentQueryId
+        |  ORDER BY currentQueryId ASCENDING
+        |  SKIP 1
+        |  LIMIT 1""".stripMargin,
+    """show transaction 'db1-transaction-123' where database = 'neo4j'
+      |terminate transaction 'db1-transaction-123', 'db1-transaction-123', 'db1-transaction-123' yield currentQueryId order by currentQueryId skip 1 limit 1
+      |terminate transaction 'db1-transaction-123' YIELD * where database = 'neo4j'
+      |show transaction 'db1-transaction-123', 'db1-transaction-123' yield currentQueryId order by currentQueryId skip 1 limit 1
+      |Return *""".stripMargin ->
+      """SHOW TRANSACTIONS "db1-transaction-123"
+        |  WHERE database = "neo4j"
+        |TERMINATE TRANSACTIONS "db1-transaction-123", "db1-transaction-123", "db1-transaction-123"
+        |YIELD currentQueryId
+        |  ORDER BY currentQueryId ASCENDING
+        |  SKIP 1
+        |  LIMIT 1
+        |TERMINATE TRANSACTIONS "db1-transaction-123"
+        |YIELD *
+        |  WHERE database = "neo4j"
+        |SHOW TRANSACTIONS "db1-transaction-123", "db1-transaction-123"
+        |YIELD currentQueryId
+        |  ORDER BY currentQueryId ASCENDING
+        |  SKIP 1
+        |  LIMIT 1
+        |RETURN *""".stripMargin
   )
 
   def administrationTests(): Seq[(String, String)] = Seq[(String, String)](

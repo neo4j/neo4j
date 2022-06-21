@@ -397,14 +397,19 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL showTransactionsClause(NULL p, SimpleEither<List<String>, Object> ids, NULL where, boolean hasYield) {
+    public NULL showTransactionsClause(NULL p, SimpleEither<List<String>, Object> ids, NULL where, NULL yieldClause) {
         throw new UnsupportedOperationException("showTransactionsClause is not a literal");
     }
 
     @Override
     public NULL terminateTransactionsClause(
-            NULL p, SimpleEither<List<String>, Object> ids, NULL where, boolean hasYield) {
+            NULL p, SimpleEither<List<String>, Object> ids, NULL where, NULL yieldClause) {
         throw new UnsupportedOperationException("terminateTransactionsClause is not a literal");
+    }
+
+    @Override
+    public NULL turnYieldToWith(NULL yieldClause) {
+        throw new UnsupportedOperationException("turnYieldToWith is not a literal");
     }
 
     // Schema commands

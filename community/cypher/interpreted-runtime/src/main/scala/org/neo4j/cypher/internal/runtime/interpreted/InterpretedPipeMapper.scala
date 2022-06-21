@@ -638,9 +638,19 @@ case class InterpretedPipeMapper(
       case ShowFunctions(functionType, executableBy, verbose, columns) =>
         CommandPipe(ShowFunctionsCommand(functionType, executableBy, verbose, columns, isCommunity))(id)
 
-      case ShowTransactions(ids, verbose, columns) => CommandPipe(ShowTransactionsCommand(ids, verbose, columns))(id)
+      case ShowTransactions(ids, verbose, columns, yields, _) =>
+        val newIds = ids match {
+          case Right(e) => Right(buildExpression(e))
+          case Left(l)  => Left(l)
+        }
+        CommandPipe(ShowTransactionsCommand(newIds, verbose, columns, yields))(id)
 
-      case TerminateTransactions(ids, columns) => CommandPipe(TerminateTransactionsCommand(ids, columns))(id)
+      case TerminateTransactions(ids, columns, yields, _) =>
+        val newIds = ids match {
+          case Right(e) => Right(buildExpression(e))
+          case Left(l)  => Left(l)
+        }
+        CommandPipe(TerminateTransactionsCommand(newIds, columns, yields))(id)
 
       // Currently used for testing only
       case MultiNodeIndexSeek(indexLeafPlans) =>

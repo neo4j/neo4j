@@ -281,9 +281,12 @@ public interface ASTFactory<
             WHERE where,
             boolean hasYield);
 
-    CLAUSE showTransactionsClause(POS p, SimpleEither<List<String>, PARAMETER> ids, WHERE where, boolean hasYield);
+    CLAUSE showTransactionsClause(POS p, SimpleEither<List<String>, EXPRESSION> ids, WHERE where, YIELD yieldClause);
 
-    CLAUSE terminateTransactionsClause(POS p, SimpleEither<List<String>, PARAMETER> ids, WHERE where, boolean hasYield);
+    CLAUSE terminateTransactionsClause(
+            POS p, SimpleEither<List<String>, EXPRESSION> ids, WHERE where, YIELD yieldClause);
+
+    CLAUSE turnYieldToWith(YIELD yieldClause);
 
     // Schema Commands
     // Constraint Commands
