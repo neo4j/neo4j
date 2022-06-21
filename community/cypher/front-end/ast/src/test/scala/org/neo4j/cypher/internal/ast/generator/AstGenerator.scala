@@ -327,6 +327,7 @@ import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
 import org.neo4j.cypher.internal.expressions.LabelExpression
+import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
@@ -880,10 +881,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       rhs <- _labelExpression(entityType)
     } yield LabelExpression.Conjunction(lhs, rhs)(pos)
 
-    def _labelExpressionDisjunction: Gen[LabelExpression.Disjunction] = for {
+    def _labelExpressionDisjunction: Gen[LabelExpression.Disjunctions] = for {
       lhs <- _labelExpression(entityType)
       rhs <- _labelExpression(entityType)
-    } yield LabelExpression.Disjunction(lhs, rhs)(pos)
+    } yield Disjunctions.flat(lhs, rhs, pos)
 
     frequency(
       5 -> oneOf[LabelExpression](

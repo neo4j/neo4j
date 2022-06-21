@@ -396,6 +396,21 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite with JavaccParserAst
       )
     }
   }
+
+  test("(n:A|B|C)") {
+    gives {
+      nodePat(
+        name = Some("n"),
+        labelExpression = Some(
+          labelDisjunctions(Seq(
+            labelLeaf("A"),
+            labelLeaf("B"),
+            labelLeaf("C")
+          ))
+        )
+      )
+    }
+  }
 }
 
 class RelationshipTypeExpressionParserTest extends CypherFunSuite with JavaccParserAstTestBase[RelationshipPattern]
@@ -432,6 +447,19 @@ class RelationshipTypeExpressionParserTest extends CypherFunSuite with JavaccPar
   test("-[]-") {
     givesIncludingPositions {
       relPat(position = (1, 1, 0), direction = BOTH)
+    }
+  }
+
+  test("-[:A|B|C]-") {
+    gives {
+      relPat(
+        direction = BOTH,
+        labelExpression = Some(labelDisjunctions(Seq(
+          labelRelTypeLeaf("A"),
+          labelRelTypeLeaf("B"),
+          labelRelTypeLeaf("C")
+        )))
+      )
     }
   }
 }

@@ -63,8 +63,10 @@ case class LabelExpressionNormalizer(entityExpression: Expression, entityType: O
         colonDisjunction.position
       )
 
-    case disjunction: LabelExpression.Disjunction =>
-      Or(rewriteLabelExpression(disjunction.lhs), rewriteLabelExpression(disjunction.rhs))(disjunction.position)
+    case disjunction: LabelExpression.Disjunctions =>
+      disjunction.children
+        .map(rewriteLabelExpression)
+        .reduceRight((a, b) => Or(a, b)(a.position))
 
     // in a node pattern
     case Leaf(name: LabelName) =>

@@ -59,7 +59,7 @@ class RelationshipPatternPredicateParserTest extends CypherFunSuite with TestNam
     parseRelationshipPatterns(testName) shouldBe Seq(
       RelationshipPattern(
         Some(varFor("r")),
-        Some(labelDisjunction(labelDisjunction(labelRelTypeLeaf("R"), labelRelTypeLeaf("S")), labelRelTypeLeaf("T"))),
+        Some(labelDisjunctions(Seq(labelRelTypeLeaf("R"), labelRelTypeLeaf("S"), labelRelTypeLeaf("T")))),
         None,
         Some(mapOf("prop" -> literal(42))),
         Some(greaterThan(prop("r", "otherProp"), literalInt(123))),

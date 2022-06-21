@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.expressions.LabelExpression
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonConjunction
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonDisjunction
 import org.neo4j.cypher.internal.expressions.LabelExpression.Conjunction
-import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunction
+import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.LabelExpression.Negation
 import org.neo4j.cypher.internal.expressions.LabelExpression.Wildcard
@@ -196,7 +196,7 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory {
     expression match {
       case Conjunction(lhs, rhs)                => and(lhs, rhs, relType)
       case ColonConjunction(lhs, rhs)           => and(lhs, rhs, relType)
-      case Disjunction(lhs, rhs)                => or(lhs, rhs, relType)
+      case Disjunctions(children)               => ors(children, relType)
       case ColonDisjunction(lhs, rhs)           => or(lhs, rhs, relType)
       case Negation(e)                          => TailCalls.tailcall(evaluate(e, relType)).map(value => !value)
       case Wildcard()                           => TailCalls.done(true)
@@ -204,6 +204,16 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory {
       case x =>
         throw new IllegalArgumentException(s"Unexpected label expression $x when evaluating relationship overlap")
     }
+
+  def ors(exprs: Seq[LabelExpression], relType: SymbolicName): TailRec[Boolean] = {
+    if (exprs.isEmpty) TailCalls.done(false)
+    else {
+      for {
+        head <- TailCalls.tailcall(evaluate(exprs.head, relType))
+        tail <- if (head) TailCalls.done(true) else ors(exprs.tail, relType)
+      } yield head || tail
+    }
+  }
 
   def and(lhs: LabelExpression, rhs: LabelExpression, relType: SymbolicName): TailRec[Boolean] =
     TailCalls.tailcall(evaluate(lhs, relType)).flatMap {

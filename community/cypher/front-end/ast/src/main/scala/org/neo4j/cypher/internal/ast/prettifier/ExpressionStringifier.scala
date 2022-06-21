@@ -54,7 +54,7 @@ import org.neo4j.cypher.internal.expressions.LabelExpression
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonConjunction
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonDisjunction
 import org.neo4j.cypher.internal.expressions.LabelExpression.Conjunction
-import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunction
+import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.LabelExpression.Negation
 import org.neo4j.cypher.internal.expressions.LabelExpression.Wildcard
@@ -454,8 +454,8 @@ private class DefaultExpressionStringifier(
   }
 
   override def stringifyLabelExpression(labelExpression: LabelExpression): String = labelExpression match {
-    case le: Disjunction =>
-      s"${stringifyLabelExpressionInDisjunction(le.lhs)}|${stringifyLabelExpressionHalfAtom(le.rhs)}"
+    case le: Disjunctions =>
+      le.children.map(stringifyLabelExpressionInDisjunction).mkString("|")
     case le: ColonDisjunction =>
       s"${stringifyLabelExpressionInColonDisjunction(le.lhs)}|:${stringifyLabelExpressionHalfAtom(le.rhs)}"
     case le: Conjunction =>
@@ -466,8 +466,8 @@ private class DefaultExpressionStringifier(
   }
 
   private def stringifyLabelExpressionInDisjunction(labelExpression: LabelExpression): String = labelExpression match {
-    case le: Disjunction =>
-      s"${stringifyLabelExpressionInDisjunction(le.lhs)}|${stringifyLabelExpressionHalfAtom(le.rhs)}"
+    case le: Disjunctions =>
+      le.children.map(stringifyLabelExpressionInDisjunction).mkString("|")
     case le => s"${stringifyLabelExpressionHalfAtom(le)}"
   }
 

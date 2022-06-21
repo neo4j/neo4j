@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.phases
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.expressions.EveryPath
-import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunction
+import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.LabelExpression.Wildcard
 import org.neo4j.cypher.internal.expressions.LabelExpressionPredicate
@@ -96,7 +96,7 @@ class ValidSymbolicNamesInLabelExpressionsTest extends FunSuite with Matchers {
     val variable = Variable("n")(InputPosition.NONE)
     val labelName = LabelName("A")(InputPosition.NONE)
     val wildcard = Wildcard()(InputPosition.NONE)
-    val disjunction = Disjunction(Leaf(labelName), wildcard)(InputPosition.NONE)
+    val disjunction = Disjunctions(Seq(Leaf(labelName), wildcard))(InputPosition.NONE)
     val nodePattern = NodePattern(Some(variable), Some(disjunction), None, None)(InputPosition.NONE)
     val pattern = Pattern(Seq(EveryPath(nodePattern)))(InputPosition.NONE)
     val labelOrRelTypeName = LabelOrRelTypeName("B")(InputPosition.NONE)
@@ -110,7 +110,7 @@ class ValidSymbolicNamesInLabelExpressionsTest extends FunSuite with Matchers {
     val variable = Variable("n")(InputPosition.NONE)
     val relTypeName = RelTypeName("A")(InputPosition(1, 3, 2))
     val wildcard = Wildcard()(InputPosition.NONE)
-    val disjunction = Disjunction(Leaf(relTypeName), wildcard)(InputPosition.NONE)
+    val disjunction = Disjunctions(Seq(Leaf(relTypeName), wildcard))(InputPosition.NONE)
     val nodePattern = NodePattern(Some(variable), Some(disjunction), None, None)(InputPosition.NONE)
     val pattern = Pattern(Seq(EveryPath(nodePattern)))(InputPosition.NONE)
     val labelName = LabelName("B")(InputPosition(41, 10, 42))

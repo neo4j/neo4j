@@ -19,11 +19,11 @@ package org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonConjunction
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonDisjunction
 import org.neo4j.cypher.internal.expressions.LabelExpression.Conjunction
-import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunction
+import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.topDown
+import org.neo4j.cypher.internal.util.bottomUp
 
 /**
  * @param entity expression to evaluate to the entity we want to check
@@ -44,16 +44,16 @@ sealed trait LabelExpression extends ASTNode {
   }
 
   def containsGpmSpecificRelTypeExpression: Boolean = this match {
-    case Disjunction(lhs, rhs) =>
-      lhs.containsGpmSpecificRelTypeExpression || rhs.containsGpmSpecificRelTypeExpression
+    case Disjunctions(children) =>
+      children.exists(_.containsGpmSpecificRelTypeExpression)
     case ColonDisjunction(lhs, rhs) =>
       lhs.containsGpmSpecificRelTypeExpression || rhs.containsGpmSpecificRelTypeExpression
     case _: Leaf => false
     case _       => true
   }
 
-  def replaceColonSyntax: LabelExpression = this.endoRewrite(topDown({
-    case disj @ ColonDisjunction(lhs, rhs) => Disjunction(lhs, rhs)(disj.position)
+  def replaceColonSyntax: LabelExpression = this.endoRewrite(bottomUp({
+    case disj @ ColonDisjunction(lhs, rhs) => Disjunctions.flat(lhs, rhs, disj.position)
     case conj @ ColonConjunction(lhs, rhs) => Conjunction(lhs, rhs)(conj.position)
     case expr                              => expr
   }))
@@ -70,7 +70,27 @@ sealed trait BinaryLabelExpression extends LabelExpression {
   override def flatten: Seq[LabelExpressionLeafName] = lhs.flatten ++ rhs.flatten
 }
 
+sealed trait MultiOperatorLabelExpression extends LabelExpression {
+  def children: Seq[LabelExpression]
+
+  override def flatten: Seq[LabelExpressionLeafName] = children.flatMap(_.flatten)
+}
+
 object LabelExpression {
+
+  final case class Disjunctions(children: Seq[LabelExpression])(val position: InputPosition)
+      extends MultiOperatorLabelExpression
+
+  object Disjunctions {
+
+    def flat(lhs: LabelExpression, rhs: LabelExpression, position: InputPosition): Disjunctions = {
+      val children = Vector(lhs, rhs).flatMap {
+        case Disjunctions(children) => children
+        case x                      => Vector(x)
+      }
+      Disjunctions(children)(position)
+    }
+  }
 
   case class Conjunction(lhs: LabelExpression, rhs: LabelExpression)(val position: InputPosition)
       extends BinaryLabelExpression
@@ -82,11 +102,6 @@ object LabelExpression {
    */
   case class ColonConjunction(lhs: LabelExpression, rhs: LabelExpression)(val position: InputPosition)
       extends BinaryLabelExpression
-
-  case class Disjunction(lhs: LabelExpression, rhs: LabelExpression)(val position: InputPosition)
-      extends BinaryLabelExpression
-  /* This is the old now deprecated relationship type disjunction [r:A|:B]
-   */
 
   case class ColonDisjunction(lhs: LabelExpression, rhs: LabelExpression)(val position: InputPosition)
       extends BinaryLabelExpression
@@ -121,9 +136,9 @@ object LabelExpression {
 
   def disjoinRelTypesToLabelExpression(relTypes: Seq[RelTypeName]): Option[LabelExpression] = {
     val labelExpressions = relTypes.map(Leaf(_))
-    labelExpressions.foldLeft[Option[LabelExpression]](None) {
-      case (None, rhs)      => Some(rhs)
-      case (Some(lhs), rhs) => Some(LabelExpression.Disjunction(lhs, rhs)(InputPosition.NONE))
-    }
+    if (labelExpressions.length > 1)
+      Some(LabelExpression.Disjunctions(labelExpressions)(InputPosition.NONE))
+    else
+      labelExpressions.headOption
   }
 }

@@ -226,13 +226,14 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
     patternStringifier(pattern) shouldEqual testName
   }
 
-  test("<-[r:Foo|(Bar|Baz)*]-") {
+  test("<-[r:Foo|Bar|Baz*]-") {
     val pattern = RelationshipPattern(
       Some(varFor("r")),
-      Some(labelDisjunction(
+      Some(labelDisjunctions(Seq(
         labelRelTypeLeaf("Foo"),
-        labelDisjunction(labelRelTypeLeaf("Bar"), labelRelTypeLeaf("Baz"))
-      )),
+        labelRelTypeLeaf("Bar"),
+        labelRelTypeLeaf("Baz")
+      ))),
       Some(None),
       None,
       None,

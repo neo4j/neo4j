@@ -451,7 +451,10 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   ): LabelExpression = LabelExpression.ColonConjunction(lhs, rhs)(position)
 
   def labelDisjunction(lhs: LabelExpression, rhs: LabelExpression, position: InputPosition = pos): LabelExpression =
-    LabelExpression.Disjunction(lhs, rhs)(position)
+    LabelExpression.Disjunctions(Seq(lhs, rhs))(position)
+
+  def labelDisjunctions(children: Seq[LabelExpression], position: InputPosition = pos): LabelExpression =
+    LabelExpression.Disjunctions(children)(position)
 
   def labelColonDisjunction(
     lhs: LabelExpression,
