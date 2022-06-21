@@ -97,7 +97,11 @@ case object outerHashJoin extends OptionalSolver {
     // It is not allowed to plan a join on the RHS of an Apply if any of the nodes we are joining on comes from the LHS of the Apply.
     // The easiest way to ensure that this doesn't happen is to check that we are in the "first part" of a query (i.e. not planning a tail).
     // We can check this with "context.outerPlan.isEmpty".
-    if (context.outerPlan.isEmpty && joinNodes.nonEmpty && joinNodes.forall(optionalQg.patternNodes)) {
+    if (
+      joinNodes.intersect(enclosingQg.argumentIds).isEmpty && joinNodes.nonEmpty && joinNodes.forall(
+        optionalQg.patternNodes
+      )
+    ) {
       val solvedHints = optionalQg.joinHints.filter { hint =>
         val hintVariables = hint.variables.map(_.name).toSet
         hintVariables.subsetOf(joinNodes)
