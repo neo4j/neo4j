@@ -539,6 +539,6 @@ trait FullSupportProfileMemoryTestBase[CONTEXT <: RuntimeContext] {
       .build(readOnly = false)
 
     // then
-    assertOnMemory(logicalQuery, NO_INPUT, 4)
+    assertOnMemory(logicalQuery, NO_INPUT, 4, 1)
   }
 }

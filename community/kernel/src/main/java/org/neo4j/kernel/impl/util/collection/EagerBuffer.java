@@ -101,39 +101,15 @@ public class EagerBuffer<T extends Measurable> extends DefaultCloseListenable {
         return size;
     }
 
+    /**
+     * Non-closing iterator.
+     */
+    public Iterator<T> iterator() {
+        return new EagerBufferIterator(false);
+    }
+
     public Iterator<T> autoClosingIterator() {
-        return new Iterator<T>() {
-            private EagerBuffer.Chunk<T> chunk;
-            private int index;
-
-            {
-                chunk = first;
-                first = null;
-                current = null;
-            }
-
-            @Override
-            public boolean hasNext() {
-                if (chunk == null || index >= chunk.cursor) {
-                    close();
-                    return false;
-                }
-                return true;
-            }
-
-            @SuppressWarnings("unchecked")
-            @Override
-            public T next() {
-                Object element = chunk.elements[index++];
-                if (index >= chunk.cursor) {
-                    var chunkToRelease = chunk;
-                    chunk = chunk.next;
-                    index = 0;
-                    chunkToRelease.close();
-                }
-                return (T) element;
-            }
-        };
+        return new EagerBufferIterator(true);
     }
 
     @Override
@@ -169,6 +145,47 @@ public class EagerBuffer<T extends Measurable> extends DefaultCloseListenable {
             return maxChunkSize;
         }
         return newSize;
+    }
+
+    private class EagerBufferIterator implements Iterator<T> {
+        private final boolean autoClosing;
+        private EagerBuffer.Chunk<T> chunk;
+        private int index;
+
+        EagerBufferIterator(boolean autoClosing) {
+            this.autoClosing = autoClosing;
+            chunk = first;
+            if (autoClosing) {
+                EagerBuffer.this.first = null;
+                EagerBuffer.this.current = null;
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            if (chunk == null || index >= chunk.cursor) {
+                if (autoClosing) {
+                    EagerBuffer.this.close();
+                }
+                return false;
+            }
+            return true;
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public T next() {
+            Object element = chunk.elements[index++];
+            if (index >= chunk.cursor) {
+                var chunkToRelease = chunk;
+                chunk = chunk.next;
+                index = 0;
+                if (autoClosing) {
+                    chunkToRelease.close();
+                }
+            }
+            return (T) element;
+        }
     }
 
     private static class Chunk<T extends Measurable> {

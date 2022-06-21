@@ -19,12 +19,18 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator.MemoryTrackingEagerBatchingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIterator.asClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIteratorTest.TestClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIteratorTest.forever
 import org.neo4j.cypher.internal.runtime.ClosingIteratorTest.values
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.memory.EmptyMemoryTracker
+import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
+import org.neo4j.memory.LocalMemoryTracker
+import org.neo4j.memory.Measurable
 
+import scala.collection.convert.ImplicitConversions.`iterator asScala`
 import scala.language.reflectiveCalls
 
 class ClosingIteratorTest extends CypherFunSuite {
@@ -328,77 +334,6 @@ class ClosingIteratorTest extends CypherFunSuite {
     single.hasNext shouldBe false
   }
 
-  test("grouped size -1 should fail") {
-    val single = ClosingIterator.single(1)
-    an[IllegalArgumentException] should be thrownBy single.grouped(-1L)
-  }
-
-  test("grouped size 0 should fail") {
-    val single = ClosingIterator.single(1)
-    an[IllegalArgumentException] should be thrownBy single.grouped(0L)
-  }
-
-  test("grouped size 1 should return sequences of 1 element") {
-    // given
-    val input = values(1, 2, 3)
-    // when
-    val grouped = input.grouped(1L)
-    // then
-    grouped.hasNext shouldBe true
-    input.closed shouldBe false
-    grouped.next() shouldBe Seq(1)
-    grouped.hasNext shouldBe true
-    input.closed shouldBe false
-    grouped.next() shouldBe Seq(2)
-    grouped.hasNext shouldBe true
-    input.closed shouldBe false
-    grouped.next() shouldBe Seq(3)
-    grouped.hasNext shouldBe false
-    input.closed shouldBe true
-  }
-
-  test("grouped when Iterator has a multiple size of argument size") {
-    // given
-    val input = values(1, 2, 3, 4, 5, 6, 7, 8, 9)
-    // when
-    val grouped = input.grouped(3L)
-    // then
-    grouped.toSeq should equal(Seq(Seq(1, 2, 3), Seq(4, 5, 6), Seq(7, 8, 9)))
-    input.closed shouldBe true
-  }
-
-  test("grouped when Iterator does not have a multiple size of argument size") {
-    // given
-    val input = values(1, 2, 3, 4, 5, 6, 7, 8)
-    // when
-    val grouped = input.grouped(3L)
-    // then
-    grouped.toSeq should equal(Seq(Seq(1, 2, 3), Seq(4, 5, 6), Seq(7, 8)))
-    input.closed shouldBe true
-  }
-
-  test("grouped with just one batch") {
-    // given
-    val input = values(1, 2, 3, 4, 5, 6, 7, 8)
-    // when
-    val grouped = input.grouped(30L)
-    // then
-    grouped.toSeq should equal(Seq(Seq(1, 2, 3, 4, 5, 6, 7, 8)))
-    input.closed shouldBe true
-  }
-
-  test("grouped closes on explicit close") {
-    // given
-    val input = values(1, 2, 3, 4, 5, 6, 7, 8)
-    val grouped = input.grouped(3L)
-    grouped.next()
-    input.closed shouldBe false
-    // when
-    grouped.close()
-    // then
-    input.closed shouldBe true
-  }
-
   test("collect should close on explicit close") {
     // given
     val outer = values[Any](1, "and", 2, "and", 3)
@@ -445,6 +380,148 @@ class ClosingIteratorTest extends CypherFunSuite {
 
     // then
     collected.hasNext shouldBe false
+  }
+}
+
+class GroupedClosingIteratorTest extends CypherFunSuite {
+  private val tracker = EmptyMemoryTracker.INSTANCE
+
+  test("should fail for batch size -1") {
+    an[IllegalArgumentException] should be thrownBy measurables(1).eagerGrouped(-1, tracker)
+  }
+
+  test("should fail for batch size 0") {
+    an[IllegalArgumentException] should be thrownBy measurables(1).eagerGrouped(0, tracker)
+  }
+
+  test("should fail when calling next on exhausted iterator") {
+    val batched = measurables(1).eagerGrouped(3, tracker)
+    batched.next()
+    an[NoSuchElementException] should be thrownBy batched.next()
+  }
+
+  test("batch size 1 should return sequences of 1 element") {
+    // given
+    val input = measurables(1, 2, 3)
+    // when
+    val batched = input.eagerGrouped(1, tracker)
+    // then
+    batched.hasNext shouldBe true
+    input.closed shouldBe false
+    batched.next().iterator().toSeq shouldBe Seq(TestMeasurable(1))
+    batched.hasNext shouldBe true
+    input.closed shouldBe false
+    batched.next().iterator().toSeq shouldBe Seq(TestMeasurable(2))
+    batched.hasNext shouldBe true
+    input.closed shouldBe false
+    batched.next().iterator().toSeq shouldBe Seq(TestMeasurable(3))
+    batched.hasNext shouldBe false
+    input.closed shouldBe true
+  }
+
+  test("should handle when Iterator has a multiple size of argument size") {
+    // given
+    val input = measurables(1, 2, 3, 4, 5, 6, 7, 8, 9)
+    // when
+    val batched = input.eagerGrouped(3, tracker)
+    // then
+    batched.map(_.iterator().toSeq).toSeq should equal(Seq(
+      measurables(1, 2, 3).toSeq,
+      measurables(4, 5, 6).toSeq,
+      measurables(7, 8, 9).toSeq
+    ))
+    input.closed shouldBe true
+  }
+
+  test("should handle when Iterator does not have a multiple size of argument size") {
+    // given
+    val input = measurables(1, 2, 3, 4, 5, 6, 7, 8)
+    // when
+    val grouped = input.eagerGrouped(3, tracker)
+    // then
+    grouped.map(_.iterator().toSeq).toSeq should equal(Seq(
+      measurables(1, 2, 3).toSeq,
+      measurables(4, 5, 6).toSeq,
+      measurables(7, 8).toSeq
+    ))
+    input.closed shouldBe true
+  }
+
+  test("should work with just one batch") {
+    // given
+    val input = measurables(1, 2, 3, 4, 5, 6, 7, 8)
+    // when
+    val batched = input.eagerGrouped(30, tracker)
+    // then
+    batched.map(_.iterator().toSeq).toSeq should equal(Seq(measurables(1, 2, 3, 4, 5, 6, 7, 8).toSeq))
+    input.closed shouldBe true
+  }
+
+  test("should close input on explicit close") {
+    // given
+    val input = measurables(1, 2, 3, 4, 5, 6, 7, 8)
+    val batched = input.eagerGrouped(3, tracker)
+    batched.next()
+    input.closed shouldBe false
+    // when
+    batched.close()
+    // then
+    input.closed shouldBe true
+  }
+
+  test("should be eager") {
+    val input = measurables(1, 2, 3)
+    val batched = input.eagerGrouped(10, tracker)
+
+    input.closed shouldBe false
+    val next = batched.next()
+    input.closed shouldBe true
+    next.iterator().toSeq shouldBe measurables(1, 2, 3).toSeq
+    input.closed shouldBe true
+  }
+
+  test("should track memory") {
+    val memoryTracker = new LocalMemoryTracker()
+    val input = measurables(1, 2, 3, 4)
+    val batched = input.eagerGrouped(1, memoryTracker)
+
+    val shallowSize = shallowSizeOfInstance(classOf[MemoryTrackingEagerBatchingIterator[_]])
+
+    memoryTracker.usedNativeMemory() shouldBe 0
+    memoryTracker.estimatedHeapMemory() shouldBe shallowSize
+    val batch1 = batched.next()
+    memoryTracker.usedNativeMemory() shouldBe 0
+    val memOneBatch = memoryTracker.estimatedHeapMemory() - shallowSize
+    memOneBatch should be > 0L
+    val batch2 = batched.next()
+    memoryTracker.estimatedHeapMemory() shouldBe (shallowSize + memOneBatch * 2 + 1)
+    val batch3 = batched.next()
+    memoryTracker.estimatedHeapMemory() shouldBe (shallowSize + memOneBatch * 3 + 1 + 2)
+
+    batch1.close()
+    memoryTracker.estimatedHeapMemory() shouldBe (shallowSize + memOneBatch * 2 + 1 + 2)
+
+    batch3.autoClosingIterator().forEachRemaining(_ => ()) // Consume iterator
+    memoryTracker.estimatedHeapMemory() shouldBe (shallowSize + memOneBatch + 1)
+
+    batch2.autoClosingIterator().forEachRemaining(_ => ())
+    memoryTracker.estimatedHeapMemory() shouldBe shallowSize
+
+    val batch4 = batched.next()
+    memoryTracker.estimatedHeapMemory() shouldBe (shallowSize + memOneBatch + 3)
+    batch4.close()
+    memoryTracker.estimatedHeapMemory() shouldBe shallowSize
+
+    batched.close()
+    memoryTracker.estimatedHeapMemory() shouldBe 0L
+  }
+
+  private def measurables[T](values: Int*): TestClosingIterator[TestMeasurable] = {
+    ClosingIteratorTest.values(values.map(TestMeasurable.apply): _*)
+  }
+
+  case class TestMeasurable(usage: Int) extends Measurable {
+    override def estimatedHeapUsage(): Long = usage
   }
 }
 

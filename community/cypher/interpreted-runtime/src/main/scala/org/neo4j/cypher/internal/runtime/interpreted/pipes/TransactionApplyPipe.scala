@@ -20,11 +20,13 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaIteratorAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipe.CypherRowEntityTransformer
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipe.evaluateBatchSize
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.kernel.impl.util.collection.EagerBuffer.createEagerBuffer
 
 case class TransactionApplyPipe(source: Pipe, inner: Pipe, batchSize: Expression)(val id: Id = Id.INVALID_ID)
     extends PipeWithSource(source) with TransactionPipe {
@@ -35,16 +37,20 @@ case class TransactionApplyPipe(source: Pipe, inner: Pipe, batchSize: Expression
   ): ClosingIterator[CypherRow] = {
     val batchSizeLong = evaluateBatchSize(batchSize, state)
     val entityTransformer = new CypherRowEntityTransformer(state.query.entityTransformer)
+    val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
 
-    input.grouped(batchSizeLong).flatMap { batch =>
-      val resultForBatch = runInnerInTransactionKeepResult(state, batch)
-
-      resultForBatch.map { resultRow =>
-        // Row based caching relies on the transaction state to avoid stale reads (see AbstractCachedProperty.apply).
-        // Since we do not share the transaction state we must clear the cached properties.
-        resultRow.invalidateCachedProperties()
-        entityTransformer.copyWithEntityWrappingValuesRebound(resultRow)
+    input
+      .eagerGrouped(batchSizeLong, memoryTracker)
+      .flatMap { batch =>
+        val innerResult = createEagerBuffer[CypherRow](memoryTracker, math.min(batch.size(), 1024).toInt)
+        createInnerResultsInNewTransaction(state, batch) { innerRow =>
+          // Row based caching relies on the transaction state to avoid stale reads (see AbstractCachedProperty.apply).
+          // Since we do not share the transaction state we must clear the cached properties.
+          innerRow.invalidateCachedProperties()
+          innerResult.add(entityTransformer.copyWithEntityWrappingValuesRebound(innerRow))
+        }
+        batch.close()
+        innerResult.autoClosingIterator().asClosingIterator
       }
-    }
   }
 }

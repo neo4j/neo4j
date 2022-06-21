@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ClosingIterator
-import org.neo4j.cypher.internal.runtime.ClosingIterator.ScalaSeqAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.EntityTransformer
 import org.neo4j.cypher.internal.runtime.QueryStatistics
@@ -30,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipe.Cyphe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipe.assertTransactionStateIsEmpty
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipe.commitTransactionWithStatistics
 import org.neo4j.exceptions.InternalException
+import org.neo4j.kernel.impl.util.collection.EagerBuffer
 
 import scala.util.control.NonFatal
 
@@ -38,49 +37,17 @@ trait TransactionPipe {
 
   val inner: Pipe
 
-  def runInnerInTransaction(state: QueryState, batch: Seq[CypherRow]): Unit = {
-    internalCreateResultsForOneBatch(state, batch, keepResults = false)
-  }
-
-  def runInnerInTransactionKeepResult(state: QueryState, batch: Seq[CypherRow]): ClosingIterator[CypherRow] = {
-    internalCreateResultsForOneBatch(state, batch, keepResults = true)
-  }
-
-  private def internalCreateResultsForOneBatch(
+  /**
+   * Evaluates inner pipe in a new transaction.
+   * 
+   * @param state query state
+   * @param outerRows buffered outer rows, will not be closed by this method
+   * @param f function to apply to inner rows
+   */
+  def createInnerResultsInNewTransaction(
     state: QueryState,
-    batch: Seq[CypherRow],
-    keepResults: Boolean
-  ): ClosingIterator[CypherRow] = {
-    inNewTransaction(state) { stateWithNewTransaction =>
-      val entityTransformer = new CypherRowEntityTransformer(stateWithNewTransaction.query.entityTransformer)
-
-      val result = batch.flatMap { outerRow =>
-        // Row based caching relies on the transaction state to avoid stale reads (see AbstractCachedProperty.apply).
-        // Since we do not share the transaction state we must clear the cached properties.
-        outerRow.invalidateCachedProperties()
-
-        val reboundRow = entityTransformer.copyWithEntityWrappingValuesRebound(outerRow)
-        val innerState = stateWithNewTransaction.withInitialContext(reboundRow)
-        val result = inner.createResults(innerState)
-        if (!keepResults) {
-          // empty result
-          while (result.hasNext) {
-            result.next()
-          }
-          Iterator.empty
-        } else {
-          result.toIterator
-        }
-      }
-
-      val subqueryStatistics = stateWithNewTransaction.getStatistics
-      state.query.addStatistics(subqueryStatistics)
-
-      result.asClosingIterator
-    }
-  }
-
-  def inNewTransaction(state: QueryState)(f: QueryState => ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = {
+    outerRows: EagerBuffer[CypherRow]
+  )(f: CypherRow => Unit): Unit = {
 
     // Ensure that no write happens before a 'CALL { ... } IN TRANSACTIONS'
     assertTransactionStateIsEmpty(state)
@@ -88,13 +55,23 @@ trait TransactionPipe {
     // beginTx()
     val stateWithNewTransaction = state.withNewTransaction()
     val innerTxContext = stateWithNewTransaction.query.transactionalContext
+    val entityTransformer = new CypherRowEntityTransformer(stateWithNewTransaction.query.entityTransformer)
 
     try {
-      val result: ClosingIterator[CypherRow] = f(stateWithNewTransaction)
+      val batchIterator = outerRows.iterator()
+      while (batchIterator.hasNext) {
+        val outerRow = batchIterator.next()
 
+        outerRow.invalidateCachedProperties()
+
+        val reboundRow = entityTransformer.copyWithEntityWrappingValuesRebound(outerRow)
+        val innerState = stateWithNewTransaction.withInitialContext(reboundRow)
+
+        inner.createResults(innerState).foreach(f.apply) // Consume result before commit
+      }
+
+      state.query.addStatistics(stateWithNewTransaction.getStatistics)
       commitTransactionWithStatistics(innerTxContext, state)
-
-      result
     } catch {
       case NonFatal(e) =>
         try {

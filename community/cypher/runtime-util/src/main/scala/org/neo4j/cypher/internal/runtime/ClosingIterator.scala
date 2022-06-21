@@ -20,14 +20,19 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.eclipse.collections.api.iterator.LongIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.MemoryTrackingEagerBatchingIterator.INIT_CHUNK_SIZE
 import org.neo4j.io.IOUtils
+import org.neo4j.kernel.impl.util.collection.EagerBuffer
+import org.neo4j.kernel.impl.util.collection.EagerBuffer.createEagerBuffer
+import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
+import org.neo4j.memory.Measurable
+import org.neo4j.memory.MemoryTracker
 import org.neo4j.storageengine.api.RelationshipVisitor
 
 import scala.collection.GenTraversableOnce
 import scala.collection.Iterator
 import scala.collection.Iterator.empty
 import scala.collection.immutable
-import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 
@@ -197,29 +202,6 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
     override protected[this] def closeMore(): Unit = self.close()
   }
 
-  // We can't override Iterator.grouped since that is only accepting Int and not Long.
-  // This is our own implementation, [[Iterator.grouped]] supports more use cases that we don't need.
-  def grouped(batchSize: Long): ClosingIterator[Seq[T]] = {
-    if (batchSize < 1) throw new IllegalArgumentException("Group size should be 1 or larger")
-
-    new ClosingIterator[Seq[T]] {
-      override protected[this] def innerHasNext: Boolean = self.hasNext
-
-      def next(): Seq[T] = {
-        var counter = 0
-        val buffer =
-          mutable.ArrayBuffer[T]()
-        while (counter < batchSize && self.hasNext) {
-          buffer += self.next()
-          counter += 1
-        }
-        buffer
-      }.toSeq
-
-      override protected[this] def closeMore(): Unit = self.close()
-    }
-  }
-
   // this is our own implementation, [[Iterator.++]] is overly complex, we probably don't need to be so specialized.
   def ++[B >: T](that: => ClosingIterator[B]): ClosingIterator[B] = new ClosingIterator[B] {
     // We read this into a lazy local variable here to avoid creating a new `that` iterator multiple times.
@@ -299,6 +281,19 @@ object ClosingIterator {
     def asClosingIterator: ClosingIterator[T] = new DelegatingClosingIterator(option.toIterator)
   }
 
+  implicit class MemoryTrackingClosingIterator[T <: Measurable](val iterator: ClosingIterator[T]) {
+
+    /**
+     * Groups this iterator in eager, memory tracked batches of the specified size.
+     * 
+     * Note! Caller of next() is responsible to close the [[EagerBuffer]], it will not be closed by
+     * the ClosingIterator.
+     */
+    def eagerGrouped(size: Long, memoryTracker: MemoryTracker): ClosingIterator[EagerBuffer[T]] = {
+      new MemoryTrackingEagerBatchingIterator(iterator, size, memoryTracker)
+    }
+  }
+
   /**
    * An empty closing iterator.
    * This cannot be a val, since resources can be mutated.
@@ -356,6 +351,52 @@ object ClosingIterator {
     override protected[this] def innerHasNext: Boolean = iterator.hasNext
 
     override def next(): T = iterator.next()
+  }
+
+  /**
+   * ClosingIterator that groups its source in eager batches of the specified size.
+   *
+   * @param source source data
+   * @param batchSize size of eager batches
+   * @param memoryTracker memory tracker
+   * @tparam T type of data
+   */
+  class MemoryTrackingEagerBatchingIterator[T <: Measurable](
+    source: ClosingIterator[T],
+    batchSize: Long,
+    memoryTracker: MemoryTracker
+  ) extends ClosingIterator[EagerBuffer[T]] {
+    require(batchSize >= 1, s"Batch size $batchSize smaller than 1")
+    memoryTracker.allocateHeap(MemoryTrackingEagerBatchingIterator.SHALLOW_SIZE)
+
+    override protected[this] def closeMore(): Unit = {
+      source.close()
+      memoryTracker.releaseHeap(MemoryTrackingEagerBatchingIterator.SHALLOW_SIZE)
+    }
+
+    override protected[this] def innerHasNext: Boolean = source.hasNext
+
+    /**
+     * Returns the next eagerly buffered items, caller is responsible to close the [[EagerBuffer]].
+     */
+    override def next(): EagerBuffer[T] = {
+      val buffer = createEagerBuffer[T](memoryTracker, math.min(batchSize, INIT_CHUNK_SIZE).toInt)
+      var count: Long = 0
+      while (count < batchSize && source.hasNext) {
+        buffer.add(source.next())
+        count += 1
+      }
+      if (count == 0) {
+        throw new NoSuchElementException("next on empty iterator")
+      }
+      buffer
+    }
+  }
+
+  object MemoryTrackingEagerBatchingIterator {
+    final private val SHALLOW_SIZE = shallowSizeOfInstance(classOf[MemoryTrackingEagerBatchingIterator[_]])
+    final private val INIT_CHUNK_SIZE = 1024
+
   }
 }
 
