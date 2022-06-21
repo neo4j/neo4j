@@ -32,6 +32,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
+import org.neo4j.configuration.database.readonly.ConfigReadOnlyDatabaseListener;
 import org.neo4j.dbms.CommunityDatabaseStateService;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementException;
@@ -44,12 +46,14 @@ import org.neo4j.dbms.database.DatabaseOperationCounts;
 import org.neo4j.dbms.database.DatabaseRepository;
 import org.neo4j.dbms.database.DefaultDatabaseContextFactory;
 import org.neo4j.dbms.database.DefaultDatabaseContextFactoryComponents;
+import org.neo4j.dbms.database.DefaultDatabaseInfoService;
 import org.neo4j.dbms.database.DefaultSystemGraphComponent;
 import org.neo4j.dbms.database.DetailedDbInfoProvider;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
-import org.neo4j.dbms.database.StandaloneDatabaseInfoService;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
+import org.neo4j.dbms.database.readonly.SystemGraphReadOnlyDatabaseLookupFactory;
+import org.neo4j.dbms.database.readonly.SystemGraphReadOnlyListener;
 import org.neo4j.dbms.identity.DefaultIdentityModule;
 import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.dbms.identity.ServerIdentityFactory;
@@ -72,6 +76,8 @@ import org.neo4j.kernel.database.SystemGraphDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
+import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLogProvider;
@@ -92,7 +98,7 @@ import org.neo4j.time.SystemNanoClock;
  * This implementation of {@link AbstractEditionModule} creates the implementations of services
  * that are specific to the Community edition.
  */
-public class CommunityEditionModule extends StandaloneEditionModule implements DefaultDatabaseContextFactoryComponents {
+public class CommunityEditionModule extends AbstractEditionModule implements DefaultDatabaseContextFactoryComponents {
     protected final SslPolicyLoader sslPolicyLoader;
     protected final GlobalModule globalModule;
     protected final ServerIdentity identityModule;
@@ -175,6 +181,24 @@ public class CommunityEditionModule extends StandaloneEditionModule implements D
         return databaseRepository;
     }
 
+    private static ReadOnlyDatabases createGlobalReadOnlyChecker(
+            DatabaseContextProvider<?> databaseContextProvider,
+            Config globalConfig,
+            GlobalTransactionEventListeners txListeners,
+            LifeSupport globalLife,
+            InternalLogProvider logProvider) {
+        var systemGraphReadOnlyLookup =
+                new SystemGraphReadOnlyDatabaseLookupFactory(databaseContextProvider, logProvider);
+        var configReadOnlyLookup =
+                new ConfigBasedLookupFactory(globalConfig, databaseContextProvider.databaseIdRepository());
+        var globalChecker = new ReadOnlyDatabases(systemGraphReadOnlyLookup, configReadOnlyLookup);
+        var configListener = new ConfigReadOnlyDatabaseListener(globalChecker, globalConfig);
+        var systemGraphListener = new SystemGraphReadOnlyListener(txListeners, globalChecker);
+        globalLife.add(configListener);
+        globalLife.add(systemGraphListener);
+        return globalChecker;
+    }
+
     @Override
     public Lifecycle createWebServer(
             DatabaseManagementService managementService,
@@ -197,7 +221,7 @@ public class CommunityEditionModule extends StandaloneEditionModule implements D
     public DatabaseInfoService createDatabaseInfoService(DatabaseContextProvider<?> databaseContextProvider) {
         DetailedDbInfoProvider detailedDbInfoProvider = new DetailedDbInfoProvider(databaseContextProvider);
         var address = globalModule.getGlobalConfig().get(BoltConnector.advertised_address);
-        return new StandaloneDatabaseInfoService(
+        return new DefaultDatabaseInfoService(
                 identityModule.serverId(),
                 address,
                 databaseContextProvider,

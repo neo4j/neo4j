@@ -37,7 +37,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
-public class StandaloneDatabaseInfoServiceIT {
+public class DefaultDatabaseInfoServiceIT {
     @Inject
     private TestDirectory testDirectory;
 

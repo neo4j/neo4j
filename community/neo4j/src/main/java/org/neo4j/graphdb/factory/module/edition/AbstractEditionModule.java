@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.factory.module.edition;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 import static org.neo4j.procedure.impl.temporal.TemporalFunction.registerTemporalFunctions;
 
@@ -36,6 +37,7 @@ import org.neo4j.dbms.database.DatabaseInfoService;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
+import org.neo4j.dbms.database.StandaloneDbmsRuntimeRepository;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.exceptions.KernelException;
@@ -190,11 +192,18 @@ public abstract class AbstractEditionModule {
             InternalLogProvider userLogProvider,
             DbmsInfo dbmsInfo);
 
-    public abstract DbmsRuntimeRepository createAndRegisterDbmsRuntimeRepository(
+    public DbmsRuntimeRepository createAndRegisterDbmsRuntimeRepository(
             GlobalModule globalModule,
             DatabaseContextProvider<?> databaseContextProvider,
             Dependencies dependencies,
-            DbmsRuntimeSystemGraphComponent dbmsRuntimeSystemGraphComponent);
+            DbmsRuntimeSystemGraphComponent dbmsRuntimeSystemGraphComponent) {
+        var dbmsRuntimeRepository =
+                new StandaloneDbmsRuntimeRepository(databaseContextProvider, dbmsRuntimeSystemGraphComponent);
+        globalModule
+                .getTransactionEventListeners()
+                .registerTransactionEventListener(SYSTEM_DATABASE_NAME, dbmsRuntimeRepository);
+        return dbmsRuntimeRepository;
+    }
 
     protected ServerSideRoutingTableProvider serverSideRoutingTableProvider(GlobalModule globalModule) {
         ConnectorPortRegister portRegister = globalModule.getConnectorPortRegister();

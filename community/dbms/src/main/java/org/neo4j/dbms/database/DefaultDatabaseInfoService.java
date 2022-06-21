@@ -34,7 +34,7 @@ import org.neo4j.dbms.identity.ServerId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-public class StandaloneDatabaseInfoService implements DatabaseInfoService {
+public class DefaultDatabaseInfoService implements DatabaseInfoService {
     private static final String ROLE_LABEL = "standalone";
 
     private final DatabaseIdRepository idRepository;
@@ -44,7 +44,7 @@ public class StandaloneDatabaseInfoService implements DatabaseInfoService {
     private final DatabaseStateService stateService;
     private final DetailedDbInfoProvider detailedDbInfoProvider;
 
-    public StandaloneDatabaseInfoService(
+    public DefaultDatabaseInfoService(
             ServerId serverId,
             SocketAddress address,
             DatabaseContextProvider<?> databaseContextProvider,
