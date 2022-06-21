@@ -33,10 +33,7 @@ import org.neo4j.cypher.internal.util.bottomUp
 case object WithBetweenCallAndWhereInserted extends Condition
 
 // Rewrites CALL proc WHERE <p> ==> CALL proc WITH * WHERE <p>
-case object expandCallWhere extends Rewriter with Step with PreparatoryRewritingRewriterFactory {
-
-  override def apply(v: AnyRef): AnyRef =
-    instance(v)
+case object expandCallWhere extends Step with PreparatoryRewritingRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
@@ -44,7 +41,7 @@ case object expandCallWhere extends Rewriter with Step with PreparatoryRewriting
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
-  private val instance = bottomUp(Rewriter.lift {
+  val instance: Rewriter = bottomUp(Rewriter.lift {
     case query @ SingleQuery(clauses) =>
       val newClauses = clauses.flatMap {
         case unresolved @ UnresolvedCall(_, _, _, Some(result @ ProcedureResult(_, optWhere @ Some(where))), _) =>

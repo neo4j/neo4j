@@ -95,7 +95,7 @@ case class expandStar(state: SemanticState) extends Rewriter {
   }
 }
 
-object expandStar extends StepSequencer.Step with ASTRewriterFactory {
+case object expandStar extends StepSequencer.Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     ProjectionClausesHaveSemanticInfo // Looks up recorded scopes of projection clauses.

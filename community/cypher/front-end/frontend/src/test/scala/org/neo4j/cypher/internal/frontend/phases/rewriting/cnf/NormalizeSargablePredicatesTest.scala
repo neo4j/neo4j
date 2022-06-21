@@ -25,27 +25,27 @@ class NormalizeSargablePredicatesTest extends CypherFunSuite with AstConstructio
     val input = not(lessThan(varFor("x"), varFor("y")))
     val output = greaterThanOrEqual(varFor("x"), varFor("y"))
 
-    normalizeSargablePredicates(input) should equal(output)
+    normalizeSargablePredicates.instance(input) should equal(output)
   }
 
   test("NOT x <= y rewritten to: x > y") {
     val input = not(lessThanOrEqual(varFor("x"), varFor("y")))
     val output = greaterThan(varFor("x"), varFor("y"))
 
-    normalizeSargablePredicates(input) should equal(output)
+    normalizeSargablePredicates.instance(input) should equal(output)
   }
 
   test("NOT x > y rewritten to: x <= y") {
     val input = not(greaterThan(varFor("x"), varFor("y")))
     val output = lessThanOrEqual(varFor("x"), varFor("y"))
 
-    normalizeSargablePredicates(input) should equal(output)
+    normalizeSargablePredicates.instance(input) should equal(output)
   }
 
   test("NOT x >= y rewritten to: x < y") {
     val input = not(greaterThanOrEqual(varFor("x"), varFor("y")))
     val output = lessThan(varFor("x"), varFor("y"))
 
-    normalizeSargablePredicates(input) should equal(output)
+    normalizeSargablePredicates.instance(input) should equal(output)
   }
 }

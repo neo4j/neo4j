@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.util.bottomUp
 case object WithBetweenShowAndWhereInserted extends Condition
 
 // rewrites SHOW ... WHERE <e> " ==> SHOW ... YIELD * WHERE <e>
-case object expandShowWhere extends Rewriter with Step with PreparatoryRewritingRewriterFactory {
+case object expandShowWhere extends Step with PreparatoryRewritingRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
@@ -48,10 +48,7 @@ case object expandShowWhere extends Rewriter with Step with PreparatoryRewriting
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def apply(v: AnyRef): AnyRef =
-    instance(v)
-
-  private val instance = bottomUp(Rewriter.lift {
+  val instance: Rewriter = bottomUp(Rewriter.lift {
     // move freestanding WHERE to YIELD * WHERE and add default columns to the YIELD
     case s @ ShowDatabase(_, Some(Right(where)), _) =>
       s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)

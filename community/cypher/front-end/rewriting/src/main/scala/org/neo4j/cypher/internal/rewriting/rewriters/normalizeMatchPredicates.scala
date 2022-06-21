@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.util.topDown
 
 case object NoPredicatesInNamedPartsOfMatchPattern extends StepSequencer.Condition
 
-object normalizeMatchPredicates extends StepSequencer.Step with ASTRewriterFactory {
+case object normalizeMatchPredicates extends StepSequencer.Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     noUnnamedPatternElementsInMatch // unnamed pattern cannot be rewritten, so they need to handled first

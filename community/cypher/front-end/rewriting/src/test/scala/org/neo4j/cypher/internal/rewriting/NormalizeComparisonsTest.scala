@@ -37,7 +37,7 @@ class NormalizeComparisonsTest extends CypherFunSuite with AstConstructionTestSu
 
   comparisons.foreach { operator =>
     test(operator.toString) {
-      val rewritten = operator.endoRewrite(normalizeComparisons)
+      val rewritten = operator.endoRewrite(normalizeComparisons.instance)
 
       rewritten.lhs shouldNot be theSameInstanceAs rewritten.rhs
     }
@@ -46,7 +46,7 @@ class NormalizeComparisonsTest extends CypherFunSuite with AstConstructionTestSu
   test("extract multiple hasLabels") {
     val original = hasLabels(varFor("a"), "X", "Y")
 
-    original.endoRewrite(normalizeComparisons) should equal(
+    original.endoRewrite(normalizeComparisons.instance) should equal(
       ands(hasLabels("a", "X"), hasLabels("a", "Y"))
     )
   }
@@ -54,6 +54,6 @@ class NormalizeComparisonsTest extends CypherFunSuite with AstConstructionTestSu
   test("does not extract single hasLabels") {
     val original = hasLabels("a", "Y")
 
-    original.endoRewrite(normalizeComparisons) should equal(original)
+    original.endoRewrite(normalizeComparisons.instance) should equal(original)
   }
 }

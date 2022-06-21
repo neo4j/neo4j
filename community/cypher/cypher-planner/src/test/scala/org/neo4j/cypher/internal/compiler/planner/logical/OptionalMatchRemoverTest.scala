@@ -808,11 +808,11 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     val astOriginal = parseForRewriting(query)
     val orgAstState = SemanticChecker.check(astOriginal).state
     val ast = astOriginal.endoRewrite(inSequence(
-      LabelExpressionPredicateNormalizer,
+      LabelExpressionPredicateNormalizer.instance,
       normalizeHasLabelsAndHasType(orgAstState),
       AddUniquenessPredicates(anonymousVariableNameGenerator),
       flattenBooleanOperators,
-      insertWithBetweenOptionalMatchAndMatch,
+      insertWithBetweenOptionalMatchAndMatch.instance,
       recordScopes(orgAstState)
     ))
     val exceptionFactory = Neo4jCypherExceptionFactory(query, Some(DummyPosition(0)))

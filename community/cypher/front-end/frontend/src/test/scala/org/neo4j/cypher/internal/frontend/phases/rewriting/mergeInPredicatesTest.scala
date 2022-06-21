@@ -221,7 +221,7 @@ class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport 
     val original = parser.parse(from, exceptionFactory, nameGenerator).asInstanceOf[Query]
     val expected = parser.parse(to, exceptionFactory, nameGenerator).asInstanceOf[Query]
     val common: Rewriter = flattenBooleanOperators
-    val result = mergeInPredicates(original)
+    val result = mergeInPredicates.instance(original)
 
     common(result) should equal(common(expected))
   }

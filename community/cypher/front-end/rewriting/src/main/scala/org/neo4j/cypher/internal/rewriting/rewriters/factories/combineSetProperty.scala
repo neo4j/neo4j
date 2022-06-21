@@ -36,7 +36,7 @@ import scala.collection.mutable.ArrayBuffer
 
 case object PropertiesCombined extends StepSequencer.Condition
 
-object combineSetProperty extends Rewriter with StepSequencer.Step with ASTRewriterFactory {
+case object combineSetProperty extends StepSequencer.Step with ASTRewriterFactory {
   override def preConditions: Set[StepSequencer.Condition] = Set()
   override def postConditions: Set[StepSequencer.Condition] = Set(PropertiesCombined)
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set()
@@ -46,9 +46,7 @@ object combineSetProperty extends Rewriter with StepSequencer.Step with ASTRewri
     parameterTypeMapping: Map[String, CypherType],
     cypherExceptionFactory: CypherExceptionFactory,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-  ): Rewriter = this
-
-  override def apply(input: AnyRef): AnyRef = instance(input)
+  ): Rewriter = instance
 
   private def onSameEntity(setItem: SetItem, entity: Expression) = setItem match {
     case SetPropertyItem(Property(map, _), _) => map == entity
@@ -59,7 +57,7 @@ object combineSetProperty extends Rewriter with StepSequencer.Step with ASTRewri
     if (ops.size == 1) ops.head
     else SetPropertyItems(entity, ops.map(o => (o.property.propertyKey, o.expression)))(ops.head.position)
 
-  private val instance: Rewriter = bottomUp(Rewriter.lift {
+  val instance: Rewriter = bottomUp(Rewriter.lift {
     case s @ SetClause(items) =>
       val newItems = ArrayBuffer.empty[SetItem]
       val itemsArray = items.toArray

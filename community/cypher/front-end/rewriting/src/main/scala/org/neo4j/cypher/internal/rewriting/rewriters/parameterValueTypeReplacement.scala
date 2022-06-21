@@ -42,7 +42,7 @@ case class parameterValueTypeReplacement(parameterTypeMapping: Map[String, Cyphe
   override def apply(that: AnyRef): AnyRef = rewriter(that)
 }
 
-object parameterValueTypeReplacement extends Step with ASTRewriterFactory {
+case object parameterValueTypeReplacement extends Step with ASTRewriterFactory {
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def postConditions: Set[StepSequencer.Condition] = Set(ExplicitParametersKnowTheirTypes)

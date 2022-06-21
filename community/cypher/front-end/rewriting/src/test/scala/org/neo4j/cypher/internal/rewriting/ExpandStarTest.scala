@@ -271,7 +271,11 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
     val nameGenerator = new AnonymousVariableNameGenerator
     val rewriter =
       if (rewriteShowCommand)
-        inSequence(normalizeWithAndReturnClauses(exceptionFactory, devNullLogger), rewriteShowQuery, expandShowWhere)
+        inSequence(
+          normalizeWithAndReturnClauses(exceptionFactory, devNullLogger),
+          rewriteShowQuery.instance,
+          expandShowWhere.instance
+        )
       else
         inSequence(normalizeWithAndReturnClauses(exceptionFactory, devNullLogger))
     JavaCCParser.parse(q, exceptionFactory, nameGenerator).endoRewrite(rewriter)

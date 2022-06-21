@@ -37,7 +37,7 @@ import scala.language.reflectiveCalls
 
 case object NoNamedPathsInPatternComprehensions extends StepSequencer.Condition
 
-case object inlineNamedPathsInPatternComprehensions extends Rewriter with Step with ASTRewriterFactory {
+case object inlineNamedPathsInPatternComprehensions extends Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(noUnnamedPatternElementsInPatternComprehension)
 
@@ -48,7 +48,7 @@ case object inlineNamedPathsInPatternComprehensions extends Rewriter with Step w
     PatternExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside PatternExpressions.
   )
 
-  private val instance = bottomUp(Rewriter.lift {
+  val instance: Rewriter = bottomUp(Rewriter.lift {
     case expr @ PatternComprehension(Some(path), pattern, predicate, projection) =>
       val patternElement = pattern.element
       expr.copy(
@@ -65,8 +65,6 @@ case object inlineNamedPathsInPatternComprehensions extends Rewriter with Step w
         PathExpression(projectNamedPaths.patternPartPathExpression(patternElement))(expr.position)
       }
   }
-
-  override def apply(v: AnyRef): AnyRef = instance(v)
 
   override def getRewriter(
     semanticState: SemanticState,

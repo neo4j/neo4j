@@ -27,12 +27,12 @@ class ReplaceLiteralDynamicPropertyLookupsTest extends CypherFunSuite with AstCo
     val input: ASTNode = containerIndex(varFor("a"), literalString("name"))
     val output: ASTNode = prop("a", "name")
 
-    replaceLiteralDynamicPropertyLookups(input) should equal(output)
+    replaceLiteralDynamicPropertyLookups.instance(input) should equal(output)
   }
 
   test("Does not replaces non-literal dynamic property lookups") {
     val input: ASTNode = containerIndex(varFor("a"), varFor("b"))
 
-    replaceLiteralDynamicPropertyLookups(input) should equal(input)
+    replaceLiteralDynamicPropertyLookups.instance(input) should equal(input)
   }
 }

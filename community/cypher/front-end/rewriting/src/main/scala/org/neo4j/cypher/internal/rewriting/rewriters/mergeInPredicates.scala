@@ -54,7 +54,7 @@ case object MultipleInPredicatesAreMerged extends Condition
  * NOTE: this rewriter must be applied before auto parameterization, since after
  * that we are just dealing with opaque parameters.
  */
-case object mergeInPredicates extends Rewriter with Step with PreparatoryRewritingRewriterFactory {
+case object mergeInPredicates extends Step with PreparatoryRewritingRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(LiteralsAreAvailable)
 
@@ -62,9 +62,7 @@ case object mergeInPredicates extends Rewriter with Step with PreparatoryRewriti
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def apply(that: AnyRef): AnyRef = inner.apply(that)
-
-  private val inner: Rewriter = bottomUp(Rewriter.lift {
+  val instance: Rewriter = bottomUp(Rewriter.lift {
 
     case and @ And(lhs, rhs) if containNeitherOrsNorInnerScopes(lhs, rhs) && containIns(lhs, rhs) =>
       if (containNoNots(lhs, rhs))
@@ -162,5 +160,5 @@ case object mergeInPredicates extends Rewriter with Step with PreparatoryRewriti
   override def getRewriter(
     cypherExceptionFactory: CypherExceptionFactory,
     notificationLogger: InternalNotificationLogger
-  ): Rewriter = this
+  ): Rewriter = instance
 }

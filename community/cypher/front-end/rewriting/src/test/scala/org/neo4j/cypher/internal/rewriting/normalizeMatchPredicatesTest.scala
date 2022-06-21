@@ -37,7 +37,7 @@ class normalizeMatchPredicatesTest extends CypherFunSuite with TestName {
   private val prettifier = Prettifier(ExpressionStringifier(_.asCanonicalStringVal))
 
   def rewriter(semanticState: SemanticState): Rewriter = inSequence(
-    LabelExpressionPredicateNormalizer,
+    LabelExpressionPredicateNormalizer.instance,
     normalizeHasLabelsAndHasType(semanticState),
     normalizeMatchPredicates.getRewriter(
       semanticState,
@@ -48,7 +48,7 @@ class normalizeMatchPredicatesTest extends CypherFunSuite with TestName {
   )
 
   def rewriterWithoutNormalizeMatchPredicates(semanticState: SemanticState): Rewriter = inSequence(
-    LabelExpressionPredicateNormalizer,
+    LabelExpressionPredicateNormalizer.instance,
     normalizeHasLabelsAndHasType(semanticState)
   )
 

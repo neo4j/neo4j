@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class moveWithPastMatchTest extends CypherFunSuite with RewriteTest {
 
-  val rewriterUnderTest: Rewriter = moveWithPastMatch
+  val rewriterUnderTest: Rewriter = moveWithPastMatch.instance
 
   test("does not move WITH if it is not a simple projection") {
     assertIsNotRewritten("WITH DISTINCT 1 AS foo MATCH (n) RETURN n")

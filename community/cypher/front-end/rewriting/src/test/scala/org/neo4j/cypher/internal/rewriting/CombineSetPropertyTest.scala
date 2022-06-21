@@ -32,7 +32,7 @@ class CombineSetPropertyTest extends CypherFunSuite with AstRewritingTestSupport
     val clause = setClause(setProperty(prop(varFor("n"), "prop"), literal(42)))
 
     // when
-    val rewritten = combineSetProperty(clause)
+    val rewritten = combineSetProperty.instance(clause)
 
     // then
     rewritten should equal(clause)
@@ -46,7 +46,7 @@ class CombineSetPropertyTest extends CypherFunSuite with AstRewritingTestSupport
     )
 
     // when
-    val rewritten = combineSetProperty(clause)
+    val rewritten = combineSetProperty.instance(clause)
 
     // then
     rewritten should equal(setClause(setProperties(varFor("n"), ("prop1", literal(1)), ("prop2", literal(2)))))
@@ -60,7 +60,7 @@ class CombineSetPropertyTest extends CypherFunSuite with AstRewritingTestSupport
     )
 
     // when
-    val rewritten = combineSetProperty(clause)
+    val rewritten = combineSetProperty.instance(clause)
 
     // then
     rewritten should equal(clause)
@@ -77,7 +77,7 @@ class CombineSetPropertyTest extends CypherFunSuite with AstRewritingTestSupport
     )
 
     // when
-    val rewritten = combineSetProperty(clause)
+    val rewritten = combineSetProperty.instance(clause)
 
     // then
     rewritten should equal(clause)
@@ -95,7 +95,7 @@ class CombineSetPropertyTest extends CypherFunSuite with AstRewritingTestSupport
     )
 
     // when
-    val rewritten = combineSetProperty(clause)
+    val rewritten = combineSetProperty.instance(clause)
 
     // then
     rewritten should equal(

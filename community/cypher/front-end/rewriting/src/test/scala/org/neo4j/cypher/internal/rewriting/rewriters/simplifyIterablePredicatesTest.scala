@@ -124,7 +124,7 @@ class simplifyIterablePredicatesTest extends CypherFunSuite with Matchers with R
     rewrite(expr) shouldBe expr
   }
 
-  override def rewriterUnderTest: Rewriter = simplifyIterablePredicates
+  override def rewriterUnderTest: Rewriter = simplifyIterablePredicates.instance
 
-  private def rewrite(e: Expression): Expression = e.endoRewrite(simplifyIterablePredicates)
+  private def rewrite(e: Expression): Expression = e.endoRewrite(rewriterUnderTest)
 }

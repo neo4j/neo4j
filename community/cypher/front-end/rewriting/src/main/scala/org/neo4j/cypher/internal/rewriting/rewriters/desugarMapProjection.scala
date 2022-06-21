@@ -74,7 +74,7 @@ case class desugarMapProjection(state: SemanticState) extends Rewriter {
   }
 }
 
-object desugarMapProjection extends StepSequencer.Step with ASTRewriterFactory {
+case object desugarMapProjection extends StepSequencer.Step with ASTRewriterFactory {
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def postConditions: Set[StepSequencer.Condition] = Set(OnlyDesugaredMapProjections)

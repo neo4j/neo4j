@@ -32,9 +32,7 @@ import org.neo4j.cypher.internal.util.topDown
 case object WithBetweenOptionalMatchAndMatchInserted extends Condition
 
 // Rewrites OPTIONAL MATCH (<n>) MATCH (<n>) RETURN <n> ==> OPTIONAL MATCH (<n>) WITH * MATCH (<n>) RETURN <n>
-case object insertWithBetweenOptionalMatchAndMatch extends Rewriter with Step with PreparatoryRewritingRewriterFactory {
-
-  override def apply(that: AnyRef): AnyRef = instance(that)
+case object insertWithBetweenOptionalMatchAndMatch extends Step with PreparatoryRewritingRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
@@ -42,7 +40,7 @@ case object insertWithBetweenOptionalMatchAndMatch extends Rewriter with Step wi
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
-  private val instance: Rewriter = topDown(Rewriter.lift {
+  val instance: Rewriter = topDown(Rewriter.lift {
     case sq @ SingleQuery(clauses) if clauses.nonEmpty =>
       val newClauses = clauses.sliding(2).collect {
         case Seq(match1: Match, match2: Match) if match1.optional && !match2.optional =>

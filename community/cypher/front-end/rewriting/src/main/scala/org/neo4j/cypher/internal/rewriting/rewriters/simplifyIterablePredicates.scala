@@ -43,15 +43,13 @@ case object IterablePredicatesRewrittenToIn extends StepSequencer.Condition
  * any(x IN list WHERE x = 1) ==> 1 IN x
  * none(x IN list WHERE x = 2) ==> not(2 IN x)
  */
-case object simplifyIterablePredicates extends Rewriter with StepSequencer.Step with ASTRewriterFactory {
+case object simplifyIterablePredicates extends StepSequencer.Step with ASTRewriterFactory {
 
-  private val instance: Rewriter = bottomUp(Rewriter.lift {
+  val instance: Rewriter = bottomUp(Rewriter.lift {
     case any @ AnyIterablePredicate(SimpleEqualsFilterScope(inLhs), list) => In(inLhs, list)(any.position)
     case none @ NoneIterablePredicate(SimpleEqualsFilterScope(inLhs), list) =>
       Not(In(inLhs, list)(none.position))(none.position)
   })
-
-  override def apply(that: AnyRef): AnyRef = instance(that)
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     RelationshipUniquenessPredicatesInMatchAndMerge // Introduces AnyIterablePredicate and NoneIterablePredicate

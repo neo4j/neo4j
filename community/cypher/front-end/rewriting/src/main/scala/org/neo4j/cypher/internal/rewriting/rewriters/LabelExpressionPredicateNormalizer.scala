@@ -40,20 +40,18 @@ case object containsNoLabelExpressionPredicates extends ValidatingCondition {
   override def name: String = productPrefix
 }
 
-object LabelExpressionPredicateNormalizer extends Rewriter with StepSequencer.Step with ASTRewriterFactory {
+case object LabelExpressionPredicateNormalizer extends StepSequencer.Step with ASTRewriterFactory {
 
-  private val instance: Rewriter = topDown(Rewriter.lift {
+  val instance: Rewriter = topDown(Rewriter.lift {
     case pred: LabelExpressionPredicate => LabelExpressionNormalizer(pred.entity, None)(pred.labelExpression)
   })
-
-  override def apply(that: AnyRef): AnyRef = instance(that)
 
   override def getRewriter(
     semanticState: SemanticState,
     parameterTypeMapping: Map[String, CypherType],
     cypherExceptionFactory: CypherExceptionFactory,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-  ): Rewriter = this
+  ): Rewriter = instance
 
   /**
    * @return the conditions that needs to be met before this step can be allowed to run.

@@ -51,7 +51,7 @@ case object ShowRewrittenToShowYieldWhereReturn extends Condition
 // It is not possible to modify or create scope at this point, to do so we would need to be a phase.
 // Because of the restricted nature of SHOW commands being only `SHOW ... YIELD ... RETURN ...` this works for now,
 // but we should revisit if we become more complicated/flexible.
-case object rewriteShowQuery extends Rewriter with Step with PreparatoryRewritingRewriterFactory {
+case object rewriteShowQuery extends Step with PreparatoryRewritingRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
@@ -64,9 +64,7 @@ case object rewriteShowQuery extends Rewriter with Step with PreparatoryRewritin
     ProjectionClausesHaveSemanticInfo
   )
 
-  override def apply(v: AnyRef): AnyRef = instance(v)
-
-  private val instance = bottomUp(Rewriter.lift {
+  val instance: Rewriter = bottomUp(Rewriter.lift {
     case s @ SingleQuery(clauses) => s.copy(clauses = rewriteClauses(clauses.toList, List()))(s.position)
   })
 

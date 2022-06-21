@@ -166,7 +166,7 @@ case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends
   private def asAst(b: Boolean, e: Expression) = if (b) True()(e.position) else False()(e.position)
 }
 
-object foldConstants extends StepSequencer.Step with ASTRewriterFactory {
+case object foldConstants extends StepSequencer.Step with ASTRewriterFactory {
   override def preConditions: Set[StepSequencer.Condition] = Set()
 
   override def postConditions: Set[StepSequencer.Condition] = Set(ConstantNumberLiteralsFolded)

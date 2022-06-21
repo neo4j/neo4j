@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.util.topDown
 
 case object OnlySingleHasLabels extends StepSequencer.Condition
 
-case object normalizeComparisons extends Rewriter with StepSequencer.Step with ASTRewriterFactory {
+case object normalizeComparisons extends StepSequencer.Step with ASTRewriterFactory {
 
   override def getRewriter(
     semanticState: SemanticState,
@@ -48,8 +48,6 @@ case object normalizeComparisons extends Rewriter with StepSequencer.Step with A
     cypherExceptionFactory: CypherExceptionFactory,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = instance
-
-  override def apply(that: AnyRef): AnyRef = instance(that)
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     HasLabelsOrTypesReplacedIfPossible, // These have to have been rewritten to HasLabels / HasTypes at this point
@@ -64,7 +62,7 @@ case object normalizeComparisons extends Rewriter with StepSequencer.Step with A
     PatternExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside PatternExpressions.
   )
 
-  private val instance: Rewriter = topDown(Rewriter.lift {
+  val instance: Rewriter = topDown(Rewriter.lift {
     case c @ NotEquals(lhs, rhs) =>
       NotEquals(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
     case c @ Equals(lhs, rhs) =>

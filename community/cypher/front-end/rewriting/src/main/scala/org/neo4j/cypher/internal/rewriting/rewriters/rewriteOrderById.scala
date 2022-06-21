@@ -53,7 +53,7 @@ case class rewriteOrderById(semanticState: SemanticState) extends Rewriter {
 
 }
 
-object rewriteOrderById extends Step with ASTRewriterFactory {
+case object rewriteOrderById extends Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set()
 

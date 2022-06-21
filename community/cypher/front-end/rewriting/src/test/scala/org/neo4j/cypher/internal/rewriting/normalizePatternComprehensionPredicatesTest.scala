@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class normalizePatternComprehensionPredicatesTest extends CypherFunSuite with RewriteTest {
 
-  override def rewriterUnderTest: Rewriter = normalizePatternComprehensionPredicates
+  override def rewriterUnderTest: Rewriter = normalizePatternComprehensionPredicates.instance
 
   test("move single predicate from node to WHERE") {
     assertRewrite(

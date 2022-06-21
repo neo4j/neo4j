@@ -73,7 +73,7 @@ object Parser {
     injectCachedProperties,
     invalidateInputPositions,
     flattenBooleanOperators, // It is otherwise impossible to create instances of Ands / Ors
-    LabelExpressionPredicateNormalizer
+    LabelExpressionPredicateNormalizer.instance
   )(in).asInstanceOf[T]
 
   private val regex = s"(.+) [Aa][Ss] (.+)".r

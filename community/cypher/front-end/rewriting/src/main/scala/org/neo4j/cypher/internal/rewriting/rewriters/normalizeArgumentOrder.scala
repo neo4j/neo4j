@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.util.topDown
 
 case object ArgumentOrderInComparisonsNormalized extends StepSequencer.Condition
 
-case object normalizeArgumentOrder extends Rewriter with StepSequencer.Step with ASTRewriterFactory {
+case object normalizeArgumentOrder extends StepSequencer.Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     containsNoNodesOfType[NotEquals]() // NotEquals must have been rewritten to Equals
@@ -52,9 +52,7 @@ case object normalizeArgumentOrder extends Rewriter with StepSequencer.Step with
     PatternExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside PatternExpressions.
   )
 
-  override def apply(that: AnyRef): AnyRef = instance(that)
-
-  private val instance: Rewriter = topDown(Rewriter.lift {
+  val instance: Rewriter = topDown(Rewriter.lift {
 
     // move id(n) on equals to the left
     case predicate @ Equals(func @ FunctionInvocation(_, _, _, _), _) if func.function == functions.Id =>

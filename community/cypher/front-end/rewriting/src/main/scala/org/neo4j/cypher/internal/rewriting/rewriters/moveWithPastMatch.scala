@@ -45,7 +45,7 @@ case object IndependentWithsMovedAfterMatch extends StepSequencer.Condition
  * This could potentially move projections to a point of higher cardinality, but the cached properties mechanism
  * should take care that expensive projections are pushed down again.
  */
-case object moveWithPastMatch extends Rewriter with StepSequencer.Step with ASTRewriterFactory {
+case object moveWithPastMatch extends StepSequencer.Step with ASTRewriterFactory {
 
   override def getRewriter(
     semanticState: SemanticState,
@@ -53,8 +53,6 @@ case object moveWithPastMatch extends Rewriter with StepSequencer.Step with ASTR
     cypherExceptionFactory: CypherExceptionFactory,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = instance
-
-  override def apply(that: AnyRef): AnyRef = instance(that)
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     containsNoReturnAll // It's better to know the variables in WITH already
@@ -71,7 +69,7 @@ case object moveWithPastMatch extends Rewriter with StepSequencer.Step with ASTR
       s.copy(part = s.part.endoRewrite(innerRewriter(insideSubquery = true)))(s.position)
   })
 
-  private val instance: Rewriter = inSequence(innerRewriter(insideSubquery = false), subqueryRewriter)
+  val instance: Rewriter = inSequence(innerRewriter(insideSubquery = false), subqueryRewriter)
 
   sealed private trait QuerySection {
     def clauses: Seq[Clause]

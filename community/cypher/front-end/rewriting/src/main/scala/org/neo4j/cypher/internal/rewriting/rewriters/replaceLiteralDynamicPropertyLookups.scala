@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 
 case object NoLiteralDynamicPropertyLookups extends StepSequencer.Condition
 
-case object replaceLiteralDynamicPropertyLookups extends Rewriter with Step with ASTRewriterFactory {
+case object replaceLiteralDynamicPropertyLookups extends Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
@@ -44,12 +44,10 @@ case object replaceLiteralDynamicPropertyLookups extends Rewriter with Step with
     PatternExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside PatternExpressions.
   )
 
-  private val instance = bottomUp(Rewriter.lift {
+  val instance: Rewriter = bottomUp(Rewriter.lift {
     case index @ ContainerIndex(expr, lit: StringLiteral) =>
       Property(expr, PropertyKeyName(lit.value)(lit.position))(index.position)
   })
-
-  override def apply(v: AnyRef): AnyRef = instance(v)
 
   override def getRewriter(
     semanticState: SemanticState,

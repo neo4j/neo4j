@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class InsertWithBetweenOptionalMatchAndMatchTest extends CypherFunSuite with RewriteTest {
-  val rewriterUnderTest: Rewriter = insertWithBetweenOptionalMatchAndMatch
+  val rewriterUnderTest: Rewriter = insertWithBetweenOptionalMatchAndMatch.instance
 
   test("OPTIONAL MATCH followed by MATCH") {
     assertRewrite(

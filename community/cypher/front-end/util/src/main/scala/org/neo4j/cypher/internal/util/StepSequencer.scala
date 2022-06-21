@@ -278,9 +278,11 @@ object StepSequencer {
     def incoming(to: S): Set[S] = elems(to).incoming.toSet
 
     override def toString: String = {
-      val nodes = allNodes.map(node => s"""  "$node";""").mkString("\n")
+      val nodes = allNodes.toSeq.map(node => s"""  "$node";""").mkString("\n")
       val edges =
-        allNodes.map(node => outgoing(node).map(other => s"""  "$node" -> "$other";""").mkString("\n")).mkString("\n")
+        allNodes.toSeq
+          .map(node => outgoing(node).toSeq.map(other => s"""  "$node" -> "$other";""").mkString("\n"))
+          .mkString("\n")
       s"digraph G {\n$nodes\n$edges\n}"
     }
   }

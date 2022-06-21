@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.util.topDown
 
 case object NoNodePatternPredicatesInPatternComprehension extends StepSequencer.Condition
 
-object normalizePatternComprehensionPredicates extends Rewriter with StepSequencer.Step with ASTRewriterFactory {
+case object normalizePatternComprehensionPredicates extends StepSequencer.Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(NoCountExpression)
 
@@ -43,9 +43,7 @@ object normalizePatternComprehensionPredicates extends Rewriter with StepSequenc
     parameterTypeMapping: Map[String, CypherType],
     cypherExceptionFactory: CypherExceptionFactory,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-  ): Rewriter = this
-
-  override def apply(that: AnyRef): AnyRef = instance(that)
+  ): Rewriter = instance
 
   private val normalizer = MatchPredicateNormalizerChain(
     NodePatternPredicateNormalizer,
@@ -64,5 +62,5 @@ object normalizePatternComprehensionPredicates extends Rewriter with StepSequenc
       )(p.position, p.outerScope, p.variableToCollectName, p.collectionName)
   }
 
-  private val instance = topDown(rewriter)
+  val instance: Rewriter = topDown(rewriter)
 }

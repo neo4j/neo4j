@@ -73,7 +73,7 @@ case class normalizeHasLabelsAndHasType(semanticState: SemanticState) extends Ha
     semanticState.expressionType(expr).actual == CTRelationship.invariant
 }
 
-object normalizeHasLabelsAndHasType extends StepSequencer.Step with ASTRewriterFactory {
+case object normalizeHasLabelsAndHasType extends StepSequencer.Step with ASTRewriterFactory {
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def postConditions: Set[StepSequencer.Condition] = Set(HasLabelsOrTypesReplacedIfPossible)

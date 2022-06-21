@@ -244,7 +244,7 @@ case class normalizeWithAndReturnClauses(
   }
 }
 
-object normalizeWithAndReturnClauses extends Step with PreparatoryRewritingRewriterFactory {
+case object normalizeWithAndReturnClauses extends Step with PreparatoryRewritingRewriterFactory {
 
   override def getRewriter(
     cypherExceptionFactory: CypherExceptionFactory,
