@@ -512,7 +512,7 @@ object ClauseConverters {
     val subquery = clause.part
     val callSubquery =
       StatementConverters.toPlannerQueryPart(subquery, acc.semanticTable, anonymousVariableNameGenerator)
-    acc.withCallSubquery(callSubquery, subquery.isCorrelated, subquery.isYielding, clause.inTransactionsParameters)
+    acc.withCallSubquery(callSubquery, subquery.isCorrelated, subquery.isReturning, clause.inTransactionsParameters)
   }
 
   private def addCommandClauseToLogicalPlanInput(

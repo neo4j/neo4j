@@ -40,7 +40,6 @@ import org.neo4j.fabric.util.PrettyPrinting
 import org.neo4j.graphdb.ExecutionPlanDescription
 
 import java.util
-
 import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.jdk.CollectionConverters.SetHasAsJava
 
@@ -163,7 +162,7 @@ object Fragment {
   ) extends Fragment.Segment {
 
     override val producesResults: Boolean = query match {
-      case Query(part) => part.isYielding
+      case Query(part) => part.isReturning
       case _           => true
     }
     val parameters: Map[String, String] = Columns.asParamMappings(importColumns)
