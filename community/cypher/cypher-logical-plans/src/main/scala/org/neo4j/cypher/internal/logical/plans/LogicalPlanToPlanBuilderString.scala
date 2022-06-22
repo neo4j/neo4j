@@ -100,11 +100,7 @@ object LogicalPlanToPlanBuilderString {
     extra: Option[LogicalPlan => String],
     planPrefixDot: Option[LogicalPlan => String]
   ) = {
-    def planRepresentation(
-      plan: LogicalPlan,
-      extra: Option[LogicalPlan => String],
-      planPrefixDot: Option[LogicalPlan => String]
-    ): String = {
+    def planRepresentation(plan: LogicalPlan): String = {
       val sb = new mutable.StringBuilder()
       sb ++= planPrefixDot.fold(".")(_.apply(plan))
       sb ++= pre(plan)
@@ -116,7 +112,7 @@ object LogicalPlanToPlanBuilderString {
       sb.toString()
     }
 
-    val treeString = LogicalPlanTreeRenderer.render(logicalPlan, ".|", planRepresentation(_, extra, planPrefixDot))
+    val treeString = LogicalPlanTreeRenderer.render(logicalPlan, ".|", planRepresentation)
 
     if (extra.isEmpty) {
       s"""$treeString
