@@ -76,8 +76,6 @@ case class BestResults[+Result](bestResult: Result, bestResultFulfillingReq: Opt
 class IDPSolver[Solvable, Result, Context](
   generator: IDPSolverStep[Solvable, Result, Context], // generates candidates at each step
   projectingSelector: ProjectingSelector[Result], // pick best from a set of candidates
-  candidateProjector: Result => Result =
-    (r: Result) => r, // map candidates before giving them to the ProjectingSelector, but keep the unmapped candidates.
   registryFactory: () => IdRegistry[Solvable] = () => IdRegistry[Solvable], // maps from Set[S] to BitSet
   tableFactory: (IdRegistry[Solvable], Seed[Solvable, Result]) => IDPTable[Result] =
     (registry: IdRegistry[Solvable], seed: Seed[Solvable, Result]) => IDPTable(registry, seed),
@@ -100,10 +98,10 @@ class IDPSolver[Solvable, Result, Context](
 
     // utility functions
     def candidateSelector(resolved: => String): Selector[Result] =
-      projectingSelector.apply[Result](candidateProjector, _, resolved)
+      projectingSelector.apply[Result](identity[Result], _, resolved)
     def goalSelector(resolved: => String): Selector[(Goal, Result)] = projectingSelector.apply[(Goal, Result)](
       {
-        case (_, result) => candidateProjector(result)
+        case (_, result) => result
       },
       _,
       resolved
