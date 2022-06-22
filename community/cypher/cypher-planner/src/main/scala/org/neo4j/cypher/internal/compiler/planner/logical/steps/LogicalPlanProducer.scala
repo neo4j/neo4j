@@ -265,7 +265,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   /**
    * This object is simply to group methods that are used by the [[SubqueryExpressionSolver]], and thus do not need to update `solveds`
    */
-  object ForListSubqueryExpressionSolver {
+  object ForSubqueryExpressionSolver {
 
     def planArgument(argumentIds: Set[String], context: LogicalPlanningContext): LogicalPlan = {
       annotate(Argument(argumentIds), SinglePlannerQuery.empty, ProvidedOrder.empty, context)

@@ -152,7 +152,7 @@ object SubqueryExpressionSolver {
 
   class SolverForLeafPlan(argumentIds: Set[String], context: LogicalPlanningContext)
       extends Solver(
-        context.logicalPlanProducer.ForListSubqueryExpressionSolver.planArgument(
+        context.logicalPlanProducer.ForSubqueryExpressionSolver.planArgument(
           argumentIds,
           context
         ), // When we have a leaf plan, we start with a single row on the LHS of the RollUpApply
@@ -172,7 +172,7 @@ object SubqueryExpressionSolver {
           // We did not change anything. No need to wrap the leaf plan in an apply.
           leafPlan
         case _ =>
-          context.logicalPlanProducer.ForListSubqueryExpressionSolver.planApply(lhsOfApply, leafPlan, context)
+          context.logicalPlanProducer.ForSubqueryExpressionSolver.planApply(lhsOfApply, leafPlan, context)
       }
     }
   }
@@ -200,7 +200,7 @@ object SubqueryExpressionSolver {
 
     val collectionName = maybeKey.getOrElse(expr.collectionName)
     val subQueryPlan = plannerQueryPartPlanner.planSubquery(expr, context)
-    val producedPlan = context.logicalPlanProducer.ForListSubqueryExpressionSolver.planRollup(
+    val producedPlan = context.logicalPlanProducer.ForSubqueryExpressionSolver.planRollup(
       source,
       subQueryPlan,
       collectionName,

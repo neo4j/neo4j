@@ -137,9 +137,9 @@ abstract class Expression extends ASTNode {
    *
    * @param variable    the variable to replace
    * @param replacement the replacement expression
-   * @return this expression with `variable` replaced by `replacement.
+   * @return this expression with `variable` replaced by `replacement`.
    */
-  def replaceAllOccurrencesBy(variable: LogicalVariable, replacement: => Expression): Expression = {
+  def replaceAllOccurrencesBy(variable: LogicalVariable, replacement: Expression): Expression = {
     val occurrencesToReplace = occurrences(variable)
     self.endoRewrite(bottomUp(Rewriter.lift {
       case occurrence: Variable if occurrencesToReplace(Ref(occurrence)) => replacement

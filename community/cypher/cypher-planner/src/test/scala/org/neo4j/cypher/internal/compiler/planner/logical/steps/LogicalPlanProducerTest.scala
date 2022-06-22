@@ -675,25 +675,25 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("ForListSubqueryExpressionSolver.planApply fail when rhs contains update") {
     shouldFailAssertion(ctx =>
-      ctx.producer.ForListSubqueryExpressionSolver.planApply(ctx.lhs, ctx.rhsWithUpdate, ctx.context)
+      ctx.producer.ForSubqueryExpressionSolver.planApply(ctx.lhs, ctx.rhsWithUpdate, ctx.context)
     )
   }
 
   test("ForListSubqueryExpressionSolver.planApply should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.ForListSubqueryExpressionSolver.planApply(ctx.lhs, ctx.rhsWithoutUpdate, ctx.context)
+      ctx.producer.ForSubqueryExpressionSolver.planApply(ctx.lhs, ctx.rhsWithoutUpdate, ctx.context)
     )
   }
 
   test("ForListSubqueryExpressionSolver.planRollup should fail when rhs contains update") {
     shouldFailAssertion(ctx =>
-      ctx.producer.ForListSubqueryExpressionSolver.planRollup(ctx.lhs, ctx.rhsWithUpdate, "x", "y", ctx.context)
+      ctx.producer.ForSubqueryExpressionSolver.planRollup(ctx.lhs, ctx.rhsWithUpdate, "x", "y", ctx.context)
     )
   }
 
   test("ForListSubqueryExpressionSolver.planRollup should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.ForListSubqueryExpressionSolver.planRollup(ctx.lhs, ctx.rhsWithoutUpdate, "x", "y", ctx.context)
+      ctx.producer.ForSubqueryExpressionSolver.planRollup(ctx.lhs, ctx.rhsWithoutUpdate, "x", "y", ctx.context)
     )
   }
 
