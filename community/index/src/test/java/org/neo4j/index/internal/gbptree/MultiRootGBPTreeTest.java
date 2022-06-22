@@ -36,6 +36,7 @@ import static org.neo4j.test.Race.throwing;
 import static org.neo4j.util.concurrent.Futures.getAllResults;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.ArrayList;
@@ -553,6 +554,43 @@ class MultiRootGBPTreeTest {
 
         // then
         assertThat(roots.toImmutable()).isEqualTo(LongSets.immutable.of(externalId1));
+    }
+
+    @Test
+    void shouldCreateRootsThroughCheckpoints() throws IOException {
+        // given
+        var nextRootKey = new AtomicLong();
+        var numCheckpoints = new AtomicInteger();
+        var race = new Race().withEndCondition(() -> nextRootKey.get() > 1_000 && numCheckpoints.get() > 20);
+        race.addContestant(throwing(() -> tree.create(rootKeyLayout.key(nextRootKey.getAndIncrement()), NULL_CONTEXT)));
+        race.addContestant(throwing(() -> {
+            tree.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
+            numCheckpoints.incrementAndGet();
+        }));
+
+        // when
+        race.goUnchecked();
+
+        // then
+        var nextExpectedRootKey = new AtomicLong();
+        tree.visitAllRoots(NULL_CONTEXT, root -> {
+            assertThat(rootKeyLayout.keySeed(root)).isEqualTo(nextExpectedRootKey.getAndIncrement());
+            assertThat(rootKeyLayout.keySeed(root)).isLessThan(nextRootKey.get());
+            var low = layout.newKey();
+            var high = layout.newKey();
+            layout.initializeAsLowest(low);
+            layout.initializeAsHighest(high);
+            try (var seek = tree.access(root).seek(low, high, NULL_CONTEXT)) {
+                var count = 0;
+                while (seek.next()) {
+                    count++;
+                }
+                assertThat(count).isZero();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            return false;
+        });
     }
 
     private void deleteRootContents(long key) throws IOException {

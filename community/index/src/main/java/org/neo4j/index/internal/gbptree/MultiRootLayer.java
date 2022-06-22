@@ -132,24 +132,26 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
 
     @Override
     void create(ROOT_KEY dataRootKey, CursorContext cursorContext) throws IOException {
-        dataRootKey = rootLayout.copyKey(dataRootKey);
-        long generation = support.generation();
-        long stableGeneration = stableGeneration(generation);
-        long unstableGeneration = unstableGeneration(generation);
         var cursorCreator = bind(support, PF_SHARED_WRITE_LOCK, cursorContext);
-        long rootId = support.idProvider().acquireNewId(stableGeneration, unstableGeneration, cursorCreator);
-        Root dataRoot = new Root(rootId, unstableGeneration);
-        support.initializeNewRoot(dataRoot, dataTreeNode, DATA_LAYER_FLAG, cursorContext);
         try (Writer<ROOT_KEY, RootMappingValue> rootMappingWriter = support.internalParallelWriter(
                 rootLayout, rootTreeNode, DEFAULT_SPLIT_RATIO, cursorContext, this, ROOT_LAYER_FLAG)) {
-            // Write it to the root mapping tree
-            rootMappingWriter.merge(
-                    dataRootKey, new RootMappingValue().initialize(dataRoot), DONT_ALLOW_CREATE_EXISTING_ROOT);
-            // Cache the created root
-            cache(new DataTreeRoot<>(dataRootKey, dataRoot));
-        } catch (DataTreeAlreadyExistsException e) {
-            support.idProvider().releaseId(stableGeneration, unstableGeneration, rootId, cursorCreator);
-            throw e;
+            dataRootKey = rootLayout.copyKey(dataRootKey);
+            long generation = support.generation();
+            long stableGeneration = stableGeneration(generation);
+            long unstableGeneration = unstableGeneration(generation);
+            long rootId = support.idProvider().acquireNewId(stableGeneration, unstableGeneration, cursorCreator);
+            try {
+                Root dataRoot = new Root(rootId, unstableGeneration);
+                support.initializeNewRoot(dataRoot, dataTreeNode, DATA_LAYER_FLAG, cursorContext);
+                // Write it to the root mapping tree
+                rootMappingWriter.merge(
+                        dataRootKey, new RootMappingValue().initialize(dataRoot), DONT_ALLOW_CREATE_EXISTING_ROOT);
+                // Cache the created root
+                cache(new DataTreeRoot<>(dataRootKey, dataRoot));
+            } catch (DataTreeAlreadyExistsException e) {
+                support.idProvider().releaseId(stableGeneration, unstableGeneration, rootId, cursorCreator);
+                throw e;
+            }
         }
     }
 
