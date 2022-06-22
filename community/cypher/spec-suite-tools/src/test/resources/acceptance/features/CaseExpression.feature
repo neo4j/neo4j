@@ -330,3 +330,61 @@ Feature: CaseExpression
       | count  |
       | 1      |
     And no side effects
+
+  Scenario: When given null, any WHEN containing null should not match as null == null = null
+    When executing query:
+      """
+      RETURN
+      CASE null
+          WHEN null THEN true
+          ELSE false
+      END AS res
+      """
+    Then the result should be, in any order:
+      | res   |
+      | false |
+    And no side effects
+
+
+  Scenario: When given null = null as a comparison it should evaluate to false
+    When executing query:
+      """
+      RETURN
+      CASE
+          WHEN null = null THEN true
+          ELSE false
+      END AS res
+      """
+    Then the result should be, in any order:
+      | res   |
+      | false |
+    And no side effects
+
+
+  Scenario: When given null IS null as a comparison it should evaluate to true
+    When executing query:
+      """
+      RETURN
+      CASE
+          WHEN null IS NULL THEN true
+          ELSE false
+      END AS res
+      """
+    Then the result should be, in any order:
+      | res   |
+      | true  |
+    And no side effects
+
+
+  Scenario: When given null and no default, null should be returned
+    When executing query:
+      """
+      RETURN
+      CASE null
+          WHEN null THEN true
+      END AS res
+      """
+    Then the result should be, in any order:
+      | res   |
+      | null  |
+    And no side effects

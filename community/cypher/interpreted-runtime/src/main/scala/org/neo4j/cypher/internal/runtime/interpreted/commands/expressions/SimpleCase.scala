@@ -31,7 +31,7 @@ case class SimpleCase(expression: Expression, alternatives: Seq[(Expression, Exp
     val value = expression(row, state)
 
     val matchingExpression: Option[Expression] = alternatives collectFirst {
-      case (exp, res) if exp(row, state) == value => res
+      case (exp, res) if exp(row, state).equalsWithNoValueCheck(value) => res
     }
 
     matchingExpression match {

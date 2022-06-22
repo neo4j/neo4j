@@ -23,12 +23,20 @@ import org.neo4j.memory.Measurable;
 import org.neo4j.values.storable.FloatingPointValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.ValueRepresentation;
+import org.neo4j.values.storable.Values;
 
 public abstract class AnyValue implements Measurable {
     // this should be final, but Mockito barfs if it is,
     // so we need to just manually ensure it isn't overridden
     @Override
     public boolean equals(Object other) {
+        return this == other || other != null && equalTo(other);
+    }
+
+    // In Cypher RETURN null = null; returns null. Therefore, in a binary equals we
+    // sometimes need to return false when matching e.g CASE null WHEN null THEN... shouldn't match on null
+    public boolean equalsWithNoValueCheck(Object other) {
+        if (this == Values.NO_VALUE && other == Values.NO_VALUE) return false;
         return this == other || other != null && equalTo(other);
     }
 
