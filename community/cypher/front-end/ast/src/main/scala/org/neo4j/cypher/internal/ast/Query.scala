@@ -94,7 +94,7 @@ sealed trait QueryPart extends ASTNode with SemanticCheckable {
   /**
    * True iff this query part ends with a return clause.
    */
-  def isYielding: Boolean
+  def isReturning: Boolean
 }
 
 case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extends QueryPart with SemanticAnalysisTooling {
@@ -112,7 +112,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   override def isCorrelated: Boolean = importWith.isDefined
 
-  override def isYielding: Boolean = clauses.last match {
+  override def isReturning: Boolean = clauses.last match {
     case _: Return => true
     case _ => false
   }
@@ -290,7 +290,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       // otherwise
       case seq => seq.last match {
         case _: UpdateClause | _: Return | _: CommandClause                   => None
-        case subquery: SubqueryCall if !subquery.part.isYielding              => None
+        case subquery: SubqueryCall if !subquery.part.isReturning              => None
         case call: CallClause if call.returnColumns.isEmpty && !call.yieldAll => None
         case call: CallClause                                                 =>
           Some(SemanticError(s"Query cannot conclude with ${call.name} together with YIELD", call.position))
@@ -432,7 +432,7 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
 
   override def isCorrelated: Boolean = query.isCorrelated || part.isCorrelated
 
-  override def isYielding: Boolean = query.isYielding // we assume part has the same value
+  override def isReturning: Boolean = query.isReturning // we assume part has the same value
 
   def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck =
     semanticCheckAbstract(
