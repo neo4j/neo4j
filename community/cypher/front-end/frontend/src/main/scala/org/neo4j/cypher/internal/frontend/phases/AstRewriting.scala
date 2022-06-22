@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.rewriting.conditions.noDuplicatesInReturnItems
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInMatch
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInPatternComprehension
 import org.neo4j.cypher.internal.rewriting.conditions.normalizedEqualsArguments
+import org.neo4j.cypher.internal.rewriting.rewriters.NoNamedPathsInPatternComprehensions
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
@@ -47,15 +48,19 @@ case class AstRewriting(parameterTypeMapping: Map[String, CypherType] = Map.empt
   override def phase = AST_REWRITE
 
   override def postConditions: Set[StepSequencer.Condition] = {
-    val rewriterConditions = Set(
+    val validatingRewriterConditions = Set(
       noDuplicatesInReturnItems,
       containsNoReturnAll,
       noUnnamedPatternElementsInMatch,
       containsNoNodesOfType[NotEquals],
       normalizedEqualsArguments,
       noUnnamedPatternElementsInPatternComprehension
+    ).map(StatementCondition.apply)
+
+    val nonValidatingRewriterConditions: Set[StepSequencer.Condition] = Set(
+      NoNamedPathsInPatternComprehensions
     )
 
-    rewriterConditions.map(StatementCondition.apply)
+    validatingRewriterConditions ++ nonValidatingRewriterConditions
   }
 }
