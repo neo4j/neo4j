@@ -76,10 +76,10 @@ public interface TopologyGraphDbmsModel {
                 case SECONDARY -> {
                     return HostedOnMode.replica;
                 }
-                case NONE -> {
+                case SINGLE -> {
                     return HostedOnMode.single;
                 }
-                default -> throw new UnsupportedOperationException("Mode constraint not supported: " + modeConstraint);
+                default -> throw new IllegalArgumentException("Mode constraint not supported: " + modeConstraint);
             }
         }
     }
@@ -121,6 +121,8 @@ public interface TopologyGraphDbmsModel {
     enum InstanceModeConstraint {
         PRIMARY,
         SECONDARY,
+        // Temporary value, to be removed when mode goes away.
+        SINGLE,
         NONE;
 
         public static InstanceModeConstraint lookupFromMode(Mode mode) {
@@ -132,8 +134,7 @@ public interface TopologyGraphDbmsModel {
                     return InstanceModeConstraint.SECONDARY;
                 }
                 case SINGLE -> {
-                    // Mode constraints are not used in single mode, so just defaulting to none.
-                    return InstanceModeConstraint.NONE;
+                    return InstanceModeConstraint.SINGLE;
                 }
                 default -> throw new IllegalArgumentException("Can't find instance constraint for " + mode.name());
             }
@@ -142,16 +143,18 @@ public interface TopologyGraphDbmsModel {
         /**
          * Does this mode constraint allow a database in the specified mode.
          */
-        // TODO: At some point adapt this to match a server with compatible constraints, i.e. include None, not just
-        // primary and secondary
         public boolean allowsMode(HostedOnMode mode) {
+            if (this == NONE) {
+                return true;
+            }
             if (mode == HostedOnMode.raft) {
                 return this == PRIMARY;
             } else if (mode == HostedOnMode.replica) {
                 return this == SECONDARY;
+            } else if (mode == HostedOnMode.single) {
+                return this == SINGLE;
             } else {
-                // TODO:
-                throw new IllegalStateException("Implement me");
+                throw new IllegalArgumentException(mode + " is not supported");
             }
         }
     }
